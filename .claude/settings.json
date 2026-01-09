@@ -86,16 +86,7 @@
       "Bash(pip3:*)",
       "Bash(node:*)",
       "Bash(npm:*)",
-      "Bash(npx:*)",
-      "Bash(sed:**/*)",
-      "Bash(echo:**/*)",
-      "Bash(mv:**/*)",
-      "Bash(cp:**/*)",
-      "Bash(rm:**/*)",
-      "Bash(touch:**/*)",
-      "Bash(chmod:**/*)",
-      "Bash(chown:**/*)"
+      "Bash(npx:*)"
     ]
   }
 }
-
