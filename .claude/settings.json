@@ -86,7 +86,8 @@
       "Bash(pip3:*)",
       "Bash(node:*)",
       "Bash(npm:*)",
-      "Bash(npx:*)"
+      "Bash(npx:*)",
+      "Edit(/Users/noah/deep-work/**)"
     ]
   }
 }
