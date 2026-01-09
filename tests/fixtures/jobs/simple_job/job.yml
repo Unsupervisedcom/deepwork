@@ -1,0 +1,24 @@
+name: simple_job
+version: "0.1.0"
+summary: "A simple single-step job for testing"
+description: |
+  A simple single-step job for testing the DeepWork framework.
+
+  This job demonstrates the minimal structure required for a valid job definition,
+  including a single step with user input and file output.
+
+changelog:
+  - version: "0.1.0"
+    changes: "Initial version"
+
+steps:
+  - id: single_step
+    name: "Single Step"
+    description: "A single step that performs a task"
+    instructions_file: steps/single_step.md
+    inputs:
+      - name: input_param
+        description: "An input parameter"
+    outputs:
+      - output.md
+    dependencies: []

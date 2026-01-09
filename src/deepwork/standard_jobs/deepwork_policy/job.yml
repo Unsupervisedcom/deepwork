@@ -1,0 +1,35 @@
+name: deepwork_policy
+version: "0.1.0"
+summary: "Policy enforcement for AI agent sessions"
+description: |
+  Manages policies that automatically trigger when certain files change during an AI agent session.
+  Policies help ensure that code changes follow team guidelines, documentation is updated,
+  and architectural decisions are respected.
+
+  Policies are defined in a `.deepwork.policy.yml` file at the root of your project. Each policy
+  specifies:
+  - Trigger patterns: Glob patterns for files that, when changed, should trigger the policy
+  - Safety patterns: Glob patterns for files that, if also changed, mean the policy doesn't need to fire
+  - Instructions: What the agent should do when the policy triggers
+
+  Example use cases:
+  - Update installation docs when configuration files change
+  - Require security review when authentication code is modified
+  - Ensure API documentation stays in sync with API code
+  - Remind developers to update changelogs
+
+changelog:
+  - version: "0.1.0"
+    changes: "Initial version"
+
+steps:
+  - id: define
+    name: "Define Policy"
+    description: "Create or update policy entries in .deepwork.policy.yml"
+    instructions_file: steps/define.md
+    inputs:
+      - name: policy_purpose
+        description: "What guideline or constraint should this policy enforce?"
+    outputs:
+      - .deepwork.policy.yml
+    dependencies: []

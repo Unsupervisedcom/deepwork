@@ -1,0 +1,117 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(pwd:*)",
+      "Bash(wc:*)",
+      "Bash(diff:*)",
+      "Bash(du:*)",
+      "Bash(df:*)",
+      "Bash(stat:*)",
+      "Bash(file:*)",
+      "Bash(less:*)",
+      "Bash(more:*)",
+      "Bash(awk:*)",
+      "Bash(sed:*)",
+      "Bash(sort:*)",
+      "Bash(uniq:*)",
+      "Bash(tr:*)",
+      "Bash(cut:*)",
+      "Bash(xargs:*)",
+      "Bash(tee:*)",
+      "Bash(printf:*)",
+      "Bash(echo:*)",
+      "Bash(date:*)",
+      "Bash(cal:*)",
+      "Bash(uname:*)",
+      "Bash(whoami:*)",
+      "Bash(id:*)",
+      "Bash(groups:*)",
+      "Bash(env:*)",
+      "Bash(printenv:*)",
+      "Bash(which:*)",
+      "Bash(whereis:*)",
+      "Bash(type:*)",
+      "Bash(ps:*)",
+      "Bash(mkdir:*)",
+      "Bash(rmdir:*)",
+      "Bash(touch:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)",
+      "Bash(chmod:*)",
+      "Bash(chown:*)",
+      "Bash(chgrp:*)",
+      "Bash(tar:*)",
+      "Bash(gzip:*)",
+      "Bash(gunzip:*)",
+      "Bash(zip:*)",
+      "Bash(unzip:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(jq:*)",
+      "Bash(yq:*)",
+      "Bash(base64:*)",
+      "Bash(sha256sum:*)",
+      "Bash(md5sum:*)",
+      "Bash(shasum:*)",
+      "Bash(bc:*)",
+      "Bash(seq:*)",
+      "Bash(test:*)",
+      "Bash([:*)",
+      "Bash(true:*)",
+      "Bash(false:*)",
+      "Bash(exit:*)",
+      "Bash(cd:*)",
+      "Bash(pushd:*)",
+      "Bash(popd:*)",
+      "Bash(dirname:*)",
+      "Bash(basename:*)",
+      "Bash(read:*)",
+      "Bash(source:*)",
+      "Bash(export:*)",
+      "Bash(unset:*)",
+      "Bash(set:*)",
+      "Bash(alias:*)",
+      "Bash(unalias:*)",
+      "Bash(git:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(pip:*)",
+      "Bash(pip3:*)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Edit(./**)"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".deepwork/jobs/deepwork_policy/hooks/user_prompt_submit.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".deepwork/jobs/deepwork_policy/hooks/policy_stop_hook.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

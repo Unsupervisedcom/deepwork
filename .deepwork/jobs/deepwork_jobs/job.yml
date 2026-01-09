@@ -1,0 +1,102 @@
+name: deepwork_jobs
+version: "0.1.0"
+summary: "DeepWork job management commands"
+description: |
+  Core commands for managing DeepWork jobs. These commands help you define new multi-step
+  workflows and refine existing ones.
+
+  The `define` command guides you through an interactive process to create a new job by
+  asking detailed questions about your workflow, understanding each step's inputs and outputs,
+  and generating all necessary files.
+
+  The `refine` command helps you modify existing jobs safely by understanding what you want
+  to change, validating the impact, and ensuring consistency across your workflow.
+
+changelog:
+  - version: "0.1.0"
+    changes: "Initial version"
+
+steps:
+  - id: define
+    name: "Define Job Specification"
+    description: "Create the job.yml specification file by understanding workflow requirements"
+    instructions_file: steps/define.md
+    inputs:
+      - name: job_purpose
+        description: "What complex task or workflow are you trying to accomplish?"
+    outputs:
+      - job.yml
+    dependencies: []
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the job.yml output meets ALL quality criteria before completing:
+
+            1. **User Understanding**: Did you fully understand the user's workflow through interactive Q&A?
+            2. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
+            3. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
+            4. **Concise Summary**: Is the summary under 200 characters and descriptive?
+            5. **Rich Description**: Does the description provide enough context for future refinement?
+            6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
+            7. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
+
+            If ANY criterion is not met, continue working to address it.
+            If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
+
+  - id: implement
+    name: "Implement Job Steps"
+    description: "Generate instruction files for each step based on the job.yml specification"
+    instructions_file: steps/implement.md
+    inputs:
+      - file: job.yml
+        from_step: define
+    outputs:
+      - implementation_summary.md
+    dependencies:
+      - define
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the implementation meets ALL quality criteria before completing:
+
+            1. **Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?
+            2. **Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?
+            3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
+            4. **Output Examples**: Does each instruction file show what good output looks like?
+            5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
+            6. **Sync Complete**: Has `deepwork sync` been run successfully?
+            7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+            8. **Summary Created**: Has `implementation_summary.md` been created?
+            9. **Policies Considered**: Have you thought about whether policies would benefit this job?
+               - If relevant policies were identified, did you explain them and offer to run `/deepwork_policy.define`?
+               - Not every job needs policies - only suggest when genuinely helpful.
+
+            If ANY criterion is not met, continue working to address it.
+            If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
+
+  - id: refine
+    name: "Refine Existing Job"
+    description: "Modify an existing job definition"
+    instructions_file: steps/refine.md
+    inputs:
+      - name: job_name
+        description: "Name of the job to refine"
+    outputs:
+      - job.yml
+    dependencies: []
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the refinement meets ALL quality criteria before completing:
+
+            1. **Job Consistency**: Do the changes maintain overall job consistency?
+            2. **Valid Dependencies**: Are all step dependencies logically valid (no circular refs)?
+            3. **Semantic Versioning**: Was the version bumped appropriately (major/minor/patch)?
+            4. **Changelog Updated**: Is the changelog updated with a description of changes?
+            5. **User Understanding**: Does the user understand the impact of the changes?
+            6. **Breaking Changes**: Were any breaking changes clearly communicated?
+            7. **Files Updated**: Are all affected files (job.yml, step files) updated?
+            8. **Sync Complete**: Has `deepwork sync` been run to regenerate commands?
+
+            If ANY criterion is not met, continue working to address it.
+            If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
