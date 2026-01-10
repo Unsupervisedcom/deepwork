@@ -1,7 +1,7 @@
 """YAML utilities for reading and writing configuration files."""
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -12,7 +12,7 @@ class YAMLError(Exception):
     pass
 
 
-def load_yaml(path: Path | str) -> Optional[dict[str, Any]]:
+def load_yaml(path: Path | str) -> dict[str, Any] | None:
     """
     Load YAML file and return parsed data.
 
@@ -31,7 +31,7 @@ def load_yaml(path: Path | str) -> Optional[dict[str, Any]]:
         return None
 
     try:
-        with open(path_obj, "r", encoding="utf-8") as f:
+        with open(path_obj, encoding="utf-8") as f:
             data = yaml.safe_load(f)
             if data is None:
                 return {}

@@ -1,7 +1,6 @@
 """Git utilities for repository operations."""
 
 from pathlib import Path
-from typing import Optional
 
 from git import GitCommandError, InvalidGitRepositoryError, Repo
 

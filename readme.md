@@ -1,45 +1,289 @@
-# Overview
-DeepWork is framework for making AIs perform complex, multi-step work tasks. It is heavily inspired by the https://github.com/github/spec-kit project that provides such a framework for software development using a spec-driven approach. However, DeepWork is meant to work for a far-broader universe of task types.
+# DeepWork
 
-# Key Concepts
-DeepWork has 2 main concepts
-## Jobs
-Jobs are the complex, multi-step things we do all the time. In DeepWork, you define a Job once, then can have Agents do that job for you many times. For example, Feature Development, Ad Campaign Design, Competitive Research, Monthly Sales Reporting, Data-Driven Research, etc.
+> Framework for enabling AI agents to perform complex, multi-step work tasks
 
-## Steps
-Each job is made up of a series of steps. Steps are defined by having an input and an output that can be reviewed. For example, SpecKit has steps of `constitution` to define invariants for the development process, `specify` for writing the specification, `plan` for making a development plan off the specification, etc. Competitive Research might have steps of `identify_competitors`, `primary_research` (looking at what competitors say about themselves), `secondary_research` (what others say about the competitors), `report` that writes detailed reports on how the competitors (and yourself) compare, and `position` that defines a process for positioning against competitors.
+DeepWork is a tool for defining and executing multi-step workflows with AI coding assistants like Claude Code, Google Gemini, and GitHub Copilot. It enables you to decompose complex tasks into manageable steps, with clear inputs, outputs, and dependencies.
 
-Each of these become commands that can be invoked in Agent platforms like Claude Code to facilitate going through the process. For example, `/competitive_research.identify_competitors`
+## Status: Phase 1 MVP Complete ✅
 
-# Git
-DeepWork is designed to be used with Git. The expectation is that you will make Git repositories for the work you do with the tool so that you can track and version both the job definitions and the products of the work. It also means that many of the key processes needed around agent-assisted work can be handled with Git integrations, such as Github Actions that fire when a PR merges.
+**Version**: 0.1.0
+**Test Coverage**: 166 tests passing
 
-# How it Works
+### What's Implemented
 
-## Install
-Users install DeepWork on their local machine as a CLI. They then invoke it in a git project directory with the command `install --gemimi` or `install --claude` or similar where their tool of choice is declared.
+- ✅ Job definition parsing and validation
+- ✅ Job registry for tracking installed workflows
+- ✅ Multi-platform support (Claude Code, Gemini, Copilot)
+- ✅ Jinja2-based skill file generation
+- ✅ Git integration for work branch management
+- ✅ CLI with `install` command
+- ✅ Core skills: `deepwork.define` and `deepwork.refine`
 
-That installs several commands in the project for the CLI you chose.
+## Installation
 
-Everything after that is done using the CLI you chose. i.e. you use `/deepwork.define` that is mentioned below will be run in Claude Code as a slash-command in the project directory.
+### Prerequisites
 
-## Define Jobs
+- Python 3.11 or higher
+- Git repository
+- One of: Claude Code, Google Gemini, or GitHub Copilot
 
-The main command installed above is now used for getting your jobs defined:
-* deepwork.define - Works with the user to define a new Job with all of the Steps involved in it
+### Install DeepWork
 
-The jobs that are defined this way are stored inside the project so that they get git-tracked alongside work product.
+```bash
+# Using uv (recommended)
+uv pip install -e .
 
-## Do Jobs
-When you want to do a new job, you just start it with the appropriate command. This will trigger the creation of a Git branch for the new work and start going.
+# Or using pip
+pip install -e .
+```
 
-You will then need to go through the flow of the job between the various steps. Each step will have reviewable output files that you can look at and make sure are correct. Once you are happy with the output, you can go on to the next step.
+### Install in Your Project
 
-We encourage you to commit the artifacts to git as you go. Once you have the final output in a great place, you can send your PR for review to other people on your team, and ultimately merge it.
+```bash
+cd your-project/
+deepwork install --platform claude  # or gemini, copilot
+```
 
-## Learn
-We need to refine our Job definitions as we work so that we keep getting better. 
-You can  call `/deepwork.refine` that will let you update a given job based on new info.
+This will:
+- Create `.deepwork/` directory structure
+- Initialize job registry
+- Generate core DeepWork skills
 
-Additionally, having all the work products in Git makes it easy for the Agents to have wide context. For example, if you are doing competitive research on a new competitor, the existing research on others acts as a template for both style and thinking for the agents.
+## Quick Start
 
+### 1. Define a Workflow
+
+Use Claude Code (or your AI assistant) to define a new job:
+
+```
+/deepwork.define
+```
+
+Follow the interactive prompts to:
+- Name your workflow
+- Define steps with inputs/outputs
+- Specify dependencies between steps
+
+### 2. Execute Steps
+
+Run individual steps of your workflow:
+
+```
+/your_job_name.step_1
+```
+
+The AI will:
+- Create a work branch
+- Execute the step's instructions
+- Generate required outputs
+- Guide you to the next step
+
+### 3. Manage Workflows
+
+Use the refine skill to update existing jobs:
+
+```
+/deepwork.refine
+```
+
+## Example: Competitive Research Workflow
+
+Here's a sample 4-step workflow for competitive analysis:
+
+**job.yml**:
+```yaml
+name: competitive_research
+version: "1.0.0"
+description: "Systematic competitive analysis workflow"
+
+steps:
+  - id: identify_competitors
+    name: "Identify Competitors"
+    description: "Research and list competitors"
+    inputs:
+      - name: market_segment
+        description: "Market segment to analyze"
+      - name: product_category
+        description: "Product category"
+    outputs:
+      - competitors.md
+    dependencies: []
+
+  - id: primary_research
+    name: "Primary Research"
+    description: "Analyze competitors' self-presentation"
+    inputs:
+      - file: competitors.md
+        from_step: identify_competitors
+    outputs:
+      - primary_research.md
+      - competitor_profiles/
+    dependencies:
+      - identify_competitors
+
+  # ... additional steps
+```
+
+Usage:
+```
+/competitive_research.identify_competitors
+# AI creates work branch and asks for market_segment, product_category
+# Generates competitors.md
+
+/competitive_research.primary_research
+# AI reads competitors.md
+# Generates primary_research.md and competitor_profiles/
+```
+
+## Architecture
+
+DeepWork follows a **Git-native, installation-only** design:
+
+- **No runtime daemon**: DeepWork is purely a CLI tool
+- **Git-based workflow**: All work happens on dedicated branches
+- **Skills as interface**: AI agents interact via generated markdown skill files
+- **Platform-agnostic**: Works with any AI coding assistant that supports skills
+
+### Directory Structure
+
+```
+your-project/
+├── .deepwork/
+│   ├── config.yml          # Platform configuration
+│   ├── registry.yml        # Installed jobs
+│   └── jobs/               # Job definitions
+│       └── job_name/
+│           ├── job.yml     # Job metadata
+│           └── steps/      # Step instructions
+├── .claude/                # Claude Code skills (auto-generated)
+│   ├── skill-deepwork.define.md
+│   ├── skill-deepwork.refine.md
+│   └── skill-job_name.step_name.md
+└── work/                   # Work products (Git branches)
+    └── job-instance-date/
+        └── outputs...
+```
+
+## Development
+
+### Setup Development Environment
+
+```bash
+# Using Nix (recommended)
+nix-shell
+
+# Or manually
+uv sync
+```
+
+### Run Tests
+
+```bash
+# All tests
+uv run pytest tests/ -v
+
+# Unit tests only
+uv run pytest tests/unit/ -v
+
+# Integration tests only
+uv run pytest tests/integration/ -v
+
+# With coverage
+uv run pytest tests/ --cov=deepwork --cov-report=html
+```
+
+### Code Quality
+
+```bash
+# Linting
+ruff check src/
+
+# Type checking
+mypy src/
+
+# Format code
+ruff format src/
+```
+
+## Documentation
+
+- **[Architecture](doc/architecture.md)**: Complete design specification
+- **[Template Review](doc/TEMPLATE_REVIEW.md)**: Skill template documentation
+- **[Status](STATUS.md)**: Implementation progress
+- **[Next Steps](NEXT_STEPS.md)**: Future development roadmap
+
+## Project Structure
+
+```
+deepwork/
+├── src/deepwork/
+│   ├── cli/              # Command-line interface
+│   ├── core/             # Core functionality
+│   │   ├── parser.py     # Job definition parsing
+│   │   ├── registry.py   # Job registry management
+│   │   ├── detector.py   # Platform detection
+│   │   └── generator.py  # Skill file generation
+│   ├── templates/        # Jinja2 templates
+│   │   └── claude/       # Claude Code templates
+│   ├── schemas/          # JSON schemas
+│   └── utils/            # Utilities (fs, yaml, git, validation)
+├── tests/
+│   ├── unit/             # Unit tests (147 tests)
+│   ├── integration/      # Integration tests (19 tests)
+│   └── fixtures/         # Test fixtures
+└── doc/                  # Documentation
+```
+
+## Features
+
+### Job Definition
+
+- **Declarative YAML**: Define workflows in simple, readable YAML
+- **JSON Schema Validation**: Automatic validation of job structure
+- **Dependency Management**: Explicit dependencies with cycle detection
+- **File & User Inputs**: Support for both user parameters and file outputs from previous steps
+
+### Skill Generation
+
+- **Template-Based**: Jinja2 templates for consistent skill generation
+- **Context-Aware**: Skills include all necessary context (instructions, inputs, dependencies)
+- **Multi-Platform**: Generate skills for different AI platforms
+
+### Git Integration
+
+- **Work Branches**: Automatic work branch creation and management
+- **Namespace Isolation**: Multiple concurrent job instances supported
+- **Version Control**: All outputs tracked in Git
+
+## Roadmap
+
+### Phase 2: Runtime Enhancements (Planned)
+
+- Job execution tracking
+- Automatic skill invocation
+- Progress visualization
+- Error recovery
+
+### Phase 3: Advanced Features (Planned)
+
+- Job templates and marketplace
+- Parallel step execution
+- External tool integration
+- Web UI for job management
+
+## Contributing
+
+DeepWork is currently in MVP phase. Contributions welcome!
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Credits
+
+- Inspired by [GitHub's spec-kit](https://github.com/github/spec-kit)
+- Built for [Claude Code](https://claude.com/claude-code)
+
+---
+
+**Built with Claude Code** 🤖

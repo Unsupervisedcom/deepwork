@@ -1,0 +1,191 @@
+Name: deepwork.define
+Description: Interactive job definition wizard
+
+## Overview
+
+This skill helps you define a new DeepWork job by guiding you through an interactive process to specify:
+- Job metadata (name, description, version)
+- Workflow steps
+- Step inputs (user parameters and file dependencies)
+- Step outputs
+- Dependencies between steps
+
+The result is a complete job definition stored in `.deepwork/jobs/[job_name]/` with generated skill files.
+
+## Instructions
+
+You will guide the user through defining a new multi-step workflow. Follow this process:
+
+### Step 1: Job Metadata
+
+Ask the user for:
+1. **Job name**: A descriptive name (lowercase, underscores allowed, e.g., `competitive_research`, `ad_campaign`)
+2. **Job description**: Brief description of what this workflow accomplishes
+3. **Initial version**: Semantic version (default: `1.0.0`)
+
+Validate:
+- Job name matches pattern: `^[a-z][a-z0-9_]*$`
+- Description is clear and concise
+- Version follows semantic versioning (X.Y.Z)
+
+### Step 2: Define Steps
+
+For each step in the workflow, ask:
+
+1. **Step ID**: Unique identifier (e.g., `identify_competitors`)
+2. **Step name**: Human-readable name (e.g., `Identify Competitors`)
+3. **Step description**: What this step accomplishes
+4. **Inputs**:
+   - User parameters: Information the user needs to provide (name + description)
+   - File inputs: Files from previous steps (filename + source step ID)
+5. **Outputs**: Files or directories this step produces
+6. **Dependencies**: Which previous steps must be completed first
+
+Continue asking "Would you like to add another step?" until the user is done.
+
+### Step 3: Review and Confirm
+
+Present a summary of the job definition:
+
+```
+Job: [name] v[version]
+Description: [description]
+
+Steps:
+1. [step_name] (id: [step_id])
+   - Inputs: [list inputs]
+   - Outputs: [list outputs]
+   - Dependencies: [list deps or "None"]
+
+2. [step_name] (id: [step_id])
+   ...
+```
+
+Ask the user to confirm or make changes.
+
+### Step 4: Create Job Definition
+
+1. **Create directory structure**:
+   ```
+   .deepwork/jobs/[job_name]/
+   ├── job.yml
+   └── steps/
+       ├── [step1_id].md
+       ├── [step2_id].md
+       └── ...
+   ```
+
+2. **Generate job.yml**:
+   ```yaml
+   name: [job_name]
+   version: "[version]"
+   description: "[description]"
+
+   steps:
+     - id: [step_id]
+       name: "[step_name]"
+       description: "[step_description]"
+       instructions_file: steps/[step_id].md
+       inputs:
+         - name: [param_name]
+           description: "[param_description]"
+         # or
+         - file: [filename]
+           from_step: [step_id]
+       outputs:
+         - [output_file]
+       dependencies:
+         - [dep_step_id]
+   ```
+
+3. **Create step instruction files**:
+   For each step, create `.deepwork/jobs/[job_name]/steps/[step_id].md`:
+   ```markdown
+   # [Step Name]
+
+   ## Objective
+   [Brief objective - ask user or generate from description]
+
+   ## Task
+   [Detailed instructions - ask user to provide or help them write]
+
+   ## Output Format
+   [Expected format of outputs]
+   ```
+
+4. **Generate skill files**:
+   For each step, generate `.claude/skill-[job_name].[step_id].md` using the job-step template.
+
+### Step 5: Installation Complete
+
+Inform the user:
+```
+✓ Job "[job_name]" v[version] has been defined!
+
+Files created:
+- .deepwork/jobs/[job_name]/job.yml
+- .deepwork/jobs/[job_name]/steps/[step1].md
+- .deepwork/jobs/[job_name]/steps/[step2].md
+- ...
+- .claude/skill-[job_name].[step1].md
+- .claude/skill-[job_name].[step2].md
+- ...
+
+To start using this job, run:
+/[job_name].[first_step_id]
+```
+
+## Validation Rules
+
+Enforce these rules during the definition process:
+
+1. **Job name**: `^[a-z][a-z0-9_]*$` (lowercase, start with letter)
+2. **Version**: `^\\d+\\.\\d+\\.\\d+$` (semantic versioning)
+3. **Step IDs**: Must be unique within the job
+4. **Dependencies**: Must reference existing step IDs
+5. **File inputs**: Must reference `from_step` that exists in dependencies
+6. **Outputs**: At least one output per step
+7. **No circular dependencies**: Validate dependency graph is acyclic
+
+## Tips for Users
+
+Provide helpful guidance:
+- "Start by identifying the major phases of your workflow"
+- "Each step should produce concrete, reviewable outputs"
+- "User parameters are for information you don't know yet (market segment, dates, etc.)"
+- "File inputs are for using outputs from previous steps"
+- "Dependencies ensure steps run in the right order"
+
+## Error Handling
+
+If validation fails:
+- Explain the specific issue clearly
+- Suggest a fix
+- Allow the user to retry or modify their input
+
+## Example Usage
+
+```
+User: /deepwork.define
+
+Claude: I'll help you define a new DeepWork job! This will create a multi-step workflow you can use repeatedly.
+
+Let's start with the basics:
+1. What would you like to call this job? (e.g., competitive_research, ad_campaign)
+
+User: product_launch
+
+Claude: Great! Now, what does this workflow accomplish? Provide a brief description.
+
+User: End-to-end product launch planning and execution
+
+Claude: Perfect! I'll use version 1.0.0. Now let's define the steps...
+[continues interactive dialog]
+```
+
+---
+
+## Context Files
+
+- Job schema: `src/deepwork/schemas/job_schema.py`
+- Template: `src/deepwork/templates/claude/skill-job-step.md.jinja`

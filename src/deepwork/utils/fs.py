@@ -2,7 +2,6 @@
 
 import shutil
 from pathlib import Path
-from typing import Optional
 
 
 def ensure_dir(path: Path | str) -> Path:
@@ -36,7 +35,7 @@ def safe_write(path: Path | str, content: str) -> None:
     path_obj.write_text(content, encoding="utf-8")
 
 
-def safe_read(path: Path | str) -> Optional[str]:
+def safe_read(path: Path | str) -> str | None:
     """
     Read content from file, return None if file doesn't exist.
 
@@ -56,7 +55,7 @@ def safe_read(path: Path | str) -> Optional[str]:
 
 
 def copy_dir(
-    src: Path | str, dst: Path | str, ignore_patterns: Optional[list[str]] = None
+    src: Path | str, dst: Path | str, ignore_patterns: list[str] | None = None
 ) -> None:
     """
     Recursively copy directory, optionally ignoring patterns.
