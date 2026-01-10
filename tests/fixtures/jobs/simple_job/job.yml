@@ -1,0 +1,15 @@
+name: simple_job
+version: "1.0.0"
+description: "A simple single-step job for testing"
+
+steps:
+  - id: single_step
+    name: "Single Step"
+    description: "A single step that performs a task"
+    instructions_file: steps/single_step.md
+    inputs:
+      - name: input_param
+        description: "An input parameter"
+    outputs:
+      - output.md
+    dependencies: []

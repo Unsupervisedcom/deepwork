@@ -1,0 +1,61 @@
+name: competitive_research
+version: "1.0.0"
+description: "Systematic competitive analysis workflow"
+
+steps:
+  - id: identify_competitors
+    name: "Identify Competitors"
+    description: "Research and list direct and indirect competitors"
+    instructions_file: steps/identify_competitors.md
+    inputs:
+      - name: market_segment
+        description: "The market segment to analyze"
+      - name: product_category
+        description: "Product category"
+    outputs:
+      - competitors.md
+    dependencies: []
+
+  - id: primary_research
+    name: "Primary Research"
+    description: "Analyze competitors' self-presentation"
+    instructions_file: steps/primary_research.md
+    inputs:
+      - file: competitors.md
+        from_step: identify_competitors
+    outputs:
+      - primary_research.md
+      - competitor_profiles/
+    dependencies:
+      - identify_competitors
+
+  - id: secondary_research
+    name: "Secondary Research"
+    description: "Research third-party perspectives on competitors"
+    instructions_file: steps/secondary_research.md
+    inputs:
+      - file: competitors.md
+        from_step: identify_competitors
+      - file: primary_research.md
+        from_step: primary_research
+    outputs:
+      - secondary_research.md
+    dependencies:
+      - identify_competitors
+      - primary_research
+
+  - id: comparative_report
+    name: "Comparative Report"
+    description: "Create detailed comparison matrix"
+    instructions_file: steps/comparative_report.md
+    inputs:
+      - file: primary_research.md
+        from_step: primary_research
+      - file: secondary_research.md
+        from_step: secondary_research
+    outputs:
+      - comparison_matrix.md
+      - strengths_weaknesses.md
+    dependencies:
+      - primary_research
+      - secondary_research

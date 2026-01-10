@@ -1,0 +1,13 @@
+# This is an invalid job definition for testing validation
+name: invalid-job-name-with-dashes
+version: not-semver
+# missing description
+steps:
+  - id: step_with_invalid_dependency
+    name: "Invalid Step"
+    # missing description
+    instructions_file: steps/nonexistent.md
+    outputs:
+      - output.md
+    dependencies:
+      - nonexistent_step  # Invalid: references step that doesn't exist
