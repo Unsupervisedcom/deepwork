@@ -1,0 +1,182 @@
+---
+description: Create a new DeepWork job definition
+---
+
+# Define a New DeepWork Job
+
+This command helps you create a new multi-step workflow (job) for DeepWork.
+
+## What is a Job?
+
+A job is a reusable, multi-step workflow that guides you through complex tasks. Examples:
+- Competitive research
+- Feature development
+- Monthly reporting
+- Ad campaign creation
+- Research paper writing
+
+## Job Structure
+
+Each job consists of:
+- **Job metadata**: Name, version, description
+- **Steps**: Individual tasks with clear inputs and outputs
+- **Dependencies**: Which steps must complete before others
+
+## Creating a Job
+
+### Step 1: Plan Your Workflow
+
+Think through the major phases of your work:
+1. What are the distinct stages?
+2. What outputs does each stage produce?
+3. What dependencies exist between stages?
+
+### Step 2: Create Job Directory
+
+```bash
+mkdir -p .deepwork/jobs/[job_name]/steps
+```
+
+### Step 3: Create job.yml
+
+Create `.deepwork/jobs/[job_name]/job.yml`:
+
+```yaml
+name: [job_name]
+version: "1.0.0"
+description: "[Brief description of what this workflow accomplishes]"
+
+steps:
+  - id: [step_id]
+    name: "[Step Name]"
+    description: "[What this step does]"
+    instructions_file: steps/[step_id].md
+    inputs:
+      - name: [param_name]
+        description: "[What user needs to provide]"
+      # OR for file inputs from previous steps:
+      # - file: [filename]
+      #   from_step: [previous_step_id]
+    outputs:
+      - [output_filename]
+    dependencies: []  # List of step IDs that must complete first
+
+  - id: [another_step]
+    name: "[Another Step]"
+    description: "[What this step does]"
+    instructions_file: steps/[another_step].md
+    inputs:
+      - file: [output_filename]
+        from_step: [step_id]
+    outputs:
+      - [another_output]
+    dependencies:
+      - [step_id]  # This step requires the previous step
+```
+
+### Step 4: Create Step Instructions
+
+For each step, create `.deepwork/jobs/[job_name]/steps/[step_id].md`:
+
+```markdown
+# [Step Name]
+
+## Objective
+[Clear statement of what this step accomplishes]
+
+## Task
+[Detailed instructions for completing this step]
+
+### Process
+1. [Substep 1]
+2. [Substep 2]
+3. [Substep 3]
+
+## Output Format
+
+### [output_filename]
+[Description of the expected output]
+
+```markdown
+[Example or template of the output]
+```
+
+## Quality Criteria
+- [Quality check 1]
+- [Quality check 2]
+```
+
+### Step 5: Validate and Sync
+
+```bash
+# Sync to generate slash-commands
+deepwork sync
+
+# Your commands will be available as:
+# /[job_name].[step_id]
+```
+
+## Example
+
+Here's a simple two-step job:
+
+```yaml
+name: blog_post
+version: "1.0.0"
+description: "Create a blog post from outline to final draft"
+
+steps:
+  - id: outline
+    name: "Create Outline"
+    description: "Create a structured outline for the blog post"
+    instructions_file: steps/outline.md
+    inputs:
+      - name: topic
+        description: "The blog post topic"
+      - name: target_audience
+        description: "Who is the target audience"
+    outputs:
+      - outline.md
+    dependencies: []
+
+  - id: draft
+    name: "Write Draft"
+    description: "Write the full blog post draft from the outline"
+    instructions_file: steps/draft.md
+    inputs:
+      - file: outline.md
+        from_step: outline
+    outputs:
+      - draft.md
+    dependencies:
+      - outline
+```
+
+## Tips
+
+- **Keep steps atomic**: Each step should do one thing well
+- **Clear outputs**: Every step should produce reviewable artifacts
+- **Logical dependencies**: Steps should build on each other
+- **User parameters**: Use when you need information from the user
+- **File inputs**: Use when you need outputs from previous steps
+
+## Validation Rules
+
+- Job name: lowercase, underscores allowed (e.g., `my_job`)
+- Version: semantic versioning (e.g., `1.0.0`)
+- Step IDs: unique within the job
+- Dependencies: must reference existing step IDs
+- File inputs: `from_step` must be in dependencies
+- At least one output per step
+- No circular dependencies
+
+## After Creating Your Job
+
+Run `deepwork sync` to generate slash-commands, then use:
+```
+/[job_name].[first_step_id]
+```
+
+---
+
+Need help? Check `.deepwork/jobs/` for example jobs or see the DeepWork documentation.

@@ -1,18 +1,14 @@
 """Install command for DeepWork CLI."""
 
-from datetime import datetime
 from pathlib import Path
 
 import click
 from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
 
 from deepwork.core.detector import PlatformDetector
-from deepwork.core.generator import CommandGenerator
 from deepwork.utils.fs import ensure_dir
 from deepwork.utils.git import is_git_repo
-from deepwork.utils.yaml_utils import save_yaml
+from deepwork.utils.yaml_utils import load_yaml, save_yaml
 
 console = Console()
 
@@ -41,8 +37,8 @@ def install(platform: str | None, path: Path) -> None:
     """
     Install DeepWork in a project.
 
-    Sets up DeepWork configuration and installs core skills for the specified
-    AI platform (Claude Code, Google Gemini, or GitHub Copilot).
+    Adds the specified AI platform to the project configuration and syncs
+    commands for all configured platforms.
     """
     try:
         _install_deepwork(platform, path)
@@ -94,6 +90,7 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
             )
 
         console.print(f"  [green]✓[/green] {platform_config.display_name} detected")
+        platform_to_add = platform_config.name
     else:
         # Auto-detect platform
         console.print("[yellow]→[/yellow] Auto-detecting AI platform...")
@@ -117,6 +114,7 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
 
         platform_config = available_platforms[0]
         console.print(f"  [green]✓[/green] {platform_config.display_name} detected")
+        platform_to_add = platform_config.name
 
     # Step 3: Create .deepwork/ directory structure
     console.print("[yellow]→[/yellow] Creating DeepWork directory structure...")
@@ -126,109 +124,69 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     ensure_dir(jobs_dir)
     console.print(f"  [green]✓[/green] Created {deepwork_dir.relative_to(project_path)}/")
 
-    # Step 4: Create config.yml
-    console.print("[yellow]→[/yellow] Creating configuration...")
-    config_data = {
-        "platform": platform_config.name,
-        "version": "1.0.0",
-        "installed": datetime.utcnow().isoformat() + "Z",
-    }
+    # Step 4: Load or create config.yml
+    console.print("[yellow]→[/yellow] Updating configuration...")
     config_file = deepwork_dir / "config.yml"
+
+    if config_file.exists():
+        config_data = load_yaml(config_file)
+        if config_data is None:
+            config_data = {}
+    else:
+        config_data = {}
+
+    # Initialize config structure
+    if "version" not in config_data:
+        config_data["version"] = "1.0.0"
+
+    if "platforms" not in config_data:
+        config_data["platforms"] = []
+
+    # Add platform if not already present
+    if platform_to_add not in config_data["platforms"]:
+        config_data["platforms"].append(platform_to_add)
+        console.print(
+            f"  [green]✓[/green] Added {platform_config.display_name} to platforms"
+        )
+    else:
+        console.print(f"  [dim]•[/dim] {platform_config.display_name} already configured")
+
     save_yaml(config_file, config_data)
-    console.print(f"  [green]✓[/green] Created {config_file.relative_to(project_path)}")
+    console.print(f"  [green]✓[/green] Updated {config_file.relative_to(project_path)}")
 
     # Step 5: Create registry.yml
     console.print("[yellow]→[/yellow] Initializing job registry...")
     registry_file = deepwork_dir / "registry.yml"
     if not registry_file.exists():
         save_yaml(registry_file, {"jobs": {}})
-    console.print(f"  [green]✓[/green] Created {registry_file.relative_to(project_path)}")
-
-    # Step 6: Create commands directory
-    console.print("[yellow]→[/yellow] Creating commands directory...")
-    platform_dir = project_path / platform_config.config_dir
-    commands_dir = platform_dir / platform_config.commands_dir
-    ensure_dir(commands_dir)
-    console.print(f"  [green]✓[/green] Created {commands_dir.relative_to(project_path)}/")
-    console.print("  [dim]Job step commands will be generated here when you install jobs[/dim]")
-
-    # Step 7: Success message
-    console.print()
-    _print_success_panel(platform_config.name, platform_config.display_name, project_path)
-
-
-def _print_success_panel(
-    platform_name: str, platform_display: str, project_path: Path
-) -> None:
-    """
-    Print success panel with next steps.
-
-    Args:
-        platform_name: Platform name (e.g., "claude")
-        platform_display: Platform display name (e.g., "Claude Code")
-        project_path: Path to project directory
-    """
-    # Create table with installed files
-    table = Table(show_header=False, box=None, padding=(0, 2))
-    table.add_column("File", style="cyan")
-
-    table.add_row("✓ .deepwork/config.yml")
-    table.add_row("✓ .deepwork/registry.yml")
-    table.add_row(f"✓ {get_platform_config_dir(platform_name)}/commands/")
-
-    # Create success message
-    success_msg = (
-        f"[bold green]DeepWork installed successfully for {platform_display}![/bold green]\n\n"
-        "[bold]Files created:[/bold]\n"
-    )
-
-    # Create next steps message
-    next_steps = (
-        "\n[bold]Next steps:[/bold]\n"
-        "  1. Create a job definition in [cyan].deepwork/jobs/[job_name]/[/cyan]\n"
-        "  2. Install the job to generate slash-commands\n"
-        "  3. Use slash-commands like [cyan]/[job_name].[step_name][/cyan] to execute steps!\n\n"
-        "[dim]See CLAUDE.md or readme.md for more information[/dim]"
-    )
-
-    # Combine all parts
-    panel_content = success_msg
-
-    # Render table to string
-    from io import StringIO
-
-    table_str = StringIO()
-    temp_console = Console(file=table_str, force_terminal=True)
-    temp_console.print(table)
-    panel_content += table_str.getvalue()
-
-    panel_content += next_steps
-
-    # Print panel
-    panel = Panel(
-        panel_content,
-        title="🎉 Installation Complete",
-        border_style="green",
-        padding=(1, 2),
-    )
-    console.print(panel)
-
-
-def get_platform_config_dir(platform_name: str) -> str:
-    """
-    Get platform config directory name.
-
-    Args:
-        platform_name: Platform name
-
-    Returns:
-        Config directory name
-    """
-    if platform_name == "claude":
-        return ".claude"
-    elif platform_name == "gemini":
-        return ".gemini"
-    elif platform_name == "copilot":
-        return ".github"
+        console.print(f"  [green]✓[/green] Created {registry_file.relative_to(project_path)}")
     else:
-        return f".{platform_name}"
+        console.print(
+            f"  [dim]•[/dim] {registry_file.relative_to(project_path)} already exists"
+        )
+
+    # Step 6: Run sync to generate commands
+    console.print()
+    console.print("[yellow]→[/yellow] Running sync to generate commands...")
+    console.print()
+
+    from deepwork.cli.sync import sync_commands
+
+    try:
+        sync_commands(project_path)
+    except Exception as e:
+        raise InstallError(f"Failed to sync commands: {e}") from e
+
+    # Success message
+    console.print()
+    console.print(
+        f"[bold green]✓ DeepWork installed successfully for {platform_config.display_name}![/bold green]"
+    )
+    console.print()
+    console.print("[bold]Next steps:[/bold]")
+    console.print("  1. Create job definitions in [cyan].deepwork/jobs/[job_name]/[/cyan]")
+    console.print("  2. Run [cyan]deepwork sync[/cyan] to generate commands")
+    console.print(
+        "  3. Use commands like [cyan]/[job_name].[step_name][/cyan] in your AI tool"
+    )
+    console.print()

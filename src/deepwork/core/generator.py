@@ -209,3 +209,57 @@ class CommandGenerator:
 
         return command_paths
 
+    def generate_core_commands(
+        self, platform: PlatformConfig, output_dir: Path | str
+    ) -> list[Path]:
+        """
+        Generate core DeepWork commands (like define).
+
+        Args:
+            platform: Platform configuration
+            output_dir: Base directory to write commands to (e.g., .claude/)
+
+        Returns:
+            List of paths to generated command files
+
+        Raises:
+            GeneratorError: If generation fails
+        """
+        output_dir = Path(output_dir)
+        commands_dir = output_dir / platform.commands_dir
+        commands_dir.mkdir(parents=True, exist_ok=True)
+
+        command_paths = []
+
+        # Core templates to generate
+        core_templates = [
+            ("command-define.md.jinja", "define.md"),
+        ]
+
+        env = self._get_jinja_env(platform)
+
+        for template_name, command_filename in core_templates:
+            try:
+                template = env.get_template(template_name)
+            except TemplateNotFound:
+                # Skip if template doesn't exist yet
+                continue
+
+            try:
+                rendered = template.render()
+            except Exception as e:
+                raise GeneratorError(
+                    f"Core template rendering failed for {template_name}: {e}"
+                ) from e
+
+            command_path = commands_dir / command_filename
+
+            try:
+                safe_write(command_path, rendered)
+            except Exception as e:
+                raise GeneratorError(f"Failed to write core command file: {e}") from e
+
+            command_paths.append(command_path)
+
+        return command_paths
+
