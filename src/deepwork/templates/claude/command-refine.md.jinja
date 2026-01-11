@@ -1,9 +1,10 @@
-Name: deepwork.refine
-Description: Refine and update existing job definitions
+---
+description: Refine and update existing job definitions
+---
 
-## Overview
+# Refine Existing DeepWork Job
 
-This skill helps you modify existing DeepWork jobs. You can:
+This command helps you modify existing DeepWork jobs. You can:
 - Add new steps to a workflow
 - Modify step instructions
 - Update inputs/outputs
@@ -63,7 +64,6 @@ Based on the user's selection:
 3. Validate dependencies (can't depend on later steps if inserted early)
 4. Update job.yml
 5. Create new step instructions file
-6. Generate skill file for the new step
 
 #### Modifying Step Instructions
 
@@ -71,7 +71,6 @@ Based on the user's selection:
 2. Read current `.deepwork/jobs/[job_name]/steps/[step_id].md`
 3. Ask user how to modify (or read their changes)
 4. Update the markdown file
-5. Regenerate the skill file (to pick up new instructions)
 
 #### Changing Inputs/Outputs
 
@@ -82,7 +81,6 @@ Based on the user's selection:
    - File inputs must reference existing dependencies
    - If removing an output, check if other steps depend on it
 5. Update job.yml
-6. Regenerate skill file
 
 #### Updating Dependencies
 
@@ -93,7 +91,6 @@ Based on the user's selection:
    - No circular dependencies
    - All file inputs match dependencies
 5. Update job.yml
-6. Regenerate affected skill files
 
 #### Updating Metadata
 
@@ -115,20 +112,23 @@ Based on the user's selection:
 3. If safe, remove:
    - Remove from job.yml
    - Delete step instructions file
-   - Delete skill file
-   - Update step numbers in remaining skills
 
-### Step 4: Regenerate Skills
+### Step 4: Sync and Reload Commands
 
-After any change:
+**IMPORTANT**: After making any changes, you MUST run sync to regenerate the slash-commands:
 
-1. **Regenerate affected skill files**:
-   - If step modified: regenerate that step's skill
-   - If dependencies changed: regenerate affected steps
-   - If step added/removed: regenerate all steps (step numbers change)
+```bash
+deepwork sync
+```
 
-2. **Update registry**:
-   If version changed, update `.deepwork/registry.yml`
+This will:
+- Parse the updated job definition
+- Regenerate all slash-commands for this job
+- Update commands in `.claude/commands/`
+
+**After sync completes successfully**, reload the commands in the current Claude session:
+- Type `/reload` to reload commands (if available), OR
+- Restart the Claude session to pick up the new commands
 
 ### Step 5: Confirm Changes
 
@@ -144,7 +144,8 @@ Changes made:
 Files updated:
 - .deepwork/jobs/[job_name]/job.yml
 - .deepwork/jobs/[job_name]/steps/[step_id].md
-- .claude/skill-[job_name].[step_id].md
+
+Commands regenerated via sync. Reload your Claude session to use the updated commands.
 
 To test the changes, run:
 /[job_name].[first_step_id]
@@ -192,7 +193,7 @@ If issues arise:
 ## Example Usage
 
 ```
-User: /deepwork.refine
+User: /deepwork.refine_job
 
 Claude: I'll help you refine an existing job. Here are your installed jobs:
 
@@ -232,4 +233,4 @@ Claude: Great! Let's add a new step. Where would you like to insert it?
 - Job schema: `src/deepwork/schemas/job_schema.py`
 - Job parser: `src/deepwork/core/parser.py`
 - Registry: `.deepwork/registry.yml`
-- Template: `src/deepwork/templates/claude/skill-job-step.md.jinja`
+- Template: `src/deepwork/templates/claude/command-job-step.md.jinja`

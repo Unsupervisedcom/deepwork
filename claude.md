@@ -182,6 +182,7 @@ my-project/
 3. **Simplicity**: Don't over-engineer; make only requested changes
 4. **Testing**: Write tests for new functionality
 5. **Type Safety**: Use type hints for better code quality
+6. **No Auto-Commit**: DO NOT automatically commit changes to git. Let the user review and commit changes themselves.
 
 ## Current Status
 

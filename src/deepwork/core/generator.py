@@ -233,7 +233,8 @@ class CommandGenerator:
 
         # Core templates to generate
         core_templates = [
-            ("command-define.md.jinja", "define.md"),
+            ("command-define.md.jinja", "deepwork.define_job.md"),
+            ("command-refine.md.jinja", "deepwork.refine_job.md"),
         ]
 
         env = self._get_jinja_env(platform)
