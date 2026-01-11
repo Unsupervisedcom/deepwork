@@ -32,6 +32,20 @@ pkgs.mkShell {
   ];
 
   shellHook = ''
+    # Set up environment variables
+    export PYTHONPATH="$PWD/src:$PYTHONPATH"
+    export DEEPWORK_DEV=1
+
+    # Auto-sync dependencies and activate venv for direct deepwork access
+    echo "Setting up DeepWork development environment..."
+    uv sync --quiet 2>/dev/null || uv sync
+
+    # Activate the virtual environment so 'deepwork' command is directly available
+    if [ -f .venv/bin/activate ]; then
+      source .venv/bin/activate
+    fi
+
+    echo ""
     echo "DeepWork Development Environment"
     echo "================================"
     echo ""
@@ -39,19 +53,15 @@ pkgs.mkShell {
     echo "uv version: $(uv --version)"
     echo ""
     echo "Available tools:"
-    echo "  - uv: Modern Python package installer"
+    echo "  - deepwork: CLI is ready (try 'deepwork --help')"
     echo "  - pytest: Testing framework"
     echo "  - ruff: Python linter and formatter"
     echo "  - mypy: Static type checker"
     echo ""
-    echo "To get started:"
-    echo "  1. Run 'uv sync' to install project dependencies"
-    echo "  2. Run 'uv run pytest' to run tests"
-    echo "  3. Read doc/architecture.md for design details"
+    echo "Quick start:"
+    echo "  - 'deepwork --help' to see available commands"
+    echo "  - 'pytest' to run tests"
+    echo "  - Read doc/architecture.md for design details"
     echo ""
-
-    # Set up environment variables
-    export PYTHONPATH="$PWD/src:$PYTHONPATH"
-    export DEEPWORK_DEV=1
   '';
 }
