@@ -9,7 +9,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from deepwork.core.detector import PlatformDetector
-from deepwork.core.generator import SkillGenerator
+from deepwork.core.generator import CommandGenerator
 from deepwork.utils.fs import ensure_dir
 from deepwork.utils.git import is_git_repo
 from deepwork.utils.yaml_utils import save_yaml
@@ -144,18 +144,13 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
         save_yaml(registry_file, {"jobs": {}})
     console.print(f"  [green]✓[/green] Created {registry_file.relative_to(project_path)}")
 
-    # Step 6: Generate core skills
-    console.print("[yellow]→[/yellow] Installing core DeepWork skills...")
-    generator = SkillGenerator()
+    # Step 6: Create commands directory
+    console.print("[yellow]→[/yellow] Creating commands directory...")
     platform_dir = project_path / platform_config.config_dir
-
-    try:
-        skill_paths = generator.generate_core_skills(platform_config, platform_dir)
-        for skill_path in skill_paths:
-            rel_path = skill_path.relative_to(project_path)
-            console.print(f"  [green]✓[/green] Created {rel_path}")
-    except Exception as e:
-        raise InstallError(f"Failed to generate core skills: {e}") from e
+    commands_dir = platform_dir / platform_config.commands_dir
+    ensure_dir(commands_dir)
+    console.print(f"  [green]✓[/green] Created {commands_dir.relative_to(project_path)}/")
+    console.print("  [dim]Job step commands will be generated here when you install jobs[/dim]")
 
     # Step 7: Success message
     console.print()
@@ -179,8 +174,7 @@ def _print_success_panel(
 
     table.add_row("✓ .deepwork/config.yml")
     table.add_row("✓ .deepwork/registry.yml")
-    table.add_row(f"✓ {get_platform_config_dir(platform_name)}/skill-deepwork.define.md")
-    table.add_row(f"✓ {get_platform_config_dir(platform_name)}/skill-deepwork.refine.md")
+    table.add_row(f"✓ {get_platform_config_dir(platform_name)}/commands/")
 
     # Create success message
     success_msg = (
@@ -191,10 +185,10 @@ def _print_success_panel(
     # Create next steps message
     next_steps = (
         "\n[bold]Next steps:[/bold]\n"
-        f"  1. Run [cyan]/{platform_name} deepwork.define[/cyan] to create your first job\n"
-        "  2. Define your multi-step workflow interactively\n"
-        "  3. Start executing workflow steps!\n\n"
-        "[dim]For help, see: doc/README.md[/dim]"
+        "  1. Create a job definition in [cyan].deepwork/jobs/[job_name]/[/cyan]\n"
+        "  2. Install the job to generate slash-commands\n"
+        "  3. Use slash-commands like [cyan]/[job_name].[step_name][/cyan] to execute steps!\n\n"
+        "[dim]See CLAUDE.md or readme.md for more information[/dim]"
     )
 
     # Combine all parts

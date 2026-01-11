@@ -17,8 +17,7 @@ class PlatformConfig:
     name: str  # "claude", "gemini", "copilot"
     display_name: str  # "Claude Code", "Google Gemini", "GitHub Copilot"
     config_dir: str  # ".claude", ".gemini", ".github"
-    skill_prefix: str  # "skill-", "skill-", "copilot-"
-    skill_extension: str  # ".md"
+    commands_dir: str  # "commands", "commands", "commands"
 
 
 # Supported platform configurations
@@ -27,22 +26,19 @@ PLATFORMS = {
         name="claude",
         display_name="Claude Code",
         config_dir=".claude",
-        skill_prefix="skill-",
-        skill_extension=".md",
+        commands_dir="commands",
     ),
     "gemini": PlatformConfig(
         name="gemini",
         display_name="Google Gemini",
         config_dir=".gemini",
-        skill_prefix="skill-",
-        skill_extension=".md",
+        commands_dir="commands",
     ),
     "copilot": PlatformConfig(
         name="copilot",
         display_name="GitHub Copilot",
         config_dir=".github",
-        skill_prefix="copilot-",
-        skill_extension=".md",
+        commands_dir="commands",
     ),
 }
 

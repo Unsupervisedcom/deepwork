@@ -1,4 +1,4 @@
-"""Skill file generator using Jinja2 templates."""
+"""Slash-command file generator using Jinja2 templates."""
 
 from pathlib import Path
 from typing import Any
@@ -11,13 +11,13 @@ from deepwork.utils.fs import safe_read, safe_write
 
 
 class GeneratorError(Exception):
-    """Exception raised for skill generation errors."""
+    """Exception raised for command generation errors."""
 
     pass
 
 
-class SkillGenerator:
-    """Generates skill files from job definitions."""
+class CommandGenerator:
+    """Generates slash-command files from job definitions."""
 
     def __init__(self, templates_dir: Path | str | None = None):
         """
@@ -119,7 +119,7 @@ class SkillGenerator:
             "prev_step": prev_step,
         }
 
-    def generate_step_skill(
+    def generate_step_command(
         self,
         job: JobDefinition,
         step: Step,
@@ -127,21 +127,25 @@ class SkillGenerator:
         output_dir: Path | str,
     ) -> Path:
         """
-        Generate skill file for a single step.
+        Generate slash-command file for a single step.
 
         Args:
             job: Job definition
-            step: Step to generate skill for
+            step: Step to generate command for
             platform: Platform configuration
-            output_dir: Directory to write skill file to
+            output_dir: Directory to write command file to
 
         Returns:
-            Path to generated skill file
+            Path to generated command file
 
         Raises:
             GeneratorError: If generation fails
         """
         output_dir = Path(output_dir)
+
+        # Create commands subdirectory if needed
+        commands_dir = output_dir / platform.commands_dir
+        commands_dir.mkdir(parents=True, exist_ok=True)
 
         # Find step index
         try:
@@ -157,7 +161,7 @@ class SkillGenerator:
         # Load and render template
         env = self._get_jinja_env(platform)
         try:
-            template = env.get_template("skill-job-step.md.jinja")
+            template = env.get_template("command-job-step.md.jinja")
         except TemplateNotFound as e:
             raise GeneratorError(f"Template not found: {e}") from e
 
@@ -166,98 +170,42 @@ class SkillGenerator:
         except Exception as e:
             raise GeneratorError(f"Template rendering failed: {e}") from e
 
-        # Write skill file
-        skill_filename = (
-            f"{platform.skill_prefix}{job.name}.{step.id}{platform.skill_extension}"
-        )
-        skill_path = output_dir / skill_filename
+        # Write command file
+        command_filename = f"{job.name}.{step.id}.md"
+        command_path = commands_dir / command_filename
 
         try:
-            safe_write(skill_path, rendered)
+            safe_write(command_path, rendered)
         except Exception as e:
-            raise GeneratorError(f"Failed to write skill file: {e}") from e
+            raise GeneratorError(f"Failed to write command file: {e}") from e
 
-        return skill_path
+        return command_path
 
-    def generate_all_skills(
+    def generate_all_commands(
         self,
         job: JobDefinition,
         platform: PlatformConfig,
         output_dir: Path | str,
     ) -> list[Path]:
         """
-        Generate skill files for all steps in a job.
+        Generate slash-command files for all steps in a job.
 
         Args:
             job: Job definition
             platform: Platform configuration
-            output_dir: Directory to write skill files to
+            output_dir: Directory to write command files to
 
         Returns:
-            List of paths to generated skill files
+            List of paths to generated command files
 
         Raises:
             GeneratorError: If generation fails
         """
-        skill_paths = []
+        command_paths = []
 
         for step in job.steps:
-            skill_path = self.generate_step_skill(job, step, platform, output_dir)
-            skill_paths.append(skill_path)
+            command_path = self.generate_step_command(job, step, platform, output_dir)
+            command_paths.append(command_path)
 
-        return skill_paths
+        return command_paths
 
-    def generate_core_skills(
-        self, platform: PlatformConfig, output_dir: Path | str
-    ) -> list[Path]:
-        """
-        Generate core DeepWork skills (define, refine).
-
-        Args:
-            platform: Platform configuration
-            output_dir: Directory to write skill files to
-
-        Returns:
-            List of paths to generated skill files
-
-        Raises:
-            GeneratorError: If generation fails
-        """
-        output_dir = Path(output_dir)
-        skill_paths = []
-
-        # Templates to generate (these don't use variables, just copy)
-        core_templates = [
-            ("skill-deepwork.define.md.jinja", "deepwork.define"),
-            ("skill-deepwork.refine.md.jinja", "deepwork.refine"),
-        ]
-
-        env = self._get_jinja_env(platform)
-
-        for template_name, skill_name in core_templates:
-            try:
-                template = env.get_template(template_name)
-            except TemplateNotFound as e:
-                raise GeneratorError(f"Core template not found: {e}") from e
-
-            try:
-                # These templates don't take variables
-                rendered = template.render()
-            except Exception as e:
-                raise GeneratorError(
-                    f"Core template rendering failed for {template_name}: {e}"
-                ) from e
-
-            skill_filename = (
-                f"{platform.skill_prefix}{skill_name}{platform.skill_extension}"
-            )
-            skill_path = output_dir / skill_filename
-
-            try:
-                safe_write(skill_path, rendered)
-            except Exception as e:
-                raise GeneratorError(f"Failed to write core skill file: {e}") from e
-
-            skill_paths.append(skill_path)
-
-        return skill_paths

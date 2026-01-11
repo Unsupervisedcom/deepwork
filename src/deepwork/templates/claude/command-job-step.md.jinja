@@ -1,9 +1,10 @@
-Name: {{ job_name }}.{{ step_id }}
-Description: {{ step_description }}
+---
+description: {{ step_description }}
+---
 
-## Overview
+# {{ job_name }}.{{ step_id }}
 
-This is step {{ step_number }} of {{ total_steps }} in the **{{ job_name }}** workflow.
+**Step {{ step_number }} of {{ total_steps }}** in the **{{ job_name }}** workflow
 
 **Job**: {{ job_description }}
 
