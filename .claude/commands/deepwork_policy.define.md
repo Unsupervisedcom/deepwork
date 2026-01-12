@@ -4,7 +4,7 @@ description: Create or update policy entries in .deepwork.policy.yml
 
 # deepwork_policy.define
 
-**Step 1 of 1** in the **deepwork_policy** workflow
+**Standalone command** in the **deepwork_policy** job - can be run anytime
 
 **Summary**: Policy enforcement for AI agent sessions
 
@@ -254,18 +254,18 @@ After completing this step:
 2. **Verify outputs**: Confirm all required files have been created
 
 3. **Inform the user**:
-   - Step 1 of 1 is complete
+   - The define command is complete
    - Outputs created: .deepwork.policy.yml
-   - This is the final step - the job is complete!
+   - This command can be run again anytime to make further changes
 
-## Workflow Complete
+## Command Complete
 
-This is the final step in the deepwork_policy workflow. All outputs should now be complete and ready for review.
+This is a standalone command that can be run anytime. The outputs are ready for use.
 
 Consider:
-- Reviewing all work products in `deepwork/deepwork_policy/`
-- Creating a pull request to merge the work branch
-- Documenting any insights or learnings
+- Reviewing the outputs in `deepwork/deepwork_policy/`
+- Running `deepwork sync` if job definitions were changed
+- Re-running this command later if further changes are needed
 
 ---
 

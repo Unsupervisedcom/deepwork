@@ -4,7 +4,7 @@ description: Modify an existing job definition
 
 # deepwork_jobs.refine
 
-**Step 3 of 3** in the **deepwork_jobs** workflow
+**Standalone command** in the **deepwork_jobs** job - can be run anytime
 
 **Summary**: DeepWork job management commands
 
@@ -459,18 +459,18 @@ After completing this step:
 2. **Verify outputs**: Confirm all required files have been created
 
 3. **Inform the user**:
-   - Step 3 of 3 is complete
+   - The refine command is complete
    - Outputs created: job.yml
-   - This is the final step - the job is complete!
+   - This command can be run again anytime to make further changes
 
-## Workflow Complete
+## Command Complete
 
-This is the final step in the deepwork_jobs workflow. All outputs should now be complete and ready for review.
+This is a standalone command that can be run anytime. The outputs are ready for use.
 
 Consider:
-- Reviewing all work products in `deepwork/deepwork_jobs/`
-- Creating a pull request to merge the work branch
-- Documenting any insights or learnings
+- Reviewing the outputs in `deepwork/deepwork_jobs/`
+- Running `deepwork sync` if job definitions were changed
+- Re-running this command later if further changes are needed
 
 ---
 

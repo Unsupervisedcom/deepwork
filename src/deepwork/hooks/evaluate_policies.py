@@ -12,9 +12,9 @@ Usage:
 The conversation context is read from stdin and checked for <promise> tags
 that indicate policies have already been addressed.
 
-Output is JSON suitable for Claude Code hooks:
-    {"continue": true, "systemMessage": "..."}  # Policies need attention
-    {}  # No policies fired, exit normally
+Output is JSON suitable for Claude Code Stop hooks:
+    {"decision": "block", "reason": "..."}  # Block stop, policies need attention
+    {}  # No policies fired, allow stop
 """
 
 import argparse
@@ -60,13 +60,9 @@ def format_policy_message(policies: list) -> str:
     Returns:
         Formatted message with all policy instructions
     """
-    lines = ["## Policies Triggered", ""]
+    lines = ["## DeepWork Policies Triggered", ""]
     lines.append(
-        "The following policies have been triggered based on the files you changed. "
-        "Please address each one."
-    )
-    lines.append("")
-    lines.append(
+        "Comply with the following policies. "
         "To mark a policy as addressed, include `<promise policy=\"Policy Name\">addressed</promise>` "
         "in your response."
     )
@@ -149,11 +145,12 @@ def main() -> None:
         print("{}")
         return
 
-    # Format output for Claude Code hooks
+    # Format output for Claude Code Stop hooks
+    # Use "decision": "block" to prevent Claude from stopping
     message = format_policy_message(fired_policies)
     result = {
-        "continue": True,
-        "systemMessage": message,
+        "decision": "block",
+        "reason": message,
     }
 
     print(json.dumps(result))

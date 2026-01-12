@@ -58,6 +58,30 @@ class CommandGenerator:
             lstrip_blocks=True,
         )
 
+    def _is_standalone_step(self, job: JobDefinition, step: Step) -> bool:
+        """
+        Check if a step is standalone (disconnected from the main workflow).
+
+        A standalone step has no dependencies AND no other steps depend on it.
+
+        Args:
+            job: Job definition
+            step: Step to check
+
+        Returns:
+            True if step is standalone
+        """
+        # Step has dependencies - not standalone
+        if step.dependencies:
+            return False
+
+        # Check if any other step depends on this step
+        for other_step in job.steps:
+            if step.id in other_step.dependencies:
+                return False
+
+        return True
+
     def _build_step_context(
         self, job: JobDefinition, step: Step, step_index: int
     ) -> dict[str, Any]:
@@ -92,13 +116,17 @@ class CommandGenerator:
             if inp.is_file_input()
         ]
 
-        # Determine next and previous steps
+        # Check if this is a standalone step
+        is_standalone = self._is_standalone_step(job, step)
+
+        # Determine next and previous steps (only for non-standalone steps)
         next_step = None
         prev_step = None
-        if step_index < len(job.steps) - 1:
-            next_step = job.steps[step_index + 1].id
-        if step_index > 0:
-            prev_step = job.steps[step_index - 1].id
+        if not is_standalone:
+            if step_index < len(job.steps) - 1:
+                next_step = job.steps[step_index + 1].id
+            if step_index > 0:
+                prev_step = job.steps[step_index - 1].id
 
         return {
             "job_name": job.name,
@@ -118,6 +146,7 @@ class CommandGenerator:
             "dependencies": step.dependencies,
             "next_step": next_step,
             "prev_step": prev_step,
+            "is_standalone": is_standalone,
         }
 
     def generate_step_command(

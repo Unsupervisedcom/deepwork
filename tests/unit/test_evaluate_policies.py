@@ -69,7 +69,7 @@ class TestFormatPolicyMessage:
         ]
         result = format_policy_message(policies)
 
-        assert "## Policies Triggered" in result
+        assert "## DeepWork Policies Triggered" in result
         assert "### Policy: Test Policy" in result
         assert "Please update the documentation." in result
         assert '<promise policy="Policy Name">' in result
