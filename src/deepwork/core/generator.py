@@ -83,9 +83,7 @@ class CommandGenerator:
 
         return True
 
-    def _build_hook_context(
-        self, job: JobDefinition, hook_action: Any
-    ) -> dict[str, Any]:
+    def _build_hook_context(self, job: JobDefinition, hook_action: Any) -> dict[str, Any]:
         """
         Build context for a single hook action.
 
@@ -177,8 +175,7 @@ class CommandGenerator:
 
         # Backward compatibility: stop_hooks is after_agent hooks
         stop_hooks = hooks.get(
-            adapter.get_platform_hook_name(CommandLifecycleHook.AFTER_AGENT) or "Stop",
-            []
+            adapter.get_platform_hook_name(CommandLifecycleHook.AFTER_AGENT) or "Stop", []
         )
 
         return {

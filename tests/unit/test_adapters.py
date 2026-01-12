@@ -156,9 +156,7 @@ class TestClaudeAdapter:
 
         adapter = ClaudeAdapter(temp_dir)
         hooks = {
-            "PreToolUse": [
-                {"matcher": "", "hooks": [{"type": "command", "command": "test.sh"}]}
-            ]
+            "PreToolUse": [{"matcher": "", "hooks": [{"type": "command", "command": "test.sh"}]}]
         }
 
         adapter.sync_hooks(temp_dir, hooks)
