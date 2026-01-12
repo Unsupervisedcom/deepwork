@@ -1,0 +1,3 @@
+# DeepWork temporary files
+# These files are used for policy evaluation during sessions
+.last_work_tree
