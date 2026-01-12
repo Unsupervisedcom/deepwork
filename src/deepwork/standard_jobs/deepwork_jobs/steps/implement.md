@@ -219,7 +219,7 @@ your strategy documentation.
 
 I'd suggest a policy like:
 - **Name**: "Update strategy when competitor analysis changes"
-- **Trigger**: `deepwork/competitive_research-*/report.md`
+- **Trigger**: `**/positioning_report.md`
 - **Action**: Prompt to review and update `docs/strategy.md`
 
 Would you like me to create this policy? I can run `/deepwork_policy.define` to set it up.

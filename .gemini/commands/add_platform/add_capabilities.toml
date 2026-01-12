@@ -186,7 +186,6 @@ When you find a new hook type, consider whether it maps to an existing pattern o
 
 This step requires the following files from previous steps:
 - `hooks_system.md` (from step `research`)
-  Location: `deepwork/add_platform/hooks_system.md`
 
 Make sure to read and use these files as context for this step.
 
@@ -204,15 +203,11 @@ All work for this job should be done on a dedicated work branch:
    ```
    Replace `[instance]` with a descriptive identifier (e.g., `acme`, `q1-launch`, etc.)
 
-3. **All outputs go in the work directory**:
-   - Create files in: `deepwork/add_platform/`
-   - This keeps work products organized by job
-
 ## Output Requirements
 
-Create the following output(s) in the work directory:
-- `deepwork/add_platform/job_schema.py`
-- `deepwork/add_platform/adapters.py`
+Create the following output(s):
+- `job_schema.py`
+- `adapters.py`
 
 Ensure all outputs are:
 - Well-formatted and complete

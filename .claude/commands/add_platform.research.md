@@ -275,14 +275,10 @@ All work for this job should be done on a dedicated work branch:
    ```
    Replace `[instance]` with a descriptive identifier (e.g., `acme`, `q1-launch`, etc.)
 
-3. **All outputs go in the work directory**:
-   - Create files in: `deepwork/add_platform/`
-   - This keeps work products organized by job
-
 ## Output Requirements
 
-Create the following output(s) in the work directory:
-- `deepwork/add_platform/cli_configuration.md`- `deepwork/add_platform/hooks_system.md`
+Create the following output(s):
+- `cli_configuration.md`- `hooks_system.md`
 Ensure all outputs are:
 - Well-formatted and complete
 - Ready for review or use by subsequent steps

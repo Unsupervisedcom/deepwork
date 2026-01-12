@@ -288,7 +288,7 @@ your strategy documentation.
 
 I'd suggest a policy like:
 - **Name**: "Update strategy when competitor analysis changes"
-- **Trigger**: `deepwork/competitive_research-*/report.md`
+- **Trigger**: `**/positioning_report.md`
 - **Action**: Prompt to review and update `docs/strategy.md`
 
 Would you like me to create this policy? I can run `/deepwork_policy.define` to set it up.
@@ -511,7 +511,6 @@ Before marking this step complete, ensure:
 
 This step requires the following files from previous steps:
 - `job.yml` (from step `define`)
-  Location: `deepwork/deepwork_jobs/job.yml`
 
 Make sure to read and use these files as context for this step.
 
@@ -529,14 +528,10 @@ All work for this job should be done on a dedicated work branch:
    ```
    Replace `[instance]` with a descriptive identifier (e.g., `acme`, `q1-launch`, etc.)
 
-3. **All outputs go in the work directory**:
-   - Create files in: `deepwork/deepwork_jobs/`
-   - This keeps work products organized by job
-
 ## Output Requirements
 
-Create the following output(s) in the work directory:
-- `deepwork/deepwork_jobs/implementation_summary.md`
+Create the following output(s):
+- `implementation_summary.md`
 Ensure all outputs are:
 - Well-formatted and complete
 - Ready for review or use by subsequent steps

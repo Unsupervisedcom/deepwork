@@ -241,9 +241,9 @@ User: I need to specify the market segment and product category as inputs. The o
 
 Claude: Perfect. A few more questions about that output:
 1. What should the file be called? Something like `competitors_list.md`?
-2. Should it go directly in the deepwork/competitive_research/ folder, or in a subdirectory like `research/` or `data/`?
+2. Should it go in the project root, or in a subdirectory like `research/` or `data/`?
 
-User: Just call it `competitors_list.md` in the main folder.
+User: Just call it `competitors_list.md` in the project root.
 
 Claude: Great. Now for the "Research each one" step:
 1. Does it use the competitor list from the first step as input?

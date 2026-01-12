@@ -267,7 +267,6 @@ Take time to verify each aspect - finding issues now is much better than having 
 
 This step requires the following files from previous steps:
 - `templates/` (from step `implement`)
-  Location: `deepwork/add_platform/templates/`
 
 Make sure to read and use these files as context for this step.
 
@@ -285,14 +284,10 @@ All work for this job should be done on a dedicated work branch:
    ```
    Replace `[instance]` with a descriptive identifier (e.g., `acme`, `q1-launch`, etc.)
 
-3. **All outputs go in the work directory**:
-   - Create files in: `deepwork/add_platform/`
-   - This keeps work products organized by job
-
 ## Output Requirements
 
-Create the following output(s) in the work directory:
-- `deepwork/add_platform/verification_complete.md`
+Create the following output(s):
+- `verification_complete.md`
 Ensure all outputs are:
 - Well-formatted and complete
 - Ready for review or use by subsequent steps
@@ -339,7 +334,7 @@ After completing this step:
 This is the final step in the add_platform workflow. All outputs should now be complete and ready for review.
 
 Consider:
-- Reviewing all work products in `deepwork/add_platform/`
+- Reviewing all work products
 - Creating a pull request to merge the work branch
 - Documenting any insights or learnings
 

@@ -228,14 +228,10 @@ All work for this job should be done on a dedicated work branch:
    ```
    Replace `[instance]` with a descriptive identifier (e.g., `acme`, `q1-launch`, etc.)
 
-3. **All outputs go in the work directory**:
-   - Create files in: `deepwork/deepwork_policy/`
-   - This keeps work products organized by job
-
 ## Output Requirements
 
-Create the following output(s) in the work directory:
-- `deepwork/deepwork_policy/.deepwork.policy.yml`
+Create the following output(s):
+- `.deepwork.policy.yml`
 Ensure all outputs are:
 - Well-formatted and complete
 - Ready for review or use by subsequent steps
@@ -256,7 +252,7 @@ After completing this step:
 This is a standalone command that can be run anytime. The outputs are ready for use.
 
 Consider:
-- Reviewing the outputs in `deepwork/deepwork_policy/`
+- Reviewing the outputs
 - Running `deepwork sync` if job definitions were changed
 - Re-running this command later if further changes are needed
 

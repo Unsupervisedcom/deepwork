@@ -308,11 +308,8 @@ The templates use Jinja2 and should produce files that match exactly what the pl
 
 This step requires the following files from previous steps:
 - `job_schema.py` (from step `add_capabilities`)
-  Location: `deepwork/add_platform/job_schema.py`
 - `adapters.py` (from step `add_capabilities`)
-  Location: `deepwork/add_platform/adapters.py`
 - `cli_configuration.md` (from step `research`)
-  Location: `deepwork/add_platform/cli_configuration.md`
 
 Make sure to read and use these files as context for this step.
 
@@ -330,14 +327,10 @@ All work for this job should be done on a dedicated work branch:
    ```
    Replace `[instance]` with a descriptive identifier (e.g., `acme`, `q1-launch`, etc.)
 
-3. **All outputs go in the work directory**:
-   - Create files in: `deepwork/add_platform/`
-   - This keeps work products organized by job
-
 ## Output Requirements
 
-Create the following output(s) in the work directory:
-- `deepwork/add_platform/templates/` (directory)- `deepwork/add_platform/tests/` (directory)- `deepwork/add_platform/README.md`
+Create the following output(s):
+- `templates/` (directory)- `tests/` (directory)- `README.md`
 Ensure all outputs are:
 - Well-formatted and complete
 - Ready for review or use by subsequent steps

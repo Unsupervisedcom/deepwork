@@ -182,14 +182,13 @@ your-project/
 │   └── commands/
 │       ├── deepwork_jobs.define.md
 │       └── job_name.step_name.md
-├── .gemini/                # Gemini CLI commands (auto-generated)
-│   └── commands/
-│       └── job_name/
-│           └── step_name.toml
-└── work/                   # Work products (Git branches)
-    └── job-instance-date/
-        └── outputs...
+└── .gemini/                # Gemini CLI commands (auto-generated)
+    └── commands/
+        └── job_name/
+            └── step_name.toml
 ```
+
+**Note**: Work outputs are created on dedicated Git branches (e.g., `deepwork/job_name-instance-date`), not in a separate directory.
 
 ## Development
 

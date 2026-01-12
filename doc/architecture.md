@@ -300,14 +300,11 @@ my-project/                     # User's project (target)
 │       └── ad_campaign/
 │           └── ...
 ├── .deepwork.policy.yml        # Policy definitions (project root)
-├── deepwork/                   # Work products (Git branches)
-│   ├── competitive_research-acme-2026-01-11/
-│   │   └── ...
-│   └── ad_campaign-q1-2026-01-11/
-│       └── ...
 ├── (rest of user's project files)
 └── README.md
 ```
+
+**Note**: Work outputs are created directly in the project on dedicated Git branches (e.g., `deepwork/competitive_research-acme-2026-01-11`). The branch naming convention is `deepwork/[job_name]-[instance]-[date]`.
 
 ## Configuration Files
 
@@ -579,7 +576,7 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
          Product category: Project Management
 
    Claude: [Performs research using web tools, analysis, etc.]
-          ✓ Created deepwork/competitive_research-acme-2026-01-11/competitors.md
+          ✓ Created competitors.md
 
           Found 8 direct competitors and 4 indirect competitors.
           Review the file and run /competitive_research.primary_research when ready.
@@ -640,8 +637,10 @@ Since there's no DeepWork runtime process, context is passed through:
 
 ### 1. Filesystem (Primary Mechanism)
 
+On a work branch like `deepwork/competitive_research-acme-2026-01-11`, outputs are created in the project:
+
 ```
-deepwork/competitive_research-acme-2026-01-11/
+(project root on work branch)
 ├── competitors.md              ← Step 1 output
 ├── primary_research.md          ← Step 2 output
 ├── competitor_profiles/         ← Step 2 output
@@ -656,7 +655,7 @@ deepwork/competitive_research-acme-2026-01-11/
 Each command instructs Claude to:
 - Read specific input files from previous steps
 - Write specific output files for this step
-- All within the same work directory
+- All on the same work branch
 
 ### 2. Command Instructions
 
@@ -676,7 +675,7 @@ Conduct web research on secondary sources for each competitor identified in comp
 
 When working on similar jobs:
 - User: "Do competitive research for Acme Corp, similar to our Widget Corp analysis"
-- Claude can read old existing branches like`deepwork/competitive_research-widget-corp-2024-01-05/` from git history
+- Claude can read old existing branches like `deepwork/competitive_research-widget-corp-2024-01-05` from git history
 - Uses it as a template for style, depth, format
 
 ### 4. No Environment Variables Needed
