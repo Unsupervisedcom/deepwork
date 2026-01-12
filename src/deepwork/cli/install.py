@@ -1,5 +1,6 @@
 """Install command for DeepWork CLI."""
 
+import shutil
 from pathlib import Path
 
 import click
@@ -17,6 +18,44 @@ class InstallError(Exception):
     """Exception raised for installation errors."""
 
     pass
+
+
+def _inject_deepwork_jobs(jobs_dir: Path, project_path: Path) -> None:
+    """
+    Inject the deepwork_jobs job definition into the project.
+
+    Args:
+        jobs_dir: Path to .deepwork/jobs directory
+        project_path: Path to project root (for relative path display)
+
+    Raises:
+        InstallError: If injection fails
+    """
+    # Find the standard jobs directory
+    standard_jobs_dir = Path(__file__).parent.parent / "standard_jobs" / "deepwork_jobs"
+
+    if not standard_jobs_dir.exists():
+        raise InstallError(
+            f"Core job definition not found at {standard_jobs_dir}. "
+            "DeepWork installation may be corrupted."
+        )
+
+    # Target directory
+    target_dir = jobs_dir / "deepwork_jobs"
+
+    # Copy the entire directory
+    try:
+        if target_dir.exists():
+            # Remove existing if present (for reinstall/upgrade)
+            shutil.rmtree(target_dir)
+
+        shutil.copytree(standard_jobs_dir, target_dir)
+        console.print(
+            f"  [green]✓[/green] Installed deepwork_jobs "
+            f"({target_dir.relative_to(project_path)})"
+        )
+    except Exception as e:
+        raise InstallError(f"Failed to install core jobs: {e}") from e
 
 
 @click.command()
@@ -124,6 +163,10 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     ensure_dir(jobs_dir)
     console.print(f"  [green]✓[/green] Created {deepwork_dir.relative_to(project_path)}/")
 
+    # Step 3b: Inject deepwork_jobs (core job definitions)
+    console.print("[yellow]→[/yellow] Installing core job definitions...")
+    _inject_deepwork_jobs(jobs_dir, project_path)
+
     # Step 4: Load or create config.yml
     console.print("[yellow]→[/yellow] Updating configuration...")
     config_file = deepwork_dir / "config.yml"
@@ -154,18 +197,7 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     save_yaml(config_file, config_data)
     console.print(f"  [green]✓[/green] Updated {config_file.relative_to(project_path)}")
 
-    # Step 5: Create registry.yml
-    console.print("[yellow]→[/yellow] Initializing job registry...")
-    registry_file = deepwork_dir / "registry.yml"
-    if not registry_file.exists():
-        save_yaml(registry_file, {"jobs": {}})
-        console.print(f"  [green]✓[/green] Created {registry_file.relative_to(project_path)}")
-    else:
-        console.print(
-            f"  [dim]•[/dim] {registry_file.relative_to(project_path)} already exists"
-        )
-
-    # Step 6: Run sync to generate commands
+    # Step 5: Run sync to generate commands
     console.print()
     console.print("[yellow]→[/yellow] Running sync to generate commands...")
     console.print()
@@ -185,5 +217,5 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     console.print()
     console.print("[bold]Next steps:[/bold]")
     console.print("  1. Start your agent CLI (ex. [cyan]claude[/cyan] or [cyan]gemini[/cyan])")
-    console.print("  2. Define your first job using the command [cyan]/deepwork.define_job[/cyan]")
+    console.print("  2. Define your first job using the command [cyan]/deepwork_jobs.define[/cyan]")
     console.print()

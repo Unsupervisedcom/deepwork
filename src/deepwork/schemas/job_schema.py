@@ -6,7 +6,7 @@ from typing import Any
 JOB_SCHEMA: dict[str, Any] = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "required": ["name", "version", "description", "steps"],
+    "required": ["name", "version", "summary", "steps"],
     "properties": {
         "name": {
             "type": "string",
@@ -18,10 +18,16 @@ JOB_SCHEMA: dict[str, Any] = {
             "pattern": r"^\d+\.\d+\.\d+$",
             "description": "Semantic version (e.g., 1.0.0)",
         },
+        "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Brief one-line summary of what this job accomplishes",
+        },
         "description": {
             "type": "string",
             "minLength": 1,
-            "description": "Human-readable description of the job",
+            "description": "Detailed multi-line description of the job's purpose, process, and goals",
         },
         "steps": {
             "type": "array",

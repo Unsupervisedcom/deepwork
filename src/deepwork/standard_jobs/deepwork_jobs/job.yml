@@ -1,0 +1,48 @@
+name: deepwork_jobs
+version: "1.0.0"
+summary: "DeepWork job management commands"
+description: |
+  Core commands for managing DeepWork jobs. These commands help you define new multi-step
+  workflows and refine existing ones.
+
+  The `define` command guides you through an interactive process to create a new job by
+  asking detailed questions about your workflow, understanding each step's inputs and outputs,
+  and generating all necessary files.
+
+  The `refine` command helps you modify existing jobs safely by understanding what you want
+  to change, validating the impact, and ensuring consistency across your workflow.
+
+steps:
+  - id: define
+    name: "Define Job Specification"
+    description: "Create the job.yml specification file by understanding workflow requirements"
+    instructions_file: steps/define.md
+    inputs:
+      - name: job_purpose
+        description: "What complex task or workflow are you trying to accomplish?"
+    outputs:
+      - job.yml
+    dependencies: []
+
+  - id: implement
+    name: "Implement Job Steps"
+    description: "Generate instruction files for each step based on the job.yml specification"
+    instructions_file: steps/implement.md
+    inputs:
+      - file: job.yml
+        from_step: define
+    outputs:
+      - implementation_summary.md
+    dependencies:
+      - define
+
+  - id: refine
+    name: "Refine Existing Job"
+    description: "Modify an existing job definition"
+    instructions_file: steps/refine.md
+    inputs:
+      - name: job_name
+        description: "Name of the job to refine"
+    outputs:
+      - refinement_summary.md
+    dependencies: []

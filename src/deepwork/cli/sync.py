@@ -100,7 +100,7 @@ def sync_commands(project_path: Path) -> None:
 
     # Sync each platform
     generator = CommandGenerator()
-    stats = {"platforms": 0, "core_commands": 0, "job_commands": 0}
+    stats = {"platforms": 0, "commands": 0}
 
     for platform_name in platforms:
         if platform_name not in PLATFORMS:
@@ -116,25 +116,13 @@ def sync_commands(project_path: Path) -> None:
         # Create commands directory
         ensure_dir(commands_dir)
 
-        # Generate core commands
-        console.print(f"  [dim]•[/dim] Generating core commands...")
-        try:
-            core_paths = generator.generate_core_commands(platform_config, platform_dir)
-            stats["core_commands"] += len(core_paths)
-            for path in core_paths:
-                rel_path = path.relative_to(project_path)
-                console.print(f"    [green]✓[/green] {rel_path}")
-        except Exception as e:
-            console.print(f"    [red]✗[/red] Failed to generate core commands: {e}")
-            continue
-
-        # Generate job commands
+        # Generate commands for all jobs
         if jobs:
-            console.print(f"  [dim]•[/dim] Generating job commands...")
+            console.print("  [dim]•[/dim] Generating commands...")
             for job in jobs:
                 try:
                     job_paths = generator.generate_all_commands(job, platform_config, platform_dir)
-                    stats["job_commands"] += len(job_paths)
+                    stats["commands"] += len(job_paths)
                     console.print(f"    [green]✓[/green] {job.name} ({len(job_paths)} commands)")
                 except Exception as e:
                     console.print(f"    [red]✗[/red] Failed for {job.name}: {e}")
@@ -151,9 +139,7 @@ def sync_commands(project_path: Path) -> None:
     table.add_column("Count", style="green")
 
     table.add_row("Platforms synced", str(stats["platforms"]))
-    table.add_row("Core commands", str(stats["core_commands"]))
-    table.add_row("Job commands", str(stats["job_commands"]))
-    table.add_row("Total commands", str(stats["core_commands"] + stats["job_commands"]))
+    table.add_row("Total commands", str(stats["commands"]))
 
     console.print(table)
     console.print()
