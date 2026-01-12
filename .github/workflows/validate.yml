@@ -1,4 +1,4 @@
-name: Format
+name: Validate
 
 on:
   pull_request:
@@ -61,3 +61,25 @@ jobs:
           git add -A
           git commit -m "style: auto-format code with ruff"
           git push
+
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run tests
+        run: uv run pytest tests/ -v
