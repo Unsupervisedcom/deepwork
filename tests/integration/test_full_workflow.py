@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from deepwork.core.detector import PLATFORMS
+from deepwork.core.adapters import ClaudeAdapter
 from deepwork.core.generator import CommandGenerator
 from deepwork.core.parser import parse_job_definition
 
@@ -21,11 +21,11 @@ class TestJobWorkflow:
 
         # Step 2: Generate commands
         generator = CommandGenerator()
-        platform = PLATFORMS["claude"]
+        adapter = ClaudeAdapter()
         commands_dir = temp_dir / ".claude"
         commands_dir.mkdir()
 
-        command_paths = generator.generate_all_commands(job, platform, commands_dir)
+        command_paths = generator.generate_all_commands(job, adapter, commands_dir)
 
         assert len(command_paths) == 4
 
@@ -50,11 +50,11 @@ class TestJobWorkflow:
 
         # Generate
         generator = CommandGenerator()
-        platform = PLATFORMS["claude"]
+        adapter = ClaudeAdapter()
         commands_dir = temp_dir / ".claude"
         commands_dir.mkdir()
 
-        command_paths = generator.generate_all_commands(job, platform, commands_dir)
+        command_paths = generator.generate_all_commands(job, adapter, commands_dir)
 
         assert len(command_paths) == 1
 
@@ -72,11 +72,11 @@ class TestJobWorkflow:
         job = parse_job_definition(job_dir)
 
         generator = CommandGenerator()
-        platform = PLATFORMS["claude"]
+        adapter = ClaudeAdapter()
         commands_dir = temp_dir / ".claude"
         commands_dir.mkdir()
 
-        command_paths = generator.generate_all_commands(job, platform, commands_dir)
+        command_paths = generator.generate_all_commands(job, adapter, commands_dir)
 
         # Check first step (no prerequisites)
         step1_content = command_paths[0].read_text()
@@ -101,11 +101,11 @@ class TestJobWorkflow:
         job = parse_job_definition(job_dir)
 
         generator = CommandGenerator()
-        platform = PLATFORMS["claude"]
+        adapter = ClaudeAdapter()
         commands_dir = temp_dir / ".claude"
         commands_dir.mkdir()
 
-        command_paths = generator.generate_all_commands(job, platform, commands_dir)
+        command_paths = generator.generate_all_commands(job, adapter, commands_dir)
 
         # Check step with file input
         step2_content = command_paths[1].read_text()  # primary_research
@@ -125,11 +125,11 @@ class TestJobWorkflow:
         job = parse_job_definition(job_dir)
 
         generator = CommandGenerator()
-        platform = PLATFORMS["claude"]
+        adapter = ClaudeAdapter()
         commands_dir = temp_dir / ".claude"
         commands_dir.mkdir()
 
-        command_paths = generator.generate_all_commands(job, platform, commands_dir)
+        command_paths = generator.generate_all_commands(job, adapter, commands_dir)
 
         # Check step with user inputs
         step1_content = command_paths[0].read_text()  # identify_competitors

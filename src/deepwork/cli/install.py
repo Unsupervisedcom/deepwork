@@ -6,6 +6,7 @@ from pathlib import Path
 import click
 from rich.console import Console
 
+from deepwork.core.adapters import AgentAdapter
 from deepwork.core.detector import PlatformDetector
 from deepwork.utils.fs import ensure_dir
 from deepwork.utils.git import is_git_repo
@@ -112,13 +113,21 @@ def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
         gitignore_path.write_text(gitignore_content)
 
 
+class DynamicChoice(click.Choice):
+    """A Click Choice that gets its values dynamically from AgentAdapter."""
+
+    def __init__(self) -> None:
+        # Get choices at runtime from registered adapters
+        super().__init__(AgentAdapter.list_names(), case_sensitive=False)
+
+
 @click.command()
 @click.option(
     "--platform",
     "-p",
-    type=click.Choice(["claude", "gemini", "copilot"], case_sensitive=False),
+    type=DynamicChoice(),
     required=False,
-    help="AI platform to install for (claude, gemini, or copilot). If not specified, will auto-detect.",
+    help="AI platform to install for. If not specified, will auto-detect.",
 )
 @click.option(
     "--path",
@@ -171,43 +180,46 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     if platform_name:
         # User specified platform - check if it's available
         console.print(f"[yellow]→[/yellow] Checking for {platform_name.title()}...")
-        platform_config = detector.detect_platform(platform_name.lower())
+        adapter = detector.detect_platform(platform_name.lower())
 
-        if platform_config is None:
+        if adapter is None:
             # Platform not detected - provide helpful message
-            platform_cfg = detector.get_platform_config(platform_name.lower())
+            adapter = detector.get_adapter(platform_name.lower())
             raise InstallError(
-                f"{platform_cfg.display_name} not detected in this project.\n"
-                f"Expected to find '{platform_cfg.config_dir}/' directory.\n"
-                f"Please ensure {platform_cfg.display_name} is set up in this project."
+                f"{adapter.display_name} not detected in this project.\n"
+                f"Expected to find '{adapter.config_dir}/' directory.\n"
+                f"Please ensure {adapter.display_name} is set up in this project."
             )
 
-        console.print(f"  [green]✓[/green] {platform_config.display_name} detected")
-        platform_to_add = platform_config.name
+        console.print(f"  [green]✓[/green] {adapter.display_name} detected")
+        platform_to_add = adapter.name
     else:
         # Auto-detect platform
         console.print("[yellow]→[/yellow] Auto-detecting AI platform...")
-        available_platforms = detector.detect_all_platforms()
+        available_adapters = detector.detect_all_platforms()
 
-        if not available_platforms:
+        if not available_adapters:
+            supported = ", ".join(
+                f"{AgentAdapter.get(name).display_name} ({AgentAdapter.get(name).config_dir}/)"
+                for name in AgentAdapter.list_names()
+            )
             raise InstallError(
-                "No AI platform detected.\n"
-                "DeepWork supports: Claude Code (.claude/), Google Gemini (.gemini/), "
-                "GitHub Copilot (.github/).\n"
+                f"No AI platform detected.\n"
+                f"DeepWork supports: {supported}.\n"
                 "Please set up one of these platforms first, or use --platform to specify."
             )
 
-        if len(available_platforms) > 1:
+        if len(available_adapters) > 1:
             # Multiple platforms - ask user to specify
-            platform_names = ", ".join(p.display_name for p in available_platforms)
+            platform_names = ", ".join(a.display_name for a in available_adapters)
             raise InstallError(
                 f"Multiple AI platforms detected: {platform_names}\n"
                 "Please specify which platform to use with --platform option."
             )
 
-        platform_config = available_platforms[0]
-        console.print(f"  [green]✓[/green] {platform_config.display_name} detected")
-        platform_to_add = platform_config.name
+        adapter = available_adapters[0]
+        console.print(f"  [green]✓[/green] {adapter.display_name} detected")
+        platform_to_add = adapter.name
 
     # Step 3: Create .deepwork/ directory structure
     console.print("[yellow]→[/yellow] Creating DeepWork directory structure...")
@@ -247,9 +259,9 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     # Add platform if not already present
     if platform_to_add not in config_data["platforms"]:
         config_data["platforms"].append(platform_to_add)
-        console.print(f"  [green]✓[/green] Added {platform_config.display_name} to platforms")
+        console.print(f"  [green]✓[/green] Added {adapter.display_name} to platforms")
     else:
-        console.print(f"  [dim]•[/dim] {platform_config.display_name} already configured")
+        console.print(f"  [dim]•[/dim] {adapter.display_name} already configured")
 
     save_yaml(config_file, config_data)
     console.print(f"  [green]✓[/green] Updated {config_file.relative_to(project_path)}")
@@ -269,7 +281,7 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     # Success message
     console.print()
     console.print(
-        f"[bold green]✓ DeepWork installed successfully for {platform_config.display_name}![/bold green]"
+        f"[bold green]✓ DeepWork installed successfully for {adapter.display_name}![/bold green]"
     )
     console.print()
     console.print("[bold]Next steps:[/bold]")

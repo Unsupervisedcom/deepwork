@@ -1,16 +1,18 @@
 ---
 description: {{ step_description }}
-{% if stop_hooks %}
+{% if hooks %}
 hooks:
-  Stop:
+{% for event_name, event_hooks in hooks.items() %}
+  {{ event_name }}:
     - hooks:
-{% for hook in stop_hooks %}
+{% for hook in event_hooks %}
 {% if hook.type == "script" %}
         - type: command
           command: ".deepwork/jobs/{{ job_name }}/{{ hook.path }}"
 {% else %}
         - type: prompt
           prompt: |
+{% if event_name == "Stop" %}
             You must evaluate whether Claude has met all the below quality criteria for the request.
 
             ## Quality Criteria
@@ -27,7 +29,11 @@ hooks:
 
             If criteria are NOT met AND the promise tag is missing, respond with:
             {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
+{% else %}
+            {{ hook.content | indent(12) }}
 {% endif %}
+{% endif %}
+{% endfor %}
 {% endfor %}
 {% endif %}
 ---

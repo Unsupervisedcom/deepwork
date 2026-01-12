@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from deepwork.core.detector import PLATFORMS
+from deepwork.core.adapters import ClaudeAdapter
 from deepwork.core.generator import CommandGenerator, GeneratorError
 from deepwork.core.parser import parse_job_definition
 
@@ -41,9 +41,9 @@ class TestCommandGenerator:
         job = parse_job_definition(job_dir)
 
         generator = CommandGenerator()
-        platform = PLATFORMS["claude"]
+        adapter = ClaudeAdapter()
 
-        command_path = generator.generate_step_command(job, job.steps[0], platform, temp_dir)
+        command_path = generator.generate_step_command(job, job.steps[0], adapter, temp_dir)
 
         assert command_path.exists()
         assert command_path.name == "simple_job.single_step.md"
@@ -63,9 +63,9 @@ class TestCommandGenerator:
         job = parse_job_definition(job_dir)
 
         generator = CommandGenerator()
-        platform = PLATFORMS["claude"]
+        adapter = ClaudeAdapter()
 
-        command_path = generator.generate_step_command(job, job.steps[0], platform, temp_dir)
+        command_path = generator.generate_step_command(job, job.steps[0], adapter, temp_dir)
 
         content = command_path.read_text()
         assert "# competitive_research.identify_competitors" in content
@@ -85,10 +85,10 @@ class TestCommandGenerator:
         job = parse_job_definition(job_dir)
 
         generator = CommandGenerator()
-        platform = PLATFORMS["claude"]
+        adapter = ClaudeAdapter()
 
         # Generate primary_research (step 2)
-        command_path = generator.generate_step_command(job, job.steps[1], platform, temp_dir)
+        command_path = generator.generate_step_command(job, job.steps[1], adapter, temp_dir)
 
         content = command_path.read_text()
         assert "# competitive_research.primary_research" in content
@@ -110,10 +110,10 @@ class TestCommandGenerator:
         job = parse_job_definition(job_dir)
 
         generator = CommandGenerator()
-        platform = PLATFORMS["claude"]
+        adapter = ClaudeAdapter()
 
         # Generate comparative_report (step 4)
-        command_path = generator.generate_step_command(job, job.steps[3], platform, temp_dir)
+        command_path = generator.generate_step_command(job, job.steps[3], adapter, temp_dir)
 
         content = command_path.read_text()
         assert "# competitive_research.comparative_report" in content
@@ -135,7 +135,7 @@ class TestCommandGenerator:
         job = parse_job_definition(job_dir)
 
         generator = CommandGenerator()
-        platform = PLATFORMS["claude"]
+        adapter = ClaudeAdapter()
 
         # Create a fake step not in the job
         from deepwork.core.parser import Step
@@ -149,7 +149,7 @@ class TestCommandGenerator:
         )
 
         with pytest.raises(GeneratorError, match="Step 'fake' not found"):
-            generator.generate_step_command(job, fake_step, platform, temp_dir)
+            generator.generate_step_command(job, fake_step, adapter, temp_dir)
 
     def test_generate_step_command_raises_for_missing_instructions(
         self, fixtures_dir: Path, temp_dir: Path
@@ -167,10 +167,10 @@ class TestCommandGenerator:
             instructions_file.unlink()
 
             generator = CommandGenerator()
-            platform = PLATFORMS["claude"]
+            adapter = ClaudeAdapter()
 
             with pytest.raises(GeneratorError, match="instructions file not found"):
-                generator.generate_step_command(job, job.steps[0], platform, temp_dir)
+                generator.generate_step_command(job, job.steps[0], adapter, temp_dir)
         finally:
             # Restore the file
             instructions_file.write_text(original_content)
@@ -181,9 +181,9 @@ class TestCommandGenerator:
         job = parse_job_definition(job_dir)
 
         generator = CommandGenerator()
-        platform = PLATFORMS["claude"]
+        adapter = ClaudeAdapter()
 
-        command_paths = generator.generate_all_commands(job, platform, temp_dir)
+        command_paths = generator.generate_all_commands(job, adapter, temp_dir)
 
         assert len(command_paths) == 4
         assert all(p.exists() for p in command_paths)
@@ -197,57 +197,3 @@ class TestCommandGenerator:
         ]
         actual_names = [p.name for p in command_paths]
         assert actual_names == expected_names
-
-    def test_generate_step_command_different_platform(
-        self, fixtures_dir: Path, temp_dir: Path
-    ) -> None:
-        """Test generating command for different platform (Gemini)."""
-        # Create .gemini templates directory by copying from claude
-        import shutil
-
-        templates_dir = Path(__file__).parent.parent.parent / "src" / "deepwork" / "templates"
-        gemini_templates = templates_dir / "gemini"
-        gemini_templates.mkdir(exist_ok=True)
-
-        try:
-            # Copy templates from claude to gemini
-            for template_file in (templates_dir / "claude").glob("*.jinja"):
-                shutil.copy(template_file, gemini_templates / template_file.name)
-
-            job_dir = fixtures_dir / "jobs" / "simple_job"
-            job = parse_job_definition(job_dir)
-
-            generator = CommandGenerator()
-            platform = PLATFORMS["gemini"]
-
-            command_path = generator.generate_step_command(job, job.steps[0], platform, temp_dir)
-
-            # Gemini uses same filename format
-            assert command_path.name == "simple_job.single_step.md"
-            assert command_path.exists()
-        finally:
-            # Cleanup
-            if gemini_templates.exists():
-                shutil.rmtree(gemini_templates)
-
-    def test_generate_raises_for_missing_platform_templates(
-        self, fixtures_dir: Path, temp_dir: Path
-    ) -> None:
-        """Test that missing platform templates raises error."""
-        import shutil
-
-        # Ensure gemini templates don't exist
-        templates_dir = Path(__file__).parent.parent.parent / "src" / "deepwork" / "templates"
-        gemini_templates = templates_dir / "gemini"
-        if gemini_templates.exists():
-            shutil.rmtree(gemini_templates)
-
-        job_dir = fixtures_dir / "jobs" / "simple_job"
-        job = parse_job_definition(job_dir)
-
-        generator = CommandGenerator()
-        # Gemini templates don't exist
-        platform = PLATFORMS["gemini"]
-
-        with pytest.raises(GeneratorError, match="Templates for platform"):
-            generator.generate_step_command(job, job.steps[0], platform, temp_dir)

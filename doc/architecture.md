@@ -42,6 +42,7 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── install.py      # Install command
 │       │   └── sync.py         # Sync command
 │       ├── core/
+│       │   ├── adapters.py     # Agent adapters for AI platforms
 │       │   ├── detector.py     # AI platform detection
 │       │   ├── generator.py    # Command file generation
 │       │   ├── parser.py       # Job definition parsing
@@ -133,52 +134,81 @@ def install(platform: str):
     print(f"  Run /deepwork_jobs.define to create your first job")
 ```
 
-### 2. Platform Detector (`detector.py`)
+### 2. Agent Adapters (`adapters.py`)
 
-Identifies which AI platforms are available in the project.
+Defines the modular adapter architecture for AI platforms. Each adapter encapsulates platform-specific configuration and behavior.
+
+**Adapter Architecture**:
+```python
+class CommandLifecycleHook(str, Enum):
+    """Generic lifecycle hook events supported by DeepWork."""
+    AFTER_AGENT = "after_agent"    # After agent finishes (quality validation)
+    BEFORE_TOOL = "before_tool"    # Before tool execution
+    BEFORE_PROMPT = "before_prompt" # When user submits a prompt
+
+class AgentAdapter(ABC):
+    """Base class for AI agent platform adapters."""
+
+    # Auto-registration via __init_subclass__
+    _registry: ClassVar[dict[str, type[AgentAdapter]]] = {}
+
+    # Platform configuration (subclasses define as class attributes)
+    name: ClassVar[str]           # "claude"
+    display_name: ClassVar[str]   # "Claude Code"
+    config_dir: ClassVar[str]     # ".claude"
+    commands_dir: ClassVar[str] = "commands"
+
+    # Mapping from generic hook names to platform-specific names
+    hook_name_mapping: ClassVar[dict[CommandLifecycleHook, str]] = {}
+
+    def detect(self, project_root: Path) -> bool:
+        """Check if this platform is available in the project."""
+
+    def get_platform_hook_name(self, hook: CommandLifecycleHook) -> str | None:
+        """Get platform-specific event name for a generic hook."""
+
+    @abstractmethod
+    def sync_hooks(self, project_path: Path, hooks: dict) -> int:
+        """Sync hooks to platform settings."""
+
+class ClaudeAdapter(AgentAdapter):
+    name = "claude"
+    display_name = "Claude Code"
+    config_dir = ".claude"
+
+    # Claude Code uses PascalCase event names
+    hook_name_mapping = {
+        CommandLifecycleHook.AFTER_AGENT: "Stop",
+        CommandLifecycleHook.BEFORE_TOOL: "PreToolUse",
+        CommandLifecycleHook.BEFORE_PROMPT: "UserPromptSubmit",
+    }
+```
+
+### 3. Platform Detector (`detector.py`)
+
+Uses adapters to identify which AI platforms are available in the project.
 
 **Detection Logic**:
 ```python
-@dataclass
-class PlatformConfig:
-    """Configuration for an AI platform."""
-    name: str           # "claude", "gemini", "copilot"
-    display_name: str   # "Claude Code", "Google Gemini", "GitHub Copilot"
-    config_dir: str     # ".claude", ".gemini", ".github"
-    commands_dir: str   # "commands", "commands", "commands"
-
-PLATFORMS = {
-    "claude": PlatformConfig(
-        name="claude",
-        display_name="Claude Code",
-        config_dir=".claude",
-        commands_dir="commands"
-    ),
-    "gemini": PlatformConfig(
-        name="gemini",
-        display_name="Google Gemini",
-        config_dir=".gemini",
-        commands_dir="commands"
-    ),
-    "copilot": PlatformConfig(
-        name="copilot",
-        display_name="GitHub Copilot",
-        config_dir=".github",
-        commands_dir="commands"
-    )
-}
-
 class PlatformDetector:
-    def detect_platform(self, platform_name: str) -> PlatformConfig | None:
+    def detect_platform(self, platform_name: str) -> AgentAdapter | None:
         """Check if a specific platform is available."""
-        platform = PLATFORMS[platform_name]
-        config_dir = self.project_root / platform.config_dir
-        if config_dir.exists() and config_dir.is_dir():
-            return platform
+        adapter_class = AgentAdapter.get(platform_name)
+        adapter = adapter_class(self.project_root)
+        if adapter.detect():
+            return adapter
         return None
+
+    def detect_all_platforms(self) -> list[AgentAdapter]:
+        """Detect all available platforms."""
+        return [
+            adapter_class(self.project_root)
+            for adapter_class in AgentAdapter.get_all().values()
+            if adapter_class(self.project_root).detect()
+        ]
 ```
 
-### 3. Command Generator (`generator.py`)
+### 4. Command Generator (`generator.py`)
 
 Generates AI-platform-specific command files from job definitions.
 
@@ -387,6 +417,42 @@ steps:
       - comparative_report
 ```
 
+### Lifecycle Hooks in Job Definitions
+
+Steps can define lifecycle hooks that trigger at specific points during execution. Hooks are defined using generic event names that are mapped to platform-specific names by adapters:
+
+```yaml
+steps:
+  - id: build_report
+    name: "Build Report"
+    description: "Generate the final report"
+    instructions_file: steps/build_report.md
+    outputs:
+      - report.md
+    hooks:
+      after_agent:  # Triggers after agent finishes (Claude: "Stop")
+        - prompt: |
+            Verify the report includes all required sections:
+            - Executive summary
+            - Data analysis
+            - Recommendations
+        - script: hooks/validate_report.sh
+      before_tool:  # Triggers before tool use (Claude: "PreToolUse")
+        - prompt: "Confirm tool execution is appropriate"
+```
+
+**Supported Lifecycle Events**:
+- `after_agent` - Triggered after the agent finishes responding (quality validation)
+- `before_tool` - Triggered before the agent uses a tool
+- `before_prompt` - Triggered when user submits a new prompt
+
+**Hook Action Types**:
+- `prompt` - Inline prompt text
+- `prompt_file` - Path to a file containing the prompt
+- `script` - Path to a shell script
+
+**Note**: The deprecated `stop_hooks` field is still supported for backward compatibility but maps to `hooks.after_agent`.
+
 ### Step Instructions Example
 
 `.deepwork/jobs/competitive_research/steps/identify_competitors.md`:
@@ -456,65 +522,8 @@ Create `competitors.md` with this structure:
 
 When the job is defined and `sync` is run, DeepWork generates command files. Example for Claude Code:
 
-`.claude/commands/competitive_research.identify_competitors.md`:
+`.deepwork/jobs/competitive_research` a step called `identify_competitors` will generate a command file at `.claude/commands/competitive_research.identify_competitors.md`:
 
-```markdown
----
-description: Research and identify direct and indirect competitors
----
-
-# competitive_research.identify_competitors
-
-**Step 1 of 5** in the **competitive_research** workflow
-
-**Summary**: Systematic competitive analysis workflow
-
-## Job Overview
-
-[Job description and context...]
-
-## Instructions
-
-You are performing the "Identify Competitors" step of competitive research.
-
-### Prerequisites
-This step has no dependencies (it's the first step).
-
-Before starting, ensure you have:
-- Market segment defined
-- Product category specified
-
-### Input Parameters
-Ask the user for the following if not already provided:
-1. **market_segment**: The market segment to analyze
-2. **product_category**: Product category
-
-### Your Task
-
-[Content from .deepwork/jobs/competitive_research/steps/identify_competitors.md is embedded here]
-
-### Work Branch Management
-1. Check if we're on a work branch for this job
-2. If not, create a new branch: `deepwork/competitive_research-[instance]-[date]`
-3. All outputs should be created in the `deepwork/[branch-name]/` directory
-
-### Output Requirements
-Create the following file in the work directory:
-- `deepwork/[branch-name]/competitors.md`
-
-### After Completion
-1. Inform the user that step 1 is complete
-2. Recommend they review the competitors.md file
-3. Suggest running `/competitive_research.primary_research` to continue
-
----
-
-## Context Files
-- Job definition: `.deepwork/jobs/competitive_research/job.yml`
-- Step instructions: `.deepwork/jobs/competitive_research/steps/identify_competitors.md`
-```
-
----
 
 # Part 3: Runtime Execution Model
 
@@ -660,17 +669,14 @@ This step requires outputs from:
 - Step 2 (primary_research): primary_research.md
 
 ### Your Task
-1. Read `deepwork/[branch]/competitors.md`
-2. Read `deepwork/[branch]/primary_research.md`
-3. [Perform analysis]
-4. Write `deepwork/[branch]/secondary_research.md`
+Conduct web research on secondary sources for each competitor identified in competitors.md.
 ```
 
 ### 3. Git History
 
 When working on similar jobs:
 - User: "Do competitive research for Acme Corp, similar to our Widget Corp analysis"
-- Claude can read `deepwork/competitive_research-widget-corp-2026-01-05/` from git history
+- Claude can read old existing branches like`deepwork/competitive_research-widget-corp-2024-01-05/` from git history
 - Uses it as a template for style, depth, format
 
 ### 4. No Environment Variables Needed
@@ -707,18 +713,17 @@ Where `instance-identifier` can be:
 ### Command Behavior
 
 Commands should:
-1. Check if we're already on a work branch for this job
+1. Check if we're already on a branch for this job
 2. If not, ask user for instance name or auto-generate from timestamp
 3. Create branch: `git checkout -b deepwork/[job_name]-[instance]-[date]`
-4. Create work directory: `mkdir -p deepwork/[job_name]-[instance]-[date]`
-5. Perform work in that directory
+4. Perform the work on that branch
 
 ### Completion and Merge
 
-When all steps are done:
-1. User reviews all outputs in `work/[branch-name]/`
-2. Commits the work
-3. Creates PR to main branch
+When all steps are done, remind the user they should:
+1. Review all outputs
+2. Commit the work
+3. Create PR to main branch
 4. After merge, the work products are in the repository
 5. Future job instances can reference this work for context/templates
 

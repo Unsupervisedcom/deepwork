@@ -80,26 +80,8 @@ class TestInstallCommand:
         assert result.exit_code != 0
         assert "No AI platform detected" in result.output
 
-    def test_install_fails_with_multiple_platforms(self, temp_dir: Path) -> None:
-        """Test that install fails when multiple platforms detected without explicit choice."""
-        from git import Repo
-
-        # Create git repo with multiple platforms
-        repo = Repo.init(temp_dir)
-        (temp_dir / "README.md").write_text("# Test\n")
-        repo.index.add(["README.md"])
-        repo.index.commit("Initial commit")
-
-        # Create both Claude and Gemini directories
-        (temp_dir / ".claude").mkdir()
-        (temp_dir / ".gemini").mkdir()
-
-        runner = CliRunner()
-
-        result = runner.invoke(cli, ["install", "--path", str(temp_dir)])
-
-        assert result.exit_code != 0
-        assert "Multiple AI platforms detected" in result.output
+    # NOTE: Multiple platform detection test removed since we currently only support Claude.
+    # When more adapters are added, this test should be reinstated.
 
     def test_install_with_specified_platform_when_missing(self, mock_git_repo: Path) -> None:
         """Test that install fails when specified platform is not present."""

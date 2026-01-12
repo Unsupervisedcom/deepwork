@@ -11,7 +11,7 @@ Read the `job.yml` specification file and create all the necessary files to make
 ### Step 1: Read and Validate the Specification
 
 1. **Locate the job.yml file**
-   - Read `deepwork/[job_name]/job.yml` from the define step (Where `[job_name]` is the name of the new job that was created in the define step)
+   - Read `.deepwork/jobs/[job_name]/job.yml` from the define step (Where `[job_name]` is the name of the new job that was created in the define step)
    - Parse the YAML content
 
 2. **Validate the specification**
@@ -144,13 +144,9 @@ If a step in the job.yml has `stop_hooks` defined, the generated instruction fil
 
 This alignment ensures the AI agent knows exactly what will be validated and can self-check before completing.
 
-### Step 4: Copy job.yml to Job Directory
+### Step 4: Verify job.yml Location
 
-Copy the validated `job.yml` from the work directory to `.deepwork/jobs/[job_name]/job.yml`:
-
-```bash
-cp deepwork/[job_name]/job.yml .deepwork/jobs/[job_name]/job.yml
-```
+Verify that `job.yml` is in the correct location at `.deepwork/jobs/[job_name]/job.yml`. The define step should have created it there. If for some reason it's not there, you may need to create or move it.
 
 ### Step 5: Sync Commands
 

@@ -133,9 +133,9 @@ stop_hooks:
 
 Only after you have complete understanding, create the `job.yml` file:
 
-**File Location**: `deepwork/[job_name]/job.yml`
+**File Location**: `.deepwork/jobs/[job_name]/job.yml`
 
-(Where `[job_name]` is the name of the NEW job you're creating, e.g., `deepwork/competitive_research/job.yml`)
+(Where `[job_name]` is the name of the NEW job you're creating, e.g., `.deepwork/jobs/competitive_research/job.yml`)
 
 **Format**:
 ```yaml
@@ -298,12 +298,12 @@ User: Yes, that's perfect!
 
 Claude: Great! Creating the job.yml specification now...
 
-[Creates deepwork/competitive_research/job.yml with the complete spec]
+[Creates .deepwork/jobs/competitive_research/job.yml with the complete spec]
 
 ✓ Job specification created!
 
 **File created:**
-- deepwork/competitive_research/job.yml
+- .deepwork/jobs/competitive_research/job.yml
 
 **Next step:**
 Run `/deepwork_jobs.implement` to generate the instruction files for each step based on this specification.
@@ -337,9 +337,9 @@ Before creating the job.yml, ensure:
 
 ### job.yml
 
-The complete YAML specification file (example shown in Step 4 above).
+The complete YAML specification file (example shown in Step 5 above).
 
-**Location**: `deepwork/[job_name]/job.yml`
+**Location**: `.deepwork/jobs/[job_name]/job.yml`
 
 (Where `[job_name]` is the name of the new job being created)
 

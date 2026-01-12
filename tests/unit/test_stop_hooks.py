@@ -4,8 +4,9 @@ from pathlib import Path
 
 import pytest
 
+from deepwork.core.adapters import ClaudeAdapter
 from deepwork.core.generator import CommandGenerator, GeneratorError
-from deepwork.core.parser import JobDefinition, Step, StopHook
+from deepwork.core.parser import HookAction, JobDefinition, Step, StopHook
 from deepwork.schemas.job_schema import JOB_SCHEMA
 from deepwork.utils.validation import ValidationError, validate_against_schema
 
@@ -74,31 +75,33 @@ class TestStepWithStopHooks:
         assert step.stop_hooks == []
 
     def test_step_with_single_stop_hook(self) -> None:
-        """Test step with single stop hook."""
+        """Test step with single stop hook (using hooks dict)."""
         step = Step(
             id="test",
             name="Test Step",
             description="A test step",
             instructions_file="steps/test.md",
             outputs=["output.md"],
-            stop_hooks=[StopHook(prompt="Check quality")],
+            hooks={"after_agent": [HookAction(prompt="Check quality")]},
         )
         assert len(step.stop_hooks) == 1
         assert step.stop_hooks[0].is_prompt()
         assert step.stop_hooks[0].prompt == "Check quality"
 
     def test_step_with_multiple_stop_hooks(self) -> None:
-        """Test step with multiple stop hooks."""
+        """Test step with multiple stop hooks (using hooks dict)."""
         step = Step(
             id="test",
             name="Test Step",
             description="A test step",
             instructions_file="steps/test.md",
             outputs=["output.md"],
-            stop_hooks=[
-                StopHook(prompt="Check criteria 1"),
-                StopHook(script="hooks/validate.sh"),
-            ],
+            hooks={
+                "after_agent": [
+                    HookAction(prompt="Check criteria 1"),
+                    HookAction(script="hooks/validate.sh"),
+                ]
+            },
         )
         assert len(step.stop_hooks) == 2
         assert step.stop_hooks[0].is_prompt()
@@ -133,6 +136,35 @@ class TestStepWithStopHooks:
         }
         step = Step.from_dict(data)
         assert step.stop_hooks == []
+
+    def test_step_from_dict_with_hooks_structure(self) -> None:
+        """Test Step.from_dict parses new hooks structure with lifecycle events."""
+        data = {
+            "id": "test",
+            "name": "Test Step",
+            "description": "A test step",
+            "instructions_file": "steps/test.md",
+            "outputs": ["output.md"],
+            "hooks": {
+                "after_agent": [
+                    {"prompt": "Check quality"},
+                    {"script": "hooks/validate.sh"},
+                ],
+                "before_tool": [
+                    {"prompt": "Pre-tool check"},
+                ],
+            },
+        }
+        step = Step.from_dict(data)
+        # stop_hooks property returns after_agent hooks
+        assert len(step.stop_hooks) == 2
+        assert step.stop_hooks[0].prompt == "Check quality"
+        assert step.stop_hooks[1].script == "hooks/validate.sh"
+        # Check full hooks dict
+        assert "after_agent" in step.hooks
+        assert "before_tool" in step.hooks
+        assert len(step.hooks["after_agent"]) == 2
+        assert len(step.hooks["before_tool"]) == 1
 
 
 class TestSchemaValidation:
@@ -258,6 +290,71 @@ class TestSchemaValidation:
         with pytest.raises(ValidationError):
             validate_against_schema(job_data, JOB_SCHEMA)
 
+    def test_valid_hooks_with_after_agent(self) -> None:
+        """Test schema accepts new hooks structure with after_agent event."""
+        job_data = {
+            "name": "test_job",
+            "version": "1.0.0",
+            "summary": "Test job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "A step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": ["output.md"],
+                    "hooks": {
+                        "after_agent": [{"prompt": "Check quality"}],
+                    },
+                }
+            ],
+        }
+        validate_against_schema(job_data, JOB_SCHEMA)
+
+    def test_valid_hooks_with_multiple_events(self) -> None:
+        """Test schema accepts hooks with multiple lifecycle events."""
+        job_data = {
+            "name": "test_job",
+            "version": "1.0.0",
+            "summary": "Test job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "A step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": ["output.md"],
+                    "hooks": {
+                        "after_agent": [{"prompt": "Check quality"}],
+                        "before_tool": [{"script": "hooks/validate.sh"}],
+                        "before_prompt": [{"prompt": "Initialize context"}],
+                    },
+                }
+            ],
+        }
+        validate_against_schema(job_data, JOB_SCHEMA)
+
+    def test_valid_hooks_with_script_action(self) -> None:
+        """Test schema accepts hooks with script action."""
+        job_data = {
+            "name": "test_job",
+            "version": "1.0.0",
+            "summary": "Test job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "A step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": ["output.md"],
+                    "hooks": {
+                        "before_tool": [{"script": "hooks/check.sh"}],
+                    },
+                }
+            ],
+        }
+        validate_against_schema(job_data, JOB_SCHEMA)
+
 
 class TestGeneratorStopHooks:
     """Tests for generator stop hooks context building."""
@@ -314,9 +411,9 @@ hooks:
                     description="First step",
                     instructions_file="steps/step1.md",
                     outputs=["output.md"],
-                    stop_hooks=[
-                        StopHook(prompt="Verify quality criteria"),
-                    ],
+                    hooks={
+                        "after_agent": [HookAction(prompt="Verify quality criteria")],
+                    },
                 ),
             ],
             job_dir=job_dir,
@@ -343,9 +440,9 @@ hooks:
                     description="First step",
                     instructions_file="steps/step1.md",
                     outputs=["output.md"],
-                    stop_hooks=[
-                        StopHook(script="hooks/validate.sh"),
-                    ],
+                    hooks={
+                        "after_agent": [HookAction(script="hooks/validate.sh")],
+                    },
                 ),
             ],
             job_dir=job_dir,
@@ -375,9 +472,9 @@ hooks:
                     description="First step",
                     instructions_file="steps/step1.md",
                     outputs=["output.md"],
-                    stop_hooks=[
-                        StopHook(prompt_file="hooks/quality.md"),
-                    ],
+                    hooks={
+                        "after_agent": [HookAction(prompt_file="hooks/quality.md")],
+                    },
                 ),
             ],
             job_dir=job_dir,
@@ -387,7 +484,8 @@ hooks:
         self, generator: CommandGenerator, job_with_hooks: JobDefinition
     ) -> None:
         """Test context building includes prompt stop hook."""
-        context = generator._build_step_context(job_with_hooks, job_with_hooks.steps[0], 0)
+        adapter = ClaudeAdapter()
+        context = generator._build_step_context(job_with_hooks, job_with_hooks.steps[0], 0, adapter)
         assert "stop_hooks" in context
         assert len(context["stop_hooks"]) == 1
         assert context["stop_hooks"][0]["type"] == "prompt"
@@ -397,8 +495,9 @@ hooks:
         self, generator: CommandGenerator, job_with_script_hook: JobDefinition
     ) -> None:
         """Test context building includes script stop hook."""
+        adapter = ClaudeAdapter()
         context = generator._build_step_context(
-            job_with_script_hook, job_with_script_hook.steps[0], 0
+            job_with_script_hook, job_with_script_hook.steps[0], 0, adapter
         )
         assert "stop_hooks" in context
         assert len(context["stop_hooks"]) == 1
@@ -409,8 +508,9 @@ hooks:
         self, generator: CommandGenerator, job_with_prompt_file_hook: JobDefinition
     ) -> None:
         """Test context building reads prompt file content."""
+        adapter = ClaudeAdapter()
         context = generator._build_step_context(
-            job_with_prompt_file_hook, job_with_prompt_file_hook.steps[0], 0
+            job_with_prompt_file_hook, job_with_prompt_file_hook.steps[0], 0, adapter
         )
         assert "stop_hooks" in context
         assert len(context["stop_hooks"]) == 1
@@ -439,14 +539,17 @@ hooks:
                     description="Step",
                     instructions_file="steps/step1.md",
                     outputs=["out.md"],
-                    stop_hooks=[StopHook(prompt_file="missing.md")],
+                    hooks={
+                        "after_agent": [HookAction(prompt_file="missing.md")],
+                    },
                 )
             ],
             job_dir=job_dir,
         )
 
+        adapter = ClaudeAdapter()
         with pytest.raises(GeneratorError, match="prompt file not found"):
-            generator._build_step_context(job, job.steps[0], 0)
+            generator._build_step_context(job, job.steps[0], 0, adapter)
 
     def test_build_context_no_hooks(self, generator: CommandGenerator, tmp_path: Path) -> None:
         """Test context with no stop hooks."""
@@ -473,7 +576,8 @@ hooks:
             job_dir=job_dir,
         )
 
-        context = generator._build_step_context(job, job.steps[0], 0)
+        adapter = ClaudeAdapter()
+        context = generator._build_step_context(job, job.steps[0], 0, adapter)
         assert context["stop_hooks"] == []
 
     def test_build_context_multiple_hooks(
@@ -498,17 +602,20 @@ hooks:
                     description="Step",
                     instructions_file="steps/step1.md",
                     outputs=["out.md"],
-                    stop_hooks=[
-                        StopHook(prompt="Check criteria 1"),
-                        StopHook(script="hooks/test.sh"),
-                        StopHook(prompt="Check criteria 2"),
-                    ],
+                    hooks={
+                        "after_agent": [
+                            HookAction(prompt="Check criteria 1"),
+                            HookAction(script="hooks/test.sh"),
+                            HookAction(prompt="Check criteria 2"),
+                        ],
+                    },
                 )
             ],
             job_dir=job_dir,
         )
 
-        context = generator._build_step_context(job, job.steps[0], 0)
+        adapter = ClaudeAdapter()
+        context = generator._build_step_context(job, job.steps[0], 0, adapter)
         assert len(context["stop_hooks"]) == 3
         assert context["stop_hooks"][0]["type"] == "prompt"
         assert context["stop_hooks"][1]["type"] == "script"
