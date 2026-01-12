@@ -2,11 +2,9 @@
 
 from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
 
 from deepwork.cli.main import cli
-from deepwork.core.registry import JobRegistry
 from deepwork.utils.yaml_utils import load_yaml
 
 
@@ -41,10 +39,6 @@ class TestInstallCommand:
         assert config["platform"] == "claude"
         assert config["version"] == "1.0.0"
         assert "installed" in config
-
-        # Verify registry.yml
-        registry_file = deepwork_dir / "registry.yml"
-        assert registry_file.exists()
 
         # Verify core skills were created
         claude_dir = mock_claude_project / ".claude"
@@ -122,24 +116,6 @@ class TestInstallCommand:
         assert "Claude Code not detected" in result.output
         assert ".claude/" in result.output
 
-    def test_install_creates_empty_registry(self, mock_claude_project: Path) -> None:
-        """Test that install creates an empty job registry."""
-        runner = CliRunner()
-
-        result = runner.invoke(
-            cli, ["install", "--platform", "claude", "--path", str(mock_claude_project)],
-            catch_exceptions=False
-        )
-
-        assert result.exit_code == 0
-
-        # Check registry is created and empty
-        deepwork_dir = mock_claude_project / ".deepwork"
-        registry = JobRegistry(deepwork_dir)
-        jobs = registry.list_jobs()
-
-        assert jobs == []
-
     def test_install_is_idempotent(self, mock_claude_project: Path) -> None:
         """Test that running install multiple times is safe."""
         runner = CliRunner()
@@ -161,7 +137,6 @@ class TestInstallCommand:
         # Verify files still exist and are valid
         deepwork_dir = mock_claude_project / ".deepwork"
         assert (deepwork_dir / "config.yml").exists()
-        assert (deepwork_dir / "registry.yml").exists()
 
         claude_dir = mock_claude_project / ".claude"
         assert (claude_dir / "skill-deepwork.define.md").exists()

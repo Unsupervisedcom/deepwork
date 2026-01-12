@@ -78,7 +78,8 @@ class JobDefinition:
 
     name: str
     version: str
-    description: str
+    summary: str
+    description: str | None
     steps: list[Step]
     job_dir: Path
 
@@ -179,7 +180,8 @@ class JobDefinition:
         return cls(
             name=data["name"],
             version=data["version"],
-            description=data["description"],
+            summary=data["summary"],
+            description=data.get("description"),
             steps=[Step.from_dict(step_data) for step_data in data["steps"]],
             job_dir=job_dir,
         )

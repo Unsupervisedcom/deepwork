@@ -36,16 +36,18 @@ Each job consists of reviewable steps with clear inputs and outputs. For example
 ```
 deepwork/
 ├── src/deepwork/
-│   ├── cli/              # CLI commands (install, etc.)
-│   ├── core/             # Core logic (project init, detection, generation)
-│   ├── templates/        # Skill templates per AI platform
+│   ├── cli/              # CLI commands (install, sync)
+│   ├── core/             # Core logic (detection, generation, parsing)
+│   ├── templates/        # Command templates per AI platform
 │   │   ├── claude/
 │   │   ├── gemini/
 │   │   └── copilot/
+│   ├── standard_jobs/    # Built-in job definitions
+│   │   └── deepwork_jobs/
 │   ├── schemas/          # Job definition schemas
-│   └── utils/            # Utilities (git, yaml, validation)
+│   └── utils/            # Utilities (fs, git, yaml, validation)
 ├── tests/                # Test suite
-├── docs/                 # Documentation
+├── doc/                  # Documentation
 └── doc/architecture.md   # Detailed architecture document
 ```
 
@@ -80,21 +82,28 @@ cd my-project/
 deepwork install --claude
 ```
 
-This installs core skills into `.claude/`:
-- `deepwork.define` - Interactive job definition wizard
-- `deepwork.refine` - Refine existing job definitions
+This installs core commands into `.claude/commands/`:
+- `deepwork_jobs.define` - Interactive job definition wizard
+- `deepwork_jobs.implement` - Generates step files and syncs commands
+- `deepwork_jobs.refine` - Refine existing job definitions
 
 ### 2. Job Definition
 Users define jobs via Claude Code:
 ```
-/deepwork.define
+/deepwork_jobs.define
 ```
 
 The agent guides you through defining:
 - Job name and description
 - Steps with inputs/outputs
 - Dependencies between steps
-- Instructions for each step
+
+This creates the `job.yml` file. Then run:
+```
+/deepwork_jobs.implement
+```
+
+This generates step instruction files and syncs commands to `.claude/commands/`.
 
 Job definitions are stored in `.deepwork/jobs/[job-name]/` and tracked in Git.
 
@@ -105,13 +114,13 @@ Execute jobs via slash commands in Claude Code:
 ```
 
 Each step:
-- Creates/uses a work branch (`work/[job-name]-[instance]`)
+- Creates/uses a work branch (`deepwork/[job-name]-[instance]-[date]`)
 - Reads inputs from previous steps
 - Generates outputs for review
 - Suggests next step
 
 ### 4. Work Completion
-- Review outputs in `work/[branch-name]/`
+- Review outputs in `deepwork/[branch-name]/`
 - Commit artifacts as you progress
 - Create PR for team review
 - Merge to preserve work products for future context
@@ -121,53 +130,27 @@ Each step:
 ```
 my-project/
 ├── .git/
-├── .claude/                    # Claude Code skills
-│   ├── skill-deepwork.define.md
-│   ├── skill-deepwork.refine.md
-│   └── skill-[job].[step].md
+├── .claude/                    # Claude Code directory
+│   └── commands/               # Command files
+│       ├── deepwork_jobs.define.md
+│       ├── deepwork_jobs.implement.md
+│       ├── deepwork_jobs.refine.md
+│       └── [job].[step].md
 ├── .deepwork/                  # DeepWork configuration
-│   ├── config.yml
+│   ├── config.yml              # version, platforms[]
 │   └── jobs/
+│       ├── deepwork_jobs/      # Built-in job
+│       │   ├── job.yml
+│       │   └── steps/
 │       └── [job-name]/
 │           ├── job.yml
 │           └── steps/
 │               └── [step].md
-└── work/                       # Work products (on branches)
-    └── [job-name]-[instance]/
+└── deepwork/                   # Work products (on branches)
+    └── [job-name]-[instance]-[date]/
         └── [outputs].md
 ```
 
-## Implementation Phases
-
-### Phase 1: Core Runtime (Current)
-- [ ] Project structure and build system
-- [ ] Job definition parser
-- [ ] Registry implementation
-- [ ] Basic Git integration
-- [ ] Template renderer
-- [ ] Unit tests for core components
-
-### Phase 2: CLI and Installation
-- [ ] CLI command framework
-- [ ] `install` command with platform detection
-- [ ] `define` command with interactive wizard
-- [ ] Integration tests
-
-### Phase 3: Runtime Engine
-- [ ] Step execution engine
-- [ ] Context preparation and injection
-- [ ] Output validation system
-- [ ] State management
-
-### Phase 4: AI Platform Integration
-- [ ] Claude Code skill generation
-- [ ] Gemini command generation
-- [ ] Platform-specific templates
-
-### Phase 5: Job Ecosystem
-- [ ] Reference job definitions
-- [ ] Job validation tools
-- [ ] Documentation and examples
 
 ## Key Files to Reference
 
@@ -183,10 +166,7 @@ my-project/
 4. **Testing**: Write tests for new functionality
 5. **Type Safety**: Use type hints for better code quality
 6. **No Auto-Commit**: DO NOT automatically commit changes to git. Let the user review and commit changes themselves.
-
-## Current Status
-
-The project is in early development (Phase 1). The architecture is defined, and we're building the core runtime components.
+7. **Documentation Sync**: CRITICAL - When making implementation changes, always update `doc/architecture.md` and `README.md` to reflect those changes. The architecture document must stay in sync with the actual codebase (terminology, file paths, structure, behavior, etc.).
 
 ## Success Metrics
 

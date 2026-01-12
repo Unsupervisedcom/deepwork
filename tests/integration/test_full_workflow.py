@@ -2,21 +2,18 @@
 
 from pathlib import Path
 
-import pytest
-
 from deepwork.core.detector import PLATFORMS
 from deepwork.core.generator import SkillGenerator
 from deepwork.core.parser import parse_job_definition
-from deepwork.core.registry import JobRegistry
 
 
 class TestJobWorkflow:
     """Integration tests for complete job workflow."""
 
-    def test_parse_register_generate_workflow(
+    def test_parse_and_generate_workflow(
         self, fixtures_dir: Path, temp_dir: Path
     ) -> None:
-        """Test complete workflow: parse job → register → generate skills."""
+        """Test complete workflow: parse job → generate skills."""
         # Step 1: Parse job definition
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
@@ -24,18 +21,7 @@ class TestJobWorkflow:
         assert job.name == "competitive_research"
         assert len(job.steps) == 4
 
-        # Step 2: Register job
-        deepwork_dir = temp_dir / ".deepwork"
-        registry = JobRegistry(deepwork_dir)
-
-        entry = registry.register_job(
-            job.name, job.version, job.description, str(job_dir)
-        )
-
-        assert entry.name == job.name
-        assert registry.is_registered(job.name)
-
-        # Step 3: Generate skills
+        # Step 2: Generate skills
         generator = SkillGenerator()
         platform = PLATFORMS["claude"]
         skills_dir = temp_dir / ".claude"
@@ -56,11 +42,6 @@ class TestJobWorkflow:
             # Check step numbers
             assert f"step {i+1} of 4" in content
 
-        # Step 4: Verify can read registry
-        loaded_entry = registry.get_job(job.name)
-        assert loaded_entry is not None
-        assert loaded_entry.version == job.version
-
     def test_simple_job_workflow(self, fixtures_dir: Path, temp_dir: Path) -> None:
         """Test workflow with simple single-step job."""
         # Parse
@@ -68,11 +49,6 @@ class TestJobWorkflow:
         job = parse_job_definition(job_dir)
 
         assert len(job.steps) == 1
-
-        # Register
-        deepwork_dir = temp_dir / ".deepwork"
-        registry = JobRegistry(deepwork_dir)
-        registry.register_job(job.name, job.version, job.description, str(job_dir))
 
         # Generate
         generator = SkillGenerator()
@@ -90,48 +66,6 @@ class TestJobWorkflow:
         assert "step 1 of 1" in content
         assert "input_param" in content
         assert "Workflow Complete" in content  # Final step message
-
-    def test_multiple_jobs_registration(self, fixtures_dir: Path, temp_dir: Path) -> None:
-        """Test registering multiple jobs."""
-        deepwork_dir = temp_dir / ".deepwork"
-        registry = JobRegistry(deepwork_dir)
-
-        # Parse and register first job
-        job1_dir = fixtures_dir / "jobs" / "simple_job"
-        job1 = parse_job_definition(job1_dir)
-        registry.register_job(job1.name, job1.version, job1.description, str(job1_dir))
-
-        # Parse and register second job
-        job2_dir = fixtures_dir / "jobs" / "complex_job"
-        job2 = parse_job_definition(job2_dir)
-        registry.register_job(job2.name, job2.version, job2.description, str(job2_dir))
-
-        # List all jobs
-        jobs = registry.list_jobs()
-        assert len(jobs) == 2
-
-        # Jobs should be sorted by name
-        assert jobs[0].name == "competitive_research"
-        assert jobs[1].name == "simple_job"
-
-    def test_job_update_workflow(self, fixtures_dir: Path, temp_dir: Path) -> None:
-        """Test updating a registered job."""
-        deepwork_dir = temp_dir / ".deepwork"
-        registry = JobRegistry(deepwork_dir)
-
-        # Register job
-        job_dir = fixtures_dir / "jobs" / "simple_job"
-        job = parse_job_definition(job_dir)
-        registry.register_job(job.name, job.version, job.description, str(job_dir))
-
-        # Update version
-        updated = registry.update_job(job.name, version="2.0.0")
-        assert updated.version == "2.0.0"
-
-        # Verify update persisted
-        loaded = registry.get_job(job.name)
-        assert loaded is not None
-        assert loaded.version == "2.0.0"
 
     def test_skill_generation_with_dependencies(
         self, fixtures_dir: Path, temp_dir: Path

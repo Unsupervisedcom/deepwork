@@ -7,7 +7,6 @@ import pytest
 from deepwork.core.detector import (
     PLATFORMS,
     DetectorError,
-    PlatformConfig,
     PlatformDetector,
 )
 

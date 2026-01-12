@@ -20,7 +20,4 @@ def __getattr__(name: str) -> object:
             parse_job_definition,
         )
         return locals()[name]
-    elif name in ("JobRegistry", "JobRegistryEntry", "RegistryError"):
-        from deepwork.core.registry import JobRegistry, JobRegistryEntry, RegistryError
-        return locals()[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
