@@ -38,43 +38,48 @@ deepwork/                       # DeepWork tool repository
 │   └── deepwork/
 │       ├── cli/
 │       │   ├── __init__.py
-│       │   ├── install.py      # Main install command
-│       │   └── commands.py     # Other CLI commands
+│       │   ├── main.py         # CLI entry point
+│       │   ├── install.py      # Install command
+│       │   └── sync.py         # Sync command
 │       ├── core/
-│       │   ├── project.py      # Project initialization
 │       │   ├── detector.py     # AI platform detection
-│       │   └── generator.py    # Skill file generation
-│       ├── templates/          # Skill templates for each platform
+│       │   ├── generator.py    # Command file generation
+│       │   └── parser.py       # Job definition parsing
+│       ├── templates/          # Command templates for each platform
 │       │   ├── claude/
-│       │   │   ├── skill-deepwork.define.md
-│       │   │   ├── skill-deepwork.refine.md
-│       │   │   └── skill-job-step.md.jinja
+│       │   │   └── command-job-step.md.jinja
 │       │   ├── gemini/
 │       │   └── copilot/
+│       ├── standard_jobs/      # Built-in job definitions
+│       │   └── deepwork_jobs/
+│       │       ├── job.yml
+│       │       └── steps/
 │       ├── schemas/            # Job definition schemas
-│       │   └── job.schema.json
+│       │   └── job_schema.py
 │       └── utils/
+│           ├── fs.py
 │           ├── git.py
-│           ├── yaml.py
-│           └── validation.py
+│           ├── validation.py
+│           └── yaml_utils.py
 ├── tests/                      # DeepWork tool tests
-├── docs/                       # Documentation
+├── doc/                        # Documentation
 ├── pyproject.toml
-└── README.md
+└── readme.md
 ```
 
 ## DeepWork CLI Components
 
 ### 1. Installation Command (`install.py`)
 
-The only command that runs regularly. When user executes `deepwork install --claude`:
+The primary installation command. When user executes `deepwork install --claude`:
 
 **Responsibilities**:
 1. Detect if current directory is a Git repository
 2. Detect if specified AI platform is available (check for `.claude/`, `.gemini/`, etc.)
 3. Create `.deepwork/` directory structure in the project
-4. Copy core skill templates to appropriate AI platform directory
-5. Create initial configuration files
+4. Inject standard job definitions (deepwork_jobs)
+5. Update or create configuration file
+6. Run sync to generate commands for all platforms
 
 **Pseudocode**:
 ```python
@@ -92,26 +97,24 @@ def install(platform: str):
     create_directory(".deepwork/")
     create_directory(".deepwork/jobs/")
 
-    # Install core skills
-    skills_to_install = [
-        "deepwork.define",   # Interactive job definition
-        "deepwork.refine",   # Refine existing job
-    ]
+    # Inject core job definitions
+    inject_deepwork_jobs(".deepwork/jobs/")
 
-    for skill in skills_to_install:
-        template = load_template(f"templates/{platform}/skill-{skill}.md")
-        write_file(f"{platform_config.skill_dir}/skill-{skill}.md", template)
+    # Update config (supports multiple platforms)
+    config = load_yaml(".deepwork/config.yml") or {}
+    config["version"] = "1.0.0"
+    config["platforms"] = config.get("platforms", [])
 
-    # Create config
-    config = {
-        "platform": platform,
-        "version": DEEPWORK_VERSION,
-        "installed": datetime.now()
-    }
+    if platform not in config["platforms"]:
+        config["platforms"].append(platform)
+
     write_yaml(".deepwork/config.yml", config)
 
+    # Run sync to generate commands
+    sync_commands()
+
     print(f"✓ DeepWork installed for {platform}")
-    print(f"  Run /{skills_to_install[0]} to create your first job")
+    print(f"  Run /deepwork_jobs.define to create your first job")
 ```
 
 ### 2. Platform Detector (`detector.py`)
@@ -120,70 +123,92 @@ Identifies which AI platforms are available in the project.
 
 **Detection Logic**:
 ```python
-PLATFORM_SIGNATURES = {
-    "claude": {
-        "check": lambda: Path(".claude").exists(),
-        "skill_dir": ".claude",
-        "skill_extension": ".md",
-        "skill_prefix": "skill-"
-    },
-    "gemini": {
-        "check": lambda: Path(".gemini").exists(),  # Hypothetical
-        "skill_dir": ".gemini",
-        "skill_extension": ".md",
-        "skill_prefix": "skill-"
-    },
-    "copilot": {
-        "check": lambda: Path(".github/copilot-instructions.md").exists(),
-        "skill_dir": ".github",
-        "skill_extension": ".md",
-        "skill_prefix": "copilot-"
-    }
+@dataclass
+class PlatformConfig:
+    """Configuration for an AI platform."""
+    name: str           # "claude", "gemini", "copilot"
+    display_name: str   # "Claude Code", "Google Gemini", "GitHub Copilot"
+    config_dir: str     # ".claude", ".gemini", ".github"
+    commands_dir: str   # "commands", "commands", "commands"
+
+PLATFORMS = {
+    "claude": PlatformConfig(
+        name="claude",
+        display_name="Claude Code",
+        config_dir=".claude",
+        commands_dir="commands"
+    ),
+    "gemini": PlatformConfig(
+        name="gemini",
+        display_name="Google Gemini",
+        config_dir=".gemini",
+        commands_dir="commands"
+    ),
+    "copilot": PlatformConfig(
+        name="copilot",
+        display_name="GitHub Copilot",
+        config_dir=".github",
+        commands_dir="commands"
+    )
 }
+
+class PlatformDetector:
+    def detect_platform(self, platform_name: str) -> PlatformConfig | None:
+        """Check if a specific platform is available."""
+        platform = PLATFORMS[platform_name]
+        config_dir = self.project_root / platform.config_dir
+        if config_dir.exists() and config_dir.is_dir():
+            return platform
+        return None
 ```
 
-### 3. Skill Generator (`generator.py`)
+### 3. Command Generator (`generator.py`)
 
-Generates AI-platform-specific skill files from job definitions.
+Generates AI-platform-specific command files from job definitions.
 
-When a user defines a job via `/deepwork.define`, this component:
+This component is called by the `sync` command to regenerate all commands:
 1. Reads the job definition from `.deepwork/jobs/[job-name]/job.yml`
 2. Loads platform-specific templates
-3. Generates skill files for each step in the job
-4. Writes skills to the AI platform's directory
+3. Generates command files for each step in the job
+4. Writes commands to the AI platform's commands directory
 
 **Example Generation Flow**:
 ```python
-def generate_skills_for_job(job_name: str, platform: str):
-    # Load job definition
-    job = load_yaml(f".deepwork/jobs/{job_name}/job.yml")
+class CommandGenerator:
+    def generate_all_commands(self, job: JobDefinition,
+                            platform: PlatformConfig,
+                            output_dir: Path) -> list[Path]:
+        """Generate command files for all steps in a job."""
+        command_paths = []
 
-    # Get platform config
-    platform_config = PLATFORM_SIGNATURES[platform]
+        for step_index, step in enumerate(job.steps):
+            # Load step instructions
+            instructions = read_file(job.job_dir / step.instructions_file)
 
-    # Generate skill for each step
-    for step in job['steps']:
-        skill_name = f"{job_name}.{step['id']}"
+            # Build template context
+            context = {
+                "job_name": job.name,
+                "step_id": step.id,
+                "step_name": step.name,
+                "step_number": step_index + 1,
+                "total_steps": len(job.steps),
+                "instructions_content": instructions,
+                "user_inputs": [inp for inp in step.inputs if inp.is_user_input()],
+                "file_inputs": [inp for inp in step.inputs if inp.is_file_input()],
+                "outputs": step.outputs,
+                "dependencies": step.dependencies,
+            }
 
-        # Load template
-        template = load_jinja_template(
-            f"templates/{platform}/skill-job-step.md.jinja"
-        )
+            # Render template
+            template = env.get_template("command-job-step.md.jinja")
+            rendered = template.render(**context)
 
-        # Render with step data
-        skill_content = template.render(
-            job_name=job_name,
-            step_id=step['id'],
-            step_name=step['name'],
-            description=step['description'],
-            inputs=step['inputs'],
-            outputs=step['outputs'],
-            instructions=load_file(step['instructions_file'])
-        )
+            # Write to platform's commands directory
+            command_path = output_dir / platform.config_dir / platform.commands_dir / f"{job.name}.{step.id}.md"
+            write_file(command_path, rendered)
+            command_paths.append(command_path)
 
-        # Write to platform directory
-        skill_path = f"{platform_config['skill_dir']}/skill-{skill_name}.md"
-        write_file(skill_path, skill_content)
+        return command_paths
 ```
 
 ---
@@ -198,36 +223,42 @@ This section describes what a project looks like AFTER `deepwork install --claud
 my-project/                     # User's project (target)
 ├── .git/
 ├── .claude/                    # Claude Code directory
-│   ├── skill-deepwork.define.md       # Core DeepWork skill
-│   ├── skill-deepwork.refine.md       # Refine existing jobs
-│   ├── skill-competitive_research.identify_competitors.md
-│   ├── skill-competitive_research.primary_research.md
-│   ├── skill-competitive_research.secondary_research.md
-│   ├── skill-competitive_research.comparative_report.md
-│   └── skill-competitive_research.positioning.md
+│   └── commands/               # Command files
+│       ├── deepwork_jobs.define.md         # Core DeepWork commands
+│       ├── deepwork_jobs.implement.md
+│       ├── deepwork_jobs.refine.md
+│       ├── competitive_research.identify_competitors.md
+│       ├── competitive_research.primary_research.md
+│       ├── competitive_research.secondary_research.md
+│       ├── competitive_research.comparative_report.md
+│       └── competitive_research.positioning.md
 ├── .deepwork/                  # DeepWork configuration
 │   ├── config.yml              # Platform config
 │   └── jobs/                   # Job definitions
+│       ├── deepwork_jobs/      # Core job for managing jobs
+│       │   ├── job.yml
+│       │   └── steps/
+│       │       ├── define.md
+│       │       ├── implement.md
+│       │       └── refine.md
 │       ├── competitive_research/
 │       │   ├── job.yml         # Job metadata
-│       │   ├── steps/
-│       │   │   ├── identify_competitors.md
-│       │   │   ├── primary_research.md
-│       │   │   ├── secondary_research.md
-│       │   │   ├── comparative_report.md
-│       │   │   └── positioning.md
-│       │   ├── templates/      # Output templates
-│       │   └── examples/       # Example outputs
+│       │   └── steps/
+│       │       ├── identify_competitors.md
+│       │       ├── primary_research.md
+│       │       ├── secondary_research.md
+│       │       ├── comparative_report.md
+│       │       └── positioning.md
 │       └── ad_campaign/
 │           └── ...
-├── work/                       # Work products (Git branches)
-│   ├── competitive-research-acme-2026-01/
+├── deepwork/                   # Work products (Git branches)
+│   ├── competitive_research-acme-2026-01-11/
 │   │   ├── competitors.md
 │   │   ├── primary_research.md
 │   │   ├── secondary_research.md
 │   │   ├── comparison_matrix.md
 │   │   └── positioning_strategy.md
-│   └── ad-campaign-q1-2026/
+│   └── ad_campaign-q1-2026-01-11/
 │       └── ...
 ├── (rest of user's project files)
 └── README.md
@@ -238,10 +269,12 @@ my-project/                     # User's project (target)
 ### `.deepwork/config.yml`
 
 ```yaml
-platform: claude
-version: "1.0.0"
-installed: "2026-01-09T10:30:00Z"
+version: 1.0.0
+platforms:
+  - claude
 ```
+
+**Note**: The config supports multiple platforms. You can add additional platforms by running `deepwork install --platform gemini` etc.
 
 ### Job Definition Example
 
@@ -387,24 +420,34 @@ Create `competitors.md` with this structure:
 - [ ] No duplicate entries
 ```
 
-## Generated Skill Files
+## Generated Command Files
 
-When the job is defined, DeepWork generates skill files. Example for Claude Code:
+When the job is defined and `sync` is run, DeepWork generates command files. Example for Claude Code:
 
-`.claude/skill-competitive_research.identify_competitors.md`:
+`.claude/commands/competitive_research.identify_competitors.md`:
 
 ```markdown
-Name: competitive_research.identify_competitors
-Description: Research and identify direct and indirect competitors
+---
+description: Research and identify direct and indirect competitors
+---
 
-## Overview
-This is step 1 of 5 in the Competitive Research job.
+# competitive_research.identify_competitors
+
+**Step 1 of 5** in the **competitive_research** workflow
+
+**Summary**: Systematic competitive analysis workflow
+
+## Job Overview
+
+[Job description and context...]
 
 ## Instructions
 
 You are performing the "Identify Competitors" step of competitive research.
 
 ### Prerequisites
+This step has no dependencies (it's the first step).
+
 Before starting, ensure you have:
 - Market segment defined
 - Product category specified
@@ -420,12 +463,12 @@ Ask the user for the following if not already provided:
 
 ### Work Branch Management
 1. Check if we're on a work branch for this job
-2. If not, create a new branch: `work/competitive-research-[timestamp]`
-3. All outputs should be created in the `work/[branch-name]/` directory
+2. If not, create a new branch: `deepwork/competitive_research-[instance]-[date]`
+3. All outputs should be created in the `deepwork/[branch-name]/` directory
 
 ### Output Requirements
 Create the following file in the work directory:
-- `work/[branch-name]/competitors.md`
+- `deepwork/[branch-name]/competitors.md`
 
 ### After Completion
 1. Inform the user that step 1 is complete
@@ -459,7 +502,7 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
 2. **Define a Job** (once per job type):
    ```
    # In Claude Code
-   User: /deepwork.define
+   User: /deepwork_jobs.define
 
    Claude: I'll help you define a new job. What type of work do you want to define?
 
@@ -468,7 +511,14 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
    [Interactive dialog to define all the steps]
 
    Claude: ✓ Job 'competitive_research' created with 5 steps
-          Skills installed to .claude/
+          Run /deepwork_jobs.implement to generate command files
+          Then run 'deepwork sync' to install commands
+
+   User: /deepwork_jobs.implement
+
+   Claude: [Generates step instruction files]
+          [Runs deepwork sync]
+          ✓ Commands installed to .claude/commands/
           Run /competitive_research.identify_competitors to start
    ```
 
@@ -478,7 +528,7 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
    User: /competitive_research.identify_competitors
 
    Claude: Starting competitive research job...
-          Created branch: work/competitive-research-20260109-143022
+          Created branch: deepwork/competitive_research-acme-2026-01-11
 
           Please provide:
           - Market segment: ?
@@ -488,7 +538,7 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
          Product category: Project Management
 
    Claude: [Performs research using web tools, analysis, etc.]
-          ✓ Created work/competitive-research-20260109-143022/competitors.md
+          ✓ Created deepwork/competitive_research-acme-2026-01-11/competitors.md
 
           Found 8 direct competitors and 4 indirect competitors.
           Review the file and run /competitive_research.primary_research when ready.
@@ -510,26 +560,26 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
    ```
    User: Looks great! Create a PR for this work
 
-   Claude: [Creates PR from work/competitive-research-20260109-143022 to main]
+   Claude: [Creates PR from deepwork/competitive_research-acme-2026-01-11 to main]
           PR created: https://github.com/user/project/pull/123
    ```
 
-## How Claude Code Executes Skills
+## How Claude Code Executes Commands
 
 When user types `/competitive_research.identify_competitors`:
 
-1. **Skill Discovery**:
-   - Claude Code scans `.claude/` directory
-   - Finds `skill-competitive_research.identify_competitors.md`
-   - Loads the skill definition
+1. **Command Discovery**:
+   - Claude Code scans `.claude/commands/` directory
+   - Finds `competitive_research.identify_competitors.md`
+   - Loads the command definition
 
 2. **Context Loading**:
-   - Skill file contains embedded instructions
+   - Command file contains embedded instructions
    - References to job definition and step files
    - Claude reads these files to understand the full context
 
 3. **Execution**:
-   - Claude follows the instructions in the skill
+   - Claude follows the instructions in the command
    - Uses its tools (Read, Write, WebSearch, WebFetch, etc.)
    - Creates outputs in the specified format
 
@@ -541,7 +591,7 @@ When user types `/competitive_research.identify_competitors`:
 5. **No DeepWork Runtime**:
    - DeepWork CLI is NOT running during execution
    - Everything happens through Claude Code's native execution
-   - Skills are just markdown instruction files that Claude interprets
+   - Commands are just markdown instruction files that Claude interprets
 
 ## Context Passing Between Steps
 
@@ -550,7 +600,7 @@ Since there's no DeepWork runtime process, context is passed through:
 ### 1. Filesystem (Primary Mechanism)
 
 ```
-work/competitive-research-20260109-143022/
+deepwork/competitive_research-acme-2026-01-11/
 ├── competitors.md              ← Step 1 output
 ├── primary_research.md          ← Step 2 output
 ├── competitor_profiles/         ← Step 2 output
@@ -562,14 +612,14 @@ work/competitive-research-20260109-143022/
 └── positioning_strategy.md      ← Step 5 output
 ```
 
-Each skill instructs Claude to:
+Each command instructs Claude to:
 - Read specific input files from previous steps
 - Write specific output files for this step
 - All within the same work directory
 
-### 2. Skill Instructions
+### 2. Command Instructions
 
-Each skill file explicitly states its dependencies:
+Each command file explicitly states its dependencies:
 
 ```markdown
 ### Prerequisites
@@ -578,17 +628,17 @@ This step requires outputs from:
 - Step 2 (primary_research): primary_research.md
 
 ### Your Task
-1. Read `work/[branch]/competitors.md`
-2. Read `work/[branch]/primary_research.md`
+1. Read `deepwork/[branch]/competitors.md`
+2. Read `deepwork/[branch]/primary_research.md`
 3. [Perform analysis]
-4. Write `work/[branch]/secondary_research.md`
+4. Write `deepwork/[branch]/secondary_research.md`
 ```
 
 ### 3. Git History
 
 When working on similar jobs:
 - User: "Do competitive research for Acme Corp, similar to our Widget Corp analysis"
-- Claude can read `work/competitive-research-widget-corp/` from git history
+- Claude can read `deepwork/competitive_research-widget-corp-2026-01-05/` from git history
 - Uses it as a template for style, depth, format
 
 ### 4. No Environment Variables Needed
@@ -605,28 +655,30 @@ Unlike the original architecture, we don't need special environment variables be
 Each job execution creates a new work branch:
 
 ```bash
-work/competitive-research-20260109-143022   # Timestamp-based
-work/ad-campaign-q1-2026                    # Name-based (user can specify)
-work/monthly-report-2026-01                 # Date-based
+deepwork/competitive_research-acme-2026-01-11      # Name-based with date
+deepwork/ad_campaign-q1-2026-01-11                 # Quarter-based with date
+deepwork/monthly_report-2026-01-11                 # Date-based
 ```
 
 **Branch Naming Convention**:
 ```
-work/[job-name]-[instance-identifier]
+deepwork/[job_name]-[instance-identifier]-[date]
 ```
 
 Where `instance-identifier` can be:
-- Timestamp (default): `20260109-143022`
-- User-specified: `acme-corp`, `q1-2026`, etc.
+- User-specified: `acme`, `q1`, etc.
+- Auto-generated from timestamp if not specified
 - Logical: "ford" when doing competitive research on Ford Motor Company
 
-### Skill Behavior
+**Date format**: `YYYY-MM-DD`
 
-Skills should:
+### Command Behavior
+
+Commands should:
 1. Check if we're already on a work branch for this job
 2. If not, ask user for instance name or auto-generate from timestamp
-3. Create branch: `git checkout -b work/[job-name]-[instance]`
-4. Create work directory: `mkdir -p work/[job-name]-[instance]`
+3. Create branch: `git checkout -b deepwork/[job_name]-[instance]-[date]`
+4. Create work directory: `mkdir -p deepwork/[job_name]-[instance]-[date]`
 5. Perform work in that directory
 
 ### Completion and Merge
@@ -640,11 +692,21 @@ When all steps are done:
 
 ---
 
-## Job Definition and Skill Generation
+## Job Definition and Command Generation
 
-### The `/deepwork.define` Skill
+### Standard Job: `deepwork_jobs`
 
-When a user runs `/deepwork.define` in Claude Code:
+DeepWork includes a built-in job called `deepwork_jobs` with three commands for managing jobs:
+
+1. **`/deepwork_jobs.define`** - Interactive job definition wizard
+2. **`/deepwork_jobs.implement`** - Generates step instruction files from job.yml
+3. **`/deepwork_jobs.refine`** - Modifies existing job definitions
+
+These commands are installed automatically when you run `deepwork install`.
+
+### The `/deepwork_jobs.define` Command
+
+When a user runs `/deepwork_jobs.define` in Claude Code:
 
 **What Happens**:
 1. Claude engages in interactive dialog to gather:
@@ -653,65 +715,44 @@ When a user runs `/deepwork.define` in Claude Code:
    - List of steps (name, description, inputs, outputs)
    - Dependencies between steps
 
-2. Claude creates the job definition files:
+2. Claude creates the job definition file:
    ```
    .deepwork/jobs/[job-name]/
-   ├── job.yml                    # Job metadata
-   └── steps/
-       ├── step1.md               # Instructions for each step
-       ├── step2.md
-       └── ...
+   └── job.yml                    # Job metadata only
    ```
 
-3. Claude generates skill files using the DeepWork skill template:
+3. User then runs `/deepwork_jobs.implement` to:
+   - Generate step instruction files (steps/*.md)
+   - Run `deepwork sync` to generate command files
+   - Install commands to `.claude/commands/`
+
+4. The workflow is now:
    ```
-   For each step in job.yml:
-     - Load template from embedded knowledge
-     - Substitute job/step metadata
-     - Write to .claude/skill-[job].[step].md
+   /deepwork_jobs.define     → Creates job.yml
+   /deepwork_jobs.implement  → Creates steps/*.md and syncs commands
    ```
 
-4. The `/deepwork.define` skill contains:
+5. The `/deepwork_jobs.define` command contains:
    - The job definition YAML schema
-   - The skill file template (Jinja2-like)
-   - Logic for generation
+   - Interactive question flow
+   - Job.yml creation logic
 
-**How Templates are Embedded**:
+**Command File Structure**:
 
-The `skill-deepwork.define.md` file contains the template AS DATA:
+The actual command file `.claude/commands/deepwork_jobs.define.md` contains:
 
 ```markdown
-Name: deepwork.define
-Description: Interactive job definition wizard
+---
+description: Create the job.yml specification file by understanding workflow requirements
+---
+
+# deepwork_jobs.define
+
+**Step 1 of 3** in the **deepwork_jobs** workflow
 
 ## Instructions
 
-[Instructions for Claude on how to run the wizard...]
-
-## Template for Generated Skills
-
-When you generate skills, use this template:
-
-````markdown
-Name: {{job_name}}.{{step_id}}
-Description: {{step_description}}
-
-## Overview
-This is step {{step_number}} of {{total_steps}} in the {{job_name}} job.
-
-## Instructions
-
-{{instructions_content}}
-
-## Work Branch Management
-[Branch creation instructions...]
-
-## Output Requirements
-Create these files:
-{{#outputs}}
-- `work/[branch]/{{this}}`
-{{/outputs}}
-````
+[Detailed instructions for Claude on how to run the interactive wizard...]
 
 ## Job Definition Schema
 
@@ -719,12 +760,45 @@ When creating job.yml, use this structure:
 [YAML schema embedded here...]
 ```
 
-### The `/deepwork.refine` Skill
+### The `/deepwork_jobs.implement` Command
+
+Generates step instruction files from job.yml and syncs commands:
+
+```
+User: /deepwork_jobs.implement
+
+Claude: Reading job definition from .deepwork/jobs/competitive_research/job.yml...
+        Generating step instruction files...
+        ✓ Created steps/identify_competitors.md
+        ✓ Created steps/primary_research.md
+        ✓ Created steps/secondary_research.md
+        ✓ Created steps/comparative_report.md
+        ✓ Created steps/positioning.md
+
+        Running deepwork sync...
+        ✓ Generated 5 command files in .claude/commands/
+
+        New commands available:
+        - /competitive_research.identify_competitors
+        - /competitive_research.primary_research
+        - /competitive_research.secondary_research
+        - /competitive_research.comparative_report
+        - /competitive_research.positioning
+```
+
+### The `/deepwork_jobs.refine` Command
 
 Allows updating existing job definitions:
 
 ```
-User: /deepwork.refine competitive_research
+User: /deepwork_jobs.refine
+
+Claude: Which job would you like to refine?
+        Available jobs:
+        - competitive_research
+        - deepwork_jobs
+
+User: competitive_research
 
 Claude: Loading competitive_research job definition...
         What would you like to update?
@@ -737,9 +811,8 @@ User: Add a new step between primary_research and secondary_research
 
 Claude: [Interactive dialog...]
         ✓ Added step 'social_media_analysis'
-        ✓ Updated dependencies
-        ✓ Regenerated skill files
-        New command available: /competitive_research.social_media_analysis
+        ✓ Updated dependencies in job.yml
+        ✓ Please run /deepwork_jobs.implement to generate the new step file
 ```
 
 ### Template System
@@ -1115,53 +1188,33 @@ jobs:
 
 ---
 
-## Implementation Phases
+## Implementation Status
 
-### Phase 1: Core Runtime
-- [ ] Project structure and build system
-- [ ] Job definition parser
-- [ ] Registry implementation
-- [ ] Basic Git integration
-- [ ] Template renderer
-- [ ] Unit tests for core components
+**Completed**: Phases 1 & 2 are complete. The core runtime, CLI, installation, and command generation systems are fully functional.
 
-### Phase 2: CLI and Installation
-- [ ] CLI command framework
-- [ ] `install` command with platform detection
-- [ ] `import` command with Git clone
-- [ ] `define` command with interactive wizard
-- [ ] `list` and `status` commands
-- [ ] Integration tests
+### Current Focus: Phase 5 - Job Ecosystem
+- ✅ Standard job `deepwork_jobs` with define, implement, refine commands
+- 📋 Reference job library (competitive research, ad campaigns, etc.)
+- 📋 Job sharing via Git repositories
 
-### Phase 3: Runtime Engine
-- [ ] Step execution engine
-- [ ] Context preparation and injection
-- [ ] Output validation system
-- [ ] State management and resumption
-- [ ] Environment variable handling
-- [ ] Integration tests for workflows
+### Future Work
 
-### Phase 4: AI Platform Integration
-- [ ] Claude Code skill generation
-- [ ] Gemini command generation
-- [ ] Copilot instruction generation
-- [ ] Platform-specific template variations
-- [ ] Multi-platform testing
+**Phase 3: Runtime Engine** (Optional enhancements)
+- Step execution tracking and monitoring
+- Output validation system
+- Advanced state management
 
-### Phase 5: Job Ecosystem
-- [ ] Create reference jobs (competitive research, campaign design, etc.)
-- [ ] Job validation tools
-- [ ] Job sharing infrastructure
-- [ ] Documentation and examples
-- [ ] E2E tests with real job definitions
-- [ ] Benchmarks
+**Phase 4: Multi-Platform Support**
+- Gemini command generation
+- GitHub Copilot integration
+- Multi-platform testing
 
-### Phase 6: Polish and Release
-- [ ] Performance optimization
-- [ ] Error handling improvements
-- [ ] User documentation
-- [ ] Tutorial videos
-- [ ] Beta release
+**Phase 6: Polish and Release**
+- Performance optimization
+- Enhanced error handling
+- Comprehensive user documentation
+- Tutorial content
+- Beta and public release
 
 ---
 
