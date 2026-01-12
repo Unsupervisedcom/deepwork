@@ -28,13 +28,16 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Run ruff formatting
         run: uv run ruff format src/ tests/
 
       - name: Run ruff linting with auto-fix
         run: uv run ruff check --fix src/ tests/
+
+      - name: Re-run formatting after auto-fix
+        run: uv run ruff format src/ tests/
 
       - name: Verify all issues are fixed
         run: |
