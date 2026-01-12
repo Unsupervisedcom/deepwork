@@ -91,6 +91,7 @@ steps:
       - tests/
       - README.md
     dependencies:
+      - research
       - add_capabilities
     stop_hooks:
       - script: hooks/run_tests.sh
