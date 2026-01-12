@@ -11,7 +11,7 @@ Guide the user through refining a job by first understanding their existing job,
 ### Step 1: Select and Load Job
 
 1. **List available jobs**
-   - Read `.deepwork/registry.yml`
+   - Scan `.deepwork/jobs/` directory for installed jobs
    - Display installed jobs with versions and descriptions
    - Ask which job to refine
 
@@ -35,6 +35,7 @@ Ask the user what they want to change:
 4. Update dependencies between steps
 5. Update job metadata (description, version)
 6. Remove a step
+7. Add or modify stop hooks (quality validation)
 
 **For each change, ask clarifying questions:**
 - Why do they want to make this change?
@@ -127,7 +128,7 @@ Based on the user's selection:
    - Minor (0.x.0): New features, backwards compatible (adding steps)
    - Patch (0.0.x): Bug fixes, improvements
 
-3. **Update job.yml and registry.yml**
+3. **Update job.yml**
    - Prepare changelog entry describing the metadata changes
 
 #### Removing a Step
@@ -145,6 +146,68 @@ Based on the user's selection:
    - Delete step instructions file
    - Suggest version bump
    - Prepare changelog entry describing the removal
+
+#### Adding or Modifying Stop Hooks
+
+Stop hooks provide quality validation loops that ensure step outputs meet criteria before completing.
+
+1. **Select step to modify**
+   - Show list of steps
+   - Ask which one to add/modify hooks for
+
+2. **Understand the need**
+   - What quality criteria should be validated?
+   - Is the output subjective (use prompt hook) or objective (use script hook)?
+   - Should validation happen automatically or only on specific conditions?
+
+3. **Choose hook type**
+
+   **Prompt hooks** (recommended for most cases):
+   - Best for subjective quality criteria
+   - AI evaluates the output against criteria
+   - Example: "Verify the report is comprehensive and well-organized"
+   ```yaml
+   stop_hooks:
+     - prompt: |
+         Verify the output meets criteria:
+         1. Contains all required sections
+         2. Analysis is thorough
+         3. Recommendations are actionable
+   ```
+
+   **Prompt file hooks**:
+   - For reusable or complex validation criteria
+   - Stores criteria in a separate markdown file
+   ```yaml
+   stop_hooks:
+     - prompt_file: hooks/quality_check.md
+   ```
+
+   **Script hooks**:
+   - For objective, programmatic validation
+   - Best for tests, linting, format checking
+   ```yaml
+   stop_hooks:
+     - script: hooks/run_tests.sh
+   ```
+
+4. **Multiple hooks can be combined**
+   ```yaml
+   stop_hooks:
+     - script: hooks/lint.sh           # First: objective checks
+     - prompt: "Verify content quality" # Then: subjective review
+   ```
+
+5. **Update files**
+   - Add/modify `stop_hooks` array in job.yml
+   - Create hook files if using prompt_file or script types
+   - Update step instructions to match quality criteria
+   - Prepare changelog entry
+
+6. **Encourage prompt-based hooks**
+   - They leverage the AI's ability to understand context
+   - More flexible than rigid script checks
+   - Can evaluate nuanced quality criteria
 
 ### Step 4: Update Changelog
 
@@ -304,7 +367,6 @@ Creating the new step... ✓
 Updated files:
 - .deepwork/jobs/competitive_research/job.yml (added step, updated dependencies, version → 1.1.0, updated changelog)
 - .deepwork/jobs/competitive_research/steps/validate_positioning.md (created)
-- .deepwork/registry.yml (updated version)
 
 Changelog entry added:
 ```yaml

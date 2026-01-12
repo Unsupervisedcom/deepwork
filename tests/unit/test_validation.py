@@ -14,6 +14,7 @@ class TestValidateAgainstSchema:
         job_data = {
             "name": "simple_job",
             "version": "1.0.0",
+            "summary": "A simple job for testing",
             "description": "A simple job",
             "steps": [
                 {
@@ -35,6 +36,7 @@ class TestValidateAgainstSchema:
         job_data = {
             "name": "job_with_inputs",
             "version": "1.0.0",
+            "summary": "Job with user inputs",
             "description": "Job with inputs",
             "steps": [
                 {
@@ -59,6 +61,7 @@ class TestValidateAgainstSchema:
         job_data = {
             "name": "job_with_deps",
             "version": "1.0.0",
+            "summary": "Job with dependencies",
             "description": "Job with dependencies",
             "steps": [
                 {
@@ -88,11 +91,12 @@ class TestValidateAgainstSchema:
         job_data = {
             "name": "incomplete_job",
             "version": "1.0.0",
+            # Missing summary
             # Missing description
             "steps": [],
         }
 
-        with pytest.raises(ValidationError, match="'description' is a required property"):
+        with pytest.raises(ValidationError, match="'summary' is a required property"):
             validate_against_schema(job_data, JOB_SCHEMA)
 
     def test_raises_for_invalid_job_name(self) -> None:
@@ -100,6 +104,7 @@ class TestValidateAgainstSchema:
         job_data = {
             "name": "Invalid-Job-Name",  # Dashes not allowed
             "version": "1.0.0",
+            "summary": "Invalid name test",
             "description": "Invalid name",
             "steps": [
                 {
@@ -120,6 +125,7 @@ class TestValidateAgainstSchema:
         job_data = {
             "name": "job",
             "version": "1.0",  # Not semver
+            "summary": "Invalid version test",
             "description": "Job",
             "steps": [
                 {
@@ -140,6 +146,7 @@ class TestValidateAgainstSchema:
         job_data = {
             "name": "job",
             "version": "1.0.0",
+            "summary": "Empty steps test",
             "description": "Job with no steps",
             "steps": [],
         }
@@ -152,6 +159,7 @@ class TestValidateAgainstSchema:
         job_data = {
             "name": "job",
             "version": "1.0.0",
+            "summary": "Missing outputs test",
             "description": "Job",
             "steps": [
                 {
@@ -172,6 +180,7 @@ class TestValidateAgainstSchema:
         job_data = {
             "name": "job",
             "version": "1.0.0",
+            "summary": "Invalid input format test",
             "description": "Job",
             "steps": [
                 {

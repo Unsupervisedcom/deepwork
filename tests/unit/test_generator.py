@@ -1,4 +1,4 @@
-"""Tests for skill generator."""
+"""Tests for command generator."""
 
 from pathlib import Path
 
@@ -35,46 +35,47 @@ class TestCommandGenerator:
         with pytest.raises(GeneratorError, match="Templates directory not found"):
             CommandGenerator(nonexistent)
 
-    def test_generate_step_skill_simple_job(
+    def test_generate_step_command_simple_job(
         self, fixtures_dir: Path, temp_dir: Path
     ) -> None:
-        """Test generating skill for simple job step."""
+        """Test generating command for simple job step."""
         job_dir = fixtures_dir / "jobs" / "simple_job"
         job = parse_job_definition(job_dir)
 
         generator = CommandGenerator()
         platform = PLATFORMS["claude"]
 
-        skill_path = generator.generate_step_skill(
+        command_path = generator.generate_step_command(
             job, job.steps[0], platform, temp_dir
         )
 
-        assert skill_path.exists()
-        assert skill_path.name == "skill-simple_job.single_step.md"
+        assert command_path.exists()
+        assert command_path.name == "simple_job.single_step.md"
 
-        content = skill_path.read_text()
-        assert "Name: simple_job.single_step" in content
-        assert "step 1 of 1" in content
+        content = command_path.read_text()
+        assert "# simple_job.single_step" in content
+        # Single step with no dependencies is treated as standalone
+        assert "Standalone command" in content
         assert "input_param" in content
         assert "output.md" in content
 
-    def test_generate_step_skill_complex_job_first_step(
+    def test_generate_step_command_complex_job_first_step(
         self, fixtures_dir: Path, temp_dir: Path
     ) -> None:
-        """Test generating skill for first step of complex job."""
+        """Test generating command for first step of complex job."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
         generator = CommandGenerator()
         platform = PLATFORMS["claude"]
 
-        skill_path = generator.generate_step_skill(
+        command_path = generator.generate_step_command(
             job, job.steps[0], platform, temp_dir
         )
 
-        content = skill_path.read_text()
-        assert "Name: competitive_research.identify_competitors" in content
-        assert "step 1 of 4" in content
+        content = command_path.read_text()
+        assert "# competitive_research.identify_competitors" in content
+        assert "Step 1 of 4" in content
         assert "market_segment" in content
         assert "product_category" in content
         # First step has no prerequisites
@@ -82,10 +83,10 @@ class TestCommandGenerator:
         # Has next step
         assert "/competitive_research.primary_research" in content
 
-    def test_generate_step_skill_complex_job_middle_step(
+    def test_generate_step_command_complex_job_middle_step(
         self, fixtures_dir: Path, temp_dir: Path
     ) -> None:
-        """Test generating skill for middle step with dependencies."""
+        """Test generating command for middle step with dependencies."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
@@ -93,13 +94,13 @@ class TestCommandGenerator:
         platform = PLATFORMS["claude"]
 
         # Generate primary_research (step 2)
-        skill_path = generator.generate_step_skill(
+        command_path = generator.generate_step_command(
             job, job.steps[1], platform, temp_dir
         )
 
-        content = skill_path.read_text()
-        assert "Name: competitive_research.primary_research" in content
-        assert "step 2 of 4" in content
+        content = command_path.read_text()
+        assert "# competitive_research.primary_research" in content
+        assert "Step 2 of 4" in content
         # Has prerequisites
         assert "## Prerequisites" in content
         assert "/competitive_research.identify_competitors" in content
@@ -109,10 +110,10 @@ class TestCommandGenerator:
         # Has next step
         assert "/competitive_research.secondary_research" in content
 
-    def test_generate_step_skill_complex_job_final_step(
+    def test_generate_step_command_complex_job_final_step(
         self, fixtures_dir: Path, temp_dir: Path
     ) -> None:
-        """Test generating skill for final step."""
+        """Test generating command for final step."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
@@ -120,13 +121,13 @@ class TestCommandGenerator:
         platform = PLATFORMS["claude"]
 
         # Generate comparative_report (step 4)
-        skill_path = generator.generate_step_skill(
+        command_path = generator.generate_step_command(
             job, job.steps[3], platform, temp_dir
         )
 
-        content = skill_path.read_text()
-        assert "Name: competitive_research.comparative_report" in content
-        assert "step 4 of 4" in content
+        content = command_path.read_text()
+        assert "# competitive_research.comparative_report" in content
+        assert "Step 4 of 4" in content
         # Has prerequisites
         assert "## Prerequisites" in content
         # Has multiple file inputs
@@ -136,10 +137,10 @@ class TestCommandGenerator:
         assert "## Workflow Complete" in content
         assert "## Next Step" not in content
 
-    def test_generate_step_skill_raises_for_missing_step(
+    def test_generate_step_command_raises_for_missing_step(
         self, fixtures_dir: Path, temp_dir: Path
     ) -> None:
-        """Test that generating skill for non-existent step raises error."""
+        """Test that generating command for non-existent step raises error."""
         job_dir = fixtures_dir / "jobs" / "simple_job"
         job = parse_job_definition(job_dir)
 
@@ -158,9 +159,9 @@ class TestCommandGenerator:
         )
 
         with pytest.raises(GeneratorError, match="Step 'fake' not found"):
-            generator.generate_step_skill(job, fake_step, platform, temp_dir)
+            generator.generate_step_command(job, fake_step, platform, temp_dir)
 
-    def test_generate_step_skill_raises_for_missing_instructions(
+    def test_generate_step_command_raises_for_missing_instructions(
         self, fixtures_dir: Path, temp_dir: Path
     ) -> None:
         """Test that missing instructions file raises error."""
@@ -179,65 +180,38 @@ class TestCommandGenerator:
             platform = PLATFORMS["claude"]
 
             with pytest.raises(GeneratorError, match="instructions file not found"):
-                generator.generate_step_skill(job, job.steps[0], platform, temp_dir)
+                generator.generate_step_command(job, job.steps[0], platform, temp_dir)
         finally:
             # Restore the file
             instructions_file.write_text(original_content)
 
-    def test_generate_all_skills(self, fixtures_dir: Path, temp_dir: Path) -> None:
-        """Test generating skills for all steps in a job."""
+    def test_generate_all_commands(self, fixtures_dir: Path, temp_dir: Path) -> None:
+        """Test generating commands for all steps in a job."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
         generator = CommandGenerator()
         platform = PLATFORMS["claude"]
 
-        skill_paths = generator.generate_all_skills(job, platform, temp_dir)
+        command_paths = generator.generate_all_commands(job, platform, temp_dir)
 
-        assert len(skill_paths) == 4
-        assert all(p.exists() for p in skill_paths)
-
-        # Check filenames
-        expected_names = [
-            "skill-competitive_research.identify_competitors.md",
-            "skill-competitive_research.primary_research.md",
-            "skill-competitive_research.secondary_research.md",
-            "skill-competitive_research.comparative_report.md",
-        ]
-        actual_names = [p.name for p in skill_paths]
-        assert actual_names == expected_names
-
-    def test_generate_core_skills(self, temp_dir: Path) -> None:
-        """Test generating core DeepWork skills."""
-        generator = CommandGenerator()
-        platform = PLATFORMS["claude"]
-
-        skill_paths = generator.generate_core_skills(platform, temp_dir)
-
-        assert len(skill_paths) == 2
-        assert all(p.exists() for p in skill_paths)
+        assert len(command_paths) == 4
+        assert all(p.exists() for p in command_paths)
 
         # Check filenames
         expected_names = [
-            "skill-deepwork.define.md",
-            "skill-deepwork.refine.md",
+            "competitive_research.identify_competitors.md",
+            "competitive_research.primary_research.md",
+            "competitive_research.secondary_research.md",
+            "competitive_research.comparative_report.md",
         ]
-        actual_names = [p.name for p in skill_paths]
+        actual_names = [p.name for p in command_paths]
         assert actual_names == expected_names
 
-        # Check content
-        define_content = skill_paths[0].read_text()
-        assert "Name: deepwork.define" in define_content
-        assert "Interactive job definition wizard" in define_content
-
-        refine_content = skill_paths[1].read_text()
-        assert "Name: deepwork.refine" in refine_content
-        assert "Refine and update existing job definitions" in refine_content
-
-    def test_generate_step_skill_different_platform(
+    def test_generate_step_command_different_platform(
         self, fixtures_dir: Path, temp_dir: Path
     ) -> None:
-        """Test generating skill for different platform (Gemini)."""
+        """Test generating command for different platform (Gemini)."""
         # Create .gemini templates directory by copying from claude
         import shutil
 
@@ -256,13 +230,13 @@ class TestCommandGenerator:
             generator = CommandGenerator()
             platform = PLATFORMS["gemini"]
 
-            skill_path = generator.generate_step_skill(
+            command_path = generator.generate_step_command(
                 job, job.steps[0], platform, temp_dir
             )
 
-            # Gemini uses same prefix, just different directory
-            assert skill_path.name == "skill-simple_job.single_step.md"
-            assert skill_path.exists()
+            # Gemini uses same filename format
+            assert command_path.name == "simple_job.single_step.md"
+            assert command_path.exists()
         finally:
             # Cleanup
             if gemini_templates.exists():
@@ -288,4 +262,4 @@ class TestCommandGenerator:
         platform = PLATFORMS["gemini"]
 
         with pytest.raises(GeneratorError, match="Templates for platform"):
-            generator.generate_step_skill(job, job.steps[0], platform, temp_dir)
+            generator.generate_step_command(job, job.steps[0], platform, temp_dir)

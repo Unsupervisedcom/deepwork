@@ -128,6 +128,29 @@ class CommandGenerator:
             if step_index > 0:
                 prev_step = job.steps[step_index - 1].id
 
+        # Build stop hooks context (array)
+        stop_hooks = []
+        for hook in step.stop_hooks:
+            hook_ctx = {}
+            if hook.is_prompt():
+                hook_ctx["type"] = "prompt"
+                hook_ctx["content"] = hook.prompt
+            elif hook.is_prompt_file():
+                hook_ctx["type"] = "prompt_file"
+                hook_ctx["path"] = hook.prompt_file
+                # Read the prompt file content
+                prompt_file_path = job.job_dir / hook.prompt_file
+                prompt_content = safe_read(prompt_file_path)
+                if prompt_content is None:
+                    raise GeneratorError(
+                        f"Stop hook prompt file not found: {prompt_file_path}"
+                    )
+                hook_ctx["content"] = prompt_content
+            elif hook.is_script():
+                hook_ctx["type"] = "script"
+                hook_ctx["path"] = hook.script
+            stop_hooks.append(hook_ctx)
+
         return {
             "job_name": job.name,
             "job_version": job.version,
@@ -147,6 +170,7 @@ class CommandGenerator:
             "next_step": next_step,
             "prev_step": prev_step,
             "is_standalone": is_standalone,
+            "stop_hooks": stop_hooks,
         }
 
     def generate_step_command(

@@ -158,7 +158,6 @@ DeepWork follows a **Git-native, installation-only** design:
 your-project/
 ├── .deepwork/
 │   ├── config.yml          # Platform configuration
-│   ├── registry.yml        # Installed jobs
 │   └── jobs/               # Job definitions
 │       └── job_name/
 │           ├── job.yml     # Job metadata

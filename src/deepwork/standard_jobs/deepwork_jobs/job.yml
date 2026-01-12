@@ -1,5 +1,5 @@
 name: deepwork_jobs
-version: "1.0.0"
+version: "1.2.0"
 summary: "DeepWork job management commands"
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -15,6 +15,10 @@ description: |
 changelog:
   - version: "1.0.0"
     changes: "Initial job creation"
+  - version: "1.1.0"
+    changes: "Added stop hooks for quality validation loops on all steps"
+  - version: "1.2.0"
+    changes: "Updated to support array of stop hooks"
 
 steps:
   - id: define
@@ -27,6 +31,20 @@ steps:
     outputs:
       - job.yml
     dependencies: []
+    stop_hooks:
+      - prompt: |
+          Verify the job.yml output meets ALL quality criteria before completing:
+
+          1. **User Understanding**: Did you fully understand the user's workflow through interactive Q&A?
+          2. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
+          3. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
+          4. **Concise Summary**: Is the summary under 200 characters and descriptive?
+          5. **Rich Description**: Does the description provide enough context for future refinement?
+          6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
+          7. **File Created**: Has the job.yml file been created in `deepwork/[job_name]/job.yml`?
+
+          If ANY criterion is not met, continue working to address it.
+          If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
 
   - id: implement
     name: "Implement Job Steps"
@@ -39,6 +57,21 @@ steps:
       - implementation_summary.md
     dependencies:
       - define
+    stop_hooks:
+      - prompt: |
+          Verify the implementation meets ALL quality criteria before completing:
+
+          1. **Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?
+          2. **Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?
+          3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
+          4. **Output Examples**: Does each instruction file show what good output looks like?
+          5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
+          6. **Sync Complete**: Has `deepwork sync` been run successfully?
+          7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+          8. **Summary Created**: Has `implementation_summary.md` been created?
+
+          If ANY criterion is not met, continue working to address it.
+          If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
 
   - id: refine
     name: "Refine Existing Job"
@@ -50,3 +83,18 @@ steps:
     outputs:
       - job.yml
     dependencies: []
+    stop_hooks:
+      - prompt: |
+          Verify the refinement meets ALL quality criteria before completing:
+
+          1. **Job Consistency**: Do the changes maintain overall job consistency?
+          2. **Valid Dependencies**: Are all step dependencies logically valid (no circular refs)?
+          3. **Semantic Versioning**: Was the version bumped appropriately (major/minor/patch)?
+          4. **Changelog Updated**: Is the changelog updated with a description of changes?
+          5. **User Understanding**: Does the user understand the impact of the changes?
+          6. **Breaking Changes**: Were any breaking changes clearly communicated?
+          7. **Files Updated**: Are all affected files (job.yml, step files) updated?
+          8. **Sync Complete**: Has `deepwork sync` been run to regenerate commands?
+
+          If ANY criterion is not met, continue working to address it.
+          If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
