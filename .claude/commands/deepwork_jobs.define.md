@@ -17,7 +17,7 @@ hooks:
             4. **Concise Summary**: Is the summary under 200 characters and descriptive?
             5. **Rich Description**: Does the description provide enough context for future refinement?
             6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
-            7. **File Created**: Has the job.yml file been created in `deepwork/[job_name]/job.yml`?
+            7. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 
             If ANY criterion is not met, continue working to address it.
             If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
@@ -192,9 +192,9 @@ stop_hooks:
 
 Only after you have complete understanding, create the `job.yml` file:
 
-**File Location**: `deepwork/[job_name]/job.yml`
+**File Location**: `.deepwork/jobs/[job_name]/job.yml`
 
-(Where `[job_name]` is the name of the NEW job you're creating, e.g., `deepwork/competitive_research/job.yml`)
+(Where `[job_name]` is the name of the NEW job you're creating, e.g., `.deepwork/jobs/competitive_research/job.yml`)
 
 **Format**:
 ```yaml
@@ -357,12 +357,12 @@ User: Yes, that's perfect!
 
 Claude: Great! Creating the job.yml specification now...
 
-[Creates deepwork/competitive_research/job.yml with the complete spec]
+[Creates .deepwork/jobs/competitive_research/job.yml with the complete spec]
 
 ✓ Job specification created!
 
 **File created:**
-- deepwork/competitive_research/job.yml
+- .deepwork/jobs/competitive_research/job.yml
 
 **Next step:**
 Run `/deepwork_jobs.implement` to generate the instruction files for each step based on this specification.
@@ -396,9 +396,9 @@ Before creating the job.yml, ensure:
 
 ### job.yml
 
-The complete YAML specification file (example shown in Step 4 above).
+The complete YAML specification file (example shown in Step 5 above).
 
-**Location**: `deepwork/[job_name]/job.yml`
+**Location**: `.deepwork/jobs/[job_name]/job.yml`
 
 (Where `[job_name]` is the name of the new job being created)
 
@@ -466,7 +466,7 @@ Verify the job.yml output meets ALL quality criteria before completing:
 4. **Concise Summary**: Is the summary under 200 characters and descriptive?
 5. **Rich Description**: Does the description provide enough context for future refinement?
 6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
-7. **File Created**: Has the job.yml file been created in `deepwork/[job_name]/job.yml`?
+7. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 
 If ANY criterion is not met, continue working to address it.
 If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.

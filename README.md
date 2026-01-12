@@ -42,12 +42,12 @@ This will:
 ### 1. Define a Job
 Jobs are multi-step workflows where each Step has clear input and output artifacts, making them easier to manage effectively.
 
-The process of defining a job itself is actually a DeepWork job. You can see it at `.deepwork/jobs/deepwork.define/`.
+The process of defining a job itself is actually a DeepWork job. You can see it at `.deepwork/jobs/deepwork_jobs/`.
 
 To start the process, just run the first Step in the job:
 
 ```
-/deepwork.define
+/deepwork_jobs.define
 ```
 
 Follow the interactive prompts to:
@@ -76,7 +76,7 @@ The AI will:
 Use the refine skill to update existing jobs:
 
 ```
-/deepwork.refine
+/deepwork_jobs.refine
 ```
 
 ## Example: Competitive Research Workflow

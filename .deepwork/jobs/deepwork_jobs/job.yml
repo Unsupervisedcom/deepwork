@@ -43,7 +43,7 @@ steps:
           4. **Concise Summary**: Is the summary under 200 characters and descriptive?
           5. **Rich Description**: Does the description provide enough context for future refinement?
           6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
-          7. **File Created**: Has the job.yml file been created in `deepwork/[job_name]/job.yml`?
+          7. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 
           If ANY criterion is not met, continue working to address it.
           If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
