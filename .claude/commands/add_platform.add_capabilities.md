@@ -1,0 +1,290 @@
+---
+description: Update job schema and adapters with any new hook events the platform supports
+hooks:
+  Stop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            You must evaluate whether Claude has met all the below quality criteria for the request.
+
+            ## Quality Criteria
+
+            Verify the capability additions meet ALL criteria:
+            1. Any new hooks from the platform (for slash commands only) are added to src/deepwork/schemas/job_schema.py
+            2. All existing adapters in src/deepwork/adapters.py are updated with the new hook fields
+               (set to None/null if the platform doesn't support that hook)
+            3. Only hooks available on slash command definitions are added (not general CLI hooks)
+            4. job_schema.py remains valid Python with no syntax errors
+            5. adapters.py remains consistent - all adapters have the same hook fields
+            6. If no new hooks are needed, document why in a comment
+
+            If ALL criteria are met, include `<promise>QUALITY_COMPLETE</promise>`.
+
+
+            ## Instructions
+
+            Review the conversation and determine if ALL quality criteria above have been satisfied.
+            Look for evidence that each criterion has been addressed.
+
+            If the agent has included `<promise>QUALITY_COMPLETE</promise>` in their response AND
+            all criteria appear to be met, respond with: {"ok": true}
+
+            If criteria are NOT met AND the promise tag is missing, respond with:
+            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
+---
+
+# add_platform.add_capabilities
+
+**Step 2 of 4** in the **add_platform** workflow
+
+**Summary**: Add a new AI platform to DeepWork with adapter, templates, and tests
+
+## Job Overview
+
+A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
+
+This job guides you through four phases:
+1. **Research**: Capture the platform's CLI configuration and hooks system documentation
+2. **Add Capabilities**: Update the job schema and adapters with any new hook events
+3. **Implement**: Create the platform adapter, templates, tests (100% coverage), and README updates
+4. **Verify**: Ensure installation works correctly and produces expected files
+
+The workflow ensures consistency across all supported platforms and maintains
+comprehensive test coverage for new functionality.
+
+**Important Notes**:
+- Only hooks available on slash command definitions should be captured
+- Each existing adapter must be updated when new hooks are added (typically with null values)
+- Tests must achieve 100% coverage for any new functionality
+- Installation verification confirms the platform integrates correctly with existing jobs
+
+
+## Prerequisites
+
+This step requires completion of the following step(s):
+- `/add_platform.research`
+
+Please ensure these steps have been completed before proceeding.
+
+## Instructions
+
+# Add Hook Capabilities
+
+## Objective
+
+Update the DeepWork job schema and platform adapters to support any new hook events that the new platform provides for slash command definitions.
+
+## Task
+
+Analyze the hooks documentation from the research step and update the codebase to support any new hook capabilities, ensuring consistency across all existing adapters.
+
+### Prerequisites
+
+Read the hooks documentation created in the previous step:
+- `doc/platforms/<platform_name>/hooks_system.md`
+
+Also review the existing schema and adapters:
+- `src/deepwork/schemas/job_schema.py`
+- `src/deepwork/adapters.py`
+
+### Process
+
+1. **Analyze the new platform's hooks**
+   - Read `doc/platforms/<platform_name>/hooks_system.md`
+   - List all hooks available for slash command definitions
+   - Compare with hooks already in `job_schema.py`
+   - Identify any NEW hooks not currently supported
+
+2. **Determine if schema changes are needed**
+   - If the platform has hooks that DeepWork doesn't currently support, add them
+   - If all hooks are already supported, document this finding
+   - Remember: Only add hooks that are available on slash command definitions
+
+3. **Update job_schema.py (if needed)**
+   - Add new hook fields to the step schema
+   - Follow existing patterns for hook definitions
+   - Add appropriate type hints and documentation
+   - Example addition:
+     ```python
+     # New hook from <platform>
+     new_hook_name: Optional[List[HookConfig]] = None
+     ```
+
+4. **Update all existing adapters**
+   - Open `src/deepwork/adapters.py`
+   - For EACH existing adapter class:
+     - Add the new hook field (set to `None` if not supported)
+     - This maintains consistency across all adapters
+   - Document why each adapter does or doesn't support the hook
+
+5. **Validate the changes**
+   - Run Python syntax check: `python -m py_compile src/deepwork/schemas/job_schema.py`
+   - Run Python syntax check: `python -m py_compile src/deepwork/adapters.py`
+   - Ensure no import errors
+
+6. **Document the decision**
+   - If no new hooks were added, add a comment explaining why
+   - If new hooks were added, ensure they're documented in the schema
+
+## Output Format
+
+### job_schema.py
+
+Location: `src/deepwork/schemas/job_schema.py`
+
+If new hooks are added:
+```python
+@dataclass
+class StepDefinition:
+    # ... existing fields ...
+
+    # New hook from <platform_name> - [description of what it does]
+    new_hook_name: Optional[List[HookConfig]] = None
+```
+
+### adapters.py
+
+Location: `src/deepwork/adapters.py`
+
+For each existing adapter, add the new hook field:
+```python
+class ExistingPlatformAdapter(PlatformAdapter):
+    # ... existing code ...
+
+    def get_hook_support(self) -> dict:
+        return {
+            # ... existing hooks ...
+            "new_hook_name": None,  # Not supported by this platform
+        }
+```
+
+Or if no changes are needed, add a documentation comment:
+```python
+# NOTE: <platform_name> hooks reviewed on YYYY-MM-DD
+# No new hooks to add - all <platform_name> command hooks are already
+# supported by the existing schema (stop_hooks covers their validation pattern)
+```
+
+## Quality Criteria
+
+- Hooks documentation from research step has been reviewed
+- If new hooks exist:
+  - Added to `src/deepwork/schemas/job_schema.py` with proper typing
+  - ALL existing adapters updated in `src/deepwork/adapters.py`
+  - Each adapter indicates support level (implemented, None, or partial)
+- If no new hooks needed:
+  - Decision documented with a comment explaining the analysis
+- Only hooks available on slash command definitions are considered
+- `job_schema.py` has no syntax errors (verified with py_compile)
+- `adapters.py` has no syntax errors (verified with py_compile)
+- All adapters have consistent hook fields (same fields across all adapters)
+- When all criteria are met, include `<promise>QUALITY_COMPLETE</promise>` in your response
+
+## Context
+
+DeepWork supports multiple AI platforms, and each platform may have different capabilities for hooks within command definitions. The schema defines what hooks CAN exist, while adapters define what each platform actually SUPPORTS.
+
+This separation allows:
+- Job definitions to use any hook (the schema is the superset)
+- Platform-specific generation to only use supported hooks (adapters filter)
+- Future platforms to add new hooks without breaking existing ones
+
+Maintaining consistency is critical - all adapters must have the same hook fields, even if they don't support them (use `None` for unsupported).
+
+## Common Hook Types
+
+For reference, here are common hook patterns across platforms:
+
+| Hook Type | Purpose | Example Platforms |
+|-----------|---------|-------------------|
+| `stop_hooks` | Quality validation loops | Claude Code |
+| `pre_hooks` | Run before command | Various |
+| `post_hooks` | Run after command | Various |
+| `validation_hooks` | Validate inputs/outputs | Various |
+
+When you find a new hook type, consider whether it maps to an existing pattern or is genuinely new functionality.
+
+
+## Inputs
+
+
+### Required Files
+
+This step requires the following files from previous steps:
+- `hooks_system.md` (from step `research`)
+
+Make sure to read and use these files as context for this step.
+
+## Work Branch Management
+
+All work for this job should be done on a dedicated work branch:
+
+1. **Check current branch**:
+   - If already on a work branch for this job (format: `deepwork/add_platform-[instance]-[date]`), continue using it
+   - If on main/master, create a new work branch
+
+2. **Create work branch** (if needed):
+   ```bash
+   git checkout -b deepwork/add_platform-[instance]-$(date +%Y%m%d)
+   ```
+   Replace `[instance]` with a descriptive identifier (e.g., `acme`, `q1-launch`, etc.)
+
+## Output Requirements
+
+Create the following output(s):
+- `job_schema.py`- `adapters.py`
+Ensure all outputs are:
+- Well-formatted and complete
+- Ready for review or use by subsequent steps
+
+## Quality Validation Loop
+
+This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
+
+### Quality Criteria
+Verify the capability additions meet ALL criteria:
+1. Any new hooks from the platform (for slash commands only) are added to src/deepwork/schemas/job_schema.py
+2. All existing adapters in src/deepwork/adapters.py are updated with the new hook fields
+   (set to None/null if the platform doesn't support that hook)
+3. Only hooks available on slash command definitions are added (not general CLI hooks)
+4. job_schema.py remains valid Python with no syntax errors
+5. adapters.py remains consistent - all adapters have the same hook fields
+6. If no new hooks are needed, document why in a comment
+
+If ALL criteria are met, include `<promise>QUALITY_COMPLETE</promise>`.
+
+
+### Completion Promise
+
+To signal that all quality criteria have been met, include this tag in your final response:
+
+```
+<promise>QUALITY_COMPLETE</promise>
+```
+
+**Important**: Only include this promise tag when you have verified that ALL quality criteria above are satisfied. The validation loop will continue until this promise is detected.
+
+## Completion
+
+After completing this step:
+
+1. **Verify outputs**: Confirm all required files have been created
+
+2. **Inform the user**:
+   - Step 2 of 4 is complete
+   - Outputs created: job_schema.py, adapters.py
+   - Ready to proceed to next step: `/add_platform.implement`
+
+## Next Step
+
+To continue the workflow, run:
+```
+/add_platform.implement
+```
+
+---
+
+## Context Files
+
+- Job definition: `.deepwork/jobs/add_platform/job.yml`
+- Step instructions: `.deepwork/jobs/add_platform/steps/add_capabilities.md`

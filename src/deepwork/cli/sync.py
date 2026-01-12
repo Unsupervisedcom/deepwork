@@ -91,6 +91,7 @@ def sync_commands(project_path: Path) -> None:
 
     # Parse all jobs
     jobs = []
+    failed_jobs: list[tuple[str, str]] = []
     for job_dir in job_dirs:
         try:
             job_def = parse_job_definition(job_dir)
@@ -98,6 +99,15 @@ def sync_commands(project_path: Path) -> None:
             console.print(f"  [green]✓[/green] Loaded {job_def.name} v{job_def.version}")
         except Exception as e:
             console.print(f"  [red]✗[/red] Failed to load {job_dir.name}: {e}")
+            failed_jobs.append((job_dir.name, str(e)))
+
+    # Fail early if any jobs failed to parse
+    if failed_jobs:
+        console.print()
+        console.print("[bold red]Sync aborted due to job parsing errors:[/bold red]")
+        for job_name, error in failed_jobs:
+            console.print(f"  • {job_name}: {error}")
+        raise SyncError(f"Failed to parse {len(failed_jobs)} job(s)")
 
     # Collect hooks from all jobs
     job_hooks_list = collect_job_hooks(jobs_dir)

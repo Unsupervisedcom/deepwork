@@ -34,7 +34,7 @@ mkdir -p .deepwork/jobs/[job_name]/steps
 ```
 
 Files to create:
-- `.deepwork/jobs/[job_name]/job.yml` - Copy from work directory
+- `.deepwork/jobs/[job_name]/job.yml`
 - `.deepwork/jobs/[job_name]/steps/[step_id].md` - One for each step
 
 ### Step 3: Generate Step Instruction Files
@@ -219,7 +219,7 @@ your strategy documentation.
 
 I'd suggest a policy like:
 - **Name**: "Update strategy when competitor analysis changes"
-- **Trigger**: `deepwork/competitive_research-*/report.md`
+- **Trigger**: `**/positioning_report.md`
 - **Action**: Prompt to review and update `docs/strategy.md`
 
 Would you like me to create this policy? I can run `/deepwork_policy.define` to set it up.

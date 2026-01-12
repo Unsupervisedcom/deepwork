@@ -4,13 +4,21 @@
 
 DeepWork is a tool for defining and executing multi-step workflows with AI coding assistants like Claude Code, Google Gemini, and GitHub Copilot. It enables you to decompose complex tasks into manageable steps, with clear inputs, outputs, and dependencies.
 
+## Supported Platforms
+
+| Platform | Status | Command Format | Hooks Support |
+|----------|--------|----------------|---------------|
+| **Claude Code** | Full Support | Markdown | Yes (stop_hooks, pre/post) |
+| **Gemini CLI** | Full Support | TOML | No (global only) |
+| GitHub Copilot | Planned | - | - |
+
 ## Installation
 
 ### Prerequisites
 
 - Python 3.11 or higher
 - Git repository
-- One of: Claude Code, Google Gemini, or GitHub Copilot
+- One of: Claude Code or Gemini CLI
 
 ### Install DeepWork
 
@@ -24,10 +32,25 @@ pip install -e .
 
 ### Install in Your Project
 
+#### Claude Code
+
 ```bash
 cd your-project/
-deepwork install --platform claude  # or gemini, copilot
+deepwork install --platform claude
 ```
+
+#### Gemini CLI
+
+```bash
+cd your-project/
+deepwork install --platform gemini
+```
+
+**Gemini CLI Notes**:
+- Commands are generated as TOML files in `.gemini/commands/`
+- Commands use colon (`:`) namespacing: `/job_name:step_id`
+- Gemini CLI does not support command-level hooks; quality validation is embedded in prompts
+- See [Gemini CLI documentation](https://geminicli.com/docs/) for more details
 
 This will:
 - Create `.deepwork/` directory structure
@@ -155,14 +178,17 @@ your-project/
 │       └── job_name/
 │           ├── job.yml     # Job metadata
 │           └── steps/      # Step instructions
-├── .claude/                # Claude Code skills (auto-generated)
-│   ├── skill-deepwork.define.md
-│   ├── skill-deepwork.refine.md
-│   └── skill-job_name.step_name.md
-└── work/                   # Work products (Git branches)
-    └── job-instance-date/
-        └── outputs...
+├── .claude/                # Claude Code commands (auto-generated)
+│   └── commands/
+│       ├── deepwork_jobs.define.md
+│       └── job_name.step_name.md
+└── .gemini/                # Gemini CLI commands (auto-generated)
+    └── commands/
+        └── job_name/
+            └── step_name.toml
 ```
+
+**Note**: Work outputs are created on dedicated Git branches (e.g., `deepwork/job_name-instance-date`), not in a separate directory.
 
 ## Development
 
@@ -220,7 +246,8 @@ deepwork/
 │   │   ├── detector.py   # Platform detection
 │   │   └── generator.py  # Skill file generation
 │   ├── templates/        # Jinja2 templates
-│   │   └── claude/       # Claude Code templates
+│   │   ├── claude/       # Claude Code templates
+│   │   └── gemini/       # Gemini CLI templates
 │   ├── schemas/          # JSON schemas
 │   └── utils/            # Utilities (fs, yaml, git, validation)
 ├── tests/

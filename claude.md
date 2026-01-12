@@ -120,7 +120,7 @@ Each step:
 - Suggests next step
 
 ### 4. Work Completion
-- Review outputs in `deepwork/[branch-name]/`
+- Review outputs on the work branch
 - Commit artifacts as you progress
 - Create PR for team review
 - Merge to preserve work products for future context
@@ -136,20 +136,19 @@ my-project/
 │       ├── deepwork_jobs.implement.md
 │       ├── deepwork_jobs.refine.md
 │       └── [job].[step].md
-├── .deepwork/                  # DeepWork configuration
-│   ├── config.yml              # version, platforms[]
-│   └── jobs/
-│       ├── deepwork_jobs/      # Built-in job
-│       │   ├── job.yml
-│       │   └── steps/
-│       └── [job-name]/
-│           ├── job.yml
-│           └── steps/
-│               └── [step].md
-└── deepwork/                   # Work products (on branches)
-    └── [job-name]-[instance]-[date]/
-        └── [outputs].md
+└── .deepwork/                  # DeepWork configuration
+    ├── config.yml              # version, platforms[]
+    └── jobs/
+        ├── deepwork_jobs/      # Built-in job
+        │   ├── job.yml
+        │   └── steps/
+        └── [job-name]/
+            ├── job.yml
+            └── steps/
+                └── [step].md
 ```
+
+**Note**: Work outputs are created on dedicated Git branches (e.g., `deepwork/job_name-instance-date`), not in a separate directory.
 
 
 ## Key Files to Reference

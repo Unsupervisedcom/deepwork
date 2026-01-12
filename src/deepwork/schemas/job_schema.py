@@ -161,7 +161,6 @@ JOB_SCHEMA: dict[str, Any] = {
                     },
                     "outputs": {
                         "type": "array",
-                        "minItems": 1,
                         "description": "List of output files/directories",
                         "items": {
                             "type": "string",

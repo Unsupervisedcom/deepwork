@@ -300,14 +300,11 @@ my-project/                     # User's project (target)
 │       └── ad_campaign/
 │           └── ...
 ├── .deepwork.policy.yml        # Policy definitions (project root)
-├── deepwork/                   # Work products (Git branches)
-│   ├── competitive_research-acme-2026-01-11/
-│   │   └── ...
-│   └── ad_campaign-q1-2026-01-11/
-│       └── ...
 ├── (rest of user's project files)
 └── README.md
 ```
+
+**Note**: Work outputs are created directly in the project on dedicated Git branches (e.g., `deepwork/competitive_research-acme-2026-01-11`). The branch naming convention is `deepwork/[job_name]-[instance]-[date]`.
 
 ## Configuration Files
 
@@ -579,7 +576,7 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
          Product category: Project Management
 
    Claude: [Performs research using web tools, analysis, etc.]
-          ✓ Created deepwork/competitive_research-acme-2026-01-11/competitors.md
+          ✓ Created competitors.md
 
           Found 8 direct competitors and 4 indirect competitors.
           Review the file and run /competitive_research.primary_research when ready.
@@ -640,8 +637,10 @@ Since there's no DeepWork runtime process, context is passed through:
 
 ### 1. Filesystem (Primary Mechanism)
 
+On a work branch like `deepwork/competitive_research-acme-2026-01-11`, outputs are created in the project:
+
 ```
-deepwork/competitive_research-acme-2026-01-11/
+(project root on work branch)
 ├── competitors.md              ← Step 1 output
 ├── primary_research.md          ← Step 2 output
 ├── competitor_profiles/         ← Step 2 output
@@ -656,7 +655,7 @@ deepwork/competitive_research-acme-2026-01-11/
 Each command instructs Claude to:
 - Read specific input files from previous steps
 - Write specific output files for this step
-- All within the same work directory
+- All on the same work branch
 
 ### 2. Command Instructions
 
@@ -676,7 +675,7 @@ Conduct web research on secondary sources for each competitor identified in comp
 
 When working on similar jobs:
 - User: "Do competitive research for Acme Corp, similar to our Widget Corp analysis"
-- Claude can read old existing branches like`deepwork/competitive_research-widget-corp-2024-01-05/` from git history
+- Claude can read old existing branches like `deepwork/competitive_research-widget-corp-2024-01-05` from git history
 - Uses it as a template for style, depth, format
 
 ### 4. No Environment Variables Needed
@@ -930,200 +929,19 @@ tests/
 ### Test Strategy
 
 #### 1. Unit Tests
-
-**Job Parser** (`test_job_parser.py`):
-```python
-def test_parse_valid_job_definition():
-    """Verify parser correctly loads valid job.yml"""
-
-def test_parse_rejects_invalid_schema():
-    """Ensure invalid job definitions raise ValidationError"""
-
-def test_parse_resolves_dependencies():
-    """Check dependency graph construction"""
-
-def test_parse_handles_optional_steps():
-    """Verify optional steps are marked correctly"""
-```
-
-**Registry** (`test_registry.py`):
-```python
-def test_add_job_to_registry():
-    """Test job registration"""
-
-def test_detect_version_conflicts():
-    """Ensure version conflicts are caught"""
-
-def test_list_installed_jobs():
-    """Verify registry query operations"""
-
-def test_remove_job_from_registry():
-    """Test job uninstallation"""
-```
-
-**Runtime Engine** (`test_runtime_engine.py`):
-```python
-def test_create_work_branch():
-    """Verify branch creation with correct naming"""
-
-def test_step_initialization():
-    """Check step setup and context preparation"""
-
-def test_validate_step_outputs():
-    """Test output validation against schemas"""
-
-def test_handle_missing_dependencies():
-    """Ensure proper error when dependencies not met"""
-```
-
-**Template Renderer** (`test_template_renderer.py`):
-```python
-def test_render_basic_template():
-    """Test simple variable substitution"""
-
-def test_render_with_loops():
-    """Verify loop constructs work correctly"""
-
-def test_render_with_conditionals():
-    """Check conditional rendering"""
-
-def test_escape_special_characters():
-    """Ensure proper escaping of Markdown"""
-```
+Use unit tests for small pieces of functionality that don't depend on external systems.
 
 #### 2. Integration Tests
-
-**Job Import** (`test_job_import.py`):
-```python
-def test_import_from_github():
-    """Test importing job from GitHub repository"""
-    # Mock git clone operation
-    # Verify job files copied correctly
-    # Check registry updated
-
-def test_import_local_job():
-    """Test importing from local directory"""
-
-def test_import_with_dependencies():
-    """Verify transitive job dependencies handled"""
-```
-
-**Workflow Execution** (`test_workflow_execution.py`):
-```python
-def test_single_step_execution():
-    """Run a single step end-to-end"""
-    # Create mock AI responses
-    # Execute step
-    # Verify outputs created
-
-def test_multi_step_workflow():
-    """Execute complete job workflow"""
-    # Mock all steps
-    # Verify context passes between steps
-    # Check final outputs
-
-def test_resume_after_interruption():
-    """Test workflow can resume mid-execution"""
-```
-
-**Git Integration** (`test_git_integration.py`):
-```python
-def test_branch_management():
-    """Verify branch creation, switching, cleanup"""
-
-def test_commit_integration():
-    """Test auto-commit functionality"""
-
-def test_merge_detection():
-    """Check detection of merged work"""
-```
+Use integration tests for larger pieces of functionality that depend on external systems.
 
 #### 3. End-to-End Tests
-
-**Full Workflow** (`test_full_workflow.py`):
-```python
-@pytest.mark.e2e
-def test_complete_competitive_research_job():
-    """
-    Full simulation of competitive research job:
-    1. Install DeepWork
-    2. Import job definition
-    3. Start job
-    4. Execute all steps with mocked AI responses
-    5. Validate final outputs
-    6. Verify Git state
-    """
-    # Setup test repository
-    # Run: deepwork install --claude
-    # Run: deepwork import github.com/deepwork-jobs/competitive-research
-    # Run: /competitive_research.identify_competitors (mocked)
-    # Validate outputs
-    # Run: /competitive_research.primary_research (mocked)
-    # Continue through all steps
-    # Assert final state correct
-```
-
-**Multi-Platform** (`test_multi_platform.py`):
-```python
-@pytest.mark.e2e
-def test_claude_and_gemini_compatibility():
-    """Verify same job works on different platforms"""
-    # Install for Claude
-    # Execute job
-    # Capture outputs
-    # Reinstall for Gemini
-    # Execute same job
-    # Compare outputs (should be structurally similar)
-```
+Use end-to-end tests to verify the entire workflow from start to finish.
 
 #### 4. Mock AI Agents
+Use mock AI agents to simulate AI agent responses.
 
-Since testing requires AI agent interactions, create mock agents:
-
-```python
-# tests/mocks/claude_mock.py
-class MockClaudeAgent:
-    """Simulates Claude Code agent behavior"""
-
-    def __init__(self, response_fixtures_dir):
-        self.fixtures = load_fixtures(response_fixtures_dir)
-
-    def execute_skill(self, skill_name, context):
-        """
-        Simulates skill execution by returning pre-recorded responses
-        based on the skill name and context
-        """
-        fixture_key = self._get_fixture_key(skill_name, context)
-        return self.fixtures[fixture_key]
-
-    def _get_fixture_key(self, skill_name, context):
-        # Match to appropriate fixture based on patterns
-        # e.g., "competitive_research.identify_competitors" ->
-        #       "competitive_research_identify_competitors_001.md"
-        ...
-```
-
-Fixtures stored as markdown files with expected outputs:
-```
-tests/fixtures/mock_responses/
-├── competitive_research_identify_competitors_001.md
-├── competitive_research_primary_research_001.md
-└── ...
-```
-
-#### 5. Validation Testing
-
-**Schema Validation** (`test_validation.py`):
-```python
-def test_json_schema_validation():
-    """Test validating outputs against JSON schemas"""
-
-def test_completeness_validation():
-    """Verify required sections are present"""
-
-def test_custom_validation_scripts():
-    """Run custom validation scripts"""
-```
+#### 5. Fixtures
+Use fixtures to provide test data.
 
 #### 6. Performance Testing
 
@@ -1148,63 +966,7 @@ def full_simple_cycle():
 
 ### CI/CD Integration
 
-**GitHub Actions Workflow** (`.github/workflows/test.yml`):
-```yaml
-name: DeepWork Tests
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.11", "3.12"]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: uv sync
-
-      - name: Run unit tests
-        run: uv run pytest tests/unit -v --cov=deepwork --cov-report=xml
-
-      - name: Run integration tests
-        run: uv run pytest tests/integration -v
-
-      - name: Run E2E tests
-        run: uv run pytest tests/e2e -v --timeout=300
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: uv tool install ruff
-      - run: ruff check deepwork/
-      - run: ruff format --check deepwork/
-
-  type-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: uv tool install mypy
-      - run: mypy deepwork/
-```
+Github Actions are used for all CI/CD tasks.
 
 ### Test Coverage Goals
 
@@ -1333,36 +1095,6 @@ Claude: ✓ Created policy "API documentation update" in .deepwork.policy.yml
 
 ---
 
-## Implementation Status
-
-**Completed**: Phases 1 & 2 are complete. The core runtime, CLI, installation, and command generation systems are fully functional.
-
-### Current Focus: Phase 5 - Job Ecosystem
-- ✅ Standard job `deepwork_jobs` with define, implement, refine commands
-- 📋 Reference job library (competitive research, ad campaigns, etc.)
-- 📋 Job sharing via Git repositories
-
-### Future Work
-
-**Phase 3: Runtime Engine** (Optional enhancements)
-- Step execution tracking and monitoring
-- Output validation system
-- Advanced state management
-
-**Phase 4: Multi-Platform Support**
-- Gemini command generation
-- GitHub Copilot integration
-- Multi-platform testing
-
-**Phase 6: Polish and Release**
-- Performance optimization
-- Enhanced error handling
-- Comprehensive user documentation
-- Tutorial content
-- Beta and public release
-
----
-
 ## Technical Decisions
 
 ### Language: Python 3.11+
@@ -1389,25 +1121,6 @@ Claude: ✓ Created policy "API documentation update" in .deepwork.policy.yml
 ### Testing: pytest + pytest-mock
 - **Rationale**: De facto standard, excellent plugin ecosystem
 - **Alternatives**: unittest (verbose), nose (unmaintained)
-
----
-
-## Open Questions
-
-1. **Job Versioning**: How do we handle breaking changes in job definitions?
-   - Proposal: Semantic versioning + migration scripts
-
-2. **Concurrent Jobs**: Should users be able to run multiple jobs simultaneously?
-   - Proposal: Yes, using separate Git branches
-
-3. **Job Composition**: Can jobs include other jobs as steps?
-   - Proposal: Phase 2 feature - support nested jobs
-
-4. **Private Jobs**: How do we support proprietary job definitions?
-   - Proposal: Support private Git repos + local job directories
-
-5. **AI Agent Abstraction**: Should we abstract AI platforms behind a common interface?
-   - Proposal: No - embrace platform-specific strengths via custom templates
 
 ---
 

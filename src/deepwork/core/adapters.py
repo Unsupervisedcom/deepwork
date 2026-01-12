@@ -230,6 +230,22 @@ def _hook_already_present(hooks: list[dict[str, Any]], script_path: str) -> bool
     return False
 
 
+# =============================================================================
+# Platform Adapters
+# =============================================================================
+#
+# Each adapter must define hook_name_mapping to indicate which hooks it supports.
+# Use an empty dict {} for platforms that don't support command-level hooks.
+#
+# Hook support reviewed:
+# - Claude Code: Full support (Stop, PreToolUse, UserPromptSubmit) - 2025-01
+# - Gemini CLI: No command-level hooks (reviewed 2026-01-12)
+#   Gemini's hooks are global/project-level in settings.json, not per-command.
+#   TOML command files only support 'prompt' and 'description' fields.
+#   See: doc/platforms/gemini/hooks_system.md
+# =============================================================================
+
+
 class ClaudeAdapter(AgentAdapter):
     """Adapter for Claude Code."""
 
@@ -297,3 +313,61 @@ class ClaudeAdapter(AgentAdapter):
         # Count total hooks
         total = sum(len(hooks_list) for hooks_list in hooks.values())
         return total
+
+
+class GeminiAdapter(AgentAdapter):
+    """Adapter for Gemini CLI.
+
+    Gemini CLI uses TOML format for custom commands stored in .gemini/commands/.
+    Commands use colon (:) for namespacing instead of dot (.).
+
+    Note: Gemini CLI does NOT support command-level hooks. Hooks are configured
+    globally in settings.json, not per-command. Therefore, hook_name_mapping
+    is empty and sync_hooks returns 0.
+
+    See: doc/platforms/gemini/hooks_system.md
+    """
+
+    name = "gemini"
+    display_name = "Gemini CLI"
+    config_dir = ".gemini"
+    command_template = "command-job-step.toml.jinja"
+
+    # Gemini CLI does NOT support command-level hooks
+    # Hooks are global/project-level in settings.json, not per-command
+    hook_name_mapping: ClassVar[dict[CommandLifecycleHook, str]] = {}
+
+    def get_command_filename(self, job_name: str, step_id: str) -> str:
+        """
+        Get the filename for a Gemini command.
+
+        Gemini uses TOML files and colon namespacing via subdirectories.
+        For job "my_job" and step "step_one", creates: my_job/step_one.toml
+
+        Args:
+            job_name: Name of the job
+            step_id: ID of the step
+
+        Returns:
+            Command filename path (e.g., "my_job/step_one.toml")
+        """
+        return f"{job_name}/{step_id}.toml"
+
+    def sync_hooks(self, project_path: Path, hooks: dict[str, list[dict[str, Any]]]) -> int:
+        """
+        Sync hooks to Gemini CLI settings.
+
+        Gemini CLI does not support command-level hooks. All hooks are
+        configured globally in settings.json. This method is a no-op
+        that always returns 0.
+
+        Args:
+            project_path: Path to project root
+            hooks: Dict mapping lifecycle events to hook configurations (ignored)
+
+        Returns:
+            0 (Gemini does not support command-level hooks)
+        """
+        # Gemini CLI does not support command-level hooks
+        # Hooks are configured globally in settings.json, not per-command
+        return 0
