@@ -4,21 +4,6 @@
 
 DeepWork is a tool for defining and executing multi-step workflows with AI coding assistants like Claude Code, Google Gemini, and GitHub Copilot. It enables you to decompose complex tasks into manageable steps, with clear inputs, outputs, and dependencies.
 
-## Status: Phase 1 MVP Complete ✅
-
-**Version**: 0.1.0
-**Test Coverage**: 166 tests passing
-
-### What's Implemented
-
-- ✅ Job definition parsing and validation
-- ✅ Job registry for tracking installed workflows
-- ✅ Multi-platform support (Claude Code, Gemini, Copilot)
-- ✅ Jinja2-based skill file generation
-- ✅ Git integration for work branch management
-- ✅ CLI with `install` command
-- ✅ Core skills: `deepwork.define` and `deepwork.refine`
-
 ## Installation
 
 ### Prerequisites
@@ -46,27 +31,35 @@ deepwork install --platform claude  # or gemini, copilot
 
 This will:
 - Create `.deepwork/` directory structure
-- Initialize job registry
-- Generate core DeepWork skills
+- Generate core DeepWork jobs
+- Install DeepWork jobs for your AI assistant
+- Configure hooks for your AI assistant to enable policies
 
 ## Quick Start
 
-### 1. Define a Workflow
 
-Use Claude Code (or your AI assistant) to define a new job:
+
+### 1. Define a Job
+Jobs are multi-step workflows where each Step has clear input and output artifacts, making them easier to manage effectively.
+
+The process of defining a job itself is actually a DeepWork job. You can see it at `.deepwork/jobs/deepwork.define/`.
+
+To start the process, just run the first Step in the job:
 
 ```
 /deepwork.define
 ```
 
 Follow the interactive prompts to:
-- Name your workflow
+- Name your job
 - Define steps with inputs/outputs
 - Specify dependencies between steps
 
+It will also prompt you to go on the the next Step in the job.
+
 ### 2. Execute Steps
 
-Run individual steps of your workflow:
+Run individual steps of your job:
 
 ```
 /your_job_name.step_1
@@ -215,9 +208,6 @@ ruff format src/
 ## Documentation
 
 - **[Architecture](doc/architecture.md)**: Complete design specification
-- **[Template Review](doc/TEMPLATE_REVIEW.md)**: Skill template documentation
-- **[Status](STATUS.md)**: Implementation progress
-- **[Next Steps](NEXT_STEPS.md)**: Future development roadmap
 
 ## Project Structure
 
@@ -227,7 +217,6 @@ deepwork/
 │   ├── cli/              # Command-line interface
 │   ├── core/             # Core functionality
 │   │   ├── parser.py     # Job definition parsing
-│   │   ├── registry.py   # Job registry management
 │   │   ├── detector.py   # Platform detection
 │   │   └── generator.py  # Skill file generation
 │   ├── templates/        # Jinja2 templates

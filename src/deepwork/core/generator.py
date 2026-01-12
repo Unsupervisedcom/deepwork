@@ -5,8 +5,9 @@ from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
-from deepwork.core.detector import PlatformConfig
+from deepwork.core.adapters import AgentAdapter, CommandLifecycleHook
 from deepwork.core.parser import JobDefinition, Step
+from deepwork.schemas.job_schema import LIFECYCLE_HOOK_EVENTS
 from deepwork.utils.fs import safe_read, safe_write
 
 
@@ -36,20 +37,20 @@ class CommandGenerator:
         if not self.templates_dir.exists():
             raise GeneratorError(f"Templates directory not found: {self.templates_dir}")
 
-    def _get_jinja_env(self, platform: PlatformConfig) -> Environment:
+    def _get_jinja_env(self, adapter: AgentAdapter) -> Environment:
         """
-        Get Jinja2 environment for a platform.
+        Get Jinja2 environment for an adapter.
 
         Args:
-            platform: Platform configuration
+            adapter: Agent adapter
 
         Returns:
             Jinja2 Environment
         """
-        platform_templates_dir = self.templates_dir / platform.name
+        platform_templates_dir = adapter.get_template_dir(self.templates_dir)
         if not platform_templates_dir.exists():
             raise GeneratorError(
-                f"Templates for platform '{platform.name}' not found at {platform_templates_dir}"
+                f"Templates for platform '{adapter.name}' not found at {platform_templates_dir}"
             )
 
         return Environment(
@@ -82,8 +83,39 @@ class CommandGenerator:
 
         return True
 
+    def _build_hook_context(
+        self, job: JobDefinition, hook_action: Any
+    ) -> dict[str, Any]:
+        """
+        Build context for a single hook action.
+
+        Args:
+            job: Job definition
+            hook_action: HookAction instance
+
+        Returns:
+            Hook context dictionary
+        """
+        hook_ctx: dict[str, Any] = {}
+        if hook_action.is_prompt():
+            hook_ctx["type"] = "prompt"
+            hook_ctx["content"] = hook_action.prompt
+        elif hook_action.is_prompt_file():
+            hook_ctx["type"] = "prompt_file"
+            hook_ctx["path"] = hook_action.prompt_file
+            # Read the prompt file content
+            prompt_file_path = job.job_dir / hook_action.prompt_file
+            prompt_content = safe_read(prompt_file_path)
+            if prompt_content is None:
+                raise GeneratorError(f"Hook prompt file not found: {prompt_file_path}")
+            hook_ctx["content"] = prompt_content
+        elif hook_action.is_script():
+            hook_ctx["type"] = "script"
+            hook_ctx["path"] = hook_action.script
+        return hook_ctx
+
     def _build_step_context(
-        self, job: JobDefinition, step: Step, step_index: int
+        self, job: JobDefinition, step: Step, step_index: int, adapter: AgentAdapter
     ) -> dict[str, Any]:
         """
         Build template context for a step.
@@ -92,6 +124,7 @@ class CommandGenerator:
             job: Job definition
             step: Step to generate context for
             step_index: Index of step in job (0-based)
+            adapter: Agent adapter for platform-specific hook name mapping
 
         Returns:
             Template context dictionary
@@ -126,26 +159,27 @@ class CommandGenerator:
             if step_index > 0:
                 prev_step = job.steps[step_index - 1].id
 
-        # Build stop hooks context (array)
-        stop_hooks = []
-        for hook in step.stop_hooks:
-            hook_ctx = {}
-            if hook.is_prompt():
-                hook_ctx["type"] = "prompt"
-                hook_ctx["content"] = hook.prompt
-            elif hook.is_prompt_file():
-                hook_ctx["type"] = "prompt_file"
-                hook_ctx["path"] = hook.prompt_file
-                # Read the prompt file content
-                prompt_file_path = job.job_dir / hook.prompt_file
-                prompt_content = safe_read(prompt_file_path)
-                if prompt_content is None:
-                    raise GeneratorError(f"Stop hook prompt file not found: {prompt_file_path}")
-                hook_ctx["content"] = prompt_content
-            elif hook.is_script():
-                hook_ctx["type"] = "script"
-                hook_ctx["path"] = hook.script
-            stop_hooks.append(hook_ctx)
+        # Build hooks context for all lifecycle events
+        # Structure: {platform_event_name: [hook_contexts]}
+        hooks: dict[str, list[dict[str, Any]]] = {}
+        for event in LIFECYCLE_HOOK_EVENTS:
+            if event in step.hooks:
+                # Get platform-specific event name from adapter
+                hook_enum = CommandLifecycleHook(event)
+                platform_event_name = adapter.get_platform_hook_name(hook_enum)
+                if platform_event_name:
+                    hook_contexts = [
+                        self._build_hook_context(job, hook_action)
+                        for hook_action in step.hooks[event]
+                    ]
+                    if hook_contexts:
+                        hooks[platform_event_name] = hook_contexts
+
+        # Backward compatibility: stop_hooks is after_agent hooks
+        stop_hooks = hooks.get(
+            adapter.get_platform_hook_name(CommandLifecycleHook.AFTER_AGENT) or "Stop",
+            []
+        )
 
         return {
             "job_name": job.name,
@@ -166,14 +200,15 @@ class CommandGenerator:
             "next_step": next_step,
             "prev_step": prev_step,
             "is_standalone": is_standalone,
-            "stop_hooks": stop_hooks,
+            "hooks": hooks,  # New: all hooks by platform event name
+            "stop_hooks": stop_hooks,  # Backward compat: after_agent hooks only
         }
 
     def generate_step_command(
         self,
         job: JobDefinition,
         step: Step,
-        platform: PlatformConfig,
+        adapter: AgentAdapter,
         output_dir: Path | str,
     ) -> Path:
         """
@@ -182,7 +217,7 @@ class CommandGenerator:
         Args:
             job: Job definition
             step: Step to generate command for
-            platform: Platform configuration
+            adapter: Agent adapter for the target platform
             output_dir: Directory to write command file to
 
         Returns:
@@ -194,7 +229,7 @@ class CommandGenerator:
         output_dir = Path(output_dir)
 
         # Create commands subdirectory if needed
-        commands_dir = output_dir / platform.commands_dir
+        commands_dir = output_dir / adapter.commands_dir
         commands_dir.mkdir(parents=True, exist_ok=True)
 
         # Find step index
@@ -204,12 +239,12 @@ class CommandGenerator:
             raise GeneratorError(f"Step '{step.id}' not found in job '{job.name}'") from e
 
         # Build context
-        context = self._build_step_context(job, step, step_index)
+        context = self._build_step_context(job, step, step_index, adapter)
 
         # Load and render template
-        env = self._get_jinja_env(platform)
+        env = self._get_jinja_env(adapter)
         try:
-            template = env.get_template("command-job-step.md.jinja")
+            template = env.get_template(adapter.command_template)
         except TemplateNotFound as e:
             raise GeneratorError(f"Template not found: {e}") from e
 
@@ -219,7 +254,7 @@ class CommandGenerator:
             raise GeneratorError(f"Template rendering failed: {e}") from e
 
         # Write command file
-        command_filename = f"{job.name}.{step.id}.md"
+        command_filename = adapter.get_command_filename(job.name, step.id)
         command_path = commands_dir / command_filename
 
         try:
@@ -232,7 +267,7 @@ class CommandGenerator:
     def generate_all_commands(
         self,
         job: JobDefinition,
-        platform: PlatformConfig,
+        adapter: AgentAdapter,
         output_dir: Path | str,
     ) -> list[Path]:
         """
@@ -240,7 +275,7 @@ class CommandGenerator:
 
         Args:
             job: Job definition
-            platform: Platform configuration
+            adapter: Agent adapter for the target platform
             output_dir: Directory to write command files to
 
         Returns:
@@ -252,7 +287,7 @@ class CommandGenerator:
         command_paths = []
 
         for step in job.steps:
-            command_path = self.generate_step_command(job, step, platform, output_dir)
+            command_path = self.generate_step_command(job, step, adapter, output_dir)
             command_paths.append(command_path)
 
         return command_paths

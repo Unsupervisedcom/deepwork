@@ -1,7 +1,8 @@
 """Platform detection for AI coding assistants."""
 
-from dataclasses import dataclass
 from pathlib import Path
+
+from deepwork.core.adapters import AdapterError, AgentAdapter
 
 
 class DetectorError(Exception):
@@ -10,41 +11,8 @@ class DetectorError(Exception):
     pass
 
 
-@dataclass
-class PlatformConfig:
-    """Configuration for an AI platform."""
-
-    name: str  # "claude", "gemini", "copilot"
-    display_name: str  # "Claude Code", "Google Gemini", "GitHub Copilot"
-    config_dir: str  # ".claude", ".gemini", ".github"
-    commands_dir: str  # "commands", "commands", "commands"
-
-
-# Supported platform configurations
-PLATFORMS = {
-    "claude": PlatformConfig(
-        name="claude",
-        display_name="Claude Code",
-        config_dir=".claude",
-        commands_dir="commands",
-    ),
-    "gemini": PlatformConfig(
-        name="gemini",
-        display_name="Google Gemini",
-        config_dir=".gemini",
-        commands_dir="commands",
-    ),
-    "copilot": PlatformConfig(
-        name="copilot",
-        display_name="GitHub Copilot",
-        config_dir=".github",
-        commands_dir="commands",
-    ),
-}
-
-
 class PlatformDetector:
-    """Detects available AI coding platforms."""
+    """Detects available AI coding platforms using registered adapters."""
 
     def __init__(self, project_root: Path | str):
         """
@@ -55,7 +23,7 @@ class PlatformDetector:
         """
         self.project_root = Path(project_root)
 
-    def detect_platform(self, platform_name: str) -> PlatformConfig | None:
+    def detect_platform(self, platform_name: str) -> AgentAdapter | None:
         """
         Check if a specific platform is available.
 
@@ -63,60 +31,56 @@ class PlatformDetector:
             platform_name: Platform name ("claude", "gemini", "copilot")
 
         Returns:
-            PlatformConfig if platform is available, None otherwise
+            AgentAdapter instance if platform is available, None otherwise
 
         Raises:
             DetectorError: If platform_name is not supported
         """
-        if platform_name not in PLATFORMS:
-            raise DetectorError(
-                f"Unknown platform '{platform_name}'. "
-                f"Supported platforms: {', '.join(PLATFORMS.keys())}"
-            )
+        try:
+            adapter_cls = AgentAdapter.get(platform_name)
+        except AdapterError as e:
+            raise DetectorError(str(e)) from e
 
-        platform = PLATFORMS[platform_name]
-        config_dir = self.project_root / platform.config_dir
-
-        if config_dir.exists() and config_dir.is_dir():
-            return platform
+        adapter = adapter_cls(self.project_root)
+        if adapter.detect():
+            return adapter
 
         return None
 
-    def detect_all_platforms(self) -> list[PlatformConfig]:
+    def detect_all_platforms(self) -> list[AgentAdapter]:
         """
         Detect all available platforms.
 
         Returns:
-            List of available platform configurations
+            List of available adapter instances
         """
         available = []
-        for platform_name in PLATFORMS:
-            platform = self.detect_platform(platform_name)
-            if platform is not None:
-                available.append(platform)
+        for platform_name in AgentAdapter.list_names():
+            adapter = self.detect_platform(platform_name)
+            if adapter is not None:
+                available.append(adapter)
 
         return available
 
-    def get_platform_config(self, platform_name: str) -> PlatformConfig:
+    def get_adapter(self, platform_name: str) -> AgentAdapter:
         """
-        Get configuration for a platform (without checking availability).
+        Get an adapter instance for a platform (without checking availability).
 
         Args:
             platform_name: Platform name
 
         Returns:
-            Platform configuration
+            AgentAdapter instance
 
         Raises:
             DetectorError: If platform_name is not supported
         """
-        if platform_name not in PLATFORMS:
-            raise DetectorError(
-                f"Unknown platform '{platform_name}'. "
-                f"Supported platforms: {', '.join(PLATFORMS.keys())}"
-            )
+        try:
+            adapter_cls = AgentAdapter.get(platform_name)
+        except AdapterError as e:
+            raise DetectorError(str(e)) from e
 
-        return PLATFORMS[platform_name]
+        return adapter_cls(self.project_root)
 
     @staticmethod
     def list_supported_platforms() -> list[str]:
@@ -126,4 +90,4 @@ class PlatformDetector:
         Returns:
             List of platform names
         """
-        return list(PLATFORMS.keys())
+        return AgentAdapter.list_names()

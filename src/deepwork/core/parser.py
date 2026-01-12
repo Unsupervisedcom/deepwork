@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from deepwork.schemas.job_schema import JOB_SCHEMA
+from deepwork.schemas.job_schema import JOB_SCHEMA, LIFECYCLE_HOOK_EVENTS
 from deepwork.utils.validation import ValidationError, validate_against_schema
 from deepwork.utils.yaml_utils import YAMLError, load_yaml
 
@@ -47,14 +47,14 @@ class StepInput:
 
 
 @dataclass
-class StopHook:
-    """Represents a stop hook configuration for quality validation loops.
+class HookAction:
+    """Represents a hook action configuration.
 
-    Stop hooks enable iterative refinement by blocking step completion until
-    quality criteria are met. Three types are supported:
-    - prompt: Inline prompt text for validation
-    - prompt_file: Path to a file containing the validation prompt
-    - script: Path to a shell script for custom validation logic
+    Hook actions define what happens when a lifecycle hook is triggered.
+    Three types are supported:
+    - prompt: Inline prompt text for validation/action
+    - prompt_file: Path to a file containing the prompt
+    - script: Path to a shell script for custom logic
     """
 
     # Inline prompt
@@ -79,13 +79,17 @@ class StopHook:
         return self.script is not None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "StopHook":
-        """Create StopHook from dictionary."""
+    def from_dict(cls, data: dict[str, Any]) -> "HookAction":
+        """Create HookAction from dictionary."""
         return cls(
             prompt=data.get("prompt"),
             prompt_file=data.get("prompt_file"),
             script=data.get("script"),
         )
+
+
+# Backward compatibility alias
+StopHook = HookAction
 
 
 @dataclass
@@ -99,11 +103,40 @@ class Step:
     inputs: list[StepInput] = field(default_factory=list)
     outputs: list[str] = field(default_factory=list)
     dependencies: list[str] = field(default_factory=list)
-    stop_hooks: list[StopHook] = field(default_factory=list)
+
+    # New: hooks dict mapping lifecycle event names to HookAction lists
+    # Event names: after_agent, before_tool, before_prompt
+    hooks: dict[str, list[HookAction]] = field(default_factory=dict)
+
+    @property
+    def stop_hooks(self) -> list[HookAction]:
+        """
+        Backward compatibility property for stop_hooks.
+
+        Returns hooks for after_agent event.
+        """
+        return self.hooks.get("after_agent", [])
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Step":
         """Create Step from dictionary."""
+        # Parse new hooks structure
+        hooks: dict[str, list[HookAction]] = {}
+        if "hooks" in data:
+            hooks_data = data["hooks"]
+            for event in LIFECYCLE_HOOK_EVENTS:
+                if event in hooks_data:
+                    hooks[event] = [HookAction.from_dict(h) for h in hooks_data[event]]
+
+        # Handle deprecated stop_hooks -> after_agent
+        if "stop_hooks" in data and data["stop_hooks"]:
+            # Merge with any existing after_agent hooks
+            after_agent_hooks = hooks.get("after_agent", [])
+            after_agent_hooks.extend(
+                [HookAction.from_dict(h) for h in data["stop_hooks"]]
+            )
+            hooks["after_agent"] = after_agent_hooks
+
         return cls(
             id=data["id"],
             name=data["name"],
@@ -112,7 +145,7 @@ class Step:
             inputs=[StepInput.from_dict(inp) for inp in data.get("inputs", [])],
             outputs=data["outputs"],
             dependencies=data.get("dependencies", []),
-            stop_hooks=[StopHook.from_dict(h) for h in data.get("stop_hooks", [])],
+            hooks=hooks,
         )
 
 

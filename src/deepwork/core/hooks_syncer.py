@@ -1,13 +1,12 @@
 """Hooks syncer for DeepWork - collects and syncs hooks from jobs to platform settings."""
 
-import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-from deepwork.core.detector import PlatformConfig
+from deepwork.core.adapters import AgentAdapter
 
 
 class HooksSyncError(Exception):
@@ -175,62 +174,9 @@ def _hook_already_present(hooks: list[dict[str, Any]], script_path: str) -> bool
     return False
 
 
-def sync_hooks_to_claude(
-    project_path: Path,
-    platform_config: PlatformConfig,
-    hooks: dict[str, list[dict[str, Any]]],
-) -> None:
-    """
-    Sync hooks to Claude Code settings.json.
-
-    Args:
-        project_path: Path to project root
-        platform_config: Platform configuration
-        hooks: Merged hooks configuration
-
-    Raises:
-        HooksSyncError: If sync fails
-    """
-    if not hooks:
-        return
-
-    settings_file = project_path / platform_config.config_dir / "settings.json"
-
-    # Load existing settings or create new
-    existing_settings: dict[str, Any] = {}
-    if settings_file.exists():
-        try:
-            with open(settings_file, encoding="utf-8") as f:
-                existing_settings = json.load(f)
-        except (json.JSONDecodeError, OSError) as e:
-            raise HooksSyncError(f"Failed to read settings.json: {e}") from e
-
-    # Merge hooks into existing settings
-    if "hooks" not in existing_settings:
-        existing_settings["hooks"] = {}
-
-    for event, event_hooks in hooks.items():
-        if event not in existing_settings["hooks"]:
-            existing_settings["hooks"][event] = []
-
-        # Add new hooks that aren't already present
-        for hook in event_hooks:
-            script_path = hook.get("hooks", [{}])[0].get("command", "")
-            if not _hook_already_present(existing_settings["hooks"][event], script_path):
-                existing_settings["hooks"][event].append(hook)
-
-    # Write back to settings.json
-    try:
-        settings_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(settings_file, "w", encoding="utf-8") as f:
-            json.dump(existing_settings, f, indent=2)
-    except OSError as e:
-        raise HooksSyncError(f"Failed to write settings.json: {e}") from e
-
-
 def sync_hooks_to_platform(
     project_path: Path,
-    platform_config: PlatformConfig,
+    adapter: AgentAdapter,
     job_hooks_list: list[JobHooks],
 ) -> int:
     """
@@ -238,7 +184,7 @@ def sync_hooks_to_platform(
 
     Args:
         project_path: Path to project root
-        platform_config: Platform configuration
+        adapter: Agent adapter for the target platform
         job_hooks_list: List of JobHooks from jobs
 
     Returns:
@@ -253,14 +199,8 @@ def sync_hooks_to_platform(
     if not merged_hooks:
         return 0
 
-    # Currently only Claude Code is fully supported
-    if platform_config.name == "claude":
-        sync_hooks_to_claude(project_path, platform_config, merged_hooks)
-    else:
-        # For other platforms, we'd add support here
-        # For now, just skip
-        return 0
-
-    # Count total hooks
-    total = sum(len(hooks) for hooks in merged_hooks.values())
-    return total
+    # Delegate to adapter's sync_hooks method
+    try:
+        return adapter.sync_hooks(project_path, merged_hooks)
+    except Exception as e:
+        raise HooksSyncError(f"Failed to sync hooks: {e}") from e

@@ -42,6 +42,7 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── install.py      # Install command
 │       │   └── sync.py         # Sync command
 │       ├── core/
+│       │   ├── adapters.py     # Agent adapters for AI platforms
 │       │   ├── detector.py     # AI platform detection
 │       │   ├── generator.py    # Command file generation
 │       │   ├── parser.py       # Job definition parsing
@@ -133,52 +134,81 @@ def install(platform: str):
     print(f"  Run /deepwork_jobs.define to create your first job")
 ```
 
-### 2. Platform Detector (`detector.py`)
+### 2. Agent Adapters (`adapters.py`)
 
-Identifies which AI platforms are available in the project.
+Defines the modular adapter architecture for AI platforms. Each adapter encapsulates platform-specific configuration and behavior.
+
+**Adapter Architecture**:
+```python
+class CommandLifecycleHook(str, Enum):
+    """Generic lifecycle hook events supported by DeepWork."""
+    AFTER_AGENT = "after_agent"    # After agent finishes (quality validation)
+    BEFORE_TOOL = "before_tool"    # Before tool execution
+    BEFORE_PROMPT = "before_prompt" # When user submits a prompt
+
+class AgentAdapter(ABC):
+    """Base class for AI agent platform adapters."""
+
+    # Auto-registration via __init_subclass__
+    _registry: ClassVar[dict[str, type[AgentAdapter]]] = {}
+
+    # Platform configuration (subclasses define as class attributes)
+    name: ClassVar[str]           # "claude"
+    display_name: ClassVar[str]   # "Claude Code"
+    config_dir: ClassVar[str]     # ".claude"
+    commands_dir: ClassVar[str] = "commands"
+
+    # Mapping from generic hook names to platform-specific names
+    hook_name_mapping: ClassVar[dict[CommandLifecycleHook, str]] = {}
+
+    def detect(self, project_root: Path) -> bool:
+        """Check if this platform is available in the project."""
+
+    def get_platform_hook_name(self, hook: CommandLifecycleHook) -> str | None:
+        """Get platform-specific event name for a generic hook."""
+
+    @abstractmethod
+    def sync_hooks(self, project_path: Path, hooks: dict) -> int:
+        """Sync hooks to platform settings."""
+
+class ClaudeAdapter(AgentAdapter):
+    name = "claude"
+    display_name = "Claude Code"
+    config_dir = ".claude"
+
+    # Claude Code uses PascalCase event names
+    hook_name_mapping = {
+        CommandLifecycleHook.AFTER_AGENT: "Stop",
+        CommandLifecycleHook.BEFORE_TOOL: "PreToolUse",
+        CommandLifecycleHook.BEFORE_PROMPT: "UserPromptSubmit",
+    }
+```
+
+### 3. Platform Detector (`detector.py`)
+
+Uses adapters to identify which AI platforms are available in the project.
 
 **Detection Logic**:
 ```python
-@dataclass
-class PlatformConfig:
-    """Configuration for an AI platform."""
-    name: str           # "claude", "gemini", "copilot"
-    display_name: str   # "Claude Code", "Google Gemini", "GitHub Copilot"
-    config_dir: str     # ".claude", ".gemini", ".github"
-    commands_dir: str   # "commands", "commands", "commands"
-
-PLATFORMS = {
-    "claude": PlatformConfig(
-        name="claude",
-        display_name="Claude Code",
-        config_dir=".claude",
-        commands_dir="commands"
-    ),
-    "gemini": PlatformConfig(
-        name="gemini",
-        display_name="Google Gemini",
-        config_dir=".gemini",
-        commands_dir="commands"
-    ),
-    "copilot": PlatformConfig(
-        name="copilot",
-        display_name="GitHub Copilot",
-        config_dir=".github",
-        commands_dir="commands"
-    )
-}
-
 class PlatformDetector:
-    def detect_platform(self, platform_name: str) -> PlatformConfig | None:
+    def detect_platform(self, platform_name: str) -> AgentAdapter | None:
         """Check if a specific platform is available."""
-        platform = PLATFORMS[platform_name]
-        config_dir = self.project_root / platform.config_dir
-        if config_dir.exists() and config_dir.is_dir():
-            return platform
+        adapter_class = AgentAdapter.get(platform_name)
+        adapter = adapter_class(self.project_root)
+        if adapter.detect():
+            return adapter
         return None
+
+    def detect_all_platforms(self) -> list[AgentAdapter]:
+        """Detect all available platforms."""
+        return [
+            adapter_class(self.project_root)
+            for adapter_class in AgentAdapter.get_all().values()
+            if adapter_class(self.project_root).detect()
+        ]
 ```
 
-### 3. Command Generator (`generator.py`)
+### 4. Command Generator (`generator.py`)
 
 Generates AI-platform-specific command files from job definitions.
 
@@ -386,6 +416,42 @@ steps:
     dependencies:
       - comparative_report
 ```
+
+### Lifecycle Hooks in Job Definitions
+
+Steps can define lifecycle hooks that trigger at specific points during execution. Hooks are defined using generic event names that are mapped to platform-specific names by adapters:
+
+```yaml
+steps:
+  - id: build_report
+    name: "Build Report"
+    description: "Generate the final report"
+    instructions_file: steps/build_report.md
+    outputs:
+      - report.md
+    hooks:
+      after_agent:  # Triggers after agent finishes (Claude: "Stop")
+        - prompt: |
+            Verify the report includes all required sections:
+            - Executive summary
+            - Data analysis
+            - Recommendations
+        - script: hooks/validate_report.sh
+      before_tool:  # Triggers before tool use (Claude: "PreToolUse")
+        - prompt: "Confirm tool execution is appropriate"
+```
+
+**Supported Lifecycle Events**:
+- `after_agent` - Triggered after the agent finishes responding (quality validation)
+- `before_tool` - Triggered before the agent uses a tool
+- `before_prompt` - Triggered when user submits a new prompt
+
+**Hook Action Types**:
+- `prompt` - Inline prompt text
+- `prompt_file` - Path to a file containing the prompt
+- `script` - Path to a shell script
+
+**Note**: The deprecated `stop_hooks` field is still supported for backward compatibility but maps to `hooks.after_agent`.
 
 ### Step Instructions Example
 

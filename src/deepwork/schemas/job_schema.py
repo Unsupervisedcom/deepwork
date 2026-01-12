@@ -2,6 +2,50 @@
 
 from typing import Any
 
+# Supported lifecycle hook events (generic names, mapped to platform-specific by adapters)
+# These values must match CommandLifecycleHook enum in adapters.py
+LIFECYCLE_HOOK_EVENTS = ["after_agent", "before_tool", "before_prompt"]
+
+# Schema definition for a single hook action (prompt, prompt_file, or script)
+HOOK_ACTION_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "oneOf": [
+        {
+            "required": ["prompt"],
+            "properties": {
+                "prompt": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Inline prompt for validation/action",
+                },
+            },
+            "additionalProperties": False,
+        },
+        {
+            "required": ["prompt_file"],
+            "properties": {
+                "prompt_file": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Path to prompt file (relative to job directory)",
+                },
+            },
+            "additionalProperties": False,
+        },
+        {
+            "required": ["script"],
+            "properties": {
+                "script": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Path to shell script (relative to job directory)",
+                },
+            },
+            "additionalProperties": False,
+        },
+    ],
+}
+
 # JSON Schema for job.yml files
 JOB_SCHEMA: dict[str, Any] = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -132,47 +176,33 @@ JOB_SCHEMA: dict[str, Any] = {
                         },
                         "default": [],
                     },
+                    "hooks": {
+                        "type": "object",
+                        "description": "Lifecycle hooks for this step, keyed by event type",
+                        "properties": {
+                            "after_agent": {
+                                "type": "array",
+                                "description": "Hooks triggered after the agent finishes (quality validation)",
+                                "items": HOOK_ACTION_SCHEMA,
+                            },
+                            "before_tool": {
+                                "type": "array",
+                                "description": "Hooks triggered before a tool is used",
+                                "items": HOOK_ACTION_SCHEMA,
+                            },
+                            "before_prompt": {
+                                "type": "array",
+                                "description": "Hooks triggered when user submits a prompt",
+                                "items": HOOK_ACTION_SCHEMA,
+                            },
+                        },
+                        "additionalProperties": False,
+                    },
+                    # DEPRECATED: Use hooks.after_agent instead
                     "stop_hooks": {
                         "type": "array",
-                        "description": "Stop hooks for quality validation loops (executed in order)",
-                        "items": {
-                            "type": "object",
-                            "oneOf": [
-                                {
-                                    "required": ["prompt"],
-                                    "properties": {
-                                        "prompt": {
-                                            "type": "string",
-                                            "minLength": 1,
-                                            "description": "Inline prompt for quality validation",
-                                        },
-                                    },
-                                    "additionalProperties": False,
-                                },
-                                {
-                                    "required": ["prompt_file"],
-                                    "properties": {
-                                        "prompt_file": {
-                                            "type": "string",
-                                            "minLength": 1,
-                                            "description": "Path to prompt file (relative to job directory)",
-                                        },
-                                    },
-                                    "additionalProperties": False,
-                                },
-                                {
-                                    "required": ["script"],
-                                    "properties": {
-                                        "script": {
-                                            "type": "string",
-                                            "minLength": 1,
-                                            "description": "Path to shell script (relative to job directory)",
-                                        },
-                                    },
-                                    "additionalProperties": False,
-                                },
-                            ],
-                        },
+                        "description": "DEPRECATED: Use hooks.after_agent instead. Stop hooks for quality validation loops.",
+                        "items": HOOK_ACTION_SCHEMA,
                     },
                 },
                 "additionalProperties": False,

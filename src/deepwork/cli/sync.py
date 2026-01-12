@@ -6,7 +6,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from deepwork.core.detector import PLATFORMS
+from deepwork.core.adapters import AgentAdapter
 from deepwork.core.generator import CommandGenerator
 from deepwork.core.hooks_syncer import collect_job_hooks, sync_hooks_to_platform
 from deepwork.core.parser import parse_job_definition
@@ -109,15 +109,17 @@ def sync_commands(project_path: Path) -> None:
     stats = {"platforms": 0, "commands": 0, "hooks": 0}
 
     for platform_name in platforms:
-        if platform_name not in PLATFORMS:
+        try:
+            adapter_cls = AgentAdapter.get(platform_name)
+        except Exception:
             console.print(f"[yellow]⚠[/yellow] Unknown platform '{platform_name}', skipping")
             continue
 
-        platform_config = PLATFORMS[platform_name]
-        console.print(f"\n[yellow]→[/yellow] Syncing to {platform_config.display_name}...")
+        adapter = adapter_cls(project_path)
+        console.print(f"\n[yellow]→[/yellow] Syncing to {adapter.display_name}...")
 
-        platform_dir = project_path / platform_config.config_dir
-        commands_dir = platform_dir / platform_config.commands_dir
+        platform_dir = project_path / adapter.config_dir
+        commands_dir = platform_dir / adapter.commands_dir
 
         # Create commands directory
         ensure_dir(commands_dir)
@@ -127,7 +129,7 @@ def sync_commands(project_path: Path) -> None:
             console.print("  [dim]•[/dim] Generating commands...")
             for job in jobs:
                 try:
-                    job_paths = generator.generate_all_commands(job, platform_config, platform_dir)
+                    job_paths = generator.generate_all_commands(job, adapter, platform_dir)
                     stats["commands"] += len(job_paths)
                     console.print(f"    [green]✓[/green] {job.name} ({len(job_paths)} commands)")
                 except Exception as e:
@@ -137,7 +139,7 @@ def sync_commands(project_path: Path) -> None:
         if job_hooks_list:
             console.print("  [dim]•[/dim] Syncing hooks...")
             try:
-                hooks_count = sync_hooks_to_platform(project_path, platform_config, job_hooks_list)
+                hooks_count = sync_hooks_to_platform(project_path, adapter, job_hooks_list)
                 stats["hooks"] += hooks_count
                 if hooks_count > 0:
                     console.print(f"    [green]✓[/green] Synced {hooks_count} hook(s)")
