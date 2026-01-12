@@ -4,7 +4,11 @@ description: {{ step_description }}
 
 # {{ job_name }}.{{ step_id }}
 
+{% if is_standalone %}
+**Standalone command** in the **{{ job_name }}** job - can be run anytime
+{% else %}
 **Step {{ step_number }} of {{ total_steps }}** in the **{{ job_name }}** workflow
+{% endif %}
 
 **Summary**: {{ job_summary }}
 
@@ -97,6 +101,11 @@ After completing this step:
 2. **Verify outputs**: Confirm all required files have been created
 
 3. **Inform the user**:
+{% if is_standalone %}
+   - The {{ step_id }} command is complete
+   - Outputs created: {{ outputs | join(', ') }}
+   - This command can be run again anytime to make further changes
+{% else %}
    - Step {{ step_number }} of {{ total_steps }} is complete
    - Outputs created: {{ outputs | join(', ') }}
    {% if next_step %}
@@ -104,8 +113,18 @@ After completing this step:
    {% else %}
    - This is the final step - the job is complete!
    {% endif %}
+{% endif %}
 
-{% if next_step %}
+{% if is_standalone %}
+## Command Complete
+
+This is a standalone command that can be run anytime. The outputs are ready for use.
+
+Consider:
+- Reviewing the outputs in `deepwork/{{ job_name }}/`
+- Running `deepwork sync` if job definitions were changed
+- Re-running this command later if further changes are needed
+{% elif next_step %}
 ## Next Step
 
 To continue the workflow, run:

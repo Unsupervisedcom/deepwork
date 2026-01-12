@@ -20,6 +20,47 @@ class InstallError(Exception):
     pass
 
 
+def _inject_standard_job(
+    job_name: str, jobs_dir: Path, project_path: Path
+) -> None:
+    """
+    Inject a standard job definition into the project.
+
+    Args:
+        job_name: Name of the standard job to inject
+        jobs_dir: Path to .deepwork/jobs directory
+        project_path: Path to project root (for relative path display)
+
+    Raises:
+        InstallError: If injection fails
+    """
+    # Find the standard jobs directory
+    standard_jobs_dir = Path(__file__).parent.parent / "standard_jobs" / job_name
+
+    if not standard_jobs_dir.exists():
+        raise InstallError(
+            f"Standard job '{job_name}' not found at {standard_jobs_dir}. "
+            "DeepWork installation may be corrupted."
+        )
+
+    # Target directory
+    target_dir = jobs_dir / job_name
+
+    # Copy the entire directory
+    try:
+        if target_dir.exists():
+            # Remove existing if present (for reinstall/upgrade)
+            shutil.rmtree(target_dir)
+
+        shutil.copytree(standard_jobs_dir, target_dir)
+        console.print(
+            f"  [green]✓[/green] Installed {job_name} "
+            f"({target_dir.relative_to(project_path)})"
+        )
+    except Exception as e:
+        raise InstallError(f"Failed to install {job_name}: {e}") from e
+
+
 def _inject_deepwork_jobs(jobs_dir: Path, project_path: Path) -> None:
     """
     Inject the deepwork_jobs job definition into the project.
@@ -31,31 +72,47 @@ def _inject_deepwork_jobs(jobs_dir: Path, project_path: Path) -> None:
     Raises:
         InstallError: If injection fails
     """
-    # Find the standard jobs directory
-    standard_jobs_dir = Path(__file__).parent.parent / "standard_jobs" / "deepwork_jobs"
+    _inject_standard_job("deepwork_jobs", jobs_dir, project_path)
 
-    if not standard_jobs_dir.exists():
-        raise InstallError(
-            f"Core job definition not found at {standard_jobs_dir}. "
-            "DeepWork installation may be corrupted."
-        )
 
-    # Target directory
-    target_dir = jobs_dir / "deepwork_jobs"
+def _inject_deepwork_policy(jobs_dir: Path, project_path: Path) -> None:
+    """
+    Inject the deepwork_policy job definition into the project.
 
-    # Copy the entire directory
-    try:
-        if target_dir.exists():
-            # Remove existing if present (for reinstall/upgrade)
-            shutil.rmtree(target_dir)
+    Args:
+        jobs_dir: Path to .deepwork/jobs directory
+        project_path: Path to project root (for relative path display)
 
-        shutil.copytree(standard_jobs_dir, target_dir)
-        console.print(
-            f"  [green]✓[/green] Installed deepwork_jobs "
-            f"({target_dir.relative_to(project_path)})"
-        )
-    except Exception as e:
-        raise InstallError(f"Failed to install core jobs: {e}") from e
+    Raises:
+        InstallError: If injection fails
+    """
+    _inject_standard_job("deepwork_policy", jobs_dir, project_path)
+
+
+def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
+    """
+    Create .gitignore file in .deepwork/ directory.
+
+    This ensures that temporary files like .last_work_tree are not committed.
+
+    Args:
+        deepwork_dir: Path to .deepwork directory
+    """
+    gitignore_path = deepwork_dir / ".gitignore"
+    gitignore_content = """# DeepWork temporary files
+# These files are used for policy evaluation during sessions
+.last_work_tree
+"""
+
+    # Only write if it doesn't exist or doesn't contain the entry
+    if gitignore_path.exists():
+        existing_content = gitignore_path.read_text()
+        if ".last_work_tree" not in existing_content:
+            # Append to existing
+            with open(gitignore_path, "a") as f:
+                f.write("\n" + gitignore_content)
+    else:
+        gitignore_path.write_text(gitignore_content)
 
 
 @click.command()
@@ -163,9 +220,14 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     ensure_dir(jobs_dir)
     console.print(f"  [green]✓[/green] Created {deepwork_dir.relative_to(project_path)}/")
 
-    # Step 3b: Inject deepwork_jobs (core job definitions)
+    # Step 3b: Inject standard jobs (core job definitions)
     console.print("[yellow]→[/yellow] Installing core job definitions...")
     _inject_deepwork_jobs(jobs_dir, project_path)
+    _inject_deepwork_policy(jobs_dir, project_path)
+
+    # Step 3c: Create .gitignore for temporary files
+    _create_deepwork_gitignore(deepwork_dir)
+    console.print("  [green]✓[/green] Created .deepwork/.gitignore")
 
     # Step 4: Load or create config.yml
     console.print("[yellow]→[/yellow] Updating configuration...")

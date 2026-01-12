@@ -5,16 +5,16 @@ from pathlib import Path
 import pytest
 
 from deepwork.core.detector import PLATFORMS
-from deepwork.core.generator import GeneratorError, SkillGenerator
+from deepwork.core.generator import GeneratorError, CommandGenerator
 from deepwork.core.parser import parse_job_definition
 
 
-class TestSkillGenerator:
-    """Tests for SkillGenerator class."""
+class TestCommandGenerator:
+    """Tests for CommandGenerator class."""
 
     def test_init_default_templates_dir(self) -> None:
         """Test initialization with default templates directory."""
-        generator = SkillGenerator()
+        generator = CommandGenerator()
 
         assert generator.templates_dir.exists()
         assert (generator.templates_dir / "claude").exists()
@@ -24,7 +24,7 @@ class TestSkillGenerator:
         templates_dir = temp_dir / "templates"
         templates_dir.mkdir()
 
-        generator = SkillGenerator(templates_dir)
+        generator = CommandGenerator(templates_dir)
 
         assert generator.templates_dir == templates_dir
 
@@ -33,7 +33,7 @@ class TestSkillGenerator:
         nonexistent = temp_dir / "nonexistent"
 
         with pytest.raises(GeneratorError, match="Templates directory not found"):
-            SkillGenerator(nonexistent)
+            CommandGenerator(nonexistent)
 
     def test_generate_step_skill_simple_job(
         self, fixtures_dir: Path, temp_dir: Path
@@ -42,7 +42,7 @@ class TestSkillGenerator:
         job_dir = fixtures_dir / "jobs" / "simple_job"
         job = parse_job_definition(job_dir)
 
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         platform = PLATFORMS["claude"]
 
         skill_path = generator.generate_step_skill(
@@ -65,7 +65,7 @@ class TestSkillGenerator:
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         platform = PLATFORMS["claude"]
 
         skill_path = generator.generate_step_skill(
@@ -89,7 +89,7 @@ class TestSkillGenerator:
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         platform = PLATFORMS["claude"]
 
         # Generate primary_research (step 2)
@@ -116,7 +116,7 @@ class TestSkillGenerator:
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         platform = PLATFORMS["claude"]
 
         # Generate comparative_report (step 4)
@@ -143,7 +143,7 @@ class TestSkillGenerator:
         job_dir = fixtures_dir / "jobs" / "simple_job"
         job = parse_job_definition(job_dir)
 
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         platform = PLATFORMS["claude"]
 
         # Create a fake step not in the job
@@ -175,7 +175,7 @@ class TestSkillGenerator:
             # Delete the instructions file
             instructions_file.unlink()
 
-            generator = SkillGenerator()
+            generator = CommandGenerator()
             platform = PLATFORMS["claude"]
 
             with pytest.raises(GeneratorError, match="instructions file not found"):
@@ -189,7 +189,7 @@ class TestSkillGenerator:
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         platform = PLATFORMS["claude"]
 
         skill_paths = generator.generate_all_skills(job, platform, temp_dir)
@@ -209,7 +209,7 @@ class TestSkillGenerator:
 
     def test_generate_core_skills(self, temp_dir: Path) -> None:
         """Test generating core DeepWork skills."""
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         platform = PLATFORMS["claude"]
 
         skill_paths = generator.generate_core_skills(platform, temp_dir)
@@ -253,7 +253,7 @@ class TestSkillGenerator:
             job_dir = fixtures_dir / "jobs" / "simple_job"
             job = parse_job_definition(job_dir)
 
-            generator = SkillGenerator()
+            generator = CommandGenerator()
             platform = PLATFORMS["gemini"]
 
             skill_path = generator.generate_step_skill(
@@ -283,7 +283,7 @@ class TestSkillGenerator:
         job_dir = fixtures_dir / "jobs" / "simple_job"
         job = parse_job_definition(job_dir)
 
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         # Gemini templates don't exist
         platform = PLATFORMS["gemini"]
 

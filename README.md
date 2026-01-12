@@ -263,6 +263,36 @@ deepwork/
 - **Namespace Isolation**: Multiple concurrent job instances supported
 - **Version Control**: All outputs tracked in Git
 
+### Policies
+
+Policies automatically enforce team guidelines when files change:
+
+```yaml
+# .deepwork.policy.yml
+- name: "Update docs on config changes"
+  trigger: "app/config/**/*"
+  safety: "docs/install_guide.md"
+  instructions: |
+    Configuration files changed. Please update docs/install_guide.md
+    if installation instructions need to change.
+```
+
+**How it works**:
+1. When you start a Claude Code session, the baseline git state is captured
+2. When the agent finishes, changed files are compared against policy triggers
+3. If policies fire (trigger matches, no safety match), Claude is prompted to address them
+4. Use `<promise policy="Policy Name">addressed</promise>` to mark policies as handled
+
+**Use cases**:
+- Keep documentation in sync with code changes
+- Require security review for auth code modifications
+- Enforce changelog updates for API changes
+
+Define policies interactively:
+```
+/deepwork_policy.define
+```
+
 ## Roadmap
 
 ### Phase 2: Runtime Enhancements (Planned)

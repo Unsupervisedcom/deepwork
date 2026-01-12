@@ -8,6 +8,7 @@ from rich.table import Table
 
 from deepwork.core.detector import PLATFORMS
 from deepwork.core.generator import CommandGenerator
+from deepwork.core.hooks_syncer import collect_job_hooks, sync_hooks_to_platform
 from deepwork.core.parser import parse_job_definition
 from deepwork.utils.fs import ensure_dir
 from deepwork.utils.yaml_utils import load_yaml
@@ -98,9 +99,14 @@ def sync_commands(project_path: Path) -> None:
         except Exception as e:
             console.print(f"  [red]✗[/red] Failed to load {job_dir.name}: {e}")
 
+    # Collect hooks from all jobs
+    job_hooks_list = collect_job_hooks(jobs_dir)
+    if job_hooks_list:
+        console.print(f"[yellow]→[/yellow] Found {len(job_hooks_list)} job(s) with hooks")
+
     # Sync each platform
     generator = CommandGenerator()
-    stats = {"platforms": 0, "commands": 0}
+    stats = {"platforms": 0, "commands": 0, "hooks": 0}
 
     for platform_name in platforms:
         if platform_name not in PLATFORMS:
@@ -127,6 +133,19 @@ def sync_commands(project_path: Path) -> None:
                 except Exception as e:
                     console.print(f"    [red]✗[/red] Failed for {job.name}: {e}")
 
+        # Sync hooks to platform settings
+        if job_hooks_list:
+            console.print("  [dim]•[/dim] Syncing hooks...")
+            try:
+                hooks_count = sync_hooks_to_platform(
+                    project_path, platform_config, job_hooks_list
+                )
+                stats["hooks"] += hooks_count
+                if hooks_count > 0:
+                    console.print(f"    [green]✓[/green] Synced {hooks_count} hook(s)")
+            except Exception as e:
+                console.print(f"    [red]✗[/red] Failed to sync hooks: {e}")
+
         stats["platforms"] += 1
 
     # Summary
@@ -140,6 +159,8 @@ def sync_commands(project_path: Path) -> None:
 
     table.add_row("Platforms synced", str(stats["platforms"]))
     table.add_row("Total commands", str(stats["commands"]))
+    if stats["hooks"] > 0:
+        table.add_row("Hooks synced", str(stats["hooks"]))
 
     console.print(table)
     console.print()
