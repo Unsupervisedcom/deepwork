@@ -8,7 +8,6 @@ from typing import Any
 import yaml
 
 from deepwork.core.detector import PlatformConfig
-from deepwork.utils.yaml_utils import load_yaml
 
 
 class HooksSyncError(Exception):

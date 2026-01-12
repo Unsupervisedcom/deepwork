@@ -210,10 +210,7 @@ class TestEvaluatePolicy:
 
         # Should not fire if any safety file is changed
         assert evaluate_policy(policy, ["src/auth/login.py", "SECURITY.md"]) is False
-        assert (
-            evaluate_policy(policy, ["src/auth/login.py", "docs/security_review.md"])
-            is False
-        )
+        assert evaluate_policy(policy, ["src/auth/login.py", "docs/security_review.md"]) is False
 
         # Should fire if no safety files changed
         assert evaluate_policy(policy, ["src/auth/login.py"]) is True

@@ -155,9 +155,7 @@ class JobDefinition:
         for step in self.steps:
             for dep_id in step.dependencies:
                 if dep_id not in step_ids:
-                    raise ParseError(
-                        f"Step '{step.id}' depends on non-existent step '{dep_id}'"
-                    )
+                    raise ParseError(f"Step '{step.id}' depends on non-existent step '{dep_id}'")
 
         # Check for circular dependencies using topological sort
         visited = set()

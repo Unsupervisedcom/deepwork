@@ -1,9 +1,7 @@
 """Tests for the hooks evaluate_policies module."""
 
-import pytest
-
-from deepwork.hooks.evaluate_policies import extract_promise_tags, format_policy_message
 from deepwork.core.policy_parser import Policy
+from deepwork.hooks.evaluate_policies import extract_promise_tags, format_policy_message
 
 
 class TestExtractPromiseTags:
@@ -45,11 +43,11 @@ class TestExtractPromiseTags:
 
     def test_multiline_promise_content(self) -> None:
         """Test promise tag with multiline content."""
-        text = '''<promise policy="Complex Policy">
+        text = """<promise policy="Complex Policy">
         I have addressed this by:
         1. Updating the docs
         2. Running tests
-        </promise>'''
+        </promise>"""
         result = extract_promise_tags(text)
         assert result == {"Complex Policy"}
 

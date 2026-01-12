@@ -10,9 +10,7 @@ from deepwork.core.parser import parse_job_definition
 class TestJobWorkflow:
     """Integration tests for complete job workflow."""
 
-    def test_parse_and_generate_workflow(
-        self, fixtures_dir: Path, temp_dir: Path
-    ) -> None:
+    def test_parse_and_generate_workflow(self, fixtures_dir: Path, temp_dir: Path) -> None:
         """Test complete workflow: parse job → generate commands."""
         # Step 1: Parse job definition
         job_dir = fixtures_dir / "jobs" / "complex_job"
@@ -40,7 +38,7 @@ class TestJobWorkflow:
             assert f"# {job.name}.{job.steps[i].id}" in content
 
             # Check step numbers
-            assert f"Step {i+1} of 4" in content
+            assert f"Step {i + 1} of 4" in content
 
     def test_simple_job_workflow(self, fixtures_dir: Path, temp_dir: Path) -> None:
         """Test workflow with simple single-step job."""
@@ -68,9 +66,7 @@ class TestJobWorkflow:
         assert "input_param" in content
         assert "Command Complete" in content  # Standalone completion message
 
-    def test_command_generation_with_dependencies(
-        self, fixtures_dir: Path, temp_dir: Path
-    ) -> None:
+    def test_command_generation_with_dependencies(self, fixtures_dir: Path, temp_dir: Path) -> None:
         """Test that generated commands properly handle dependencies."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
@@ -99,9 +95,7 @@ class TestJobWorkflow:
         assert "## Workflow Complete" in step4_content
         assert "## Next Step" not in step4_content
 
-    def test_command_generation_with_file_inputs(
-        self, fixtures_dir: Path, temp_dir: Path
-    ) -> None:
+    def test_command_generation_with_file_inputs(self, fixtures_dir: Path, temp_dir: Path) -> None:
         """Test that generated commands properly handle file inputs."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
@@ -125,9 +119,7 @@ class TestJobWorkflow:
         assert "primary_research.md" in step4_content
         assert "secondary_research.md" in step4_content
 
-    def test_command_generation_with_user_inputs(
-        self, fixtures_dir: Path, temp_dir: Path
-    ) -> None:
+    def test_command_generation_with_user_inputs(self, fixtures_dir: Path, temp_dir: Path) -> None:
         """Test that generated commands properly handle user parameter inputs."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)

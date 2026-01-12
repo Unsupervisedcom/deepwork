@@ -137,9 +137,7 @@ def sync_commands(project_path: Path) -> None:
         if job_hooks_list:
             console.print("  [dim]•[/dim] Syncing hooks...")
             try:
-                hooks_count = sync_hooks_to_platform(
-                    project_path, platform_config, job_hooks_list
-                )
+                hooks_count = sync_hooks_to_platform(project_path, platform_config, job_hooks_list)
                 stats["hooks"] += hooks_count
                 if hooks_count > 0:
                     console.print(f"    [green]✓[/green] Synced {hooks_count} hook(s)")

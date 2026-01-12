@@ -8,6 +8,7 @@ __all__ = [
     "__author__",
 ]
 
+
 # Lazy imports to avoid circular dependencies and missing modules during development
 def __getattr__(name: str) -> object:
     """Lazy import for core modules."""
@@ -19,5 +20,6 @@ def __getattr__(name: str) -> object:
             StepInput,
             parse_job_definition,
         )
+
         return locals()[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

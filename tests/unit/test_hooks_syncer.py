@@ -3,17 +3,14 @@
 import json
 from pathlib import Path
 
-import pytest
-
+from deepwork.core.detector import PlatformConfig
 from deepwork.core.hooks_syncer import (
     HookEntry,
-    HooksSyncError,
     JobHooks,
     collect_job_hooks,
     merge_hooks_for_platform,
     sync_hooks_to_claude,
 )
-from deepwork.core.detector import PlatformConfig
 
 
 class TestHookEntry:
@@ -280,9 +277,7 @@ class TestSyncHooksToClaude:
         # Settings with existing hook
         existing_settings = {
             "hooks": {
-                "Stop": [
-                    {"matcher": "", "hooks": [{"type": "command", "command": "hook.sh"}]}
-                ]
+                "Stop": [{"matcher": "", "hooks": [{"type": "command", "command": "hook.sh"}]}]
             },
         }
         settings_file = claude_dir / "settings.json"

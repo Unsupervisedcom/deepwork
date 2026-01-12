@@ -54,9 +54,7 @@ def safe_read(path: Path | str) -> str | None:
     return path_obj.read_text(encoding="utf-8")
 
 
-def copy_dir(
-    src: Path | str, dst: Path | str, ignore_patterns: list[str] | None = None
-) -> None:
+def copy_dir(src: Path | str, dst: Path | str, ignore_patterns: list[str] | None = None) -> None:
     """
     Recursively copy directory, optionally ignoring patterns.
 
