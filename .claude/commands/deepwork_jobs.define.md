@@ -141,7 +141,54 @@ After gathering information about all steps:
    - Job description (detailed multi-line explanation)
    - Version number (start with 1.0.0)
 
-### Step 4: Create the job.yml Specification
+### Step 4: Define Quality Validation (Stop Hooks)
+
+For each step, consider whether it would benefit from **quality validation loops**. Stop hooks allow the AI agent to iteratively refine its work until quality criteria are met.
+
+**Ask the user about quality validation:**
+- "Are there specific quality criteria that must be met for this step?"
+- "Would you like the agent to validate its work before completing?"
+- "What would make you send the work back for revision?"
+
+**Stop hooks are particularly valuable for:**
+- Steps with complex outputs that need multiple checks
+- Steps where quality is critical (final deliverables)
+- Steps with subjective quality criteria that benefit from AI self-review
+
+**Three types of stop hooks are supported:**
+
+1. **Inline Prompt** (`prompt`) - Best for simple quality criteria
+   ```yaml
+   stop_hooks:
+     - prompt: |
+         Verify the output meets these criteria:
+         1. Contains at least 5 competitors
+         2. Each competitor has a description
+         3. Selection rationale is clear
+   ```
+
+2. **Prompt File** (`prompt_file`) - For detailed/reusable criteria
+   ```yaml
+   stop_hooks:
+     - prompt_file: hooks/quality_check.md
+   ```
+
+3. **Script** (`script`) - For programmatic validation (tests, linting)
+   ```yaml
+   stop_hooks:
+     - script: hooks/run_tests.sh
+   ```
+
+**Multiple hooks can be combined:**
+```yaml
+stop_hooks:
+  - script: hooks/lint_output.sh
+  - prompt: "Verify the content is comprehensive and well-organized"
+```
+
+**Encourage prompt-based hooks** - They leverage the AI's ability to understand context and make nuanced quality judgments. Script hooks are best for objective checks (syntax, format, tests).
+
+### Step 5: Create the job.yml Specification
 
 Only after you have complete understanding, create the `job.yml` file:
 
@@ -182,6 +229,13 @@ steps:
     outputs:
       - [output_filename_or_path]  # e.g., "report.md" or "reports/analysis.md"
     dependencies: []  # List of step IDs that must complete first
+    # Optional: Quality validation hooks
+    stop_hooks:
+      - prompt: |
+          Verify this step's output meets quality criteria:
+          1. [Criterion 1]
+          2. [Criterion 2]
+          If ALL criteria are met, include `<promise>QUALITY_COMPLETE</promise>`.
 
   - id: [another_step]
     name: "[Another Step]"
