@@ -1,7 +1,6 @@
 """Tests for stop hook functionality."""
 
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -388,9 +387,7 @@ hooks:
         self, generator: CommandGenerator, job_with_hooks: JobDefinition
     ) -> None:
         """Test context building includes prompt stop hook."""
-        context = generator._build_step_context(
-            job_with_hooks, job_with_hooks.steps[0], 0
-        )
+        context = generator._build_step_context(job_with_hooks, job_with_hooks.steps[0], 0)
         assert "stop_hooks" in context
         assert len(context["stop_hooks"]) == 1
         assert context["stop_hooks"][0]["type"] == "prompt"
@@ -451,9 +448,7 @@ hooks:
         with pytest.raises(GeneratorError, match="prompt file not found"):
             generator._build_step_context(job, job.steps[0], 0)
 
-    def test_build_context_no_hooks(
-        self, generator: CommandGenerator, tmp_path: Path
-    ) -> None:
+    def test_build_context_no_hooks(self, generator: CommandGenerator, tmp_path: Path) -> None:
         """Test context with no stop hooks."""
         job_dir = tmp_path / "test_job"
         job_dir.mkdir()

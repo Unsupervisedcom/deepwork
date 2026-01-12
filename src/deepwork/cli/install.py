@@ -20,9 +20,7 @@ class InstallError(Exception):
     pass
 
 
-def _inject_standard_job(
-    job_name: str, jobs_dir: Path, project_path: Path
-) -> None:
+def _inject_standard_job(job_name: str, jobs_dir: Path, project_path: Path) -> None:
     """
     Inject a standard job definition into the project.
 
@@ -54,8 +52,7 @@ def _inject_standard_job(
 
         shutil.copytree(standard_jobs_dir, target_dir)
         console.print(
-            f"  [green]✓[/green] Installed {job_name} "
-            f"({target_dir.relative_to(project_path)})"
+            f"  [green]✓[/green] Installed {job_name} ({target_dir.relative_to(project_path)})"
         )
     except Exception as e:
         raise InstallError(f"Failed to install {job_name}: {e}") from e
@@ -250,9 +247,7 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     # Add platform if not already present
     if platform_to_add not in config_data["platforms"]:
         config_data["platforms"].append(platform_to_add)
-        console.print(
-            f"  [green]✓[/green] Added {platform_config.display_name} to platforms"
-        )
+        console.print(f"  [green]✓[/green] Added {platform_config.display_name} to platforms")
     else:
         console.print(f"  [dim]•[/dim] {platform_config.display_name} already configured")
 

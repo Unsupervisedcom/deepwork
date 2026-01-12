@@ -16,8 +16,9 @@ class TestInstallCommand:
         runner = CliRunner()
 
         result = runner.invoke(
-            cli, ["install", "--platform", "claude", "--path", str(mock_claude_project)],
-            catch_exceptions=False
+            cli,
+            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            catch_exceptions=False,
         )
 
         assert result.exit_code == 0
@@ -54,8 +55,7 @@ class TestInstallCommand:
         runner = CliRunner()
 
         result = runner.invoke(
-            cli, ["install", "--path", str(mock_claude_project)],
-            catch_exceptions=False
+            cli, ["install", "--path", str(mock_claude_project)], catch_exceptions=False
         )
 
         assert result.exit_code == 0
@@ -101,9 +101,7 @@ class TestInstallCommand:
         assert result.exit_code != 0
         assert "Multiple AI platforms detected" in result.output
 
-    def test_install_with_specified_platform_when_missing(
-        self, mock_git_repo: Path
-    ) -> None:
+    def test_install_with_specified_platform_when_missing(self, mock_git_repo: Path) -> None:
         """Test that install fails when specified platform is not present."""
         runner = CliRunner()
 
@@ -121,15 +119,17 @@ class TestInstallCommand:
 
         # First install
         result1 = runner.invoke(
-            cli, ["install", "--platform", "claude", "--path", str(mock_claude_project)],
-            catch_exceptions=False
+            cli,
+            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            catch_exceptions=False,
         )
         assert result1.exit_code == 0
 
         # Second install
         result2 = runner.invoke(
-            cli, ["install", "--platform", "claude", "--path", str(mock_claude_project)],
-            catch_exceptions=False
+            cli,
+            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            catch_exceptions=False,
         )
         assert result2.exit_code == 0
 

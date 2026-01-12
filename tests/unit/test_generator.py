@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from deepwork.core.detector import PLATFORMS
-from deepwork.core.generator import GeneratorError, CommandGenerator
+from deepwork.core.generator import CommandGenerator, GeneratorError
 from deepwork.core.parser import parse_job_definition
 
 
@@ -35,9 +35,7 @@ class TestCommandGenerator:
         with pytest.raises(GeneratorError, match="Templates directory not found"):
             CommandGenerator(nonexistent)
 
-    def test_generate_step_command_simple_job(
-        self, fixtures_dir: Path, temp_dir: Path
-    ) -> None:
+    def test_generate_step_command_simple_job(self, fixtures_dir: Path, temp_dir: Path) -> None:
         """Test generating command for simple job step."""
         job_dir = fixtures_dir / "jobs" / "simple_job"
         job = parse_job_definition(job_dir)
@@ -45,9 +43,7 @@ class TestCommandGenerator:
         generator = CommandGenerator()
         platform = PLATFORMS["claude"]
 
-        command_path = generator.generate_step_command(
-            job, job.steps[0], platform, temp_dir
-        )
+        command_path = generator.generate_step_command(job, job.steps[0], platform, temp_dir)
 
         assert command_path.exists()
         assert command_path.name == "simple_job.single_step.md"
@@ -69,9 +65,7 @@ class TestCommandGenerator:
         generator = CommandGenerator()
         platform = PLATFORMS["claude"]
 
-        command_path = generator.generate_step_command(
-            job, job.steps[0], platform, temp_dir
-        )
+        command_path = generator.generate_step_command(job, job.steps[0], platform, temp_dir)
 
         content = command_path.read_text()
         assert "# competitive_research.identify_competitors" in content
@@ -94,9 +88,7 @@ class TestCommandGenerator:
         platform = PLATFORMS["claude"]
 
         # Generate primary_research (step 2)
-        command_path = generator.generate_step_command(
-            job, job.steps[1], platform, temp_dir
-        )
+        command_path = generator.generate_step_command(job, job.steps[1], platform, temp_dir)
 
         content = command_path.read_text()
         assert "# competitive_research.primary_research" in content
@@ -121,9 +113,7 @@ class TestCommandGenerator:
         platform = PLATFORMS["claude"]
 
         # Generate comparative_report (step 4)
-        command_path = generator.generate_step_command(
-            job, job.steps[3], platform, temp_dir
-        )
+        command_path = generator.generate_step_command(job, job.steps[3], platform, temp_dir)
 
         content = command_path.read_text()
         assert "# competitive_research.comparative_report" in content
@@ -230,9 +220,7 @@ class TestCommandGenerator:
             generator = CommandGenerator()
             platform = PLATFORMS["gemini"]
 
-            command_path = generator.generate_step_command(
-                job, job.steps[0], platform, temp_dir
-            )
+            command_path = generator.generate_step_command(job, job.steps[0], platform, temp_dir)
 
             # Gemini uses same filename format
             assert command_path.name == "simple_job.single_step.md"

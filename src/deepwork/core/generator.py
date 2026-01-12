@@ -100,9 +100,7 @@ class CommandGenerator:
         instructions_file = job.job_dir / step.instructions_file
         instructions_content = safe_read(instructions_file)
         if instructions_content is None:
-            raise GeneratorError(
-                f"Step instructions file not found: {instructions_file}"
-            )
+            raise GeneratorError(f"Step instructions file not found: {instructions_file}")
 
         # Separate user inputs and file inputs
         user_inputs = [
@@ -142,9 +140,7 @@ class CommandGenerator:
                 prompt_file_path = job.job_dir / hook.prompt_file
                 prompt_content = safe_read(prompt_file_path)
                 if prompt_content is None:
-                    raise GeneratorError(
-                        f"Stop hook prompt file not found: {prompt_file_path}"
-                    )
+                    raise GeneratorError(f"Stop hook prompt file not found: {prompt_file_path}")
                 hook_ctx["content"] = prompt_content
             elif hook.is_script():
                 hook_ctx["type"] = "script"
@@ -203,9 +199,7 @@ class CommandGenerator:
 
         # Find step index
         try:
-            step_index = next(
-                i for i, s in enumerate(job.steps) if s.id == step.id
-            )
+            step_index = next(i for i, s in enumerate(job.steps) if s.id == step.id)
         except StopIteration as e:
             raise GeneratorError(f"Step '{step.id}' not found in job '{job.name}'") from e
 
@@ -262,4 +256,3 @@ class CommandGenerator:
             command_paths.append(command_path)
 
         return command_paths
-
