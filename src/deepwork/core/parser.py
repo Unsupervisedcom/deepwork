@@ -132,9 +132,7 @@ class Step:
         if "stop_hooks" in data and data["stop_hooks"]:
             # Merge with any existing after_agent hooks
             after_agent_hooks = hooks.get("after_agent", [])
-            after_agent_hooks.extend(
-                [HookAction.from_dict(h) for h in data["stop_hooks"]]
-            )
+            after_agent_hooks.extend([HookAction.from_dict(h) for h in data["stop_hooks"]])
             hooks["after_agent"] = after_agent_hooks
 
         return cls(

@@ -9,8 +9,6 @@ from deepwork.core.adapters import (
     AdapterError,
     AgentAdapter,
     ClaudeAdapter,
-    CommandLifecycleHook,
-    COMMAND_LIFECYCLE_HOOKS_SUPPORTED,
 )
 
 
@@ -128,9 +126,7 @@ class TestClaudeAdapter:
         (temp_dir / ".claude").mkdir()
         adapter = ClaudeAdapter(temp_dir)
         hooks = {
-            "PreToolUse": [
-                {"matcher": "", "hooks": [{"type": "command", "command": "test.sh"}]}
-            ]
+            "PreToolUse": [{"matcher": "", "hooks": [{"type": "command", "command": "test.sh"}]}]
         }
 
         count = adapter.sync_hooks(temp_dir, hooks)
@@ -151,9 +147,7 @@ class TestClaudeAdapter:
 
         adapter = ClaudeAdapter(temp_dir)
         hooks = {
-            "PreToolUse": [
-                {"matcher": "", "hooks": [{"type": "command", "command": "test.sh"}]}
-            ]
+            "PreToolUse": [{"matcher": "", "hooks": [{"type": "command", "command": "test.sh"}]}]
         }
 
         adapter.sync_hooks(temp_dir, hooks)

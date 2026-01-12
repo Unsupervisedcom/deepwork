@@ -485,9 +485,7 @@ hooks:
     ) -> None:
         """Test context building includes prompt stop hook."""
         adapter = ClaudeAdapter()
-        context = generator._build_step_context(
-            job_with_hooks, job_with_hooks.steps[0], 0, adapter
-        )
+        context = generator._build_step_context(job_with_hooks, job_with_hooks.steps[0], 0, adapter)
         assert "stop_hooks" in context
         assert len(context["stop_hooks"]) == 1
         assert context["stop_hooks"][0]["type"] == "prompt"

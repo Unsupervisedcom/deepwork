@@ -103,8 +103,7 @@ class AgentAdapter(ABC):
         """
         if name not in cls._registry:
             raise AdapterError(
-                f"Unknown adapter '{name}'. "
-                f"Supported adapters: {', '.join(cls._registry.keys())}"
+                f"Unknown adapter '{name}'. Supported adapters: {', '.join(cls._registry.keys())}"
             )
         return cls._registry[name]
 
