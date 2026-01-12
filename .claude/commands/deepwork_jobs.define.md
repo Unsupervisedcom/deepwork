@@ -1,5 +1,38 @@
 ---
 description: Create the job.yml specification file by understanding workflow requirements
+hooks:
+  Stop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            You must evaluate whether Claude has met all the below quality criteria for the request.
+
+            ## Quality Criteria
+
+            Verify the job.yml output meets ALL quality criteria before completing:
+
+            1. **User Understanding**: Did you fully understand the user's workflow through interactive Q&A?
+            2. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
+            3. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
+            4. **Concise Summary**: Is the summary under 200 characters and descriptive?
+            5. **Rich Description**: Does the description provide enough context for future refinement?
+            6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
+            7. **File Created**: Has the job.yml file been created in `deepwork/[job_name]/job.yml`?
+
+            If ANY criterion is not met, continue working to address it.
+            If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
+
+
+            ## Instructions
+
+            Review the conversation and determine if ALL quality criteria above have been satisfied.
+            Look for evidence that each criterion has been addressed.
+
+            If the agent has included `<promise>QUALITY_COMPLETE</promise>` in their response AND
+            all criteria appear to be met, respond with: {"ok": true}
+
+            If criteria are NOT met AND the promise tag is missing, respond with:
+            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
 ---
 
 # deepwork_jobs.define
@@ -365,6 +398,35 @@ Ensure all outputs are:
 - Well-formatted and complete
 - Committed to the work branch
 - Ready for review or use by subsequent steps
+
+## Quality Validation Loop
+
+This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
+
+### Quality Criteria
+Verify the job.yml output meets ALL quality criteria before completing:
+
+1. **User Understanding**: Did you fully understand the user's workflow through interactive Q&A?
+2. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
+3. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
+4. **Concise Summary**: Is the summary under 200 characters and descriptive?
+5. **Rich Description**: Does the description provide enough context for future refinement?
+6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
+7. **File Created**: Has the job.yml file been created in `deepwork/[job_name]/job.yml`?
+
+If ANY criterion is not met, continue working to address it.
+If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
+
+
+### Completion Promise
+
+To signal that all quality criteria have been met, include this tag in your final response:
+
+```
+<promise>QUALITY_COMPLETE</promise>
+```
+
+**Important**: Only include this promise tag when you have verified that ALL quality criteria above are satisfied. The validation loop will continue until this promise is detected.
 
 ## Completion
 

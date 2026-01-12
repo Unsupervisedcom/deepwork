@@ -114,6 +114,7 @@ class TestJobDefinition:
         job = JobDefinition(
             name="test_job",
             version="1.0.0",
+            summary="Test job",
             description="Test",
             steps=[
                 Step(
@@ -136,6 +137,7 @@ class TestJobDefinition:
         job = JobDefinition(
             name="test_job",
             version="1.0.0",
+            summary="Test job",
             description="Test",
             steps=[
                 Step(
@@ -174,6 +176,7 @@ class TestJobDefinition:
         job = JobDefinition(
             name="test_job",
             version="1.0.0",
+            summary="Test job",
             description="Test",
             steps=[
                 Step(
@@ -197,6 +200,7 @@ class TestJobDefinition:
         job = JobDefinition(
             name="test_job",
             version="1.0.0",
+            summary="Test job",
             description="Test",
             steps=[
                 Step(
@@ -234,7 +238,8 @@ class TestParseJobDefinition:
 
         assert job.name == "simple_job"
         assert job.version == "1.0.0"
-        assert job.description == "A simple single-step job for testing"
+        assert job.summary == "A simple single-step job for testing"
+        assert "DeepWork framework" in job.description  # Multi-line description
         assert len(job.steps) == 1
         assert job.steps[0].id == "single_step"
         assert job.job_dir == job_dir

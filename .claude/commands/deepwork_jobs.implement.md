@@ -1,5 +1,40 @@
 ---
 description: Generate instruction files for each step based on the job.yml specification
+hooks:
+  Stop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            You must evaluate whether Claude has met all the below quality criteria for the request.
+
+            ## Quality Criteria
+
+            Verify the implementation meets ALL quality criteria before completing:
+
+            1. **Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?
+            2. **Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?
+            3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
+            4. **Output Examples**: Does each instruction file show what good output looks like?
+            5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
+            6. **Registry Updated**: Is `.deepwork/registry.yml` updated with the new job?
+            7. **Sync Complete**: Has `deepwork sync` been run successfully?
+            8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+            9. **Summary Created**: Has `implementation_summary.md` been created?
+
+            If ANY criterion is not met, continue working to address it.
+            If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
+
+
+            ## Instructions
+
+            Review the conversation and determine if ALL quality criteria above have been satisfied.
+            Look for evidence that each criterion has been addressed.
+
+            If the agent has included `<promise>QUALITY_COMPLETE</promise>` in their response AND
+            all criteria appear to be met, respond with: {"ok": true}
+
+            If criteria are NOT met AND the promise tag is missing, respond with:
+            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
 ---
 
 # deepwork_jobs.implement
@@ -432,6 +467,37 @@ Ensure all outputs are:
 - Well-formatted and complete
 - Committed to the work branch
 - Ready for review or use by subsequent steps
+
+## Quality Validation Loop
+
+This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
+
+### Quality Criteria
+Verify the implementation meets ALL quality criteria before completing:
+
+1. **Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?
+2. **Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?
+3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
+4. **Output Examples**: Does each instruction file show what good output looks like?
+5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
+6. **Registry Updated**: Is `.deepwork/registry.yml` updated with the new job?
+7. **Sync Complete**: Has `deepwork sync` been run successfully?
+8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+9. **Summary Created**: Has `implementation_summary.md` been created?
+
+If ANY criterion is not met, continue working to address it.
+If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
+
+
+### Completion Promise
+
+To signal that all quality criteria have been met, include this tag in your final response:
+
+```
+<promise>QUALITY_COMPLETE</promise>
+```
+
+**Important**: Only include this promise tag when you have verified that ALL quality criteria above are satisfied. The validation loop will continue until this promise is detected.
 
 ## Completion
 

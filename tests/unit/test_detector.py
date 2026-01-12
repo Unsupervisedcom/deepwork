@@ -21,8 +21,7 @@ class TestPlatformConfig:
         assert config.name == "claude"
         assert config.display_name == "Claude Code"
         assert config.config_dir == ".claude"
-        assert config.skill_prefix == "skill-"
-        assert config.skill_extension == ".md"
+        assert config.commands_dir == "commands"
 
     def test_gemini_config(self) -> None:
         """Test Gemini platform configuration."""
@@ -31,8 +30,7 @@ class TestPlatformConfig:
         assert config.name == "gemini"
         assert config.display_name == "Google Gemini"
         assert config.config_dir == ".gemini"
-        assert config.skill_prefix == "skill-"
-        assert config.skill_extension == ".md"
+        assert config.commands_dir == "commands"
 
     def test_copilot_config(self) -> None:
         """Test Copilot platform configuration."""
@@ -41,8 +39,7 @@ class TestPlatformConfig:
         assert config.name == "copilot"
         assert config.display_name == "GitHub Copilot"
         assert config.config_dir == ".github"
-        assert config.skill_prefix == "copilot-"
-        assert config.skill_extension == ".md"
+        assert config.commands_dir == "commands"
 
 
 class TestPlatformDetector:

@@ -132,6 +132,48 @@ JOB_SCHEMA: dict[str, Any] = {
                         },
                         "default": [],
                     },
+                    "stop_hooks": {
+                        "type": "array",
+                        "description": "Stop hooks for quality validation loops (executed in order)",
+                        "items": {
+                            "type": "object",
+                            "oneOf": [
+                                {
+                                    "required": ["prompt"],
+                                    "properties": {
+                                        "prompt": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "description": "Inline prompt for quality validation",
+                                        },
+                                    },
+                                    "additionalProperties": False,
+                                },
+                                {
+                                    "required": ["prompt_file"],
+                                    "properties": {
+                                        "prompt_file": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "description": "Path to prompt file (relative to job directory)",
+                                        },
+                                    },
+                                    "additionalProperties": False,
+                                },
+                                {
+                                    "required": ["script"],
+                                    "properties": {
+                                        "script": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "description": "Path to shell script (relative to job directory)",
+                                        },
+                                    },
+                                    "additionalProperties": False,
+                                },
+                            ],
+                        },
+                    },
                 },
                 "additionalProperties": False,
             },

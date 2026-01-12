@@ -6,13 +6,12 @@ Generate the DeepWork job directory structure and instruction files for each ste
 
 ## Task
 
-Read the `job.yml` specification file and create all the necessary files to make the job functional, including directory structure, step instruction files, and registry entry. Then sync the commands to make them available.
+Read the `job.yml` specification file and create all the necessary files to make the job functional, including directory structure and step instruction files. Then sync the commands to make them available.
 
 ### Step 1: Read and Validate the Specification
 
 1. **Locate the job.yml file**
-   - Read `deepwork/[job_name]/job.yml` from the define step
-   - (Where `[job_name]` is the name of the new job that was created in the define step)
+   - Read `deepwork/[job_name]/job.yml` from the define step (Where `[job_name]` is the name of the new job that was created in the define step)
    - Parse the YAML content
 
 2. **Validate the specification**
@@ -111,6 +110,39 @@ Each instruction file should follow this structure:
 3. **Provide examples** - Show what good output looks like
 4. **Explain the "why"** - Help the user understand the step's role in the workflow
 5. **Quality over quantity** - Detailed, actionable instructions are better than vague ones
+6. **Align with stop hooks** - If the step has `stop_hooks` defined, ensure the quality criteria in the instruction file match the validation criteria in the hooks
+
+### Handling Stop Hooks
+
+If a step in the job.yml has `stop_hooks` defined, the generated instruction file should:
+
+1. **Mirror the quality criteria** - The "Quality Criteria" section should match what the stop hooks will validate
+2. **Be explicit about success** - Help the agent understand when the step is truly complete
+3. **Include the promise pattern** - Mention that `<promise>QUALITY_COMPLETE</promise>` should be included when criteria are met
+
+**Example: If the job.yml has:**
+```yaml
+- id: research_competitors
+  name: "Research Competitors"
+  stop_hooks:
+    - prompt: |
+        Verify the research meets criteria:
+        1. Each competitor has at least 3 data points
+        2. Sources are cited
+        3. Information is current (within last year)
+```
+
+**The instruction file should include:**
+```markdown
+## Quality Criteria
+
+- Each competitor has at least 3 distinct data points
+- All information is sourced with citations
+- Data is current (from within the last year)
+- When all criteria are met, include `<promise>QUALITY_COMPLETE</promise>` in your response
+```
+
+This alignment ensures the AI agent knows exactly what will be validated and can self-check before completing.
 
 ### Step 4: Copy job.yml to Job Directory
 
@@ -120,21 +152,7 @@ Copy the validated `job.yml` from the work directory to `.deepwork/jobs/[job_nam
 cp deepwork/[job_name]/job.yml .deepwork/jobs/[job_name]/job.yml
 ```
 
-### Step 5: Register the Job
-
-Update `.deepwork/registry.yml` to register the new job:
-
-```yaml
-jobs:
-  [job_name]:
-    version: "[version]"
-    summary: "[summary]"
-    path: "[job_name]"
-```
-
-**Important**: Don't overwrite existing jobs in the registry - add to it.
-
-### Step 6: Sync Commands
+### Step 5: Sync Commands
 
 Run `deepwork sync` to generate the slash-commands for this job:
 
@@ -147,7 +165,7 @@ This will:
 - Generate slash-commands for each step
 - Make the commands available in `.claude/commands/` (or appropriate platform directory)
 
-### Step 7: Reload Commands
+### Step 6: Reload Commands
 
 Instruct the user to reload commands in their current session:
 - Run `/reload` command (if available)
@@ -277,7 +295,6 @@ Before running `deepwork sync`, verify:
 - All directories exist
 - `job.yml` is in place
 - All step instruction files exist (one per step)
-- Registry is updated
 - No file system errors
 
 ## Output Format
@@ -307,8 +324,6 @@ Successfully implemented the **[job_name]** workflow with [N] steps.
 - `.deepwork/jobs/[job_name]/steps/[step2_id].md`
 [... list all step files ...]
 
-### Registry
-- Updated `.deepwork/registry.yml` with job registration
 
 ## Generated Commands
 
@@ -345,7 +360,6 @@ Before marking this step complete, ensure:
 - [ ] job.yml validated and copied to job directory
 - [ ] All step instruction files created
 - [ ] Each instruction file is complete and actionable
-- [ ] Registry updated with new job
 - [ ] `deepwork sync` executed successfully
 - [ ] Commands generated in platform directory
 - [ ] User informed of next steps (reload commands)
@@ -358,6 +372,5 @@ Before marking this step complete, ensure:
 - Instructions are specific and actionable
 - Output examples are provided in each instruction file
 - Quality criteria defined for each step
-- Registry properly updated
 - Sync completed successfully
 - Commands available for use

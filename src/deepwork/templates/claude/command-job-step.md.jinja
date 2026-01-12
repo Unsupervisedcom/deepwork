@@ -1,5 +1,35 @@
 ---
 description: {{ step_description }}
+{% if stop_hooks %}
+hooks:
+  Stop:
+    - hooks:
+{% for hook in stop_hooks %}
+{% if hook.type == "script" %}
+        - type: command
+          command: ".deepwork/jobs/{{ job_name }}/{{ hook.path }}"
+{% else %}
+        - type: prompt
+          prompt: |
+            You must evaluate whether Claude has met all the below quality criteria for the request.
+
+            ## Quality Criteria
+
+            {{ hook.content | indent(12) }}
+
+            ## Instructions
+
+            Review the conversation and determine if ALL quality criteria above have been satisfied.
+            Look for evidence that each criterion has been addressed.
+
+            If the agent has included `<promise>QUALITY_COMPLETE</promise>` in their response AND
+            all criteria appear to be met, respond with: {"ok": true}
+
+            If criteria are NOT met AND the promise tag is missing, respond with:
+            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
+{% endif %}
+{% endfor %}
+{% endif %}
 ---
 
 # {{ job_name }}.{{ step_id }}
@@ -88,6 +118,34 @@ Ensure all outputs are:
 - Committed to the work branch
 - Ready for review or use by subsequent steps
 
+{% if stop_hooks %}
+## Quality Validation Loop
+
+This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
+
+{% for hook in stop_hooks %}
+{% if hook.type == "script" %}
+**Validation Script**: `.deepwork/jobs/{{ job_name }}/{{ hook.path }}`
+
+The validation script will be executed automatically when you attempt to complete this step.
+{% else %}
+### Quality Criteria{% if stop_hooks | length > 1 %} ({{ loop.index }}){% endif %}
+
+{{ hook.content }}
+{% endif %}
+{% endfor %}
+
+### Completion Promise
+
+To signal that all quality criteria have been met, include this tag in your final response:
+
+```
+<promise>QUALITY_COMPLETE</promise>
+```
+
+**Important**: Only include this promise tag when you have verified that ALL quality criteria above are satisfied. The validation loop will continue until this promise is detected.
+
+{% endif %}
 ## Completion
 
 After completing this step:

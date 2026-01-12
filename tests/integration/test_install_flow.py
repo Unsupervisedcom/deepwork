@@ -24,7 +24,7 @@ class TestInstallCommand:
         assert "DeepWork Installation" in result.output
         assert "Git repository found" in result.output
         assert "Claude Code detected" in result.output
-        assert "Installation Complete" in result.output
+        assert "DeepWork installed successfully" in result.output
 
         # Verify directory structure
         deepwork_dir = mock_claude_project / ".deepwork"
@@ -36,19 +36,18 @@ class TestInstallCommand:
         assert config_file.exists()
         config = load_yaml(config_file)
         assert config is not None
-        assert config["platform"] == "claude"
+        assert "claude" in config["platforms"]
         assert config["version"] == "1.0.0"
-        assert "installed" in config
 
-        # Verify core skills were created
-        claude_dir = mock_claude_project / ".claude"
-        assert (claude_dir / "skill-deepwork.define.md").exists()
-        assert (claude_dir / "skill-deepwork.refine.md").exists()
+        # Verify core commands were created
+        claude_dir = mock_claude_project / ".claude" / "commands"
+        assert (claude_dir / "deepwork_jobs.define.md").exists()
+        assert (claude_dir / "deepwork_jobs.refine.md").exists()
 
-        # Verify skill content
-        define_skill = (claude_dir / "skill-deepwork.define.md").read_text()
-        assert "Name: deepwork.define" in define_skill
-        assert "Interactive job definition wizard" in define_skill
+        # Verify command content
+        define_command = (claude_dir / "deepwork_jobs.define.md").read_text()
+        assert "# deepwork_jobs.define" in define_command
+        assert "Define Job Specification" in define_command
 
     def test_install_with_auto_detect(self, mock_claude_project: Path) -> None:
         """Test installing with auto-detection."""
@@ -138,9 +137,9 @@ class TestInstallCommand:
         deepwork_dir = mock_claude_project / ".deepwork"
         assert (deepwork_dir / "config.yml").exists()
 
-        claude_dir = mock_claude_project / ".claude"
-        assert (claude_dir / "skill-deepwork.define.md").exists()
-        assert (claude_dir / "skill-deepwork.refine.md").exists()
+        claude_dir = mock_claude_project / ".claude" / "commands"
+        assert (claude_dir / "deepwork_jobs.define.md").exists()
+        assert (claude_dir / "deepwork_jobs.refine.md").exists()
 
 
 class TestCLIEntryPoint:

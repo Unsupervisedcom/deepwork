@@ -47,6 +47,48 @@ class StepInput:
 
 
 @dataclass
+class StopHook:
+    """Represents a stop hook configuration for quality validation loops.
+
+    Stop hooks enable iterative refinement by blocking step completion until
+    quality criteria are met. Three types are supported:
+    - prompt: Inline prompt text for validation
+    - prompt_file: Path to a file containing the validation prompt
+    - script: Path to a shell script for custom validation logic
+    """
+
+    # Inline prompt
+    prompt: str | None = None
+
+    # Prompt file reference (relative to job directory)
+    prompt_file: str | None = None
+
+    # Shell script reference (relative to job directory)
+    script: str | None = None
+
+    def is_prompt(self) -> bool:
+        """Check if this is an inline prompt hook."""
+        return self.prompt is not None
+
+    def is_prompt_file(self) -> bool:
+        """Check if this is a prompt file reference hook."""
+        return self.prompt_file is not None
+
+    def is_script(self) -> bool:
+        """Check if this is a shell script hook."""
+        return self.script is not None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "StopHook":
+        """Create StopHook from dictionary."""
+        return cls(
+            prompt=data.get("prompt"),
+            prompt_file=data.get("prompt_file"),
+            script=data.get("script"),
+        )
+
+
+@dataclass
 class Step:
     """Represents a single step in a job."""
 
@@ -57,6 +99,7 @@ class Step:
     inputs: list[StepInput] = field(default_factory=list)
     outputs: list[str] = field(default_factory=list)
     dependencies: list[str] = field(default_factory=list)
+    stop_hooks: list[StopHook] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Step":
@@ -69,6 +112,7 @@ class Step:
             inputs=[StepInput.from_dict(inp) for inp in data.get("inputs", [])],
             outputs=data["outputs"],
             dependencies=data.get("dependencies", []),
+            stop_hooks=[StopHook.from_dict(h) for h in data.get("stop_hooks", [])],
         )
 
 
