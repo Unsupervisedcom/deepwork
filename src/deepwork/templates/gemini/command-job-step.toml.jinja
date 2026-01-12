@@ -91,7 +91,6 @@ Create the following output(s) in the work directory:
 
 Ensure all outputs are:
 - Well-formatted and complete
-- Committed to the work branch
 - Ready for review or use by subsequent steps
 
 {% if stop_hooks %}
@@ -114,15 +113,9 @@ This step has quality criteria that should be verified before completion.
 
 After completing this step:
 
-1. **Commit your work**:
-   ```bash
-   git add deepwork/{{ job_name }}/
-   git commit -m "{{ job_name }}: Complete {{ step_id }} step"
-   ```
+1. **Verify outputs**: Confirm all required files have been created
 
-2. **Verify outputs**: Confirm all required files have been created
-
-3. **Inform the user**:
+2. **Inform the user**:
 {% if is_standalone %}
    - The {{ step_id }} command is complete
    - Outputs created: {{ outputs | join(', ') }}

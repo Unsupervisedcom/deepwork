@@ -450,7 +450,6 @@ Create the following output(s) in the work directory:
 - `deepwork/deepwork_jobs/job.yml`
 Ensure all outputs are:
 - Well-formatted and complete
-- Committed to the work branch
 - Ready for review or use by subsequent steps
 
 ## Quality Validation Loop
@@ -486,15 +485,9 @@ To signal that all quality criteria have been met, include this tag in your fina
 
 After completing this step:
 
-1. **Commit your work**:
-   ```bash
-   git add deepwork/deepwork_jobs/
-   git commit -m "deepwork_jobs: Complete define step"
-   ```
+1. **Verify outputs**: Confirm all required files have been created
 
-2. **Verify outputs**: Confirm all required files have been created
-
-3. **Inform the user**:
+2. **Inform the user**:
    - Step 1 of 3 is complete
    - Outputs created: job.yml
    - Ready to proceed to next step: `/deepwork_jobs.implement`

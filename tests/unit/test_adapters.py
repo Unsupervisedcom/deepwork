@@ -133,9 +133,7 @@ class TestClaudeAdapter:
         (temp_dir / ".claude").mkdir()
         adapter = ClaudeAdapter(temp_dir)
         hooks = {
-            "PreToolUse": [
-                {"matcher": "", "hooks": [{"type": "command", "command": "test.sh"}]}
-            ]
+            "PreToolUse": [{"matcher": "", "hooks": [{"type": "command", "command": "test.sh"}]}]
         }
 
         count = adapter.sync_hooks(temp_dir, hooks)
@@ -289,9 +287,7 @@ class TestGeminiAdapter:
         (temp_dir / ".gemini").mkdir()
         adapter = GeminiAdapter(temp_dir)
         hooks = {
-            "SomeEvent": [
-                {"matcher": "", "hooks": [{"type": "command", "command": "test.sh"}]}
-            ]
+            "SomeEvent": [{"matcher": "", "hooks": [{"type": "command", "command": "test.sh"}]}]
         }
 
         count = adapter.sync_hooks(temp_dir, hooks)
@@ -312,9 +308,7 @@ class TestGeminiAdapter:
         gemini_dir.mkdir()
         adapter = GeminiAdapter(temp_dir)
         hooks = {
-            "AfterAgent": [
-                {"matcher": "", "hooks": [{"type": "command", "command": "test.sh"}]}
-            ]
+            "AfterAgent": [{"matcher": "", "hooks": [{"type": "command", "command": "test.sh"}]}]
         }
 
         adapter.sync_hooks(temp_dir, hooks)

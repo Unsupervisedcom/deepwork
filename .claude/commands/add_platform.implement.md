@@ -340,7 +340,6 @@ Create the following output(s) in the work directory:
 - `deepwork/add_platform/templates/` (directory)- `deepwork/add_platform/tests/` (directory)- `deepwork/add_platform/README.md`
 Ensure all outputs are:
 - Well-formatted and complete
-- Committed to the work branch
 - Ready for review or use by subsequent steps
 
 ## Quality Validation Loop
@@ -379,15 +378,9 @@ To signal that all quality criteria have been met, include this tag in your fina
 
 After completing this step:
 
-1. **Commit your work**:
-   ```bash
-   git add deepwork/add_platform/
-   git commit -m "add_platform: Complete implement step"
-   ```
+1. **Verify outputs**: Confirm all required files have been created
 
-2. **Verify outputs**: Confirm all required files have been created
-
-3. **Inform the user**:
+2. **Inform the user**:
    - Step 3 of 4 is complete
    - Outputs created: templates/, tests/, README.md
    - Ready to proceed to next step: `/add_platform.verify`

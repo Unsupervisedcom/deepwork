@@ -1031,8 +1031,8 @@ def test_resume_after_interruption():
 def test_branch_management():
     """Verify branch creation, switching, cleanup"""
 
-def test_commit_integration():
-    """Test auto-commit functionality"""
+def test_work_directory_structure():
+    """Test work directory creation and file organization"""
 
 def test_merge_detection():
     """Check detection of merged work"""

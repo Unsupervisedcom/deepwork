@@ -244,22 +244,15 @@ Create the following output(s) in the work directory:
 
 Ensure all outputs are:
 - Well-formatted and complete
-- Committed to the work branch
 - Ready for review or use by subsequent steps
 
 ## Completion
 
 After completing this step:
 
-1. **Commit your work**:
-   ```bash
-   git add deepwork/deepwork_policy/
-   git commit -m "deepwork_policy: Complete define step"
-   ```
+1. **Verify outputs**: Confirm all required files have been created
 
-2. **Verify outputs**: Confirm all required files have been created
-
-3. **Inform the user**:
+2. **Inform the user**:
    - The define command is complete
    - Outputs created: .deepwork.policy.yml
    - This command can be run again anytime to make further changes

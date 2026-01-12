@@ -295,7 +295,6 @@ Create the following output(s) in the work directory:
 - `deepwork/add_platform/verification_complete.md`
 Ensure all outputs are:
 - Well-formatted and complete
-- Committed to the work branch
 - Ready for review or use by subsequent steps
 
 ## Quality Validation Loop
@@ -328,15 +327,9 @@ To signal that all quality criteria have been met, include this tag in your fina
 
 After completing this step:
 
-1. **Commit your work**:
-   ```bash
-   git add deepwork/add_platform/
-   git commit -m "add_platform: Complete verify step"
-   ```
+1. **Verify outputs**: Confirm all required files have been created
 
-2. **Verify outputs**: Confirm all required files have been created
-
-3. **Inform the user**:
+2. **Inform the user**:
    - Step 4 of 4 is complete
    - Outputs created: verification_complete.md
    - This is the final step - the job is complete!
