@@ -83,6 +83,3 @@ dmypy.json
 *.tmp
 .temp/
 tmp/
-
-# CI/CD
-.github/
