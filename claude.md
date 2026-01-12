@@ -155,7 +155,7 @@ my-project/
 ## Key Files to Reference
 
 - `doc/architecture.md` - Comprehensive architecture documentation
-- `readme.md` - High-level project overview
+- `README.md` - High-level project overview
 - `shell.nix` - Development environment setup
 
 ## Development Guidelines
@@ -206,9 +206,3 @@ If a job exists in `src/deepwork/standard_jobs/`, it is a standard job and MUST 
 3. **Performance**: Job import completes in <10 seconds
 4. **Extensibility**: New AI platforms can be added in <2 days
 5. **Quality**: 90%+ test coverage, zero critical bugs
-
-## Questions or Issues?
-
-- See `doc/architecture.md` for detailed design documentation
-- Check `readme.md` for high-level concepts
-- Reference implementation phases for current work focus

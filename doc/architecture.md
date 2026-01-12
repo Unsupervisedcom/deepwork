@@ -522,65 +522,8 @@ Create `competitors.md` with this structure:
 
 When the job is defined and `sync` is run, DeepWork generates command files. Example for Claude Code:
 
-`.claude/commands/competitive_research.identify_competitors.md`:
+`.deepwork/jobs/competitive_research` a step called `identify_competitors` will generate a command file at `.claude/commands/competitive_research.identify_competitors.md`:
 
-```markdown
----
-description: Research and identify direct and indirect competitors
----
-
-# competitive_research.identify_competitors
-
-**Step 1 of 5** in the **competitive_research** workflow
-
-**Summary**: Systematic competitive analysis workflow
-
-## Job Overview
-
-[Job description and context...]
-
-## Instructions
-
-You are performing the "Identify Competitors" step of competitive research.
-
-### Prerequisites
-This step has no dependencies (it's the first step).
-
-Before starting, ensure you have:
-- Market segment defined
-- Product category specified
-
-### Input Parameters
-Ask the user for the following if not already provided:
-1. **market_segment**: The market segment to analyze
-2. **product_category**: Product category
-
-### Your Task
-
-[Content from .deepwork/jobs/competitive_research/steps/identify_competitors.md is embedded here]
-
-### Work Branch Management
-1. Check if we're on a work branch for this job
-2. If not, create a new branch: `deepwork/competitive_research-[instance]-[date]`
-3. All outputs should be created in the `deepwork/[branch-name]/` directory
-
-### Output Requirements
-Create the following file in the work directory:
-- `deepwork/[branch-name]/competitors.md`
-
-### After Completion
-1. Inform the user that step 1 is complete
-2. Recommend they review the competitors.md file
-3. Suggest running `/competitive_research.primary_research` to continue
-
----
-
-## Context Files
-- Job definition: `.deepwork/jobs/competitive_research/job.yml`
-- Step instructions: `.deepwork/jobs/competitive_research/steps/identify_competitors.md`
-```
-
----
 
 # Part 3: Runtime Execution Model
 
@@ -726,17 +669,14 @@ This step requires outputs from:
 - Step 2 (primary_research): primary_research.md
 
 ### Your Task
-1. Read `deepwork/[branch]/competitors.md`
-2. Read `deepwork/[branch]/primary_research.md`
-3. [Perform analysis]
-4. Write `deepwork/[branch]/secondary_research.md`
+Conduct web research on secondary sources for each competitor identified in competitors.md.
 ```
 
 ### 3. Git History
 
 When working on similar jobs:
 - User: "Do competitive research for Acme Corp, similar to our Widget Corp analysis"
-- Claude can read `deepwork/competitive_research-widget-corp-2026-01-05/` from git history
+- Claude can read old existing branches like`deepwork/competitive_research-widget-corp-2024-01-05/` from git history
 - Uses it as a template for style, depth, format
 
 ### 4. No Environment Variables Needed
@@ -773,18 +713,17 @@ Where `instance-identifier` can be:
 ### Command Behavior
 
 Commands should:
-1. Check if we're already on a work branch for this job
+1. Check if we're already on a branch for this job
 2. If not, ask user for instance name or auto-generate from timestamp
 3. Create branch: `git checkout -b deepwork/[job_name]-[instance]-[date]`
-4. Create work directory: `mkdir -p deepwork/[job_name]-[instance]-[date]`
-5. Perform work in that directory
+4. Perform the work on that branch
 
 ### Completion and Merge
 
-When all steps are done:
-1. User reviews all outputs in `work/[branch-name]/`
-2. Commits the work
-3. Creates PR to main branch
+When all steps are done, remind the user they should:
+1. Review all outputs
+2. Commit the work
+3. Create PR to main branch
 4. After merge, the work products are in the repository
 5. Future job instances can reference this work for context/templates
 
