@@ -206,11 +206,7 @@ All work for this job should be done on a dedicated work branch:
 
 ## Output Requirements
 
-Create the following output(s):
-- `none`
-Ensure all outputs are:
-- Well-formatted and complete
-- Ready for review or use by subsequent steps
+No specific files are output by this command.
 
 ## Quality Validation Loop
 
@@ -246,7 +242,6 @@ After completing this step:
 
 2. **Inform the user**:
    - Step 4 of 4 is complete
-   - Outputs created: none
    - This is the final step - the job is complete!
 
 ## Workflow Complete

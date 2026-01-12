@@ -116,8 +116,7 @@ steps:
     inputs:
       - file: templates/
         from_step: implement
-    outputs:
-      - none
+    outputs: []
     dependencies:
       - implement
     stop_hooks:
