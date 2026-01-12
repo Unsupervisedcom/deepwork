@@ -10,7 +10,6 @@ from deepwork.core.adapters import (
     AgentAdapter,
     ClaudeAdapter,
     CommandLifecycleHook,
-    COMMAND_LIFECYCLE_HOOKS_SUPPORTED,
     GeminiAdapter,
 )
 
