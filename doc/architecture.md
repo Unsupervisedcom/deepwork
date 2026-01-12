@@ -44,18 +44,34 @@ deepwork/                       # DeepWork tool repository
 │       ├── core/
 │       │   ├── detector.py     # AI platform detection
 │       │   ├── generator.py    # Command file generation
-│       │   └── parser.py       # Job definition parsing
+│       │   ├── parser.py       # Job definition parsing
+│       │   ├── policy_parser.py # Policy definition parsing
+│       │   └── hooks_syncer.py # Hook syncing to platforms
+│       ├── hooks/              # Hook evaluation modules
+│       │   ├── __init__.py
+│       │   └── evaluate_policies.py  # Policy evaluation CLI
 │       ├── templates/          # Command templates for each platform
 │       │   ├── claude/
 │       │   │   └── command-job-step.md.jinja
 │       │   ├── gemini/
 │       │   └── copilot/
 │       ├── standard_jobs/      # Built-in job definitions
-│       │   └── deepwork_jobs/
+│       │   ├── deepwork_jobs/
+│       │   │   ├── job.yml
+│       │   │   └── steps/
+│       │   └── deepwork_policy/   # Policy management job
 │       │       ├── job.yml
-│       │       └── steps/
-│       ├── schemas/            # Job definition schemas
-│       │   └── job_schema.py
+│       │       ├── steps/
+│       │       │   └── define.md
+│       │       └── hooks/         # Hook scripts
+│       │           ├── global_hooks.yml
+│       │           ├── user_prompt_submit.sh
+│       │           ├── capture_work_tree.sh
+│       │           ├── get_changed_files.sh
+│       │           └── policy_stop_hook.sh
+│       ├── schemas/            # Definition schemas
+│       │   ├── job_schema.py
+│       │   └── policy_schema.py
 │       └── utils/
 │           ├── fs.py
 │           ├── git.py
@@ -223,41 +239,40 @@ This section describes what a project looks like AFTER `deepwork install --claud
 my-project/                     # User's project (target)
 ├── .git/
 ├── .claude/                    # Claude Code directory
+│   ├── settings.json           # Includes installed hooks
 │   └── commands/               # Command files
 │       ├── deepwork_jobs.define.md         # Core DeepWork commands
 │       ├── deepwork_jobs.implement.md
 │       ├── deepwork_jobs.refine.md
+│       ├── deepwork_policy.define.md       # Policy management
 │       ├── competitive_research.identify_competitors.md
-│       ├── competitive_research.primary_research.md
-│       ├── competitive_research.secondary_research.md
-│       ├── competitive_research.comparative_report.md
-│       └── competitive_research.positioning.md
+│       └── ...
 ├── .deepwork/                  # DeepWork configuration
 │   ├── config.yml              # Platform config
+│   ├── .gitignore              # Ignores .last_work_tree
 │   └── jobs/                   # Job definitions
 │       ├── deepwork_jobs/      # Core job for managing jobs
 │       │   ├── job.yml
 │       │   └── steps/
-│       │       ├── define.md
-│       │       ├── implement.md
-│       │       └── refine.md
+│       ├── deepwork_policy/    # Policy management job
+│       │   ├── job.yml
+│       │   ├── steps/
+│       │   │   └── define.md
+│       │   └── hooks/          # Hook scripts (installed from standard_jobs)
+│       │       ├── global_hooks.yml
+│       │       ├── user_prompt_submit.sh
+│       │       ├── capture_work_tree.sh
+│       │       ├── get_changed_files.sh
+│       │       └── policy_stop_hook.sh
 │       ├── competitive_research/
 │       │   ├── job.yml         # Job metadata
 │       │   └── steps/
-│       │       ├── identify_competitors.md
-│       │       ├── primary_research.md
-│       │       ├── secondary_research.md
-│       │       ├── comparative_report.md
-│       │       └── positioning.md
 │       └── ad_campaign/
 │           └── ...
+├── .deepwork.policy.yml        # Policy definitions (project root)
 ├── deepwork/                   # Work products (Git branches)
 │   ├── competitive_research-acme-2026-01-11/
-│   │   ├── competitors.md
-│   │   ├── primary_research.md
-│   │   ├── secondary_research.md
-│   │   ├── comparison_matrix.md
-│   │   └── positioning_strategy.md
+│   │   └── ...
 │   └── ad_campaign-q1-2026-01-11/
 │       └── ...
 ├── (rest of user's project files)
@@ -1203,6 +1218,113 @@ jobs:
 5. **Mocking**: Mock external dependencies (Git, network, AI agents)
 6. **Assertions**: Use specific assertions with clear failure messages
 7. **Documentation**: Complex tests should have docstrings explaining setup
+
+---
+
+## Policies
+
+Policies are automated enforcement rules that trigger based on file changes during an AI agent session. They help ensure that:
+- Documentation stays in sync with code changes
+- Security reviews happen when sensitive code is modified
+- Team guidelines are followed automatically
+
+### Policy Configuration File
+
+Policies are defined in `.deepwork.policy.yml` at the project root:
+
+```yaml
+- name: "Update install guide on config changes"
+  trigger: "app/config/**/*"
+  safety: "docs/install_guide.md"
+  instructions: |
+    Configuration files have been modified. Please review docs/install_guide.md
+    and update it if any installation instructions need to change.
+
+- name: "Security review for auth changes"
+  trigger:
+    - "src/auth/**/*"
+    - "src/security/**/*"
+  safety:
+    - "SECURITY.md"
+    - "docs/security_audit.md"
+  instructions: |
+    Authentication or security code has been changed. Please:
+    1. Check for hardcoded credentials
+    2. Verify input validation
+    3. Review access control logic
+```
+
+### Policy Evaluation Flow
+
+1. **Session Start**: When a Claude Code session begins, the baseline git state is captured
+2. **Agent Works**: The AI agent performs tasks, potentially modifying files
+3. **Session Stop**: When the agent finishes:
+   - Changed files are detected by comparing against the baseline
+   - Each policy is evaluated:
+     - If any changed file matches a `trigger` pattern AND
+     - No changed file matches a `safety` pattern AND
+     - The agent hasn't marked it with a `<promise>` tag
+     - → The policy fires
+   - If policies fire, Claude is prompted to address them
+4. **Promise Tags**: Agents can mark policies as addressed by including `<promise policy="Policy Name">addressed</promise>` in their response
+
+### Hook Integration
+
+Policies are implemented using Claude Code's hooks system. The `deepwork_policy` standard job includes:
+
+```
+.deepwork/jobs/deepwork_policy/hooks/
+├── global_hooks.yml           # Maps lifecycle events to scripts
+├── user_prompt_submit.sh      # Captures baseline on first prompt
+├── capture_work_tree.sh       # Creates git state snapshot
+├── get_changed_files.sh       # Computes changed files
+└── policy_stop_hook.sh        # Evaluates policies on stop
+```
+
+The hooks are installed to `.claude/settings.json` during `deepwork sync`:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {"matcher": "", "hooks": [{"type": "command", "command": ".deepwork/jobs/deepwork_policy/hooks/user_prompt_submit.sh"}]}
+    ],
+    "Stop": [
+      {"matcher": "", "hooks": [{"type": "command", "command": ".deepwork/jobs/deepwork_policy/hooks/policy_stop_hook.sh"}]}
+    ]
+  }
+}
+```
+
+### Policy Schema
+
+Policies are validated against a JSON Schema:
+
+```yaml
+- name: string          # Required: Friendly name for the policy
+  trigger: string|array # Required: Glob pattern(s) for triggering files
+  safety: string|array  # Optional: Glob pattern(s) for safety files
+  instructions: string  # Required (unless instructions_file): What to do
+  instructions_file: string  # Alternative: Path to instructions file
+```
+
+### Defining Policies
+
+Use the `/deepwork_policy.define` command to interactively create policies:
+
+```
+User: /deepwork_policy.define
+
+Claude: I'll help you define a new policy. What guideline or constraint
+        should this policy enforce?
+
+User: When API code changes, the API documentation should be updated
+
+Claude: Got it. Let me ask a few questions...
+        [Interactive dialog to define trigger, safety, and instructions]
+
+Claude: ✓ Created policy "API documentation update" in .deepwork.policy.yml
+```
 
 ---
 

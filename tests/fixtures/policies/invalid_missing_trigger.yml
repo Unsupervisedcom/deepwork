@@ -1,0 +1,3 @@
+- name: "Invalid policy"
+  safety: "some/file.md"
+  instructions: "This policy is missing a trigger"

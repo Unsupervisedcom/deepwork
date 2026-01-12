@@ -1,0 +1,3 @@
+- name: "Security review"
+  trigger: "src/auth/**/*"
+  instructions_file: "instructions/security_review.md"

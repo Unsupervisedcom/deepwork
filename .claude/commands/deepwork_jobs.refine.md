@@ -439,21 +439,28 @@ All work for this job should be done on a dedicated work branch:
 
 ## Output Requirements
 
-**No separate output file is created**. All changes are made directly to:
-- `.deepwork/jobs/[job_name]/job.yml` (updated with new version and changelog entry)
-- `.deepwork/jobs/[job_name]/steps/[step_id].md` (if step instructions are modified)
-- Any new step instruction files created
+Create the following output(s) in the work directory:
+- `deepwork/deepwork_jobs/job.yml`
+Ensure all outputs are:
+- Well-formatted and complete
+- Committed to the work branch
+- Ready for review or use by subsequent steps
 
 ## Completion
 
 After completing this step:
 
-1. **Verify outputs**: Confirm all required files have been created
+1. **Commit your work**:
+   ```bash
+   git add deepwork/deepwork_jobs/
+   git commit -m "deepwork_jobs: Complete refine step"
+   ```
 
-2. **Inform the user**:
+2. **Verify outputs**: Confirm all required files have been created
+
+3. **Inform the user**:
    - Step 3 of 3 is complete
-   - Changes made to job.yml with updated version and changelog
-   - They should review the updated job.yml file before proceeding
+   - Outputs created: job.yml
    - This is the final step - the job is complete!
 
 ## Workflow Complete

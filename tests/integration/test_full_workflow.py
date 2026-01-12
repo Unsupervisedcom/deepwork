@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from deepwork.core.detector import PLATFORMS
-from deepwork.core.generator import SkillGenerator
+from deepwork.core.generator import CommandGenerator
 from deepwork.core.parser import parse_job_definition
 
 
@@ -22,7 +22,7 @@ class TestJobWorkflow:
         assert len(job.steps) == 4
 
         # Step 2: Generate skills
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         platform = PLATFORMS["claude"]
         skills_dir = temp_dir / ".claude"
         skills_dir.mkdir()
@@ -51,7 +51,7 @@ class TestJobWorkflow:
         assert len(job.steps) == 1
 
         # Generate
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         platform = PLATFORMS["claude"]
         skills_dir = temp_dir / ".claude"
         skills_dir.mkdir()
@@ -74,7 +74,7 @@ class TestJobWorkflow:
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         platform = PLATFORMS["claude"]
         skills_dir = temp_dir / ".claude"
         skills_dir.mkdir()
@@ -105,7 +105,7 @@ class TestJobWorkflow:
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         platform = PLATFORMS["claude"]
         skills_dir = temp_dir / ".claude"
         skills_dir.mkdir()
@@ -131,7 +131,7 @@ class TestJobWorkflow:
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         platform = PLATFORMS["claude"]
         skills_dir = temp_dir / ".claude"
         skills_dir.mkdir()
@@ -147,7 +147,7 @@ class TestJobWorkflow:
 
     def test_core_skills_generation(self, temp_dir: Path) -> None:
         """Test generation of core DeepWork skills."""
-        generator = SkillGenerator()
+        generator = CommandGenerator()
         platform = PLATFORMS["claude"]
         skills_dir = temp_dir / ".claude"
         skills_dir.mkdir()

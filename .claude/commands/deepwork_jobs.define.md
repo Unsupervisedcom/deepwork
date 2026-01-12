@@ -329,7 +329,6 @@ After creating the file:
 - Description provides rich context for future refinement
 - Specification is valid YAML and follows the schema
 - Ready for implementation step
-- Output artifacts have quality criteria defined
 
 
 ## Inputs
@@ -364,18 +363,24 @@ Create the following output(s) in the work directory:
 - `deepwork/deepwork_jobs/job.yml`
 Ensure all outputs are:
 - Well-formatted and complete
+- Committed to the work branch
 - Ready for review or use by subsequent steps
 
 ## Completion
 
 After completing this step:
 
-1. **Verify outputs**: Confirm all required files have been created
+1. **Commit your work**:
+   ```bash
+   git add deepwork/deepwork_jobs/
+   git commit -m "deepwork_jobs: Complete define step"
+   ```
 
-2. **Inform the user**:
-   - Step 1 of 2 is complete
+2. **Verify outputs**: Confirm all required files have been created
+
+3. **Inform the user**:
+   - Step 1 of 3 is complete
    - Outputs created: job.yml
-   - They should review the job.yml file before proceeding
    - Ready to proceed to next step: `/deepwork_jobs.implement`
 
 ## Next Step

@@ -89,5 +89,29 @@
       "Bash(npx:*)",
       "Edit(./**)"
     ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".deepwork/jobs/deepwork_policy/hooks/user_prompt_submit.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".deepwork/jobs/deepwork_policy/hooks/policy_stop_hook.sh"
+          }
+        ]
+      }
+    ]
   }
 }
