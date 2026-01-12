@@ -83,9 +83,3 @@ dmypy.json
 *.tmp
 .temp/
 tmp/
-
-# Project specific
-.deepwork/
-work/
-
-# CI/CD

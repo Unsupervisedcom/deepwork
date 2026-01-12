@@ -168,6 +168,37 @@ my-project/
 6. **No Auto-Commit**: DO NOT automatically commit changes to git. Let the user review and commit changes themselves.
 7. **Documentation Sync**: CRITICAL - When making implementation changes, always update `doc/architecture.md` and `README.md` to reflect those changes. The architecture document must stay in sync with the actual codebase (terminology, file paths, structure, behavior, etc.).
 
+## CRITICAL: Editing Standard Jobs
+
+**Standard jobs** (like `deepwork_jobs` and `deepwork_policy`) are bundled with DeepWork and installed to user projects. They exist in THREE locations:
+
+1. **Source of truth**: `src/deepwork/standard_jobs/[job_name]/` - The canonical source files
+2. **Installed copy**: `.deepwork/jobs/[job_name]/` - Installed by `deepwork install`
+3. **Generated commands**: `.claude/commands/[job_name].[step].md` - Generated from installed jobs
+
+### Editing Workflow for Standard Jobs
+
+**NEVER edit files in `.deepwork/jobs/` or `.claude/commands/` for standard jobs directly!**
+
+Instead, follow this workflow:
+
+1. **Edit the source files** in `src/deepwork/standard_jobs/[job_name]/`
+   - `job.yml` - Job definition with steps, stop_hooks, etc.
+   - `steps/*.md` - Step instruction files
+   - `hooks/*` - Any hook scripts
+
+2. **Run `deepwork install --platform claude`** to sync changes to `.deepwork/jobs/` and `.claude/commands/`
+
+3. **Verify** the changes propagated correctly to all locations
+
+### How to Identify Standard Jobs
+
+Standard jobs are defined in `src/deepwork/standard_jobs/`. Currently:
+- `deepwork_jobs` - Core job management commands (define, implement, refine)
+- `deepwork_policy` - Policy enforcement system
+
+If a job exists in `src/deepwork/standard_jobs/`, it is a standard job and MUST be edited there.
+
 ## Success Metrics
 
 1. **Usability**: Users can define and execute new jobs in <30 minutes

@@ -16,10 +16,12 @@ hooks:
             3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
             4. **Output Examples**: Does each instruction file show what good output looks like?
             5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
-            6. **Registry Updated**: Is `.deepwork/registry.yml` updated with the new job?
-            7. **Sync Complete**: Has `deepwork sync` been run successfully?
-            8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-            9. **Summary Created**: Has `implementation_summary.md` been created?
+            6. **Sync Complete**: Has `deepwork sync` been run successfully?
+            7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+            8. **Summary Created**: Has `implementation_summary.md` been created?
+            9. **Policies Considered**: Have you thought about whether policies would benefit this job?
+               - If relevant policies were identified, did you explain them and offer to run `/deepwork_policy.define`?
+               - Not every job needs policies - only suggest when genuinely helpful.
 
             If ANY criterion is not met, continue working to address it.
             If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
@@ -73,13 +75,12 @@ Generate the DeepWork job directory structure and instruction files for each ste
 
 ## Task
 
-Read the `job.yml` specification file and create all the necessary files to make the job functional, including directory structure, step instruction files, and registry entry. Then sync the commands to make them available.
+Read the `job.yml` specification file and create all the necessary files to make the job functional, including directory structure and step instruction files. Then sync the commands to make them available.
 
 ### Step 1: Read and Validate the Specification
 
 1. **Locate the job.yml file**
-   - Read `deepwork/[job_name]/job.yml` from the define step
-   - (Where `[job_name]` is the name of the new job that was created in the define step)
+   - Read `deepwork/[job_name]/job.yml` from the define step (Where `[job_name]` is the name of the new job that was created in the define step)
    - Parse the YAML content
 
 2. **Validate the specification**
@@ -178,6 +179,39 @@ Each instruction file should follow this structure:
 3. **Provide examples** - Show what good output looks like
 4. **Explain the "why"** - Help the user understand the step's role in the workflow
 5. **Quality over quantity** - Detailed, actionable instructions are better than vague ones
+6. **Align with stop hooks** - If the step has `stop_hooks` defined, ensure the quality criteria in the instruction file match the validation criteria in the hooks
+
+### Handling Stop Hooks
+
+If a step in the job.yml has `stop_hooks` defined, the generated instruction file should:
+
+1. **Mirror the quality criteria** - The "Quality Criteria" section should match what the stop hooks will validate
+2. **Be explicit about success** - Help the agent understand when the step is truly complete
+3. **Include the promise pattern** - Mention that `<promise>QUALITY_COMPLETE</promise>` should be included when criteria are met
+
+**Example: If the job.yml has:**
+```yaml
+- id: research_competitors
+  name: "Research Competitors"
+  stop_hooks:
+    - prompt: |
+        Verify the research meets criteria:
+        1. Each competitor has at least 3 data points
+        2. Sources are cited
+        3. Information is current (within last year)
+```
+
+**The instruction file should include:**
+```markdown
+## Quality Criteria
+
+- Each competitor has at least 3 distinct data points
+- All information is sourced with citations
+- Data is current (from within the last year)
+- When all criteria are met, include `<promise>QUALITY_COMPLETE</promise>` in your response
+```
+
+This alignment ensures the AI agent knows exactly what will be validated and can self-check before completing.
 
 ### Step 4: Copy job.yml to Job Directory
 
@@ -187,21 +221,7 @@ Copy the validated `job.yml` from the work directory to `.deepwork/jobs/[job_nam
 cp deepwork/[job_name]/job.yml .deepwork/jobs/[job_name]/job.yml
 ```
 
-### Step 5: Register the Job
-
-Update `.deepwork/registry.yml` to register the new job:
-
-```yaml
-jobs:
-  [job_name]:
-    version: "[version]"
-    summary: "[summary]"
-    path: "[job_name]"
-```
-
-**Important**: Don't overwrite existing jobs in the registry - add to it.
-
-### Step 6: Sync Commands
+### Step 5: Sync Commands
 
 Run `deepwork sync` to generate the slash-commands for this job:
 
@@ -214,11 +234,71 @@ This will:
 - Generate slash-commands for each step
 - Make the commands available in `.claude/commands/` (or appropriate platform directory)
 
-### Step 7: Reload Commands
+### Step 6: Reload Commands
 
 Instruct the user to reload commands in their current session:
 - Run `/reload` command (if available)
 - Or restart the Claude session
+
+### Step 7: Consider Policies for the New Job
+
+After implementing the job, consider whether there are **policies** that would help enforce quality or consistency when working with this job's domain.
+
+**What are policies?**
+
+Policies are automated guardrails defined in `.deepwork.policy.yml` that trigger when certain files change during an AI session. They help ensure:
+- Documentation stays in sync with code
+- Team guidelines are followed
+- Architectural decisions are respected
+- Quality standards are maintained
+
+**When to suggest policies:**
+
+Think about the job you just implemented and ask:
+- Does this job produce outputs that other files depend on?
+- Are there documentation files that should be updated when this job's outputs change?
+- Are there quality checks or reviews that should happen when certain files in this domain change?
+- Could changes to the job's output files impact other parts of the project?
+
+**Examples of policies that might make sense:**
+
+| Job Type | Potential Policy |
+|----------|------------------|
+| API Design | "Update API docs when endpoint definitions change" |
+| Database Schema | "Review migrations when schema files change" |
+| Competitive Research | "Update strategy docs when competitor analysis changes" |
+| Feature Development | "Update changelog when feature files change" |
+| Configuration Management | "Update install guide when config files change" |
+
+**How to offer policy creation:**
+
+If you identify one or more policies that would benefit the user, explain:
+1. **What the policy would do** - What triggers it and what action it prompts
+2. **Why it would help** - How it prevents common mistakes or keeps things in sync
+3. **What files it would watch** - The trigger patterns
+
+Then ask the user:
+
+> "Would you like me to create this policy for you? I can run `/deepwork_policy.define` to set it up."
+
+If the user agrees, invoke the `/deepwork_policy.define` command to guide them through creating the policy.
+
+**Example dialogue:**
+
+```
+Based on the competitive_research job you just created, I noticed that when
+competitor analysis files change, it would be helpful to remind you to update
+your strategy documentation.
+
+I'd suggest a policy like:
+- **Name**: "Update strategy when competitor analysis changes"
+- **Trigger**: `deepwork/competitive_research-*/report.md`
+- **Action**: Prompt to review and update `docs/strategy.md`
+
+Would you like me to create this policy? I can run `/deepwork_policy.define` to set it up.
+```
+
+**Note:** Not every job needs policies. Only suggest them when they would genuinely help maintain consistency or quality. Don't force policies where they don't make sense.
 
 ## Example Implementation
 
@@ -344,7 +424,6 @@ Before running `deepwork sync`, verify:
 - All directories exist
 - `job.yml` is in place
 - All step instruction files exist (one per step)
-- Registry is updated
 - No file system errors
 
 ## Output Format
@@ -374,8 +453,6 @@ Successfully implemented the **[job_name]** workflow with [N] steps.
 - `.deepwork/jobs/[job_name]/steps/[step2_id].md`
 [... list all step files ...]
 
-### Registry
-- Updated `.deepwork/registry.yml` with job registration
 
 ## Generated Commands
 
@@ -412,11 +489,12 @@ Before marking this step complete, ensure:
 - [ ] job.yml validated and copied to job directory
 - [ ] All step instruction files created
 - [ ] Each instruction file is complete and actionable
-- [ ] Registry updated with new job
 - [ ] `deepwork sync` executed successfully
 - [ ] Commands generated in platform directory
 - [ ] User informed of next steps (reload commands)
 - [ ] implementation_summary.md created
+- [ ] Considered whether policies would benefit this job (Step 7)
+- [ ] If policies suggested, offered to run `/deepwork_policy.define`
 
 ## Quality Criteria
 
@@ -425,9 +503,9 @@ Before marking this step complete, ensure:
 - Instructions are specific and actionable
 - Output examples are provided in each instruction file
 - Quality criteria defined for each step
-- Registry properly updated
 - Sync completed successfully
 - Commands available for use
+- Thoughtfully considered relevant policies for the job domain
 
 
 ## Inputs
@@ -480,10 +558,12 @@ Verify the implementation meets ALL quality criteria before completing:
 3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
 4. **Output Examples**: Does each instruction file show what good output looks like?
 5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
-6. **Registry Updated**: Is `.deepwork/registry.yml` updated with the new job?
-7. **Sync Complete**: Has `deepwork sync` been run successfully?
-8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-9. **Summary Created**: Has `implementation_summary.md` been created?
+6. **Sync Complete**: Has `deepwork sync` been run successfully?
+7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+8. **Summary Created**: Has `implementation_summary.md` been created?
+9. **Policies Considered**: Have you thought about whether policies would benefit this job?
+   - If relevant policies were identified, did you explain them and offer to run `/deepwork_policy.define`?
+   - Not every job needs policies - only suggest when genuinely helpful.
 
 If ANY criterion is not met, continue working to address it.
 If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
