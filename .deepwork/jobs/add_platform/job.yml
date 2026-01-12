@@ -117,7 +117,7 @@ steps:
       - file: templates/
         from_step: implement
     outputs:
-      - verification_complete.md
+      - none
     dependencies:
       - implement
     stop_hooks:

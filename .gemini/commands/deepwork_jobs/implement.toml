@@ -71,7 +71,7 @@ mkdir -p .deepwork/jobs/[job_name]/steps
 ```
 
 Files to create:
-- `.deepwork/jobs/[job_name]/job.yml` - Copy from work directory
+- `.deepwork/jobs/[job_name]/job.yml`
 - `.deepwork/jobs/[job_name]/steps/[step_id].md` - One for each step
 
 ### Step 3: Generate Step Instruction Files

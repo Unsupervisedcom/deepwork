@@ -120,85 +120,6 @@ Ensure the implementation step is complete:
    - Each platform's commands are independent
    - No file conflicts or overwrites
 
-6. **Document verification results**
-
-   Create a verification report documenting what was tested and the results.
-
-## Output Format
-
-### verification_complete.md
-
-Location: `deepwork/add_platform/verification_complete.md` (in work directory)
-
-**Structure**:
-```markdown
-# Platform Verification Complete: <platform_name>
-
-## Summary
-
-**Platform**: <platform_name>
-**Date**: YYYY-MM-DD
-**Status**: PASSED / FAILED
-
-## Installation Test
-
-### Command Executed
-```bash
-deepwork install --platform <platform_name>
-```
-
-### Result
-- Exit code: 0
-- Errors: None
-- Warnings: [any warnings]
-
-## Generated Files
-
-### Command Directory: <path>
-
-| File | Status | Notes |
-|------|--------|-------|
-| deepwork_jobs.define.md | Created | [size, any notes] |
-| deepwork_jobs.implement.md | Created | [size, any notes] |
-| deepwork_jobs.refine.md | Created | [size, any notes] |
-| deepwork_policy.define.md | Created | [size, any notes] |
-
-## Content Validation
-
-### Sample Command File Review
-
-**File**: deepwork_jobs.define.md
-
-- [ ] Correct frontmatter/metadata for platform
-- [ ] Job summary included
-- [ ] Step instructions rendered correctly
-- [ ] Platform-specific hooks present (if applicable)
-
-### Format Compliance
-
-- [ ] Files match platform's expected command format
-- [ ] No template rendering errors
-- [ ] All placeholders resolved
-
-## Cross-Platform Compatibility
-
-### Other Platforms Tested
-
-| Platform | Still Works | Notes |
-|----------|-------------|-------|
-| claude | Yes/No | [any issues] |
-
-## Conclusion
-
-[Summary of verification results and any recommendations]
-
-## Next Steps
-
-- [ ] Platform is ready for use
-- [ ] Consider adding to CI/CD pipeline
-- [ ] Update any additional documentation
-```
-
 ## Quality Criteria
 
 - Platform-specific directories are set up in the DeepWork repo
@@ -213,7 +134,6 @@ deepwork install --platform <platform_name>
   - No template errors or missing content
 - Existing platforms still work (if applicable)
 - No conflicts between platforms
-- `verification_complete.md` documents all test results
 - When all criteria are met, include `<promise>QUALITY_COMPLETE</promise>` in your response
 
 ## Context
@@ -262,7 +182,7 @@ All work for this job should be done on a dedicated work branch:
 ## Output Requirements
 
 Create the following output(s):
-- `verification_complete.md`
+- `none`
 
 Ensure all outputs are:
 - Well-formatted and complete
@@ -276,7 +196,7 @@ After completing this step:
 
 2. **Inform the user**:
    - Step 4 of 4 is complete
-   - Outputs created: verification_complete.md
+   - Outputs created: none
    - This is the final step - the job is complete!
 
 ## Workflow Complete
