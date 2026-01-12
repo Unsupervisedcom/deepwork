@@ -29,6 +29,27 @@ JOB_SCHEMA: dict[str, Any] = {
             "minLength": 1,
             "description": "Detailed multi-line description of the job's purpose, process, and goals",
         },
+        "changelog": {
+            "type": "array",
+            "description": "Version history and changes to the job",
+            "items": {
+                "type": "object",
+                "required": ["version", "changes"],
+                "properties": {
+                    "version": {
+                        "type": "string",
+                        "pattern": r"^\d+\.\d+\.\d+$",
+                        "description": "Version number for this change",
+                    },
+                    "changes": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Description of changes made in this version",
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
         "steps": {
             "type": "array",
             "minItems": 1,

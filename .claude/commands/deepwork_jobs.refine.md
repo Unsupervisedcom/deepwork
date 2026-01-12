@@ -89,9 +89,10 @@ Based on the user's selection:
    - File inputs must come from dependencies
    - Check for circular dependencies
 
-4. **Create files**
+4. **Update files**
    - Update `job.yml` with new step
    - Create step instructions file in `steps/[step_id].md`
+   - Prepare changelog entry describing the addition
 
 #### Modifying Step Instructions
 
@@ -107,6 +108,7 @@ Based on the user's selection:
 3. **Update instructions**
    - Modify `.deepwork/jobs/[job_name]/steps/[step_id].md`
    - Keep the same structure (Objective, Task, Process, Output Format, Quality Criteria)
+   - Prepare changelog entry describing the modification
 
 #### Changing Inputs/Outputs
 
@@ -122,6 +124,7 @@ Based on the user's selection:
    - If removing input: ensure it's not critical
 
 5. **Update job.yml**
+   - Prepare changelog entry describing the input/output changes
 
 #### Updating Dependencies
 
@@ -137,6 +140,7 @@ Based on the user's selection:
    - Ensure dependency chain makes logical sense
 
 5. **Update job.yml**
+   - Prepare changelog entry describing the dependency changes
 
 #### Updating Metadata
 
@@ -150,6 +154,7 @@ Based on the user's selection:
    - Patch (0.0.x): Bug fixes, improvements
 
 3. **Update job.yml and registry.yml**
+   - Prepare changelog entry describing the metadata changes
 
 #### Removing a Step
 
@@ -165,10 +170,34 @@ Based on the user's selection:
    - Remove from `job.yml`
    - Delete step instructions file
    - Suggest version bump
+   - Prepare changelog entry describing the removal
 
-### Step 4: Validate Changes
+### Step 4: Update Changelog
 
-After making changes:
+After making changes to the job.yml:
+
+1. **Add a changelog entry**
+   - Add a new entry to the `changelog` array in the job.yml
+   - Use the new version number
+   - List all changes made in this refinement
+
+2. **Changelog entry format**:
+   ```yaml
+   - version: "[new_version]"
+     changes: "[Description of all changes in this version]"
+   ```
+
+3. **Example changelog entries**:
+   - "Added step: validate_positioning"
+   - "Modified step instructions for research_competitors to improve clarity and add quality criteria"
+   - "Removed step: duplicate_analysis (consolidated into comparative_analysis)"
+   - "Updated dependencies: positioning_recommendations now depends on validate_positioning"
+   - "Changed output filename: comparison_matrix.md → comparison_table.md"
+   - "Added step: validate_positioning; Updated dependencies for positioning_recommendations"
+
+### Step 5: Validate Changes
+
+After updating the changelog:
 
 1. **Review the updated structure**
    - Show the complete updated workflow
@@ -181,12 +210,13 @@ After making changes:
    - All step IDs unique
    - All outputs defined
 
-3. **Suggest version update** if not already done
+3. **Confirm version update**
+   - Ensure version was bumped appropriately
    - Breaking changes? Major version
    - New features? Minor version
    - Improvements? Patch version
 
-### Step 5: Sync and Reload
+### Step 6: Sync and Reload
 
 1. **Run sync**
    ```bash
@@ -199,6 +229,7 @@ After making changes:
 3. **Provide summary**
    - Show what changed
    - List updated files
+   - Display the changelog entry
    - Explain next steps
 
 ## Safe Modification Patterns
@@ -297,9 +328,15 @@ This is a new feature, so I'll bump the version to 1.1.0 (minor version).
 Creating the new step... ✓
 
 Updated files:
-- .deepwork/jobs/competitive_research/job.yml (added step, updated dependencies, version → 1.1.0)
+- .deepwork/jobs/competitive_research/job.yml (added step, updated dependencies, version → 1.1.0, updated changelog)
 - .deepwork/jobs/competitive_research/steps/validate_positioning.md (created)
 - .deepwork/registry.yml (updated version)
+
+Changelog entry added:
+```yaml
+- version: "1.1.0"
+  changes: "Added step: validate_positioning between comparative_analysis and positioning_recommendations; Updated dependencies for positioning_recommendations"
+```
 
 Now run:
 ```bash
@@ -330,49 +367,39 @@ If issues arise, provide clear guidance:
 - **Missing file input**: "Step X requires file.md from step Y, but Y is not in its dependencies. I'll add Y to the dependencies."
 - **Breaking change**: "Removing this output is a breaking change. Other steps depend on it. I recommend against this change unless you update the dependent steps first."
 
-## Output Format
+## Changelog Entry Format
 
-### refinement_summary.md
+Instead of creating a separate refinement_summary.md file, add the changes directly to the job.yml changelog section. This creates a permanent version history within the job definition itself.
 
-```markdown
-# Job Refinement: [job_name]
+**Location**: `.deepwork/jobs/[job_name]/job.yml`
 
-## Changes Made
+**Add to the `changelog` array**:
 
-### Version
-[old_version] → [new_version]
-
-### Added Steps
-- **[step_name]** (`[step_id]`)
-  - Purpose: [what it does]
-  - Inputs: [list]
-  - Outputs: [list]
-  - Position: After [previous_step]
-
-### Modified Steps
-- **[step_name]** (`[step_id]`)
-  - Changed: [what changed]
-  - Reason: [why]
-
-### Updated Dependencies
-- **[step_name]**: Added dependency on [other_step]
-
-### Removed
-- [Anything removed]
-
-## Files Updated
-- `.deepwork/jobs/[job_name]/job.yml`
-- `.deepwork/jobs/[job_name]/steps/[step_id].md`
-- `.deepwork/registry.yml`
-
-## Next Steps
-1. Run `deepwork sync` to regenerate commands
-2. Reload your Claude session (`/reload` or restart)
-3. Test the updated workflow: `/[job_name].[first_step]`
-
-## Updated Command Reference
-[List all commands with brief descriptions]
+```yaml
+changelog:
+  - version: "1.0.0"
+    changes: "Initial job creation"
+  - version: "[new_version]"
+    changes: "[Concise description of all changes in this version]"
 ```
+
+**Guidelines for changelog entries**:
+- Be concise but descriptive
+- Use action verbs (Added, Modified, Removed, Updated, Changed, Fixed)
+- Reference specific step names when relevant
+- For breaking changes, prefix with "BREAKING:"
+- If multiple changes, separate with semicolons or use clear phrasing
+
+**Examples**:
+- "Added step: validate_positioning between comparative_analysis and positioning_recommendations"
+- "Modified step instructions for research_competitors to improve clarity and add quality criteria"
+- "Removed step: duplicate_analysis (consolidated into comparative_analysis)"
+- "Updated dependencies: positioning_recommendations now depends on validate_positioning"
+- "Changed output filename: comparison_matrix.md → comparison_table.md"
+- "BREAKING: Removed output file shared_data.json from identify_competitors step"
+- "Fixed circular dependency between steps A and B"
+- "Updated job description to reflect new validation phase"
+- "Added validate_positioning step; Updated dependencies for positioning_recommendations"
 
 ## Quality Criteria
 
@@ -412,28 +439,21 @@ All work for this job should be done on a dedicated work branch:
 
 ## Output Requirements
 
-Create the following output(s) in the work directory:
-- `deepwork/deepwork_jobs/refinement_summary.md`
-Ensure all outputs are:
-- Well-formatted and complete
-- Committed to the work branch
-- Ready for review or use by subsequent steps
+**No separate output file is created**. All changes are made directly to:
+- `.deepwork/jobs/[job_name]/job.yml` (updated with new version and changelog entry)
+- `.deepwork/jobs/[job_name]/steps/[step_id].md` (if step instructions are modified)
+- Any new step instruction files created
 
 ## Completion
 
 After completing this step:
 
-1. **Commit your work**:
-   ```bash
-   git add deepwork/deepwork_jobs/
-   git commit -m "deepwork_jobs: Complete refine step"
-   ```
+1. **Verify outputs**: Confirm all required files have been created
 
-2. **Verify outputs**: Confirm all required files have been created
-
-3. **Inform the user**:
+2. **Inform the user**:
    - Step 3 of 3 is complete
-   - Outputs created: refinement_summary.md
+   - Changes made to job.yml with updated version and changelog
+   - They should review the updated job.yml file before proceeding
    - This is the final step - the job is complete!
 
 ## Workflow Complete

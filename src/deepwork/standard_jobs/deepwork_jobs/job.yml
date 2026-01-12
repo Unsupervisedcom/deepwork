@@ -12,6 +12,10 @@ description: |
   The `refine` command helps you modify existing jobs safely by understanding what you want
   to change, validating the impact, and ensuring consistency across your workflow.
 
+changelog:
+  - version: "1.0.0"
+    changes: "Initial job creation"
+
 steps:
   - id: define
     name: "Define Job Specification"
@@ -44,5 +48,5 @@ steps:
       - name: job_name
         description: "Name of the job to refine"
     outputs:
-      - refinement_summary.md
+      - job.yml
     dependencies: []

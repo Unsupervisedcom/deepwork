@@ -283,7 +283,24 @@ platforms:
 ```yaml
 name: competitive_research
 version: "1.0.0"
-description: "Systematic competitive analysis workflow"
+summary: "Systematic competitive analysis workflow"
+description: |
+  A comprehensive workflow for analyzing competitors in your market segment. This job
+  helps product teams understand the competitive landscape by systematically identifying
+  competitors, researching their offerings, creating comparison matrices, and developing
+  strategic positioning recommendations.
+
+  The workflow produces:
+  - A vetted list of key competitors
+  - Detailed research notes on each competitor (primary and secondary sources)
+  - A comparison matrix highlighting key differentiators
+  - Strategic positioning recommendations
+
+  Designed for product teams conducting quarterly competitive analysis.
+
+changelog:
+  - version: "1.0.0"
+    changes: "Initial job creation"
 
 steps:
   - id: identify_competitors
@@ -812,6 +829,7 @@ User: Add a new step between primary_research and secondary_research
 Claude: [Interactive dialog...]
         ✓ Added step 'social_media_analysis'
         ✓ Updated dependencies in job.yml
+        ✓ Updated changelog with version 1.1.0
         ✓ Please run /deepwork_jobs.implement to generate the new step file
 ```
 

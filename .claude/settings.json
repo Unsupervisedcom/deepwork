@@ -87,7 +87,7 @@
       "Bash(node:*)",
       "Bash(npm:*)",
       "Bash(npx:*)",
-      "Edit(/Users/noah/deep-work/**)"
+      "Edit(./**)"
     ]
   }
 }

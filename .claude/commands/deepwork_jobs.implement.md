@@ -380,8 +380,8 @@ Before marking this step complete, ensure:
 - [ ] Registry updated with new job
 - [ ] `deepwork sync` executed successfully
 - [ ] Commands generated in platform directory
+- [ ] Reload the slash commmands so the user can use them immediately if the current CLI requires it
 - [ ] User informed of next steps (reload commands)
-- [ ] implementation_summary.md created
 
 ## Quality Criteria
 
@@ -430,25 +430,19 @@ Create the following output(s) in the work directory:
 - `deepwork/deepwork_jobs/implementation_summary.md`
 Ensure all outputs are:
 - Well-formatted and complete
-- Committed to the work branch
 - Ready for review or use by subsequent steps
 
 ## Completion
 
 After completing this step:
 
-1. **Commit your work**:
-   ```bash
-   git add deepwork/deepwork_jobs/
-   git commit -m "deepwork_jobs: Complete implement step"
-   ```
+1. **Verify outputs**: Confirm all required files have been created
 
-2. **Verify outputs**: Confirm all required files have been created
-
-3. **Inform the user**:
-   - Step 2 of 3 is complete
-   - Outputs created: implementation_summary.md
-   - Ready to proceed to next step: `/deepwork_jobs.refine`
+2. **Inform the user**:
+   - All steps are complete
+   - They should review the generated files before proceeding
+   - Suggest that before they try the job, they should commit the changes so far.
+   - Remind them what the first command for their new job will be to run it
 
 ## Next Step
 

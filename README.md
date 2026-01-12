@@ -94,7 +94,15 @@ Here's a sample 4-step workflow for competitive analysis:
 ```yaml
 name: competitive_research
 version: "1.0.0"
-description: "Systematic competitive analysis workflow"
+summary: "Systematic competitive analysis workflow"
+description: |
+  A comprehensive workflow for analyzing competitors in your market segment.
+  Helps product teams understand the competitive landscape by identifying
+  competitors, researching their offerings, and developing positioning strategies.
+
+changelog:
+  - version: "1.0.0"
+    changes: "Initial job creation"
 
 steps:
   - id: identify_competitors

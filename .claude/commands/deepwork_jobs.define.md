@@ -131,6 +131,10 @@ description: |
   - Who the intended users are
   - Any important context about the workflow]
 
+changelog:
+  - version: "1.0.0"
+    changes: "Initial job creation"
+
 steps:
   - id: [step_id]
     name: "[Step Name]"
@@ -166,6 +170,7 @@ steps:
 - At least one output per step
 - The `summary` should be concise (max 200 chars)
 - The `description` should provide rich context for future refinement
+- Include a `changelog` section with an initial entry for version 1.0.0
 
 ## Example Dialog
 
@@ -311,8 +316,8 @@ The complete YAML specification file (example shown in Step 4 above).
 (Where `[job_name]` is the name of the new job being created)
 
 After creating the file:
-1. Commit it to the work branch
-2. Inform the user that the specification is complete
+1. Inform the user that the specification is complete
+2. Recommend that they review the job.yml file
 3. Tell them to run `/deepwork_jobs.implement` next
 
 ## Quality Criteria
@@ -324,6 +329,7 @@ After creating the file:
 - Description provides rich context for future refinement
 - Specification is valid YAML and follows the schema
 - Ready for implementation step
+- Output artifacts have quality criteria defined
 
 
 ## Inputs
@@ -358,24 +364,18 @@ Create the following output(s) in the work directory:
 - `deepwork/deepwork_jobs/job.yml`
 Ensure all outputs are:
 - Well-formatted and complete
-- Committed to the work branch
 - Ready for review or use by subsequent steps
 
 ## Completion
 
 After completing this step:
 
-1. **Commit your work**:
-   ```bash
-   git add deepwork/deepwork_jobs/
-   git commit -m "deepwork_jobs: Complete define step"
-   ```
+1. **Verify outputs**: Confirm all required files have been created
 
-2. **Verify outputs**: Confirm all required files have been created
-
-3. **Inform the user**:
-   - Step 1 of 3 is complete
+2. **Inform the user**:
+   - Step 1 of 2 is complete
    - Outputs created: job.yml
+   - They should review the job.yml file before proceeding
    - Ready to proceed to next step: `/deepwork_jobs.implement`
 
 ## Next Step

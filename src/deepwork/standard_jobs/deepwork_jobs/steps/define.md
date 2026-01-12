@@ -105,6 +105,10 @@ description: |
   - Who the intended users are
   - Any important context about the workflow]
 
+changelog:
+  - version: "1.0.0"
+    changes: "Initial job creation"
+
 steps:
   - id: [step_id]
     name: "[Step Name]"
@@ -140,6 +144,7 @@ steps:
 - At least one output per step
 - The `summary` should be concise (max 200 chars)
 - The `description` should provide rich context for future refinement
+- Include a `changelog` section with an initial entry for version 1.0.0
 
 ## Example Dialog
 
@@ -285,8 +290,8 @@ The complete YAML specification file (example shown in Step 4 above).
 (Where `[job_name]` is the name of the new job being created)
 
 After creating the file:
-1. Commit it to the work branch
-2. Inform the user that the specification is complete
+1. Inform the user that the specification is complete
+2. Recommend that they review the job.yml file
 3. Tell them to run `/deepwork_jobs.implement` next
 
 ## Quality Criteria
