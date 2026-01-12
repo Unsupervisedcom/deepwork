@@ -84,9 +84,5 @@ dmypy.json
 .temp/
 tmp/
 
-# Project specific
-.deepwork/
-work/
-
 # CI/CD
 .github/

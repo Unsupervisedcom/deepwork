@@ -16,10 +16,12 @@ hooks:
             3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
             4. **Output Examples**: Does each instruction file show what good output looks like?
             5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
-            6. **Registry Updated**: Is `.deepwork/registry.yml` updated with the new job?
-            7. **Sync Complete**: Has `deepwork sync` been run successfully?
-            8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-            9. **Summary Created**: Has `implementation_summary.md` been created?
+            6. **Sync Complete**: Has `deepwork sync` been run successfully?
+            7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+            8. **Summary Created**: Has `implementation_summary.md` been created?
+            9. **Policies Considered**: Have you thought about whether policies would benefit this job?
+               - If relevant policies were identified, did you explain them and offer to run `/deepwork_policy.define`?
+               - Not every job needs policies - only suggest when genuinely helpful.
 
             If ANY criterion is not met, continue working to address it.
             If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
@@ -238,6 +240,66 @@ Instruct the user to reload commands in their current session:
 - Run `/reload` command (if available)
 - Or restart the Claude session
 
+### Step 7: Consider Policies for the New Job
+
+After implementing the job, consider whether there are **policies** that would help enforce quality or consistency when working with this job's domain.
+
+**What are policies?**
+
+Policies are automated guardrails defined in `.deepwork.policy.yml` that trigger when certain files change during an AI session. They help ensure:
+- Documentation stays in sync with code
+- Team guidelines are followed
+- Architectural decisions are respected
+- Quality standards are maintained
+
+**When to suggest policies:**
+
+Think about the job you just implemented and ask:
+- Does this job produce outputs that other files depend on?
+- Are there documentation files that should be updated when this job's outputs change?
+- Are there quality checks or reviews that should happen when certain files in this domain change?
+- Could changes to the job's output files impact other parts of the project?
+
+**Examples of policies that might make sense:**
+
+| Job Type | Potential Policy |
+|----------|------------------|
+| API Design | "Update API docs when endpoint definitions change" |
+| Database Schema | "Review migrations when schema files change" |
+| Competitive Research | "Update strategy docs when competitor analysis changes" |
+| Feature Development | "Update changelog when feature files change" |
+| Configuration Management | "Update install guide when config files change" |
+
+**How to offer policy creation:**
+
+If you identify one or more policies that would benefit the user, explain:
+1. **What the policy would do** - What triggers it and what action it prompts
+2. **Why it would help** - How it prevents common mistakes or keeps things in sync
+3. **What files it would watch** - The trigger patterns
+
+Then ask the user:
+
+> "Would you like me to create this policy for you? I can run `/deepwork_policy.define` to set it up."
+
+If the user agrees, invoke the `/deepwork_policy.define` command to guide them through creating the policy.
+
+**Example dialogue:**
+
+```
+Based on the competitive_research job you just created, I noticed that when
+competitor analysis files change, it would be helpful to remind you to update
+your strategy documentation.
+
+I'd suggest a policy like:
+- **Name**: "Update strategy when competitor analysis changes"
+- **Trigger**: `deepwork/competitive_research-*/report.md`
+- **Action**: Prompt to review and update `docs/strategy.md`
+
+Would you like me to create this policy? I can run `/deepwork_policy.define` to set it up.
+```
+
+**Note:** Not every job needs policies. Only suggest them when they would genuinely help maintain consistency or quality. Don't force policies where they don't make sense.
+
 ## Example Implementation
 
 **Given this job.yml:**
@@ -431,6 +493,8 @@ Before marking this step complete, ensure:
 - [ ] Commands generated in platform directory
 - [ ] User informed of next steps (reload commands)
 - [ ] implementation_summary.md created
+- [ ] Considered whether policies would benefit this job (Step 7)
+- [ ] If policies suggested, offered to run `/deepwork_policy.define`
 
 ## Quality Criteria
 
@@ -441,6 +505,7 @@ Before marking this step complete, ensure:
 - Quality criteria defined for each step
 - Sync completed successfully
 - Commands available for use
+- Thoughtfully considered relevant policies for the job domain
 
 
 ## Inputs
@@ -493,10 +558,12 @@ Verify the implementation meets ALL quality criteria before completing:
 3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
 4. **Output Examples**: Does each instruction file show what good output looks like?
 5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
-6. **Registry Updated**: Is `.deepwork/registry.yml` updated with the new job?
-7. **Sync Complete**: Has `deepwork sync` been run successfully?
-8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-9. **Summary Created**: Has `implementation_summary.md` been created?
+6. **Sync Complete**: Has `deepwork sync` been run successfully?
+7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+8. **Summary Created**: Has `implementation_summary.md` been created?
+9. **Policies Considered**: Have you thought about whether policies would benefit this job?
+   - If relevant policies were identified, did you explain them and offer to run `/deepwork_policy.define`?
+   - Not every job needs policies - only suggest when genuinely helpful.
 
 If ANY criterion is not met, continue working to address it.
 If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
