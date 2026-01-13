@@ -6,6 +6,60 @@ from typing import Any
 # These values must match CommandLifecycleHook enum in adapters.py
 LIFECYCLE_HOOK_EVENTS = ["after_agent", "before_tool", "before_prompt"]
 
+# Schema definition for a skill entry (follows Claude Code SKILL.md format)
+SKILL_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": ["name", "description", "content"],
+    "properties": {
+        "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "maxLength": 64,
+            "description": "Skill name (lowercase letters, numbers, hyphens, max 64 chars)",
+        },
+        "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "description": "What the skill does and when Claude should use it (max 1024 chars)",
+        },
+        "content": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Markdown content with instructions for Claude",
+        },
+        "allowed_tools": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Tools Claude can use without asking permission when this skill is active",
+        },
+        "model": {
+            "type": "string",
+            "description": "Specific Claude model to use when this skill is active",
+        },
+        "context": {
+            "type": "string",
+            "enum": ["fork"],
+            "description": "Set to 'fork' to run in isolated sub-agent context",
+        },
+        "agent": {
+            "type": "string",
+            "description": "Agent type to use when context is 'fork' (e.g., Explore, Plan)",
+        },
+        "user_invocable": {
+            "type": "boolean",
+            "default": True,
+            "description": "Whether to show in slash command menu (defaults to true)",
+        },
+        "disable_model_invocation": {
+            "type": "boolean",
+            "default": False,
+            "description": "Block programmatic invocation via Skill tool",
+        },
+    },
+    "additionalProperties": False,
+}
+
 # Schema definition for a single hook action (prompt, prompt_file, or script)
 HOOK_ACTION_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -93,6 +147,11 @@ JOB_SCHEMA: dict[str, Any] = {
                 },
                 "additionalProperties": False,
             },
+        },
+        "skills": {
+            "type": "array",
+            "description": "Agent skills to be installed with this job (Claude Code SKILL.md format)",
+            "items": SKILL_SCHEMA,
         },
         "steps": {
             "type": "array",

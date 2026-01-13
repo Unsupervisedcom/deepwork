@@ -47,15 +47,49 @@ hooks:
 
 ## Job Overview
 
-Core commands for managing DeepWork jobs. These commands help you define new multi-step
-workflows and refine existing ones.
+# DeepWork Jobs Overview
 
-The `define` command guides you through an interactive process to create a new job by
-asking detailed questions about your workflow, understanding each step's inputs and outputs,
-and generating all necessary files.
+DeepWork jobs are multi-step AI workflows that break complex tasks into manageable,
+repeatable steps. Each job is defined in a `job.yml` file and consists of:
 
-The `refine` command helps you modify existing jobs safely by understanding what you want
-to change, validating the impact, and ensuring consistency across your workflow.
+- **Steps**: Individual tasks with clear inputs, outputs, and instructions
+- **Dependencies**: Ordering constraints between steps
+- **Hooks**: Quality validation loops that ensure outputs meet standards
+- **Skills**: Reusable AI capabilities that jobs can install
+
+## How Jobs Work
+
+Jobs follow a **define → implement → use** workflow:
+
+1. **Define** (`/deepwork_jobs.define`): Interactive Q&A to understand your workflow
+   and create a `job.yml` specification. This captures what each step does, what
+   inputs it needs, and what outputs it produces.
+
+2. **Implement** (`/deepwork_jobs.implement`): Generates detailed instruction files
+   for each step based on the spec. Creates the directory structure and syncs
+   commands to make them available as slash commands.
+
+3. **Use**: Each step becomes a slash command like `/job_name.step_id`. Run steps
+   in order (respecting dependencies) to complete the workflow.
+
+## Refining Jobs
+
+The `refine` command (`/deepwork_jobs.refine`) helps modify existing jobs safely
+by understanding what you want to change, validating the impact, and ensuring
+consistency across your workflow.
+
+## Job Structure
+
+Jobs live in `.deepwork/jobs/[job_name]/` with:
+- `job.yml` - The job specification
+- `steps/` - Instruction files for each step
+- `hooks/` - Optional hook scripts and prompts
+
+## Creating Jobs Casually
+
+You can ask Claude to create jobs naturally, like "Make a new job that does X"
+or "I need a workflow for Y". Claude will invoke the appropriate commands
+automatically.
 
 
 ## Prerequisites

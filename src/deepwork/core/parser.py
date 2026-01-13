@@ -93,6 +93,40 @@ StopHook = HookAction
 
 
 @dataclass
+class Skill:
+    """Represents an agent skill to be installed with the job.
+
+    Skills follow the Claude Code SKILL.md format and are installed
+    to .claude/skills/ (or equivalent) during sync.
+    """
+
+    name: str
+    description: str
+    content: str
+    allowed_tools: list[str] = field(default_factory=list)
+    model: str | None = None
+    context: str | None = None  # "fork" for isolated sub-agent
+    agent: str | None = None  # Agent type when context is "fork"
+    user_invocable: bool = True
+    disable_model_invocation: bool = False
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Skill":
+        """Create Skill from dictionary."""
+        return cls(
+            name=data["name"],
+            description=data["description"],
+            content=data["content"],
+            allowed_tools=data.get("allowed_tools", []),
+            model=data.get("model"),
+            context=data.get("context"),
+            agent=data.get("agent"),
+            user_invocable=data.get("user_invocable", True),
+            disable_model_invocation=data.get("disable_model_invocation", False),
+        )
+
+
+@dataclass
 class Step:
     """Represents a single step in a job."""
 
@@ -157,6 +191,7 @@ class JobDefinition:
     description: str | None
     steps: list[Step]
     job_dir: Path
+    skills: list[Skill] = field(default_factory=list)
 
     def get_step(self, step_id: str) -> Step | None:
         """
@@ -257,6 +292,7 @@ class JobDefinition:
             description=data.get("description"),
             steps=[Step.from_dict(step_data) for step_data in data["steps"]],
             job_dir=job_dir,
+            skills=[Skill.from_dict(skill_data) for skill_data in data.get("skills", [])],
         )
 
 

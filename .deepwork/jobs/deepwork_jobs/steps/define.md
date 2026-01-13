@@ -82,7 +82,115 @@ After gathering information about all steps:
    - Job description (detailed multi-line explanation)
    - Version number (start with 1.0.0)
 
-### Step 4: Define Quality Validation (Stop Hooks)
+### Step 4: Define Workflow Context in Description
+
+The job's `description` field is crucial for helping users (and AI agents) understand how the job works. A good description should include:
+
+**1. Overview of what the job accomplishes**
+- What problem does this workflow solve?
+- What's the end result?
+
+**2. How the workflow operates**
+- Explain the step-by-step flow: "First... then... finally..."
+- Show how outputs from one step feed into the next
+- Clarify any branching or optional paths
+
+**3. Background context users need**
+- Domain-specific knowledge required
+- Prerequisites or setup needed
+- Who the intended users are
+
+**4. How to use the job**
+- The general usage pattern
+- Any tips for getting good results
+
+**Example of a good description:**
+
+```yaml
+description: |
+  # Competitive Research Workflow
+
+  This job helps product teams analyze their competitive landscape through
+  a systematic four-step process.
+
+  ## How It Works
+
+  1. **Identify Competitors** - You provide a market segment and product category.
+     The job identifies 5-7 key competitors with brief descriptions.
+
+  2. **Research Each Competitor** - Deep-dive research on each competitor,
+     gathering data on features, pricing, positioning, and strategy.
+
+  3. **Create Comparison Matrix** - Synthesizes research into a side-by-side
+     comparison highlighting key differentiators.
+
+  4. **Generate Positioning Recommendations** - Based on the analysis, produces
+     strategic recommendations for how to position against each competitor.
+
+  ## Prerequisites
+
+  - Clear understanding of your own product's value proposition
+  - Defined target market segment
+
+  ## Usage Tips
+
+  - Run this quarterly to stay current on competitive dynamics
+  - Steps can be re-run individually if competitors change
+```
+
+### Step 5: Consider Skills for the Job
+
+**Skills** are reusable AI capabilities that jobs can install. When defining a job, consider whether skills would enhance the user experience.
+
+**When to suggest skills:**
+
+1. **Workflow guidance** - A skill that explains how the job works and guides users through the process
+   - Example: A skill that knows when to invoke each step and in what order
+   - Triggered when users ask about the job or want to start it casually
+
+2. **Domain expertise** - A skill that provides domain-specific knowledge relevant to the job
+   - Example: A "legal-writing" skill for a contract review job
+   - Helps Claude give better responses within that domain
+
+3. **Automation helpers** - A skill that automates common patterns
+   - Example: A skill that knows how to format outputs in a specific way
+   - Reduces repetitive instructions in individual steps
+
+**Ask the user:**
+- "Would you like Claude to understand how to guide users through this workflow casually?"
+- "Are there domain-specific capabilities that would help with this job?"
+
+**Skill structure in job.yml:**
+
+```yaml
+skills:
+  - name: my-job-guide
+    description: |
+      Use this skill when users ask about [job purpose] or want to
+      [do the thing the job does]. Triggered by phrases like "..."
+    user_invocable: false  # Model invokes it, not shown in menu
+    content: |
+      # Workflow Guide
+
+      When users want to [do thing], guide them through:
+
+      1. First run `/job_name.step1` - This will...
+      2. Then run `/job_name.step2` - This will...
+
+      ## When to Use Each Step
+      [Explain when each step applies]
+
+      ## Tips
+      [Domain-specific guidance]
+```
+
+**Best practices for skill content:**
+- Explain the workflow clearly with step-by-step guidance
+- Include example user phrases that should trigger the skill
+- Provide domain context that helps Claude give better responses
+- Reference the slash commands users should run
+
+### Step 6: Define Quality Validation (Stop Hooks)
 
 For each step, consider whether it would benefit from **quality validation loops**. Stop hooks allow the AI agent to iteratively refine its work until quality criteria are met.
 
@@ -129,7 +237,7 @@ stop_hooks:
 
 **Encourage prompt-based hooks** - They leverage the AI's ability to understand context and make nuanced quality judgments. Script hooks are best for objective checks (syntax, format, tests).
 
-### Step 5: Create the job.yml Specification
+### Step 7: Create the job.yml Specification
 
 Only after you have complete understanding, create the `job.yml` file:
 
@@ -155,6 +263,25 @@ description: |
 changelog:
   - version: "1.0.0"
     changes: "Initial job creation"
+
+# Optional: Skills for workflow guidance or domain expertise
+skills:
+  - name: [job_name]-guide
+    description: |
+      Use this skill when users ask about [job purpose] or want to start
+      the workflow casually. Triggered by phrases like "[example phrases]"
+    user_invocable: false
+    content: |
+      # [Job Name] Workflow Guide
+
+      [Explain the workflow and when to use each step]
+
+      ## Steps
+      1. Run `/[job_name].[step1_id]` - [what it does]
+      2. Run `/[job_name].[step2_id]` - [what it does]
+
+      ## Tips
+      [Domain-specific guidance]
 
 steps:
   - id: [step_id]
@@ -197,8 +324,10 @@ steps:
 - No circular dependencies
 - At least one output per step
 - The `summary` should be concise (max 200 chars)
-- The `description` should provide rich context for future refinement
+- The `description` should provide rich context including workflow explanation and usage guidance
 - Include a `changelog` section with an initial entry for version 1.0.0
+- Consider adding a `skills` section for workflow guidance or domain expertise
+- Skill names use lowercase with hyphens (not underscores)
 
 ## Example Dialog
 
@@ -324,7 +453,7 @@ Before creating the job.yml, ensure:
 - Job name: lowercase, underscores, no spaces
 - Version: semantic versioning (1.0.0)
 - Summary: concise, under 200 characters
-- Description: detailed, provides context
+- Description: detailed, provides workflow context, explains how to use the job
 - Step IDs: unique, descriptive, lowercase with underscores
 - Dependencies: must reference existing step IDs
 - File inputs: `from_step` must be in dependencies
@@ -332,6 +461,10 @@ Before creating the job.yml, ensure:
 - Outputs can be filenames (e.g., `report.md`) or paths (e.g., `reports/analysis.md`)
 - File paths in outputs should match where files will actually be created
 - No circular dependencies
+- Skills (if included):
+  - Name: lowercase with hyphens, max 64 chars
+  - Description: explains when Claude should use this skill
+  - Content: provides workflow guidance or domain knowledge
 
 ## Output Format
 
@@ -354,6 +487,13 @@ After creating the file:
 - All steps have clear inputs and outputs
 - Dependencies make logical sense
 - Summary is concise and descriptive
-- Description provides rich context for future refinement
+- Description provides rich context including:
+  - Workflow explanation (how steps connect)
+  - Background context users need
+  - Usage guidance
+- Skills (if included) have:
+  - Clear description of when Claude should invoke them
+  - Comprehensive content with workflow steps and guidance
+  - Domain-specific tips where relevant
 - Specification is valid YAML and follows the schema
 - Ready for implementation step

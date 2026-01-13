@@ -55,6 +55,7 @@ class AgentAdapter(ABC):
     display_name: ClassVar[str]
     config_dir: ClassVar[str]
     commands_dir: ClassVar[str] = "commands"
+    skills_dir: ClassVar[str] = "skills"
     command_template: ClassVar[str] = "command-job-step.md.jinja"
 
     # Mapping from generic CommandLifecycleHook to platform-specific event names.
@@ -147,6 +148,24 @@ class AgentAdapter(ABC):
             raise AdapterError("No project root specified")
         return root / self.config_dir / self.commands_dir
 
+    def get_skills_dir(self, project_root: Path | None = None) -> Path:
+        """
+        Get the skills directory path.
+
+        Args:
+            project_root: Project root (uses instance's project_root if not provided)
+
+        Returns:
+            Path to skills directory
+
+        Raises:
+            AdapterError: If no project root specified
+        """
+        root = project_root or self.project_root
+        if not root:
+            raise AdapterError("No project root specified")
+        return root / self.config_dir / self.skills_dir
+
     def get_command_filename(self, job_name: str, step_id: str) -> str:
         """
         Get the filename for a command.
@@ -218,6 +237,21 @@ class AgentAdapter(ABC):
             AdapterError: If sync fails
         """
         pass
+
+    def sync_skills(self, project_path: Path, skills: list[dict[str, Any]]) -> int:
+        """
+        Sync skills to platform-specific locations.
+
+        By default, does nothing. Override in subclasses that support skills.
+
+        Args:
+            project_path: Path to project root
+            skills: List of skill definitions from job.yml
+
+        Returns:
+            Number of skills synced
+        """
+        return 0
 
 
 def _hook_already_present(hooks: list[dict[str, Any]], script_path: str) -> bool:
@@ -313,6 +347,76 @@ class ClaudeAdapter(AgentAdapter):
         # Count total hooks
         total = sum(len(hooks_list) for hooks_list in hooks.values())
         return total
+
+    def sync_skills(self, project_path: Path, skills: list[dict[str, Any]]) -> int:
+        """
+        Sync skills to Claude Code skills directory.
+
+        Creates .claude/skills/{skill-name}/SKILL.md for each skill.
+
+        Args:
+            project_path: Path to project root
+            skills: List of skill definitions from job.yml
+
+        Returns:
+            Number of skills synced
+
+        Raises:
+            AdapterError: If sync fails
+        """
+        if not skills:
+            return 0
+
+        skills_dir = self.get_skills_dir(project_path)
+
+        for skill in skills:
+            skill_name = skill["name"]
+            skill_dir = skills_dir / skill_name
+
+            # Create skill directory
+            try:
+                skill_dir.mkdir(parents=True, exist_ok=True)
+            except OSError as e:
+                raise AdapterError(f"Failed to create skill directory: {e}") from e
+
+            # Build SKILL.md content with YAML frontmatter
+            frontmatter_fields = [
+                f"name: {skill_name}",
+                f"description: {skill['description']}",
+            ]
+
+            # Add optional fields
+            if skill.get("allowed_tools"):
+                tools_list = "\n".join(f"  - {tool}" for tool in skill["allowed_tools"])
+                frontmatter_fields.append(f"allowed-tools:\n{tools_list}")
+
+            if skill.get("model"):
+                frontmatter_fields.append(f"model: {skill['model']}")
+
+            if skill.get("context"):
+                frontmatter_fields.append(f"context: {skill['context']}")
+
+            if skill.get("agent"):
+                frontmatter_fields.append(f"agent: {skill['agent']}")
+
+            if not skill.get("user_invocable", True):
+                frontmatter_fields.append("user-invocable: false")
+
+            if skill.get("disable_model_invocation", False):
+                frontmatter_fields.append("disable-model-invocation: true")
+
+            frontmatter = "\n".join(frontmatter_fields)
+            skill_content = f"---\n{frontmatter}\n---\n\n{skill['content']}"
+
+            # Write SKILL.md
+            skill_file = skill_dir / "SKILL.md"
+            try:
+                with open(skill_file, "w", encoding="utf-8") as f:
+                    f.write(skill_content)
+            except OSError as e:
+                raise AdapterError(f"Failed to write SKILL.md: {e}") from e
+
+        return len(skills)
 
 
 class GeminiAdapter(AgentAdapter):

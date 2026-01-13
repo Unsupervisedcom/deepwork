@@ -114,9 +114,28 @@ def sync_commands(project_path: Path) -> None:
     if job_hooks_list:
         console.print(f"[yellow]→[/yellow] Found {len(job_hooks_list)} job(s) with hooks")
 
+    # Collect skills from all jobs
+    all_skills: list[dict] = []
+    for job in jobs:
+        if job.skills:
+            for skill in job.skills:
+                all_skills.append({
+                    "name": skill.name,
+                    "description": skill.description,
+                    "content": skill.content,
+                    "allowed_tools": skill.allowed_tools,
+                    "model": skill.model,
+                    "context": skill.context,
+                    "agent": skill.agent,
+                    "user_invocable": skill.user_invocable,
+                    "disable_model_invocation": skill.disable_model_invocation,
+                })
+    if all_skills:
+        console.print(f"[yellow]→[/yellow] Found {len(all_skills)} skill(s) to sync")
+
     # Sync each platform
     generator = CommandGenerator()
-    stats = {"platforms": 0, "commands": 0, "hooks": 0}
+    stats = {"platforms": 0, "commands": 0, "hooks": 0, "skills": 0}
 
     for platform_name in platforms:
         try:
@@ -156,6 +175,17 @@ def sync_commands(project_path: Path) -> None:
             except Exception as e:
                 console.print(f"    [red]✗[/red] Failed to sync hooks: {e}")
 
+        # Sync skills to platform
+        if all_skills:
+            console.print("  [dim]•[/dim] Syncing skills...")
+            try:
+                skills_count = adapter.sync_skills(project_path, all_skills)
+                stats["skills"] += skills_count
+                if skills_count > 0:
+                    console.print(f"    [green]✓[/green] Synced {skills_count} skill(s)")
+            except Exception as e:
+                console.print(f"    [red]✗[/red] Failed to sync skills: {e}")
+
         stats["platforms"] += 1
 
     # Summary
@@ -171,6 +201,8 @@ def sync_commands(project_path: Path) -> None:
     table.add_row("Total commands", str(stats["commands"]))
     if stats["hooks"] > 0:
         table.add_row("Hooks synced", str(stats["hooks"]))
+    if stats["skills"] > 0:
+        table.add_row("Skills synced", str(stats["skills"]))
 
     console.print(table)
     console.print()
