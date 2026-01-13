@@ -44,7 +44,7 @@ def extract_promise_tags(text: str) -> set[str]:
         Set of policy names that have been promised/addressed
     """
     # Match <promise>✓ Policy Name</promise> and extract the policy name
-    pattern = r'<promise>✓\s*([^<]+)</promise>'
+    pattern = r"<promise>✓\s*([^<]+)</promise>"
     matches = re.findall(pattern, text, re.IGNORECASE | re.DOTALL)
     return {m.strip() for m in matches}
 
