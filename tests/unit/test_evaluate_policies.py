@@ -9,7 +9,7 @@ class TestExtractPromiseTags:
 
     def test_extracts_double_quote_promise(self) -> None:
         """Test extracting promise with double quotes."""
-        text = '<promise policy="Update Docs">addressed</promise>'
+        text = '<promise policy="Update Docs">✓ Update Docs</promise>'
         result = extract_promise_tags(text)
         assert result == {"Update Docs"}
 

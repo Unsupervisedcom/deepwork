@@ -63,8 +63,8 @@ def format_policy_message(policies: list) -> str:
     lines = ["## DeepWork Policies Triggered", ""]
     lines.append(
         "Comply with the following policies. "
-        'To mark a policy as addressed, include `<promise policy="Policy Name">addressed</promise>` '
-        "in your response."
+        'To mark a policy as addressed, include `<promise policy="Policy Name">✓ Policy Name</promise>` '
+        "in your response (replace Policy Name with the actual policy name)."
     )
     lines.append("")
 

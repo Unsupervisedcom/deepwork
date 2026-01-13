@@ -203,7 +203,7 @@ Policies are evaluated automatically when you finish working on a task. The syst
 3. Skips policies where safety patterns also matched
 4. Prompts you with instructions for any triggered policies
 
-You can mark a policy as addressed by including `<promise policy="Policy Name">considered</promise>` in your response. This tells the system you've already handled that policy's requirements.
+You can mark a policy as addressed by including `<promise policy="Policy Name">✓ Policy Name</promise>` in your response (replace Policy Name with the actual policy name). This tells the system you've already handled that policy's requirements.
 
 
 ## Inputs
