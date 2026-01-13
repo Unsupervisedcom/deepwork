@@ -1033,7 +1033,7 @@ Policies are defined in `.deepwork.policy.yml` at the project root:
      - The agent hasn't marked it with a `<promise>` tag
      - → The policy fires
    - If policies fire, Claude is prompted to address them
-4. **Promise Tags**: Agents can mark policies as addressed by including `<promise policy="Policy Name">✓ Policy Name</promise>` in their response
+4. **Promise Tags**: Agents can mark policies as addressed by including `<promise>✓ Policy Name</promise>` in their response
 
 ### Hook Integration
 

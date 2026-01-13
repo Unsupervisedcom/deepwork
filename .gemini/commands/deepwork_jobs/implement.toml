@@ -155,7 +155,7 @@ If a step in the job.yml has `stop_hooks` defined, the generated instruction fil
 
 1. **Mirror the quality criteria** - The "Quality Criteria" section should match what the stop hooks will validate
 2. **Be explicit about success** - Help the agent understand when the step is truly complete
-3. **Include the promise pattern** - Mention that `<promise>QUALITY_COMPLETE</promise>` should be included when criteria are met
+3. **Include the promise pattern** - Mention that `<promise>✓ Quality Criteria Met</promise>` should be included when criteria are met
 
 **Example: If the job.yml has:**
 ```yaml
@@ -176,7 +176,7 @@ If a step in the job.yml has `stop_hooks` defined, the generated instruction fil
 - Each competitor has at least 3 distinct data points
 - All information is sourced with citations
 - Data is current (from within the last year)
-- When all criteria are met, include `<promise>QUALITY_COMPLETE</promise>` in your response
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 ```
 
 This alignment ensures the AI agent knows exactly what will be validated and can self-check before completing.

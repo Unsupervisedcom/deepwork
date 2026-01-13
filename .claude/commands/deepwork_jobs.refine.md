@@ -21,7 +21,7 @@ hooks:
             8. **Sync Complete**: Has `deepwork sync` been run to regenerate commands?
 
             If ANY criterion is not met, continue working to address it.
-            If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
+            If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
 
 
             ## Instructions
@@ -29,7 +29,7 @@ hooks:
             Review the conversation and determine if ALL quality criteria above have been satisfied.
             Look for evidence that each criterion has been addressed.
 
-            If the agent has included `<promise>QUALITY_COMPLETE</promise>` in their response AND
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
             all criteria appear to be met, respond with: {"ok": true}
 
             If criteria are NOT met AND the promise tag is missing, respond with:
@@ -554,7 +554,7 @@ Verify the refinement meets ALL quality criteria before completing:
 8. **Sync Complete**: Has `deepwork sync` been run to regenerate commands?
 
 If ANY criterion is not met, continue working to address it.
-If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
+If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
 
 
 ### Completion Promise
@@ -562,7 +562,7 @@ If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in 
 To signal that all quality criteria have been met, include this tag in your final response:
 
 ```
-<promise>QUALITY_COMPLETE</promise>
+<promise>✓ Quality Criteria Met</promise>
 ```
 
 **Important**: Only include this promise tag when you have verified that ALL quality criteria above are satisfied. The validation loop will continue until this promise is detected.

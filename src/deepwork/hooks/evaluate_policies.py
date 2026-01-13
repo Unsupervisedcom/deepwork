@@ -34,9 +34,8 @@ def extract_promise_tags(text: str) -> set[str]:
     """
     Extract policy names from <promise> tags in text.
 
-    Supported formats:
-    - <promise policy="Policy Name">...</promise>
-    - <promise policy='Policy Name'>...</promise>
+    Supported format:
+    - <promise>✓ Policy Name</promise>
 
     Args:
         text: Text to search for promise tags
@@ -44,10 +43,10 @@ def extract_promise_tags(text: str) -> set[str]:
     Returns:
         Set of policy names that have been promised/addressed
     """
-    # Match <promise policy="...">...</promise> or <promise policy='...'>
-    pattern = r'<promise\s+policy=["\']([^"\']+)["\']>.*?</promise>'
+    # Match <promise>✓ Policy Name</promise> and extract the policy name
+    pattern = r'<promise>✓\s*([^<]+)</promise>'
     matches = re.findall(pattern, text, re.IGNORECASE | re.DOTALL)
-    return set(matches)
+    return {m.strip() for m in matches}
 
 
 def format_policy_message(policies: list) -> str:
@@ -63,7 +62,7 @@ def format_policy_message(policies: list) -> str:
     lines = ["## DeepWork Policies Triggered", ""]
     lines.append(
         "Comply with the following policies. "
-        'To mark a policy as addressed, include `<promise policy="Policy Name">✓ Policy Name</promise>` '
+        "To mark a policy as addressed, include `<promise>✓ Policy Name</promise>` "
         "in your response (replace Policy Name with the actual policy name)."
     )
     lines.append("")

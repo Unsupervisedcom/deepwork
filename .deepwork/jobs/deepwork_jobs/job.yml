@@ -41,7 +41,7 @@ steps:
             7. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 
             If ANY criterion is not met, continue working to address it.
-            If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
+            If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
 
   - id: implement
     name: "Implement Job Steps"
@@ -72,7 +72,7 @@ steps:
                - Not every job needs policies - only suggest when genuinely helpful.
 
             If ANY criterion is not met, continue working to address it.
-            If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
+            If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
 
   - id: refine
     name: "Refine Existing Job"
@@ -99,4 +99,4 @@ steps:
             8. **Sync Complete**: Has `deepwork sync` been run to regenerate commands?
 
             If ANY criterion is not met, continue working to address it.
-            If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
+            If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.

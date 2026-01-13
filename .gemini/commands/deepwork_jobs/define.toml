@@ -207,7 +207,7 @@ steps:
           Verify this step's output meets quality criteria:
           1. [Criterion 1]
           2. [Criterion 2]
-          If ALL criteria are met, include `<promise>QUALITY_COMPLETE</promise>`.
+          If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
   - id: [another_step]
     name: "[Another Step]"

@@ -19,7 +19,7 @@ hooks:
             5. No extraneous documentation (only these two specific topics)
             6. Documentation is comprehensive enough to implement the platform
 
-            If ALL criteria are met, include `<promise>QUALITY_COMPLETE</promise>`.
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
 
             ## Instructions
@@ -27,7 +27,7 @@ hooks:
             Review the conversation and determine if ALL quality criteria above have been satisfied.
             Look for evidence that each criterion has been addressed.
 
-            If the agent has included `<promise>QUALITY_COMPLETE</promise>` in their response AND
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
             all criteria appear to be met, respond with: {"ok": true}
 
             If criteria are NOT met AND the promise tag is missing, respond with:
@@ -234,7 +234,7 @@ Source: [URL where this documentation was obtained]
   - NOT general CLI hooks (only command-level hooks)
 - Documentation is detailed enough to implement the platform adapter
 - No extraneous topics (only CLI config and command hooks)
-- When all criteria are met, include `<promise>QUALITY_COMPLETE</promise>` in your response
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
 
@@ -298,7 +298,7 @@ Verify the research output meets ALL criteria:
 5. No extraneous documentation (only these two specific topics)
 6. Documentation is comprehensive enough to implement the platform
 
-If ALL criteria are met, include `<promise>QUALITY_COMPLETE</promise>`.
+If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
 
 ### Completion Promise
@@ -306,7 +306,7 @@ If ALL criteria are met, include `<promise>QUALITY_COMPLETE</promise>`.
 To signal that all quality criteria have been met, include this tag in your final response:
 
 ```
-<promise>QUALITY_COMPLETE</promise>
+<promise>✓ Quality Criteria Met</promise>
 ```
 
 **Important**: Only include this promise tag when you have verified that ALL quality criteria above are satisfied. The validation loop will continue until this promise is detected.

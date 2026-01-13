@@ -24,7 +24,7 @@ hooks:
                - Not every job needs policies - only suggest when genuinely helpful.
 
             If ANY criterion is not met, continue working to address it.
-            If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
+            If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
 
 
             ## Instructions
@@ -32,7 +32,7 @@ hooks:
             Review the conversation and determine if ALL quality criteria above have been satisfied.
             Look for evidence that each criterion has been addressed.
 
-            If the agent has included `<promise>QUALITY_COMPLETE</promise>` in their response AND
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
             all criteria appear to be met, respond with: {"ok": true}
 
             If criteria are NOT met AND the promise tag is missing, respond with:
@@ -187,7 +187,7 @@ If a step in the job.yml has `stop_hooks` defined, the generated instruction fil
 
 1. **Mirror the quality criteria** - The "Quality Criteria" section should match what the stop hooks will validate
 2. **Be explicit about success** - Help the agent understand when the step is truly complete
-3. **Include the promise pattern** - Mention that `<promise>QUALITY_COMPLETE</promise>` should be included when criteria are met
+3. **Include the promise pattern** - Mention that `<promise>✓ Quality Criteria Met</promise>` should be included when criteria are met
 
 **Example: If the job.yml has:**
 ```yaml
@@ -208,7 +208,7 @@ If a step in the job.yml has `stop_hooks` defined, the generated instruction fil
 - Each competitor has at least 3 distinct data points
 - All information is sourced with citations
 - Data is current (from within the last year)
-- When all criteria are met, include `<promise>QUALITY_COMPLETE</promise>` in your response
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 ```
 
 This alignment ensures the AI agent knows exactly what will be validated and can self-check before completing.
@@ -556,7 +556,7 @@ Verify the implementation meets ALL quality criteria before completing:
    - Not every job needs policies - only suggest when genuinely helpful.
 
 If ANY criterion is not met, continue working to address it.
-If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
+If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
 
 
 ### Completion Promise
@@ -564,7 +564,7 @@ If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in 
 To signal that all quality criteria have been met, include this tag in your final response:
 
 ```
-<promise>QUALITY_COMPLETE</promise>
+<promise>✓ Quality Criteria Met</promise>
 ```
 
 **Important**: Only include this promise tag when you have verified that ALL quality criteria above are satisfied. The validation loop will continue until this promise is detected.

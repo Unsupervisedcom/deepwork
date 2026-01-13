@@ -169,7 +169,7 @@ Source: [URL where this documentation was obtained]
   - NOT general CLI hooks (only command-level hooks)
 - Documentation is detailed enough to implement the platform adapter
 - No extraneous topics (only CLI config and command hooks)
-- When all criteria are met, include `<promise>QUALITY_COMPLETE</promise>` in your response
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
 

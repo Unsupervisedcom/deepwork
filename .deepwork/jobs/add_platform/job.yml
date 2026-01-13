@@ -49,7 +49,7 @@ steps:
             5. No extraneous documentation (only these two specific topics)
             6. Documentation is comprehensive enough to implement the platform
 
-            If ALL criteria are met, include `<promise>QUALITY_COMPLETE</promise>`.
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
   - id: add_capabilities
     name: "Add Hook Capabilities"
@@ -75,7 +75,7 @@ steps:
             5. adapters.py remains consistent - all adapters have the same hook fields
             6. If no new hooks are needed, document why in a comment
 
-            If ALL criteria are met, include `<promise>QUALITY_COMPLETE</promise>`.
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
   - id: implement
     name: "Implement Platform Support"
@@ -110,7 +110,7 @@ steps:
                - Installation instructions for the platform
                - Any platform-specific notes
 
-            If ALL criteria are met, include `<promise>QUALITY_COMPLETE</promise>`.
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
   - id: verify
     name: "Verify Installation"
@@ -133,4 +133,4 @@ steps:
             5. Established DeepWork jobs (deepwork_jobs, deepwork_policy) are installed correctly
             6. The platform can be used alongside existing platforms without conflicts
 
-            If ALL criteria are met, include `<promise>QUALITY_COMPLETE</promise>`.
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.

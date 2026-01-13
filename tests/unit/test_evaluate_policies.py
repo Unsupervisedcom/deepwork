@@ -7,31 +7,25 @@ from deepwork.hooks.evaluate_policies import extract_promise_tags, format_policy
 class TestExtractPromiseTags:
     """Tests for extract_promise_tags function."""
 
-    def test_extracts_double_quote_promise(self) -> None:
-        """Test extracting promise with double quotes."""
-        text = '<promise policy="Update Docs">✓ Update Docs</promise>'
+    def test_extracts_policy_name_from_promise(self) -> None:
+        """Test extracting policy name from promise tag body."""
+        text = "<promise>✓ Update Docs</promise>"
         result = extract_promise_tags(text)
         assert result == {"Update Docs"}
-
-    def test_extracts_single_quote_promise(self) -> None:
-        """Test extracting promise with single quotes."""
-        text = "<promise policy='Security Review'>done</promise>"
-        result = extract_promise_tags(text)
-        assert result == {"Security Review"}
 
     def test_extracts_multiple_promises(self) -> None:
         """Test extracting multiple promise tags."""
         text = """
         I've addressed the policies.
-        <promise policy="Update Docs">done</promise>
-        <promise policy="Security Review">checked</promise>
+        <promise>✓ Update Docs</promise>
+        <promise>✓ Security Review</promise>
         """
         result = extract_promise_tags(text)
         assert result == {"Update Docs", "Security Review"}
 
     def test_case_insensitive(self) -> None:
         """Test that promise tag matching is case insensitive."""
-        text = '<PROMISE policy="Test Policy">done</PROMISE>'
+        text = "<PROMISE>✓ Test Policy</PROMISE>"
         result = extract_promise_tags(text)
         assert result == {"Test Policy"}
 
@@ -41,15 +35,11 @@ class TestExtractPromiseTags:
         result = extract_promise_tags(text)
         assert result == set()
 
-    def test_multiline_promise_content(self) -> None:
-        """Test promise tag with multiline content."""
-        text = """<promise policy="Complex Policy">
-        I have addressed this by:
-        1. Updating the docs
-        2. Running tests
-        </promise>"""
+    def test_strips_whitespace_from_policy_name(self) -> None:
+        """Test that whitespace is stripped from extracted policy names."""
+        text = "<promise>✓   Policy With Spaces   </promise>"
         result = extract_promise_tags(text)
-        assert result == {"Complex Policy"}
+        assert result == {"Policy With Spaces"}
 
 
 class TestFormatPolicyMessage:
@@ -70,7 +60,7 @@ class TestFormatPolicyMessage:
         assert "## DeepWork Policies Triggered" in result
         assert "### Policy: Test Policy" in result
         assert "Please update the documentation." in result
-        assert '<promise policy="Policy Name">' in result
+        assert "<promise>✓ Policy Name</promise>" in result
 
     def test_formats_multiple_policies(self) -> None:
         """Test formatting multiple policies."""
