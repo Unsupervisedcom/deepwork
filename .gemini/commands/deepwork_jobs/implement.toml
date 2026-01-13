@@ -9,7 +9,7 @@ description = "Generate instruction files for each step based on the job.yml spe
 prompt = """
 # deepwork_jobs:implement
 
-**Step 2 of 3** in the **deepwork_jobs** workflow
+**Step 2 of 2** in the **deepwork_jobs** workflow
 
 **Summary**: DeepWork job management commands
 
@@ -512,16 +512,18 @@ After completing this step:
 1. **Verify outputs**: Confirm all required files have been created
 
 2. **Inform the user**:
-   - Step 2 of 3 is complete
+   - Step 2 of 2 is complete
    - Outputs created: implementation_summary.md
-   - Ready to proceed to next step: `/deepwork_jobs:refine`
+   - This is the final step - the job is complete!
 
-## Next Step
+## Workflow Complete
 
-To continue the workflow, run:
-```
-/deepwork_jobs:refine
-```
+This is the final step in the deepwork_jobs workflow. All outputs should now be complete and ready for review.
+
+Consider:
+- Reviewing all work products
+- Creating a pull request to merge the work branch
+- Documenting any insights or learnings
 
 ---
 

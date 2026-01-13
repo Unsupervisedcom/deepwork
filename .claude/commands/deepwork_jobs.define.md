@@ -16,7 +16,7 @@ hooks:
             3. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
             4. **Concise Summary**: Is the summary under 200 characters and descriptive?
             5. **Rich Description**: Does the description provide enough context for future refinement?
-            6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
+            6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, workflows)?
             7. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 
             If ANY criterion is not met, continue working to address it.
@@ -37,7 +37,7 @@ hooks:
 
 # deepwork_jobs.define
 
-**Step 1 of 3** in the **deepwork_jobs** workflow
+**Step 1 of 2** in the **deepwork_jobs** workflow
 
 **Summary**: DeepWork job management commands
 
@@ -460,7 +460,7 @@ Verify the job.yml output meets ALL quality criteria before completing:
 3. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
 4. **Concise Summary**: Is the summary under 200 characters and descriptive?
 5. **Rich Description**: Does the description provide enough context for future refinement?
-6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
+6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, workflows)?
 7. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 
 If ANY criterion is not met, continue working to address it.
@@ -484,7 +484,7 @@ After completing this step:
 1. **Verify outputs**: Confirm all required files have been created
 
 2. **Inform the user**:
-   - Step 1 of 3 is complete
+   - Step 1 of 2 is complete
    - Outputs created: job.yml
    - Ready to proceed to next step: `/deepwork_jobs.implement`
 
