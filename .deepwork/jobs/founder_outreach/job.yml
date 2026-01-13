@@ -1,0 +1,62 @@
+name: founder_outreach
+version: "1.0.0"
+summary: "Generate personalized DeepWork outreach for target founders"
+description: |
+  A workflow for creating compelling, personalized outreach to convince founders
+  to try DeepWork. This job researches a target company, analyzes where DeepWork
+  would fit their workflows, and generates customized email, SMS, and demo ideas.
+
+  The workflow produces:
+  - Comprehensive company research summary
+  - Analysis of DeepWork fit and relevant workflows
+  - Personalized email, SMS options, and a custom demo concept
+
+  Designed for founder-to-founder outreach where the target is likely a power user
+  of AI coding tools like Claude Code or OpenCode.
+
+changelog:
+  - version: "1.0.0"
+    changes: "Initial job creation"
+
+steps:
+  - id: research
+    name: "Research Company"
+    description: "Research the target company using web search to understand what they do, team size, funding, and tech stack"
+    instructions_file: steps/research.md
+    inputs:
+      - name: company_name
+        description: "Company name or domain (e.g., 'overjoy.ai')"
+      - name: contact_name
+        description: "Name of the founder/CEO to reach out to"
+      - name: relationship
+        description: "Your relationship to them (friend, warm intro, cold)"
+    outputs:
+      - company_research.md
+    dependencies: []
+
+  - id: analyze
+    name: "Analyze DeepWork Fit"
+    description: "Analyze the company profile to identify pain points and workflows where DeepWork would add value"
+    instructions_file: steps/analyze.md
+    inputs:
+      - file: company_research.md
+        from_step: research
+    outputs:
+      - deepwork_fit_analysis.md
+    dependencies:
+      - research
+
+  - id: outreach
+    name: "Generate Outreach Assets"
+    description: "Create personalized email, SMS options, and a custom demo idea tailored to the target company"
+    instructions_file: steps/outreach.md
+    inputs:
+      - file: company_research.md
+        from_step: research
+      - file: deepwork_fit_analysis.md
+        from_step: analyze
+    outputs:
+      - outreach_assets.md
+    dependencies:
+      - research
+      - analyze

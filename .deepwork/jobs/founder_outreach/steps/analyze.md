@@ -1,0 +1,182 @@
+# Analyze DeepWork Fit
+
+## Objective
+Analyze the target company's profile to identify where DeepWork would add value, what workflows they likely have, and how to position it for maximum resonance.
+
+## Prerequisites
+This step requires:
+- `company_research.md` from the research step
+
+**IMPORTANT**: Before starting, read the DeepWork context file to understand what DeepWork is and how to identify good workflows:
+- Read: `.deepwork/jobs/founder_outreach/context/deepwork_overview.md`
+
+## What is DeepWork? (Quick Reference)
+
+DeepWork transforms complex multi-step tasks into reusable slash commands for AI coding assistants (Claude Code, Gemini CLI, etc.).
+
+**How it works:**
+1. Define a workflow once in YAML (steps, inputs, outputs)
+2. DeepWork generates slash commands (e.g., `/competitive_research.identify_competitors`)
+3. Execute via AI assistant - outputs go to Git branches, everything versioned
+
+**Key insight**: "Stop re-explaining multi-step workflows to your AI. Define once, execute forever."
+
+## Task Description
+
+Read the company research and analyze:
+1. Why DeepWork would resonate with this company specifically
+2. What repetitive workflows they likely have (be specific to their business)
+3. What pain points DeepWork solves for them
+4. The best positioning angle for outreach
+5. What demo workflow would resonate most
+
+## What Makes a Workflow "DeepWork-able"
+
+**Good fit:**
+- Multi-step (3-7 steps ideal)
+- Repeatable (done more than once)
+- Has clear inputs/outputs (files, reports, decisions)
+- Benefits from consistency
+- Currently manual or inconsistent (no one owns it, or founder does it ad-hoc)
+
+**Bad fit:**
+- One-off tasks
+- Highly creative with no structure
+- Real-time human judgment at every step
+- Simple tasks that don't need a workflow
+
+## DeepWork Value Propositions
+
+**For Small Teams (< 20 people)**
+- "Build lightweight processes without scaling headcount"
+- "A 5-person team operating with 50-person rigor"
+- "Can't afford to hire for process, can't afford to half-ass it"
+
+**For AI-Native Companies**
+- "You're building AI for customers—are you using AI systematically internally?"
+- "Meta angle: AI workflows to build AI products"
+
+**For Technical Founders (Claude Code users)**
+- "You're already using Claude Code—this makes it 10x more powerful"
+- "Define once, execute forever via slash commands"
+
+**For Fast-Moving Startups**
+- "Stop re-explaining processes every time"
+- "Build institutional knowledge into your AI workflows"
+
+## Common Workflow Categories
+
+Identify which of these the target company likely has. **Be specific to their business**—don't just list generic categories.
+
+| Category | Examples | Typical Frequency |
+|----------|----------|-------------------|
+| **Research** | Competitive intel, market research, customer research | Quarterly |
+| **Reporting** | Investor updates, board decks, metrics dashboards | Weekly/Monthly |
+| **Content** | Marketing materials, sales collateral, case studies | Ongoing |
+| **Ops** | New hire onboarding, compliance evidence gathering | Per event |
+| **DevOps** | Deployment, monitoring, cloud cost management | Daily/Weekly |
+| **Sales** | Lead research, proposal generation, pipeline reports | Daily |
+| **Ad Ops** | Pull reports → analyze → suggest changes → execute | Daily |
+
+## Real Use Cases We're Running
+
+Reference these when identifying workflows:
+1. **Marketing materials with accuracy checks** - Generate content → validation step checks for accuracy
+2. **DevOps automation** - Deployment workflows, monitoring setup, incident response
+3. **Bug discovery → code agent** - Find bugs → auto-kick off agent to fix
+4. **Founder outreach** (this job!) - Research → analyze fit → generate outreach
+
+## Analysis Framework
+
+For each relevant workflow, evaluate:
+- **Frequency**: How often? (Daily/Weekly/Monthly/Quarterly)
+- **Current Owner**: Who does it? (Founder? Employee? No one?)
+- **Pain Level**: How painful is it manually? (High = good DeepWork fit)
+- **DeepWork Value**: How specifically would DeepWork help?
+
+## Demo Workflow Criteria
+
+The demo recommendation should be:
+- **Universally relatable** - They definitely do this (every founder does competitive research)
+- **Immediately useful** - They walk away with real, usable output
+- **Shows the "aha"** - Define once → slash commands → Git-native outputs
+- **Appropriate length** - 3-5 steps, ~20 min to demo
+- **Specific to them** - Not generic, tied to their business
+
+**Example of a good demo workflow:**
+
+`/competitive_intel` (4 steps):
+1. `/competitive_intel.identify` → `competitors.md`
+2. `/competitive_intel.deep_dive` → `competitor_profiles/`
+3. `/competitive_intel.matrix` → `comparison_matrix.md`
+4. `/competitive_intel.briefing` → `competitive_briefing.md`
+
+## Output Format
+
+Create `deepwork_fit_analysis.md` with this structure:
+
+```markdown
+# DeepWork Fit Analysis: [Company Name]
+
+## Summary
+- **Fit Score**: [Strong / Medium / Weak]
+- **Best Positioning**: [One sentence on how to pitch DeepWork to this specific founder]
+- **Primary Hook**: [The pain point to lead with]
+
+## Why DeepWork Resonates for [Company Name]
+
+[2-3 paragraphs explaining why this specific company is a good fit. Reference:
+- Their team size and stage
+- What they're building (especially if AI-related)
+- Specific workflows you identified
+- Why the founder would "get it"]
+
+## Likely Workflows
+
+### High-Value Workflows (Lead with these)
+| Workflow | Frequency | Current Owner | Pain Level | DeepWork Value |
+|----------|-----------|---------------|------------|----------------|
+| [Specific to their business] | [Freq] | [Who] | [H/M/L] | [How it helps] |
+
+### Secondary Workflows
+[Additional workflows that could resonate, with brief descriptions]
+
+## Positioning Strategy
+
+### Primary Angle
+[The main pitch - specific to this company, not generic]
+
+### Secondary Angles
+[1-2 backup angles if primary doesn't land]
+
+### What NOT to Lead With
+[Any angles to avoid based on their situation]
+
+## Potential Objections & Responses
+| Objection | Response |
+|-----------|----------|
+| "We're too small for process" | [Response] |
+| "I can just explain to Claude each time" | [Response] |
+| [Company-specific objection] | [Response] |
+
+## Recommended Demo Workflow
+
+**Workflow name**: `/[specific_name]`
+
+**Why this demo**: [Why it resonates for this specific company]
+
+**Proposed steps**:
+1. [Step 1] → [Output]
+2. [Step 2] → [Output]
+3. [Step 3] → [Output]
+4. [Step 4] → [Output]
+
+**Alternative demo options**: [1-2 backups]
+```
+
+## Quality Checklist
+- [ ] Read the DeepWork context file first
+- [ ] At least 3 high-value workflows identified, specific to their business
+- [ ] Positioning is specific to this company (not generic)
+- [ ] Demo recommendation is concrete and tied to their business
+- [ ] Objections include at least one company-specific concern
