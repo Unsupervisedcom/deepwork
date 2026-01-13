@@ -243,6 +243,11 @@ def _hook_already_present(hooks: list[dict[str, Any]], script_path: str) -> bool
 #   Gemini's hooks are global/project-level in settings.json, not per-command.
 #   TOML command files only support 'prompt' and 'description' fields.
 #   See: doc/platforms/gemini/hooks_system.md
+# - OpenCode: No command-level hooks (reviewed 2026-01-13)
+#   OpenCode's hooks are global via a plugin system (JS/TS modules), not per-command.
+#   Markdown command files only support 'description', 'agent', 'model', 'subtask' fields.
+#   The plugin system has 25+ events but none are applicable to command definitions.
+#   See: doc/platforms/opencode/hooks_system.md
 # =============================================================================
 
 
