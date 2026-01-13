@@ -10,7 +10,8 @@ DeepWork is a tool for defining and executing multi-step workflows with AI codin
 |----------|--------|----------------|---------------|
 | **Claude Code** | Full Support | Markdown | Yes (stop_hooks, pre/post) |
 | **Gemini CLI** | Full Support | TOML | No (global only) |
-| GitHub Copilot | Planned | - | - |
+| OpenCode | Planned | Markdown | No |
+| GitHub Copilot CLI | Planned | Markdown | No (tool permissions only) |
 
 ## Installation
 
