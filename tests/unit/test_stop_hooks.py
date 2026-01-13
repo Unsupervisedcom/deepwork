@@ -6,7 +6,7 @@ import pytest
 
 from deepwork.core.adapters import ClaudeAdapter
 from deepwork.core.generator import CommandGenerator, GeneratorError
-from deepwork.core.parser import HookAction, JobDefinition, Step, StopHook
+from deepwork.core.parser import HookAction, JobDefinition, Step, StopHook, Workflow
 from deepwork.schemas.job_schema import JOB_SCHEMA
 from deepwork.utils.validation import ValidationError, validate_against_schema
 
@@ -176,14 +176,18 @@ class TestSchemaValidation:
             "name": "test_job",
             "version": "1.0.0",
             "summary": "Test job",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "A step",
-                    "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
-                    "stop_hooks": [{"prompt": "Check quality"}],
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "A step",
+                            "instructions_file": "steps/step1.md",
+                            "outputs": ["output.md"],
+                            "stop_hooks": [{"prompt": "Check quality"}],
+                        }
+                    ]
                 }
             ],
         }
@@ -196,14 +200,18 @@ class TestSchemaValidation:
             "name": "test_job",
             "version": "1.0.0",
             "summary": "Test job",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "A step",
-                    "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
-                    "stop_hooks": [{"script": "hooks/validate.sh"}],
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "A step",
+                            "instructions_file": "steps/step1.md",
+                            "outputs": ["output.md"],
+                            "stop_hooks": [{"script": "hooks/validate.sh"}],
+                        }
+                    ]
                 }
             ],
         }
@@ -215,14 +223,18 @@ class TestSchemaValidation:
             "name": "test_job",
             "version": "1.0.0",
             "summary": "Test job",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "A step",
-                    "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
-                    "stop_hooks": [{"prompt_file": "hooks/quality.md"}],
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "A step",
+                            "instructions_file": "steps/step1.md",
+                            "outputs": ["output.md"],
+                            "stop_hooks": [{"prompt_file": "hooks/quality.md"}],
+                        }
+                    ]
                 }
             ],
         }
@@ -234,17 +246,21 @@ class TestSchemaValidation:
             "name": "test_job",
             "version": "1.0.0",
             "summary": "Test job",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "A step",
-                    "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
-                    "stop_hooks": [
-                        {"prompt": "Check quality"},
-                        {"script": "hooks/tests.sh"},
-                    ],
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "A step",
+                            "instructions_file": "steps/step1.md",
+                            "outputs": ["output.md"],
+                            "stop_hooks": [
+                                {"prompt": "Check quality"},
+                                {"script": "hooks/tests.sh"},
+                            ],
+                        }
+                    ]
                 }
             ],
         }
@@ -256,14 +272,18 @@ class TestSchemaValidation:
             "name": "test_job",
             "version": "1.0.0",
             "summary": "Test job",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "A step",
-                    "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
-                    "stop_hooks": [{}],  # Empty object
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "A step",
+                            "instructions_file": "steps/step1.md",
+                            "outputs": ["output.md"],
+                            "stop_hooks": [{}],  # Empty object
+                        }
+                    ]
                 }
             ],
         }
@@ -276,14 +296,18 @@ class TestSchemaValidation:
             "name": "test_job",
             "version": "1.0.0",
             "summary": "Test job",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "A step",
-                    "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
-                    "stop_hooks": [{"prompt": "Check", "extra": "field"}],
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "A step",
+                            "instructions_file": "steps/step1.md",
+                            "outputs": ["output.md"],
+                            "stop_hooks": [{"prompt": "Check", "extra": "field"}],
+                        }
+                    ]
                 }
             ],
         }
@@ -296,16 +320,20 @@ class TestSchemaValidation:
             "name": "test_job",
             "version": "1.0.0",
             "summary": "Test job",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "A step",
-                    "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
-                    "hooks": {
-                        "after_agent": [{"prompt": "Check quality"}],
-                    },
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "A step",
+                            "instructions_file": "steps/step1.md",
+                            "outputs": ["output.md"],
+                            "hooks": {
+                                "after_agent": [{"prompt": "Check quality"}],
+                            },
+                        }
+                    ]
                 }
             ],
         }
@@ -317,18 +345,22 @@ class TestSchemaValidation:
             "name": "test_job",
             "version": "1.0.0",
             "summary": "Test job",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "A step",
-                    "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
-                    "hooks": {
-                        "after_agent": [{"prompt": "Check quality"}],
-                        "before_tool": [{"script": "hooks/validate.sh"}],
-                        "before_prompt": [{"prompt": "Initialize context"}],
-                    },
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "A step",
+                            "instructions_file": "steps/step1.md",
+                            "outputs": ["output.md"],
+                            "hooks": {
+                                "after_agent": [{"prompt": "Check quality"}],
+                                "before_tool": [{"script": "hooks/validate.sh"}],
+                                "before_prompt": [{"prompt": "Initialize context"}],
+                            },
+                        }
+                    ]
                 }
             ],
         }
@@ -340,16 +372,20 @@ class TestSchemaValidation:
             "name": "test_job",
             "version": "1.0.0",
             "summary": "Test job",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "A step",
-                    "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
-                    "hooks": {
-                        "before_tool": [{"script": "hooks/check.sh"}],
-                    },
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "A step",
+                            "instructions_file": "steps/step1.md",
+                            "outputs": ["output.md"],
+                            "hooks": {
+                                "before_tool": [{"script": "hooks/check.sh"}],
+                            },
+                        }
+                    ]
                 }
             ],
         }
@@ -404,17 +440,21 @@ hooks:
             version="1.0.0",
             summary="Test job",
             description="A test job",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="First step",
-                    instructions_file="steps/step1.md",
-                    outputs=["output.md"],
-                    hooks={
-                        "after_agent": [HookAction(prompt="Verify quality criteria")],
-                    },
-                ),
+            workflows=[
+                Workflow(
+                    steps=[
+                        Step(
+                            id="step1",
+                            name="Step 1",
+                            description="First step",
+                            instructions_file="steps/step1.md",
+                            outputs=["output.md"],
+                            hooks={
+                                "after_agent": [HookAction(prompt="Verify quality criteria")],
+                            },
+                        ),
+                    ]
+                )
             ],
             job_dir=job_dir,
         )
@@ -433,17 +473,21 @@ hooks:
             version="1.0.0",
             summary="Test job",
             description="A test job",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="First step",
-                    instructions_file="steps/step1.md",
-                    outputs=["output.md"],
-                    hooks={
-                        "after_agent": [HookAction(script="hooks/validate.sh")],
-                    },
-                ),
+            workflows=[
+                Workflow(
+                    steps=[
+                        Step(
+                            id="step1",
+                            name="Step 1",
+                            description="First step",
+                            instructions_file="steps/step1.md",
+                            outputs=["output.md"],
+                            hooks={
+                                "after_agent": [HookAction(script="hooks/validate.sh")],
+                            },
+                        ),
+                    ]
+                )
             ],
             job_dir=job_dir,
         )
@@ -465,17 +509,21 @@ hooks:
             version="1.0.0",
             summary="Test job",
             description="A test job",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="First step",
-                    instructions_file="steps/step1.md",
-                    outputs=["output.md"],
-                    hooks={
-                        "after_agent": [HookAction(prompt_file="hooks/quality.md")],
-                    },
-                ),
+            workflows=[
+                Workflow(
+                    steps=[
+                        Step(
+                            id="step1",
+                            name="Step 1",
+                            description="First step",
+                            instructions_file="steps/step1.md",
+                            outputs=["output.md"],
+                            hooks={
+                                "after_agent": [HookAction(prompt_file="hooks/quality.md")],
+                            },
+                        ),
+                    ]
+                )
             ],
             job_dir=job_dir,
         )
@@ -532,16 +580,20 @@ hooks:
             version="1.0.0",
             summary="Test",
             description="Test",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="Step",
-                    instructions_file="steps/step1.md",
-                    outputs=["out.md"],
-                    hooks={
-                        "after_agent": [HookAction(prompt_file="missing.md")],
-                    },
+            workflows=[
+                Workflow(
+                    steps=[
+                        Step(
+                            id="step1",
+                            name="Step 1",
+                            description="Step",
+                            instructions_file="steps/step1.md",
+                            outputs=["out.md"],
+                            hooks={
+                                "after_agent": [HookAction(prompt_file="missing.md")],
+                            },
+                        )
+                    ]
                 )
             ],
             job_dir=job_dir,
@@ -564,13 +616,17 @@ hooks:
             version="1.0.0",
             summary="Test",
             description="Test",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="Step",
-                    instructions_file="steps/step1.md",
-                    outputs=["out.md"],
+            workflows=[
+                Workflow(
+                    steps=[
+                        Step(
+                            id="step1",
+                            name="Step 1",
+                            description="Step",
+                            instructions_file="steps/step1.md",
+                            outputs=["out.md"],
+                        )
+                    ]
                 )
             ],
             job_dir=job_dir,
@@ -595,20 +651,24 @@ hooks:
             version="1.0.0",
             summary="Test",
             description="Test",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="Step",
-                    instructions_file="steps/step1.md",
-                    outputs=["out.md"],
-                    hooks={
-                        "after_agent": [
-                            HookAction(prompt="Check criteria 1"),
-                            HookAction(script="hooks/test.sh"),
-                            HookAction(prompt="Check criteria 2"),
-                        ],
-                    },
+            workflows=[
+                Workflow(
+                    steps=[
+                        Step(
+                            id="step1",
+                            name="Step 1",
+                            description="Step",
+                            instructions_file="steps/step1.md",
+                            outputs=["out.md"],
+                            hooks={
+                                "after_agent": [
+                                    HookAction(prompt="Check criteria 1"),
+                                    HookAction(script="hooks/test.sh"),
+                                    HookAction(prompt="Check criteria 2"),
+                                ],
+                            },
+                        )
+                    ]
                 )
             ],
             job_dir=job_dir,

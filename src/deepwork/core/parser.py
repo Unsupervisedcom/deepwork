@@ -148,6 +148,33 @@ class Step:
 
 
 @dataclass
+class Workflow:
+    """Represents a workflow containing one or more steps.
+
+    A workflow groups related steps together. Named workflows represent
+    multi-step processes (like "create" with define + implement steps).
+    Anonymous workflows (no name/description) contain standalone steps.
+    """
+
+    steps: list[Step]
+    name: str | None = None
+    description: str | None = None
+
+    def is_anonymous(self) -> bool:
+        """Check if this is an anonymous (standalone) workflow."""
+        return self.name is None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Workflow":
+        """Create Workflow from dictionary."""
+        return cls(
+            name=data.get("name"),
+            description=data.get("description"),
+            steps=[Step.from_dict(step_data) for step_data in data["steps"]],
+        )
+
+
+@dataclass
 class JobDefinition:
     """Represents a complete job definition."""
 
@@ -155,8 +182,21 @@ class JobDefinition:
     version: str
     summary: str
     description: str | None
-    steps: list[Step]
+    workflows: list[Workflow]
     job_dir: Path
+
+    @property
+    def steps(self) -> list[Step]:
+        """
+        Get all steps from all workflows (flattened).
+
+        Returns:
+            List of all steps across all workflows
+        """
+        all_steps = []
+        for workflow in self.workflows:
+            all_steps.extend(workflow.steps)
+        return all_steps
 
     def get_step(self, step_id: str) -> Step | None:
         """
@@ -171,6 +211,22 @@ class JobDefinition:
         for step in self.steps:
             if step.id == step_id:
                 return step
+        return None
+
+    def get_workflow_for_step(self, step_id: str) -> Workflow | None:
+        """
+        Get the workflow that contains a given step.
+
+        Args:
+            step_id: Step ID to look for
+
+        Returns:
+            Workflow containing the step, or None if not found
+        """
+        for workflow in self.workflows:
+            for step in workflow.steps:
+                if step.id == step_id:
+                    return workflow
         return None
 
     def validate_dependencies(self) -> None:
@@ -255,7 +311,7 @@ class JobDefinition:
             version=data["version"],
             summary=data["summary"],
             description=data.get("description"),
-            steps=[Step.from_dict(step_data) for step_data in data["steps"]],
+            workflows=[Workflow.from_dict(wf_data) for wf_data in data["workflows"]],
             job_dir=job_dir,
         )
 

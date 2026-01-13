@@ -4,7 +4,14 @@ from pathlib import Path
 
 import pytest
 
-from deepwork.core.parser import JobDefinition, ParseError, Step, StepInput, parse_job_definition
+from deepwork.core.parser import (
+    JobDefinition,
+    ParseError,
+    Step,
+    StepInput,
+    Workflow,
+    parse_job_definition,
+)
 
 
 class TestStepInput:
@@ -116,14 +123,18 @@ class TestJobDefinition:
             version="1.0.0",
             summary="Test job",
             description="Test",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="Step",
-                    instructions_file="steps/step1.md",
-                    outputs=["output.md"],
-                    dependencies=["nonexistent"],
+            workflows=[
+                Workflow(
+                    steps=[
+                        Step(
+                            id="step1",
+                            name="Step 1",
+                            description="Step",
+                            instructions_file="steps/step1.md",
+                            outputs=["output.md"],
+                            dependencies=["nonexistent"],
+                        )
+                    ]
                 )
             ],
             job_dir=Path("/tmp"),
@@ -139,23 +150,27 @@ class TestJobDefinition:
             version="1.0.0",
             summary="Test job",
             description="Test",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="Step",
-                    instructions_file="steps/step1.md",
-                    outputs=["output.md"],
-                    dependencies=["step2"],
-                ),
-                Step(
-                    id="step2",
-                    name="Step 2",
-                    description="Step",
-                    instructions_file="steps/step2.md",
-                    outputs=["output.md"],
-                    dependencies=["step1"],
-                ),
+            workflows=[
+                Workflow(
+                    steps=[
+                        Step(
+                            id="step1",
+                            name="Step 1",
+                            description="Step",
+                            instructions_file="steps/step1.md",
+                            outputs=["output.md"],
+                            dependencies=["step2"],
+                        ),
+                        Step(
+                            id="step2",
+                            name="Step 2",
+                            description="Step",
+                            instructions_file="steps/step2.md",
+                            outputs=["output.md"],
+                            dependencies=["step1"],
+                        ),
+                    ]
+                )
             ],
             job_dir=Path("/tmp"),
         )
@@ -178,15 +193,19 @@ class TestJobDefinition:
             version="1.0.0",
             summary="Test job",
             description="Test",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="Step",
-                    instructions_file="steps/step1.md",
-                    inputs=[StepInput(file="data.md", from_step="nonexistent")],
-                    outputs=["output.md"],
-                    dependencies=["nonexistent"],
+            workflows=[
+                Workflow(
+                    steps=[
+                        Step(
+                            id="step1",
+                            name="Step 1",
+                            description="Step",
+                            instructions_file="steps/step1.md",
+                            inputs=[StepInput(file="data.md", from_step="nonexistent")],
+                            outputs=["output.md"],
+                            dependencies=["nonexistent"],
+                        )
+                    ]
                 )
             ],
             job_dir=Path("/tmp"),
@@ -202,24 +221,28 @@ class TestJobDefinition:
             version="1.0.0",
             summary="Test job",
             description="Test",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="Step",
-                    instructions_file="steps/step1.md",
-                    outputs=["output.md"],
-                ),
-                Step(
-                    id="step2",
-                    name="Step 2",
-                    description="Step",
-                    instructions_file="steps/step2.md",
-                    inputs=[StepInput(file="data.md", from_step="step1")],
-                    outputs=["output.md"],
-                    # Missing step1 in dependencies!
-                    dependencies=[],
-                ),
+            workflows=[
+                Workflow(
+                    steps=[
+                        Step(
+                            id="step1",
+                            name="Step 1",
+                            description="Step",
+                            instructions_file="steps/step1.md",
+                            outputs=["output.md"],
+                        ),
+                        Step(
+                            id="step2",
+                            name="Step 2",
+                            description="Step",
+                            instructions_file="steps/step2.md",
+                            inputs=[StepInput(file="data.md", from_step="step1")],
+                            outputs=["output.md"],
+                            # Missing step1 in dependencies!
+                            dependencies=[],
+                        ),
+                    ]
+                )
             ],
             job_dir=Path("/tmp"),
         )

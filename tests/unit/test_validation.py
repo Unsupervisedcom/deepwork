@@ -16,14 +16,18 @@ class TestValidateAgainstSchema:
             "version": "1.0.0",
             "summary": "A simple job for testing",
             "description": "A simple job",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "First step",
-                    "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
-                    "dependencies": [],
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "First step",
+                            "instructions_file": "steps/step1.md",
+                            "outputs": ["output.md"],
+                            "dependencies": [],
+                        }
+                    ]
                 }
             ],
         }
@@ -38,18 +42,22 @@ class TestValidateAgainstSchema:
             "version": "1.0.0",
             "summary": "Job with user inputs",
             "description": "Job with inputs",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "Step with inputs",
-                    "instructions_file": "steps/step1.md",
-                    "inputs": [
-                        {"name": "param1", "description": "First parameter"},
-                        {"name": "param2", "description": "Second parameter"},
-                    ],
-                    "outputs": ["output.md"],
-                    "dependencies": [],
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "Step with inputs",
+                            "instructions_file": "steps/step1.md",
+                            "inputs": [
+                                {"name": "param1", "description": "First parameter"},
+                                {"name": "param2", "description": "Second parameter"},
+                            ],
+                            "outputs": ["output.md"],
+                            "dependencies": [],
+                        }
+                    ]
                 }
             ],
         }
@@ -63,24 +71,28 @@ class TestValidateAgainstSchema:
             "version": "1.0.0",
             "summary": "Job with dependencies",
             "description": "Job with dependencies",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "First step",
-                    "instructions_file": "steps/step1.md",
-                    "outputs": ["data.md"],
-                    "dependencies": [],
-                },
-                {
-                    "id": "step2",
-                    "name": "Step 2",
-                    "description": "Second step",
-                    "instructions_file": "steps/step2.md",
-                    "inputs": [{"file": "data.md", "from_step": "step1"}],
-                    "outputs": ["result.md"],
-                    "dependencies": ["step1"],
-                },
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "First step",
+                            "instructions_file": "steps/step1.md",
+                            "outputs": ["data.md"],
+                            "dependencies": [],
+                        },
+                        {
+                            "id": "step2",
+                            "name": "Step 2",
+                            "description": "Second step",
+                            "instructions_file": "steps/step2.md",
+                            "inputs": [{"file": "data.md", "from_step": "step1"}],
+                            "outputs": ["result.md"],
+                            "dependencies": ["step1"],
+                        },
+                    ]
+                }
             ],
         }
 
@@ -92,8 +104,7 @@ class TestValidateAgainstSchema:
             "name": "incomplete_job",
             "version": "1.0.0",
             # Missing summary
-            # Missing description
-            "steps": [],
+            # Missing workflows
         }
 
         with pytest.raises(ValidationError, match="'summary' is a required property"):
@@ -106,13 +117,17 @@ class TestValidateAgainstSchema:
             "version": "1.0.0",
             "summary": "Invalid name test",
             "description": "Invalid name",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "Step",
-                    "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "Step",
+                            "instructions_file": "steps/step1.md",
+                            "outputs": ["output.md"],
+                        }
+                    ]
                 }
             ],
         }
@@ -127,13 +142,17 @@ class TestValidateAgainstSchema:
             "version": "1.0",  # Not semver
             "summary": "Invalid version test",
             "description": "Job",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "Step",
-                    "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "Step",
+                            "instructions_file": "steps/step1.md",
+                            "outputs": ["output.md"],
+                        }
+                    ]
                 }
             ],
         }
@@ -141,14 +160,14 @@ class TestValidateAgainstSchema:
         with pytest.raises(ValidationError, match="does not match"):
             validate_against_schema(job_data, JOB_SCHEMA)
 
-    def test_raises_for_empty_steps(self) -> None:
-        """Test that validation fails for empty steps array."""
+    def test_raises_for_empty_workflows(self) -> None:
+        """Test that validation fails for empty workflows array."""
         job_data = {
             "name": "job",
             "version": "1.0.0",
-            "summary": "Empty steps test",
-            "description": "Job with no steps",
-            "steps": [],
+            "summary": "Empty workflows test",
+            "description": "Job with no workflows",
+            "workflows": [],
         }
 
         with pytest.raises(ValidationError, match="should be non-empty"):
@@ -161,13 +180,17 @@ class TestValidateAgainstSchema:
             "version": "1.0.0",
             "summary": "Missing outputs test",
             "description": "Job",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "Step",
-                    "instructions_file": "steps/step1.md",
-                    # Missing outputs
+                    "steps": [
+                        {
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "Step",
+                            "instructions_file": "steps/step1.md",
+                            # Missing outputs
+                        }
+                    ]
                 }
             ],
         }
@@ -182,19 +205,23 @@ class TestValidateAgainstSchema:
             "version": "1.0.0",
             "summary": "Invalid input format test",
             "description": "Job",
-            "steps": [
+            "workflows": [
                 {
-                    "id": "step1",
-                    "name": "Step 1",
-                    "description": "Step",
-                    "instructions_file": "steps/step1.md",
-                    "inputs": [
+                    "steps": [
                         {
-                            "name": "param",
-                            # Missing description for user input
+                            "id": "step1",
+                            "name": "Step 1",
+                            "description": "Step",
+                            "instructions_file": "steps/step1.md",
+                            "inputs": [
+                                {
+                                    "name": "param",
+                                    # Missing description for user input
+                                }
+                            ],
+                            "outputs": ["output.md"],
                         }
-                    ],
-                    "outputs": ["output.md"],
+                    ]
                 }
             ],
         }

@@ -11,14 +11,15 @@ changelog:
   - version: "1.0.0"
     changes: "Initial job creation"
 
-steps:
-  - id: single_step
-    name: "Single Step"
-    description: "A single step that performs a task"
-    instructions_file: steps/single_step.md
-    inputs:
-      - name: input_param
-        description: "An input parameter"
-    outputs:
-      - output.md
-    dependencies: []
+workflows:
+  - steps:
+      - id: single_step
+        name: "Single Step"
+        description: "A single step that performs a task"
+        instructions_file: steps/single_step.md
+        inputs:
+          - name: input_param
+            description: "An input parameter"
+        outputs:
+          - output.md
+        dependencies: []

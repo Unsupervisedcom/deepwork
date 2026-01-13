@@ -6,7 +6,7 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
 from deepwork.core.adapters import AgentAdapter, CommandLifecycleHook
-from deepwork.core.parser import JobDefinition, Step
+from deepwork.core.parser import JobDefinition, Step, Workflow
 from deepwork.schemas.job_schema import LIFECYCLE_HOOK_EVENTS
 from deepwork.utils.fs import safe_read, safe_write
 
@@ -61,27 +61,22 @@ class CommandGenerator:
 
     def _is_standalone_step(self, job: JobDefinition, step: Step) -> bool:
         """
-        Check if a step is standalone (disconnected from the main workflow).
+        Check if a step is standalone (not part of a named workflow).
 
-        A standalone step has no dependencies AND no other steps depend on it.
+        A step is standalone if it's in an anonymous workflow (a workflow with no name).
+        Anonymous workflows are meant for single, independent steps.
 
         Args:
             job: Job definition
             step: Step to check
 
         Returns:
-            True if step is standalone
+            True if step is standalone (in an anonymous workflow)
         """
-        # Step has dependencies - not standalone
-        if step.dependencies:
-            return False
-
-        # Check if any other step depends on this step
-        for other_step in job.steps:
-            if step.id in other_step.dependencies:
-                return False
-
-        return True
+        workflow = job.get_workflow_for_step(step.id)
+        if workflow is None:
+            return True
+        return workflow.is_anonymous()
 
     def _build_hook_context(self, job: JobDefinition, hook_action: Any) -> dict[str, Any]:
         """
@@ -121,7 +116,7 @@ class CommandGenerator:
         Args:
             job: Job definition
             step: Step to generate context for
-            step_index: Index of step in job (0-based)
+            step_index: Index of step in job (0-based, across all workflows)
             adapter: Agent adapter for platform-specific hook name mapping
 
         Returns:
@@ -148,14 +143,28 @@ class CommandGenerator:
         # Check if this is a standalone step
         is_standalone = self._is_standalone_step(job, step)
 
-        # Determine next and previous steps (only for non-standalone steps)
+        # Get the workflow containing this step
+        workflow = job.get_workflow_for_step(step.id)
+
+        # Determine next and previous steps within the workflow (only for non-standalone steps)
         next_step = None
         prev_step = None
-        if not is_standalone:
-            if step_index < len(job.steps) - 1:
-                next_step = job.steps[step_index + 1].id
-            if step_index > 0:
-                prev_step = job.steps[step_index - 1].id
+        workflow_step_number = 1
+        workflow_total_steps = 1
+        if not is_standalone and workflow is not None:
+            workflow_steps = workflow.steps
+            workflow_total_steps = len(workflow_steps)
+            try:
+                workflow_step_index = next(
+                    i for i, s in enumerate(workflow_steps) if s.id == step.id
+                )
+                workflow_step_number = workflow_step_index + 1
+                if workflow_step_index < len(workflow_steps) - 1:
+                    next_step = workflow_steps[workflow_step_index + 1].id
+                if workflow_step_index > 0:
+                    prev_step = workflow_steps[workflow_step_index - 1].id
+            except StopIteration:
+                pass
 
         # Build hooks context for all lifecycle events
         # Structure: {platform_event_name: [hook_contexts]}
@@ -186,8 +195,10 @@ class CommandGenerator:
             "step_id": step.id,
             "step_name": step.name,
             "step_description": step.description,
-            "step_number": step_index + 1,  # 1-based for display
-            "total_steps": len(job.steps),
+            "step_number": workflow_step_number,  # 1-based position within workflow
+            "total_steps": workflow_total_steps,  # Total steps in this workflow
+            "workflow_name": workflow.name if workflow else None,
+            "workflow_description": workflow.description if workflow else None,
             "instructions_file": step.instructions_file,
             "instructions_content": instructions_content,
             "user_inputs": user_inputs,
