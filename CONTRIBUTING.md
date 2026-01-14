@@ -227,7 +227,7 @@ uv run pytest tests/unit/core/test_parser.py::test_parse_valid_job -v
 
 ```bash
 # Generate coverage report
-uv run pytest --cov=deepwork --cov-report=html
+uv run pytest tests/ --cov=deepwork --cov-report=html
 
 # View coverage in browser
 open htmlcov/index.html  # macOS
