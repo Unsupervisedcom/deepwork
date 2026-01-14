@@ -134,7 +134,7 @@ Ensure the implementation step is complete:
   - No template errors or missing content
 - Existing platforms still work (if applicable)
 - No conflicts between platforms
-- When all criteria are met, include `<promise>QUALITY_COMPLETE</promise>` in your response
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
 

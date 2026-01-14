@@ -299,7 +299,7 @@ Policies automatically enforce team guidelines when files change:
 1. When you start a Claude Code session, the baseline git state is captured
 2. When the agent finishes, changed files are compared against policy triggers
 3. If policies fire (trigger matches, no safety match), Claude is prompted to address them
-4. Use `<promise policy="Policy Name">addressed</promise>` to mark policies as handled
+4. Use `<promise>✓ Policy Name</promise>` to mark policies as handled
 
 **Use cases**:
 - Keep documentation in sync with code changes

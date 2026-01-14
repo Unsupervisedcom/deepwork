@@ -152,7 +152,7 @@ Or if no changes are needed, add a documentation comment:
 - `job_schema.py` has no syntax errors (verified with py_compile)
 - `adapters.py` has no syntax errors (verified with py_compile)
 - All adapters have consistent hook fields (same fields across all adapters)
-- When all criteria are met, include `<promise>QUALITY_COMPLETE</promise>` in your response
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
 

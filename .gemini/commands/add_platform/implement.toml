@@ -251,7 +251,7 @@ deepwork install --platform <platform_name>
   - Platform listed in supported platforms
   - Installation command documented
   - Any platform-specific notes included
-- When all criteria are met, include `<promise>QUALITY_COMPLETE</promise>` in your response
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
 

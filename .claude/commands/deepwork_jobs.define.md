@@ -20,7 +20,7 @@ hooks:
             7. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 
             If ANY criterion is not met, continue working to address it.
-            If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
+            If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
 
 
             ## Instructions
@@ -28,7 +28,7 @@ hooks:
             Review the conversation and determine if ALL quality criteria above have been satisfied.
             Look for evidence that each criterion has been addressed.
 
-            If the agent has included `<promise>QUALITY_COMPLETE</promise>` in their response AND
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
             all criteria appear to be met, respond with: {"ok": true}
 
             If criteria are NOT met AND the promise tag is missing, respond with:
@@ -235,7 +235,7 @@ steps:
           Verify this step's output meets quality criteria:
           1. [Criterion 1]
           2. [Criterion 2]
-          If ALL criteria are met, include `<promise>QUALITY_COMPLETE</promise>`.
+          If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
   - id: [another_step]
     name: "[Another Step]"
@@ -464,7 +464,7 @@ Verify the job.yml output meets ALL quality criteria before completing:
 7. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 
 If ANY criterion is not met, continue working to address it.
-If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in your response.
+If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
 
 
 ### Completion Promise
@@ -472,7 +472,7 @@ If ALL criteria are satisfied, include `<promise>QUALITY_COMPLETE</promise>` in 
 To signal that all quality criteria have been met, include this tag in your final response:
 
 ```
-<promise>QUALITY_COMPLETE</promise>
+<promise>✓ Quality Criteria Met</promise>
 ```
 
 **Important**: Only include this promise tag when you have verified that ALL quality criteria above are satisfied. The validation loop will continue until this promise is detected.
