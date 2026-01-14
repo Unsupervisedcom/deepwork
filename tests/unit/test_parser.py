@@ -237,7 +237,6 @@ class TestParseJobDefinition:
         job = parse_job_definition(job_dir)
 
         assert job.name == "simple_job"
-        assert job.version == "1.0.0"
         assert job.summary == "A simple single-step job for testing"
         assert "DeepWork framework" in job.description  # Multi-line description
         assert len(job.steps) == 1

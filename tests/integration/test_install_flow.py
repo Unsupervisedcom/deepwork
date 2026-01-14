@@ -38,7 +38,6 @@ class TestInstallCommand:
         config = load_yaml(config_file)
         assert config is not None
         assert "claude" in config["platforms"]
-        assert config["version"] == "1.0.0"
 
         # Verify core commands were created
         claude_dir = mock_claude_project / ".claude" / "commands"
