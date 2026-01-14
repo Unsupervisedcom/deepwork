@@ -376,3 +376,61 @@ class GeminiAdapter(AgentAdapter):
         # Gemini CLI does not support command-level hooks
         # Hooks are configured globally in settings.json, not per-command
         return 0
+
+
+class OpenCodeAdapter(AgentAdapter):
+    """Adapter for OpenCode.
+
+    OpenCode uses Markdown format for custom commands stored in .opencode/command/.
+    Commands use forward slash (/) for namespacing via subdirectories.
+
+    Note: OpenCode does NOT support command-level hooks. Hooks are implemented
+    through a global plugin system (JS/TS modules), not per-command frontmatter.
+    Command frontmatter only supports: description, agent, model, subtask.
+
+    See: doc/platforms/opencode/hooks_system.md
+    """
+
+    name = "opencode"
+    display_name = "OpenCode"
+    config_dir = ".opencode"
+    commands_dir = "command"  # OpenCode uses 'command' not 'commands'
+
+    # OpenCode does NOT support command-level hooks
+    # Hooks are global via plugin system (JS/TS modules), not per-command
+    hook_name_mapping: ClassVar[dict[CommandLifecycleHook, str]] = {}
+
+    def get_command_filename(self, job_name: str, step_id: str) -> str:
+        """
+        Get the filename for an OpenCode command.
+
+        OpenCode uses Markdown files and forward slash namespacing via subdirectories.
+        For job "my_job" and step "step_one", creates: my_job/step_one.md
+
+        Args:
+            job_name: Name of the job
+            step_id: ID of the step
+
+        Returns:
+            Command filename path (e.g., "my_job/step_one.md")
+        """
+        return f"{job_name}/{step_id}.md"
+
+    def sync_hooks(self, project_path: Path, hooks: dict[str, list[dict[str, Any]]]) -> int:
+        """
+        Sync hooks to OpenCode settings.
+
+        OpenCode does not support command-level hooks. All hooks are
+        implemented through the global plugin system. This method is a no-op
+        that always returns 0.
+
+        Args:
+            project_path: Path to project root
+            hooks: Dict mapping lifecycle events to hook configurations (ignored)
+
+        Returns:
+            0 (OpenCode does not support command-level hooks)
+        """
+        # OpenCode does not support command-level hooks
+        # Hooks are implemented through the global plugin system
+        return 0
