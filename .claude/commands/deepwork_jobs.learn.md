@@ -14,11 +14,13 @@ hooks:
             1. **Conversation Analyzed**: Did you review the conversation for DeepWork job executions?
             2. **Confusion Identified**: Did you identify points of confusion, errors, or inefficiencies?
             3. **Instructions Improved**: Were job instructions updated to address identified issues?
-            4. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
-            5. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
-            6. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
-            7. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
-            8. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
+            4. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
+            5. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
+            6. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
+            7. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
+            8. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
+            9. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
+            10. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
 
             If ANY criterion is not met, continue working to address it.
             If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
@@ -79,9 +81,8 @@ Analyze the conversation history to extract learnings and improvements, then app
    - Note the order of execution
 
 2. **Identify the working folder**
-   - Find where outputs were created during job execution
-   - This is typically specified in the job's working directory
-   - Common patterns: project root, `./output/`, or job-specific directories
+   - Should be clear from conversation history where work was done
+   - If unclear, run `git diff` to see where changes were made on the branch
 
 3. **If no job was specified**, ask the user:
    - "Which DeepWork job would you like me to learn from?"
@@ -150,14 +151,45 @@ For each generalizable learning:
    - Clarify ambiguous instructions
    - Update quality criteria if needed
 
-3. **Preserve instruction structure**
+3. **Keep instructions concise**
+   - Avoid redundancy - don't repeat the same guidance in multiple places
+   - Be direct - remove verbose explanations that don't add value
+   - Prefer bullet points over paragraphs where appropriate
+
+4. **Preserve instruction structure**
    - Keep existing sections (Objective, Task, Process, Output Format, Quality Criteria)
    - Add to appropriate sections rather than restructuring
    - Maintain consistency with other steps
 
-4. **Track changes for changelog**
+5. **Track changes for changelog**
    - Note what was changed and why
    - Prepare changelog entry for job.yml
+
+### Step 4b: Extract Shared Content into Referenced Files
+
+Review all instruction files for the job and identify content that:
+- Appears in multiple step instructions (duplicated)
+- Is lengthy and could be extracted for clarity
+- Would benefit from being maintained in one place
+
+**Extract to shared files:**
+
+1. **Create shared files** in `.deepwork/jobs/[job_name]/steps/shared/`
+   - `conventions.md` - Coding/formatting conventions used across steps
+   - `examples.md` - Common examples referenced by multiple steps
+   - `schemas.md` - Data structures or formats used throughout
+
+2. **Reference from instructions** using markdown includes or explicit references:
+   ```markdown
+   ## Conventions
+
+   Follow the conventions defined in `shared/conventions.md`.
+   ```
+
+3. **Benefits of extraction:**
+   - Single source of truth - update once, applies everywhere
+   - Shorter instruction files - easier to read and maintain
+   - Consistent guidance across steps
 
 ### Step 5: Create/Update AGENTS.md (Bespoke Learnings)
 
@@ -285,6 +317,8 @@ When adding entries to AGENTS.md, prefer these patterns:
 - Points of confusion and inefficiency are identified
 - Learnings are correctly classified (generalizable vs bespoke)
 - Job instructions updated for generalizable improvements
+- Instructions are concise - no redundancy or unnecessary verbosity
+- Shared/lengthy content extracted into referenced files where appropriate
 - AGENTS.md created/updated with bespoke learnings
 - File references used instead of duplicating content
 - AGENTS.md is in the correct working folder
@@ -415,11 +449,13 @@ Verify the learning process meets ALL quality criteria before completing:
 1. **Conversation Analyzed**: Did you review the conversation for DeepWork job executions?
 2. **Confusion Identified**: Did you identify points of confusion, errors, or inefficiencies?
 3. **Instructions Improved**: Were job instructions updated to address identified issues?
-4. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
-5. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
-6. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
-7. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
-8. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
+4. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
+5. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
+6. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
+7. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
+8. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
+9. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
+10. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
 
 If ANY criterion is not met, continue working to address it.
 If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.

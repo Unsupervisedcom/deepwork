@@ -95,11 +95,13 @@ steps:
             1. **Conversation Analyzed**: Did you review the conversation for DeepWork job executions?
             2. **Confusion Identified**: Did you identify points of confusion, errors, or inefficiencies?
             3. **Instructions Improved**: Were job instructions updated to address identified issues?
-            4. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
-            5. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
-            6. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
-            7. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
-            8. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
+            4. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
+            5. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
+            6. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
+            7. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
+            8. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
+            9. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
+            10. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
 
             If ANY criterion is not met, continue working to address it.
             If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
