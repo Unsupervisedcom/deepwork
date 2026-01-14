@@ -1,5 +1,5 @@
 name: competitive_research
-version: "1.0.0"
+version: "0.1.0"
 summary: "Systematic competitive analysis workflow"
 description: |
   A comprehensive workflow for analyzing competitors in your market segment. This job
@@ -16,8 +16,8 @@ description: |
   Designed for product teams conducting quarterly competitive analysis.
 
 changelog:
-  - version: "1.0.0"
-    changes: "Initial job creation"
+  - version: "0.1.0"
+    changes: "Initial version"
 
 steps:
   - id: identify_competitors

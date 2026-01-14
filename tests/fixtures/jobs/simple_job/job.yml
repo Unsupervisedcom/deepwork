@@ -1,5 +1,5 @@
 name: simple_job
-version: "1.0.0"
+version: "0.1.0"
 summary: "A simple single-step job for testing"
 description: |
   A simple single-step job for testing the DeepWork framework.
@@ -8,8 +8,8 @@ description: |
   including a single step with user input and file output.
 
 changelog:
-  - version: "1.0.0"
-    changes: "Initial job creation"
+  - version: "0.1.0"
+    changes: "Initial version"
 
 steps:
   - id: single_step

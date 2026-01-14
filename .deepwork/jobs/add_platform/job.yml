@@ -1,5 +1,5 @@
 name: add_platform
-version: "1.0.0"
+version: "0.1.0"
 summary: "Add a new AI platform to DeepWork with adapter, templates, and tests"
 
 description: |
@@ -21,8 +21,8 @@ description: |
   - Installation verification confirms the platform integrates correctly with existing jobs
 
 changelog:
-  - version: "1.0.0"
-    changes: "Initial job creation"
+  - version: "0.1.0"
+    changes: "Initial version"
 
 steps:
   - id: research

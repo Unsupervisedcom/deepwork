@@ -1,5 +1,7 @@
 # DeepWork
 
+> **Note**: DeepWork is in active development. We welcome feedback and contributions!
+
 > Framework for enabling AI agents to perform complex, multi-step work tasks
 
 DeepWork is a tool for defining and executing multi-step workflows with AI coding assistants like Claude Code, Google Gemini, and GitHub Copilot. It enables you to decompose complex tasks into manageable steps, with clear inputs, outputs, and dependencies.
