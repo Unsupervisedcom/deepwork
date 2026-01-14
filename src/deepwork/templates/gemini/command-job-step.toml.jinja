@@ -166,13 +166,4 @@ Consider:
 
 - Job definition: `.deepwork/jobs/{{ job_name }}/job.yml`
 - Step instructions: `.deepwork/jobs/{{ job_name }}/{{ instructions_file }}`
-{% if supplementary_files %}
-
-### Supplementary Reference Files
-
-The following additional reference files are available for this step:
-{% for file in supplementary_files %}
-- `{{ file.path }}`
-{% endfor %}
-{% endif %}
 """

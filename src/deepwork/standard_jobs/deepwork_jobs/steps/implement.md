@@ -146,40 +146,9 @@ This alignment ensures the AI agent knows exactly what will be validated and can
 
 ### Using Supplementary Reference Files
 
-Step instructions can reference additional `.md` files placed in the same `steps/` directory. These supplementary files are useful for:
+Step instructions can include additional `.md` files in the `steps/` directory for detailed examples, templates, or reference material. Reference them using the full path from the project root.
 
-- Providing detailed examples or templates that would clutter the main instruction file
-- Sharing common reference material across multiple steps
-- Including technical specifications, API documentation, or style guides
-
-**How it works:**
-
-1. Place additional `.md` files in the `steps/` directory alongside the main step instruction files
-2. Reference them by filename in your step instructions using any of these patterns:
-   - Backticks: `` `example_template.md` ``
-   - Markdown links: `[see template](example_template.md)`
-   - Quoted strings: `"example_template.md"` or `'example_template.md'`
-
-3. When `deepwork sync` generates the slash commands, these references are automatically transformed to relative paths from the project root (e.g., `.deepwork/jobs/my_job/steps/example_template.md`)
-
-**Example:**
-
-If your job has a step instruction that says:
-```markdown
-Use the template in `api_spec.md` to structure your API endpoints.
-```
-
-And you have `.deepwork/jobs/my_job/steps/api_spec.md` containing the template, the generated slash command will transform this to:
-```markdown
-Use the template in `.deepwork/jobs/my_job/steps/api_spec.md` to structure your API endpoints.
-```
-
-The generated command will also list all supplementary files in a "Supplementary Reference Files" section at the end.
-
-**Important notes:**
-- Supplementary files must be `.md` files in the `steps/` directory
-- Files that match step instruction filenames (e.g., `define.md`, `implement.md`) are NOT treated as supplementary
-- Only filename references are transformed; paths that already include directories are left unchanged
+See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for detailed documentation and examples.
 
 ### Step 4: Verify job.yml Location
 
