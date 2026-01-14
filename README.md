@@ -1,6 +1,6 @@
 # DeepWork
 
-> **Pre-release**: This project is in early development (v0.1.0). APIs and features may change.
+> **Note**: DeepWork is in active development. We welcome feedback and contributions!
 
 > Framework for enabling AI agents to perform complex, multi-step work tasks
 
