@@ -1,5 +1,6 @@
 """Slash-command file generator using Jinja2 templates."""
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -112,6 +113,112 @@ class CommandGenerator:
             hook_ctx["path"] = hook_action.script
         return hook_ctx
 
+    def _find_supplementary_files(
+        self, job: JobDefinition, step: Step
+    ) -> list[dict[str, str]]:
+        """
+        Find supplementary .md files in the steps directory.
+
+        Supplementary files are markdown files in the steps directory that are
+        NOT the main instruction file for any step. These can be referenced
+        in step instructions for additional context.
+
+        Args:
+            job: Job definition
+            step: Current step
+
+        Returns:
+            List of dicts with 'name' (filename) and 'path' (relative from project root)
+        """
+        steps_dir = job.job_dir / "steps"
+        if not steps_dir.exists():
+            return []
+
+        # Get all step instruction filenames (just the filename, not full path)
+        step_instruction_files = {
+            Path(s.instructions_file).name for s in job.steps
+        }
+
+        supplementary_files = []
+        for md_file in steps_dir.glob("*.md"):
+            # Skip if this is a main step instruction file
+            if md_file.name in step_instruction_files:
+                continue
+
+            # Calculate relative path from project root
+            # job_dir is like .deepwork/jobs/[job_name]
+            # so the full path is .deepwork/jobs/[job_name]/steps/[filename]
+            relative_path = f".deepwork/jobs/{job.name}/steps/{md_file.name}"
+
+            supplementary_files.append({
+                "name": md_file.name,
+                "path": relative_path,
+            })
+
+        return sorted(supplementary_files, key=lambda x: x["name"])
+
+    def _transform_md_references(
+        self, content: str, supplementary_files: list[dict[str, str]]
+    ) -> str:
+        """
+        Transform references to supplementary .md files into relative paths.
+
+        This transforms references like `foo.md` into `.deepwork/jobs/[job_name]/steps/foo.md`
+        so that when the slash command is generated, the AI agent can find the files.
+
+        Handles various reference patterns:
+        - `foo.md` (backtick code)
+        - [link](foo.md) (markdown links)
+        - "foo.md" or 'foo.md' (quoted strings)
+
+        Args:
+            content: The instruction file content
+            supplementary_files: List of supplementary file info dicts
+
+        Returns:
+            Content with references transformed to relative paths
+        """
+        if not supplementary_files:
+            return content
+
+        # Build a map of filename -> relative path
+        file_map = {f["name"]: f["path"] for f in supplementary_files}
+
+        for filename, relative_path in file_map.items():
+            # Escape special regex characters in filename
+            escaped_filename = re.escape(filename)
+
+            # Pattern 1: backtick references like `foo.md`
+            # Only match if it's just the filename, not already a path
+            content = re.sub(
+                rf'`(?<![/\\])({escaped_filename})`',
+                f'`{relative_path}`',
+                content
+            )
+
+            # Pattern 2: markdown links like [text](foo.md)
+            # Only match if it's just the filename, not already a path
+            content = re.sub(
+                rf'\]\((?<![/\\])({escaped_filename})\)',
+                f']({relative_path})',
+                content
+            )
+
+            # Pattern 3: quoted strings like "foo.md" or 'foo.md'
+            # Be careful to only match standalone filenames, not paths
+            content = re.sub(
+                rf'"(?<![/\\])({escaped_filename})"',
+                f'"{relative_path}"',
+                content
+            )
+            content = re.sub(
+                rf"'(?<![/\\])({escaped_filename})'",
+                f"'{relative_path}'",
+                content
+            )
+
+        return content
+
     def _build_step_context(
         self, job: JobDefinition, step: Step, step_index: int, adapter: AgentAdapter
     ) -> dict[str, Any]:
@@ -127,11 +234,19 @@ class CommandGenerator:
         Returns:
             Template context dictionary
         """
+        # Find supplementary .md files in the steps directory
+        supplementary_files = self._find_supplementary_files(job, step)
+
         # Read step instructions
         instructions_file = job.job_dir / step.instructions_file
         instructions_content = safe_read(instructions_file)
         if instructions_content is None:
             raise GeneratorError(f"Step instructions file not found: {instructions_file}")
+
+        # Transform references to supplementary files into relative paths
+        instructions_content = self._transform_md_references(
+            instructions_content, supplementary_files
+        )
 
         # Separate user inputs and file inputs
         user_inputs = [
@@ -199,6 +314,7 @@ class CommandGenerator:
             "is_standalone": is_standalone,
             "hooks": hooks,  # New: all hooks by platform event name
             "stop_hooks": stop_hooks,  # Backward compat: after_agent hooks only
+            "supplementary_files": supplementary_files,  # Additional .md files in steps dir
         }
 
     def generate_step_command(
