@@ -144,6 +144,12 @@ If a step in the job.yml has `stop_hooks` defined, the generated instruction fil
 
 This alignment ensures the AI agent knows exactly what will be validated and can self-check before completing.
 
+### Using Supplementary Reference Files
+
+Step instructions can include additional `.md` files in the `steps/` directory for detailed examples, templates, or reference material. Reference them using the full path from the project root.
+
+See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for detailed documentation and examples.
+
 ### Step 4: Verify job.yml Location
 
 Verify that `job.yml` is in the correct location at `.deepwork/jobs/[job_name]/job.yml`. The define step should have created it there. If for some reason it's not there, you may need to create or move it.
