@@ -102,7 +102,7 @@ By signing this Agreement, You accept and agree to the terms and conditions cont
 
 ### For Individual Contributors
 
-To sign this CLA, please add your GitHub username to the list of signatories by creating a pull request that adds your name to the `.github/CLA_SIGNATORIES.md` file, or alternatively, sign the CLA through our automated CLA Assistant when you submit your first pull request.
+To sign this CLA, please add your GitHub username to the list of signatories by creating a pull request that adds your name to the `CLA/version_1/CLA_SIGNATORIES.md` file, or alternatively, sign the CLA through our automated CLA Assistant when you submit your first pull request.
 
 When you submit a pull request, the CLA Assistant bot will automatically check if you have signed the CLA and guide you through the process if you haven't.
 
