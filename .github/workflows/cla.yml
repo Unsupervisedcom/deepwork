@@ -26,7 +26,7 @@ jobs:
           PERSONAL_ACCESS_TOKEN: ${{ secrets.CLA_ASSISTANT_PAT }}
         with:
           path-to-signatures: '.github/CLA_SIGNATORIES.json'
-          path-to-document: 'https://github.com/Unsupervisedcom/deepwork/blob/main/CLA.md'
+          path-to-document: 'https://github.com/${{ github.repository }}/blob/main/CLA.md'
           # Branch where CLA signatures will be stored
           branch: 'main'
           allowlist: 'dependabot[bot],github-actions[bot]'

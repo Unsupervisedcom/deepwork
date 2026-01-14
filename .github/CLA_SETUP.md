@@ -93,7 +93,7 @@ Signatures are stored in `.github/CLA_SIGNATORIES.json` in the following format:
       "name": "username",
       "id": 12345678,
       "comment_id": 987654321,
-      "created_at": "2026-01-14T17:00:00Z",
+      "created_at": "YYYY-MM-DDTHH:MM:SSZ",
       "repoId": 123456789,
       "pullRequestNo": 42
     }
