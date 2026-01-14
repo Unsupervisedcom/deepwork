@@ -15,7 +15,17 @@ DeepWork is a tool for defining and executing multi-step workflows with AI codin
 | OpenCode | Planned | Markdown | No |
 | GitHub Copilot CLI | Planned | Markdown | No (tool permissions only) |
 
-## Installation
+## Easy Installation
+In your Agent CLI (ex. `claude`), ask:
+
+```
+Please fully install https://pypi.org/project/deepwork/ and make sure you see the new commands.
+```
+
+## Installation Details
+
+
+**Agents**: - be sure to perform all the steps, not just the package install.
 
 ### Prerequisites
 
@@ -26,34 +36,24 @@ DeepWork is a tool for defining and executing multi-step workflows with AI codin
 ### Install DeepWork
 
 ```bash
-# Using uv (recommended)
-uv pip install -e .
+# Using pipx (recommended - isolated environment)
+pipx install deepwork
+
+# Or using uv
+uv tool install deepwork
 
 # Or using pip
-pip install -e .
+pip install deepwork
 ```
 
 ### Install in Your Project
-
-#### Claude Code
-
 ```bash
 cd your-project/
 deepwork install --platform claude
-```
 
-#### Gemini CLI
-
-```bash
-cd your-project/
+# Or Gemini CLI, etc.
 deepwork install --platform gemini
 ```
-
-**Gemini CLI Notes**:
-- Commands are generated as TOML files in `.gemini/commands/`
-- Commands use colon (`:`) namespacing: `/job_name:step_id`
-- Gemini CLI does not support command-level hooks; quality validation is embedded in prompts
-- See [Gemini CLI documentation](https://geminicli.com/docs/) for more details
 
 This will:
 - Create `.deepwork/` directory structure
@@ -62,8 +62,6 @@ This will:
 - Configure hooks for your AI assistant to enable policies
 
 ## Quick Start
-
-
 
 ### 1. Define a Job
 Jobs are multi-step workflows where each Step has clear input and output artifacts, making them easier to manage effectively.
@@ -193,50 +191,10 @@ your-project/
 
 **Note**: Work outputs are created on dedicated Git branches (e.g., `deepwork/job_name-instance-date`), not in a separate directory.
 
-## Development
-
-### Setup Development Environment
-
-```bash
-# Using Nix (recommended)
-nix-shell
-
-# Or manually
-uv sync
-```
-
-### Run Tests
-
-```bash
-# All tests
-uv run pytest tests/ -v
-
-# Unit tests only
-uv run pytest tests/unit/ -v
-
-# Integration tests only
-uv run pytest tests/integration/ -v
-
-# With coverage
-uv run pytest tests/ --cov=deepwork --cov-report=html
-```
-
-### Code Quality
-
-```bash
-# Linting
-ruff check src/
-
-# Type checking
-mypy src/
-
-# Format code
-ruff format src/
-```
-
 ## Documentation
 
 - **[Architecture](doc/architecture.md)**: Complete design specification
+- **[Contributing](CONTRIBUTING.md)**: Setup development environment and contribute
 
 ## Project Structure
 
@@ -262,84 +220,56 @@ deepwork/
 
 ## Features
 
-### Job Definition
+### 📋 Job Definition
+Define structured, multi-step workflows where each step has clear requirements and produces specific results.
+- **Dependency Management**: Explicitly link steps with automatic sequence handling and cycle detection.
+- **Artifact Passing**: Seamlessly use file outputs from one step as inputs for future steps.
+- **Dynamic Inputs**: Support for both fixed file references and interactive user parameters.
+- **Human-Readable YAML**: Simple, declarative job definitions that are easy to version and maintain.
 
-- **Declarative YAML**: Define workflows in simple, readable YAML
-- **JSON Schema Validation**: Automatic validation of job structure
-- **Dependency Management**: Explicit dependencies with cycle detection
-- **File & User Inputs**: Support for both user parameters and file outputs from previous steps
+### 🌿 Git-Native Workflow
+Maintain a clean repository with automatic branch management and isolation.
+- **Automatic Branching**: Every job execution happens on a dedicated work branch (e.g., `deepwork/my-job-2024`).
+- **Namespace Isolation**: Run multiple concurrent jobs or instances without versioning conflicts.
+- **Full Traceability**: All AI-generated changes, logs, and artifacts are tracked natively in your Git history.
 
-### Skill Generation
+### 🛡️ Automated Policies
+Enforce project standards and best practices without manual oversight. Policies monitor file changes and automatically prompt your AI assistant to follow specific guidelines when relevant code is modified.
+- **Automatic Triggers**: Detect when specific files or directories are changed to fire relevant policies.
+- **Contextual Guidance**: Instructions are injected directly into the AI's workflow at the right moment.
+- **Common Use Cases**: Keep documentation in sync, enforce security reviews, or automate changelog updates.
 
-- **Template-Based**: Jinja2 templates for consistent skill generation
-- **Context-Aware**: Skills include all necessary context (instructions, inputs, dependencies)
-- **Multi-Platform**: Generate skills for different AI platforms
-
-### Git Integration
-
-- **Work Branches**: Automatic work branch creation and management
-- **Namespace Isolation**: Multiple concurrent job instances supported
-- **Version Control**: All outputs tracked in Git
-
-### Policies
-
-Policies automatically enforce team guidelines when files change:
-
+**Example Policy**:
 ```yaml
-# .deepwork.policy.yml
+# Enforce documentation updates when config changes
 - name: "Update docs on config changes"
   trigger: "app/config/**/*"
-  safety: "docs/install_guide.md"
-  instructions: |
-    Configuration files changed. Please update docs/install_guide.md
-    if installation instructions need to change.
+  instructions: "Configuration files changed. Please update docs/install_guide.md."
 ```
 
-**How it works**:
-1. When you start a Claude Code session, the baseline git state is captured
-2. When the agent finishes, changed files are compared against policy triggers
-3. If policies fire (trigger matches, no safety match), Claude is prompted to address them
-4. Use `<promise>✓ Policy Name</promise>` to mark policies as handled
-
-**Use cases**:
-- Keep documentation in sync with code changes
-- Require security review for auth code modifications
-- Enforce changelog updates for API changes
-
-Define policies interactively:
-```
-/deepwork_policy.define
-```
-
-## Roadmap
-
-### Phase 2: Runtime Enhancements (Planned)
-
-- Job execution tracking
-- Automatic skill invocation
-- Progress visualization
-- Error recovery
-
-### Phase 3: Advanced Features (Planned)
-
-- Job templates and marketplace
-- Parallel step execution
-- External tool integration
-- Web UI for job management
+### 🚀 Multi-Platform Support
+Generate native commands and skills tailored for your AI coding assistant.
+- **Native Integration**: Works directly with the skill/command formats of supported agents.
+- **Context-Aware**: Skills include all necessary context (instructions, inputs, and dependencies) for the AI.
+- **Expanding Ecosystem**: Currently supports **Claude Code** and **Gemini CLI**, with more platforms planned.
 
 ## Contributing
 
-DeepWork is currently in MVP phase. Contributions welcome!
+DeepWork is currently in MVP phase. Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development guide.
 
 ## License
 
-MIT License - see LICENSE file for details
+DeepWork is licensed under the Business Source License 1.1 (BSL 1.1). See [LICENSE.md](LICENSE.md) for details.
+
+### Key Points
+
+- **Free for non-competing use**: You can use DeepWork freely for internal workflow automation, education, research, and development
+- **Change Date**: On January 14, 2030, the license will automatically convert to Apache License 2.0
+- **Prohibited Uses**: You cannot use DeepWork to build products that compete with DeepWork or Unsupervised.com, Inc. in workflow automation or data analysis
+- **Contributing**: Contributors must sign our [Contributor License Agreement (CLA)](CLA/version_1/CLA.md)
+
+For commercial use or questions about licensing, please contact legal@unsupervised.com
 
 ## Credits
 
 - Inspired by [GitHub's spec-kit](https://github.com/github/spec-kit)
-- Built for [Claude Code](https://claude.com/claude-code)
-
----
-
-**Built with Claude Code** 🤖

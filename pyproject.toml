@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Framework for enabling AI agents to perform complex, multi-step work tasks"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { text = "Business Source License 1.1" }
 authors = [
     { name = "DeepWork Contributors" }
 ]
@@ -12,7 +12,7 @@ keywords = ["ai", "agents", "workflow", "automation", "cli"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

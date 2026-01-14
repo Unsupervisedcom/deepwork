@@ -20,6 +20,44 @@ Thank you for your interest in contributing to DeepWork! This guide will help yo
 - **Git** - For version control
 - **Nix** (optional but recommended) - For reproducible development environment
 - **uv** - Modern Python package installer (included in Nix environment)
+- **Signed CLA** - All contributors must sign the Contributor License Agreement (see below)
+
+## Contributor License Agreement (CLA)
+
+Before we can accept your contributions, you must sign our Contributor License Agreement (CLA). This is a one-time requirement for all contributors.
+
+### Why We Require a CLA
+
+The CLA ensures that:
+- You have the legal right to contribute your code
+- The project can safely use and distribute your contributions
+- Your contributions comply with the Business Source License 1.1 under which DeepWork is licensed
+- Both you and the project are legally protected
+
+### How to Sign the CLA
+
+**For First-Time Contributors:**
+
+1. **Submit your pull request** - When you open your first PR, the CLA Assistant bot will automatically comment on it
+2. **Read the CLA** - Review the [Contributor License Agreement (CLA)](CLA/version_1/CLA.md)
+3. **Sign electronically** - Comment on your PR with: `I have read the CLA Document and I hereby sign the CLA`
+4. **Verification** - The bot will verify your signature and update the PR status
+
+The CLA Assistant will remember your signature for all future contributions.
+
+**For Corporate Contributors:**
+
+If you're contributing on behalf of your employer, your organization must sign a Corporate CLA. Please contact legal@unsupervised.com to obtain the Corporate CLA.
+
+### CLA Details
+
+Our CLA:
+- Grants the project a license to use your contributions
+- Confirms you have the right to contribute the code
+- Acknowledges the Business Source License 1.1 restrictions
+- Is based on the Apache Software Foundation's CLA with modifications for BSL 1.1
+
+For the full text, see [CLA.md](CLA/version_1/CLA.md).
 
 ## Development Setup
 
@@ -189,7 +227,7 @@ uv run pytest tests/unit/core/test_parser.py::test_parse_valid_job -v
 
 ```bash
 # Generate coverage report
-uv run pytest --cov=deepwork --cov-report=html
+uv run pytest tests/ --cov=deepwork --cov-report=html
 
 # View coverage in browser
 open htmlcov/index.html  # macOS
@@ -484,7 +522,9 @@ echo $NIX_PATH
 
 ## License
 
-By contributing to DeepWork, you agree that your contributions will be licensed under the MIT License.
+By contributing to DeepWork, you agree that your contributions will be licensed under the project's current license. The licensor (Unsupervised.com, Inc.) reserves the right to change the project license at any time at its sole discretion.
+
+You must sign the [Contributor License Agreement (CLA)](CLA/version_1/CLA.md) before your contributions can be accepted. See the CLA section above for details.
 
 ---
 
