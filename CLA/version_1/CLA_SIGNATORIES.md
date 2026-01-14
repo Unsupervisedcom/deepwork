@@ -24,4 +24,4 @@ Organizations that have signed the Corporate CLA are tracked separately. If you 
 
 ---
 
-For questions about the CLA, see [CLA.md](../CLA.md) or contact legal@unsupervised.com.
+For questions about the CLA, see [CLA.md](CLA.md) or contact legal@unsupervised.com.

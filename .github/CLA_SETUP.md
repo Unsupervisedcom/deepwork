@@ -6,7 +6,7 @@ This document explains how to set up the CLA Assistant GitHub Action to automati
 
 The CLA Assistant GitHub Action (`.github/workflows/cla.yml`) automatically:
 - Comments on new pull requests asking contributors to sign the CLA
-- Tracks who has signed the CLA in `.github/CLA_SIGNATORIES.json`
+- Tracks who has signed the CLA in `CLA/version_1/CLA_SIGNATORIES.md`
 - Updates PR status checks based on CLA signature status
 - Allows contributors to sign by commenting on their PR
 
@@ -65,7 +65,7 @@ To verify the CLA Assistant is working:
    I have read the CLA Document and I hereby sign the CLA
    ```
 
-4. **Verify signature tracking**: After signing, a new commit should be added to the main branch updating `.github/CLA_SIGNATORIES.json`
+4. **Verify signature tracking**: After signing, a new commit should be added to the main branch updating `CLA/version_1/CLA_SIGNATORIES.md`
 
 5. **Check PR status**: The PR status check should update to show "All contributors have signed the CLA ✅"
 
@@ -76,15 +76,15 @@ To verify the CLA Assistant is working:
 When a contributor opens a pull request:
 
 1. The CLA Assistant bot comments with a link to the CLA and instructions
-2. The contributor reads the CLA at `/CLA.md`
+2. The contributor reads the CLA at `/CLA/version_1/CLA.md`
 3. The contributor signs by commenting: `I have read the CLA Document and I hereby sign the CLA`
-4. The bot records the signature in `.github/CLA_SIGNATORIES.json`
+4. The bot records the signature in `CLA/version_1/CLA_SIGNATORIES.md`
 5. The bot updates the PR status to indicate CLA is signed
 6. Future PRs from the same contributor don't require re-signing
 
 ### Signature Storage
 
-Signatures are stored in `.github/CLA_SIGNATORIES.json` in the following format:
+Signatures are stored in `CLA/version_1/CLA_SIGNATORIES.md` in the following format:
 
 ```json
 {
@@ -160,7 +160,7 @@ Recommended rotation period: Every 12 months
 
 - [CLA Assistant GitHub Action Documentation](https://github.com/contributor-assistant/github-action)
 - [GitHub Personal Access Tokens Guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
-- [DeepWork CLA](../CLA.md)
+- [DeepWork CLA](../CLA/version_1/CLA.md)
 - [DeepWork License](../LICENSE.md)
 
 ## Support

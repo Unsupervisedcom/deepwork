@@ -39,7 +39,7 @@ The CLA ensures that:
 **For First-Time Contributors:**
 
 1. **Submit your pull request** - When you open your first PR, the CLA Assistant bot will automatically comment on it
-2. **Read the CLA** - Review the [Contributor License Agreement (CLA)](CLA.md)
+2. **Read the CLA** - Review the [Contributor License Agreement (CLA)](CLA/version_1/CLA.md)
 3. **Sign electronically** - Comment on your PR with: `I have read the CLA Document and I hereby sign the CLA`
 4. **Verification** - The bot will verify your signature and update the PR status
 
@@ -57,7 +57,7 @@ Our CLA:
 - Acknowledges the Business Source License 1.1 restrictions
 - Is based on the Apache Software Foundation's CLA with modifications for BSL 1.1
 
-For the full text, see [CLA.md](CLA.md).
+For the full text, see [CLA.md](CLA/version_1/CLA.md).
 
 ## Development Setup
 
@@ -524,7 +524,7 @@ echo $NIX_PATH
 
 By contributing to DeepWork, you agree that your contributions will be licensed under the project's current license. The licensor (Unsupervised.com, Inc.) reserves the right to change the project license at any time at its sole discretion.
 
-You must sign the [Contributor License Agreement (CLA)](CLA.md) before your contributions can be accepted. See the CLA section above for details.
+You must sign the [Contributor License Agreement (CLA)](CLA/version_1/CLA.md) before your contributions can be accepted. See the CLA section above for details.
 
 ---
 

@@ -25,8 +25,8 @@ jobs:
           # This should be a Personal Access Token with repo scope
           PERSONAL_ACCESS_TOKEN: ${{ secrets.CLA_ASSISTANT_PAT }}
         with:
-          path-to-signatures: '.github/CLA_SIGNATORIES.json'
-          path-to-document: 'https://github.com/${{ github.repository }}/blob/main/CLA.md'
+          path-to-signatures: 'CLA/version_1/CLA_SIGNATORIES.md'
+          path-to-document: 'https://github.com/${{ github.repository }}/blob/main/CLA/version_1/CLA.md'
           # Branch where CLA signatures will be stored
           branch: 'IMPT_cla_signatures'
           allowlist: 'dependabot[bot],github-actions[bot]'

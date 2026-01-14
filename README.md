@@ -266,7 +266,7 @@ DeepWork is licensed under the Business Source License 1.1 (BSL 1.1). See [LICEN
 - **Free for non-competing use**: You can use DeepWork freely for internal workflow automation, education, research, and development
 - **Change Date**: On January 14, 2030, the license will automatically convert to Apache License 2.0
 - **Prohibited Uses**: You cannot use DeepWork to build products that compete with DeepWork or Unsupervised.com, Inc. in workflow automation or data analysis
-- **Contributing**: Contributors must sign our [Contributor License Agreement (CLA)](CLA.md)
+- **Contributing**: Contributors must sign our [Contributor License Agreement (CLA)](CLA/version_1/CLA.md)
 
 For commercial use or questions about licensing, please contact legal@unsupervised.com
 
