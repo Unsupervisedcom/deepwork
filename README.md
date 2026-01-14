@@ -26,11 +26,14 @@ DeepWork is a tool for defining and executing multi-step workflows with AI codin
 ### Install DeepWork
 
 ```bash
-# Using uv (recommended)
-uv pip install -e .
+# Using pipx (recommended - isolated environment)
+pipx install deepwork
+
+# Or using uv
+uv tool install deepwork
 
 # Or using pip
-pip install -e .
+pip install deepwork
 ```
 
 ### Install in Your Project
