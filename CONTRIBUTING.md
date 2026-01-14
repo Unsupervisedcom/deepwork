@@ -522,7 +522,7 @@ echo $NIX_PATH
 
 ## License
 
-By contributing to DeepWork, you agree that your contributions will be licensed under the Business Source License 1.1 (BSL 1.1) until the Change Date (January 14, 2030), after which they will be licensed under the Apache License 2.0.
+By contributing to DeepWork, you agree that your contributions will be licensed under the project's current license. The licensor (Unsupervised.com, Inc.) reserves the right to change the project license at any time at its sole discretion.
 
 You must sign the [Contributor License Agreement (CLA)](CLA.md) before your contributions can be accepted. See the CLA section above for details.
 
