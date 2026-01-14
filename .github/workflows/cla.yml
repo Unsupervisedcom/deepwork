@@ -28,7 +28,7 @@ jobs:
           path-to-signatures: '.github/CLA_SIGNATORIES.json'
           path-to-document: 'https://github.com/${{ github.repository }}/blob/main/CLA.md'
           # Branch where CLA signatures will be stored
-          branch: 'main'
+          branch: 'IMPT_cla_signatures'
           allowlist: 'dependabot[bot],github-actions[bot]'
           
           # Customizable messages
