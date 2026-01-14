@@ -1,5 +1,5 @@
 name: deepwork_jobs
-version: "1.3.0"
+version: "0.1.0"
 summary: "DeepWork job management commands"
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -13,14 +13,8 @@ description: |
   to change, validating the impact, and ensuring consistency across your workflow.
 
 changelog:
-  - version: "1.0.0"
-    changes: "Initial job creation"
-  - version: "1.1.0"
-    changes: "Added stop hooks for quality validation loops on all steps"
-  - version: "1.2.0"
-    changes: "Updated to support array of stop hooks"
-  - version: "1.3.0"
-    changes: "Added policy awareness to implement step - suggests relevant policies after job implementation"
+  - version: "0.1.0"
+    changes: "Initial version"
 
 steps:
   - id: define

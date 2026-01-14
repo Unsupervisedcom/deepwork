@@ -251,7 +251,7 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
 
     # Initialize config structure
     if "version" not in config_data:
-        config_data["version"] = "1.0.0"
+        config_data["version"] = "0.1.0"
 
     if "platforms" not in config_data:
         config_data["platforms"] = []
