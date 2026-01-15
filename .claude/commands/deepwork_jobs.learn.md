@@ -205,42 +205,7 @@ The AGENTS.md file captures project-specific knowledge that helps future agent r
    - This keeps AGENTS.md in sync as the codebase evolves
    - Pattern: "See `path/to/file.ext` for [description]"
 
-3. **AGENTS.md structure**:
-
-```markdown
-# Project Context for [Job Name]
-
-## Codebase Structure
-
-<!-- Reference files rather than duplicating content -->
-- Project structure: See `README.md` for overview
-- API documentation: See `docs/api.md`
-- Configuration: See `config/README.md`
-
-## Conventions
-
-### Naming Conventions
-- [Convention]: See example in `path/to/example.ext:LINE`
-
-### File Organization
-- [Pattern]: Reference `path/to/pattern/`
-
-## Job-Specific Context
-
-### [Job Name]
-
-#### [Step Name]
-- [Learning]: Reference `relevant/file.ext`
-- [Context]: [Brief explanation with file reference]
-
-## Known Issues and Workarounds
-
-- [Issue]: [Workaround with file reference if applicable]
-
-## Last Updated
-- Date: [YYYY-MM-DD]
-- From conversation about: [Brief description]
-```
+3. **AGENTS.md structure**: See `.deepwork/jobs/deepwork_jobs/templates/agents.md.template` for the standard format.
 
 4. **Writing entries**
    - Be concise but specific
@@ -269,27 +234,7 @@ If instruction files were modified:
    deepwork sync
    ```
 
-2. **Create learning_summary.md** in the working folder:
-   ```markdown
-   # Learning Summary
-
-   ## Job Analyzed
-   - Job: [job_name]
-   - Steps executed: [list of steps]
-
-   ## Generalizable Improvements Made
-   - [Step]: [What was improved]
-
-   ## Bespoke Learnings Captured
-   - Location: [path to AGENTS.md]
-   - Entries added: [list of entries]
-
-   ## Files Modified
-   - [List of files changed]
-
-   ## Recommendations
-   - [Any additional suggestions]
-   ```
+2. **Create learning_summary.md** in the working folder. See `.deepwork/jobs/deepwork_jobs/templates/learning_summary.md.template` for the standard format.
 
 3. **If commands were regenerated**, look at the "To use the new commands" section in the `deepwork sync` output and **relay these exact reload instructions to the user** (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code)
 

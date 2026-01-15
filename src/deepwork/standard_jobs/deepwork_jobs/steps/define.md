@@ -143,59 +143,9 @@ Only after you have complete understanding, create the `job.yml` file:
 
 (Where `[job_name]` is the name of the NEW job you're creating, e.g., `.deepwork/jobs/competitive_research/job.yml`)
 
-**Format**:
-```yaml
-name: [job_name]
-version: "1.0.0"
-summary: "[Brief one-line summary of what this job accomplishes]"
-description: |
-  [Detailed multi-line description of the job's purpose, process, and goals.
+**Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.template` for the standard structure.
 
-  This should explain:
-  - What problem this workflow solves
-  - What the overall process looks like
-  - What the end result will be
-  - Who the intended users are
-  - Any important context about the workflow]
-
-changelog:
-  - version: "1.0.0"
-    changes: "Initial job creation"
-
-steps:
-  - id: [step_id]
-    name: "[Step Name]"
-    description: "[What this step does]"
-    instructions_file: steps/[step_id].md
-    inputs:
-      - name: [param_name]
-        description: "[What user needs to provide]"
-      # OR for file inputs from previous steps:
-      # - file: [filename_or_path]
-      #   from_step: [previous_step_id]
-    outputs:
-      - [output_filename_or_path]  # e.g., "report.md" or "reports/analysis.md"
-    dependencies: []  # List of step IDs that must complete first
-    # Optional: Quality validation hooks
-    stop_hooks:
-      - prompt: |
-          Verify this step's output meets quality criteria:
-          1. [Criterion 1]
-          2. [Criterion 2]
-          If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
-  - id: [another_step]
-    name: "[Another Step]"
-    description: "[What this step does]"
-    instructions_file: steps/[another_step].md
-    inputs:
-      - file: [output_filename_or_path]
-        from_step: [step_id]
-    outputs:
-      - [another_output_path]
-    dependencies:
-      - [step_id]  # This step requires the previous step
-```
+**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/example_job.yml` for a fully worked example.
 
 **Important**:
 - Use lowercase with underscores for job name and step IDs

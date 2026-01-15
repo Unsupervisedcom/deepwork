@@ -1,5 +1,5 @@
 name: deepwork_jobs
-version: "0.2.0"
+version: "0.3.0"
 summary: "DeepWork job management commands"
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -18,6 +18,8 @@ changelog:
     changes: "Initial version"
   - version: "0.2.0"
     changes: "Replaced refine command with learn command for conversation-driven improvement"
+  - version: "0.3.0"
+    changes: "Added make_new_job.sh script and templates directory; updated instructions to reference templates instead of inline examples"
 
 steps:
   - id: define
