@@ -58,6 +58,16 @@ POLICY_SCHEMA: dict[str, Any] = {
                 "minLength": 1,
                 "description": "Path to a file containing instructions (alternative to inline instructions)",
             },
+            "compare_to": {
+                "type": "string",
+                "enum": ["base", "default_tip", "prompt"],
+                "description": (
+                    "What to compare against when detecting changed files. "
+                    "'base' (default) compares to the base of the current branch. "
+                    "'default_tip' compares to the tip of the default branch. "
+                    "'prompt' compares to the state at the start of the prompt."
+                ),
+            },
         },
         "oneOf": [
             {"required": ["instructions"]},
