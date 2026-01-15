@@ -292,7 +292,7 @@ After updating the changelog:
    ```
 
 2. **Reload commands**
-   - Instruct user to run `/reload` or restart session
+   - Instruct user to follow the reload instructions shown by `deepwork sync`
 
 3. **Provide summary**
    - Show what changed
@@ -410,7 +410,7 @@ Now run:
 deepwork sync
 ```
 
-Then reload your session and you'll have:
+Then follow the reload instructions shown by `deepwork sync` and you'll have:
 - /competitive_research.validate_positioning (new!)
 - All other commands updated
 ```

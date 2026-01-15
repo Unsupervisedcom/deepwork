@@ -1,20 +1,23 @@
 name: deepwork_jobs
-version: "0.1.0"
+version: "0.2.0"
 summary: "DeepWork job management commands"
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
-  workflows and refine existing ones.
+  workflows and learn from running them.
 
   The `define` command guides you through an interactive process to create a new job by
   asking detailed questions about your workflow, understanding each step's inputs and outputs,
   and generating all necessary files.
 
-  The `refine` command helps you modify existing jobs safely by understanding what you want
-  to change, validating the impact, and ensuring consistency across your workflow.
+  The `learn` command reflects on conversations where DeepWork jobs were run, identifies
+  confusion or inefficiencies, and improves job instructions. It also captures bespoke
+  learnings specific to the current run into AGENTS.md files in the working folder.
 
 changelog:
   - version: "0.1.0"
     changes: "Initial version"
+  - version: "0.2.0"
+    changes: "Replaced refine command with learn command for conversation-driven improvement"
 
 steps:
   - id: define
@@ -74,29 +77,31 @@ steps:
             If ANY criterion is not met, continue working to address it.
             If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
 
-  - id: refine
-    name: "Refine Existing Job"
-    description: "Modify an existing job definition"
-    instructions_file: steps/refine.md
+  - id: learn
+    name: "Learn from Job Execution"
+    description: "Reflect on conversation to improve job instructions and capture learnings"
+    instructions_file: steps/learn.md
     inputs:
       - name: job_name
-        description: "Name of the job to refine"
+        description: "Name of the job that was run (optional - will auto-detect from conversation)"
     outputs:
-      - job.yml
+      - learning_summary.md
     dependencies: []
     hooks:
       after_agent:
         - prompt: |
-            Verify the refinement meets ALL quality criteria before completing:
+            Verify the learning process meets ALL quality criteria before completing:
 
-            1. **Job Consistency**: Do the changes maintain overall job consistency?
-            2. **Valid Dependencies**: Are all step dependencies logically valid (no circular refs)?
-            3. **Semantic Versioning**: Was the version bumped appropriately (major/minor/patch)?
-            4. **Changelog Updated**: Is the changelog updated with a description of changes?
-            5. **User Understanding**: Does the user understand the impact of the changes?
-            6. **Breaking Changes**: Were any breaking changes clearly communicated?
-            7. **Files Updated**: Are all affected files (job.yml, step files) updated?
-            8. **Sync Complete**: Has `deepwork sync` been run to regenerate commands?
+            1. **Conversation Analyzed**: Did you review the conversation for DeepWork job executions?
+            2. **Confusion Identified**: Did you identify points of confusion, errors, or inefficiencies?
+            3. **Instructions Improved**: Were job instructions updated to address identified issues?
+            4. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
+            5. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
+            6. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
+            7. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
+            8. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
+            9. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
+            10. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
 
             If ANY criterion is not met, continue working to address it.
             If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
