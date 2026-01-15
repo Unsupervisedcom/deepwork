@@ -42,11 +42,9 @@ deepwork_jobs/
 └── templates/
     ├── job.yml.template              # Job spec structure
     ├── step_instruction.md.template  # Step instruction structure
-    ├── implementation_summary.md.template
-    ├── learning_summary.md.template
-    ├── agents.md.template
-    ├── example_job.yml               # Complete example
-    └── example_step_instruction.md   # Complete example
+    ├── agents.md.template            # AGENTS.md structure
+    ├── job.yml.example               # Complete job example
+    └── step_instruction.md.example   # Complete step example
 ```
 
 ## Version Management
