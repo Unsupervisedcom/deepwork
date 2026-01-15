@@ -48,14 +48,15 @@ hooks:
 ## Job Overview
 
 Core commands for managing DeepWork jobs. These commands help you define new multi-step
-workflows and refine existing ones.
+workflows and learn from running them.
 
 The `define` command guides you through an interactive process to create a new job by
 asking detailed questions about your workflow, understanding each step's inputs and outputs,
 and generating all necessary files.
 
-The `refine` command helps you modify existing jobs safely by understanding what you want
-to change, validating the impact, and ensuring consistency across your workflow.
+The `learn` command reflects on conversations where DeepWork jobs were run, identifies
+confusion or inefficiencies, and improves job instructions. It also captures bespoke
+learnings specific to the current run into AGENTS.md files in the working folder.
 
 
 ## Prerequisites
@@ -578,13 +579,13 @@ After completing this step:
 2. **Inform the user**:
    - Step 2 of 3 is complete
    - Outputs created: implementation_summary.md
-   - Ready to proceed to next step: `/deepwork_jobs.refine`
+   - Ready to proceed to next step: `/deepwork_jobs.learn`
 
 ## Next Step
 
 To continue the workflow, run:
 ```
-/deepwork_jobs.refine
+/deepwork_jobs.learn
 ```
 
 ---

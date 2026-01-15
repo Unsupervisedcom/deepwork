@@ -42,7 +42,7 @@ class TestInstallCommand:
         # Verify core commands were created
         claude_dir = mock_claude_project / ".claude" / "commands"
         assert (claude_dir / "deepwork_jobs.define.md").exists()
-        assert (claude_dir / "deepwork_jobs.refine.md").exists()
+        assert (claude_dir / "deepwork_jobs.learn.md").exists()
 
         # Verify command content
         define_command = (claude_dir / "deepwork_jobs.define.md").read_text()
@@ -120,7 +120,7 @@ class TestInstallCommand:
 
         claude_dir = mock_claude_project / ".claude" / "commands"
         assert (claude_dir / "deepwork_jobs.define.md").exists()
-        assert (claude_dir / "deepwork_jobs.refine.md").exists()
+        assert (claude_dir / "deepwork_jobs.learn.md").exists()
 
 
 class TestCLIEntryPoint:
