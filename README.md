@@ -15,6 +15,8 @@ DeepWork is a tool for defining and executing multi-step workflows with AI codin
 | OpenCode | Planned | Markdown | No |
 | GitHub Copilot CLI | Planned | Markdown | No (tool permissions only) |
 
+> **Tip:** New to DeepWork? Claude Code has the most complete feature support, including quality validation hooks and automated policies. For browser automation, Claude in Chrome (Anthropic's browser extension) works well with DeepWork workflows.
+
 ## Easy Installation
 In your Agent CLI (ex. `claude`), ask:
 
@@ -60,6 +62,7 @@ This will:
 - Generate core DeepWork jobs
 - Install DeepWork jobs for your AI assistant
 - Configure hooks for your AI assistant to enable policies
+- Create a `.deepwork.policy.yml` template file with example policies
 
 ## Quick Start
 

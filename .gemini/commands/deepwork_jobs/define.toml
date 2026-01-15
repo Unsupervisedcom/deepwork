@@ -16,14 +16,15 @@ prompt = """
 ## Job Overview
 
 Core commands for managing DeepWork jobs. These commands help you define new multi-step
-workflows and refine existing ones.
+workflows and learn from running them.
 
 The `define` command guides you through an interactive process to create a new job by
 asking detailed questions about your workflow, understanding each step's inputs and outputs,
 and generating all necessary files.
 
-The `refine` command helps you modify existing jobs safely by understanding what you want
-to change, validating the impact, and ensuring consistency across your workflow.
+The `learn` command reflects on conversations where DeepWork jobs were run, identifies
+confusion or inefficiencies, and improves job instructions. It also captures bespoke
+learnings specific to the current run into AGENTS.md files in the working folder.
 
 
 
@@ -93,6 +94,12 @@ For each major phase they mentioned, ask detailed questions:
 
 **Note**: You're gathering this information to understand what instructions will be needed, but you won't create the instruction files yet - that happens in the `implement` step.
 
+### Capability Considerations
+
+When defining steps, identify any that require specialized tools:
+
+**Browser Automation**: If any step involves web scraping, form filling, interactive browsing, UI testing, or research requiring website visits, ask the user what browser tools they have available. For Claude Code users, **Claude in Chrome** (Anthropic's browser extension) has been tested with DeepWork and is recommended for new users. Don't assume a default—confirm the tool before designing browser-dependent steps.
+
 ### Step 3: Validate the Workflow
 
 After gathering information about all steps:
@@ -160,67 +167,30 @@ stop_hooks:
 
 **Encourage prompt-based hooks** - They leverage the AI's ability to understand context and make nuanced quality judgments. Script hooks are best for objective checks (syntax, format, tests).
 
-### Step 5: Create the job.yml Specification
+### Step 5: Create the Job Directory and Specification
 
-Only after you have complete understanding, create the `job.yml` file:
+Only after you have complete understanding, create the job directory and `job.yml` file:
 
-**File Location**: `.deepwork/jobs/[job_name]/job.yml`
+**First, create the directory structure** using the `make_new_job.sh` script:
 
-(Where `[job_name]` is the name of the NEW job you're creating, e.g., `.deepwork/jobs/competitive_research/job.yml`)
-
-**Format**:
-```yaml
-name: [job_name]
-version: "1.0.0"
-summary: "[Brief one-line summary of what this job accomplishes]"
-description: |
-  [Detailed multi-line description of the job's purpose, process, and goals.
-
-  This should explain:
-  - What problem this workflow solves
-  - What the overall process looks like
-  - What the end result will be
-  - Who the intended users are
-  - Any important context about the workflow]
-
-changelog:
-  - version: "1.0.0"
-    changes: "Initial job creation"
-
-steps:
-  - id: [step_id]
-    name: "[Step Name]"
-    description: "[What this step does]"
-    instructions_file: steps/[step_id].md
-    inputs:
-      - name: [param_name]
-        description: "[What user needs to provide]"
-      # OR for file inputs from previous steps:
-      # - file: [filename_or_path]
-      #   from_step: [previous_step_id]
-    outputs:
-      - [output_filename_or_path]  # e.g., "report.md" or "reports/analysis.md"
-    dependencies: []  # List of step IDs that must complete first
-    # Optional: Quality validation hooks
-    stop_hooks:
-      - prompt: |
-          Verify this step's output meets quality criteria:
-          1. [Criterion 1]
-          2. [Criterion 2]
-          If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
-  - id: [another_step]
-    name: "[Another Step]"
-    description: "[What this step does]"
-    instructions_file: steps/[another_step].md
-    inputs:
-      - file: [output_filename_or_path]
-        from_step: [step_id]
-    outputs:
-      - [another_output_path]
-    dependencies:
-      - [step_id]  # This step requires the previous step
+```bash
+.deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
 ```
+
+This creates:
+- `.deepwork/jobs/[job_name]/` - Main job directory
+- `.deepwork/jobs/[job_name]/steps/` - For step instruction files
+- `.deepwork/jobs/[job_name]/hooks/` - For custom validation scripts
+- `.deepwork/jobs/[job_name]/templates/` - For example file formats
+- `.deepwork/jobs/[job_name]/AGENTS.md` - Job management guidance
+
+**Then create the job.yml file** at `.deepwork/jobs/[job_name]/job.yml`
+
+(Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`)
+
+**Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.template` for the standard structure.
+
+**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.example` for a fully worked example.
 
 **Important**:
 - Use lowercase with underscores for job name and step IDs

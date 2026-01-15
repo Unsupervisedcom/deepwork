@@ -17,6 +17,11 @@ class PolicyParseError(Exception):
     pass
 
 
+# Valid compare_to values
+COMPARE_TO_VALUES = frozenset({"base", "default_tip", "prompt"})
+DEFAULT_COMPARE_TO = "base"
+
+
 @dataclass
 class Policy:
     """Represents a single policy definition."""
@@ -25,6 +30,7 @@ class Policy:
     triggers: list[str]  # Normalized to list
     safety: list[str] = field(default_factory=list)  # Normalized to list, empty if not specified
     instructions: str = ""  # Resolved content (either inline or from file)
+    compare_to: str = DEFAULT_COMPARE_TO  # What to compare against: base, default_tip, or prompt
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], base_dir: Path | None = None) -> "Policy":
@@ -74,11 +80,15 @@ class Policy:
                 f"Policy '{data['name']}' must have either 'instructions' or 'instructions_file'"
             )
 
+        # Get compare_to (defaults to DEFAULT_COMPARE_TO)
+        compare_to = data.get("compare_to", DEFAULT_COMPARE_TO)
+
         return cls(
             name=data["name"],
             triggers=triggers,
             safety=safety,
             instructions=instructions,
+            compare_to=compare_to,
         )
 
 

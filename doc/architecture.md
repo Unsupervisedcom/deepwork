@@ -67,8 +67,7 @@ deepwork/                       # DeepWork tool repository
 │       │       └── hooks/         # Hook scripts
 │       │           ├── global_hooks.yml
 │       │           ├── user_prompt_submit.sh
-│       │           ├── capture_work_tree.sh
-│       │           ├── get_changed_files.sh
+│       │           ├── capture_prompt_work_tree.sh
 │       │           └── policy_stop_hook.sh
 │       ├── schemas/            # Definition schemas
 │       │   ├── job_schema.py
@@ -116,6 +115,10 @@ def install(platform: str):
 
     # Inject core job definitions
     inject_deepwork_jobs(".deepwork/jobs/")
+
+    # Create default policy template (if not exists)
+    if not exists(".deepwork.policy.yml"):
+        copy_template("default_policy.yml", ".deepwork.policy.yml")
 
     # Update config (supports multiple platforms)
     config = load_yaml(".deepwork/config.yml") or {}
@@ -291,8 +294,7 @@ my-project/                     # User's project (target)
 │       │   └── hooks/          # Hook scripts (installed from standard_jobs)
 │       │       ├── global_hooks.yml
 │       │       ├── user_prompt_submit.sh
-│       │       ├── capture_work_tree.sh
-│       │       ├── get_changed_files.sh
+│       │       ├── capture_prompt_work_tree.sh
 │       │       └── policy_stop_hook.sh
 │       ├── competitive_research/
 │       │   ├── job.yml         # Job metadata
@@ -1041,11 +1043,10 @@ Policies are implemented using Claude Code's hooks system. The `deepwork_policy`
 
 ```
 .deepwork/jobs/deepwork_policy/hooks/
-├── global_hooks.yml           # Maps lifecycle events to scripts
-├── user_prompt_submit.sh      # Captures baseline on first prompt
-├── capture_work_tree.sh       # Creates git state snapshot
-├── get_changed_files.sh       # Computes changed files
-└── policy_stop_hook.sh        # Evaluates policies on stop
+├── global_hooks.yml              # Maps lifecycle events to scripts
+├── user_prompt_submit.sh         # Captures baseline at each prompt
+├── capture_prompt_work_tree.sh   # Creates git state snapshot for compare_to: prompt
+└── policy_stop_hook.sh           # Evaluates policies on stop (calls Python evaluator)
 ```
 
 The hooks are installed to `.claude/settings.json` during `deepwork sync`:
