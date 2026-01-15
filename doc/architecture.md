@@ -116,6 +116,10 @@ def install(platform: str):
     # Inject core job definitions
     inject_deepwork_jobs(".deepwork/jobs/")
 
+    # Create default policy template (if not exists)
+    if not exists(".deepwork.policy.yml"):
+        copy_template("default_policy.yml", ".deepwork.policy.yml")
+
     # Update config (supports multiple platforms)
     config = load_yaml(".deepwork/config.yml") or {}
     config["version"] = "1.0.0"
