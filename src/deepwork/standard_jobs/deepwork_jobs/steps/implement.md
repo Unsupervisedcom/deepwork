@@ -167,11 +167,9 @@ This will:
 - Generate slash-commands for each step
 - Make the commands available in `.claude/commands/` (or appropriate platform directory)
 
-### Step 6: Reload Commands
+### Step 6: Relay Reload Instructions
 
-Instruct the user to reload commands in their current session:
-- Run `/reload` command (if available)
-- Or restart the Claude session
+After running `deepwork sync`, look at the "To use the new commands" section in the output. **Relay these exact reload instructions to the user** so they know how to pick up the new commands. Don't just reference the sync output - tell them directly what they need to do (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code, or "Run '/memory refresh'" for Gemini CLI).
 
 ### Step 7: Consider Policies for the New Job
 
@@ -397,7 +395,7 @@ After running `deepwork sync`, the following slash-commands are now available:
 
 ## Next Steps
 
-1. **Reload commands**: Run `/reload` or restart your Claude session
+1. **Reload commands**: [Include the specific reload instructions from the `deepwork sync` output here]
 2. **Start the workflow**: Run `/[job_name].[first_step_id]` to begin
 3. **Test the job**: Try executing the first step to ensure everything works
 
@@ -424,7 +422,7 @@ Before marking this step complete, ensure:
 - [ ] Each instruction file is complete and actionable
 - [ ] `deepwork sync` executed successfully
 - [ ] Commands generated in platform directory
-- [ ] User informed of next steps (reload commands)
+- [ ] User informed to follow reload instructions from `deepwork sync`
 - [ ] implementation_summary.md created
 - [ ] Considered whether policies would benefit this job (Step 7)
 - [ ] If policies suggested, offered to run `/deepwork_policy.define`

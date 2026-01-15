@@ -260,7 +260,7 @@ If instruction files were modified:
    - [Any additional suggestions]
    ```
 
-3. **Instruct user to reload** if commands were regenerated
+3. **If commands were regenerated**, look at the "To use the new commands" section in the `deepwork sync` output and **relay these exact reload instructions to the user** (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code)
 
 ## File Reference Patterns
 
@@ -351,7 +351,7 @@ I found the following job executions:
 
 **Summary**
 
-Created `learning_summary.md` documenting all changes. Please run `/reload` to get the updated commands.
+Created `learning_summary.md` documenting all changes. To get the updated commands, run '/memory refresh' or restart your session.
 ```
 
 ## Handling Edge Cases
