@@ -59,7 +59,9 @@ class AgentAdapter(ABC):
 
     # Instructions for reloading commands after sync (shown to users)
     # Subclasses should override with platform-specific instructions.
-    reload_instructions: ClassVar[str] = "Restart your AI assistant session to use the new commands."
+    reload_instructions: ClassVar[str] = (
+        "Restart your AI assistant session to use the new commands."
+    )
 
     # Mapping from generic CommandLifecycleHook to platform-specific event names.
     # Subclasses should override this to provide platform-specific mappings.
