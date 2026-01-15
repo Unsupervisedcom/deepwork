@@ -122,6 +122,58 @@ class TestInstallCommand:
         assert (claude_dir / "deepwork_jobs.define.md").exists()
         assert (claude_dir / "deepwork_jobs.learn.md").exists()
 
+    def test_install_creates_policy_template(self, mock_claude_project: Path) -> None:
+        """Test that install creates a policy template file."""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+        assert ".deepwork.policy.yml template" in result.output
+
+        # Verify policy file was created
+        policy_file = mock_claude_project / ".deepwork.policy.yml"
+        assert policy_file.exists()
+
+        # Verify it's the template (has comment header, no active policies)
+        content = policy_file.read_text()
+        assert "# DeepWork Policy Configuration" in content
+        assert "# Use /deepwork_policy.define" in content
+
+        # Verify it does NOT contain deepwork-specific policies
+        assert "Standard Jobs Source of Truth" not in content
+        assert "Version and Changelog Update" not in content
+        assert "pyproject.toml" not in content
+
+    def test_install_preserves_existing_policy_file(self, mock_claude_project: Path) -> None:
+        """Test that install doesn't overwrite existing policy file."""
+        runner = CliRunner()
+
+        # Create a custom policy file before install
+        policy_file = mock_claude_project / ".deepwork.policy.yml"
+        custom_content = """- name: "My Custom Policy"
+  trigger: "src/**/*"
+  instructions: |
+    Custom instructions here.
+"""
+        policy_file.write_text(custom_content)
+
+        result = runner.invoke(
+            cli,
+            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+        assert ".deepwork.policy.yml already exists" in result.output
+
+        # Verify original content is preserved
+        assert policy_file.read_text() == custom_content
+
 
 class TestCLIEntryPoint:
     """Tests for CLI entry point."""
