@@ -261,8 +261,8 @@ class ClaudeAdapter(AgentAdapter):
 
     # Claude Code doesn't have a reload command - must restart session
     reload_instructions: ClassVar[str] = (
-        "Type 'exit' to leave your current session, then run 'claude' "
-        "(fresh start) or 'claude --resume' (keep conversation history)."
+        "Type 'exit' to leave your current session, then run "
+        "'claude --resume' (your history will be maintained)."
     )
 
     # Claude Code uses PascalCase event names
