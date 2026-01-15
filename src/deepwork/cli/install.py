@@ -113,6 +113,48 @@ def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
         gitignore_path.write_text(gitignore_content)
 
 
+def _create_default_policy_file(project_path: Path) -> bool:
+    """
+    Create a default policy file template in the project root.
+
+    Only creates the file if it doesn't already exist.
+
+    Args:
+        project_path: Path to the project root
+
+    Returns:
+        True if the file was created, False if it already existed
+    """
+    policy_file = project_path / ".deepwork.policy.yml"
+
+    if policy_file.exists():
+        return False
+
+    # Copy the template from the templates directory
+    template_path = Path(__file__).parent.parent / "templates" / "default_policy.yml"
+
+    if template_path.exists():
+        shutil.copy(template_path, policy_file)
+    else:
+        # Fallback: create a minimal template inline
+        policy_file.write_text(
+            """# DeepWork Policy Configuration
+#
+# Policies are automated guardrails that trigger when specific files change.
+# Use /deepwork_policy.define to create new policies interactively.
+#
+# Format:
+#   - name: "Policy name"
+#     trigger: "glob/pattern/**/*"
+#     safety: "optional/pattern/**/*"
+#     instructions: |
+#       Instructions for the AI agent...
+"""
+        )
+
+    return True
+
+
 class DynamicChoice(click.Choice):
     """A Click Choice that gets its values dynamically from AgentAdapter."""
 
@@ -234,6 +276,12 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     # Step 3c: Create .gitignore for temporary files
     _create_deepwork_gitignore(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/.gitignore")
+
+    # Step 3d: Create default policy file template
+    if _create_default_policy_file(project_path):
+        console.print("  [green]✓[/green] Created .deepwork.policy.yml template")
+    else:
+        console.print("  [dim]•[/dim] .deepwork.policy.yml already exists")
 
     # Step 4: Load or create config.yml
     console.print("[yellow]→[/yellow] Updating configuration...")
