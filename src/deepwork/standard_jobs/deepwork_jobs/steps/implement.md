@@ -57,8 +57,6 @@ For each step in the job.yml, create a comprehensive instruction file at `.deepw
 **Available templates in `.deepwork/jobs/deepwork_jobs/templates/`:**
 - `job.yml.template` - Job specification structure
 - `step_instruction.md.template` - Step instruction file structure
-- `implementation_summary.md.template` - Implementation summary format
-- `learning_summary.md.template` - Learning summary format
 - `agents.md.template` - AGENTS.md file structure
 - `job.yml.example` - Complete job specification example
 - `step_instruction.md.example` - Complete step instruction example
@@ -214,12 +212,6 @@ Before running `deepwork sync`, verify:
 - All step instruction files exist (one per step)
 - No file system errors
 
-## Output Format
-
-### implementation_summary.md
-
-After successful implementation, create a summary. See `.deepwork/jobs/deepwork_jobs/templates/implementation_summary.md.template` for the standard format.
-
 ## Completion Checklist
 
 Before marking this step complete, ensure:
@@ -229,7 +221,6 @@ Before marking this step complete, ensure:
 - [ ] `deepwork sync` executed successfully
 - [ ] Commands generated in platform directory
 - [ ] User informed to follow reload instructions from `deepwork sync`
-- [ ] implementation_summary.md created
 - [ ] Considered whether policies would benefit this job (Step 7)
 - [ ] If policies suggested, offered to run `/deepwork_policy.define`
 

@@ -18,8 +18,7 @@ hooks:
             5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
             6. **Sync Complete**: Has `deepwork sync` been run successfully?
             7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-            8. **Summary Created**: Has `implementation_summary.md` been created?
-            9. **Policies Considered**: Have you thought about whether policies would benefit this job?
+            8. **Policies Considered**: Have you thought about whether policies would benefit this job?
                - If relevant policies were identified, did you explain them and offer to run `/deepwork_policy.define`?
                - Not every job needs policies - only suggest when genuinely helpful.
 
@@ -127,8 +126,6 @@ For each step in the job.yml, create a comprehensive instruction file at `.deepw
 **Available templates in `.deepwork/jobs/deepwork_jobs/templates/`:**
 - `job.yml.template` - Job specification structure
 - `step_instruction.md.template` - Step instruction file structure
-- `implementation_summary.md.template` - Implementation summary format
-- `learning_summary.md.template` - Learning summary format
 - `agents.md.template` - AGENTS.md file structure
 - `job.yml.example` - Complete job specification example
 - `step_instruction.md.example` - Complete step instruction example
@@ -284,12 +281,6 @@ Before running `deepwork sync`, verify:
 - All step instruction files exist (one per step)
 - No file system errors
 
-## Output Format
-
-### implementation_summary.md
-
-After successful implementation, create a summary. See `.deepwork/jobs/deepwork_jobs/templates/implementation_summary.md.template` for the standard format.
-
 ## Completion Checklist
 
 Before marking this step complete, ensure:
@@ -299,7 +290,6 @@ Before marking this step complete, ensure:
 - [ ] `deepwork sync` executed successfully
 - [ ] Commands generated in platform directory
 - [ ] User informed to follow reload instructions from `deepwork sync`
-- [ ] implementation_summary.md created
 - [ ] Considered whether policies would benefit this job (Step 7)
 - [ ] If policies suggested, offered to run `/deepwork_policy.define`
 
@@ -342,7 +332,7 @@ All work for this job should be done on a dedicated work branch:
 ## Output Requirements
 
 Create the following output(s):
-- `implementation_summary.md`
+- `steps/` (directory)
 Ensure all outputs are:
 - Well-formatted and complete
 - Ready for review or use by subsequent steps
@@ -361,8 +351,7 @@ Verify the implementation meets ALL quality criteria before completing:
 5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
 6. **Sync Complete**: Has `deepwork sync` been run successfully?
 7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-8. **Summary Created**: Has `implementation_summary.md` been created?
-9. **Policies Considered**: Have you thought about whether policies would benefit this job?
+8. **Policies Considered**: Have you thought about whether policies would benefit this job?
    - If relevant policies were identified, did you explain them and offer to run `/deepwork_policy.define`?
    - Not every job needs policies - only suggest when genuinely helpful.
 
@@ -388,7 +377,7 @@ After completing this step:
 
 2. **Inform the user**:
    - Step 2 of 3 is complete
-   - Outputs created: implementation_summary.md
+   - Outputs created: steps/
    - Ready to proceed to next step: `/deepwork_jobs.learn`
 
 ## Next Step

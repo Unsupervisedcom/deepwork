@@ -196,16 +196,14 @@ If instruction files were modified:
      changes: "Improved [step] instructions based on execution learnings: [brief description]"
    ```
 
-### Step 7: Sync and Summarize
+### Step 7: Sync and Relay Instructions
 
 1. **Run deepwork sync** (if instructions were modified)
    ```bash
    deepwork sync
    ```
 
-2. **Create learning_summary.md** in the working folder. See `.deepwork/jobs/deepwork_jobs/templates/learning_summary.md.template` for the standard format.
-
-3. **If commands were regenerated**, look at the "To use the new commands" section in the `deepwork sync` output and **relay these exact reload instructions to the user** (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code)
+2. **If commands were regenerated**, look at the "To use the new commands" section in the `deepwork sync` output and **relay these exact reload instructions to the user** (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code)
 
 ## File Reference Patterns
 
@@ -236,7 +234,6 @@ When adding entries to AGENTS.md, prefer these patterns:
 - AGENTS.md created/updated with bespoke learnings
 - File references used instead of duplicating content
 - AGENTS.md is in the correct working folder
-- learning_summary.md documents all changes
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
 
 ## Example Dialog
@@ -296,7 +293,7 @@ I found the following job executions:
 
 **Summary**
 
-Created `learning_summary.md` documenting all changes. To get the updated commands, type 'exit' then run 'claude --resume'.
+Updated job instructions and created AGENTS.md with bespoke learnings. To get the updated commands, type 'exit' then run 'claude --resume'.
 ```
 
 ## Handling Edge Cases
@@ -348,7 +345,7 @@ All work for this job should be done on a dedicated work branch:
 ## Output Requirements
 
 Create the following output(s):
-- `learning_summary.md`
+- `AGENTS.md`
 
 Ensure all outputs are:
 - Well-formatted and complete
@@ -362,7 +359,7 @@ After completing this step:
 
 2. **Inform the user**:
    - The learn command is complete
-   - Outputs created: learning_summary.md
+   - Outputs created: AGENTS.md
    - This command can be run again anytime to make further changes
 
 ## Command Complete
