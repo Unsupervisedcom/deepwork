@@ -29,7 +29,6 @@ import sys
 from pathlib import Path
 
 from deepwork.core.policy_parser import (
-    DEFAULT_COMPARE_TO,
     Policy,
     PolicyParseError,
     evaluate_policy,
