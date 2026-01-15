@@ -35,14 +35,15 @@ jobs:
             const pullRequests = ${{ toJSON(github.event.workflow_run.pull_requests) }};
             if (!pullRequests || pullRequests.length === 0) {
               console.log('No pull requests found');
-              return { isOpen: false };
+              return { isOpen: false, prNumber: null };
             }
+            const prNumber = pullRequests[0].number;
             const pr = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: pullRequests[0].number
+              pull_number: prNumber
             });
-            return { isOpen: pr.data.state === 'open' };
+            return { isOpen: pr.data.state === 'open', prNumber: prNumber };
 
       - name: Checkout code
         if: fromJSON(steps.pr_check.outputs.result).isOpen
@@ -142,7 +143,7 @@ jobs:
             ## Failure Information
             - Failed CI Run: ${{ fromJSON(steps.failure_details.outputs.result).runUrl }}
             - Failed Jobs: ${{ join(fromJSON(steps.failure_details.outputs.result).failedJobs, ', ') }}
-            - PR Number: ${{ github.event.workflow_run.pull_requests[0].number }}
+            - PR Number: ${{ fromJSON(steps.pr_check.outputs.result).prNumber }}
             - Branch: ${{ github.event.workflow_run.head_branch }}
             - Repository: ${{ github.repository }}
 
