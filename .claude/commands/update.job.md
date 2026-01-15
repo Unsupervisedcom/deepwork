@@ -61,8 +61,6 @@ for any standard job in the DeepWork repository.
 
 Edit standard job source files in `src/deepwork/standard_jobs/` and sync changes to installed locations.
 
-**Reference**: See `.deepwork/jobs/deepwork_jobs/deepwork_jobs.md` for job structure, schemas, and templates.
-
 ## Task
 
 When modifying a standard job in the DeepWork repository, this step ensures changes are made in the correct location and properly propagated.
@@ -97,7 +95,6 @@ ls src/deepwork/standard_jobs/
 ```
 src/deepwork/standard_jobs/[job_name]/
 ├── job.yml              # Job definition
-├── deepwork_jobs.md     # Reference documentation (if applicable)
 ├── steps/               # Step instruction files
 ├── hooks/               # Hook scripts
 └── templates/           # Templates

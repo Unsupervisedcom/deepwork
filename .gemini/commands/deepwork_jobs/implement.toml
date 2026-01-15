@@ -40,96 +40,238 @@ Please ensure these steps have been completed before proceeding.
 
 ## Objective
 
-Generate step instruction files for each step based on the `job.yml` specification created in the define step.
-
-**Reference**: See `deepwork_jobs.md` for job structure, step instruction format, and templates.
+Generate the DeepWork job directory structure and instruction files for each step based on the `job.yml` specification created in the previous step.
 
 ## Task
 
-Read the `job.yml` specification and create instruction files to make the job functional.
+Read the `job.yml` specification file and create all the necessary files to make the job functional, including directory structure and step instruction files. Then sync the commands to make them available.
 
-### Step 1: Create Directory Structure (if needed)
+### Step 1: Create Directory Structure Using Script
 
-If directory doesn't exist, run:
+Run the `make_new_job.sh` script to create the standard directory structure:
+
 ```bash
 .deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
 ```
 
-Or manually create missing directories:
+This creates:
+- `.deepwork/jobs/[job_name]/` - Main job directory
+- `.deepwork/jobs/[job_name]/steps/` - Step instruction files
+- `.deepwork/jobs/[job_name]/hooks/` - Custom validation scripts (with .gitkeep)
+- `.deepwork/jobs/[job_name]/templates/` - Example file formats (with .gitkeep)
+- `.deepwork/jobs/[job_name]/AGENTS.md` - Job management guidance
+
+**Note**: If the directory already exists (e.g., job.yml was created by define step), you can skip this step or manually create the additional directories:
 ```bash
 mkdir -p .deepwork/jobs/[job_name]/hooks .deepwork/jobs/[job_name]/templates
 touch .deepwork/jobs/[job_name]/hooks/.gitkeep .deepwork/jobs/[job_name]/templates/.gitkeep
 ```
 
-### Step 2: Read and Validate Specification
+### Step 2: Read and Validate the Specification
 
-1. Read `.deepwork/jobs/[job_name]/job.yml`
-2. Validate schema (name, version, summary, description, steps)
-3. Check dependencies reference existing steps, no circular dependencies
-4. Extract job name, version, summary, description, and step details
+1. **Locate the job.yml file**
+   - Read `.deepwork/jobs/[job_name]/job.yml` from the define step
+   - Parse the YAML content
+
+2. **Validate the specification**
+   - Ensure it follows the schema (name, version, summary, description, steps)
+   - Check that all dependencies reference existing steps
+   - Verify no circular dependencies
+   - Confirm file inputs match dependencies
+
+3. **Extract key information**
+   - Job name, version, summary, description
+   - List of all steps with their details
+   - Understand the workflow structure
 
 ### Step 3: Generate Step Instruction Files
 
-For each step, create `.deepwork/jobs/[job_name]/steps/[step_id].md`.
+For each step in the job.yml, create a comprehensive instruction file at `.deepwork/jobs/[job_name]/steps/[step_id].md`.
 
-**Templates**: See `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.template` and `step_instruction.md.example`
+**Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.template` for the standard structure.
 
-**Guidelines:**
-- Use the job description for context
-- Be specific, not generic
-- Provide output examples
-- Explain the "why"
-- Align quality criteria with stop hooks
+**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.example` for a fully worked example.
+
+**Available templates in `.deepwork/jobs/deepwork_jobs/templates/`:**
+- `job.yml.template` - Job specification structure
+- `step_instruction.md.template` - Step instruction file structure
+- `agents.md.template` - AGENTS.md file structure
+- `job.yml.example` - Complete job specification example
+- `step_instruction.md.example` - Complete step instruction example
+
+**Guidelines for generating instructions:**
+
+1. **Use the job description** - The detailed description from job.yml provides crucial context
+2. **Be specific** - Don't write generic instructions; tailor them to the step's purpose
+3. **Provide examples** - Show what good output looks like
+4. **Explain the "why"** - Help the user understand the step's role in the workflow
+5. **Quality over quantity** - Detailed, actionable instructions are better than vague ones
+6. **Align with stop hooks** - If the step has `stop_hooks` defined, ensure the quality criteria in the instruction file match the validation criteria in the hooks
 
 ### Handling Stop Hooks
 
-If step has `stop_hooks`, the instruction file's Quality Criteria section must match what hooks validate. Include the promise pattern: `<promise>✓ Quality Criteria Met</promise>`
+If a step in the job.yml has `stop_hooks` defined, the generated instruction file should:
 
-### Step 4: Sync Commands
+1. **Mirror the quality criteria** - The "Quality Criteria" section should match what the stop hooks will validate
+2. **Be explicit about success** - Help the agent understand when the step is truly complete
+3. **Include the promise pattern** - Mention that `<promise>✓ Quality Criteria Met</promise>` should be included when criteria are met
+
+**Example: If the job.yml has:**
+```yaml
+- id: research_competitors
+  name: "Research Competitors"
+  stop_hooks:
+    - prompt: |
+        Verify the research meets criteria:
+        1. Each competitor has at least 3 data points
+        2. Sources are cited
+        3. Information is current (within last year)
+```
+
+**The instruction file should include:**
+```markdown
+## Quality Criteria
+
+- Each competitor has at least 3 distinct data points
+- All information is sourced with citations
+- Data is current (from within the last year)
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+```
+
+This alignment ensures the AI agent knows exactly what will be validated and can self-check before completing.
+
+### Using Supplementary Reference Files
+
+Step instructions can include additional `.md` files in the `steps/` directory for detailed examples, templates, or reference material. Reference them using the full path from the project root.
+
+See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for detailed documentation and examples.
+
+### Step 4: Verify job.yml Location
+
+Verify that `job.yml` is in the correct location at `.deepwork/jobs/[job_name]/job.yml`. The define step should have created it there. If for some reason it's not there, you may need to create or move it.
+
+### Step 5: Sync Commands
+
+Run `deepwork sync` to generate the slash-commands for this job:
 
 ```bash
 deepwork sync
 ```
 
-### Step 5: Relay Reload Instructions
+This will:
+- Parse the job definition
+- Generate slash-commands for each step
+- Make the commands available in `.claude/commands/` (or appropriate platform directory)
 
-Tell user how to reload commands:
-- **Claude Code**: Type `exit` then run `claude --resume`
-- **Gemini CLI**: Run `/memory refresh`
+### Step 6: Relay Reload Instructions
 
-### Step 6: Consider Policies
+After running `deepwork sync`, look at the "To use the new commands" section in the output. **Relay these exact reload instructions to the user** so they know how to pick up the new commands. Don't just reference the sync output - tell them directly what they need to do (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code, or "Run '/memory refresh'" for Gemini CLI).
 
-Think about whether policies would help maintain consistency for this job's domain.
+### Step 7: Consider Policies for the New Job
 
-**Policies** are guardrails in `.deepwork.policy.yml` that trigger when files change.
+After implementing the job, consider whether there are **policies** that would help enforce quality or consistency when working with this job's domain.
 
-Consider:
-- Does this job produce outputs other files depend on?
-- Should documentation be updated when outputs change?
-- Are there quality checks that should happen on certain file changes?
+**What are policies?**
 
-If policies would help, explain what they'd do and offer to run `/deepwork_policy.define`.
+Policies are automated guardrails defined in `.deepwork.policy.yml` that trigger when certain files change during an AI session. They help ensure:
+- Documentation stays in sync with code
+- Team guidelines are followed
+- Architectural decisions are respected
+- Quality standards are maintained
+
+**When to suggest policies:**
+
+Think about the job you just implemented and ask:
+- Does this job produce outputs that other files depend on?
+- Are there documentation files that should be updated when this job's outputs change?
+- Are there quality checks or reviews that should happen when certain files in this domain change?
+- Could changes to the job's output files impact other parts of the project?
+
+**Examples of policies that might make sense:**
+
+| Job Type | Potential Policy |
+|----------|------------------|
+| API Design | "Update API docs when endpoint definitions change" |
+| Database Schema | "Review migrations when schema files change" |
+| Competitive Research | "Update strategy docs when competitor analysis changes" |
+| Feature Development | "Update changelog when feature files change" |
+| Configuration Management | "Update install guide when config files change" |
+
+**How to offer policy creation:**
+
+If you identify one or more policies that would benefit the user, explain:
+1. **What the policy would do** - What triggers it and what action it prompts
+2. **Why it would help** - How it prevents common mistakes or keeps things in sync
+3. **What files it would watch** - The trigger patterns
+
+Then ask the user:
+
+> "Would you like me to create this policy for you? I can run `/deepwork_policy.define` to set it up."
+
+If the user agrees, invoke the `/deepwork_policy.define` command to guide them through creating the policy.
+
+**Example dialogue:**
+
+```
+Based on the competitive_research job you just created, I noticed that when
+competitor analysis files change, it would be helpful to remind you to update
+your strategy documentation.
+
+I'd suggest a policy like:
+- **Name**: "Update strategy when competitor analysis changes"
+- **Trigger**: `**/positioning_report.md`
+- **Action**: Prompt to review and update `docs/strategy.md`
+
+Would you like me to create this policy? I can run `/deepwork_policy.define` to set it up.
+```
+
+**Note:** Not every job needs policies. Only suggest them when they would genuinely help maintain consistency or quality. Don't force policies where they don't make sense.
+
+## Example Implementation
+
+For a complete worked example showing a job.yml and corresponding step instruction file, see:
+- **Job specification**: `.deepwork/jobs/deepwork_jobs/templates/job.yml.example`
+- **Step instruction**: `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.example`
+
+## Important Guidelines
+
+1. **Read the spec carefully** - Understand the job's intent from the description
+2. **Generate complete instructions** - Don't create placeholder or stub files
+3. **Maintain consistency** - Use the same structure for all step instruction files
+4. **Provide examples** - Show what good output looks like
+5. **Use context** - The job description provides valuable context for each step
+6. **Be specific** - Tailor instructions to the specific step, not generic advice
+
+## Validation Before Sync
+
+Before running `deepwork sync`, verify:
+- All directories exist
+- `job.yml` is in place
+- All step instruction files exist (one per step)
+- No file system errors
 
 ## Completion Checklist
 
-- [ ] job.yml validated
-- [ ] All step instruction files created (complete, not stubs)
-- [ ] Each instruction is specific and actionable
-- [ ] Output examples provided
-- [ ] `deepwork sync` executed
-- [ ] User informed about reload instructions
-- [ ] Policies considered (suggest if relevant)
+Before marking this step complete, ensure:
+- [ ] job.yml validated and copied to job directory
+- [ ] All step instruction files created
+- [ ] Each instruction file is complete and actionable
+- [ ] `deepwork sync` executed successfully
+- [ ] Commands generated in platform directory
+- [ ] User informed to follow reload instructions from `deepwork sync`
+- [ ] Considered whether policies would benefit this job (Step 7)
+- [ ] If policies suggested, offered to run `/deepwork_policy.define`
 
 ## Quality Criteria
 
-- Job directory structure correct
-- All instruction files complete (not stubs)
-- Instructions specific and actionable
-- Output examples provided
+- Job directory structure is correct
+- All instruction files are complete (not stubs)
+- Instructions are specific and actionable
+- Output examples are provided in each instruction file
 - Quality criteria defined for each step
 - Sync completed successfully
 - Commands available for use
-- Policies thoughtfully considered
+- Thoughtfully considered relevant policies for the job domain
 
 
 ## Inputs
