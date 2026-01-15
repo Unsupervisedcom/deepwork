@@ -1,0 +1,221 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://deepwork.dev/schemas/job.schema.json",
+  "title": "DeepWork Job Definition",
+  "description": "Schema for DeepWork job.yml files that define multi-step workflows",
+  "type": "object",
+  "required": ["name", "version", "summary", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "Job name (lowercase letters, numbers, underscores, must start with letter)"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version (e.g., 1.0.0)"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Brief one-line summary of what this job accomplishes"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Detailed multi-line description of the job's purpose, process, and goals"
+    },
+    "changelog": {
+      "type": "array",
+      "default": [],
+      "description": "Version history and changes to the job",
+      "items": {
+        "type": "object",
+        "required": ["version", "changes"],
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "description": "Version number for this change"
+          },
+          "changes": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Description of changes made in this version"
+          }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "description": "List of steps in the job",
+      "items": {
+        "$ref": "#/$defs/step"
+      }
+    }
+  },
+  "$defs": {
+    "hookAction": {
+      "type": "object",
+      "description": "A hook action - one of: inline prompt, prompt file reference, or shell script",
+      "oneOf": [
+        {
+          "required": ["prompt"],
+          "additionalProperties": false,
+          "properties": {
+            "prompt": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Inline prompt for validation/action"
+            }
+          }
+        },
+        {
+          "required": ["prompt_file"],
+          "additionalProperties": false,
+          "properties": {
+            "prompt_file": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Path to prompt file (relative to job directory)"
+            }
+          }
+        },
+        {
+          "required": ["script"],
+          "additionalProperties": false,
+          "properties": {
+            "script": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Path to shell script (relative to job directory)"
+            }
+          }
+        }
+      ]
+    },
+    "userInput": {
+      "type": "object",
+      "description": "User parameter input",
+      "required": ["name", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Input parameter name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Input parameter description"
+        }
+      }
+    },
+    "fileInput": {
+      "type": "object",
+      "description": "File input from a previous step",
+      "required": ["file", "from_step"],
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "File name from previous step"
+        },
+        "from_step": {
+          "type": "string",
+          "description": "Step ID that produces this file"
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "description": "A single step in the job workflow",
+      "required": ["id", "name", "description", "instructions_file", "outputs"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "Step ID (unique within job)"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable step name"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Step description"
+        },
+        "instructions_file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to instructions file (relative to job directory)"
+        },
+        "inputs": {
+          "type": "array",
+          "default": [],
+          "description": "List of inputs (user parameters or files from previous steps)",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/userInput" },
+              { "$ref": "#/$defs/fileInput" }
+            ]
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "description": "List of output files/directories",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "default": [],
+          "description": "List of step IDs this step depends on",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hooks": {
+          "type": "object",
+          "default": {},
+          "description": "Lifecycle hooks for this step, keyed by event type",
+          "additionalProperties": false,
+          "properties": {
+            "after_agent": {
+              "type": "array",
+              "default": [],
+              "description": "Hooks triggered after the agent finishes (quality validation)",
+              "items": { "$ref": "#/$defs/hookAction" }
+            },
+            "before_tool": {
+              "type": "array",
+              "default": [],
+              "description": "Hooks triggered before a tool is used",
+              "items": { "$ref": "#/$defs/hookAction" }
+            },
+            "before_prompt": {
+              "type": "array",
+              "default": [],
+              "description": "Hooks triggered when user submits a prompt",
+              "items": { "$ref": "#/$defs/hookAction" }
+            }
+          }
+        },
+        "stop_hooks": {
+          "type": "array",
+          "description": "DEPRECATED: Use hooks.after_agent instead. Stop hooks for quality validation loops.",
+          "items": { "$ref": "#/$defs/hookAction" }
+        }
+      }
+    }
+  }
+}

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../../src/deepwork/schemas/job.schema.json
 name: add_platform
 version: "0.1.0"
 summary: "Add a new AI platform to DeepWork with adapter, templates, and tests"

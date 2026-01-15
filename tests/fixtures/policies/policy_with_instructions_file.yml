@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../../src/deepwork/schemas/policy.schema.json
 - name: "Security review"
   trigger: "src/auth/**/*"
   instructions_file: "instructions/security_review.md"

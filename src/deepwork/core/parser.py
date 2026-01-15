@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from deepwork.schemas.job_schema import JOB_SCHEMA, LIFECYCLE_HOOK_EVENTS
-from deepwork.utils.validation import ValidationError, validate_against_schema
+from deepwork.utils.validation import ValidationError, validate_and_set_defaults
 from deepwork.utils.yaml_utils import YAMLError, load_yaml
 
 
@@ -294,9 +294,9 @@ def parse_job_definition(job_dir: Path | str) -> JobDefinition:
     if job_data is None:
         raise ParseError("job.yml is empty")
 
-    # Validate against schema
+    # Validate against schema and apply defaults
     try:
-        validate_against_schema(job_data, JOB_SCHEMA)
+        validate_and_set_defaults(job_data, JOB_SCHEMA)
     except ValidationError as e:
         raise ParseError(f"Job definition validation failed: {e}") from e
 

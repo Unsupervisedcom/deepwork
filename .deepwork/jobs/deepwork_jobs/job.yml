@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../../src/deepwork/schemas/job.schema.json
 name: deepwork_jobs
 version: "0.2.0"
 summary: "DeepWork job management commands"

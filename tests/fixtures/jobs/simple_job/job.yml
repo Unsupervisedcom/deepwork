@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../../../src/deepwork/schemas/job.schema.json
 name: simple_job
 version: "0.1.0"
 summary: "A simple single-step job for testing"
