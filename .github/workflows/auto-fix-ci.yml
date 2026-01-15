@@ -164,9 +164,7 @@ jobs:
             ${{ toJSON(fromJSON(steps.failure_details.outputs.result).errorLogs) }}
             ```
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: >-
-            --allowedTools
-            Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(uv:*),Bash(python:*),Bash(pytest:*),Bash(ruff:*)
+          claude_args: --allowedTools Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(uv:*),Bash(python:*),Bash(pytest:*),Bash(ruff:*)
 
       - name: Comment on PR with fix status
         if: |
@@ -178,7 +176,7 @@ jobs:
         with:
           script: |
             // Safely access pull request number with null check
-            const pullRequests = context.payload.workflow_run?.pull_requests;
+            const pullRequests = ${{ toJSON(github.event.workflow_run.pull_requests) }};
             if (!pullRequests || pullRequests.length === 0) {
               console.log('No pull request found, skipping comment');
               return;
