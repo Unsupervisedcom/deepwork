@@ -13,7 +13,7 @@ A DeepWork job consists of:
 │   └── [step_id].md
 ├── hooks/               # Custom validation scripts
 ├── templates/           # Example file formats
-└── AGENTS.md            # Job-specific learnings
+└── AGENTS.md
 ```
 
 ## job.yml Schema
