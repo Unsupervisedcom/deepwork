@@ -1,0 +1,174 @@
+name: Auto Fix CI Failures
+
+on:
+  workflow_run:
+    workflows: ["Validate"]
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+  issues: write
+  id-token: write
+
+jobs:
+  auto-fix:
+    # Only run when:
+    # 1. The Validate workflow failed
+    # 2. There is an associated PR
+    # 3. The branch was created by Claude (starts with 'claude/')
+    if: |
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.pull_requests[0] &&
+      startsWith(github.event.workflow_run.head_branch, 'claude/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 10
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if last commit was auto-fix (prevent loops)
+        id: check_loop
+        run: |
+          LAST_COMMIT_MSG=$(git log -1 --pretty=%s)
+          if [[ "$LAST_COMMIT_MSG" == *"[auto-fix]"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Last commit was an auto-fix, skipping to prevent loop"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup git identity
+        if: steps.check_loop.outputs.skip != 'true'
+        run: |
+          git config --global user.email "claude[bot]@users.noreply.github.com"
+          git config --global user.name "claude[bot]"
+
+      - name: Get CI failure details
+        if: steps.check_loop.outputs.skip != 'true'
+        id: failure_details
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            });
+
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            });
+
+            const failedJobs = jobs.data.jobs.filter(job => job.conclusion === 'failure');
+
+            let errorLogs = [];
+            for (const job of failedJobs) {
+              try {
+                const logs = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  job_id: job.id
+                });
+                errorLogs.push({
+                  jobName: job.name,
+                  logs: logs.data.substring(0, 50000) // Limit log size
+                });
+              } catch (e) {
+                errorLogs.push({
+                  jobName: job.name,
+                  logs: `Failed to retrieve logs: ${e.message}`
+                });
+              }
+            }
+
+            return {
+              runUrl: run.data.html_url,
+              failedJobs: failedJobs.map(j => j.name),
+              errorLogs: errorLogs
+            };
+
+      - name: Fix CI failures with Claude
+        if: steps.check_loop.outputs.skip != 'true'
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          prompt: |
+            The CI workflow "Validate" has failed on a PR that you (Claude) contributed to.
+            Please analyze the failure and fix the issues.
+
+            ## Failure Information
+            - Failed CI Run: ${{ fromJSON(steps.failure_details.outputs.result).runUrl }}
+            - Failed Jobs: ${{ join(fromJSON(steps.failure_details.outputs.result).failedJobs, ', ') }}
+            - PR Number: ${{ github.event.workflow_run.pull_requests[0].number }}
+            - Branch: ${{ github.event.workflow_run.head_branch }}
+            - Repository: ${{ github.repository }}
+
+            ## CI Workflow Steps
+            The Validate workflow runs these checks:
+            1. `uv run ruff format --check src/ tests/` - Code formatting
+            2. `uv run ruff check src/ tests/` - Linting
+            3. `uv run pytest tests/ -v` - Tests
+
+            ## Your Task
+            1. Analyze the error logs below to understand what failed
+            2. Fix the issues in the code:
+               - For formatting errors: Run `uv run ruff format src/ tests/`
+               - For linting errors: Fix the code issues reported by ruff
+               - For test failures: Fix the failing tests or the code they're testing
+            3. Commit your fixes with a message that includes "[auto-fix]" tag
+            4. Push the changes to the branch: ${{ github.event.workflow_run.head_branch }}
+
+            IMPORTANT: Your commit message MUST include "[auto-fix]" to prevent infinite loops.
+            Example: "Fix linting errors in parser module [auto-fix]"
+
+            ## Error Logs
+            ```
+            ${{ toJSON(fromJSON(steps.failure_details.outputs.result).errorLogs) }}
+            ```
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--allowedTools 'Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git:*),Bash(uv:*),Bash(python:*),Bash(pytest:*),Bash(ruff:*)'"
+
+      - name: Comment on PR with fix status
+        if: always() && steps.check_loop.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ github.event.workflow_run.pull_requests[0].number }};
+            const conclusion = '${{ steps.claude.outcome }}';
+            const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
+
+            let body;
+            if (conclusion === 'success') {
+              body = `## CI Auto-Fix Attempted
+
+            Claude has analyzed the CI failure and attempted to fix the issues.
+
+            - **Fix workflow run**: ${runUrl}
+            - **Original failure**: ${{ fromJSON(steps.failure_details.outputs.result).runUrl }}
+
+            Please review the changes pushed to this branch.`;
+            } else {
+              body = `## CI Auto-Fix Failed
+
+            Claude attempted to fix the CI failure but encountered issues.
+
+            - **Fix workflow run**: ${runUrl}
+            - **Original failure**: ${{ fromJSON(steps.failure_details.outputs.result).runUrl }}
+
+            Manual intervention may be required.`;
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: body
+            });
