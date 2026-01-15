@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from deepwork.core.policy_parser import (
+    DEFAULT_COMPARE_TO,
     Policy,
     PolicyParseError,
     evaluate_policies,
@@ -113,6 +114,54 @@ class TestPolicy:
 
         with pytest.raises(PolicyParseError, match="no base_dir provided"):
             Policy.from_dict(data, base_dir=None)
+
+    def test_from_dict_compare_to_defaults_to_base(self) -> None:
+        """Test that compare_to defaults to 'base'."""
+        data = {
+            "name": "Test",
+            "trigger": "src/*",
+            "instructions": "Check it",
+        }
+        policy = Policy.from_dict(data)
+
+        assert policy.compare_to == DEFAULT_COMPARE_TO
+        assert policy.compare_to == "base"
+
+    def test_from_dict_compare_to_explicit_base(self) -> None:
+        """Test explicit compare_to: base."""
+        data = {
+            "name": "Test",
+            "trigger": "src/*",
+            "instructions": "Check it",
+            "compare_to": "base",
+        }
+        policy = Policy.from_dict(data)
+
+        assert policy.compare_to == "base"
+
+    def test_from_dict_compare_to_default_tip(self) -> None:
+        """Test compare_to: default_tip."""
+        data = {
+            "name": "Test",
+            "trigger": "src/*",
+            "instructions": "Check it",
+            "compare_to": "default_tip",
+        }
+        policy = Policy.from_dict(data)
+
+        assert policy.compare_to == "default_tip"
+
+    def test_from_dict_compare_to_prompt(self) -> None:
+        """Test compare_to: prompt."""
+        data = {
+            "name": "Test",
+            "trigger": "src/*",
+            "instructions": "Check it",
+            "compare_to": "prompt",
+        }
+        policy = Policy.from_dict(data)
+
+        assert policy.compare_to == "prompt"
 
 
 class TestMatchesPattern:

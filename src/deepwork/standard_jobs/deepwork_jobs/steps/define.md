@@ -62,6 +62,12 @@ For each major phase they mentioned, ask detailed questions:
 
 **Note**: You're gathering this information to understand what instructions will be needed, but you won't create the instruction files yet - that happens in the `implement` step.
 
+### Capability Considerations
+
+When defining steps, identify any that require specialized tools:
+
+**Browser Automation**: If any step involves web scraping, form filling, interactive browsing, UI testing, or research requiring website visits, ask the user what browser tools they have available. For Claude Code users, **Claude in Chrome** (Anthropic's browser extension) has been tested with DeepWork and is recommended for new users. Don't assume a default—confirm the tool before designing browser-dependent steps.
+
 ### Step 3: Validate the Workflow
 
 After gathering information about all steps:

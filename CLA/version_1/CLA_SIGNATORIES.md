@@ -12,9 +12,7 @@ This file tracks individual contributors who have signed the Contributor License
 
 ## How to Sign
 
-1. **Automated Method (Recommended)**: When you submit your first pull request, the CLA Assistant bot will guide you through signing the CLA electronically.
-
-2. **Manual Method**: Add your GitHub username to the table above by creating a pull request. Your PR will be reviewed and merged once verified.
+When you submit your first pull request, the CLA Assistant bot will guide you through signing the CLA electronically by commenting on your PR.
 
 ---
 
@@ -24,4 +22,4 @@ Organizations that have signed the Corporate CLA are tracked separately. If you 
 
 ---
 
-For questions about the CLA, see [CLA.md](../CLA.md) or contact legal@unsupervised.com.
+For questions about the CLA, see [CLA.md](CLA.md) or contact legal@unsupervised.com.
