@@ -31,10 +31,6 @@ jobs:
           branch: 'IMPT_cla_signatures'
           allowlist: 'dependabot[bot],github-actions[bot],claude,copilot'
           
-          # Customizable messages
-          remote-organization-name: 'Unsupervised.com, Inc.'
-          remote-repository-name: 'deepwork'
-          
           # Custom text for the CLA comment
           custom-pr-sign-comment: 'I have read the CLA Document and I hereby sign the CLA'
           custom-allsigned-prcomment: 'All contributors have signed the CLA. ✅'
