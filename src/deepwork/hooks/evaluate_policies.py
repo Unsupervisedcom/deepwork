@@ -193,40 +193,29 @@ def get_changed_files_prompt() -> list[str]:
     baseline_path = Path(".deepwork/.last_work_tree")
 
     try:
-        # Stage all changes
+        # Stage all changes so we can see them with --cached
         subprocess.run(["git", "add", "-A"], capture_output=True, check=False)
 
-        # Get current changed files
+        # Get all staged files (includes what was just staged)
         result = subprocess.run(
-            ["git", "diff", "--name-only", "HEAD"],
+            ["git", "diff", "--name-only", "--cached"],
             capture_output=True,
             text=True,
             check=False,
         )
         current_files = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
-
-        # Get untracked files
-        result = subprocess.run(
-            ["git", "ls-files", "--others", "--exclude-standard"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        untracked_files = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
-
-        all_current = current_files | untracked_files
-        all_current = {f for f in all_current if f}
+        current_files = {f for f in current_files if f}
 
         if baseline_path.exists():
             # Read baseline and find new files
             baseline_files = set(baseline_path.read_text().strip().split("\n"))
             baseline_files = {f for f in baseline_files if f}
             # Return files that are in current but not in baseline
-            new_files = all_current - baseline_files
+            new_files = current_files - baseline_files
             return sorted(new_files)
         else:
             # No baseline, return all current changes
-            return sorted(all_current)
+            return sorted(current_files)
 
     except (subprocess.CalledProcessError, OSError):
         return []
