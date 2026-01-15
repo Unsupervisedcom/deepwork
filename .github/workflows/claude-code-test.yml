@@ -1,0 +1,213 @@
+name: Claude Code Integration Test
+
+on:
+  # Manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable debug logging'
+        required: false
+        default: 'false'
+        type: boolean
+  # Run on PRs that modify core code
+  pull_request:
+    branches: ["*"]
+    paths:
+      - 'src/deepwork/**'
+      - 'tests/**'
+      - '.github/workflows/claude-code-test.yml'
+  # Scheduled run for continuous validation
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Monday at 6 AM UTC
+
+jobs:
+  # Job 1: Validate command generation (always runs)
+  validate-generation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run fruits workflow tests
+        run: uv run pytest tests/integration/test_fruits_workflow.py -v
+
+      - name: Generate commands and validate structure
+        run: |
+          # Create a test environment
+          mkdir -p test_project/.deepwork/jobs
+          cp -r tests/fixtures/jobs/fruits test_project/.deepwork/jobs/
+
+          # Install deepwork into test project
+          cd test_project
+          git init
+          git config user.email "test@test.com"
+          git config user.name "Test"
+          echo "# Test" > README.md
+          git add . && git commit -m "init"
+
+          # Run deepwork sync to generate commands
+          uv run --directory .. deepwork sync
+
+          # Validate generated commands exist
+          echo "Checking generated commands..."
+          ls -la .claude/commands/
+
+          # Verify command files exist
+          test -f .claude/commands/fruits.identify.md || (echo "Missing fruits.identify.md" && exit 1)
+          test -f .claude/commands/fruits.classify.md || (echo "Missing fruits.classify.md" && exit 1)
+
+          # Verify command content
+          grep -q "# fruits.identify" .claude/commands/fruits.identify.md
+          grep -q "raw_items" .claude/commands/fruits.identify.md
+          grep -q "identified_fruits.md" .claude/commands/fruits.identify.md
+
+          grep -q "# fruits.classify" .claude/commands/fruits.classify.md
+          grep -q "identified_fruits.md" .claude/commands/fruits.classify.md
+          grep -q "classified_fruits.md" .claude/commands/fruits.classify.md
+
+          echo "Command generation validated successfully!"
+
+  # Job 2: End-to-end test with Claude Code (only when API key is available)
+  claude-code-e2e:
+    runs-on: ubuntu-latest
+    needs: validate-generation
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for API key
+        id: check-key
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "has_key=false" >> $GITHUB_OUTPUT
+            echo "::warning::ANTHROPIC_API_KEY not set, skipping Claude Code e2e test"
+          else
+            echo "has_key=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install Node.js (for Claude Code CLI)
+        if: steps.check-key.outputs.has_key == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code CLI
+        if: steps.check-key.outputs.has_key == 'true'
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Install uv
+        if: steps.check-key.outputs.has_key == 'true'
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        if: steps.check-key.outputs.has_key == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deepwork
+        if: steps.check-key.outputs.has_key == 'true'
+        run: uv sync
+
+      - name: Set up test project
+        if: steps.check-key.outputs.has_key == 'true'
+        run: |
+          mkdir -p test_project/.deepwork/jobs
+          cp -r tests/fixtures/jobs/fruits test_project/.deepwork/jobs/
+
+          cd test_project
+          git init
+          git config user.email "test@test.com"
+          git config user.name "Test"
+          echo "# CI Test Project" > README.md
+          git add . && git commit -m "init"
+
+          # Generate commands
+          uv run --directory .. deepwork sync
+
+          echo "Test project setup complete"
+          ls -la .claude/commands/
+
+      - name: Run Claude Code - Identify Step
+        if: steps.check-key.outputs.has_key == 'true'
+        working-directory: test_project
+        timeout-minutes: 5
+        run: |
+          # Run the identify step with a deterministic input
+          # Using --print to output result, --yes to auto-accept
+          claude --yes --print "/fruits.identify" <<EOF
+          raw_items: apple, car, banana, chair, orange, table, mango, laptop
+          EOF
+
+          # Verify output was created
+          if [ -f "identified_fruits.md" ]; then
+            echo "Identify step completed successfully!"
+            echo "--- Output ---"
+            cat identified_fruits.md
+          else
+            echo "ERROR: identified_fruits.md was not created"
+            exit 1
+          fi
+
+      - name: Run Claude Code - Classify Step
+        if: steps.check-key.outputs.has_key == 'true'
+        working-directory: test_project
+        timeout-minutes: 5
+        run: |
+          # Run the classify step
+          claude --yes --print "/fruits.classify"
+
+          # Verify output was created
+          if [ -f "classified_fruits.md" ]; then
+            echo "Classify step completed successfully!"
+            echo "--- Output ---"
+            cat classified_fruits.md
+          else
+            echo "ERROR: classified_fruits.md was not created"
+            exit 1
+          fi
+
+      - name: Validate outputs
+        if: steps.check-key.outputs.has_key == 'true'
+        working-directory: test_project
+        run: |
+          echo "=== Validating outputs ==="
+
+          # Check identified_fruits.md contains expected fruits
+          echo "Checking identified_fruits.md..."
+          grep -qi "apple" identified_fruits.md || (echo "Missing: apple" && exit 1)
+          grep -qi "banana" identified_fruits.md || (echo "Missing: banana" && exit 1)
+          grep -qi "orange" identified_fruits.md || (echo "Missing: orange" && exit 1)
+          grep -qi "mango" identified_fruits.md || (echo "Missing: mango" && exit 1)
+
+          # Check classified_fruits.md has expected structure
+          echo "Checking classified_fruits.md..."
+          grep -qi "citrus\|tropical\|pome" classified_fruits.md || (echo "Missing fruit categories" && exit 1)
+
+          echo "All validations passed!"
+
+      - name: Upload test artifacts
+        if: steps.check-key.outputs.has_key == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-code-test-outputs
+          path: |
+            test_project/identified_fruits.md
+            test_project/classified_fruits.md
+          retention-days: 7
