@@ -9,16 +9,14 @@ on:
         required: false
         default: 'false'
         type: boolean
-  # Run on PRs that modify core code
+  # Run on PRs that are ready for review (not drafts)
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: ["*"]
     paths:
       - 'src/deepwork/**'
       - 'tests/**'
       - '.github/workflows/claude-code-test.yml'
-  # Scheduled run for continuous validation
-  schedule:
-    - cron: '0 6 * * 1'  # Weekly on Monday at 6 AM UTC
 
 # Ensure only one instance runs at a time per PR/branch
 concurrency:
@@ -91,7 +89,7 @@ jobs:
   claude-code-e2e:
     runs-on: ubuntu-latest
     needs: validate-generation
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
