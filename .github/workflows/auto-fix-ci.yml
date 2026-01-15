@@ -182,7 +182,7 @@ jobs:
               return;
             }
             const prNumber = pullRequests[0].number;
-            
+
             // Safely access failure details with null check
             const failureDetails = '${{ steps.failure_details.outputs.result }}';
             if (!failureDetails) {
@@ -190,7 +190,7 @@ jobs:
               return;
             }
             const failureData = JSON.parse(failureDetails);
-            
+
             const claudeOutcome = '${{ steps.claude.outcome }}';
             const hasFailedJobs = failureData.hasFailedJobs;
             const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
