@@ -8,21 +8,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.1] - 2026-01-15
 
 ### Added
-- New `learn` step in deepwork_jobs for analyzing existing workflows
+- `compare_to` option in policy system for flexible change detection (#34)
+  - `base` (default): Compare to merge-base with default branch
+  - `default_tip`: Two-dot diff against default branch tip
+  - `prompt`: Compare to state captured at prompt submission
+- New `learn` command replacing `refine` for conversation-driven job improvement (#27)
+  - Analyzes conversations where DeepWork jobs were run
+  - Classifies learnings as generalizable (→ instructions) or bespoke (→ AGENTS.md)
+  - Creates learning_summary.md documenting all changes
+- "Think deeply" prompt in learn step for enhanced reasoning (#33)
+- Supplementary markdown file support for job steps (#19)
+  - Steps can now reference additional .md files in the steps/ directory
+- Browser automation capability consideration in job definition (#32)
+  - Prompts users to confirm browser automation tools
+  - Recommends Claude in Chrome for Claude Code users
+- Platform-specific reload instructions in adapters (#31)
+  - Claude Code: "Type 'exit' then run 'claude --resume'"
+  - Gemini CLI: "Run '/memory refresh'"
 - Version and changelog update policy to enforce version tracking on src changes
-- Supplemental file references support in job definitions
-- Policy schema enhancements with new validation options
+- Added claude and copilot to CLA allowlist (#26)
 
 ### Changed
-- Reorganized CLA files into versioned directory structure
-- Improved policy evaluation hooks with better change detection
-- Renamed `capture_work_tree.sh` to `capture_prompt_work_tree.sh` for clarity
-- Updated deepwork_jobs step instructions for better guidance
+- Reorganized CLA files into `CLA/version_1/` directory structure (#24)
+- CLA signatures now stored on `IMPT_cla_signatures` branch (#24)
+- Simplified CLA signing instructions to only mention comment mechanism (#25)
+- Moved git diff logic into evaluate_policies.py for per-policy handling (#34)
+- Renamed `capture_work_tree.sh` to `capture_prompt_work_tree.sh` (#34)
+- Updated README with PyPI install instructions using pipx, uv, and pip (#22)
+- Updated deepwork_jobs job version to 0.2.0
+
+### Fixed
+- CLA Assistant "Not Found" error by removing unnecessary remote parameters (#29)
 
 ### Removed
-- Deprecated `refine` step (replaced by `learn`)
-- Removed `get_changed_files.sh` hook (functionality moved to policy evaluator)
-- Removed CLA_SETUP.md (setup instructions moved to main docs)
+- `refine` step (replaced by `learn` command) (#27)
+- `get_changed_files.sh` hook (logic moved to Python policy evaluator) (#34)
+- `CLA_SETUP.md` (setup instructions consolidated) (#24)
 
 ## [0.1.0] - Initial Release
 
