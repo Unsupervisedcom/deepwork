@@ -37,11 +37,13 @@ for any standard job in the DeepWork repository.
 
 ## Objective
 
-Edit standard job source files in `src/deepwork/standard_jobs/` and sync changes to installed locations (`.deepwork/jobs/` and command directories).
+Edit standard job source files in `src/deepwork/standard_jobs/` and sync changes to installed locations.
+
+**Reference**: See `.deepwork/jobs/deepwork_jobs/deepwork_jobs.md` for job structure, schemas, and templates.
 
 ## Task
 
-When working in the DeepWork repository and you need to modify a standard job, this step ensures changes are made in the correct location and properly propagated.
+When modifying a standard job in the DeepWork repository, this step ensures changes are made in the correct location and properly propagated.
 
 ### Important: Source of Truth
 
@@ -59,77 +61,50 @@ Standard jobs exist in THREE locations, but only ONE is the source of truth:
 
 #### 1. Identify the Standard Job to Update
 
-From the conversation context, determine:
+From conversation context, determine:
 - Which standard job needs updating (e.g., `deepwork_jobs`, `deepwork_policy`)
-- What specific changes are needed (job.yml, step instructions, hooks, etc.)
+- What changes are needed (job.yml, step instructions, hooks, etc.)
 
 Current standard jobs:
-- `deepwork_jobs` - Core job management (define, implement, learn)
-- `deepwork_policy` - Policy enforcement system
-
-To check what standard jobs exist:
 ```bash
 ls src/deepwork/standard_jobs/
 ```
 
 #### 2. Make Changes in Source Location
 
-Navigate to the source directory and make your changes:
-
 ```
 src/deepwork/standard_jobs/[job_name]/
 ├── job.yml              # Job definition
+├── deepwork_jobs.md     # Reference documentation (if applicable)
 ├── steps/               # Step instruction files
-│   └── [step].md
-├── hooks/               # Hook scripts (if any)
-└── templates/           # Templates (if any)
+├── hooks/               # Hook scripts
+└── templates/           # Templates
 ```
 
-**Examples of common edits:**
-- Modify `job.yml` to add/change steps, update stop_hooks, or adjust metadata
-- Edit `steps/[step].md` to improve instructions
-- Add new hook scripts in `hooks/`
-
 #### 3. Run DeepWork Install
-
-After making changes, run install to propagate them:
 
 ```bash
 deepwork install --platform claude
 ```
 
-This copies files from `src/deepwork/standard_jobs/` to `.deepwork/jobs/` and regenerates command files.
-
-If you also need Gemini support:
-```bash
-deepwork install --platform gemini
-```
+For Gemini: `deepwork install --platform gemini`
 
 #### 4. Verify the Sync
 
-Check that changes propagated correctly:
-
-**Verify job.yml:**
 ```bash
+# Verify job.yml
 diff src/deepwork/standard_jobs/[job_name]/job.yml .deepwork/jobs/[job_name]/job.yml
-```
 
-**Verify step files:**
-```bash
+# Verify step files
 diff -r src/deepwork/standard_jobs/[job_name]/steps/ .deepwork/jobs/[job_name]/steps/
-```
 
-**Check command files were regenerated:**
-```bash
+# Check commands regenerated
 ls -la .claude/commands/[job_name].*.md
 ```
 
-#### 5. Document the Changes
+#### 5. Document Changes
 
-Create `sync_verification.md` documenting:
-- What was changed
-- Which files were modified
-- Verification results
+Create `sync_verification.md` with what changed and verification results.
 
 ## Output Format
 
@@ -142,47 +117,25 @@ Create `sync_verification.md` documenting:
 [job_name]
 
 ## Changes Made
-- [List each file modified in src/deepwork/standard_jobs/]
-- [Describe what was changed]
-
-## Install Command
-```
-deepwork install --platform claude
-```
+- [Files modified in src/deepwork/standard_jobs/]
 
 ## Verification Results
-
-### Source → .deepwork/jobs/ sync
 - [x] job.yml matches
 - [x] steps/ files match
-- [x] hooks/ files match (if applicable)
-
-### Command Generation
-- [x] .claude/commands/[job].[step].md regenerated
+- [x] .claude/commands/ regenerated
 
 ## Summary
-All changes successfully propagated from source to installed locations.
+All changes successfully propagated.
 ```
 
 ## Quality Criteria
 
-- Changes were made ONLY in `src/deepwork/standard_jobs/[job_name]/` (never in `.deepwork/jobs/`)
-- `deepwork install --platform claude` was executed successfully
-- Files in `.deepwork/jobs/[job_name]/` match the source files
-- Command files in `.claude/commands/` were regenerated
-- `sync_verification.md` documents all changes and confirms sync status
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
-
-## Context
-
-This job exists specifically for maintaining the DeepWork project itself. Standard jobs are bundled with DeepWork and distributed to users when they run `deepwork install`. By keeping the source of truth in `src/deepwork/standard_jobs/`, we ensure:
-
-1. Changes are tracked in version control properly
-2. The install command always has the latest version
-3. Users get consistent, tested job definitions
-4. We don't accidentally edit installed copies that get overwritten
-
-This workflow is critical for anyone contributing to DeepWork's built-in job definitions.
+- Changes made ONLY in `src/deepwork/standard_jobs/[job_name]/`
+- `deepwork install --platform claude` executed successfully
+- Files in `.deepwork/jobs/` match source
+- Command files regenerated
+- `sync_verification.md` documents changes
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
 
 
 ## Inputs
