@@ -90,7 +90,7 @@ For each step in the job.yml, create a comprehensive instruction file at `.deepw
 
 **Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.template` for the standard structure.
 
-**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/example_step_instruction.md` for a fully worked example.
+**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.example` for a fully worked example.
 
 **Available templates in `.deepwork/jobs/deepwork_jobs/templates/`:**
 - `job.yml.template` - Job specification structure
@@ -98,8 +98,8 @@ For each step in the job.yml, create a comprehensive instruction file at `.deepw
 - `implementation_summary.md.template` - Implementation summary format
 - `learning_summary.md.template` - Learning summary format
 - `agents.md.template` - AGENTS.md file structure
-- `example_job.yml` - Complete job specification example
-- `example_step_instruction.md` - Complete step instruction example
+- `job.yml.example` - Complete job specification example
+- `step_instruction.md.example` - Complete step instruction example
 
 **Guidelines for generating instructions:**
 
@@ -232,8 +232,8 @@ Would you like me to create this policy? I can run `/deepwork_policy.define` to 
 ## Example Implementation
 
 For a complete worked example showing a job.yml and corresponding step instruction file, see:
-- **Job specification**: `.deepwork/jobs/deepwork_jobs/templates/example_job.yml`
-- **Step instruction**: `.deepwork/jobs/deepwork_jobs/templates/example_step_instruction.md`
+- **Job specification**: `.deepwork/jobs/deepwork_jobs/templates/job.yml.example`
+- **Step instruction**: `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.example`
 
 ## Important Guidelines
 

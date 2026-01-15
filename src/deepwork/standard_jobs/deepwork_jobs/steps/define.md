@@ -135,17 +135,30 @@ stop_hooks:
 
 **Encourage prompt-based hooks** - They leverage the AI's ability to understand context and make nuanced quality judgments. Script hooks are best for objective checks (syntax, format, tests).
 
-### Step 5: Create the job.yml Specification
+### Step 5: Create the Job Directory and Specification
 
-Only after you have complete understanding, create the `job.yml` file:
+Only after you have complete understanding, create the job directory and `job.yml` file:
 
-**File Location**: `.deepwork/jobs/[job_name]/job.yml`
+**First, create the directory structure** using the `make_new_job.sh` script:
 
-(Where `[job_name]` is the name of the NEW job you're creating, e.g., `.deepwork/jobs/competitive_research/job.yml`)
+```bash
+.deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
+```
+
+This creates:
+- `.deepwork/jobs/[job_name]/` - Main job directory
+- `.deepwork/jobs/[job_name]/steps/` - For step instruction files
+- `.deepwork/jobs/[job_name]/hooks/` - For custom validation scripts
+- `.deepwork/jobs/[job_name]/templates/` - For example file formats
+- `.deepwork/jobs/[job_name]/AGENTS.md` - Job management guidance
+
+**Then create the job.yml file** at `.deepwork/jobs/[job_name]/job.yml`
+
+(Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`)
 
 **Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.template` for the standard structure.
 
-**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/example_job.yml` for a fully worked example.
+**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.example` for a fully worked example.
 
 **Important**:
 - Use lowercase with underscores for job name and step IDs
