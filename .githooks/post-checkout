@@ -1,0 +1,29 @@
+#!/bin/sh
+# post-checkout hook - runs deepwork install when switching branches
+#
+# Arguments:
+#   $1 - ref of the previous HEAD
+#   $2 - ref of the new HEAD
+#   $3 - flag: 1 = branch checkout, 0 = file checkout
+
+OLD_REF="$1"
+NEW_REF="$2"
+CHECKOUT_TYPE="$3"
+
+# Only run on branch checkouts, not file checkouts
+if [ "$CHECKOUT_TYPE" != "1" ]; then
+    exit 0
+fi
+
+# Only run if the branch actually changed
+if [ "$OLD_REF" = "$NEW_REF" ]; then
+    exit 0
+fi
+
+# Check if deepwork command is available
+if ! command -v deepwork >/dev/null 2>&1; then
+    exit 0
+fi
+
+echo "Branch changed, running deepwork install..."
+deepwork install

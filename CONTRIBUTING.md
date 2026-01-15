@@ -105,6 +105,17 @@ export PYTHONPATH="$PWD/src:$PYTHONPATH"
 export DEEPWORK_DEV=1
 ```
 
+### Setting Up Git Hooks
+
+The repository includes git hooks that automatically run `deepwork install` when you switch branches, keeping your local deepwork configuration in sync. To enable them:
+
+```bash
+# Configure git to use the project's hooks directory
+git config core.hooksPath .githooks
+```
+
+This only needs to be done once per clone.
+
 ## Installing DeepWork Locally
 
 To use your local development version of DeepWork, install it in **editable mode**. This allows you to make changes to the code and have them immediately reflected without reinstalling.
