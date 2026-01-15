@@ -62,6 +62,7 @@ This will:
 - Generate core DeepWork jobs
 - Install DeepWork jobs for your AI assistant
 - Configure hooks for your AI assistant to enable policies
+- Create a `.deepwork.policy.yml` template file with example policies
 
 ## Quick Start
 
