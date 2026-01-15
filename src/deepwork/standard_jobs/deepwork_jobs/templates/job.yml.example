@@ -1,0 +1,73 @@
+# Example: Competitive Research Job
+#
+# This is a complete example of a job.yml file for reference.
+
+name: competitive_research
+version: "1.0.0"
+summary: "Systematic competitive analysis workflow"
+description: |
+  A comprehensive workflow for analyzing competitors in your market segment.
+  Helps product teams understand the competitive landscape through systematic
+  identification, research, comparison, and positioning recommendations.
+
+changelog:
+  - version: "1.0.0"
+    changes: "Initial job creation"
+
+steps:
+  - id: identify_competitors
+    name: "Identify Competitors"
+    description: "Identify 5-7 key competitors in the target market"
+    instructions_file: steps/identify_competitors.md
+    inputs:
+      - name: market_segment
+        description: "The market segment to analyze"
+      - name: product_category
+        description: "The product category"
+    outputs:
+      - competitors_list.md
+    dependencies: []
+
+  - id: research_competitors
+    name: "Research Competitors"
+    description: "Deep dive research on each identified competitor"
+    instructions_file: steps/research_competitors.md
+    inputs:
+      - file: competitors_list.md
+        from_step: identify_competitors
+    outputs:
+      - research_notes.md
+    dependencies:
+      - identify_competitors
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the research meets criteria:
+            1. Each competitor has at least 3 data points
+            2. Sources are cited
+            3. Information is current (within last year)
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
+  - id: comparative_analysis
+    name: "Comparative Analysis"
+    description: "Create side-by-side comparison matrix"
+    instructions_file: steps/comparative_analysis.md
+    inputs:
+      - file: research_notes.md
+        from_step: research_competitors
+    outputs:
+      - comparison_matrix.md
+    dependencies:
+      - research_competitors
+
+  - id: positioning_recommendations
+    name: "Positioning Recommendations"
+    description: "Strategic positioning recommendations based on analysis"
+    instructions_file: steps/positioning_recommendations.md
+    inputs:
+      - file: comparison_matrix.md
+        from_step: comparative_analysis
+    outputs:
+      - positioning_report.md
+    dependencies:
+      - comparative_analysis

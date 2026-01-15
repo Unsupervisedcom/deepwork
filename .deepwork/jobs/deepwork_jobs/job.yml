@@ -1,5 +1,5 @@
 name: deepwork_jobs
-version: "0.2.0"
+version: "0.4.0"
 summary: "DeepWork job management commands"
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -18,6 +18,10 @@ changelog:
     changes: "Initial version"
   - version: "0.2.0"
     changes: "Replaced refine command with learn command for conversation-driven improvement"
+  - version: "0.3.0"
+    changes: "Added make_new_job.sh script and templates directory; updated instructions to reference templates instead of inline examples"
+  - version: "0.4.0"
+    changes: "Removed implementation_summary and learning_summary outputs; simplified step outputs"
 
 steps:
   - id: define
@@ -54,7 +58,7 @@ steps:
       - file: job.yml
         from_step: define
     outputs:
-      - implementation_summary.md
+      - steps/
     dependencies:
       - define
     hooks:
@@ -69,8 +73,7 @@ steps:
             5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
             6. **Sync Complete**: Has `deepwork sync` been run successfully?
             7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-            8. **Summary Created**: Has `implementation_summary.md` been created?
-            9. **Policies Considered**: Have you thought about whether policies would benefit this job?
+            8. **Policies Considered**: Have you thought about whether policies would benefit this job?
                - If relevant policies were identified, did you explain them and offer to run `/deepwork_policy.define`?
                - Not every job needs policies - only suggest when genuinely helpful.
 
@@ -85,7 +88,7 @@ steps:
       - name: job_name
         description: "Name of the job that was run (optional - will auto-detect from conversation)"
     outputs:
-      - learning_summary.md
+      - AGENTS.md
     dependencies: []
     hooks:
       after_agent:

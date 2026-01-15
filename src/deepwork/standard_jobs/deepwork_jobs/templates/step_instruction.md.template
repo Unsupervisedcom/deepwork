@@ -1,0 +1,58 @@
+# [Step Name]
+
+## Objective
+
+[Clear statement of what this step accomplishes, derived from the step's description]
+
+## Task
+
+[Detailed instructions for completing this step, based on:
+- The step's purpose
+- Expected inputs and outputs
+- The job's overall context
+]
+
+### Process
+
+[Break down the step into substeps. Use the information gathered during define about:
+- What needs to be done
+- What makes a good output
+- Any quality criteria
+]
+
+1. [Substep 1]
+2. [Substep 2]
+3. [Substep 3]
+
+[If this step has user inputs, explain how to gather them]
+[If this step has file inputs, explain how to use them]
+
+## Output Format
+
+### [output_filename_1]
+
+[Description of what should be in this output file]
+
+**Structure**:
+```[file format]
+[Example or template of what the output should look like]
+```
+
+[Repeat for each output file]
+
+## Quality Criteria
+
+[List what makes this step's output high quality:
+- Completeness checks
+- Format requirements
+- Content requirements
+]
+
+- [Quality criterion 1]
+- [Quality criterion 2]
+- [Quality criterion 3]
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+
+## Context
+
+[Provide context from the job's overall description to help understand why this step matters and how it fits into the bigger picture]
