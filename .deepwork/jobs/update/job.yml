@@ -1,5 +1,5 @@
 name: update
-version: "1.0.0"
+version: "1.1.0"
 summary: "Update standard jobs in src/ and sync to installed locations"
 description: |
   A workflow for maintaining standard jobs bundled with DeepWork. Standard jobs
@@ -19,6 +19,8 @@ description: |
 changelog:
   - version: "1.0.0"
     changes: "Initial job creation"
+  - version: "1.1.0"
+    changes: "Removed sync_verification.md output requirement"
 
 steps:
   - id: job
@@ -28,8 +30,7 @@ steps:
     inputs:
       - name: job_context
         description: "Determine from conversation context which standard job(s) to update and what changes are needed"
-    outputs:
-      - sync_verification.md
+    outputs: []
     dependencies: []
     stop_hooks:
       - prompt: |
@@ -38,5 +39,4 @@ steps:
           2. `deepwork install --platform claude` was run
           3. Files in .deepwork/jobs/ match the source files
           4. Command files in .claude/commands/ were regenerated
-          5. sync_verification.md documents what was changed and confirms sync status
           If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.

@@ -14,7 +14,6 @@ hooks:
             2. `deepwork install --platform claude` was run
             3. Files in .deepwork/jobs/ match the source files
             4. Command files in .claude/commands/ were regenerated
-            5. sync_verification.md documents what was changed and confirms sync status
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
 
@@ -125,39 +124,12 @@ diff -r src/deepwork/standard_jobs/[job_name]/steps/ .deepwork/jobs/[job_name]/s
 ls -la .claude/commands/[job_name].*.md
 ```
 
-#### 5. Document Changes
-
-Create `sync_verification.md` with what changed and verification results.
-
-## Output Format
-
-### sync_verification.md
-
-```markdown
-# Sync Verification Report
-
-## Job Updated
-[job_name]
-
-## Changes Made
-- [Files modified in src/deepwork/standard_jobs/]
-
-## Verification Results
-- [x] job.yml matches
-- [x] steps/ files match
-- [x] .claude/commands/ regenerated
-
-## Summary
-All changes successfully propagated.
-```
-
 ## Quality Criteria
 
 - Changes made ONLY in `src/deepwork/standard_jobs/[job_name]/`
 - `deepwork install --platform claude` executed successfully
 - Files in `.deepwork/jobs/` match source
 - Command files regenerated
-- `sync_verification.md` documents changes
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
 
 
@@ -185,11 +157,7 @@ All work for this job should be done on a dedicated work branch:
 
 ## Output Requirements
 
-Create the following output(s):
-- `sync_verification.md`
-Ensure all outputs are:
-- Well-formatted and complete
-- Ready for review or use by subsequent steps
+No specific files are output by this command.
 
 ## Quality Validation Loop
 
@@ -201,7 +169,6 @@ Verify the update process completed successfully:
 2. `deepwork install --platform claude` was run
 3. Files in .deepwork/jobs/ match the source files
 4. Command files in .claude/commands/ were regenerated
-5. sync_verification.md documents what was changed and confirms sync status
 If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
 
@@ -223,7 +190,6 @@ After completing this step:
 
 2. **Inform the user**:
    - The job command is complete
-   - Outputs created: sync_verification.md
    - This command can be run again anytime to make further changes
 
 ## Command Complete
