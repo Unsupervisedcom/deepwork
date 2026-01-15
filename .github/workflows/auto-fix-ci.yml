@@ -169,7 +169,7 @@ jobs:
             ${{ toJSON(fromJSON(steps.failure_details.outputs.result).errorLogs) }}
             ```
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: --allowedTools Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(uv:*),Bash(python:*),Bash(pytest:*),Bash(ruff:*)
+          claude_args: "--allowedTools Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(uv:*),Bash(python:*),Bash(pytest:*),Bash(ruff:*)"
 
       - name: Comment on PR with fix status
         if: |
@@ -188,13 +188,19 @@ jobs:
             }
             const prNumber = pullRequests[0].number;
 
-            // Safely access failure details with null check
+            // Safely access failure details with null check and JSON validation
             const failureDetails = '${{ steps.failure_details.outputs.result }}';
-            if (!failureDetails || failureDetails.trim() === '') {
+            if (!failureDetails || failureDetails.trim() === '' || failureDetails === 'undefined' || failureDetails === 'null') {
               console.log('No failure details available, skipping comment');
               return;
             }
-            const failureData = JSON.parse(failureDetails);
+            let failureData;
+            try {
+              failureData = JSON.parse(failureDetails);
+            } catch (e) {
+              console.log('Failed to parse failure details:', e);
+              return;
+            }
 
             const claudeOutcome = '${{ steps.claude.outcome }}';
             const hasFailedJobs = failureData.hasFailedJobs;
