@@ -225,9 +225,7 @@ class TestPolicyStopHookBlocking:
             # Run the stop hook with transcript path
             script_path = shell_scripts_dir / "policy_stop_hook.sh"
             hook_input = {"transcript_path": transcript_path}
-            stdout, stderr, code = run_stop_hook(
-                script_path, git_repo_with_policy, hook_input
-            )
+            stdout, stderr, code = run_stop_hook(script_path, git_repo_with_policy, hook_input)
 
             # Parse the output
             output = stdout.strip()
@@ -236,15 +234,11 @@ class TestPolicyStopHookBlocking:
             result = json.loads(output)
 
             # Should be empty JSON because the policy was promised
-            assert result == {}, (
-                f"Expected empty JSON when policy is promised, got: {result}"
-            )
+            assert result == {}, f"Expected empty JSON when policy is promised, got: {result}"
         finally:
             os.unlink(transcript_path)
 
-    def test_safety_pattern_prevents_firing(
-        self, shell_scripts_dir: Path, tmp_path: Path
-    ) -> None:
+    def test_safety_pattern_prevents_firing(self, shell_scripts_dir: Path, tmp_path: Path) -> None:
         """Test that safety patterns prevent policies from firing."""
         # Initialize git repo
         repo = Repo.init(tmp_path)
@@ -295,9 +289,7 @@ class TestPolicyStopHookBlocking:
         result = json.loads(output)
 
         # Should be empty JSON because safety pattern matched
-        assert result == {}, (
-            f"Expected empty JSON when safety pattern matches, got: {result}"
-        )
+        assert result == {}, f"Expected empty JSON when safety pattern matches, got: {result}"
 
 
 class TestPolicyStopHookJsonFormat:
