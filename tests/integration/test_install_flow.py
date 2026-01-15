@@ -79,8 +79,38 @@ class TestInstallCommand:
         assert result.exit_code != 0
         assert "No AI platform detected" in result.output
 
-    # NOTE: Multiple platform detection test removed since we currently only support Claude.
-    # When more adapters are added, this test should be reinstated.
+    def test_install_with_multiple_platforms_auto_detect(
+        self, mock_multi_platform_project: Path
+    ) -> None:
+        """Test installing with auto-detection when multiple platforms are present."""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            ["install", "--path", str(mock_multi_platform_project)],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+        assert "Auto-detecting AI platforms" in result.output
+        assert "Claude Code detected" in result.output
+        assert "Gemini CLI detected" in result.output
+        assert "DeepWork installed successfully for Claude Code, Gemini CLI" in result.output
+
+        # Verify config.yml has both platforms
+        config_file = mock_multi_platform_project / ".deepwork" / "config.yml"
+        config = load_yaml(config_file)
+        assert config is not None
+        assert "claude" in config["platforms"]
+        assert "gemini" in config["platforms"]
+
+        # Verify commands were created for both platforms
+        claude_dir = mock_multi_platform_project / ".claude" / "commands"
+        assert (claude_dir / "deepwork_jobs.define.md").exists()
+
+        # Gemini uses job_name/step_id.toml structure
+        gemini_dir = mock_multi_platform_project / ".gemini" / "commands"
+        assert (gemini_dir / "deepwork_jobs" / "define.toml").exists()
 
     def test_install_with_specified_platform_when_missing(self, mock_git_repo: Path) -> None:
         """Test that install fails when specified platform is not present."""
