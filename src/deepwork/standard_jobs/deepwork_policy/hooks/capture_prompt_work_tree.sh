@@ -1,9 +1,10 @@
 #!/bin/bash
-# capture_work_tree.sh - Captures the current git work tree state
+# capture_prompt_work_tree.sh - Captures the git work tree state at prompt submission
 #
 # This script creates a snapshot of the current git state by recording
 # all files that have been modified, added, or deleted. This baseline
-# is used later to detect what changed during an agent session.
+# is used for policies with compare_to: prompt to detect what changed
+# during an agent response (between user prompts).
 
 set -e
 

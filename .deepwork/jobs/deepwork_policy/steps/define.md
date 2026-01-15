@@ -56,6 +56,22 @@ If there are files that, when also changed, mean the policy shouldn't fire:
   - Trigger: `src/auth/**/*`
   - Safety: `SECURITY.md`, `docs/security_review.md`
 
+### Step 3b: Choose the Comparison Mode (Optional)
+
+The `compare_to` field controls what baseline is used when detecting "changed files":
+
+**Options:**
+- `base` (default) - Compares to the base of the current branch (merge-base with main/master). This is the most common choice for feature branches, as it shows all changes made on the branch.
+- `default_tip` - Compares to the current tip of the default branch (main/master). Useful when you want to see the difference from what's currently in production.
+- `prompt` - Compares to the state at the start of each prompt. Useful for policies that should only fire based on changes made during a single agent response.
+
+**When to use each:**
+- **base**: Best for most policies. "Did this branch change config files?" → trigger docs review
+- **default_tip**: For policies about what's different from production/main
+- **prompt**: For policies that should only consider very recent changes within the current session
+
+Most policies should use the default (`base`) and don't need to specify `compare_to`.
+
 ### Step 4: Write the Instructions
 
 Create clear, actionable instructions for what the agent should do when the policy fires.
@@ -86,6 +102,7 @@ Create or update `.deepwork.policy.yml` in the project root.
 - name: "[Friendly name for the policy]"
   trigger: "[glob pattern]"  # or array: ["pattern1", "pattern2"]
   safety: "[glob pattern]"   # optional, or array
+  compare_to: "base"         # optional: "base" (default), "default_tip", or "prompt"
   instructions: |
     [Multi-line instructions for the agent...]
 ```
@@ -95,6 +112,7 @@ Create or update `.deepwork.policy.yml` in the project root.
 - name: "[Friendly name for the policy]"
   trigger: "[glob pattern]"
   safety: "[glob pattern]"
+  compare_to: "base"         # optional
   instructions_file: "path/to/instructions.md"
 ```
 
@@ -166,7 +184,10 @@ Create or update this file at the project root with the new policy entry.
 ## Context
 
 Policies are evaluated automatically when you finish working on a task. The system:
-1. Tracks which files you changed during the session
+1. Determines which files have changed based on each policy's `compare_to` setting:
+   - `base` (default): Files changed since the branch diverged from main/master
+   - `default_tip`: Files different from the current main/master branch
+   - `prompt`: Files changed since the last prompt submission
 2. Checks if any changes match policy trigger patterns
 3. Skips policies where safety patterns also matched
 4. Prompts you with instructions for any triggered policies

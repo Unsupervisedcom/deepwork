@@ -18,8 +18,7 @@ hooks:
             5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
             6. **Sync Complete**: Has `deepwork sync` been run successfully?
             7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-            8. **Summary Created**: Has `implementation_summary.md` been created?
-            9. **Policies Considered**: Have you thought about whether policies would benefit this job?
+            8. **Policies Considered**: Have you thought about whether policies would benefit this job?
                - If relevant policies were identified, did you explain them and offer to run `/deepwork_policy.define`?
                - Not every job needs policies - only suggest when genuinely helpful.
 
@@ -48,14 +47,15 @@ hooks:
 ## Job Overview
 
 Core commands for managing DeepWork jobs. These commands help you define new multi-step
-workflows and refine existing ones.
+workflows and learn from running them.
 
 The `define` command guides you through an interactive process to create a new job by
 asking detailed questions about your workflow, understanding each step's inputs and outputs,
 and generating all necessary files.
 
-The `refine` command helps you modify existing jobs safely by understanding what you want
-to change, validating the impact, and ensuring consistency across your workflow.
+The `learn` command reflects on conversations where DeepWork jobs were run, identifies
+confusion or inefficiencies, and improves job instructions. It also captures bespoke
+learnings specific to the current run into AGENTS.md files in the working folder.
 
 
 ## Prerequisites
@@ -77,10 +77,31 @@ Generate the DeepWork job directory structure and instruction files for each ste
 
 Read the `job.yml` specification file and create all the necessary files to make the job functional, including directory structure and step instruction files. Then sync the commands to make them available.
 
-### Step 1: Read and Validate the Specification
+### Step 1: Create Directory Structure Using Script
+
+Run the `make_new_job.sh` script to create the standard directory structure:
+
+```bash
+.deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
+```
+
+This creates:
+- `.deepwork/jobs/[job_name]/` - Main job directory
+- `.deepwork/jobs/[job_name]/steps/` - Step instruction files
+- `.deepwork/jobs/[job_name]/hooks/` - Custom validation scripts (with .gitkeep)
+- `.deepwork/jobs/[job_name]/templates/` - Example file formats (with .gitkeep)
+- `.deepwork/jobs/[job_name]/AGENTS.md` - Job management guidance
+
+**Note**: If the directory already exists (e.g., job.yml was created by define step), you can skip this step or manually create the additional directories:
+```bash
+mkdir -p .deepwork/jobs/[job_name]/hooks .deepwork/jobs/[job_name]/templates
+touch .deepwork/jobs/[job_name]/hooks/.gitkeep .deepwork/jobs/[job_name]/templates/.gitkeep
+```
+
+### Step 2: Read and Validate the Specification
 
 1. **Locate the job.yml file**
-   - Read `.deepwork/jobs/[job_name]/job.yml` from the define step (Where `[job_name]` is the name of the new job that was created in the define step)
+   - Read `.deepwork/jobs/[job_name]/job.yml` from the define step
    - Parse the YAML content
 
 2. **Validate the specification**
@@ -94,83 +115,20 @@ Read the `job.yml` specification file and create all the necessary files to make
    - List of all steps with their details
    - Understand the workflow structure
 
-### Step 2: Create Directory Structure
-
-Create the job directory in `.deepwork/jobs/[job_name]/`:
-
-```bash
-mkdir -p .deepwork/jobs/[job_name]/steps
-```
-
-Files to create:
-- `.deepwork/jobs/[job_name]/job.yml`
-- `.deepwork/jobs/[job_name]/steps/[step_id].md` - One for each step
-
 ### Step 3: Generate Step Instruction Files
 
 For each step in the job.yml, create a comprehensive instruction file at `.deepwork/jobs/[job_name]/steps/[step_id].md`.
 
-Each instruction file should follow this structure:
+**Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.template` for the standard structure.
 
-```markdown
-# [Step Name]
+**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.example` for a fully worked example.
 
-## Objective
-
-[Clear statement of what this step accomplishes, derived from the step's description]
-
-## Task
-
-[Detailed instructions for completing this step, based on:
-- The step's purpose
-- Expected inputs and outputs
-- The job's overall context
-]
-
-### Process
-
-[Break down the step into substeps. Use the information gathered during define about:
-- What needs to be done
-- What makes a good output
-- Any quality criteria
-]
-
-1. [Substep 1]
-2. [Substep 2]
-3. [Substep 3]
-
-[If this step has user inputs, explain how to gather them]
-[If this step has file inputs, explain how to use them]
-
-## Output Format
-
-### [output_filename_1]
-
-[Description of what should be in this output file]
-
-**Structure**:
-```[file format]
-[Example or template of what the output should look like]
-```
-
-[Repeat for each output file]
-
-## Quality Criteria
-
-[List what makes this step's output high quality:
-- Completeness checks
-- Format requirements
-- Content requirements
-]
-
-- [Quality criterion 1]
-- [Quality criterion 2]
-- [Quality criterion 3]
-
-## Context
-
-[Provide context from the job's overall description to help understand why this step matters and how it fits into the bigger picture]
-```
+**Available templates in `.deepwork/jobs/deepwork_jobs/templates/`:**
+- `job.yml.template` - Job specification structure
+- `step_instruction.md.template` - Step instruction file structure
+- `agents.md.template` - AGENTS.md file structure
+- `job.yml.example` - Complete job specification example
+- `step_instruction.md.example` - Complete step instruction example
 
 **Guidelines for generating instructions:**
 
@@ -213,6 +171,12 @@ If a step in the job.yml has `stop_hooks` defined, the generated instruction fil
 
 This alignment ensures the AI agent knows exactly what will be validated and can self-check before completing.
 
+### Using Supplementary Reference Files
+
+Step instructions can include additional `.md` files in the `steps/` directory for detailed examples, templates, or reference material. Reference them using the full path from the project root.
+
+See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for detailed documentation and examples.
+
 ### Step 4: Verify job.yml Location
 
 Verify that `job.yml` is in the correct location at `.deepwork/jobs/[job_name]/job.yml`. The define step should have created it there. If for some reason it's not there, you may need to create or move it.
@@ -230,11 +194,9 @@ This will:
 - Generate slash-commands for each step
 - Make the commands available in `.claude/commands/` (or appropriate platform directory)
 
-### Step 6: Reload Commands
+### Step 6: Relay Reload Instructions
 
-Instruct the user to reload commands in their current session:
-- Run `/reload` command (if available)
-- Or restart the Claude session
+After running `deepwork sync`, look at the "To use the new commands" section in the output. **Relay these exact reload instructions to the user** so they know how to pick up the new commands. Don't just reference the sync output - tell them directly what they need to do (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code, or "Run '/memory refresh'" for Gemini CLI).
 
 ### Step 7: Consider Policies for the New Job
 
@@ -298,112 +260,9 @@ Would you like me to create this policy? I can run `/deepwork_policy.define` to 
 
 ## Example Implementation
 
-**Given this job.yml:**
-```yaml
-name: competitive_research
-version: "1.0.0"
-summary: "Systematic competitive analysis workflow"
-description: |
-  A comprehensive workflow for analyzing competitors in your market segment.
-  Helps product teams understand the competitive landscape through systematic
-  identification, research, comparison, and positioning recommendations.
-
-steps:
-  - id: identify_competitors
-    name: "Identify Competitors"
-    description: "Identify 5-7 key competitors in the target market"
-    instructions_file: steps/identify_competitors.md
-    inputs:
-      - name: market_segment
-        description: "The market segment to analyze"
-      - name: product_category
-        description: "The product category"
-    outputs:
-      - competitors_list.md
-    dependencies: []
-```
-
-**Generate this instruction file** (`.deepwork/jobs/competitive_research/steps/identify_competitors.md`):
-
-```markdown
-# Identify Competitors
-
-## Objective
-
-Identify 5-7 key competitors in the target market segment to analyze for competitive positioning.
-
-## Task
-
-Research and identify the most relevant competitors in the specified market segment and product category. Focus on companies that directly compete for the same customer base and solve similar problems.
-
-### Process
-
-1. **Understand the market context**
-   - Review the market segment provided by the user
-   - Understand the product category boundaries
-   - Consider direct and indirect competitors
-
-2. **Research competitors**
-   - Search for companies in this space
-   - Look for market leaders and emerging players
-   - Consider different competitive dimensions (features, price, target market)
-
-3. **Select 5-7 key competitors**
-   - Prioritize direct competitors
-   - Include at least one market leader
-   - Include 1-2 emerging/innovative players
-   - Ensure diversity in the competitive set
-
-4. **Document each competitor**
-   - Company name
-   - Brief description (2-3 sentences)
-   - Why they're a relevant competitor
-   - Primary competitive dimension
-
-## Output Format
-
-### competitors_list.md
-
-A markdown document listing each competitor with context.
-
-**Structure**:
-```markdown
-# Competitor Analysis: [Market Segment]
-
-## Market Context
-- **Segment**: [market segment]
-- **Category**: [product category]
-- **Analysis Date**: [current date]
-
-## Identified Competitors
-
-### 1. [Competitor Name]
-**Description**: [2-3 sentence description of what they do]
-
-**Why Relevant**: [Why they're a key competitor in this space]
-
-**Competitive Dimension**: [What they compete on - e.g., price, features, market segment]
-
-[Repeat for each competitor, 5-7 total]
-
-## Selection Rationale
-
-[Brief paragraph explaining why these specific competitors were chosen and what dimensions of competition they represent]
-```
-
-## Quality Criteria
-
-- 5-7 competitors identified (not too few, not too many)
-- Mix of established and emerging players
-- All competitors are genuinely relevant to the market segment
-- Each competitor has clear, specific description
-- Selection rationale explains the competitive landscape
-- Output is well-formatted and ready for use by next step
-
-## Context
-
-This is the foundation step for competitive analysis. The competitors identified here will be deeply researched in subsequent steps, so it's important to choose the right set. Focus on competitors that will provide strategic insights for positioning decisions.
-```
+For a complete worked example showing a job.yml and corresponding step instruction file, see:
+- **Job specification**: `.deepwork/jobs/deepwork_jobs/templates/job.yml.example`
+- **Step instruction**: `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.example`
 
 ## Important Guidelines
 
@@ -422,63 +281,6 @@ Before running `deepwork sync`, verify:
 - All step instruction files exist (one per step)
 - No file system errors
 
-## Output Format
-
-### implementation_summary.md
-
-After successful implementation, create a summary:
-
-```markdown
-# Job Implementation Complete: [job_name]
-
-## Overview
-
-Successfully implemented the **[job_name]** workflow with [N] steps.
-
-**Summary**: [job summary]
-
-**Version**: [version]
-
-## Files Created
-
-### Job Definition
-- `.deepwork/jobs/[job_name]/job.yml`
-
-### Step Instructions
-- `.deepwork/jobs/[job_name]/steps/[step1_id].md`
-- `.deepwork/jobs/[job_name]/steps/[step2_id].md`
-[... list all step files ...]
-
-
-## Generated Commands
-
-After running `deepwork sync`, the following slash-commands are now available:
-
-- `/[job_name].[step1_id]` - [step description]
-- `/[job_name].[step2_id]` - [step description]
-[... list all commands ...]
-
-## Next Steps
-
-1. **Reload commands**: Run `/reload` or restart your Claude session
-2. **Start the workflow**: Run `/[job_name].[first_step_id]` to begin
-3. **Test the job**: Try executing the first step to ensure everything works
-
-## Job Structure
-
-[Show the workflow diagram with step names and dependencies]
-
-Step 1: [step_name]
-  ↓
-Step 2: [step_name]
-  ↓
-Step 3: [step_name]
-  ↓
-[Final output]
-
-The job is now ready for use!
-```
-
 ## Completion Checklist
 
 Before marking this step complete, ensure:
@@ -487,8 +289,7 @@ Before marking this step complete, ensure:
 - [ ] Each instruction file is complete and actionable
 - [ ] `deepwork sync` executed successfully
 - [ ] Commands generated in platform directory
-- [ ] User informed of next steps (reload commands)
-- [ ] implementation_summary.md created
+- [ ] User informed to follow reload instructions from `deepwork sync`
 - [ ] Considered whether policies would benefit this job (Step 7)
 - [ ] If policies suggested, offered to run `/deepwork_policy.define`
 
@@ -531,7 +332,7 @@ All work for this job should be done on a dedicated work branch:
 ## Output Requirements
 
 Create the following output(s):
-- `implementation_summary.md`
+- `steps/` (directory)
 Ensure all outputs are:
 - Well-formatted and complete
 - Ready for review or use by subsequent steps
@@ -550,8 +351,7 @@ Verify the implementation meets ALL quality criteria before completing:
 5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
 6. **Sync Complete**: Has `deepwork sync` been run successfully?
 7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-8. **Summary Created**: Has `implementation_summary.md` been created?
-9. **Policies Considered**: Have you thought about whether policies would benefit this job?
+8. **Policies Considered**: Have you thought about whether policies would benefit this job?
    - If relevant policies were identified, did you explain them and offer to run `/deepwork_policy.define`?
    - Not every job needs policies - only suggest when genuinely helpful.
 
@@ -577,14 +377,14 @@ After completing this step:
 
 2. **Inform the user**:
    - Step 2 of 3 is complete
-   - Outputs created: implementation_summary.md
-   - Ready to proceed to next step: `/deepwork_jobs.refine`
+   - Outputs created: steps/
+   - Ready to proceed to next step: `/deepwork_jobs.learn`
 
 ## Next Step
 
 To continue the workflow, run:
 ```
-/deepwork_jobs.refine
+/deepwork_jobs.learn
 ```
 
 ---
