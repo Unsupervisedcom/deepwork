@@ -20,6 +20,11 @@ on:
   schedule:
     - cron: '0 6 * * 1'  # Weekly on Monday at 6 AM UTC
 
+# Ensure only one instance runs at a time per PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Job 1: Validate command generation (always runs)
   validate-generation:
@@ -47,35 +52,37 @@ jobs:
         run: |
           # Create a test environment
           mkdir -p test_project/.deepwork/jobs
+          mkdir -p test_project/.claude  # Required for platform detection
           cp -r tests/fixtures/jobs/fruits test_project/.deepwork/jobs/
 
-          # Install deepwork into test project
+          # Set up git repo in test project
           cd test_project
           git init
           git config user.email "test@test.com"
           git config user.name "Test"
           echo "# Test" > README.md
           git add . && git commit -m "init"
+          cd ..
 
-          # Run deepwork sync to generate commands
-          uv run --directory .. deepwork sync
+          # Run deepwork install to set up the project (this also runs sync)
+          uv run deepwork install --platform claude --path test_project
 
           # Validate generated commands exist
           echo "Checking generated commands..."
-          ls -la .claude/commands/
+          ls -la test_project/.claude/commands/
 
           # Verify command files exist
-          test -f .claude/commands/fruits.identify.md || (echo "Missing fruits.identify.md" && exit 1)
-          test -f .claude/commands/fruits.classify.md || (echo "Missing fruits.classify.md" && exit 1)
+          test -f test_project/.claude/commands/fruits.identify.md || (echo "Missing fruits.identify.md" && exit 1)
+          test -f test_project/.claude/commands/fruits.classify.md || (echo "Missing fruits.classify.md" && exit 1)
 
           # Verify command content
-          grep -q "# fruits.identify" .claude/commands/fruits.identify.md
-          grep -q "raw_items" .claude/commands/fruits.identify.md
-          grep -q "identified_fruits.md" .claude/commands/fruits.identify.md
+          grep -q "# fruits.identify" test_project/.claude/commands/fruits.identify.md
+          grep -q "raw_items" test_project/.claude/commands/fruits.identify.md
+          grep -q "identified_fruits.md" test_project/.claude/commands/fruits.identify.md
 
-          grep -q "# fruits.classify" .claude/commands/fruits.classify.md
-          grep -q "identified_fruits.md" .claude/commands/fruits.classify.md
-          grep -q "classified_fruits.md" .claude/commands/fruits.classify.md
+          grep -q "# fruits.classify" test_project/.claude/commands/fruits.classify.md
+          grep -q "identified_fruits.md" test_project/.claude/commands/fruits.classify.md
+          grep -q "classified_fruits.md" test_project/.claude/commands/fruits.classify.md
 
           echo "Command generation validated successfully!"
 
@@ -129,6 +136,7 @@ jobs:
         if: steps.check-key.outputs.has_key == 'true'
         run: |
           mkdir -p test_project/.deepwork/jobs
+          mkdir -p test_project/.claude  # Required for platform detection
           cp -r tests/fixtures/jobs/fruits test_project/.deepwork/jobs/
 
           cd test_project
@@ -137,12 +145,13 @@ jobs:
           git config user.name "Test"
           echo "# CI Test Project" > README.md
           git add . && git commit -m "init"
+          cd ..
 
-          # Generate commands
-          uv run --directory .. deepwork sync
+          # Run deepwork install to set up the project (this also runs sync)
+          uv run deepwork install --platform claude --path test_project
 
           echo "Test project setup complete"
-          ls -la .claude/commands/
+          ls -la test_project/.claude/commands/
 
       - name: Run Claude Code - Identify Step
         if: steps.check-key.outputs.has_key == 'true'
