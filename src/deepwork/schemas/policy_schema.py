@@ -1,78 +1,34 @@
-"""JSON Schema definition for policy definitions."""
+"""JSON Schema definition for policy definitions.
+
+The schema is loaded from the JSON Schema file policy.schema.json.
+This module provides backward-compatible access to the schema and related constants.
+"""
 
 from typing import Any
 
-# JSON Schema for .deepwork.policy.yml files
-# Policies are defined as an array of policy objects
-POLICY_SCHEMA: dict[str, Any] = {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "array",
-    "description": "List of policies that trigger based on file changes",
-    "items": {
-        "type": "object",
-        "required": ["name", "trigger"],
-        "properties": {
-            "name": {
-                "type": "string",
-                "minLength": 1,
-                "description": "Friendly name for the policy",
-            },
-            "trigger": {
-                "oneOf": [
-                    {
-                        "type": "string",
-                        "minLength": 1,
-                        "description": "Glob pattern for files that trigger this policy",
-                    },
-                    {
-                        "type": "array",
-                        "items": {"type": "string", "minLength": 1},
-                        "minItems": 1,
-                        "description": "List of glob patterns for files that trigger this policy",
-                    },
-                ],
-                "description": "Glob pattern(s) for files that, if changed, should trigger this policy",
-            },
-            "safety": {
-                "oneOf": [
-                    {
-                        "type": "string",
-                        "minLength": 1,
-                        "description": "Glob pattern for safety files",
-                    },
-                    {
-                        "type": "array",
-                        "items": {"type": "string", "minLength": 1},
-                        "description": "List of glob patterns for safety files",
-                    },
-                ],
-                "description": "Glob pattern(s) for files that, if also changed, mean the policy doesn't need to trigger",
-            },
-            "instructions": {
-                "type": "string",
-                "minLength": 1,
-                "description": "Instructions to give the agent when this policy triggers",
-            },
-            "instructions_file": {
-                "type": "string",
-                "minLength": 1,
-                "description": "Path to a file containing instructions (alternative to inline instructions)",
-            },
-            "compare_to": {
-                "type": "string",
-                "enum": ["base", "default_tip", "prompt"],
-                "description": (
-                    "What to compare against when detecting changed files. "
-                    "'base' (default) compares to the base of the current branch. "
-                    "'default_tip' compares to the tip of the default branch. "
-                    "'prompt' compares to the state at the start of the prompt."
-                ),
-            },
-        },
-        "oneOf": [
-            {"required": ["instructions"]},
-            {"required": ["instructions_file"]},
-        ],
-        "additionalProperties": False,
-    },
-}
+from deepwork.utils.validation import load_schema
+
+# Valid compare_to values for policies
+COMPARE_TO_VALUES = frozenset({"base", "default_tip", "prompt"})
+DEFAULT_COMPARE_TO = "base"
+
+# Schema name for loading (corresponds to policy.schema.json)
+POLICY_SCHEMA_NAME = "policy.schema"
+
+
+def get_policy_schema() -> dict[str, Any]:
+    """
+    Load and return the policy schema from the JSON Schema file.
+
+    Returns:
+        The policy JSON Schema as a dictionary
+    """
+    return load_schema(POLICY_SCHEMA_NAME)
+
+
+# For backward compatibility, expose POLICY_SCHEMA as a module-level variable
+# This is loaded lazily to avoid circular imports at module load time
+def __getattr__(name: str) -> Any:
+    if name == "POLICY_SCHEMA":
+        return get_policy_schema()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

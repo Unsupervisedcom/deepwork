@@ -8,7 +8,7 @@ from typing import Any
 import yaml
 
 from deepwork.schemas.policy_schema import POLICY_SCHEMA
-from deepwork.utils.validation import ValidationError, validate_against_schema
+from deepwork.utils.validation import ValidationError, validate_and_set_defaults
 
 
 class PolicyParseError(Exception):
@@ -280,9 +280,9 @@ def parse_policy_file(policy_path: Path | str, base_dir: Path | None = None) -> 
             f"Policy file must contain a list of policies, got {type(policy_data).__name__}"
         )
 
-    # Validate against schema
+    # Validate against schema and apply defaults
     try:
-        validate_against_schema(policy_data, POLICY_SCHEMA)
+        validate_and_set_defaults(policy_data, POLICY_SCHEMA)
     except ValidationError as e:
         raise PolicyParseError(f"Policy definition validation failed: {e}") from e
 

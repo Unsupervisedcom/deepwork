@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://deepwork.dev/schemas/policy.schema.json",
+  "title": "DeepWork Policy Definition",
+  "description": "Schema for .deepwork.policy.yml files that define policies triggering based on file changes",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/policy"
+  },
+  "$defs": {
+    "globPattern": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A glob pattern for matching file paths (supports * and ** wildcards)"
+    },
+    "globPatternOrArray": {
+      "description": "One or more glob patterns for matching file paths",
+      "oneOf": [
+        { "$ref": "#/$defs/globPattern" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/globPattern" },
+          "minItems": 1
+        }
+      ]
+    },
+    "policy": {
+      "type": "object",
+      "description": "A policy that triggers based on file changes",
+      "required": ["name", "trigger"],
+      "additionalProperties": false,
+      "oneOf": [
+        { "required": ["instructions"] },
+        { "required": ["instructions_file"] }
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Friendly name for the policy"
+        },
+        "trigger": {
+          "$ref": "#/$defs/globPatternOrArray",
+          "description": "Glob pattern(s) for files that, if changed, should trigger this policy"
+        },
+        "safety": {
+          "$ref": "#/$defs/globPatternOrArray",
+          "description": "Glob pattern(s) for files that, if also changed, mean the policy doesn't need to trigger"
+        },
+        "instructions": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Instructions to give the agent when this policy triggers"
+        },
+        "instructions_file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to a file containing instructions (alternative to inline instructions)"
+        },
+        "compare_to": {
+          "type": "string",
+          "enum": ["base", "default_tip", "prompt"],
+          "default": "base",
+          "description": "What to compare against when detecting changed files. 'base' (default) compares to the base of the current branch. 'default_tip' compares to the tip of the default branch. 'prompt' compares to the state at the start of the prompt."
+        }
+      }
+    }
+  }
+}
