@@ -57,6 +57,10 @@ class AgentAdapter(ABC):
     commands_dir: ClassVar[str] = "commands"
     command_template: ClassVar[str] = "command-job-step.md.jinja"
 
+    # Instructions for reloading commands after sync (shown to users)
+    # Subclasses should override with platform-specific instructions.
+    reload_instructions: ClassVar[str] = "Restart your AI assistant session to use the new commands."
+
     # Mapping from generic CommandLifecycleHook to platform-specific event names.
     # Subclasses should override this to provide platform-specific mappings.
     hook_name_mapping: ClassVar[dict[CommandLifecycleHook, str]] = {}
@@ -253,6 +257,12 @@ class ClaudeAdapter(AgentAdapter):
     display_name = "Claude Code"
     config_dir = ".claude"
 
+    # Claude Code doesn't have a reload command - must restart session
+    reload_instructions: ClassVar[str] = (
+        "Type 'exit' to leave your current session, then run 'claude' "
+        "(fresh start) or 'claude --resume' (keep conversation history)."
+    )
+
     # Claude Code uses PascalCase event names
     hook_name_mapping: ClassVar[dict[CommandLifecycleHook, str]] = {
         CommandLifecycleHook.AFTER_AGENT: "Stop",
@@ -332,6 +342,11 @@ class GeminiAdapter(AgentAdapter):
     display_name = "Gemini CLI"
     config_dir = ".gemini"
     command_template = "command-job-step.toml.jinja"
+
+    # Gemini CLI can reload with /memory refresh
+    reload_instructions: ClassVar[str] = (
+        "Run '/memory refresh' to reload commands, or restart your Gemini CLI session."
+    )
 
     # Gemini CLI does NOT support command-level hooks
     # Hooks are global/project-level in settings.json, not per-command
