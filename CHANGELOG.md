@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated README with PyPI install instructions using pipx, uv, and pip (#22)
 - Updated deepwork_jobs job version to 0.2.0
 
+### Fixed
+- Stop hooks now correctly return blocking JSON when policies fire
+- Added shell script tests to verify stop hook blocking behavior
+
 ### Removed
 - `refine` step (replaced by `learn` command) (#27)
 - `get_changed_files.sh` hook (logic moved to Python policy evaluator) (#34)

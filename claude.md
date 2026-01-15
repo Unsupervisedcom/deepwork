@@ -73,6 +73,21 @@ uv sync                  # Install dependencies
 uv run pytest           # Run tests
 ```
 
+## Running DeepWork CLI (Claude Code Web Environment)
+
+When running in Claude Code on the web (not local installations), the `deepwork` CLI may not be available. To run DeepWork commands:
+
+```bash
+# Install the package in editable mode (one-time setup)
+pip install -e .
+
+# Then run commands normally
+deepwork install --platform claude
+deepwork sync
+```
+
+**Note**: In web environments, you may also need to install dependencies like `jsonschema`, `pyyaml`, `gitpython`, `jinja2`, and `click` if they're not already available.
+
 ## How DeepWork Works
 
 ### 1. Installation
