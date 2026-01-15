@@ -51,7 +51,9 @@ jobs:
         if: fromJSON(steps.pr_check.outputs.result).isOpen
         id: check_loop
         run: |
-          # Check last 3 commits for auto-fix tag to be more robust
+          # Check last 3 commits for auto-fix tag to prevent infinite loops.
+          # We look back 3 commits as a lightweight safeguard: this is enough to catch
+          # any recent auto-fix pushes triggered by this workflow without scanning the full history.
           RECENT_COMMITS=$(git log -3 --pretty=%s)
           if echo "$RECENT_COMMITS" | grep -q "\[auto-fix\]"; then
             echo "skip=true" >> $GITHUB_OUTPUT
@@ -59,14 +61,6 @@ jobs:
           else
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
-
-      - name: Setup git identity
-        if: |
-          fromJSON(steps.pr_check.outputs.result).isOpen &&
-          steps.check_loop.outputs.skip != 'true'
-        run: |
-          git config --global user.email "claude[bot]@users.noreply.github.com"
-          git config --global user.name "claude[bot]"
 
       - name: Get CI failure details
         if: |
@@ -107,6 +101,8 @@ jobs:
                   repo: context.repo.repo,
                   job_id: job.id
                 });
+                // Truncate logs to 50000 characters to stay within Claude's context window
+                // and GitHub API response size limits
                 errorLogs.push({
                   jobName: job.name,
                   logs: logs.data.substring(0, 50000)
@@ -168,7 +164,7 @@ jobs:
             ${{ toJSON(fromJSON(steps.failure_details.outputs.result).errorLogs) }}
             ```
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--allowedTools 'Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git:*),Bash(uv:*),Bash(python:*),Bash(pytest:*),Bash(ruff:*)'"
+          claude_args: --allowedTools Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(uv:*),Bash(python:*),Bash(pytest:*),Bash(ruff:*)
 
       - name: Comment on PR with fix status
         if: |
@@ -179,40 +175,61 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const prNumber = ${{ github.event.workflow_run.pull_requests[0].number }};
+            // Safely access pull request number with null check
+            const pullRequests = context.payload.workflow_run?.pull_requests;
+            if (!pullRequests || pullRequests.length === 0) {
+              console.log('No pull request found, skipping comment');
+              return;
+            }
+            const prNumber = pullRequests[0].number;
+            
+            // Safely access failure details with null check
+            const failureDetails = '${{ steps.failure_details.outputs.result }}';
+            if (!failureDetails) {
+              console.log('No failure details available, skipping comment');
+              return;
+            }
+            const failureData = JSON.parse(failureDetails);
+            
             const claudeOutcome = '${{ steps.claude.outcome }}';
-            const hasFailedJobs = ${{ fromJSON(steps.failure_details.outputs.result).hasFailedJobs }};
+            const hasFailedJobs = failureData.hasFailedJobs;
             const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
-            const failureUrl = '${{ fromJSON(steps.failure_details.outputs.result).runUrl }}';
+            const failureUrl = failureData.runUrl;
 
             let body;
             if (!hasFailedJobs) {
-              body = `## CI Auto-Fix Skipped
-
-            The CI workflow failed but no individual jobs failed (possibly a setup/infrastructure issue).
-
-            - **Fix workflow run**: ${runUrl}
-            - **Original failure**: ${failureUrl}
-
-            Manual investigation may be required.`;
+              body = [
+                '## CI Auto-Fix Skipped',
+                '',
+                'The CI workflow failed but no individual jobs failed (possibly a setup/infrastructure issue).',
+                '',
+                `- **Fix workflow run**: ${runUrl}`,
+                `- **Original failure**: ${failureUrl}`,
+                '',
+                'Manual investigation may be required.'
+              ].join('\n');
             } else if (claudeOutcome === 'success') {
-              body = `## CI Auto-Fix Attempted
-
-            Claude has analyzed the CI failure and attempted to fix the issues.
-
-            - **Fix workflow run**: ${runUrl}
-            - **Original failure**: ${failureUrl}
-
-            Please review the changes pushed to this branch.`;
+              body = [
+                '## CI Auto-Fix Attempted',
+                '',
+                'Claude has analyzed the CI failure and attempted to fix the issues.',
+                '',
+                `- **Fix workflow run**: ${runUrl}`,
+                `- **Original failure**: ${failureUrl}`,
+                '',
+                'Please review the changes pushed to this branch.'
+              ].join('\n');
             } else {
-              body = `## CI Auto-Fix Failed
-
-            Claude attempted to fix the CI failure but encountered issues.
-
-            - **Fix workflow run**: ${runUrl}
-            - **Original failure**: ${failureUrl}
-
-            Manual intervention may be required.`;
+              body = [
+                '## CI Auto-Fix Failed',
+                '',
+                'Claude attempted to fix the CI failure but encountered issues.',
+                '',
+                `- **Fix workflow run**: ${runUrl}`,
+                `- **Original failure**: ${failureUrl}`,
+                '',
+                'Manual intervention may be required.'
+              ].join('\n');
             }
 
             await github.rest.issues.createComment({
