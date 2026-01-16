@@ -1,8 +1,10 @@
 """
-Policy check hook for DeepWork.
+Policy check hook for DeepWork (v2).
 
 This hook evaluates policies when the agent finishes (after_agent event).
 It uses the wrapper system for cross-platform compatibility.
+
+Policy files are loaded from .deepwork/policies/ directory as frontmatter markdown files.
 
 Usage (via shell wrapper):
     claude_hook.sh deepwork.hooks.policy_check
@@ -21,11 +23,25 @@ import subprocess
 import sys
 from pathlib import Path
 
+from deepwork.core.command_executor import (
+    all_commands_succeeded,
+    format_command_errors,
+    run_command_action,
+)
 from deepwork.core.policy_parser import (
+    ActionType,
+    DetectionMode,
     Policy,
+    PolicyEvaluationResult,
     PolicyParseError,
-    evaluate_policy,
-    parse_policy_file,
+    evaluate_policies,
+    load_policies_from_directory,
+)
+from deepwork.core.policy_queue import (
+    ActionResult,
+    PolicyQueue,
+    QueueEntryStatus,
+    compute_trigger_hash,
 )
 from deepwork.hooks.wrapper import (
     HookInput,
@@ -61,6 +77,41 @@ def get_default_branch() -> str:
             continue
 
     return "main"
+
+
+def get_baseline_ref(mode: str) -> str:
+    """Get the baseline reference for a compare_to mode."""
+    if mode == "base":
+        try:
+            default_branch = get_default_branch()
+            result = subprocess.run(
+                ["git", "merge-base", "HEAD", f"origin/{default_branch}"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            return result.stdout.strip()
+        except subprocess.CalledProcessError:
+            return "base"
+    elif mode == "default_tip":
+        try:
+            default_branch = get_default_branch()
+            result = subprocess.run(
+                ["git", "rev-parse", f"origin/{default_branch}"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            return result.stdout.strip()
+        except subprocess.CalledProcessError:
+            return "default_tip"
+    elif mode == "prompt":
+        baseline_path = Path(".deepwork/.last_work_tree")
+        if baseline_path.exists():
+            # Use file modification time as reference
+            return str(int(baseline_path.stat().st_mtime))
+        return "prompt"
+    return mode
 
 
 def get_changed_files_base() -> list[str]:
@@ -188,8 +239,15 @@ def get_changed_files_for_mode(mode: str) -> list[str]:
 
 
 def extract_promise_tags(text: str) -> set[str]:
-    """Extract policy names from <promise> tags in text."""
-    pattern = r"<promise>✓\s*([^<]+)</promise>"
+    """
+    Extract policy names from <promise> tags in text.
+
+    Supports both:
+    - <promise>✓ Policy Name</promise>
+    - <promise>Policy Name</promise>
+    """
+    # Match with or without checkmark
+    pattern = r"<promise>(?:✓\s*)?([^<]+)</promise>"
     matches = re.findall(pattern, text, re.IGNORECASE | re.DOTALL)
     return {m.strip() for m in matches}
 
@@ -247,28 +305,52 @@ def extract_conversation_from_transcript(transcript_path: str, platform: Platfor
         return ""
 
 
-def format_policy_message(policies: list[Policy]) -> str:
-    """Format triggered policies into a message for the agent."""
+def format_policy_message(results: list[PolicyEvaluationResult]) -> str:
+    """
+    Format triggered policies into a concise message for the agent.
+
+    Groups policies by name and uses minimal formatting.
+    """
     lines = ["## DeepWork Policies Triggered", ""]
     lines.append(
         "Comply with the following policies. "
         "To mark a policy as addressed, include `<promise>✓ Policy Name</promise>` "
-        "in your response (replace Policy Name with the actual policy name)."
+        "in your response."
     )
     lines.append("")
 
-    for policy in policies:
-        lines.append(f"### Policy: {policy.name}")
+    # Group results by policy name
+    by_name: dict[str, list[PolicyEvaluationResult]] = {}
+    for result in results:
+        name = result.policy.name
+        if name not in by_name:
+            by_name[name] = []
+        by_name[name].append(result)
+
+    for name, policy_results in by_name.items():
+        policy = policy_results[0].policy
+        lines.append(f"## {name}")
         lines.append("")
-        lines.append(policy.instructions.strip())
-        lines.append("")
+
+        # For set/pair modes, show the correspondence violations concisely
+        if policy.detection_mode in (DetectionMode.SET, DetectionMode.PAIR):
+            for result in policy_results:
+                for trigger_file in result.trigger_files:
+                    for missing_file in result.missing_files:
+                        lines.append(f"{trigger_file} → {missing_file}")
+            lines.append("")
+
+        # Show instructions
+        if policy.instructions:
+            lines.append(policy.instructions.strip())
+            lines.append("")
 
     return "\n".join(lines)
 
 
 def policy_check_hook(hook_input: HookInput) -> HookOutput:
     """
-    Main hook logic for policy evaluation.
+    Main hook logic for policy evaluation (v2).
 
     This is called for after_agent events to check if policies need attention
     before allowing the agent to complete.
@@ -277,9 +359,9 @@ def policy_check_hook(hook_input: HookInput) -> HookOutput:
     if hook_input.event != NormalizedEvent.AFTER_AGENT:
         return HookOutput()
 
-    # Check if policy file exists
-    policy_path = Path(".deepwork.policy.yml")
-    if not policy_path.exists():
+    # Check if policies directory exists
+    policies_dir = Path(".deepwork/policies")
+    if not policies_dir.exists():
         return HookOutput()
 
     # Extract conversation context from transcript
@@ -287,18 +369,21 @@ def policy_check_hook(hook_input: HookInput) -> HookOutput:
         hook_input.transcript_path, hook_input.platform
     )
 
-    # Extract promise tags
+    # Extract promise tags (case-insensitive)
     promised_policies = extract_promise_tags(conversation_context)
 
-    # Parse policies
+    # Load policies
     try:
-        policies = parse_policy_file(policy_path)
+        policies = load_policies_from_directory(policies_dir)
     except PolicyParseError as e:
-        print(f"Error parsing policy file: {e}", file=sys.stderr)
+        print(f"Error loading policies: {e}", file=sys.stderr)
         return HookOutput()
 
     if not policies:
         return HookOutput()
+
+    # Initialize queue
+    queue = PolicyQueue()
 
     # Group policies by compare_to mode
     policies_by_mode: dict[str, list[Policy]] = {}
@@ -308,25 +393,105 @@ def policy_check_hook(hook_input: HookInput) -> HookOutput:
             policies_by_mode[mode] = []
         policies_by_mode[mode].append(policy)
 
-    # Evaluate policies
-    fired_policies: list[Policy] = []
+    # Evaluate policies and collect results
+    prompt_results: list[PolicyEvaluationResult] = []
+    command_errors: list[str] = []
+
     for mode, mode_policies in policies_by_mode.items():
         changed_files = get_changed_files_for_mode(mode)
         if not changed_files:
             continue
 
-        for policy in mode_policies:
-            if policy.name in promised_policies:
+        baseline_ref = get_baseline_ref(mode)
+
+        # Evaluate which policies fire
+        results = evaluate_policies(mode_policies, changed_files, promised_policies)
+
+        for result in results:
+            policy = result.policy
+
+            # Compute trigger hash for queue deduplication
+            trigger_hash = compute_trigger_hash(
+                policy.name,
+                result.trigger_files,
+                baseline_ref,
+            )
+
+            # Check if already in queue (passed/skipped)
+            existing = queue.get_entry(trigger_hash)
+            if existing and existing.status in (
+                QueueEntryStatus.PASSED,
+                QueueEntryStatus.SKIPPED,
+            ):
                 continue
-            if evaluate_policy(policy, changed_files):
-                fired_policies.append(policy)
 
-    if not fired_policies:
-        return HookOutput()
+            # Create queue entry if new
+            if not existing:
+                queue.create_entry(
+                    policy_name=policy.name,
+                    policy_file=f"{policy.filename}.md",
+                    trigger_files=result.trigger_files,
+                    baseline_ref=baseline_ref,
+                    expected_files=result.missing_files,
+                )
 
-    # Format message and return blocking response
-    message = format_policy_message(fired_policies)
-    return HookOutput(decision="block", reason=message)
+            # Handle based on action type
+            if policy.action_type == ActionType.COMMAND:
+                # Run command action
+                if policy.command_action:
+                    repo_root = Path.cwd()
+                    cmd_results = run_command_action(
+                        policy.command_action,
+                        result.trigger_files,
+                        repo_root,
+                    )
+
+                    if all_commands_succeeded(cmd_results):
+                        # Command succeeded, mark as passed
+                        queue.update_status(
+                            trigger_hash,
+                            QueueEntryStatus.PASSED,
+                            ActionResult(
+                                type="command",
+                                output=cmd_results[0].stdout if cmd_results else None,
+                                exit_code=0,
+                            ),
+                        )
+                    else:
+                        # Command failed
+                        error_msg = format_command_errors(cmd_results)
+                        command_errors.append(f"## {policy.name}\n{error_msg}")
+                        queue.update_status(
+                            trigger_hash,
+                            QueueEntryStatus.FAILED,
+                            ActionResult(
+                                type="command",
+                                output=error_msg,
+                                exit_code=cmd_results[0].exit_code if cmd_results else -1,
+                            ),
+                        )
+
+            elif policy.action_type == ActionType.PROMPT:
+                # Collect for prompt output
+                prompt_results.append(result)
+
+    # Build response
+    messages: list[str] = []
+
+    # Add command errors if any
+    if command_errors:
+        messages.append("## Command Policy Errors\n")
+        messages.extend(command_errors)
+        messages.append("")
+
+    # Add prompt policies if any
+    if prompt_results:
+        messages.append(format_policy_message(prompt_results))
+
+    if messages:
+        return HookOutput(decision="block", reason="\n".join(messages))
+
+    return HookOutput()
 
 
 def main() -> None:

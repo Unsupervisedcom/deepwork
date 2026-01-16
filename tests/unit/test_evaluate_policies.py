@@ -1,6 +1,6 @@
 """Tests for the hooks evaluate_policies module."""
 
-from deepwork.core.policy_parser import Policy
+from deepwork.core.policy_parser import PolicyV1
 from deepwork.hooks.evaluate_policies import extract_promise_tags, format_policy_message
 
 
@@ -48,7 +48,7 @@ class TestFormatPolicyMessage:
     def test_formats_single_policy(self) -> None:
         """Test formatting a single policy."""
         policies = [
-            Policy(
+            PolicyV1(
                 name="Test Policy",
                 triggers=["src/*"],
                 safety=[],
@@ -65,13 +65,13 @@ class TestFormatPolicyMessage:
     def test_formats_multiple_policies(self) -> None:
         """Test formatting multiple policies."""
         policies = [
-            Policy(
+            PolicyV1(
                 name="Policy 1",
                 triggers=["src/*"],
                 safety=[],
                 instructions="Do thing 1.",
             ),
-            Policy(
+            PolicyV1(
                 name="Policy 2",
                 triggers=["test/*"],
                 safety=[],
@@ -88,7 +88,7 @@ class TestFormatPolicyMessage:
     def test_strips_instruction_whitespace(self) -> None:
         """Test that instruction whitespace is stripped."""
         policies = [
-            Policy(
+            PolicyV1(
                 name="Test",
                 triggers=["*"],
                 safety=[],
