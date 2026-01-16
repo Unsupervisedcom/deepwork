@@ -11,26 +11,37 @@ The deepwork policy system enables automated enforcement of development standard
 
 ## Core Concepts
 
-### Policy Types
+### Policy Structure
 
-The system supports three policy types:
+Every policy has two orthogonal aspects:
 
-| Type | Purpose | Trigger Direction |
-|------|---------|-------------------|
-| **Instruction policies** | Prompt agent with instructions | Any matched file |
-| **Command policies** | Run idempotent commands | Any matched file |
-| **Correspondence policies** | Enforce file relationships | When relationship is incomplete |
+**Detection Mode** - How the policy decides when to fire:
 
-### File Correspondence
+| Mode | Field | Description |
+|------|-------|-------------|
+| **Trigger/Safety** | `trigger`, `safety` | Fire when trigger matches and safety doesn't |
+| **Set** | `set` | Fire when file correspondence is incomplete (bidirectional) |
+| **Pair** | `pair` | Fire when file correspondence is incomplete (directional) |
 
-Correspondence policies define relationships between files that should change together.
+**Action Type** - What happens when the policy fires:
 
-**Sets (Bidirectional)**
+| Type | Field | Description |
+|------|-------|-------------|
+| **Prompt** (default) | (markdown body) | Show instructions to the agent |
+| **Command** | `action.command` | Run an idempotent command |
+
+### Detection Modes
+
+**Trigger/Safety Mode**
+- Simplest mode: fire when files match `trigger` and none match `safety`
+- Good for general checks like "source changed, verify README"
+
+**Set Mode (Bidirectional Correspondence)**
 - Define N patterns that share a common variable path
 - If ANY file matching one pattern changes, ALL corresponding files should change
 - Example: Source files and their tests
 
-**Pairs (Directional)**
+**Pair Mode (Directional Correspondence)**
 - Define a trigger pattern and one or more expected patterns
 - Changes to trigger files require corresponding expected files to also change
 - Changes to expected files alone do not trigger the policy
@@ -51,22 +62,14 @@ Special variable names:
 - `{**}` - Explicit multi-segment wildcard
 - `{*}` - Explicit single-segment wildcard
 
-### Actions
-
-Policies can specify two types of actions:
+### Action Types
 
 **Prompt Action (default)**
-```yaml
-action:
-  type: prompt
-  instructions: |
-    Please review the changes...
-```
+The markdown body of the policy file serves as instructions shown to the agent.
 
 **Command Action**
 ```yaml
 action:
-  type: command
   command: "ruff format {file}"
   run_for: each_match
 ```
@@ -156,9 +159,7 @@ The queue persists policy trigger state in `.deepwork/tmp/policy/queue/`:
 ```
 
 **Queue Cleanup**:
-- Entries older than 24 hours are automatically pruned
-- `passed` and `skipped` entries are pruned after 1 hour
-- Manual cleanup via `deepwork policy clear-queue`
+Since `.deepwork/tmp/` is gitignored, queue entries are transient local state. No aggressive cleanup is required—entries can accumulate without causing issues. The directory can be safely deleted at any time to reset state.
 
 ### Evaluator
 
@@ -296,61 +297,27 @@ When many policies trigger, the agent receives excessive output, degrading perfo
 ### Solution
 
 **1. Output Batching**
-Group related policies into single messages:
+Group related policies into concise sections:
 
 ```
 The following policies require attention:
 
-## File Correspondence Issues (3)
-
-1. **Source/Test Pairing**: src/auth/login.py changed without tests/auth/login_test.py
-2. **Source/Test Pairing**: src/api/users.py changed without tests/api/users_test.py
-3. **API Documentation**: api/users.py changed without docs/api/users.md
- 
-[FEEDBACK] - these sections should all be shorter. Ex:
-## Source/Test Pairings
-src/auth/login.py changed without tests/auth/login_test.py
-src/api/users.py changed without tests/api/users_test.py
+## Source/Test Pairing
+src/auth/login.py → tests/auth/login_test.py
+src/api/users.py → tests/api/users_test.py
 
 ## API Documentation
-api/users.py changed without docs/api/users.md
+api/users.py → docs/api/users.md
 
-## Code Quality (1)
-
-4. **README Accuracy**: Source files changed, please verify README.md
-```
-
-**2. Priority Levels**
-Policies can specify priority (critical, high, normal, low):
-
-```yaml
-- name: "Security Review"
-  trigger: "src/auth/**/*"
-  priority: critical
-```
-
-Only critical and high priority shown immediately. Normal/low shown in summary.
-
-**3. Deferred Policies**
-Low-priority policies can be deferred to end of session:
-
-```yaml
-- name: "Documentation Check"
-  trigger: "src/**/*"
-  priority: low
-  defer: true  # Show at session end, not immediately
-```
-
-**4. Collapsed Instructions**
-Long instructions are truncated with expansion available:
-
-```
 ## README Accuracy
-
-Source code changed. Please verify README.md is accurate.
-
-[+] Show full instructions (15 lines)
+Source files changed. Verify README.md is accurate.
 ```
+
+**2. Grouped by Policy Name**
+Multiple violations of the same policy are grouped together under a single heading, keeping output compact.
+
+**3. Minimal Decoration**
+Avoid excessive formatting, numbering, or emphasis. Use simple arrow notation for correspondence violations.
 
 ## State Persistence
 
@@ -363,7 +330,7 @@ Source code changed. Please verify README.md is accurate.
 │   ├── source-test-pairing.md
 │   ├── api-documentation.md
 │   └── python-formatting.md
-├── tmp/
+├── tmp/                     # GITIGNORED - transient state
 │   └── policy/
 │       ├── queue/           # Queue entries
 │       │   ├── abc123.queued.json
@@ -375,15 +342,17 @@ Source code changed. Please verify README.md is accurate.
 └── policy_state.json        # Session state summary
 ```
 
+**Important:** The entire `.deepwork/tmp/` directory is gitignored. All queue entries, baselines, and caches are local transient state that is not committed. This means cleanup is not critical—files can accumulate and will be naturally cleaned when the directory is deleted or the repo is re-cloned.
+
 ### Policy File Format
 
 Each policy is a markdown file with YAML frontmatter:
 
 ```markdown
 ---
+name: README Accuracy
 trigger: src/**/*.py
 safety: README.md
-priority: normal
 ---
 Instructions shown to the agent when this policy fires.
 
@@ -425,15 +394,9 @@ Multiple baselines can exist for different prompts in a session.
     ┌─────────┐   ┌─────────┐   ┌─────────┐
     │ .passed │   │ .failed │   │.skipped │
     └─────────┘   └─────────┘   └─────────┘
-         │             │             │
-         └─────────────┼─────────────┘
-                       │
-                       ▼
-                  ┌─────────┐
-                  │ Pruned  │
-                  │(cleanup)│
-                  └─────────┘
 ```
+
+Terminal states persist in `.deepwork/tmp/` (gitignored) until manually cleared or the directory is deleted.
 
 ## Error Handling
 
@@ -508,10 +471,7 @@ In `.deepwork/config.yml`:
 policy:
   enabled: true
   policies_dir: .deepwork/policies  # Can be customized
-  queue_retention_hours: 24
-  max_queued_entries: 100
-  output_mode: batched  # batched, individual, summary
-  priority_threshold: normal  # Show this priority and above
+  output_mode: batched  # batched or individual
 ```
 
 ## Performance Considerations
