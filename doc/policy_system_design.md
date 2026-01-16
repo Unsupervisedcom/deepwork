@@ -306,6 +306,14 @@ The following policies require attention:
 1. **Source/Test Pairing**: src/auth/login.py changed without tests/auth/login_test.py
 2. **Source/Test Pairing**: src/api/users.py changed without tests/api/users_test.py
 3. **API Documentation**: api/users.py changed without docs/api/users.md
+ 
+[FEEDBACK] - these sections should all be shorter. Ex:
+## Source/Test Pairings
+src/auth/login.py changed without tests/auth/login_test.py
+src/api/users.py changed without tests/api/users_test.py
+
+## API Documentation
+api/users.py changed without docs/api/users.md
 
 ## Code Quality (1)
 

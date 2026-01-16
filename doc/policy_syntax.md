@@ -36,7 +36,7 @@ class AuthService:
 trigger: src/**/*
 safety: README.md
 ---
-Source code changed. Please verify README.md is accurate.
+Source code changed. Please verify README.md is accurate. Note that this is called only once even if there are many changes, so verify all changes.
 
 Check that:
 - All public APIs are documented
