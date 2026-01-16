@@ -201,6 +201,110 @@ class CommandGenerator:
             "stop_hooks": stop_hooks,  # Backward compat: after_agent hooks only
         }
 
+    def _build_meta_command_context(
+        self, job: JobDefinition, adapter: AgentAdapter
+    ) -> dict[str, Any]:
+        """
+        Build template context for a job's meta-command.
+
+        Args:
+            job: Job definition
+            adapter: Agent adapter for platform-specific configuration
+
+        Returns:
+            Template context dictionary
+        """
+        # Build step info for the meta-command
+        steps_info = []
+        for step in job.steps:
+            command_filename = adapter.get_step_command_filename(job.name, step.id, step.exposed)
+            # Extract just the command name (without path and extension)
+            # For Claude: _job_name.step_id.md -> _job_name.step_id
+            # For Gemini: job_name/_step_id.toml -> job_name:_step_id
+            if adapter.name == "gemini":
+                # Gemini uses colon for namespacing: job_name:step_id or job_name:_step_id
+                parts = command_filename.replace(".toml", "").split("/")
+                command_name = ":".join(parts)
+            else:
+                # Claude uses dot for namespacing: _job_name.step_id
+                command_name = command_filename.replace(".md", "")
+
+            steps_info.append({
+                "id": step.id,
+                "name": step.name,
+                "description": step.description,
+                "command_name": command_name,
+                "dependencies": step.dependencies,
+                "exposed": step.exposed,
+            })
+
+        return {
+            "job_name": job.name,
+            "job_version": job.version,
+            "job_summary": job.summary,
+            "job_description": job.description,
+            "total_steps": len(job.steps),
+            "steps": steps_info,
+        }
+
+    def generate_meta_command(
+        self,
+        job: JobDefinition,
+        adapter: AgentAdapter,
+        output_dir: Path | str,
+    ) -> Path:
+        """
+        Generate the meta-command file for a job.
+
+        The meta-command is the primary user interface for a job, routing
+        user intent to the appropriate step.
+
+        Args:
+            job: Job definition
+            adapter: Agent adapter for the target platform
+            output_dir: Directory to write command file to
+
+        Returns:
+            Path to generated meta-command file
+
+        Raises:
+            GeneratorError: If generation fails
+        """
+        output_dir = Path(output_dir)
+
+        # Create commands subdirectory if needed
+        commands_dir = output_dir / adapter.commands_dir
+        commands_dir.mkdir(parents=True, exist_ok=True)
+
+        # Build context
+        context = self._build_meta_command_context(job, adapter)
+
+        # Load and render template
+        env = self._get_jinja_env(adapter)
+        try:
+            template = env.get_template(adapter.meta_command_template)
+        except TemplateNotFound as e:
+            raise GeneratorError(f"Meta-command template not found: {e}") from e
+
+        try:
+            rendered = template.render(**context)
+        except Exception as e:
+            raise GeneratorError(f"Meta-command template rendering failed: {e}") from e
+
+        # Write meta-command file
+        command_filename = adapter.get_meta_command_filename(job.name)
+        command_path = commands_dir / command_filename
+
+        # Ensure parent directories exist (for Gemini's job_name/index.toml structure)
+        command_path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            safe_write(command_path, rendered)
+        except Exception as e:
+            raise GeneratorError(f"Failed to write meta-command file: {e}") from e
+
+        return command_path
+
     def generate_step_command(
         self,
         job: JobDefinition,
@@ -250,8 +354,8 @@ class CommandGenerator:
         except Exception as e:
             raise GeneratorError(f"Template rendering failed: {e}") from e
 
-        # Write command file
-        command_filename = adapter.get_command_filename(job.name, step.id)
+        # Write command file (hidden by default unless step.exposed is True)
+        command_filename = adapter.get_step_command_filename(job.name, step.id, step.exposed)
         command_path = commands_dir / command_filename
 
         try:
@@ -268,7 +372,7 @@ class CommandGenerator:
         output_dir: Path | str,
     ) -> list[Path]:
         """
-        Generate slash-command files for all steps in a job.
+        Generate all command files for a job: meta-command and step commands.
 
         Args:
             job: Job definition
@@ -276,13 +380,18 @@ class CommandGenerator:
             output_dir: Directory to write command files to
 
         Returns:
-            List of paths to generated command files
+            List of paths to generated command files (meta-command first, then steps)
 
         Raises:
             GeneratorError: If generation fails
         """
         command_paths = []
 
+        # Generate meta-command first (job-level entry point)
+        meta_command_path = self.generate_meta_command(job, adapter, output_dir)
+        command_paths.append(meta_command_path)
+
+        # Generate step commands (hidden by default unless step.exposed is True)
         for step in job.steps:
             command_path = self.generate_step_command(job, step, adapter, output_dir)
             command_paths.append(command_path)

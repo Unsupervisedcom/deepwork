@@ -88,6 +88,7 @@ steps:
     name: "Learn from Job Execution"
     description: "Reflect on conversation to improve job instructions and capture learnings"
     instructions_file: steps/learn.md
+    exposed: true
     inputs:
       - name: job_name
         description: "Name of the job that was run (optional - will auto-detect from conversation)"

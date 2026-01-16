@@ -56,6 +56,7 @@ class AgentAdapter(ABC):
     config_dir: ClassVar[str]
     commands_dir: ClassVar[str] = "commands"
     command_template: ClassVar[str] = "command-job-step.md.jinja"
+    meta_command_template: ClassVar[str] = "command-job-meta.md.jinja"
 
     # Instructions for reloading commands after sync (shown to users)
     # Subclasses should override with platform-specific instructions.
@@ -153,20 +154,38 @@ class AgentAdapter(ABC):
             raise AdapterError("No project root specified")
         return root / self.config_dir / self.commands_dir
 
-    def get_command_filename(self, job_name: str, step_id: str) -> str:
+    def get_meta_command_filename(self, job_name: str) -> str:
         """
-        Get the filename for a command.
+        Get the filename for a job's meta-command.
 
+        The meta-command is the primary user interface for a job.
+        Can be overridden for different file formats.
+
+        Args:
+            job_name: Name of the job
+
+        Returns:
+            Meta-command filename (e.g., "job_name.md")
+        """
+        return f"{job_name}.md"
+
+    def get_step_command_filename(self, job_name: str, step_id: str, exposed: bool = False) -> str:
+        """
+        Get the filename for a step command.
+
+        Step commands are hidden by default (underscore prefix) unless exposed=True.
         Can be overridden for different file formats (e.g., TOML for Gemini).
 
         Args:
             job_name: Name of the job
             step_id: ID of the step
+            exposed: If True, command is visible (no underscore prefix). Default: False.
 
         Returns:
-            Command filename (e.g., "job_name.step_id.md")
+            Command filename (e.g., "_job_name.step_id.md" or "job_name.step_id.md" if exposed)
         """
-        return f"{job_name}.{step_id}.md"
+        prefix = "" if exposed else "_"
+        return f"{prefix}{job_name}.{step_id}.md"
 
     def detect(self, project_root: Path | None = None) -> bool:
         """
@@ -346,6 +365,7 @@ class GeminiAdapter(AgentAdapter):
     display_name = "Gemini CLI"
     config_dir = ".gemini"
     command_template = "command-job-step.toml.jinja"
+    meta_command_template = "command-job-meta.toml.jinja"
 
     # Gemini CLI can reload with /memory refresh
     reload_instructions: ClassVar[str] = (
@@ -356,21 +376,39 @@ class GeminiAdapter(AgentAdapter):
     # Hooks are global/project-level in settings.json, not per-command
     hook_name_mapping: ClassVar[dict[CommandLifecycleHook, str]] = {}
 
-    def get_command_filename(self, job_name: str, step_id: str) -> str:
+    def get_meta_command_filename(self, job_name: str) -> str:
         """
-        Get the filename for a Gemini command.
+        Get the filename for a Gemini job's meta-command.
 
         Gemini uses TOML files and colon namespacing via subdirectories.
-        For job "my_job" and step "step_one", creates: my_job/step_one.toml
+        For job "my_job", creates: my_job/index.toml
+
+        Args:
+            job_name: Name of the job
+
+        Returns:
+            Meta-command filename path (e.g., "my_job/index.toml")
+        """
+        return f"{job_name}/index.toml"
+
+    def get_step_command_filename(self, job_name: str, step_id: str, exposed: bool = False) -> str:
+        """
+        Get the filename for a Gemini step command.
+
+        Gemini uses TOML files and colon namespacing via subdirectories.
+        Step commands are hidden by default (underscore prefix) unless exposed=True.
+        For job "my_job" and step "step_one", creates: my_job/_step_one.toml
 
         Args:
             job_name: Name of the job
             step_id: ID of the step
+            exposed: If True, command is visible (no underscore prefix). Default: False.
 
         Returns:
-            Command filename path (e.g., "my_job/step_one.toml")
+            Command filename path (e.g., "my_job/_step_one.toml" or "my_job/step_one.toml" if exposed)
         """
-        return f"{job_name}/{step_id}.toml"
+        prefix = "" if exposed else "_"
+        return f"{job_name}/{prefix}{step_id}.toml"
 
     def sync_hooks(self, project_path: Path, hooks: dict[str, list[dict[str, Any]]]) -> int:
         """

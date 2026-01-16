@@ -1,0 +1,50 @@
+---
+description: {{ job_summary }}
+---
+
+# {{ job_name }}
+
+You are executing the **{{ job_name }}** job. {{ job_summary }}
+
+{% if job_description %}
+{{ job_description }}
+{% endif %}
+
+## Available Steps
+
+This job has {{ total_steps }} step(s):
+
+{% for step in steps %}
+### {{ step.id }}
+**{{ step.name }}**: {{ step.description }}
+- Command: `{{ step.command_name }}`
+{% if step.dependencies %}
+- Requires: {{ step.dependencies | join(', ') }}
+{% endif %}
+{% endfor %}
+
+## Instructions
+
+Determine what the user wants to do and route to the appropriate step.
+
+1. **Analyze user intent** from the text that follows `/{{ job_name }}`
+
+2. **Match intent to a step**:
+{% for step in steps %}
+   - {{ step.id }}: {{ step.description }}
+{% endfor %}
+
+3. **Invoke the matched step** using the Skill tool:
+   ```
+   Skill: <step_command_name>
+   ```
+
+4. **If intent is ambiguous**, ask the user which step they want:
+   - Present the available steps as numbered options
+   - Use AskUserQuestion to let them choose
+
+**Critical**: You MUST invoke the step using the Skill tool. Do not copy/paste the step's instructions. The Skill tool invocation ensures the step's quality validation hooks fire.
+
+## Context Files
+
+- Job definition: `.deepwork/jobs/{{ job_name }}/job.yml`

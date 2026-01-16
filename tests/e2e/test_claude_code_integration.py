@@ -94,12 +94,14 @@ class TestCommandGenerationE2E:
 
             command_paths = generator.generate_all_commands(job, adapter, commands_dir)
 
-            # Validate commands were generated
-            assert len(command_paths) == 2
+            # Validate commands were generated (1 meta + 2 steps)
+            assert len(command_paths) == 3
 
-            identify_cmd = commands_dir / "commands" / "fruits.identify.md"
-            classify_cmd = commands_dir / "commands" / "fruits.classify.md"
+            meta_cmd = commands_dir / "commands" / "fruits.md"
+            identify_cmd = commands_dir / "commands" / "_fruits.identify.md"
+            classify_cmd = commands_dir / "commands" / "_fruits.classify.md"
 
+            assert meta_cmd.exists()
             assert identify_cmd.exists()
             assert classify_cmd.exists()
 
@@ -127,7 +129,8 @@ class TestCommandGenerationE2E:
             adapter = ClaudeAdapter()
             generator.generate_all_commands(job, adapter, commands_dir)
 
-            identify_cmd = commands_dir / "commands" / "fruits.identify.md"
+            # Step commands are now hidden (underscore prefix)
+            identify_cmd = commands_dir / "commands" / "_fruits.identify.md"
             content = identify_cmd.read_text()
 
             # Claude Code expects specific sections
@@ -152,13 +155,14 @@ class TestCommandGenerationE2E:
             adapter = ClaudeAdapter()
             generator.generate_all_commands(job, adapter, commands_dir)
 
+            # Step commands are now hidden (underscore prefix)
             # First step should have no prerequisites
-            identify_cmd = commands_dir / "commands" / "fruits.identify.md"
+            identify_cmd = commands_dir / "commands" / "_fruits.identify.md"
             identify_content = identify_cmd.read_text()
             assert "## Prerequisites" not in identify_content
 
             # Second step should reference first step
-            classify_cmd = commands_dir / "commands" / "fruits.classify.md"
+            classify_cmd = commands_dir / "commands" / "_fruits.classify.md"
             classify_content = classify_cmd.read_text()
             assert "## Prerequisites" in classify_content
             assert "identify" in classify_content.lower()

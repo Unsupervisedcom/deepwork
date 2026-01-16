@@ -59,8 +59,11 @@ deepwork/                       # DeepWork tool repository
 │       │   └── rules_check.py       # Cross-platform rule evaluation hook
 │       ├── templates/          # Command templates for each platform
 │       │   ├── claude/
-│       │   │   └── command-job-step.md.jinja
+│       │   │   ├── command-job-meta.md.jinja   # Meta-command template
+│       │   │   └── command-job-step.md.jinja   # Step command template
 │       │   ├── gemini/
+│       │   │   ├── command-job-meta.toml.jinja
+│       │   │   └── command-job-step.toml.jinja
 │       │   └── copilot/
 │       ├── standard_jobs/      # Built-in job definitions
 │       │   ├── deepwork_jobs/
@@ -166,9 +169,20 @@ class AgentAdapter(ABC):
     display_name: ClassVar[str]   # "Claude Code"
     config_dir: ClassVar[str]     # ".claude"
     commands_dir: ClassVar[str] = "commands"
+    command_template: ClassVar[str] = "command-job-step.md.jinja"
+    meta_command_template: ClassVar[str] = "command-job-meta.md.jinja"
 
     # Mapping from generic hook names to platform-specific names
     hook_name_mapping: ClassVar[dict[CommandLifecycleHook, str]] = {}
+
+    def get_meta_command_filename(self, job_name: str) -> str:
+        """Get filename for job's meta-command."""
+        return f"{job_name}.md"
+
+    def get_step_command_filename(self, job_name: str, step_id: str, exposed: bool = False) -> str:
+        """Get filename for step command. Hidden by default (underscore prefix)."""
+        prefix = "" if exposed else "_"
+        return f"{prefix}{job_name}.{step_id}.md"
 
     def detect(self, project_root: Path) -> bool:
         """Check if this platform is available in the project."""
@@ -224,46 +238,56 @@ Generates AI-platform-specific command files from job definitions.
 This component is called by the `sync` command to regenerate all commands:
 1. Reads the job definition from `.deepwork/jobs/[job-name]/job.yml`
 2. Loads platform-specific templates
-3. Generates command files for each step in the job
-4. Writes commands to the AI platform's commands directory
+3. Generates the meta-command (job-level entry point)
+4. Generates step command files (hidden by default, exposed if `exposed: true`)
+5. Writes commands to the AI platform's commands directory
+
+**Meta-Command Architecture**:
+
+Each job gets a single user-facing meta-command (e.g., `/deepwork_jobs`) that interprets user intent and routes to appropriate hidden step commands. Steps are hidden by default (underscore prefix) unless marked `exposed: true` in job.yml.
+
+```yaml
+# In job.yml
+steps:
+  - id: define
+    name: "Define Job"
+    # ...  (hidden by default → _deepwork_jobs.define.md)
+
+  - id: learn
+    name: "Learn from Execution"
+    exposed: true  # Visible to users → deepwork_jobs.learn.md
+    # ...
+```
 
 **Example Generation Flow**:
 ```python
 class CommandGenerator:
     def generate_all_commands(self, job: JobDefinition,
-                            platform: PlatformConfig,
+                            adapter: AgentAdapter,
                             output_dir: Path) -> list[Path]:
-        """Generate command files for all steps in a job."""
+        """Generate all command files: meta-command and step commands."""
         command_paths = []
 
-        for step_index, step in enumerate(job.steps):
-            # Load step instructions
-            instructions = read_file(job.job_dir / step.instructions_file)
+        # 1. Generate meta-command (job-level entry point)
+        meta_path = self.generate_meta_command(job, adapter, output_dir)
+        command_paths.append(meta_path)
 
-            # Build template context
-            context = {
-                "job_name": job.name,
-                "step_id": step.id,
-                "step_name": step.name,
-                "step_number": step_index + 1,
-                "total_steps": len(job.steps),
-                "instructions_content": instructions,
-                "user_inputs": [inp for inp in step.inputs if inp.is_user_input()],
-                "file_inputs": [inp for inp in step.inputs if inp.is_file_input()],
-                "outputs": step.outputs,
-                "dependencies": step.dependencies,
-            }
-
-            # Render template
-            template = env.get_template("command-job-step.md.jinja")
-            rendered = template.render(**context)
-
-            # Write to platform's commands directory
-            command_path = output_dir / platform.config_dir / platform.commands_dir / f"{job.name}.{step.id}.md"
-            write_file(command_path, rendered)
-            command_paths.append(command_path)
+        # 2. Generate step commands (hidden by default)
+        for step in job.steps:
+            step_path = self.generate_step_command(job, step, adapter, output_dir)
+            command_paths.append(step_path)
 
         return command_paths
+
+    def generate_step_command(self, job, step, adapter, output_dir):
+        # ... build context ...
+
+        # Write to platform's commands directory
+        # Hidden by default (underscore prefix) unless step.exposed is True
+        command_filename = adapter.get_step_command_filename(job.name, step.id, step.exposed)
+        command_path = output_dir / adapter.config_dir / adapter.commands_dir / command_filename
+        write_file(command_path, rendered)
+        return command_path
 ```
 
 ---
@@ -280,11 +304,14 @@ my-project/                     # User's project (target)
 ├── .claude/                    # Claude Code directory
 │   ├── settings.json           # Includes installed hooks
 │   └── commands/               # Command files
-│       ├── deepwork_jobs.define.md         # Core DeepWork commands
-│       ├── deepwork_jobs.implement.md
-│       ├── deepwork_jobs.refine.md
-│       ├── deepwork_rules.define.md        # Rule management
-│       ├── competitive_research.identify_competitors.md
+│       ├── deepwork_jobs.md                # Meta-command (user-facing entry point)
+│       ├── _deepwork_jobs.define.md        # Hidden step (underscore prefix)
+│       ├── _deepwork_jobs.implement.md     # Hidden step
+│       ├── deepwork_jobs.learn.md          # Exposed step (no underscore)
+│       ├── deepwork_rules.md               # Rules meta-command
+│       ├── _deepwork_rules.define.md       # Hidden step
+│       ├── competitive_research.md         # User job meta-command
+│       ├── _competitive_research.identify_competitors.md  # Hidden steps
 │       └── ...
 ├── .deepwork/                  # DeepWork configuration
 │   ├── config.yml              # Platform config
@@ -531,7 +558,12 @@ Create `competitors.md` with this structure:
 
 When the job is defined and `sync` is run, DeepWork generates command files. Example for Claude Code:
 
-`.deepwork/jobs/competitive_research` a step called `identify_competitors` will generate a command file at `.claude/commands/competitive_research.identify_competitors.md`:
+`.deepwork/jobs/competitive_research` generates:
+- Meta-command: `.claude/commands/competitive_research.md` (user-facing entry point)
+- Hidden step commands: `.claude/commands/_competitive_research.identify_competitors.md` (prefixed with underscore)
+- Exposed step commands: `.claude/commands/competitive_research.step_name.md` (if `exposed: true` in job.yml)
+
+The meta-command routes user intent to the appropriate step command via the Skill tool.
 
 
 # Part 3: Runtime Execution Model
@@ -552,56 +584,56 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
 2. **Define a Job** (once per job type):
    ```
    # In Claude Code
-   User: /deepwork_jobs.define
+   User: /deepwork_jobs define a competitive research workflow
 
-   Claude: I'll help you define a new job. What type of work do you want to define?
-
-   User: Competitive research
+   Claude: [Meta-command routes to /_deepwork_jobs.define]
+          I'll help you define a new job. What type of work do you want to define?
 
    [Interactive dialog to define all the steps]
 
    Claude: ✓ Job 'competitive_research' created with 5 steps
-          Run /deepwork_jobs.implement to generate command files
-          Then run 'deepwork sync' to install commands
+          Run /deepwork_jobs implement to generate command files
 
-   User: /deepwork_jobs.implement
+   User: /deepwork_jobs implement the job
 
-   Claude: [Generates step instruction files]
+   Claude: [Meta-command routes to /_deepwork_jobs.implement]
+          [Generates step instruction files]
           [Runs deepwork sync]
           ✓ Commands installed to .claude/commands/
-          Run /competitive_research.identify_competitors to start
+          Run /competitive_research to start
    ```
 
 3. **Execute a Job Instance** (each time you need to do the work):
    ```
    # In Claude Code
-   User: /competitive_research.identify_competitors
+   User: /competitive_research identify competitors in enterprise SaaS
 
-   Claude: Starting competitive research job...
+   Claude: [Meta-command routes to /_competitive_research.identify_competitors]
+          Starting competitive research job...
           Created branch: deepwork/competitive_research-acme-2026-01-11
 
           Please provide:
-          - Market segment: ?
+          - Market segment: Enterprise SaaS
           - Product category: ?
 
-   User: Market segment: Enterprise SaaS
-         Product category: Project Management
+   User: Product category: Project Management
 
    Claude: [Performs research using web tools, analysis, etc.]
           ✓ Created competitors.md
 
           Found 8 direct competitors and 4 indirect competitors.
-          Review the file and run /competitive_research.primary_research when ready.
+          Review the file and run /competitive_research continue to primary research when ready.
 
    User: [Reviews competitors.md, maybe edits it]
-         /competitive_research.primary_research
+         /competitive_research continue to primary research
 
-   Claude: Continuing competitive research (step 2/5)...
+   Claude: [Meta-command routes to /_competitive_research.primary_research]
+          Continuing competitive research (step 2/5)...
           [Reads competitors.md]
           [Performs primary research on each competitor]
           ✓ Created primary_research.md and competitor_profiles/
 
-          Next: /competitive_research.secondary_research
+          Next step: secondary_research
 
    [Continue through all steps...]
    ```
@@ -616,20 +648,22 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
 
 ## How Claude Code Executes Commands
 
-When user types `/competitive_research.identify_competitors`:
+When user types `/competitive_research identify competitors`:
 
-1. **Command Discovery**:
+1. **Meta-Command Discovery**:
    - Claude Code scans `.claude/commands/` directory
-   - Finds `competitive_research.identify_competitors.md`
-   - Loads the command definition
+   - Finds `competitive_research.md` (the meta-command)
+   - Loads the meta-command definition
 
-2. **Context Loading**:
-   - Command file contains embedded instructions
-   - References to job definition and step files
-   - Claude reads these files to understand the full context
+2. **Intent Routing**:
+   - Meta-command analyzes user text ("identify competitors")
+   - Matches intent to appropriate step (identify_competitors)
+   - Invokes hidden step command via Skill tool: `/_competitive_research.identify_competitors`
 
-3. **Execution**:
-   - Claude follows the instructions in the command
+3. **Step Execution**:
+   - Claude Code loads `_competitive_research.identify_competitors.md`
+   - Step hooks (Stop, PreToolUse, etc.) are active
+   - Claude follows the instructions in the step command
    - Uses its tools (Read, Write, WebSearch, WebFetch, etc.)
    - Creates outputs in the specified format
 
@@ -744,17 +778,18 @@ When all steps are done, remind the user they should:
 
 ### Standard Job: `deepwork_jobs`
 
-DeepWork includes a built-in job called `deepwork_jobs` with three commands for managing jobs:
+DeepWork includes a built-in job called `deepwork_jobs` with a meta-command and step commands for managing jobs:
 
-1. **`/deepwork_jobs.define`** - Interactive job definition wizard
-2. **`/deepwork_jobs.implement`** - Generates step instruction files from job.yml
-3. **`/deepwork_jobs.refine`** - Modifies existing job definitions
+- **`/deepwork_jobs`** - Meta-command (routes to appropriate step)
+- **`/_deepwork_jobs.define`** - Interactive job definition wizard (hidden)
+- **`/_deepwork_jobs.implement`** - Generates step instruction files from job.yml (hidden)
+- **`/deepwork_jobs.learn`** - Learn from job execution (exposed via `exposed: true`)
 
-These commands are installed automatically when you run `deepwork install`.
+These commands are installed automatically when you run `deepwork install`. Users typically interact via the meta-command.
 
-### The `/deepwork_jobs.define` Command
+### The `/deepwork_jobs define` Command
 
-When a user runs `/deepwork_jobs.define` in Claude Code:
+When a user runs `/deepwork_jobs define a new job` in Claude Code, the meta-command routes to `/_deepwork_jobs.define`:
 
 **What Happens**:
 1. Claude engages in interactive dialog to gather:
@@ -769,25 +804,26 @@ When a user runs `/deepwork_jobs.define` in Claude Code:
    └── job.yml                    # Job metadata only
    ```
 
-3. User then runs `/deepwork_jobs.implement` to:
+3. User then runs `/deepwork_jobs implement` to:
    - Generate step instruction files (steps/*.md)
    - Run `deepwork sync` to generate command files
    - Install commands to `.claude/commands/`
 
 4. The workflow is now:
    ```
-   /deepwork_jobs.define     → Creates job.yml
-   /deepwork_jobs.implement  → Creates steps/*.md and syncs commands
+   /deepwork_jobs define     → Routes to /_deepwork_jobs.define → Creates job.yml
+   /deepwork_jobs implement  → Routes to /_deepwork_jobs.implement → Creates steps/*.md and syncs commands
    ```
 
-5. The `/deepwork_jobs.define` command contains:
+5. The `/_deepwork_jobs.define` step command contains:
    - The job definition YAML schema
    - Interactive question flow
    - Job.yml creation logic
 
 **Command File Structure**:
 
-The actual command file `.claude/commands/deepwork_jobs.define.md` contains:
+The meta-command `.claude/commands/deepwork_jobs.md` routes intent to steps.
+The step command `.claude/commands/_deepwork_jobs.define.md` contains:
 
 ```markdown
 ---
@@ -808,14 +844,15 @@ When creating job.yml, use this structure:
 [YAML schema embedded here...]
 ```
 
-### The `/deepwork_jobs.implement` Command
+### The `/deepwork_jobs implement` Command
 
 Generates step instruction files from job.yml and syncs commands:
 
 ```
-User: /deepwork_jobs.implement
+User: /deepwork_jobs implement the competitive_research job
 
-Claude: Reading job definition from .deepwork/jobs/competitive_research/job.yml...
+Claude: [Meta-command routes to /_deepwork_jobs.implement]
+        Reading job definition from .deepwork/jobs/competitive_research/job.yml...
         Generating step instruction files...
         ✓ Created steps/identify_competitors.md
         ✓ Created steps/primary_research.md
@@ -824,45 +861,32 @@ Claude: Reading job definition from .deepwork/jobs/competitive_research/job.yml.
         ✓ Created steps/positioning.md
 
         Running deepwork sync...
-        ✓ Generated 5 command files in .claude/commands/
+        ✓ Generated meta-command: competitive_research.md
+        ✓ Generated 5 hidden step commands in .claude/commands/
 
-        New commands available:
-        - /competitive_research.identify_competitors
-        - /competitive_research.primary_research
-        - /competitive_research.secondary_research
-        - /competitive_research.comparative_report
-        - /competitive_research.positioning
+        Use /competitive_research to start the workflow
 ```
 
-### The `/deepwork_jobs.refine` Command
+### The `/deepwork_jobs.learn` Command
 
-Allows updating existing job definitions:
+After running a job, use the learn command to improve instructions based on the conversation:
 
 ```
-User: /deepwork_jobs.refine
+User: /deepwork_jobs.learn
 
-Claude: Which job would you like to refine?
-        Available jobs:
-        - competitive_research
-        - deepwork_jobs
+Claude: I'll analyze this conversation to improve the job instructions.
 
-User: competitive_research
+        Analyzing what went well and what could be improved...
 
-Claude: Loading competitive_research job definition...
-        What would you like to update?
-        1. Add a new step
-        2. Modify existing step
-        3. Remove a step
-        4. Update metadata
+        Learnings identified:
+        - The identify_competitors step needed more guidance on research sources
+        - Users often asked about handling international competitors
 
-User: Add a new step between primary_research and secondary_research
-
-Claude: [Interactive dialog...]
-        ✓ Added step 'social_media_analysis'
-        ✓ Updated dependencies in job.yml
-        ✓ Updated changelog with version 1.1.0
-        ✓ Please run /deepwork_jobs.implement to generate the new step file
+        ✓ Updated steps/identify_competitors.md with additional guidance
+        ✓ Created learning_summary.md documenting changes
 ```
+
+Note: `/deepwork_jobs.learn` is exposed (visible) because it's a standalone utility that users may want to invoke directly.
 
 ### Template System
 

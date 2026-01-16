@@ -203,6 +203,11 @@ JOB_SCHEMA: dict[str, Any] = {
                         "description": "DEPRECATED: Use hooks.after_agent instead. Stop hooks for quality validation loops.",
                         "items": HOOK_ACTION_SCHEMA,
                     },
+                    "exposed": {
+                        "type": "boolean",
+                        "description": "If true, step command is visible (no underscore prefix). Default: false (hidden).",
+                        "default": False,
+                    },
                 },
                 "additionalProperties": False,
             },

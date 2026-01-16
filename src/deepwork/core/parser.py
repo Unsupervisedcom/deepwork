@@ -108,6 +108,9 @@ class Step:
     # Event names: after_agent, before_tool, before_prompt
     hooks: dict[str, list[HookAction]] = field(default_factory=dict)
 
+    # If true, step command is visible (no underscore prefix). Default: false (hidden).
+    exposed: bool = False
+
     @property
     def stop_hooks(self) -> list[HookAction]:
         """
@@ -144,6 +147,7 @@ class Step:
             outputs=data["outputs"],
             dependencies=data.get("dependencies", []),
             hooks=hooks,
+            exposed=data.get("exposed", False),
         )
 
 
