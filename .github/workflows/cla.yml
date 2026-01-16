@@ -9,7 +9,8 @@ on:
   # Run in merge queue but skip the step (shows as passing check)
   merge_group:
     types: [checks_requested]
-    branches: [main]
+    # Note: Don't use branches filter here - merge queue refs like
+    # gh-readonly-queue/main/pr-N-xxx don't match simple branch globs
   workflow_dispatch:
 
 # Explicitly set permissions for the workflow
