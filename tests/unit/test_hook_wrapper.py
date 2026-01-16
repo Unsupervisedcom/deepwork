@@ -395,12 +395,14 @@ class TestIntegration:
     def test_claude_stop_hook_flow(self) -> None:
         """Test complete flow for Claude Stop hook."""
         # Input from Claude
-        raw_input = json.dumps({
-            "session_id": "sess123",
-            "transcript_path": "/path/transcript.jsonl",
-            "cwd": "/project",
-            "hook_event_name": "Stop",
-        })
+        raw_input = json.dumps(
+            {
+                "session_id": "sess123",
+                "transcript_path": "/path/transcript.jsonl",
+                "cwd": "/project",
+                "hook_event_name": "Stop",
+            }
+        )
 
         # Normalize
         hook_input = normalize_input(raw_input, Platform.CLAUDE)
@@ -419,13 +421,15 @@ class TestIntegration:
     def test_gemini_afteragent_hook_flow(self) -> None:
         """Test complete flow for Gemini AfterAgent hook."""
         # Input from Gemini
-        raw_input = json.dumps({
-            "session_id": "sess456",
-            "transcript_path": "/path/transcript.json",
-            "cwd": "/project",
-            "hook_event_name": "AfterAgent",
-            "timestamp": "2026-01-15T10:00:00Z",
-        })
+        raw_input = json.dumps(
+            {
+                "session_id": "sess456",
+                "transcript_path": "/path/transcript.json",
+                "cwd": "/project",
+                "hook_event_name": "AfterAgent",
+                "timestamp": "2026-01-15T10:00:00Z",
+            }
+        )
 
         # Normalize
         hook_input = normalize_input(raw_input, Platform.GEMINI)

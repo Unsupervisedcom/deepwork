@@ -249,14 +249,18 @@ class HookOutput:
                 # Claude uses different fields depending on event
                 if event == NormalizedEvent.SESSION_START:
                     result.setdefault("hookSpecificOutput", {})
-                    result["hookSpecificOutput"]["hookEventName"] = NORMALIZED_TO_EVENT[platform][event]
+                    result["hookSpecificOutput"]["hookEventName"] = NORMALIZED_TO_EVENT[platform][
+                        event
+                    ]
                     result["hookSpecificOutput"]["additionalContext"] = self.context
                 else:
                     result["systemMessage"] = self.context
             else:
                 # Gemini
                 result.setdefault("hookSpecificOutput", {})
-                result["hookSpecificOutput"]["hookEventName"] = NORMALIZED_TO_EVENT[platform].get(event, str(event))
+                result["hookSpecificOutput"]["hookEventName"] = NORMALIZED_TO_EVENT[platform].get(
+                    event, str(event)
+                )
                 result["hookSpecificOutput"]["additionalContext"] = self.context
 
         # Merge any raw output
