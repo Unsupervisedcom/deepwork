@@ -9,7 +9,7 @@ hooks:
 
             ## Quality Criteria
 
-            Verify the update process completed successfully:
+            **AGENT: TAKE ACTION** - Verify the update process completed successfully:
             1. Changes were made in src/deepwork/standard_jobs/[job_name]/ (NOT in .deepwork/jobs/)
             2. `deepwork install --platform claude` was run
             3. Files in .deepwork/jobs/ match the source files
@@ -161,7 +161,7 @@ No specific files are output by this command.
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
 ### Quality Criteria
-Verify the update process completed successfully:
+**AGENT: TAKE ACTION** - Verify the update process completed successfully:
 1. Changes were made in src/deepwork/standard_jobs/[job_name]/ (NOT in .deepwork/jobs/)
 2. `deepwork install --platform claude` was run
 3. Files in .deepwork/jobs/ match the source files

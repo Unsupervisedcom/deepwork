@@ -11,7 +11,7 @@ hooks:
 
             ## Quality Criteria
 
-            Verify the implementation meets ALL criteria:
+            **AGENT: TAKE ACTION** - Verify the implementation meets ALL criteria:
             1. Platform adapter class is added to src/deepwork/adapters.py
             2. Templates exist in src/deepwork/templates/<platform>/ with appropriate command structure
             3. Tests exist for all new functionality
@@ -343,7 +343,7 @@ This step uses an iterative quality validation loop. After completing your work,
 
 The validation script will be executed automatically when you attempt to complete this step.
 ### Quality Criteria (2)
-Verify the implementation meets ALL criteria:
+**AGENT: TAKE ACTION** - Verify the implementation meets ALL criteria:
 1. Platform adapter class is added to src/deepwork/adapters.py
 2. Templates exist in src/deepwork/templates/<platform>/ with appropriate command structure
 3. Tests exist for all new functionality

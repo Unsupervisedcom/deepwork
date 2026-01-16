@@ -9,7 +9,7 @@ hooks:
 
             ## Quality Criteria
 
-            Verify the research output meets ALL criteria:
+            **AGENT: TAKE ACTION** - Verify the research output meets ALL criteria:
             1. Both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md
             2. Each file has a comment at the top with:
                - Last updated date
@@ -288,7 +288,7 @@ Ensure all outputs are:
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
 ### Quality Criteria
-Verify the research output meets ALL criteria:
+**AGENT: TAKE ACTION** - Verify the research output meets ALL criteria:
 1. Both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md
 2. Each file has a comment at the top with:
    - Last updated date

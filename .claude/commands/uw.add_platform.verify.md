@@ -9,7 +9,7 @@ hooks:
 
             ## Quality Criteria
 
-            Verify the installation meets ALL criteria:
+            **AGENT: TAKE ACTION** - Verify the installation meets ALL criteria:
             1. Platform-specific directories/files are added to the deepwork repo as needed
             2. Running `deepwork install --platform <platform>` completes without errors
             3. Expected command files are created in the platform's command directory
@@ -213,7 +213,7 @@ No specific files are output by this command.
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
 ### Quality Criteria
-Verify the installation meets ALL criteria:
+**AGENT: TAKE ACTION** - Verify the installation meets ALL criteria:
 1. Platform-specific directories/files are added to the deepwork repo as needed
 2. Running `deepwork install --platform <platform>` completes without errors
 3. Expected command files are created in the platform's command directory

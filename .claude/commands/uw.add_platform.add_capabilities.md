@@ -9,7 +9,7 @@ hooks:
 
             ## Quality Criteria
 
-            Verify the capability additions meet ALL criteria:
+            **AGENT: TAKE ACTION** - Verify the capability additions meet ALL criteria:
             1. Any new hooks from the platform (for slash commands only) are added to src/deepwork/schemas/job_schema.py
             2. All existing adapters in src/deepwork/adapters.py are updated with the new hook fields
                (set to None/null if the platform doesn't support that hook)
@@ -242,7 +242,7 @@ Ensure all outputs are:
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
 ### Quality Criteria
-Verify the capability additions meet ALL criteria:
+**AGENT: TAKE ACTION** - Verify the capability additions meet ALL criteria:
 1. Any new hooks from the platform (for slash commands only) are added to src/deepwork/schemas/job_schema.py
 2. All existing adapters in src/deepwork/adapters.py are updated with the new hook fields
    (set to None/null if the platform doesn't support that hook)

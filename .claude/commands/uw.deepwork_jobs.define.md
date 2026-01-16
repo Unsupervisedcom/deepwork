@@ -9,7 +9,7 @@ hooks:
 
             ## Quality Criteria
 
-            Verify the job.yml output meets ALL quality criteria before completing:
+            **AGENT: TAKE ACTION** - Verify the job.yml output meets ALL quality criteria before completing:
 
             1. **User Understanding**: Did you fully understand the user's workflow by asking structured questions?
             2. **Structured Questions Used**: Did you ask structured questions (using the AskUserQuestion tool) to gather user input?
@@ -427,7 +427,7 @@ Ensure all outputs are:
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
 ### Quality Criteria
-Verify the job.yml output meets ALL quality criteria before completing:
+**AGENT: TAKE ACTION** - Verify the job.yml output meets ALL quality criteria before completing:
 
 1. **User Understanding**: Did you fully understand the user's workflow by asking structured questions?
 2. **Structured Questions Used**: Did you ask structured questions (using the AskUserQuestion tool) to gather user input?

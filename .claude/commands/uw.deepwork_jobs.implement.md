@@ -9,7 +9,7 @@ hooks:
 
             ## Quality Criteria
 
-            Verify the implementation meets ALL quality criteria before completing:
+            **AGENT: TAKE ACTION** - Verify the implementation meets ALL quality criteria before completing:
 
             1. **Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?
             2. **Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?
@@ -345,7 +345,7 @@ Ensure all outputs are:
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
 ### Quality Criteria
-Verify the implementation meets ALL quality criteria before completing:
+**AGENT: TAKE ACTION** - Verify the implementation meets ALL quality criteria before completing:
 
 1. **Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?
 2. **Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?

@@ -34,7 +34,7 @@ steps:
     dependencies: []
     stop_hooks:
       - prompt: |
-          Verify the update process completed successfully:
+          **AGENT: TAKE ACTION** - Verify the update process completed successfully:
           1. Changes were made in src/deepwork/standard_jobs/[job_name]/ (NOT in .deepwork/jobs/)
           2. `deepwork install --platform claude` was run
           3. Files in .deepwork/jobs/ match the source files

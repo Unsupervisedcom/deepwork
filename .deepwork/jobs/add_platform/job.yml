@@ -39,7 +39,7 @@ steps:
     hooks:
       after_agent:
         - prompt: |
-            Verify the research output meets ALL criteria:
+            **AGENT: TAKE ACTION** - Verify the research output meets ALL criteria:
             1. Both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md
             2. Each file has a comment at the top with:
                - Last updated date
@@ -66,7 +66,7 @@ steps:
     hooks:
       after_agent:
         - prompt: |
-            Verify the capability additions meet ALL criteria:
+            **AGENT: TAKE ACTION** - Verify the capability additions meet ALL criteria:
             1. Any new hooks from the platform (for slash commands only) are added to src/deepwork/schemas/job_schema.py
             2. All existing adapters in src/deepwork/adapters.py are updated with the new hook fields
                (set to None/null if the platform doesn't support that hook)
@@ -99,7 +99,7 @@ steps:
       after_agent:
         - script: hooks/run_tests.sh
         - prompt: |
-            Verify the implementation meets ALL criteria:
+            **AGENT: TAKE ACTION** - Verify the implementation meets ALL criteria:
             1. Platform adapter class is added to src/deepwork/adapters.py
             2. Templates exist in src/deepwork/templates/<platform>/ with appropriate command structure
             3. Tests exist for all new functionality
@@ -125,7 +125,7 @@ steps:
     hooks:
       after_agent:
         - prompt: |
-            Verify the installation meets ALL criteria:
+            **AGENT: TAKE ACTION** - Verify the installation meets ALL criteria:
             1. Platform-specific directories/files are added to the deepwork repo as needed
             2. Running `deepwork install --platform <platform>` completes without errors
             3. Expected command files are created in the platform's command directory

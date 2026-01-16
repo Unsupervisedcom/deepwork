@@ -39,7 +39,7 @@ steps:
     hooks:
       after_agent:
         - prompt: |
-            Verify the job.yml output meets ALL quality criteria before completing:
+            **AGENT: TAKE ACTION** - Verify the job.yml output meets ALL quality criteria before completing:
 
             1. **User Understanding**: Did you fully understand the user's workflow by asking structured questions?
             2. **Structured Questions Used**: Did you ask structured questions (using the AskUserQuestion tool) to gather user input?
@@ -67,7 +67,7 @@ steps:
     hooks:
       after_agent:
         - prompt: |
-            Verify the implementation meets ALL quality criteria before completing:
+            **AGENT: TAKE ACTION** - Verify the implementation meets ALL quality criteria before completing:
 
             1. **Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?
             2. **Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?
@@ -98,7 +98,7 @@ steps:
     hooks:
       after_agent:
         - prompt: |
-            Verify the learning process meets ALL quality criteria before completing:
+            **AGENT: TAKE ACTION** - Verify the learning process meets ALL quality criteria before completing:
 
             1. **Conversation Analyzed**: Did you review the conversation for DeepWork job executions?
             2. **Confusion Identified**: Did you identify points of confusion, errors, or inefficiencies?

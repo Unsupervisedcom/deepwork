@@ -9,7 +9,7 @@ hooks:
 
             ## Quality Criteria
 
-            Verify the learning process meets ALL quality criteria before completing:
+            **AGENT: TAKE ACTION** - Verify the learning process meets ALL quality criteria before completing:
 
             1. **Conversation Analyzed**: Did you review the conversation for DeepWork job executions?
             2. **Confusion Identified**: Did you identify points of confusion, errors, or inefficiencies?
@@ -386,7 +386,7 @@ Ensure all outputs are:
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
 ### Quality Criteria
-Verify the learning process meets ALL quality criteria before completing:
+**AGENT: TAKE ACTION** - Verify the learning process meets ALL quality criteria before completing:
 
 1. **Conversation Analyzed**: Did you review the conversation for DeepWork job executions?
 2. **Confusion Identified**: Did you identify points of confusion, errors, or inefficiencies?
