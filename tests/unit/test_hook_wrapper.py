@@ -6,12 +6,9 @@ between different AI CLI platforms (Claude Code, Gemini CLI).
 
 import json
 
-import pytest
-
 from deepwork.hooks.wrapper import (
     EVENT_TO_NORMALIZED,
     NORMALIZED_TO_EVENT,
-    NORMALIZED_TO_TOOL,
     TOOL_TO_NORMALIZED,
     HookInput,
     HookOutput,
@@ -347,7 +344,7 @@ class TestEventMappings:
 
     def test_normalized_to_event_roundtrip_claude(self) -> None:
         """Test that Claude events can be normalized and denormalized."""
-        for platform_event, normalized in EVENT_TO_NORMALIZED[Platform.CLAUDE].items():
+        for _platform_event, normalized in EVENT_TO_NORMALIZED[Platform.CLAUDE].items():
             if normalized in NORMALIZED_TO_EVENT[Platform.CLAUDE]:
                 # SubagentStop maps to AFTER_AGENT but denormalizes to Stop
                 denormalized = NORMALIZED_TO_EVENT[Platform.CLAUDE][normalized]
@@ -360,13 +357,13 @@ class TestToolMappings:
 
     def test_claude_tools_normalize_to_snake_case(self) -> None:
         """Test Claude tool names normalize to snake_case."""
-        for claude_tool, normalized in TOOL_TO_NORMALIZED[Platform.CLAUDE].items():
+        for _claude_tool, normalized in TOOL_TO_NORMALIZED[Platform.CLAUDE].items():
             assert "_" in normalized or normalized.islower(), f"{normalized} should be snake_case"
 
     def test_gemini_tools_are_already_snake_case(self) -> None:
         """Test Gemini tool names are already snake_case."""
         for gemini_tool, normalized in TOOL_TO_NORMALIZED[Platform.GEMINI].items():
-            assert gemini_tool == normalized, f"Gemini tools should be identity mapping"
+            assert gemini_tool == normalized, "Gemini tools should be identity mapping"
 
     def test_common_tools_map_to_same_normalized_name(self) -> None:
         """Test that common tools map to the same normalized name across platforms."""
