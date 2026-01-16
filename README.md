@@ -209,14 +209,18 @@ deepwork/
 │   │   ├── parser.py     # Job definition parsing
 │   │   ├── detector.py   # Platform detection
 │   │   └── generator.py  # Skill file generation
+│   ├── hooks/            # Cross-platform hook wrappers
+│   │   ├── wrapper.py    # Input/output normalization
+│   │   ├── claude_hook.sh  # Claude Code adapter
+│   │   └── gemini_hook.sh  # Gemini CLI adapter
 │   ├── templates/        # Jinja2 templates
 │   │   ├── claude/       # Claude Code templates
 │   │   └── gemini/       # Gemini CLI templates
 │   ├── schemas/          # JSON schemas
 │   └── utils/            # Utilities (fs, yaml, git, validation)
 ├── tests/
-│   ├── unit/             # Unit tests (147 tests)
-│   ├── integration/      # Integration tests (19 tests)
+│   ├── unit/             # Unit tests
+│   ├── integration/      # Integration tests
 │   └── fixtures/         # Test fixtures
 └── doc/                  # Documentation
 ```

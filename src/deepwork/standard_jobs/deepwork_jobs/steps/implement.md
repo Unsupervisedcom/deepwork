@@ -69,6 +69,7 @@ For each step in the job.yml, create a comprehensive instruction file at `.deepw
 4. **Explain the "why"** - Help the user understand the step's role in the workflow
 5. **Quality over quantity** - Detailed, actionable instructions are better than vague ones
 6. **Align with stop hooks** - If the step has `stop_hooks` defined, ensure the quality criteria in the instruction file match the validation criteria in the hooks
+7. **Ask structured questions** - When a step has user inputs, the instructions MUST explicitly tell the agent to "ask structured questions" using the AskUserQuestion tool to gather that information. Never use generic phrasing like "ask the user" - always use "ask structured questions"
 
 ### Handling Stop Hooks
 
@@ -231,6 +232,7 @@ Before marking this step complete, ensure:
 - Instructions are specific and actionable
 - Output examples are provided in each instruction file
 - Quality criteria defined for each step
+- Steps with user inputs explicitly use "ask structured questions" phrasing
 - Sync completed successfully
 - Commands available for use
 - Thoughtfully considered relevant policies for the job domain

@@ -244,7 +244,9 @@ def _hook_already_present(hooks: list[dict[str, Any]], script_path: str) -> bool
 # Use an empty dict {} for platforms that don't support command-level hooks.
 #
 # Hook support reviewed:
-# - Claude Code: Full support (Stop, PreToolUse, UserPromptSubmit) - 2025-01
+# - Claude Code: Full support (Stop, PreToolUse, UserPromptSubmit) - reviewed 2026-01-16
+#   All three command lifecycle hooks are supported in markdown frontmatter.
+#   See: doc/platforms/claude/hooks_system.md
 # - Gemini CLI: No command-level hooks (reviewed 2026-01-12)
 #   Gemini's hooks are global/project-level in settings.json, not per-command.
 #   TOML command files only support 'prompt' and 'description' fields.
