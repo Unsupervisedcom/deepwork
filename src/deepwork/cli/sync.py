@@ -7,6 +7,7 @@ from rich.console import Console
 from rich.table import Table
 
 from deepwork.core.adapters import AgentAdapter
+from deepwork.core.agent_generator import AgentGenerator
 from deepwork.core.generator import CommandGenerator
 from deepwork.core.hooks_syncer import collect_job_hooks, sync_hooks_to_platform
 from deepwork.core.parser import parse_job_definition
@@ -116,7 +117,8 @@ def sync_commands(project_path: Path) -> None:
 
     # Sync each platform
     generator = CommandGenerator()
-    stats = {"platforms": 0, "commands": 0, "hooks": 0}
+    agent_generator = AgentGenerator()
+    stats = {"platforms": 0, "commands": 0, "hooks": 0, "agents": 0}
     synced_adapters: list[AgentAdapter] = []
 
     for platform_name in platforms:
@@ -146,6 +148,18 @@ def sync_commands(project_path: Path) -> None:
                 except Exception as e:
                     console.print(f"    [red]✗[/red] Failed for {job.name}: {e}")
 
+        # Generate agent files for platforms that support them
+        console.print("  [dim]•[/dim] Generating agent files...")
+        try:
+            agent_paths = agent_generator.generate_agents(adapter, project_path)
+            if agent_paths:
+                stats["agents"] += len(agent_paths)
+                console.print(f"    [green]✓[/green] Generated {len(agent_paths)} agent file(s)")
+            else:
+                console.print("    [dim]•[/dim] No agent templates for this platform")
+        except Exception as e:
+            console.print(f"    [red]✗[/red] Failed to generate agents: {e}")
+
         # Sync hooks to platform settings
         if job_hooks_list:
             console.print("  [dim]•[/dim] Syncing hooks...")
@@ -171,6 +185,8 @@ def sync_commands(project_path: Path) -> None:
 
     table.add_row("Platforms synced", str(stats["platforms"]))
     table.add_row("Total commands", str(stats["commands"]))
+    if stats["agents"] > 0:
+        table.add_row("Agent files", str(stats["agents"]))
     if stats["hooks"] > 0:
         table.add_row("Hooks synced", str(stats["hooks"]))
 

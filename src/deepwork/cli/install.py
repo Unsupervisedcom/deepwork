@@ -87,6 +87,20 @@ def _inject_deepwork_policy(jobs_dir: Path, project_path: Path) -> None:
     _inject_standard_job("deepwork_policy", jobs_dir, project_path)
 
 
+def _inject_env_investigate(jobs_dir: Path, project_path: Path) -> None:
+    """
+    Inject the env_investigate job definition into the project.
+
+    Args:
+        jobs_dir: Path to .deepwork/jobs directory
+        project_path: Path to project root (for relative path display)
+
+    Raises:
+        InstallError: If injection fails
+    """
+    _inject_standard_job("env_investigate", jobs_dir, project_path)
+
+
 def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
     """
     Create .gitignore file in .deepwork/ directory.
@@ -272,6 +286,7 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     console.print("[yellow]→[/yellow] Installing core job definitions...")
     _inject_deepwork_jobs(jobs_dir, project_path)
     _inject_deepwork_policy(jobs_dir, project_path)
+    _inject_env_investigate(jobs_dir, project_path)
 
     # Step 3c: Create .gitignore for temporary files
     _create_deepwork_gitignore(deepwork_dir)

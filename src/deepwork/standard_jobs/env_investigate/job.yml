@@ -1,0 +1,112 @@
+name: env_investigate
+version: "1.0.0"
+summary: "Investigate deployed environment issues via isolated observability subagents"
+description: |
+  Multi-step investigation workflow for debugging production issues using Grafana MCP
+  (Prometheus, Alertmanager, Loki). Delegates all observability queries to isolated
+  subagents to prevent context bloat from large log volumes.
+
+  This workflow structures the investigation into discrete phases with clear artifacts,
+  ensuring that only structured summaries (not raw query results) are returned to the
+  main context. Particularly useful when dealing with high-volume log data that would
+  otherwise overwhelm the agent's context window.
+
+  **Requirements:**
+  - Grafana MCP server configured with Prometheus, Loki, and Alertmanager datasources
+  - Claude Code for full subagent support (recommended)
+  - For Gemini CLI: manual summarization guidelines are included in step instructions
+
+changelog:
+  - version: "1.0.0"
+    changes: "Initial release with 6-step investigation workflow"
+
+steps:
+  - id: triage
+    name: "Triage & Scope"
+    description: "Define investigation scope and gather initial context"
+    instructions_file: steps/triage.md
+    inputs:
+      - name: issue_description
+        description: "Description of the production issue to investigate"
+      - name: affected_services
+        description: "Services or components affected (optional)"
+      - name: time_range
+        description: "Time range to investigate (e.g., 'last 1 hour', '2026-01-16 14:00 to 15:00')"
+    outputs:
+      - triage.md
+    dependencies: []
+
+  - id: alert_check
+    name: "Check Alerts"
+    description: "Query Alertmanager for active and recent alerts"
+    instructions_file: steps/alert_check.md
+    inputs:
+      - file: triage.md
+        from_step: triage
+    outputs:
+      - alerts.md
+    dependencies:
+      - triage
+
+  - id: metrics_analysis
+    name: "Metrics Analysis"
+    description: "Query Prometheus for relevant metrics and trends"
+    instructions_file: steps/metrics_analysis.md
+    inputs:
+      - file: triage.md
+        from_step: triage
+      - file: alerts.md
+        from_step: alert_check
+    outputs:
+      - metrics.md
+    dependencies:
+      - alert_check
+
+  - id: log_investigation
+    name: "Log Investigation"
+    description: "Query Loki for relevant log entries and patterns"
+    instructions_file: steps/log_investigation.md
+    inputs:
+      - file: triage.md
+        from_step: triage
+      - file: alerts.md
+        from_step: alert_check
+      - file: metrics.md
+        from_step: metrics_analysis
+    outputs:
+      - logs.md
+    dependencies:
+      - metrics_analysis
+
+  - id: root_cause
+    name: "Root Cause Analysis"
+    description: "Synthesize findings to identify root cause"
+    instructions_file: steps/root_cause.md
+    inputs:
+      - file: triage.md
+        from_step: triage
+      - file: alerts.md
+        from_step: alert_check
+      - file: metrics.md
+        from_step: metrics_analysis
+      - file: logs.md
+        from_step: log_investigation
+    outputs:
+      - root_cause.md
+      - timeline.md
+    dependencies:
+      - log_investigation
+
+  - id: remediation
+    name: "Remediation Plan"
+    description: "Create actionable remediation plan"
+    instructions_file: steps/remediation.md
+    inputs:
+      - file: root_cause.md
+        from_step: root_cause
+      - file: timeline.md
+        from_step: root_cause
+    outputs:
+      - remediation.md
+    dependencies:
+      - root_cause
