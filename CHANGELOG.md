@@ -5,6 +5,24 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-01-16
+
+### Added
+- Policy system v2 with frontmatter markdown format in `.deepwork/policies/`
+  - Detection modes: trigger/safety (default), set (bidirectional), pair (directional)
+  - Action types: prompt (show instructions), command (run idempotent commands)
+  - Variable pattern matching with `{path}` (multi-segment) and `{name}` (single-segment)
+  - Queue system in `.deepwork/tmp/policy/queue/` for state tracking and deduplication
+- New core modules:
+  - `pattern_matcher.py`: Variable pattern matching with regex-based capture
+  - `policy_queue.py`: Queue system for policy state persistence
+  - `command_executor.py`: Command action execution with variable substitution
+- Updated `policy_check.py` hook to use v2 system with queue-based deduplication
+
+### Changed
+- Policy parser now supports both v1 (`.deepwork.policy.yml`) and v2 (`.deepwork/policies/*.md`) formats
+- Documentation updated with v2 policy examples and configuration
+
 ## [0.3.0] - 2026-01-16
 
 ### Added
@@ -64,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
+[0.4.0]: https://github.com/anthropics/deepwork/releases/tag/0.4.0
 [0.3.0]: https://github.com/anthropics/deepwork/releases/tag/0.3.0
 [0.1.1]: https://github.com/anthropics/deepwork/releases/tag/0.1.1
 [0.1.0]: https://github.com/anthropics/deepwork/releases/tag/0.1.0

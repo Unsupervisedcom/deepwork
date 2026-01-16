@@ -46,8 +46,11 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── detector.py     # AI platform detection
 │       │   ├── generator.py    # Command file generation
 │       │   ├── parser.py       # Job definition parsing
-│       │   ├── policy_parser.py # Policy definition parsing
-│       │   └── hooks_syncer.py # Hook syncing to platforms
+│       │   ├── policy_parser.py    # Policy definition parsing (v1 and v2)
+│       │   ├── pattern_matcher.py  # Variable pattern matching for policies
+│       │   ├── policy_queue.py     # Policy state queue system
+│       │   ├── command_executor.py # Command action execution
+│       │   └── hooks_syncer.py     # Hook syncing to platforms
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── __init__.py
 │       │   ├── wrapper.py           # Cross-platform input/output normalization
@@ -286,7 +289,13 @@ my-project/                     # User's project (target)
 │       └── ...
 ├── .deepwork/                  # DeepWork configuration
 │   ├── config.yml              # Platform config
-│   ├── .gitignore              # Ignores .last_work_tree
+│   ├── .gitignore              # Ignores tmp/ directory
+│   ├── policies/               # Policy definitions (v2 format)
+│   │   ├── source-test-pairing.md
+│   │   ├── format-python.md
+│   │   └── api-docs.md
+│   ├── tmp/                    # Temporary state (gitignored)
+│   │   └── policy/queue/       # Policy evaluation queue
 │   └── jobs/                   # Job definitions
 │       ├── deepwork_jobs/      # Core job for managing jobs
 │       │   ├── job.yml
@@ -305,7 +314,7 @@ my-project/                     # User's project (target)
 │       │   └── steps/
 │       └── ad_campaign/
 │           └── ...
-├── .deepwork.policy.yml        # Policy definitions (project root)
+├── .deepwork.policy.yml        # Legacy policy definitions (v1 format)
 ├── (rest of user's project files)
 └── README.md
 ```
@@ -1000,57 +1009,125 @@ Policies are automated enforcement rules that trigger based on file changes duri
 - Documentation stays in sync with code changes
 - Security reviews happen when sensitive code is modified
 - Team guidelines are followed automatically
+- File correspondences are maintained (e.g., source/test pairing)
 
-### Policy Configuration File
+### Policy System v2 (Frontmatter Markdown)
 
-Policies are defined in `.deepwork.policy.yml` at the project root:
+Policies are defined as individual markdown files in `.deepwork/policies/`:
 
+```
+.deepwork/policies/
+├── source-test-pairing.md
+├── format-python.md
+└── api-docs.md
+```
+
+Each policy file uses YAML frontmatter with a markdown body for instructions:
+
+```markdown
+---
+name: Source/Test Pairing
+set:
+  - src/{path}.py
+  - tests/{path}_test.py
+---
+When source files change, corresponding test files should also change.
+Please create or update tests for the modified source files.
+```
+
+### Detection Modes
+
+Policies support three detection modes:
+
+**1. Trigger/Safety (default)** - Fire when trigger matches but safety doesn't:
 ```yaml
-- name: "Update install guide on config changes"
-  trigger: "app/config/**/*"
-  safety: "docs/install_guide.md"
-  instructions: |
-    Configuration files have been modified. Please review docs/install_guide.md
-    and update it if any installation instructions need to change.
+---
+name: Update install guide
+trigger: "app/config/**/*"
+safety: "docs/install_guide.md"
+---
+```
 
-- name: "Security review for auth changes"
-  trigger:
-    - "src/auth/**/*"
-    - "src/security/**/*"
-  safety:
-    - "SECURITY.md"
-    - "docs/security_audit.md"
-  instructions: |
-    Authentication or security code has been changed. Please:
-    1. Check for hardcoded credentials
-    2. Verify input validation
-    3. Review access control logic
+**2. Set (bidirectional)** - Enforce file correspondence in both directions:
+```yaml
+---
+name: Source/Test Pairing
+set:
+  - src/{path}.py
+  - tests/{path}_test.py
+---
+```
+Uses variable patterns like `{path}` (multi-segment) and `{name}` (single-segment) for matching.
+
+**3. Pair (directional)** - Trigger requires corresponding files, but not vice versa:
+```yaml
+---
+name: API Documentation
+pair:
+  trigger: src/api/{name}.py
+  expects: docs/api/{name}.md
+---
+```
+
+### Action Types
+
+**1. Prompt (default)** - Show instructions to the agent:
+```yaml
+---
+name: Security Review
+trigger: "src/auth/**/*"
+---
+Please check for hardcoded credentials and validate input.
+```
+
+**2. Command** - Run an idempotent command:
+```yaml
+---
+name: Format Python
+trigger: "**/*.py"
+action:
+  command: "ruff format {file}"
+  run_for: each_match  # or "all_matches"
+---
 ```
 
 ### Policy Evaluation Flow
 
 1. **Session Start**: When a Claude Code session begins, the baseline git state is captured
 2. **Agent Works**: The AI agent performs tasks, potentially modifying files
-3. **Session Stop**: When the agent finishes:
-   - Changed files are detected by comparing against the baseline
-   - Each policy is evaluated:
-     - If any changed file matches a `trigger` pattern AND
-     - No changed file matches a `safety` pattern AND
-     - The agent hasn't marked it with a `<promise>` tag
-     - → The policy fires
-   - If policies fire, Claude is prompted to address them
+3. **Session Stop**: When the agent finishes (after_agent event):
+   - Changed files are detected based on `compare_to` setting (base, default_tip, or prompt)
+   - Each policy is evaluated based on its detection mode
+   - Queue entries are created in `.deepwork/tmp/policy/queue/` for deduplication
+   - For command actions: commands are executed, results tracked
+   - For prompt actions: if policy fires and not already promised, agent is prompted
 4. **Promise Tags**: Agents can mark policies as addressed by including `<promise>✓ Policy Name</promise>` in their response
+
+### Queue System
+
+Policy state is tracked in `.deepwork/tmp/policy/queue/` with files named `{hash}.{status}.json`:
+- `queued` - Detected, awaiting evaluation
+- `passed` - Policy satisfied (promise found or command succeeded)
+- `failed` - Policy not satisfied
+- `skipped` - Safety pattern matched
+
+This prevents re-prompting for the same policy violation within a session.
 
 ### Hook Integration
 
-Policies are implemented using Claude Code's hooks system. The `deepwork_policy` standard job includes:
+The v2 policy system uses the cross-platform hook wrapper:
 
 ```
-.deepwork/jobs/deepwork_policy/hooks/
-├── global_hooks.yml              # Maps lifecycle events to scripts
-├── user_prompt_submit.sh         # Captures baseline at each prompt
-├── capture_prompt_work_tree.sh   # Creates git state snapshot for compare_to: prompt
-└── policy_stop_hook.sh           # Evaluates policies on stop (calls Python evaluator)
+src/deepwork/hooks/
+├── wrapper.py           # Cross-platform input/output normalization
+├── policy_check.py      # Policy evaluation hook (v2)
+├── claude_hook.sh       # Claude Code shell wrapper
+└── gemini_hook.sh       # Gemini CLI shell wrapper
+```
+
+Hooks are called via the shell wrappers:
+```bash
+claude_hook.sh deepwork.hooks.policy_check
 ```
 
 The hooks are installed to `.claude/settings.json` during `deepwork sync`:
@@ -1058,14 +1135,23 @@ The hooks are installed to `.claude/settings.json` during `deepwork sync`:
 ```json
 {
   "hooks": {
-    "UserPromptSubmit": [
-      {"matcher": "", "hooks": [{"type": "command", "command": ".deepwork/jobs/deepwork_policy/hooks/user_prompt_submit.sh"}]}
-    ],
     "Stop": [
       {"matcher": "", "hooks": [{"type": "command", "command": ".deepwork/jobs/deepwork_policy/hooks/policy_stop_hook.sh"}]}
     ]
   }
 }
+```
+
+### Legacy v1 Format
+
+The v1 format (`.deepwork.policy.yml`) is still supported for backward compatibility:
+
+```yaml
+- name: "Update install guide"
+  trigger: "app/config/**/*"
+  safety: "docs/install_guide.md"
+  instructions: |
+    Configuration files have been modified. Please review docs/install_guide.md.
 ```
 
 ### Cross-Platform Hook Wrapper System
