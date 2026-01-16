@@ -1,5 +1,5 @@
 name: deepwork_policy
-version: "0.1.0"
+version: "0.2.0"
 summary: "Policy enforcement for AI agent sessions"
 description: |
   Manages policies that automatically trigger when certain files change during an AI agent session.
@@ -21,6 +21,8 @@ description: |
 changelog:
   - version: "0.1.0"
     changes: "Initial version"
+  - version: "0.2.0"
+    changes: "Standardized on 'ask structured questions' phrasing for user input"
 
 steps:
   - id: define
