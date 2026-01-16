@@ -16,9 +16,10 @@ hooks:
             3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
             4. **Output Examples**: Does each instruction file show what good output looks like?
             5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
-            6. **Sync Complete**: Has `deepwork sync` been run successfully?
-            7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-            8. **Policies Considered**: Have you thought about whether policies would benefit this job?
+            6. **Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase "ask structured questions"?
+            7. **Sync Complete**: Has `deepwork sync` been run successfully?
+            8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+            9. **Policies Considered**: Have you thought about whether policies would benefit this job?
                - If relevant policies were identified, did you explain them and offer to run `/deepwork_policy.define`?
                - Not every job needs policies - only suggest when genuinely helpful.
 
@@ -50,7 +51,7 @@ Core commands for managing DeepWork jobs. These commands help you define new mul
 workflows and learn from running them.
 
 The `define` command guides you through an interactive process to create a new job by
-asking detailed questions about your workflow, understanding each step's inputs and outputs,
+asking structured questions about your workflow, understanding each step's inputs and outputs,
 and generating all necessary files.
 
 The `learn` command reflects on conversations where DeepWork jobs were run, identifies
@@ -138,6 +139,7 @@ For each step in the job.yml, create a comprehensive instruction file at `.deepw
 4. **Explain the "why"** - Help the user understand the step's role in the workflow
 5. **Quality over quantity** - Detailed, actionable instructions are better than vague ones
 6. **Align with stop hooks** - If the step has `stop_hooks` defined, ensure the quality criteria in the instruction file match the validation criteria in the hooks
+7. **Ask structured questions** - When a step has user inputs, the instructions MUST explicitly tell the agent to "ask structured questions" using the AskUserQuestion tool to gather that information. Never use generic phrasing like "ask the user" - always use "ask structured questions"
 
 ### Handling Stop Hooks
 
@@ -300,6 +302,7 @@ Before marking this step complete, ensure:
 - Instructions are specific and actionable
 - Output examples are provided in each instruction file
 - Quality criteria defined for each step
+- Steps with user inputs explicitly use "ask structured questions" phrasing
 - Sync completed successfully
 - Commands available for use
 - Thoughtfully considered relevant policies for the job domain
@@ -349,9 +352,10 @@ Verify the implementation meets ALL quality criteria before completing:
 3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
 4. **Output Examples**: Does each instruction file show what good output looks like?
 5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
-6. **Sync Complete**: Has `deepwork sync` been run successfully?
-7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-8. **Policies Considered**: Have you thought about whether policies would benefit this job?
+6. **Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase "ask structured questions"?
+7. **Sync Complete**: Has `deepwork sync` been run successfully?
+8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+9. **Policies Considered**: Have you thought about whether policies would benefit this job?
    - If relevant policies were identified, did you explain them and offer to run `/deepwork_policy.define`?
    - Not every job needs policies - only suggest when genuinely helpful.
 
