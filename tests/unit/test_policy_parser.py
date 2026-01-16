@@ -4,19 +4,21 @@ from pathlib import Path
 
 import pytest
 
+from deepwork.core.pattern_matcher import matches_any_pattern as matches_pattern
 from deepwork.core.policy_parser import (
     DEFAULT_COMPARE_TO,
+    DetectionMode,
     Policy,
     PolicyParseError,
+    PolicyV1,
     evaluate_policies,
     evaluate_policy,
-    matches_pattern,
     parse_policy_file,
 )
 
 
-class TestPolicy:
-    """Tests for Policy dataclass."""
+class TestPolicyV1:
+    """Tests for PolicyV1 dataclass (legacy format)."""
 
     def test_from_dict_with_inline_instructions(self) -> None:
         """Test creating policy from dict with inline instructions."""
@@ -26,7 +28,7 @@ class TestPolicy:
             "safety": "docs/readme.md",
             "instructions": "Do something",
         }
-        policy = Policy.from_dict(data)
+        policy = PolicyV1.from_dict(data)
 
         assert policy.name == "Test Policy"
         assert policy.triggers == ["src/**/*"]
@@ -40,7 +42,7 @@ class TestPolicy:
             "trigger": "*.py",
             "instructions": "Check it",
         }
-        policy = Policy.from_dict(data)
+        policy = PolicyV1.from_dict(data)
 
         assert policy.triggers == ["*.py"]
 
@@ -51,7 +53,7 @@ class TestPolicy:
             "trigger": ["*.py", "*.js"],
             "instructions": "Check it",
         }
-        policy = Policy.from_dict(data)
+        policy = PolicyV1.from_dict(data)
 
         assert policy.triggers == ["*.py", "*.js"]
 
@@ -63,7 +65,7 @@ class TestPolicy:
             "safety": "docs/README.md",
             "instructions": "Check it",
         }
-        policy = Policy.from_dict(data)
+        policy = PolicyV1.from_dict(data)
 
         assert policy.safety == ["docs/README.md"]
 
@@ -74,7 +76,7 @@ class TestPolicy:
             "trigger": "src/*",
             "instructions": "Check it",
         }
-        policy = Policy.from_dict(data)
+        policy = PolicyV1.from_dict(data)
 
         assert policy.safety == []
 
@@ -89,7 +91,7 @@ class TestPolicy:
             "trigger": "src/*",
             "instructions_file": "instructions.md",
         }
-        policy = Policy.from_dict(data, base_dir=temp_dir)
+        policy = PolicyV1.from_dict(data, base_dir=temp_dir)
 
         assert policy.instructions == "# Instructions\nDo this and that."
 
@@ -102,7 +104,7 @@ class TestPolicy:
         }
 
         with pytest.raises(PolicyParseError, match="instructions file not found"):
-            Policy.from_dict(data, base_dir=temp_dir)
+            PolicyV1.from_dict(data, base_dir=temp_dir)
 
     def test_from_dict_instructions_file_without_base_dir(self) -> None:
         """Test error when instructions_file used without base_dir."""
@@ -113,7 +115,7 @@ class TestPolicy:
         }
 
         with pytest.raises(PolicyParseError, match="no base_dir provided"):
-            Policy.from_dict(data, base_dir=None)
+            PolicyV1.from_dict(data, base_dir=None)
 
     def test_from_dict_compare_to_defaults_to_base(self) -> None:
         """Test that compare_to defaults to 'base'."""
@@ -122,7 +124,7 @@ class TestPolicy:
             "trigger": "src/*",
             "instructions": "Check it",
         }
-        policy = Policy.from_dict(data)
+        policy = PolicyV1.from_dict(data)
 
         assert policy.compare_to == DEFAULT_COMPARE_TO
         assert policy.compare_to == "base"
@@ -135,7 +137,7 @@ class TestPolicy:
             "instructions": "Check it",
             "compare_to": "base",
         }
-        policy = Policy.from_dict(data)
+        policy = PolicyV1.from_dict(data)
 
         assert policy.compare_to == "base"
 
@@ -147,7 +149,7 @@ class TestPolicy:
             "instructions": "Check it",
             "compare_to": "default_tip",
         }
-        policy = Policy.from_dict(data)
+        policy = PolicyV1.from_dict(data)
 
         assert policy.compare_to == "default_tip"
 
@@ -159,7 +161,7 @@ class TestPolicy:
             "instructions": "Check it",
             "compare_to": "prompt",
         }
-        policy = Policy.from_dict(data)
+        policy = PolicyV1.from_dict(data)
 
         assert policy.compare_to == "prompt"
 
@@ -204,65 +206,82 @@ class TestEvaluatePolicy:
         """Test policy fires when trigger matches."""
         policy = Policy(
             name="Test",
+            filename="test",
+            detection_mode=DetectionMode.TRIGGER_SAFETY,
             triggers=["src/**/*.py"],
             safety=[],
             instructions="Check it",
         )
         changed_files = ["src/main.py", "README.md"]
 
-        assert evaluate_policy(policy, changed_files) is True
+        result = evaluate_policy(policy, changed_files)
+        assert result.should_fire is True
 
     def test_does_not_fire_when_no_trigger_match(self) -> None:
         """Test policy doesn't fire when no trigger matches."""
         policy = Policy(
             name="Test",
+            filename="test",
+            detection_mode=DetectionMode.TRIGGER_SAFETY,
             triggers=["src/**/*.py"],
             safety=[],
             instructions="Check it",
         )
         changed_files = ["test/main.py", "README.md"]
 
-        assert evaluate_policy(policy, changed_files) is False
+        result = evaluate_policy(policy, changed_files)
+        assert result.should_fire is False
 
     def test_does_not_fire_when_safety_matches(self) -> None:
         """Test policy doesn't fire when safety file is also changed."""
         policy = Policy(
             name="Test",
+            filename="test",
+            detection_mode=DetectionMode.TRIGGER_SAFETY,
             triggers=["app/config/**/*"],
             safety=["docs/install_guide.md"],
             instructions="Update docs",
         )
         changed_files = ["app/config/settings.py", "docs/install_guide.md"]
 
-        assert evaluate_policy(policy, changed_files) is False
+        result = evaluate_policy(policy, changed_files)
+        assert result.should_fire is False
 
     def test_fires_when_trigger_matches_but_safety_doesnt(self) -> None:
         """Test policy fires when trigger matches but safety doesn't."""
         policy = Policy(
             name="Test",
+            filename="test",
+            detection_mode=DetectionMode.TRIGGER_SAFETY,
             triggers=["app/config/**/*"],
             safety=["docs/install_guide.md"],
             instructions="Update docs",
         )
         changed_files = ["app/config/settings.py", "app/main.py"]
 
-        assert evaluate_policy(policy, changed_files) is True
+        result = evaluate_policy(policy, changed_files)
+        assert result.should_fire is True
 
     def test_multiple_safety_patterns(self) -> None:
         """Test policy with multiple safety patterns."""
         policy = Policy(
             name="Test",
+            filename="test",
+            detection_mode=DetectionMode.TRIGGER_SAFETY,
             triggers=["src/auth/**/*"],
             safety=["SECURITY.md", "docs/security_review.md"],
             instructions="Security review",
         )
 
         # Should not fire if any safety file is changed
-        assert evaluate_policy(policy, ["src/auth/login.py", "SECURITY.md"]) is False
-        assert evaluate_policy(policy, ["src/auth/login.py", "docs/security_review.md"]) is False
+        result1 = evaluate_policy(policy, ["src/auth/login.py", "SECURITY.md"])
+        assert result1.should_fire is False
+        result2 = evaluate_policy(policy, ["src/auth/login.py", "docs/security_review.md"])
+        assert result2.should_fire is False
 
         # Should fire if no safety files changed
-        assert evaluate_policy(policy, ["src/auth/login.py"]) is True
+        result3 = evaluate_policy(policy, ["src/auth/login.py"])
+        assert result3.should_fire is True
 
 
 class TestEvaluatePolicies:
@@ -273,12 +292,16 @@ class TestEvaluatePolicies:
         policies = [
             Policy(
                 name="Policy 1",
+                filename="policy1",
+                detection_mode=DetectionMode.TRIGGER_SAFETY,
                 triggers=["src/**/*"],
                 safety=[],
                 instructions="Do 1",
             ),
             Policy(
                 name="Policy 2",
+                filename="policy2",
+                detection_mode=DetectionMode.TRIGGER_SAFETY,
                 triggers=["test/**/*"],
                 safety=[],
                 instructions="Do 2",
@@ -289,20 +312,24 @@ class TestEvaluatePolicies:
         fired = evaluate_policies(policies, changed_files)
 
         assert len(fired) == 2
-        assert fired[0].name == "Policy 1"
-        assert fired[1].name == "Policy 2"
+        assert fired[0].policy.name == "Policy 1"
+        assert fired[1].policy.name == "Policy 2"
 
     def test_skips_promised_policies(self) -> None:
         """Test that promised policies are skipped."""
         policies = [
             Policy(
                 name="Policy 1",
+                filename="policy1",
+                detection_mode=DetectionMode.TRIGGER_SAFETY,
                 triggers=["src/**/*"],
                 safety=[],
                 instructions="Do 1",
             ),
             Policy(
                 name="Policy 2",
+                filename="policy2",
+                detection_mode=DetectionMode.TRIGGER_SAFETY,
                 triggers=["src/**/*"],
                 safety=[],
                 instructions="Do 2",
@@ -314,13 +341,15 @@ class TestEvaluatePolicies:
         fired = evaluate_policies(policies, changed_files, promised)
 
         assert len(fired) == 1
-        assert fired[0].name == "Policy 2"
+        assert fired[0].policy.name == "Policy 2"
 
     def test_returns_empty_when_no_policies_fire(self) -> None:
         """Test returns empty list when no policies fire."""
         policies = [
             Policy(
                 name="Policy 1",
+                filename="policy1",
+                detection_mode=DetectionMode.TRIGGER_SAFETY,
                 triggers=["src/**/*"],
                 safety=[],
                 instructions="Do 1",

@@ -28,12 +28,46 @@ import subprocess
 import sys
 from pathlib import Path
 
+from deepwork.core.pattern_matcher import matches_any_pattern
 from deepwork.core.policy_parser import (
-    Policy,
     PolicyParseError,
-    evaluate_policy,
+    PolicyV1,
     parse_policy_file,
 )
+
+
+def evaluate_policy_v1(policy: PolicyV1, changed_files: list[str]) -> bool:
+    """
+    Evaluate whether a v1 policy should fire based on changed files.
+
+    A policy fires when:
+    - At least one changed file matches a trigger pattern
+    - AND no changed file matches a safety pattern
+
+    Args:
+        policy: PolicyV1 to evaluate
+        changed_files: List of changed file paths
+
+    Returns:
+        True if policy should fire, False otherwise
+    """
+    # Check if any trigger matches
+    trigger_matched = False
+    for file_path in changed_files:
+        if matches_any_pattern(file_path, policy.triggers):
+            trigger_matched = True
+            break
+
+    if not trigger_matched:
+        return False
+
+    # Check if any safety pattern matches
+    if policy.safety:
+        for file_path in changed_files:
+            if matches_any_pattern(file_path, policy.safety):
+                return False
+
+    return True
 
 
 def get_default_branch() -> str:
@@ -334,7 +368,7 @@ def main() -> None:
         return
 
     # Group policies by compare_to mode to minimize git calls
-    policies_by_mode: dict[str, list[Policy]] = {}
+    policies_by_mode: dict[str, list[PolicyV1]] = {}
     for policy in policies:
         mode = policy.compare_to
         if mode not in policies_by_mode:
@@ -342,7 +376,7 @@ def main() -> None:
         policies_by_mode[mode].append(policy)
 
     # Get changed files for each mode and evaluate policies
-    fired_policies: list[Policy] = []
+    fired_policies: list[PolicyV1] = []
     for mode, mode_policies in policies_by_mode.items():
         changed_files = get_changed_files_for_mode(mode)
         if not changed_files:
@@ -353,7 +387,7 @@ def main() -> None:
             if policy.name in promised_policies:
                 continue
             # Evaluate this policy
-            if evaluate_policy(policy, changed_files):
+            if evaluate_policy_v1(policy, changed_files):
                 fired_policies.append(policy)
 
     if not fired_policies:
