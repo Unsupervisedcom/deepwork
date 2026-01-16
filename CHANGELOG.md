@@ -23,8 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Standardized on "ask structured questions" phrasing across all jobs (#48)
 - deepwork_jobs bumped to v0.5.0, deepwork_policy to v0.2.0
-- Updated `README.md` project structure to include hooks directory
-- Updated `doc/architecture.md` with cross-platform hook wrapper documentation
 
 ### Fixed
 - Stop hooks now properly return blocking JSON (#38)
