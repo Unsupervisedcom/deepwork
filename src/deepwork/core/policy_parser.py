@@ -115,13 +115,9 @@ class Policy:
 
         mode_count = sum([has_trigger, has_set, has_pair])
         if mode_count == 0:
-            raise PolicyParseError(
-                f"Policy '{name}' must have 'trigger', 'set', or 'pair'"
-            )
+            raise PolicyParseError(f"Policy '{name}' must have 'trigger', 'set', or 'pair'")
         if mode_count > 1:
-            raise PolicyParseError(
-                f"Policy '{name}' has multiple detection modes - use only one"
-            )
+            raise PolicyParseError(f"Policy '{name}' has multiple detection modes - use only one")
 
         # Parse based on detection mode
         detection_mode: DetectionMode
@@ -141,9 +137,7 @@ class Policy:
             detection_mode = DetectionMode.SET
             set_patterns = list(frontmatter["set"])
             if len(set_patterns) < 2:
-                raise PolicyParseError(
-                    f"Policy '{name}' set requires at least 2 patterns"
-                )
+                raise PolicyParseError(f"Policy '{name}' set requires at least 2 patterns")
 
         elif has_pair:
             detection_mode = DetectionMode.PAIR
@@ -170,9 +164,7 @@ class Policy:
             action_type = ActionType.PROMPT
             # Markdown body is the instructions
             if not markdown_body.strip():
-                raise PolicyParseError(
-                    f"Policy '{name}' with prompt action requires markdown body"
-                )
+                raise PolicyParseError(f"Policy '{name}' with prompt action requires markdown body")
 
         # Get compare_to
         compare_to = frontmatter.get("compare_to", DEFAULT_COMPARE_TO)
@@ -230,9 +222,7 @@ def parse_frontmatter_file(filepath: Path) -> tuple[dict[str, Any], str]:
     try:
         frontmatter = yaml.safe_load(frontmatter_str)
     except yaml.YAMLError as e:
-        raise PolicyParseError(
-            f"Invalid YAML frontmatter in '{filepath.name}': {e}"
-        ) from e
+        raise PolicyParseError(f"Invalid YAML frontmatter in '{filepath.name}': {e}") from e
 
     if frontmatter is None:
         frontmatter = {}
@@ -270,9 +260,7 @@ def parse_policy_file_v2(filepath: Path) -> Policy:
     try:
         validate_against_schema(frontmatter, POLICY_FRONTMATTER_SCHEMA)
     except ValidationError as e:
-        raise PolicyParseError(
-            f"Policy '{filepath.name}' validation failed: {e}"
-        ) from e
+        raise PolicyParseError(f"Policy '{filepath.name}' validation failed: {e}") from e
 
     # Create Policy object
     filename = filepath.stem  # filename without .md extension
