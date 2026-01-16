@@ -15,7 +15,8 @@ on:
   # Run in the merge queue to validate before merging
   merge_group:
     types: [checks_requested]
-    branches: [main]
+    # Note: Don't use branches filter here - merge queue refs like
+    # gh-readonly-queue/main/pr-N-xxx don't match simple branch globs
 
 # Ensure only one instance runs at a time per PR/branch
 concurrency:
