@@ -11,8 +11,10 @@ on:
         type: boolean
   # Run on all PRs (shows as check, but steps skip unless in merge queue)
   pull_request:
+    branches: [main]
   # Run in the merge queue to validate before merging
   merge_group:
+    branches: [main]
 
 # Ensure only one instance runs at a time per PR/branch
 concurrency:

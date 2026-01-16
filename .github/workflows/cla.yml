@@ -7,6 +7,8 @@ on:
     types: [opened, synchronize]
   # Run in merge queue but skip the step (shows as passing check)
   merge_group:
+    branches: [main]
+  workflow_dispatch:
 
 # Explicitly set permissions for the workflow
 permissions:
@@ -19,14 +21,14 @@ jobs:
   # Job for merge queue - always passes since CLA is checked at PR time
   merge-queue-pass:
     runs-on: ubuntu-latest
-    if: github.event_name == 'merge_group'
+    if: github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
     steps:
       - name: CLA already verified at PR time
         run: echo "CLA check is performed on PRs, not in merge queue. Passing."
 
   cla-check:
     runs-on: ubuntu-latest
-    if: github.event_name != 'merge_group'
+    if: github.event_name != 'merge_group' && github.event_name != 'workflow_dispatch'
     steps:
       - name: "CLA Assistant"
         if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA') || github.event_name == 'pull_request_target'
