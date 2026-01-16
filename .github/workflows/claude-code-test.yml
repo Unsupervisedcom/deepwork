@@ -21,6 +21,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
+# Minimal permissions for this workflow
+permissions:
+  contents: read
+
 jobs:
   # Job for PRs - always passes, actual validation happens in merge queue
   pr-check:
