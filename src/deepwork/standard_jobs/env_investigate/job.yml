@@ -60,6 +60,7 @@ steps:
     outputs:
       - metrics.md
     dependencies:
+      - triage
       - alert_check
 
   - id: log_investigation
@@ -76,6 +77,8 @@ steps:
     outputs:
       - logs.md
     dependencies:
+      - triage
+      - alert_check
       - metrics_analysis
 
   - id: root_cause
@@ -95,6 +98,9 @@ steps:
       - root_cause.md
       - timeline.md
     dependencies:
+      - triage
+      - alert_check
+      - metrics_analysis
       - log_investigation
 
   - id: remediation
