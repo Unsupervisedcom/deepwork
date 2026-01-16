@@ -229,14 +229,16 @@ class CommandGenerator:
                 # Claude uses dot for namespacing: _job_name.step_id
                 command_name = command_filename.replace(".md", "")
 
-            steps_info.append({
-                "id": step.id,
-                "name": step.name,
-                "description": step.description,
-                "command_name": command_name,
-                "dependencies": step.dependencies,
-                "exposed": step.exposed,
-            })
+            steps_info.append(
+                {
+                    "id": step.id,
+                    "name": step.name,
+                    "description": step.description,
+                    "command_name": command_name,
+                    "dependencies": step.dependencies,
+                    "exposed": step.exposed,
+                }
+            )
 
         return {
             "job_name": job.name,
