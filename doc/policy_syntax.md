@@ -237,11 +237,7 @@ action:
 
 **Idempotency Requirement:**
 
-Commands MUST be idempotent. The system verifies this by:
-1. Running the command
-2. Checking for changes
-3. If changes occurred, running again
-4. If more changes occur, marking as failed
+Commands should be idempotent—running them multiple times produces the same result. Lint formatters like `black`, `ruff format`, and `prettier` are good examples: they produce consistent output regardless of how many times they run.
 
 ## Pattern Syntax
 
