@@ -26,13 +26,14 @@ We use a skip pattern so the same required checks pass in both PR and merge queu
 
 ### How It Works
 
-All workflows specify explicit branch targeting:
+All workflows specify explicit branch targeting and the `checks_requested` type:
 
 ```yaml
 on:
   pull_request:
     branches: [main]
   merge_group:
+    types: [checks_requested]
     branches: [main]
   workflow_dispatch:  # Enables manual triggering for testing
 ```
@@ -71,7 +72,7 @@ In GitHub branch protection rules, require these checks:
 
 All checks will pass in both PR and merge queue contexts (either by running or by being skipped).
 
-**Note**: The explicit branch targeting in `merge_group` triggers is critical for workflows to run properly in the merge queue. Without this, GitHub may not trigger the workflows and they will remain in "expected" state.
+**Note**: The explicit `types: [checks_requested]` and branch targeting in `merge_group` triggers is critical for workflows to run properly in the merge queue. The `types` parameter is recommended by GitHub to future-proof against new activity types. Without proper configuration, GitHub may not trigger the workflows and they will remain in "expected" state.
 
 ## Workflow Details
 
