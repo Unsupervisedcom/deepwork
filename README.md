@@ -62,7 +62,6 @@ This will:
 - Generate core DeepWork jobs
 - Install DeepWork jobs for your AI assistant
 - Configure hooks for your AI assistant to enable policies
-- Create a `.deepwork.policy.yml` template file with example policies
 
 ## Quick Start
 
@@ -213,13 +212,13 @@ deepwork/
 │   │   ├── parser.py     # Job definition parsing
 │   │   ├── detector.py   # Platform detection
 │   │   ├── generator.py  # Skill file generation
-│   │   ├── policy_parser.py    # Policy parsing (v1 and v2)
+│   │   ├── policy_parser.py    # Policy parsing
 │   │   ├── pattern_matcher.py  # Variable pattern matching
 │   │   ├── policy_queue.py     # Policy state queue
 │   │   └── command_executor.py # Command action execution
 │   ├── hooks/            # Cross-platform hook wrappers
 │   │   ├── wrapper.py    # Input/output normalization
-│   │   ├── policy_check.py   # Policy evaluation hook (v2)
+│   │   ├── policy_check.py   # Policy evaluation hook
 │   │   ├── claude_hook.sh    # Claude Code adapter
 │   │   └── gemini_hook.sh    # Gemini CLI adapter
 │   ├── templates/        # Jinja2 templates

@@ -10,160 +10,10 @@ from deepwork.core.policy_parser import (
     DetectionMode,
     Policy,
     PolicyParseError,
-    PolicyV1,
     evaluate_policies,
     evaluate_policy,
-    parse_policy_file,
+    load_policies_from_directory,
 )
-
-
-class TestPolicyV1:
-    """Tests for PolicyV1 dataclass (legacy format)."""
-
-    def test_from_dict_with_inline_instructions(self) -> None:
-        """Test creating policy from dict with inline instructions."""
-        data = {
-            "name": "Test Policy",
-            "trigger": "src/**/*",
-            "safety": "docs/readme.md",
-            "instructions": "Do something",
-        }
-        policy = PolicyV1.from_dict(data)
-
-        assert policy.name == "Test Policy"
-        assert policy.triggers == ["src/**/*"]
-        assert policy.safety == ["docs/readme.md"]
-        assert policy.instructions == "Do something"
-
-    def test_from_dict_normalizes_trigger_string_to_list(self) -> None:
-        """Test that trigger string is normalized to list."""
-        data = {
-            "name": "Test",
-            "trigger": "*.py",
-            "instructions": "Check it",
-        }
-        policy = PolicyV1.from_dict(data)
-
-        assert policy.triggers == ["*.py"]
-
-    def test_from_dict_preserves_trigger_list(self) -> None:
-        """Test that trigger list is preserved."""
-        data = {
-            "name": "Test",
-            "trigger": ["*.py", "*.js"],
-            "instructions": "Check it",
-        }
-        policy = PolicyV1.from_dict(data)
-
-        assert policy.triggers == ["*.py", "*.js"]
-
-    def test_from_dict_normalizes_safety_string_to_list(self) -> None:
-        """Test that safety string is normalized to list."""
-        data = {
-            "name": "Test",
-            "trigger": "src/*",
-            "safety": "docs/README.md",
-            "instructions": "Check it",
-        }
-        policy = PolicyV1.from_dict(data)
-
-        assert policy.safety == ["docs/README.md"]
-
-    def test_from_dict_safety_defaults_to_empty_list(self) -> None:
-        """Test that missing safety defaults to empty list."""
-        data = {
-            "name": "Test",
-            "trigger": "src/*",
-            "instructions": "Check it",
-        }
-        policy = PolicyV1.from_dict(data)
-
-        assert policy.safety == []
-
-    def test_from_dict_with_instructions_file(self, temp_dir: Path) -> None:
-        """Test creating policy from dict with instructions_file."""
-        # Create instructions file
-        instructions_file = temp_dir / "instructions.md"
-        instructions_file.write_text("# Instructions\nDo this and that.")
-
-        data = {
-            "name": "Test Policy",
-            "trigger": "src/*",
-            "instructions_file": "instructions.md",
-        }
-        policy = PolicyV1.from_dict(data, base_dir=temp_dir)
-
-        assert policy.instructions == "# Instructions\nDo this and that."
-
-    def test_from_dict_instructions_file_not_found(self, temp_dir: Path) -> None:
-        """Test error when instructions_file doesn't exist."""
-        data = {
-            "name": "Test Policy",
-            "trigger": "src/*",
-            "instructions_file": "nonexistent.md",
-        }
-
-        with pytest.raises(PolicyParseError, match="instructions file not found"):
-            PolicyV1.from_dict(data, base_dir=temp_dir)
-
-    def test_from_dict_instructions_file_without_base_dir(self) -> None:
-        """Test error when instructions_file used without base_dir."""
-        data = {
-            "name": "Test Policy",
-            "trigger": "src/*",
-            "instructions_file": "instructions.md",
-        }
-
-        with pytest.raises(PolicyParseError, match="no base_dir provided"):
-            PolicyV1.from_dict(data, base_dir=None)
-
-    def test_from_dict_compare_to_defaults_to_base(self) -> None:
-        """Test that compare_to defaults to 'base'."""
-        data = {
-            "name": "Test",
-            "trigger": "src/*",
-            "instructions": "Check it",
-        }
-        policy = PolicyV1.from_dict(data)
-
-        assert policy.compare_to == DEFAULT_COMPARE_TO
-        assert policy.compare_to == "base"
-
-    def test_from_dict_compare_to_explicit_base(self) -> None:
-        """Test explicit compare_to: base."""
-        data = {
-            "name": "Test",
-            "trigger": "src/*",
-            "instructions": "Check it",
-            "compare_to": "base",
-        }
-        policy = PolicyV1.from_dict(data)
-
-        assert policy.compare_to == "base"
-
-    def test_from_dict_compare_to_default_tip(self) -> None:
-        """Test compare_to: default_tip."""
-        data = {
-            "name": "Test",
-            "trigger": "src/*",
-            "instructions": "Check it",
-            "compare_to": "default_tip",
-        }
-        policy = PolicyV1.from_dict(data)
-
-        assert policy.compare_to == "default_tip"
-
-    def test_from_dict_compare_to_prompt(self) -> None:
-        """Test compare_to: prompt."""
-        data = {
-            "name": "Test",
-            "trigger": "src/*",
-            "instructions": "Check it",
-            "compare_to": "prompt",
-        }
-        policy = PolicyV1.from_dict(data)
-
-        assert policy.compare_to == "prompt"
 
 
 class TestMatchesPattern:
@@ -362,72 +212,153 @@ class TestEvaluatePolicies:
         assert len(fired) == 0
 
 
-class TestParsePolicyFile:
-    """Tests for parse_policy_file function."""
+class TestLoadPoliciesFromDirectory:
+    """Tests for load_policies_from_directory function."""
 
-    def test_parses_valid_policy_file(self, fixtures_dir: Path) -> None:
-        """Test parsing a valid policy file."""
-        policy_file = fixtures_dir / "policies" / "valid_policy.yml"
-        policies = parse_policy_file(policy_file)
+    def test_loads_policies_from_directory(self, temp_dir: Path) -> None:
+        """Test loading policies from a directory."""
+        policies_dir = temp_dir / "policies"
+        policies_dir.mkdir()
 
-        assert len(policies) == 1
-        assert policies[0].name == "Update install guide on config changes"
-        assert policies[0].triggers == ["app/config/**/*"]
-        assert policies[0].safety == ["docs/install_guide.md"]
-        assert "Configuration files have changed" in policies[0].instructions
+        # Create a policy file
+        policy_file = policies_dir / "test-policy.md"
+        policy_file.write_text(
+            """---
+name: Test Policy
+trigger: "src/**/*"
+---
+Please check the source files.
+"""
+        )
 
-    def test_parses_multiple_policies(self, fixtures_dir: Path) -> None:
-        """Test parsing a file with multiple policies."""
-        policy_file = fixtures_dir / "policies" / "multiple_policies.yml"
-        policies = parse_policy_file(policy_file)
-
-        assert len(policies) == 3
-        assert policies[0].name == "Update install guide on config changes"
-        assert policies[1].name == "Security review for auth changes"
-        assert policies[2].name == "API documentation update"
-
-        # Check that arrays are parsed correctly
-        assert policies[1].triggers == ["src/auth/**/*", "src/security/**/*"]
-        assert policies[1].safety == ["SECURITY.md", "docs/security_review.md"]
-
-    def test_parses_policy_with_instructions_file(self, fixtures_dir: Path) -> None:
-        """Test parsing a policy with instructions_file."""
-        policy_file = fixtures_dir / "policies" / "policy_with_instructions_file.yml"
-        policies = parse_policy_file(policy_file)
+        policies = load_policies_from_directory(policies_dir)
 
         assert len(policies) == 1
-        assert "Security Review Required" in policies[0].instructions
-        assert "hardcoded credentials" in policies[0].instructions
+        assert policies[0].name == "Test Policy"
+        assert policies[0].triggers == ["src/**/*"]
+        assert policies[0].detection_mode == DetectionMode.TRIGGER_SAFETY
+        assert "check the source files" in policies[0].instructions
 
-    def test_empty_policy_file_returns_empty_list(self, fixtures_dir: Path) -> None:
-        """Test that empty policy file returns empty list."""
-        policy_file = fixtures_dir / "policies" / "empty_policy.yml"
-        policies = parse_policy_file(policy_file)
+    def test_loads_multiple_policies(self, temp_dir: Path) -> None:
+        """Test loading multiple policies."""
+        policies_dir = temp_dir / "policies"
+        policies_dir.mkdir()
+
+        # Create policy files
+        (policies_dir / "policy1.md").write_text(
+            """---
+name: Policy 1
+trigger: "src/**/*"
+---
+Instructions for policy 1.
+"""
+        )
+        (policies_dir / "policy2.md").write_text(
+            """---
+name: Policy 2
+trigger: "test/**/*"
+---
+Instructions for policy 2.
+"""
+        )
+
+        policies = load_policies_from_directory(policies_dir)
+
+        assert len(policies) == 2
+        names = {p.name for p in policies}
+        assert names == {"Policy 1", "Policy 2"}
+
+    def test_returns_empty_for_empty_directory(self, temp_dir: Path) -> None:
+        """Test that empty directory returns empty list."""
+        policies_dir = temp_dir / "policies"
+        policies_dir.mkdir()
+
+        policies = load_policies_from_directory(policies_dir)
 
         assert policies == []
 
-    def test_raises_for_missing_trigger(self, fixtures_dir: Path) -> None:
-        """Test error when policy is missing trigger."""
-        policy_file = fixtures_dir / "policies" / "invalid_missing_trigger.yml"
+    def test_returns_empty_for_nonexistent_directory(self, temp_dir: Path) -> None:
+        """Test that nonexistent directory returns empty list."""
+        policies_dir = temp_dir / "nonexistent"
 
-        with pytest.raises(PolicyParseError, match="validation failed"):
-            parse_policy_file(policy_file)
+        policies = load_policies_from_directory(policies_dir)
 
-    def test_raises_for_missing_instructions(self, fixtures_dir: Path) -> None:
-        """Test error when policy is missing both instructions and instructions_file."""
-        policy_file = fixtures_dir / "policies" / "invalid_missing_instructions.yml"
+        assert policies == []
 
-        with pytest.raises(PolicyParseError, match="validation failed"):
-            parse_policy_file(policy_file)
+    def test_loads_policy_with_set_detection_mode(self, temp_dir: Path) -> None:
+        """Test loading a policy with set detection mode."""
+        policies_dir = temp_dir / "policies"
+        policies_dir.mkdir()
 
-    def test_raises_for_nonexistent_file(self, temp_dir: Path) -> None:
-        """Test error when policy file doesn't exist."""
-        policy_file = temp_dir / "nonexistent.yml"
+        policy_file = policies_dir / "source-test-pairing.md"
+        policy_file.write_text(
+            """---
+name: Source/Test Pairing
+set:
+  - src/{path}.py
+  - tests/{path}_test.py
+---
+Source and test files should change together.
+"""
+        )
 
-        with pytest.raises(PolicyParseError, match="does not exist"):
-            parse_policy_file(policy_file)
+        policies = load_policies_from_directory(policies_dir)
 
-    def test_raises_for_directory_path(self, temp_dir: Path) -> None:
-        """Test error when path is a directory."""
-        with pytest.raises(PolicyParseError, match="is not a file"):
-            parse_policy_file(temp_dir)
+        assert len(policies) == 1
+        assert policies[0].name == "Source/Test Pairing"
+        assert policies[0].detection_mode == DetectionMode.SET
+        assert policies[0].set_patterns == ["src/{path}.py", "tests/{path}_test.py"]
+
+    def test_loads_policy_with_pair_detection_mode(self, temp_dir: Path) -> None:
+        """Test loading a policy with pair detection mode."""
+        policies_dir = temp_dir / "policies"
+        policies_dir.mkdir()
+
+        policy_file = policies_dir / "api-docs.md"
+        policy_file.write_text(
+            """---
+name: API Documentation
+pair:
+  trigger: src/api/{name}.py
+  expects: docs/api/{name}.md
+---
+API code requires documentation.
+"""
+        )
+
+        policies = load_policies_from_directory(policies_dir)
+
+        assert len(policies) == 1
+        assert policies[0].name == "API Documentation"
+        assert policies[0].detection_mode == DetectionMode.PAIR
+        assert policies[0].pair_config is not None
+        assert policies[0].pair_config.trigger == "src/api/{name}.py"
+        assert policies[0].pair_config.expects == ["docs/api/{name}.md"]
+
+    def test_loads_policy_with_command_action(self, temp_dir: Path) -> None:
+        """Test loading a policy with command action."""
+        policies_dir = temp_dir / "policies"
+        policies_dir.mkdir()
+
+        policy_file = policies_dir / "format-python.md"
+        policy_file.write_text(
+            """---
+name: Format Python
+trigger: "**/*.py"
+action:
+  command: "ruff format {file}"
+  run_for: each_match
+---
+"""
+        )
+
+        policies = load_policies_from_directory(policies_dir)
+
+        assert len(policies) == 1
+        assert policies[0].name == "Format Python"
+        from deepwork.core.policy_parser import ActionType
+
+        assert policies[0].action_type == ActionType.COMMAND
+        assert policies[0].command_action is not None
+        assert policies[0].command_action.command == "ruff format {file}"
+        assert policies[0].command_action.run_for == "each_match"

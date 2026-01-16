@@ -13,7 +13,7 @@ from deepwork.core.pattern_matcher import (
     matches_any_pattern,
     resolve_pattern,
 )
-from deepwork.schemas.policy_schema import POLICY_FRONTMATTER_SCHEMA, POLICY_SCHEMA
+from deepwork.schemas.policy_schema import POLICY_FRONTMATTER_SCHEMA
 from deepwork.utils.validation import ValidationError, validate_against_schema
 
 
@@ -523,105 +523,3 @@ def evaluate_policies(
             results.append(result)
 
     return results
-
-
-# =============================================================================
-# Legacy v1 Support (for migration)
-# =============================================================================
-
-
-@dataclass
-class PolicyV1:
-    """Legacy v1 policy format (from .deepwork.policy.yml)."""
-
-    name: str
-    triggers: list[str]
-    safety: list[str] = field(default_factory=list)
-    instructions: str = ""
-    compare_to: str = DEFAULT_COMPARE_TO
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any], base_dir: Path | None = None) -> "PolicyV1":
-        """Create PolicyV1 from dictionary (legacy format)."""
-        trigger = data["trigger"]
-        triggers = [trigger] if isinstance(trigger, str) else list(trigger)
-
-        safety_data = data.get("safety", [])
-        safety = [safety_data] if isinstance(safety_data, str) else list(safety_data)
-
-        if "instructions" in data:
-            instructions = data["instructions"]
-        elif "instructions_file" in data:
-            if base_dir is None:
-                raise PolicyParseError(
-                    f"Policy '{data['name']}' uses instructions_file but no base_dir provided"
-                )
-            instructions_path = base_dir / data["instructions_file"]
-            if not instructions_path.exists():
-                raise PolicyParseError(
-                    f"Policy '{data['name']}' instructions file not found: {instructions_path}"
-                )
-            instructions = instructions_path.read_text()
-        else:
-            raise PolicyParseError(
-                f"Policy '{data['name']}' must have 'instructions' or 'instructions_file'"
-            )
-
-        return cls(
-            name=data["name"],
-            triggers=triggers,
-            safety=safety,
-            instructions=instructions,
-            compare_to=data.get("compare_to", DEFAULT_COMPARE_TO),
-        )
-
-
-def parse_policy_file(policy_path: Path | str, base_dir: Path | None = None) -> list[PolicyV1]:
-    """
-    Parse policy definitions from a YAML file (legacy v1 format).
-
-    Args:
-        policy_path: Path to .deepwork.policy.yml file
-        base_dir: Base directory for resolving instructions_file paths
-
-    Returns:
-        List of parsed PolicyV1 objects
-    """
-    policy_path = Path(policy_path)
-
-    if not policy_path.exists():
-        raise PolicyParseError(f"Policy file does not exist: {policy_path}")
-
-    if not policy_path.is_file():
-        raise PolicyParseError(f"Policy path is not a file: {policy_path}")
-
-    if base_dir is None:
-        base_dir = policy_path.parent
-
-    try:
-        with open(policy_path, encoding="utf-8") as f:
-            policy_data = yaml.safe_load(f)
-    except yaml.YAMLError as e:
-        raise PolicyParseError(f"Failed to parse policy YAML: {e}") from e
-    except OSError as e:
-        raise PolicyParseError(f"Failed to read policy file: {e}") from e
-
-    if policy_data is None:
-        return []
-
-    if not isinstance(policy_data, list):
-        raise PolicyParseError(
-            f"Policy file must contain a list of policies, got {type(policy_data).__name__}"
-        )
-
-    try:
-        validate_against_schema(policy_data, POLICY_SCHEMA)
-    except ValidationError as e:
-        raise PolicyParseError(f"Policy definition validation failed: {e}") from e
-
-    policies = []
-    for policy_item in policy_data:
-        policy = PolicyV1.from_dict(policy_item, base_dir)
-        policies.append(policy)
-
-    return policies

@@ -46,7 +46,7 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── detector.py     # AI platform detection
 │       │   ├── generator.py    # Command file generation
 │       │   ├── parser.py       # Job definition parsing
-│       │   ├── policy_parser.py    # Policy definition parsing (v1 and v2)
+│       │   ├── policy_parser.py    # Policy definition parsing
 │       │   ├── pattern_matcher.py  # Variable pattern matching for policies
 │       │   ├── policy_queue.py     # Policy state queue system
 │       │   ├── command_executor.py # Command action execution
@@ -56,8 +56,7 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── wrapper.py           # Cross-platform input/output normalization
 │       │   ├── claude_hook.sh       # Shell wrapper for Claude Code
 │       │   ├── gemini_hook.sh       # Shell wrapper for Gemini CLI
-│       │   ├── policy_check.py      # Cross-platform policy evaluation hook
-│       │   └── evaluate_policies.py # Legacy policy evaluation CLI
+│       │   └── policy_check.py      # Cross-platform policy evaluation hook
 │       ├── templates/          # Command templates for each platform
 │       │   ├── claude/
 │       │   │   └── command-job-step.md.jinja
@@ -314,7 +313,6 @@ my-project/                     # User's project (target)
 │       │   └── steps/
 │       └── ad_campaign/
 │           └── ...
-├── .deepwork.policy.yml        # Legacy policy definitions (v1 format)
 ├── (rest of user's project files)
 └── README.md
 ```
@@ -1140,18 +1138,6 @@ The hooks are installed to `.claude/settings.json` during `deepwork sync`:
     ]
   }
 }
-```
-
-### Legacy v1 Format
-
-The v1 format (`.deepwork.policy.yml`) is still supported for backward compatibility:
-
-```yaml
-- name: "Update install guide"
-  trigger: "app/config/**/*"
-  safety: "docs/install_guide.md"
-  instructions: |
-    Configuration files have been modified. Please review docs/install_guide.md.
 ```
 
 ### Cross-Platform Hook Wrapper System

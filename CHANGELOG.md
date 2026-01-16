@@ -20,8 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated `policy_check.py` hook to use v2 system with queue-based deduplication
 
 ### Changed
-- Policy parser now supports both v1 (`.deepwork.policy.yml`) and v2 (`.deepwork/policies/*.md`) formats
 - Documentation updated with v2 policy examples and configuration
+
+### Removed
+- v1 policy format (`.deepwork.policy.yml`) - now only v2 frontmatter markdown format is supported
 
 ## [0.3.0] - 2026-01-16
 
