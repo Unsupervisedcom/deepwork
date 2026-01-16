@@ -11,17 +11,31 @@ on:
         type: boolean
   # Run on all PRs (shows as check, but steps skip unless in merge queue)
   pull_request:
+    branches: [main]
   # Run in the merge queue to validate before merging
   merge_group:
+    branches: [main]
 
 # Ensure only one instance runs at a time per PR/branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
+# Minimal permissions for this workflow
+permissions:
+  contents: read
+
 jobs:
+  # Job for PRs - always passes, actual validation happens in merge queue
+  pr-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: PR Check
+        run: echo "Claude Code integration tests will run in the merge queue"
+
   # Job 1: Validate command generation from fixtures (no API key needed)
-  # Runs on merge_group and workflow_dispatch, skipped on PRs (shows as passing check)
+  # Runs on merge_group and workflow_dispatch only
   validate-generation:
     runs-on: ubuntu-latest
     if: github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
