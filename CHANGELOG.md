@@ -5,13 +5,22 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.2] - 2026-01-15
+## [0.2.0] - 2026-01-16
 
 ### Added
-- Default policy template file created during `deepwork install`
-  - Generic, commented-out example policies suitable for any project
-  - Does not include deepwork-specific policies (those remain in the deepwork repo only)
-  - Preserves existing policy files if already present
+- `update.job` for maintaining standard jobs (#41)
+- `make_new_job.sh` script and templates directory for job scaffolding (#37)
+- Default policy template file created during `deepwork install` (#42)
+- Full e2e test suite: define → implement → execute workflow (#45)
+- Automated tests for all shell scripts (#40)
+
+### Changed
+- Standardized on "ask structured questions" phrasing across all jobs (#48)
+- deepwork_jobs bumped to v0.5.0, deepwork_policy to v0.2.0
+
+### Fixed
+- Stop hooks now properly return blocking JSON (#38)
+- Various CI workflow fixes (#35, #46, #47, #51, #52)
 
 ## [0.1.1] - 2026-01-15
 
@@ -49,6 +58,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[0.1.2]: https://github.com/anthropics/deepwork/releases/tag/v0.1.2
-[0.1.1]: https://github.com/anthropics/deepwork/releases/tag/v0.1.1
-[0.1.0]: https://github.com/anthropics/deepwork/releases/tag/v0.1.0
+[0.2.0]: https://github.com/anthropics/deepwork/releases/tag/0.2.0
+[0.1.1]: https://github.com/anthropics/deepwork/releases/tag/0.1.1
+[0.1.0]: https://github.com/anthropics/deepwork/releases/tag/0.1.0
