@@ -48,9 +48,13 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── parser.py       # Job definition parsing
 │       │   ├── policy_parser.py # Policy definition parsing
 │       │   └── hooks_syncer.py # Hook syncing to platforms
-│       ├── hooks/              # Hook evaluation modules
+│       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── __init__.py
-│       │   └── evaluate_policies.py  # Policy evaluation CLI
+│       │   ├── wrapper.py           # Cross-platform input/output normalization
+│       │   ├── claude_hook.sh       # Shell wrapper for Claude Code
+│       │   ├── gemini_hook.sh       # Shell wrapper for Gemini CLI
+│       │   ├── policy_check.py      # Cross-platform policy evaluation hook
+│       │   └── evaluate_policies.py # Legacy policy evaluation CLI
 │       ├── templates/          # Command templates for each platform
 │       │   ├── claude/
 │       │   │   └── command-job-step.md.jinja
@@ -1063,6 +1067,56 @@ The hooks are installed to `.claude/settings.json` during `deepwork sync`:
   }
 }
 ```
+
+### Cross-Platform Hook Wrapper System
+
+The `hooks/` module provides a wrapper system that allows writing hooks once in Python and running them on multiple platforms. This normalizes the differences between Claude Code and Gemini CLI hook systems.
+
+**Architecture:**
+```
+┌─────────────────┐     ┌─────────────────┐
+│  Claude Code    │     │   Gemini CLI    │
+│  (Stop event)   │     │ (AfterAgent)    │
+└────────┬────────┘     └────────┬────────┘
+         │                       │
+         ▼                       ▼
+┌─────────────────┐     ┌─────────────────┐
+│ claude_hook.sh  │     │ gemini_hook.sh  │
+│ (shell wrapper) │     │ (shell wrapper) │
+└────────┬────────┘     └────────┬────────┘
+         │                       │
+         └───────────┬───────────┘
+                     ▼
+           ┌─────────────────┐
+           │   wrapper.py    │
+           │ (normalization) │
+           └────────┬────────┘
+                    ▼
+           ┌─────────────────┐
+           │  Python Hook    │
+           │ (common logic)  │
+           └─────────────────┘
+```
+
+**Key normalizations:**
+- Event names: `Stop` ↔ `AfterAgent`, `PreToolUse` ↔ `BeforeTool`, `UserPromptSubmit` ↔ `BeforeAgent`
+- Tool names: `Write` ↔ `write_file`, `Bash` ↔ `shell`, `Read` ↔ `read_file`
+- Decision values: `block` → `deny` for Gemini CLI
+- Environment variables: `CLAUDE_PROJECT_DIR` ↔ `GEMINI_PROJECT_DIR`
+
+**Usage:**
+```python
+from deepwork.hooks.wrapper import HookInput, HookOutput, run_hook, Platform
+
+def my_hook(input: HookInput) -> HookOutput:
+    if input.event == NormalizedEvent.AFTER_AGENT:
+        return HookOutput(decision="block", reason="Complete X first")
+    return HookOutput()
+
+# Called via: claude_hook.sh mymodule or gemini_hook.sh mymodule
+```
+
+See `doc/platform/` for detailed platform-specific hook documentation.
 
 ### Policy Schema
 
