@@ -20,20 +20,19 @@ permissions:
   statuses: write
 
 jobs:
-  # Job for merge queue - always passes since CLA is checked at PR time
-  merge-queue-pass:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
-    steps:
-      - name: CLA already verified at PR time
-        run: echo "CLA check is performed on PRs, not in merge queue. Passing."
-
+  # Single job that handles all event types with consistent naming
+  # This ensures the 'cla-check' status is reported for both PRs and merge queue
   cla-check:
     runs-on: ubuntu-latest
-    if: github.event_name != 'merge_group' && github.event_name != 'workflow_dispatch'
     steps:
+      # For merge queue and workflow_dispatch: skip actual CLA check (already verified at PR time)
+      - name: Skip CLA for merge queue
+        if: github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
+        run: echo "CLA check is performed on PRs, not in merge queue. Passing."
+
+      # For PRs and issue comments: run the actual CLA check
       - name: "CLA Assistant"
-        if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA') || github.event_name == 'pull_request_target'
+        if: github.event_name != 'merge_group' && github.event_name != 'workflow_dispatch' && ((github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA') || github.event_name == 'pull_request_target')
         uses: contributor-assistant/github-action@v2.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -45,10 +44,10 @@ jobs:
           # Branch where CLA signatures will be stored
           branch: 'IMPT_cla_signatures'
           allowlist: 'dependabot[bot],github-actions[bot],claude,copilot,copilot-swe-agent[bot]'
-          
+
           # Custom text for the CLA comment
           custom-pr-sign-comment: 'I have read the CLA Document and I hereby sign the CLA'
           custom-allsigned-prcomment: 'All contributors have signed the CLA. ✅'
-          
+
           lock-pullrequest-aftermerge: false
           use-dco-flag: true
