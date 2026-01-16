@@ -32,20 +32,24 @@ def git_repo_with_policy(tmp_path: Path) -> Path:
     repo.index.add(["README.md"])
     repo.index.commit("Initial commit")
 
-    # Policy that triggers on any Python file
-    policy_file = tmp_path / ".deepwork.policy.yml"
+    # Create v2 policy directory and file
+    policies_dir = tmp_path / ".deepwork" / "policies"
+    policies_dir.mkdir(parents=True, exist_ok=True)
+
+    # Policy that triggers on any Python file (v2 format)
+    policy_file = policies_dir / "python-file-policy.md"
     policy_file.write_text(
-        """- name: "Python File Policy"
-  trigger: "**/*.py"
-  compare_to: prompt
-  instructions: |
-    Review Python files for quality.
+        """---
+name: Python File Policy
+trigger: "**/*.py"
+compare_to: prompt
+---
+Review Python files for quality.
 """
     )
 
     # Empty baseline so new files trigger
     deepwork_dir = tmp_path / ".deepwork"
-    deepwork_dir.mkdir(exist_ok=True)
     (deepwork_dir / ".last_work_tree").write_text("")
 
     return tmp_path

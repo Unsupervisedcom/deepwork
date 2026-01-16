@@ -17,7 +17,7 @@ from .conftest import run_shell_script
 
 @pytest.fixture
 def git_repo_with_src_policy(tmp_path: Path) -> Path:
-    """Create a git repo with a policy file that triggers on src/** changes."""
+    """Create a git repo with a v2 policy file that triggers on src/** changes."""
     repo = Repo.init(tmp_path)
 
     readme = tmp_path / "README.md"
@@ -25,21 +25,25 @@ def git_repo_with_src_policy(tmp_path: Path) -> Path:
     repo.index.add(["README.md"])
     repo.index.commit("Initial commit")
 
+    # Create v2 policy directory and file
+    policies_dir = tmp_path / ".deepwork" / "policies"
+    policies_dir.mkdir(parents=True, exist_ok=True)
+
     # Use compare_to: prompt since test repos don't have origin remote
-    policy_file = tmp_path / ".deepwork.policy.yml"
+    policy_file = policies_dir / "test-policy.md"
     policy_file.write_text(
-        """- name: "Test Policy"
-  trigger: "src/**/*"
-  compare_to: prompt
-  instructions: |
-    This is a test policy that fires when src/ files change.
-    Please address this policy.
+        """---
+name: Test Policy
+trigger: "src/**/*"
+compare_to: prompt
+---
+This is a test policy that fires when src/ files change.
+Please address this policy.
 """
     )
 
     # Empty baseline means all current files are "new"
     deepwork_dir = tmp_path / ".deepwork"
-    deepwork_dir.mkdir(exist_ok=True)
     (deepwork_dir / ".last_work_tree").write_text("")
 
     return tmp_path
@@ -112,14 +116,14 @@ class TestPolicyStopHookBlocking:
         # Should be empty JSON (no blocking)
         assert result == {}, f"Expected empty JSON when no policies fire, got: {result}"
 
-    def test_exits_early_when_no_policy_file(self, policy_hooks_dir: Path, git_repo: Path) -> None:
-        """Test that the hook exits cleanly when no policy file exists."""
+    def test_exits_early_when_no_policy_dir(self, policy_hooks_dir: Path, git_repo: Path) -> None:
+        """Test that the hook exits cleanly when no policy directory exists."""
         script_path = policy_hooks_dir / "policy_stop_hook.sh"
         stdout, stderr, code = run_stop_hook(script_path, git_repo)
 
         # Should exit with code 0 and produce no output (or empty)
         assert code == 0, f"Expected exit code 0, got {code}. stderr: {stderr}"
-        # No output is fine when there's no policy file
+        # No output is fine when there's no policy directory
         output = stdout.strip()
         if output:
             # If there is output, it should be valid JSON
@@ -167,7 +171,7 @@ class TestPolicyStopHookBlocking:
         try:
             # Run the stop hook with transcript path
             script_path = policy_hooks_dir / "policy_stop_hook.sh"
-            hook_input = {"transcript_path": transcript_path}
+            hook_input = {"transcript_path": transcript_path, "hook_event_name": "Stop"}
             stdout, stderr, code = run_stop_hook(script_path, git_repo_with_src_policy, hook_input)
 
             # Parse the output
@@ -191,22 +195,24 @@ class TestPolicyStopHookBlocking:
         repo.index.add(["README.md"])
         repo.index.commit("Initial commit")
 
-        # Create a policy with a safety pattern
-        # Use compare_to: prompt since test repos don't have origin remote
-        policy_file = tmp_path / ".deepwork.policy.yml"
+        # Create v2 policy with a safety pattern
+        policies_dir = tmp_path / ".deepwork" / "policies"
+        policies_dir.mkdir(parents=True, exist_ok=True)
+
+        policy_file = policies_dir / "documentation-policy.md"
         policy_file.write_text(
-            """- name: "Documentation Policy"
-  trigger: "src/**/*"
-  safety: "docs/**/*"
-  compare_to: prompt
-  instructions: |
-    Update documentation when changing source files.
+            """---
+name: Documentation Policy
+trigger: "src/**/*"
+safety: "docs/**/*"
+compare_to: prompt
+---
+Update documentation when changing source files.
 """
         )
 
         # Create .deepwork directory with empty baseline
         deepwork_dir = tmp_path / ".deepwork"
-        deepwork_dir.mkdir(exist_ok=True)
         (deepwork_dir / ".last_work_tree").write_text("")
 
         # Create both trigger and safety files

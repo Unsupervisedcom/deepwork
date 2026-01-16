@@ -1,37 +1,40 @@
 name: deepwork_policy
-version: "0.2.0"
+version: "0.3.0"
 summary: "Policy enforcement for AI agent sessions"
 description: |
   Manages policies that automatically trigger when certain files change during an AI agent session.
   Policies help ensure that code changes follow team guidelines, documentation is updated,
   and architectural decisions are respected.
 
-  Policies are defined in a `.deepwork.policy.yml` file at the root of your project. Each policy
-  specifies:
-  - Trigger patterns: Glob patterns for files that, when changed, should trigger the policy
-  - Safety patterns: Glob patterns for files that, if also changed, mean the policy doesn't need to fire
-  - Instructions: What the agent should do when the policy triggers
+  Policies are defined as individual markdown files in `.deepwork/policies/` with YAML frontmatter.
+  This format supports:
+  - Detection modes: trigger/safety (default), set (bidirectional), pair (directional)
+  - Action types: prompt (show instructions), command (run idempotent commands)
+  - Variable pattern matching for file correspondence (e.g., `src/{path}.py` ↔ `tests/{path}_test.py`)
 
   Example use cases:
+  - Enforce source/test pairing with set patterns
+  - Run formatters automatically when files change
   - Update installation docs when configuration files change
   - Require security review when authentication code is modified
   - Ensure API documentation stays in sync with API code
-  - Remind developers to update changelogs
 
 changelog:
   - version: "0.1.0"
     changes: "Initial version"
   - version: "0.2.0"
     changes: "Standardized on 'ask structured questions' phrasing for user input"
+  - version: "0.3.0"
+    changes: "Updated for policy system v2 with detection modes, action types, and variable patterns"
 
 steps:
   - id: define
     name: "Define Policy"
-    description: "Create or update policy entries in .deepwork.policy.yml"
+    description: "Create or update policies in .deepwork/policies/"
     instructions_file: steps/define.md
     inputs:
       - name: policy_purpose
         description: "What guideline or constraint should this policy enforce?"
     outputs:
-      - .deepwork.policy.yml
+      - .deepwork/policies/*.md
     dependencies: []

@@ -17,7 +17,6 @@ The hook system provides:
 
 3. **Hook implementations**:
    - `policy_check.py` - Evaluates DeepWork policies on `after_agent` events
-   - `evaluate_policies.py` - Legacy Claude-specific policy evaluation
 
 ## Usage
 
@@ -180,4 +179,3 @@ pytest tests/shell_script_tests/test_hook_wrappers.py -v
 | `claude_hook.sh` | Shell wrapper for Claude Code |
 | `gemini_hook.sh` | Shell wrapper for Gemini CLI |
 | `policy_check.py` | Cross-platform policy evaluation hook |
-| `evaluate_policies.py` | Legacy Claude-specific policy evaluation |
