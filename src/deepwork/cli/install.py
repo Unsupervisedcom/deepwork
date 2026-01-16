@@ -216,8 +216,10 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
         )
     console.print("  [green]✓[/green] Git repository found")
 
-    # Step 2: Detect or validate platform
+    # Step 2: Detect or validate platform(s)
     detector = PlatformDetector(project_path)
+    platforms_to_add: list[str] = []
+    detected_adapters: list[AgentAdapter] = []
 
     if platform_name:
         # User specified platform - check if it's available
@@ -234,10 +236,11 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
             )
 
         console.print(f"  [green]✓[/green] {adapter.display_name} detected")
-        platform_to_add = adapter.name
+        platforms_to_add = [adapter.name]
+        detected_adapters = [adapter]
     else:
-        # Auto-detect platform
-        console.print("[yellow]→[/yellow] Auto-detecting AI platform...")
+        # Auto-detect all available platforms
+        console.print("[yellow]→[/yellow] Auto-detecting AI platforms...")
         available_adapters = detector.detect_all_platforms()
 
         if not available_adapters:
@@ -251,17 +254,11 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
                 "Please set up one of these platforms first, or use --platform to specify."
             )
 
-        if len(available_adapters) > 1:
-            # Multiple platforms - ask user to specify
-            platform_names = ", ".join(a.display_name for a in available_adapters)
-            raise InstallError(
-                f"Multiple AI platforms detected: {platform_names}\n"
-                "Please specify which platform to use with --platform option."
-            )
-
-        adapter = available_adapters[0]
-        console.print(f"  [green]✓[/green] {adapter.display_name} detected")
-        platform_to_add = adapter.name
+        # Add all detected platforms
+        for adapter in available_adapters:
+            console.print(f"  [green]✓[/green] {adapter.display_name} detected")
+            platforms_to_add.append(adapter.name)
+        detected_adapters = available_adapters
 
     # Step 3: Create .deepwork/ directory structure
     console.print("[yellow]→[/yellow] Creating DeepWork directory structure...")
@@ -304,12 +301,16 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     if "platforms" not in config_data:
         config_data["platforms"] = []
 
-    # Add platform if not already present
-    if platform_to_add not in config_data["platforms"]:
-        config_data["platforms"].append(platform_to_add)
-        console.print(f"  [green]✓[/green] Added {adapter.display_name} to platforms")
-    else:
-        console.print(f"  [dim]•[/dim] {adapter.display_name} already configured")
+    # Add each platform if not already present
+    added_platforms: list[str] = []
+    for i, platform in enumerate(platforms_to_add):
+        adapter = detected_adapters[i]
+        if platform not in config_data["platforms"]:
+            config_data["platforms"].append(platform)
+            added_platforms.append(adapter.display_name)
+            console.print(f"  [green]✓[/green] Added {adapter.display_name} to platforms")
+        else:
+            console.print(f"  [dim]•[/dim] {adapter.display_name} already configured")
 
     save_yaml(config_file, config_data)
     console.print(f"  [green]✓[/green] Updated {config_file.relative_to(project_path)}")
@@ -328,8 +329,9 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
 
     # Success message
     console.print()
+    platform_names = ", ".join(a.display_name for a in detected_adapters)
     console.print(
-        f"[bold green]✓ DeepWork installed successfully for {adapter.display_name}![/bold green]"
+        f"[bold green]✓ DeepWork installed successfully for {platform_names}![/bold green]"
     )
     console.print()
     console.print("[bold]Next steps:[/bold]")
