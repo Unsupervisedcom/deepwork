@@ -9,6 +9,8 @@ on:
         required: false
         default: 'false'
         type: boolean
+  # Run on all PRs (shows as check, but steps skip unless in merge queue)
+  pull_request:
   # Run in the merge queue to validate before merging
   merge_group:
 
@@ -18,9 +20,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Job 1: Validate command generation from fixtures (always runs, no API key needed)
+  # Job 1: Validate command generation from fixtures (no API key needed)
+  # Runs on merge_group and workflow_dispatch, skipped on PRs (shows as passing check)
   validate-generation:
     runs-on: ubuntu-latest
+    if: github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
 
@@ -80,10 +84,11 @@ jobs:
 
   # Job 2: Full end-to-end test with Claude Code
   # Tests the COMPLETE workflow: define job -> implement -> execute
+  # Runs on merge_group and workflow_dispatch, skipped on PRs (shows as passing check)
   claude-code-e2e:
     runs-on: ubuntu-latest
     needs: validate-generation
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group'
+    if: github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
