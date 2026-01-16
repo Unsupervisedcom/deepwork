@@ -178,6 +178,10 @@ DeepWork follows a **Git-native, installation-only** design:
 your-project/
 ├── .deepwork/
 │   ├── config.yml          # Platform configuration
+│   ├── policies/           # Policy definitions (v2 format)
+│   │   └── policy-name.md  # Individual policy files
+│   ├── tmp/                # Temporary state (gitignored)
+│   │   └── policy/queue/   # Policy evaluation queue
 │   └── jobs/               # Job definitions
 │       └── job_name/
 │           ├── job.yml     # Job metadata
@@ -208,11 +212,16 @@ deepwork/
 │   ├── core/             # Core functionality
 │   │   ├── parser.py     # Job definition parsing
 │   │   ├── detector.py   # Platform detection
-│   │   └── generator.py  # Skill file generation
+│   │   ├── generator.py  # Skill file generation
+│   │   ├── policy_parser.py    # Policy parsing (v1 and v2)
+│   │   ├── pattern_matcher.py  # Variable pattern matching
+│   │   ├── policy_queue.py     # Policy state queue
+│   │   └── command_executor.py # Command action execution
 │   ├── hooks/            # Cross-platform hook wrappers
 │   │   ├── wrapper.py    # Input/output normalization
-│   │   ├── claude_hook.sh  # Claude Code adapter
-│   │   └── gemini_hook.sh  # Gemini CLI adapter
+│   │   ├── policy_check.py   # Policy evaluation hook (v2)
+│   │   ├── claude_hook.sh    # Claude Code adapter
+│   │   └── gemini_hook.sh    # Gemini CLI adapter
 │   ├── templates/        # Jinja2 templates
 │   │   ├── claude/       # Claude Code templates
 │   │   └── gemini/       # Gemini CLI templates
@@ -243,15 +252,31 @@ Maintain a clean repository with automatic branch management and isolation.
 ### 🛡️ Automated Policies
 Enforce project standards and best practices without manual oversight. Policies monitor file changes and automatically prompt your AI assistant to follow specific guidelines when relevant code is modified.
 - **Automatic Triggers**: Detect when specific files or directories are changed to fire relevant policies.
+- **File Correspondence**: Define bidirectional (set) or directional (pair) relationships between files.
+- **Command Actions**: Run idempotent commands (formatters, linters) automatically when files change.
 - **Contextual Guidance**: Instructions are injected directly into the AI's workflow at the right moment.
-- **Common Use Cases**: Keep documentation in sync, enforce security reviews, or automate changelog updates.
 
-**Example Policy**:
-```yaml
-# Enforce documentation updates when config changes
-- name: "Update docs on config changes"
-  trigger: "app/config/**/*"
-  instructions: "Configuration files changed. Please update docs/install_guide.md."
+**Example Policy** (`.deepwork/policies/source-test-pairing.md`):
+```markdown
+---
+name: Source/Test Pairing
+set:
+  - src/{path}.py
+  - tests/{path}_test.py
+---
+When source files change, corresponding test files should also change.
+Please create or update tests for the modified source files.
+```
+
+**Example Command Policy** (`.deepwork/policies/format-python.md`):
+```markdown
+---
+name: Format Python
+trigger: "**/*.py"
+action:
+  command: "ruff format {file}"
+  run_for: each_match
+---
 ```
 
 ### 🚀 Multi-Platform Support
