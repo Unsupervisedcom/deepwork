@@ -260,22 +260,6 @@ Generate native commands and skills tailored for your AI coding assistant.
 
 DeepWork is currently in MVP phase. Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development guide.
 
-## CI/CD Setup
-
-DeepWork uses GitHub's merge queue for efficient CI. The workflow configuration ensures required checks pass in both PR and merge queue contexts using a skip pattern:
-
-| Workflow | On PRs | In Merge Queue |
-|----------|--------|----------------|
-| **Validate** (lint, unit tests) | Runs | Runs |
-| **Integration Tests** | Skipped (passes) | Runs |
-| **E2E Tests** | Skipped (passes) | Runs |
-| **CLA Check** | Runs | Skipped (passes) |
-
-**How it works**: Jobs/steps use `if: github.event_name == 'merge_group'` conditions to skip execution on PRs while still satisfying GitHub's required checks. This allows the same check names to be required in branch protection rules, passing in both contexts:
-- PRs get fast feedback (lint + unit tests only)
-- Merge queue runs expensive integration/e2e tests before merging
-- CLA verification happens on PRs only (already signed before merge queue)
-
 ## License
 
 DeepWork is licensed under the Business Source License 1.1 (BSL 1.1). See [LICENSE.md](LICENSE.md) for details.
