@@ -199,22 +199,14 @@ action:
 | CMD-5.2.1 | Multiple files | `["a.js", "b.js", "c.js"]` | `eslint --fix a.js b.js c.js` |
 | CMD-5.2.2 | Single file | `["a.js"]` | `eslint --fix a.js` |
 
-### 5.3 Idempotency Verification
-
-| ID | Scenario | First Run | Second Run | Expected Result |
-|----|----------|-----------|------------|-----------------|
-| CMD-5.3.1 | Truly idempotent | Changes files | No changes | Pass |
-| CMD-5.3.2 | Not idempotent | Changes files | Changes files | Fail |
-| CMD-5.3.3 | No changes needed | No changes | (not run) | Pass |
-
-### 5.4 Command Errors
+### 5.3 Command Errors
 
 | ID | Scenario | Command Result | Expected |
 |----|----------|----------------|----------|
-| CMD-5.4.1 | Exit code 0 | Success | Pass |
-| CMD-5.4.2 | Exit code 1 | Failure | Fail, show stderr |
-| CMD-5.4.3 | Timeout | Command hangs | Fail, timeout error |
-| CMD-5.4.4 | Command not found | Not executable | Fail, not found error |
+| CMD-5.3.1 | Exit code 0 | Success | Pass |
+| CMD-5.3.2 | Exit code 1 | Failure | Fail, show stderr |
+| CMD-5.3.3 | Timeout | Command hangs | Fail, timeout error |
+| CMD-5.3.4 | Command not found | Not executable | Fail, not found error |
 
 ## 6. Queue System
 

@@ -74,7 +74,7 @@ action:
   run_for: each_match
 ```
 
-Command actions execute idempotent commands. The system verifies idempotency by running the command twice and checking that no additional changes occur.
+Command actions should be idempotent—running them multiple times produces the same result. Lint formatters like `black`, `ruff format`, and `prettier` are good examples.
 
 ## Architecture
 
@@ -471,7 +471,6 @@ In `.deepwork/config.yml`:
 policy:
   enabled: true
   policies_dir: .deepwork/policies  # Can be customized
-  output_mode: batched  # batched or individual
 ```
 
 ## Performance Considerations
