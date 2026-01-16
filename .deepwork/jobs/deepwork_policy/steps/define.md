@@ -6,13 +6,11 @@ Create or update policy entries in the `.deepwork.policy.yml` file to enforce te
 
 ## Task
 
-Guide the user through defining a new policy by asking structured questions. **Do not create the policy without first understanding what they want to enforce.**
-
-**Important**: Use the AskUserQuestion tool to ask structured questions when gathering information from the user. This provides a better user experience with clear options and guided choices.
+Guide the user through defining a new policy by asking clarifying questions. **Do not create the policy without first understanding what they want to enforce.**
 
 ### Step 1: Understand the Policy Purpose
 
-Start by asking structured questions to understand what the user wants to enforce:
+Start by asking questions to understand what the user wants to enforce:
 
 1. **What guideline or constraint should this policy enforce?**
    - What situation triggers the need for action?
@@ -177,7 +175,6 @@ Create or update this file at the project root with the new policy entry.
 
 ## Quality Criteria
 
-- Asked structured questions to understand user requirements
 - Policy name is clear and descriptive
 - Trigger patterns accurately match the intended files
 - Safety patterns prevent unnecessary triggering

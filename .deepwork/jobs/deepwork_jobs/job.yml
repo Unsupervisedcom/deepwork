@@ -1,12 +1,12 @@
 name: deepwork_jobs
-version: "0.5.0"
+version: "0.4.0"
 summary: "DeepWork job management commands"
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
   workflows and learn from running them.
 
   The `define` command guides you through an interactive process to create a new job by
-  asking structured questions about your workflow, understanding each step's inputs and outputs,
+  asking detailed questions about your workflow, understanding each step's inputs and outputs,
   and generating all necessary files.
 
   The `learn` command reflects on conversations where DeepWork jobs were run, identifies
@@ -22,8 +22,6 @@ changelog:
     changes: "Added make_new_job.sh script and templates directory; updated instructions to reference templates instead of inline examples"
   - version: "0.4.0"
     changes: "Removed implementation_summary and learning_summary outputs; simplified step outputs"
-  - version: "0.5.0"
-    changes: "Standardized on 'ask structured questions' phrasing for user input; Updated quality criteria hooks to verify phrase usage; Added guidance in implement.md to use phrase in generated instructions"
 
 steps:
   - id: define
@@ -41,14 +39,13 @@ steps:
         - prompt: |
             Verify the job.yml output meets ALL quality criteria before completing:
 
-            1. **User Understanding**: Did you fully understand the user's workflow by asking structured questions?
-            2. **Structured Questions Used**: Did you ask structured questions (using the AskUserQuestion tool) to gather user input?
-            3. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
-            4. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
-            5. **Concise Summary**: Is the summary under 200 characters and descriptive?
-            6. **Rich Description**: Does the description provide enough context for future refinement?
-            7. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
-            8. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
+            1. **User Understanding**: Did you fully understand the user's workflow through interactive Q&A?
+            2. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
+            3. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
+            4. **Concise Summary**: Is the summary under 200 characters and descriptive?
+            5. **Rich Description**: Does the description provide enough context for future refinement?
+            6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
+            7. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 
             If ANY criterion is not met, continue working to address it.
             If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
@@ -74,10 +71,9 @@ steps:
             3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
             4. **Output Examples**: Does each instruction file show what good output looks like?
             5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
-            6. **Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase "ask structured questions"?
-            7. **Sync Complete**: Has `deepwork sync` been run successfully?
-            8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-            9. **Policies Considered**: Have you thought about whether policies would benefit this job?
+            6. **Sync Complete**: Has `deepwork sync` been run successfully?
+            7. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+            8. **Policies Considered**: Have you thought about whether policies would benefit this job?
                - If relevant policies were identified, did you explain them and offer to run `/deepwork_policy.define`?
                - Not every job needs policies - only suggest when genuinely helpful.
 

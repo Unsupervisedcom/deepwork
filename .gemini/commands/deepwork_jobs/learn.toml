@@ -19,7 +19,7 @@ Core commands for managing DeepWork jobs. These commands help you define new mul
 workflows and learn from running them.
 
 The `define` command guides you through an interactive process to create a new job by
-asking structured questions about your workflow, understanding each step's inputs and outputs,
+asking detailed questions about your workflow, understanding each step's inputs and outputs,
 and generating all necessary files.
 
 The `learn` command reflects on conversations where DeepWork jobs were run, identifies

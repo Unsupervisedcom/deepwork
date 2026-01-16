@@ -6,15 +6,13 @@ Create a `job.yml` specification file that defines the structure of a new DeepWo
 
 ## Task
 
-Guide the user through defining a job specification by asking structured questions. **Do not attempt to create the specification without first fully understanding the user's needs.**
-
-**Important**: Use the AskUserQuestion tool to ask structured questions when gathering information from the user. This provides a better user experience with clear options and guided choices.
+Guide the user through defining a job specification by asking clarifying questions. **Do not attempt to create the specification without first fully understanding the user's needs.**
 
 The output of this step is **only** the `job.yml` file - a complete specification of the workflow. The actual step instruction files will be created in the next step (`implement`).
 
 ### Step 1: Understand the Job Purpose
 
-Start by asking structured questions to understand what the user wants to accomplish:
+Start by asking questions to understand what the user wants to accomplish:
 
 1. **What is the overall goal of this workflow?**
    - What complex task are they trying to accomplish?
@@ -33,7 +31,7 @@ Start by asking structured questions to understand what the user wants to accomp
 
 ### Step 2: Define Each Step
 
-For each major phase they mentioned, ask structured questions to gather details:
+For each major phase they mentioned, ask detailed questions:
 
 1. **Step Purpose**
    - What exactly does this step accomplish?
@@ -94,7 +92,7 @@ After gathering information about all steps:
 
 For each step, consider whether it would benefit from **quality validation loops**. Stop hooks allow the AI agent to iteratively refine its work until quality criteria are met.
 
-**Ask structured questions about quality validation:**
+**Ask the user about quality validation:**
 - "Are there specific quality criteria that must be met for this step?"
 - "Would you like the agent to validate its work before completing?"
 - "What would make you send the work back for revision?"
@@ -283,11 +281,11 @@ Run `/deepwork_jobs.implement` to generate the instruction files for each step b
 ## Important Guidelines
 
 1. **Focus on specification only** - Don't create instruction files yet
-2. **Ask structured questions** - Never skip the discovery phase; use the AskUserQuestion tool
+2. **Ask clarifying questions** - Never skip the discovery phase
 3. **Rich context in description** - This helps with future refinement
 4. **Validate understanding** - Summarize and confirm before creating
 5. **Use examples** - Help users understand what good specifications look like
-6. **Understand file organization** - Always ask structured questions about where outputs should be saved and if subdirectories are needed
+6. **Understand file organization** - Always ask where outputs should be saved and if subdirectories are needed
 
 ## Validation Rules
 
@@ -321,7 +319,6 @@ After creating the file:
 
 ## Quality Criteria
 
-- Asked structured questions to fully understand user requirements
 - User fully understands what job they're creating
 - All steps have clear inputs and outputs
 - Dependencies make logical sense

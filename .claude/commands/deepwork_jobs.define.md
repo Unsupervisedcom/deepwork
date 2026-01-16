@@ -11,14 +11,13 @@ hooks:
 
             Verify the job.yml output meets ALL quality criteria before completing:
 
-            1. **User Understanding**: Did you fully understand the user's workflow by asking structured questions?
-            2. **Structured Questions Used**: Did you ask structured questions (using the AskUserQuestion tool) to gather user input?
-            3. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
-            4. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
-            5. **Concise Summary**: Is the summary under 200 characters and descriptive?
-            6. **Rich Description**: Does the description provide enough context for future refinement?
-            7. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
-            8. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
+            1. **User Understanding**: Did you fully understand the user's workflow through interactive Q&A?
+            2. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
+            3. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
+            4. **Concise Summary**: Is the summary under 200 characters and descriptive?
+            5. **Rich Description**: Does the description provide enough context for future refinement?
+            6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
+            7. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 
             If ANY criterion is not met, continue working to address it.
             If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
@@ -48,7 +47,7 @@ Core commands for managing DeepWork jobs. These commands help you define new mul
 workflows and learn from running them.
 
 The `define` command guides you through an interactive process to create a new job by
-asking structured questions about your workflow, understanding each step's inputs and outputs,
+asking detailed questions about your workflow, understanding each step's inputs and outputs,
 and generating all necessary files.
 
 The `learn` command reflects on conversations where DeepWork jobs were run, identifies
@@ -67,15 +66,13 @@ Create a `job.yml` specification file that defines the structure of a new DeepWo
 
 ## Task
 
-Guide the user through defining a job specification by asking structured questions. **Do not attempt to create the specification without first fully understanding the user's needs.**
-
-**Important**: Use the AskUserQuestion tool to ask structured questions when gathering information from the user. This provides a better user experience with clear options and guided choices.
+Guide the user through defining a job specification by asking clarifying questions. **Do not attempt to create the specification without first fully understanding the user's needs.**
 
 The output of this step is **only** the `job.yml` file - a complete specification of the workflow. The actual step instruction files will be created in the next step (`implement`).
 
 ### Step 1: Understand the Job Purpose
 
-Start by asking structured questions to understand what the user wants to accomplish:
+Start by asking questions to understand what the user wants to accomplish:
 
 1. **What is the overall goal of this workflow?**
    - What complex task are they trying to accomplish?
@@ -94,7 +91,7 @@ Start by asking structured questions to understand what the user wants to accomp
 
 ### Step 2: Define Each Step
 
-For each major phase they mentioned, ask structured questions to gather details:
+For each major phase they mentioned, ask detailed questions:
 
 1. **Step Purpose**
    - What exactly does this step accomplish?
@@ -155,7 +152,7 @@ After gathering information about all steps:
 
 For each step, consider whether it would benefit from **quality validation loops**. Stop hooks allow the AI agent to iteratively refine its work until quality criteria are met.
 
-**Ask structured questions about quality validation:**
+**Ask the user about quality validation:**
 - "Are there specific quality criteria that must be met for this step?"
 - "Would you like the agent to validate its work before completing?"
 - "What would make you send the work back for revision?"
@@ -344,11 +341,11 @@ Run `/deepwork_jobs.implement` to generate the instruction files for each step b
 ## Important Guidelines
 
 1. **Focus on specification only** - Don't create instruction files yet
-2. **Ask structured questions** - Never skip the discovery phase; use the AskUserQuestion tool
+2. **Ask clarifying questions** - Never skip the discovery phase
 3. **Rich context in description** - This helps with future refinement
 4. **Validate understanding** - Summarize and confirm before creating
 5. **Use examples** - Help users understand what good specifications look like
-6. **Understand file organization** - Always ask structured questions about where outputs should be saved and if subdirectories are needed
+6. **Understand file organization** - Always ask where outputs should be saved and if subdirectories are needed
 
 ## Validation Rules
 
@@ -382,7 +379,6 @@ After creating the file:
 
 ## Quality Criteria
 
-- Asked structured questions to fully understand user requirements
 - User fully understands what job they're creating
 - All steps have clear inputs and outputs
 - Dependencies make logical sense
@@ -429,14 +425,13 @@ This step uses an iterative quality validation loop. After completing your work,
 ### Quality Criteria
 Verify the job.yml output meets ALL quality criteria before completing:
 
-1. **User Understanding**: Did you fully understand the user's workflow by asking structured questions?
-2. **Structured Questions Used**: Did you ask structured questions (using the AskUserQuestion tool) to gather user input?
-3. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
-4. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
-5. **Concise Summary**: Is the summary under 200 characters and descriptive?
-6. **Rich Description**: Does the description provide enough context for future refinement?
-7. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
-8. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
+1. **User Understanding**: Did you fully understand the user's workflow through interactive Q&A?
+2. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
+3. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
+4. **Concise Summary**: Is the summary under 200 characters and descriptive?
+5. **Rich Description**: Does the description provide enough context for future refinement?
+6. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
+7. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 
 If ANY criterion is not met, continue working to address it.
 If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
