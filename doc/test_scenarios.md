@@ -76,17 +76,17 @@ Setup: Branch diverged 3 commits ago from main
 
 ### 2.3 Promise Tags
 
-Policy names are now derived from filenames (without `.md` extension).
+Promise tags use the policy's `name` field (not filename) with a checkmark prefix for human readability.
 
-| ID | Scenario | Conversation Contains | Policy File | Expected |
-|----|----------|----------------------|-------------|----------|
-| IP-2.3.1 | Exact promise | `<promise>readme-accuracy</promise>` | `readme-accuracy.md` | Suppressed |
-| IP-2.3.2 | Promise with checkmark | `<promise>✓ readme-accuracy</promise>` | `readme-accuracy.md` | Suppressed |
-| IP-2.3.3 | Case insensitive | `<promise>README-ACCURACY</promise>` | `readme-accuracy.md` | Suppressed |
-| IP-2.3.4 | Whitespace | `<promise>  readme-accuracy  </promise>` | `readme-accuracy.md` | Suppressed |
-| IP-2.3.5 | No promise | (none) | `readme-accuracy.md` | Not suppressed |
-| IP-2.3.6 | Wrong promise | `<promise>other-policy</promise>` | `readme-accuracy.md` | Not suppressed |
-| IP-2.3.7 | Multiple promises | `<promise>a</promise><promise>b</promise>` | `a.md` | Suppressed |
+| ID | Scenario | Conversation Contains | Policy `name` | Expected |
+|----|----------|----------------------|---------------|----------|
+| IP-2.3.1 | Standard promise | `<promise>✓ README Accuracy</promise>` | `README Accuracy` | Suppressed |
+| IP-2.3.2 | Without checkmark | `<promise>README Accuracy</promise>` | `README Accuracy` | Suppressed |
+| IP-2.3.3 | Case insensitive | `<promise>✓ readme accuracy</promise>` | `README Accuracy` | Suppressed |
+| IP-2.3.4 | Whitespace | `<promise>  ✓ README Accuracy  </promise>` | `README Accuracy` | Suppressed |
+| IP-2.3.5 | No promise | (none) | `README Accuracy` | Not suppressed |
+| IP-2.3.6 | Wrong promise | `<promise>✓ Other Policy</promise>` | `README Accuracy` | Not suppressed |
+| IP-2.3.7 | Multiple promises | `<promise>✓ A</promise><promise>✓ B</promise>` | `A` | Suppressed |
 
 ## 3. Correspondence Sets
 
@@ -259,38 +259,22 @@ action:
 
 ## 7. Output Management
 
-### 7.1 Priority Ordering
-
-```
-Policies:
-- Critical: "Security Review"
-- High: "API Documentation"
-- Normal: "README Accuracy"
-- Low: "Code Style"
-```
-
-| ID | Scenario | Triggered Policies | Expected Order |
-|----|----------|-------------------|----------------|
-| OM-7.1.1 | All priorities | All 4 | Security, API, README, Style |
-| OM-7.1.2 | Mixed | High, Low | API, Style |
-| OM-7.1.3 | Same priority | 3 Normal | Alphabetical within priority |
-
-### 7.2 Output Batching
+### 7.1 Output Batching
 
 | ID | Scenario | Triggered Policies | Expected Output |
 |----|----------|-------------------|-----------------|
-| OM-7.2.1 | Single policy | 1 | Full instructions |
-| OM-7.2.2 | Two policies | 2 | Both, numbered |
-| OM-7.2.3 | Many policies | 10 | Batched with summary |
-| OM-7.2.4 | Same type | 3 Source/Test pairs | Grouped under heading |
+| OM-7.1.1 | Single policy | 1 | Full instructions |
+| OM-7.1.2 | Two policies | 2 | Both, grouped |
+| OM-7.1.3 | Many policies | 10 | Batched by policy name |
+| OM-7.1.4 | Same policy multiple files | 3 Source/Test pairs | Grouped under single heading |
 
-### 7.3 Deferred Policies
+### 7.2 Output Format
 
-| ID | Scenario | Policy defer Setting | Agent Action | Expected |
-|----|----------|---------------------|--------------|----------|
-| OM-7.3.1 | Deferred, stop | `defer: true` | Stop | Not shown |
-| OM-7.3.2 | Deferred, session end | `defer: true` | Session ends | Shown |
-| OM-7.3.3 | Not deferred | `defer: false` | Stop | Shown |
+| ID | Scenario | Input | Expected Format |
+|----|----------|-------|-----------------|
+| OM-7.2.1 | Correspondence violation | `src/foo.py` missing `tests/foo_test.py` | `src/foo.py → tests/foo_test.py` |
+| OM-7.2.2 | Multiple same policy | 3 correspondence violations | Single heading, 3 lines |
+| OM-7.2.3 | Instruction policy | Source files changed | Short summary + instructions |
 
 ## 8. Schema Validation
 
@@ -299,17 +283,17 @@ Policies:
 | ID | Scenario | Missing Field | Expected Error |
 |----|----------|---------------|----------------|
 | SV-8.1.1 | Missing name | `name` | "required field 'name'" |
-| SV-8.1.2 | Missing trigger (instruction) | `trigger` | "required 'trigger', 'set', or 'pair'" |
-| SV-8.1.3 | Missing instructions | `instructions` | "required 'instructions' or 'instructions_file'" |
+| SV-8.1.2 | Missing detection mode | no `trigger`, `set`, or `pair` | "must have 'trigger', 'set', or 'pair'" |
+| SV-8.1.3 | Missing markdown body | empty body (prompt action) | "instruction policies require markdown body" |
 | SV-8.1.4 | Missing set patterns | `set` is empty | "set requires at least 2 patterns" |
 
 ### 8.2 Mutually Exclusive Fields
 
 | ID | Scenario | Fields Present | Expected Error |
 |----|----------|----------------|----------------|
-| SV-8.2.1 | Both instructions types | `instructions` + `instructions_file` | "use one or the other" |
-| SV-8.2.2 | Both trigger types | `trigger` + `set` | "use trigger, set, or pair" |
-| SV-8.2.3 | All trigger types | `trigger` + `set` + `pair` | "use one policy type" |
+| SV-8.2.1 | Both trigger and set | `trigger` + `set` | "use trigger, set, or pair" |
+| SV-8.2.2 | Both trigger and pair | `trigger` + `pair` | "use trigger, set, or pair" |
+| SV-8.2.3 | All detection modes | `trigger` + `set` + `pair` | "use only one detection mode" |
 
 ### 8.3 Pattern Validation
 
@@ -325,8 +309,7 @@ Policies:
 | ID | Scenario | Field | Value | Expected Error |
 |----|----------|-------|-------|----------------|
 | SV-8.4.1 | Invalid compare_to | `compare_to` | `"yesterday"` | "must be base, default_tip, or prompt" |
-| SV-8.4.2 | Invalid priority | `priority` | `"urgent"` | "must be critical, high, normal, or low" |
-| SV-8.4.3 | Invalid run_for | `run_for` | `"first_match"` | "must be each_match or all_matches" |
+| SV-8.4.2 | Invalid run_for | `run_for` | `"first_match"` | "must be each_match or all_matches" |
 
 ## 9. Integration Tests
 
@@ -439,6 +422,7 @@ Policies are stored as individual markdown files in `.deepwork/policies/`:
 **`.deepwork/policies/readme-accuracy.md`**
 ```markdown
 ---
+name: README Accuracy
 trigger: src/**/*
 safety: README.md
 ---
@@ -448,6 +432,7 @@ Please review README.md for accuracy.
 **`.deepwork/policies/source-test-pairing.md`**
 ```markdown
 ---
+name: Source/Test Pairing
 set:
   - src/{path}.py
   - tests/{path}_test.py
@@ -458,6 +443,7 @@ Source and test should change together.
 **`.deepwork/policies/api-documentation.md`**
 ```markdown
 ---
+name: API Documentation
 pair:
   trigger: api/{module}.py
   expects: docs/api/{module}.md
@@ -468,6 +454,7 @@ API changes need documentation.
 **`.deepwork/policies/python-formatting.md`**
 ```markdown
 ---
+name: Python Formatting
 trigger: "**/*.py"
 action:
   command: black {file}
@@ -480,7 +467,8 @@ Auto-formats Python files with Black.
 
 ```json
 {
-  "policy_name": "source-test-pairing",
+  "policy_name": "Source/Test Pairing",
+  "policy_file": "source-test-pairing.md",
   "trigger_hash": "abc123def456",
   "status": "queued",
   "created_at": "2024-01-16T10:00:00Z",
@@ -502,7 +490,7 @@ Auto-formats Python files with Black.
 │   ├── source-test-pairing.md
 │   ├── api-documentation.md
 │   └── python-formatting.md
-└── tmp/
+└── tmp/                         # GITIGNORED
     └── policy/
         └── queue/
             └── (queue entries created during tests)

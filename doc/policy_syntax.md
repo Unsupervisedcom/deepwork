@@ -17,7 +17,7 @@ Policies are stored as individual markdown files with YAML frontmatter:
 
 Each file has:
 - **Frontmatter**: YAML configuration between `---` delimiters
-- **Body**: Instructions (for prompt policies) or description (for command policies)
+- **Body**: Instructions (for prompt actions) or description (for command actions)
 
 This structure enables code files to reference policies:
 ```python
@@ -28,15 +28,16 @@ class AuthService:
 
 ## Quick Reference
 
-### Instruction Policy
+### Simple Trigger with Prompt
 
 `.deepwork/policies/readme-accuracy.md`:
 ```markdown
 ---
+name: README Accuracy
 trigger: src/**/*
 safety: README.md
 ---
-Source code changed. Please verify README.md is accurate. Note that this is called only once even if there are many changes, so verify all changes.
+Source code changed. Please verify README.md is accurate.
 
 Check that:
 - All public APIs are documented
@@ -49,6 +50,7 @@ Check that:
 `.deepwork/policies/source-test-pairing.md`:
 ```markdown
 ---
+name: Source/Test Pairing
 set:
   - src/{path}.py
   - tests/{path}_test.py
@@ -64,6 +66,7 @@ When adding tests, ensure they test actual source code.
 `.deepwork/policies/api-documentation.md`:
 ```markdown
 ---
+name: API Documentation
 pair:
   trigger: api/{path}.py
   expects: docs/api/{path}.md
@@ -76,11 +79,12 @@ When modifying an API endpoint, update its documentation to reflect:
 - New error conditions
 ```
 
-### Command Policy
+### Command Action
 
 `.deepwork/policies/python-formatting.md`:
 ```markdown
 ---
+name: Python Formatting
 trigger: "**/*.py"
 action:
   command: ruff format {file}
@@ -91,57 +95,58 @@ This policy runs `ruff format` on any changed Python files to ensure
 consistent code style across the codebase.
 ```
 
-## Policy Types
+## Policy Structure
 
-### Instruction Policies
+Every policy has two orthogonal aspects:
 
-Instruction policies prompt the AI agent with guidance when certain files change.
+### Detection Mode
 
-**Frontmatter fields:**
+How the policy decides when to fire:
+
+| Mode | Field | Description |
+|------|-------|-------------|
+| **Trigger/Safety** | `trigger`, `safety` | Fire when trigger matches and safety doesn't |
+| **Set** | `set` | Fire when file correspondence is incomplete (bidirectional) |
+| **Pair** | `pair` | Fire when file correspondence is incomplete (directional) |
+
+### Action Type
+
+What happens when the policy fires:
+
+| Type | Field | Description |
+|------|-------|-------------|
+| **Prompt** (default) | (markdown body) | Show instructions to the agent |
+| **Command** | `action.command` | Run an idempotent command |
+
+## Detection Modes
+
+### Trigger/Safety Mode
+
+The simplest detection mode. Fires when changed files match `trigger` patterns and no changed files match `safety` patterns.
+
 ```yaml
 ---
-trigger: pattern              # Required: file pattern(s) that trigger
-safety: pattern               # Optional: file pattern(s) that suppress
-compare_to: base              # Optional: comparison baseline
-priority: normal              # Optional: output priority
----
-```
-
-The markdown body contains the instructions shown to the agent.
-
-**Example:** `.deepwork/policies/security-review.md`
-
-```markdown
----
+name: Security Review
 trigger:
   - src/auth/**/*
   - src/crypto/**/*
 safety: SECURITY.md
 compare_to: base
-priority: critical
 ---
-Security-sensitive code has been modified.
-
-Please verify:
-1. No credentials are hardcoded
-2. Input validation is present
-3. Authentication checks are correct
 ```
 
-### Correspondence Sets
+### Set Mode (Bidirectional Correspondence)
 
-Sets define bidirectional relationships between files. When any file in a correspondence group changes, all related files should also change.
+Defines files that should change together. If ANY file in a correspondence group changes, ALL related files should also change.
 
-**Frontmatter fields:**
 ```yaml
 ---
-set:                            # Required: list of corresponding patterns
-  - pattern1/{path}.ext1
-  - pattern2/{path}.ext2
+name: Source/Test Pairing
+set:
+  - src/{path}.py
+  - tests/{path}_test.py
 ---
 ```
-
-The markdown body contains instructions for when correspondence is incomplete.
 
 **How it works:**
 
@@ -149,118 +154,78 @@ The markdown body contains instructions for when correspondence is incomplete.
 2. System extracts the variable portions (e.g., `{path}`)
 3. System generates expected files by substituting into other patterns
 4. If ALL expected files also changed: policy is satisfied (no trigger)
-5. If ANY expected file is missing: policy triggers with instructions
-
-**Example:** `.deepwork/policies/source-test-pairing.md`
-
-```markdown
----
-set:
-  - src/{path}.py
-  - tests/{path}_test.py
----
-Source and test files should change together.
-
-Changed: {trigger_file}
-Expected: {expected_files}
-
-Please ensure both source and test are updated.
-```
+5. If ANY expected file is missing: policy fires
 
 If `src/auth/login.py` changes:
 - Extracts `{path}` = `auth/login`
 - Expects `tests/auth/login_test.py` to also change
-- If test didn't change, shows instructions
+- If test didn't change, fires with instructions
 
 If `tests/auth/login_test.py` changes:
 - Extracts `{path}` = `auth/login`
 - Expects `src/auth/login.py` to also change
-- If source didn't change, shows instructions
+- If source didn't change, fires with instructions
 
-**Example:** `.deepwork/policies/model-schema-migration.md`
+### Pair Mode (Directional Correspondence)
 
-```markdown
----
-set:
-  - models/{name}.py
-  - schemas/{name}.py
-  - migrations/{name}.sql
----
-Models, schemas, and migrations should stay in sync.
-
-When modifying database models, ensure:
-- Schema definitions are updated
-- Migration files are created or updated
-```
-
-### Correspondence Pairs
-
-Pairs define directional relationships. Changes to trigger files require corresponding expected files to change, but not vice versa.
-
-**Frontmatter fields:**
-```yaml
----
-pair:
-  trigger: pattern/{path}.ext     # Required: pattern that triggers
-  expects: pattern/{path}.ext     # Required: expected to also change
----
-```
-
-Can also specify multiple expected patterns:
+Defines directional relationships. Changes to trigger files require corresponding expected files to change, but not vice versa.
 
 ```yaml
 ---
-pair:
-  trigger: pattern/{path}.ext
-  expects:
-    - pattern1/{path}.ext
-    - pattern2/{path}.ext
----
-```
-
-**Example:** `.deepwork/policies/api-documentation.md`
-
-```markdown
----
+name: API Documentation
 pair:
   trigger: api/{module}/{name}.py
   expects: docs/api/{module}/{name}.md
 ---
-API endpoint changed without documentation update.
+```
 
-Changed: {trigger_file}
-Please update: {expected_files}
+Can specify multiple expected patterns:
 
-Ensure the documentation covers:
-- Endpoint URL and method
-- Request parameters
-- Response format
-- Error cases
+```yaml
+---
+pair:
+  trigger: api/{path}.py
+  expects:
+    - docs/api/{path}.md
+    - schemas/{path}.json
+---
 ```
 
 If `api/users/create.py` changes:
 - Expects `docs/api/users/create.md` to also change
-- If doc didn't change, shows instructions
+- If doc didn't change, fires with instructions
 
 If `docs/api/users/create.md` changes alone:
 - No trigger (documentation can be updated independently)
 
-### Command Policies
+## Action Types
 
-Command policies run idempotent commands instead of prompting the agent.
+### Prompt Action (Default)
 
-**Frontmatter fields:**
+The markdown body after frontmatter serves as instructions shown to the agent. This is the default when no `action` field is specified.
+
+**Template Variables in Instructions:**
+
+| Variable | Description |
+|----------|-------------|
+| `{trigger_file}` | The file that triggered the policy |
+| `{trigger_files}` | All files that matched trigger patterns |
+| `{expected_files}` | Expected corresponding files (for sets/pairs) |
+
+### Command Action
+
+Runs an idempotent command instead of prompting the agent.
+
 ```yaml
 ---
-trigger: pattern                  # Required: files that trigger
-safety: pattern                   # Optional: files that suppress
+name: Python Formatting
+trigger: "**/*.py"
+safety: "*.pyi"
 action:
-  command: command {file}         # Required: command to run
-  run_for: each_match             # Optional: each_match (default) or all_matches
+  command: ruff format {file}
+  run_for: each_match
 ---
 ```
-
-The markdown body serves as a description of what the command does (shown in logs, not to agent).
 
 **Template Variables in Commands:**
 
@@ -269,34 +234,6 @@ The markdown body serves as a description of what the command does (shown in log
 | `{file}` | Single file path | `run_for: each_match` |
 | `{files}` | Space-separated file paths | `run_for: all_matches` |
 | `{repo_root}` | Repository root directory | Always |
-
-**Example:** `.deepwork/policies/python-formatting.md`
-
-```markdown
----
-trigger: "**/*.py"
-safety: "*.pyi"
-action:
-  command: ruff format {file}
-  run_for: each_match
----
-Automatically formats Python files using ruff.
-
-This ensures consistent code style without requiring manual formatting.
-Stub files (*.pyi) are excluded as they have different formatting rules.
-```
-
-**Example:** `.deepwork/policies/eslint-check.md`
-
-```markdown
----
-trigger: "**/*.{js,ts,tsx}"
-action:
-  command: eslint --fix {files}
-  run_for: all_matches
----
-Runs ESLint with auto-fix on all changed JavaScript/TypeScript files.
-```
 
 **Idempotency Requirement:**
 
@@ -357,6 +294,16 @@ To explicitly control this, use `{**name}` for multi-segment or `{*name}` for si
 
 ## Field Reference
 
+### name (required)
+
+Human-friendly name for the policy. Displayed in promise tags and output.
+
+```yaml
+---
+name: Source/Test Pairing
+---
+```
+
 ### File Naming
 
 Policy files are named using kebab-case with `.md` extension:
@@ -364,20 +311,18 @@ Policy files are named using kebab-case with `.md` extension:
 - `source-test-pairing.md`
 - `api-documentation.md`
 
-The filename (without extension) serves as the policy's unique identifier for logging and promise tags.
+The filename serves as the policy's identifier in the queue system.
 
-### trigger (instruction/command policies)
+### trigger
 
-File patterns that cause the policy to fire. Can be string or array.
+File patterns that cause the policy to fire (trigger/safety mode). Can be string or array.
 
 ```yaml
 ---
-# Single pattern
 trigger: src/**/*.py
 ---
 
 ---
-# Multiple patterns
 trigger:
   - src/**/*.py
   - lib/**/*.py
@@ -390,21 +335,19 @@ File patterns that suppress the policy. If ANY changed file matches a safety pat
 
 ```yaml
 ---
-# Single pattern
 safety: CHANGELOG.md
 ---
 
 ---
-# Multiple patterns
 safety:
   - CHANGELOG.md
   - docs/**/*
 ---
 ```
 
-### set (correspondence sets)
+### set
 
-List of patterns defining bidirectional file relationships.
+List of patterns defining bidirectional file relationships (set mode).
 
 ```yaml
 ---
@@ -414,9 +357,9 @@ set:
 ---
 ```
 
-### pair (correspondence pairs)
+### pair
 
-Object with `trigger` and `expects` patterns for directional relationships.
+Object with `trigger` and `expects` patterns for directional relationships (pair mode).
 
 ```yaml
 ---
@@ -426,7 +369,6 @@ pair:
 ---
 
 ---
-# Or with multiple expects
 pair:
   trigger: api/{path}.py
   expects:
@@ -435,20 +377,7 @@ pair:
 ---
 ```
 
-### Markdown Body (instructions)
-
-The markdown content after the frontmatter serves as instructions shown to the agent when the policy fires.
-
-**Template Variables in Instructions:**
-
-| Variable | Description |
-|----------|-------------|
-| `{trigger_file}` | The file that triggered the policy |
-| `{trigger_files}` | All files that matched trigger patterns |
-| `{expected_files}` | Expected corresponding files (for sets/pairs) |
-| `{safety_files}` | Files that would suppress the policy |
-
-### action (command policies)
+### action (optional)
 
 Specifies a command to run instead of prompting.
 
@@ -476,33 +405,6 @@ compare_to: prompt
 ---
 ```
 
-### priority (optional)
-
-Controls output ordering and visibility.
-
-| Value | Behavior |
-|-------|----------|
-| `critical` | Always shown first, blocks progress |
-| `high` | Shown prominently |
-| `normal` (default) | Standard display |
-| `low` | Shown in summary, may be collapsed |
-
-```yaml
----
-priority: critical
----
-```
-
-### defer (optional)
-
-When `true`, policy output is deferred to end of session.
-
-```yaml
----
-defer: true
----
-```
-
 ## Complete Examples
 
 ### Example 1: Test Coverage Policy
@@ -510,10 +412,10 @@ defer: true
 `.deepwork/policies/test-coverage.md`:
 ```markdown
 ---
+name: Test Coverage
 set:
   - src/{path}.py
   - tests/{path}_test.py
-compare_to: base
 ---
 Source code was modified without corresponding test updates.
 
@@ -522,7 +424,7 @@ Expected test: {expected_files}
 
 Please either:
 1. Add/update tests for the changed code
-2. Explain why tests are not needed (and mark with <promise>)
+2. Explain why tests are not needed
 ```
 
 ### Example 2: Documentation Sync
@@ -530,18 +432,16 @@ Please either:
 `.deepwork/policies/api-documentation-sync.md`:
 ```markdown
 ---
+name: API Documentation Sync
 pair:
   trigger: src/api/{module}/{endpoint}.py
   expects:
     - docs/api/{module}/{endpoint}.md
     - openapi/{module}.yaml
-priority: high
 ---
 API endpoint changed. Please update:
 - Documentation: {expected_files}
 - Ensure OpenAPI spec is current
-
-If this is an internal-only change, mark as addressed.
 ```
 
 ### Example 3: Auto-formatting Pipeline
@@ -549,6 +449,7 @@ If this is an internal-only change, mark as addressed.
 `.deepwork/policies/python-black-formatting.md`:
 ```markdown
 ---
+name: Python Black Formatting
 trigger: "**/*.py"
 safety:
   - "**/*.pyi"
@@ -564,22 +465,12 @@ Excludes:
 - Database migration files
 ```
 
-`.deepwork/policies/typescript-prettier.md`:
-```markdown
----
-trigger: "**/*.{ts,tsx}"
-action:
-  command: prettier --write {file}
-  run_for: each_match
----
-Formats TypeScript files using Prettier.
-```
-
 ### Example 4: Multi-file Correspondence
 
 `.deepwork/policies/full-stack-feature-sync.md`:
 ```markdown
 ---
+name: Full Stack Feature Sync
 set:
   - backend/api/{feature}/routes.py
   - backend/api/{feature}/models.py
@@ -593,9 +484,6 @@ When modifying a feature, ensure:
 - Backend models are updated
 - Frontend API client is updated
 - Frontend components are updated
-
-Changed: {trigger_files}
-Expected: {expected_files}
 ```
 
 ### Example 5: Conditional Safety
@@ -603,15 +491,13 @@ Expected: {expected_files}
 `.deepwork/policies/version-bump-required.md`:
 ```markdown
 ---
+name: Version Bump Required
 trigger:
   - src/**/*.py
   - pyproject.toml
 safety:
   - pyproject.toml
   - CHANGELOG.md
-compare_to: base
-priority: low
-defer: true
 ---
 Code changes detected. Before merging, ensure:
 - Version is bumped in pyproject.toml (if needed)
@@ -623,20 +509,14 @@ or CHANGELOG.md, as that indicates you're handling versioning.
 
 ## Promise Tags
 
-When a policy fires but should be dismissed, use promise tags in the conversation:
+When a policy fires but should be dismissed, use promise tags in the conversation. The tag content should be human-readable, using the policy's `name` field with a checkmark:
 
 ```
-<promise>policy-filename</promise>
+<promise>✓ Source/Test Pairing</promise>
+<promise>✓ API Documentation Sync</promise>
 ```
 
-Use the policy filename (without `.md` extension) as the identifier:
-
-```
-<promise>test-coverage</promise>
-<promise>api-documentation-sync</promise>
-```
-
-This tells the system the policy has been addressed (either by action or explicit acknowledgment).
+The checkmark and friendly name make promise tags easy to read when displayed in the conversation. The system matches promise tags to policies using case-insensitive comparison of the `name` field (ignoring the checkmark prefix).
 
 ## Validation
 
