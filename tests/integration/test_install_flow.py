@@ -43,9 +43,9 @@ class TestInstallCommand:
         claude_dir = mock_claude_project / ".claude" / "commands"
         # Meta-command
         assert (claude_dir / "deepwork_jobs.md").exists()
-        # Hidden step command (underscore prefix)
-        assert (claude_dir / "_deepwork_jobs.define.md").exists()
-        # Exposed step command (no underscore - learn has exposed: true)
+        # Hidden step command (uw. prefix)
+        assert (claude_dir / "uw.deepwork_jobs.define.md").exists()
+        # Exposed step command (no uw. prefix - learn has exposed: true)
         assert (claude_dir / "deepwork_jobs.learn.md").exists()
 
         # Verify meta-command content
@@ -54,7 +54,7 @@ class TestInstallCommand:
         assert "Available Steps" in meta_command
 
         # Verify hidden step command content
-        define_command = (claude_dir / "_deepwork_jobs.define.md").read_text()
+        define_command = (claude_dir / "uw.deepwork_jobs.define.md").read_text()
         assert "# deepwork_jobs.define" in define_command
         assert "Define Job Specification" in define_command
 
@@ -117,13 +117,13 @@ class TestInstallCommand:
         claude_dir = mock_multi_platform_project / ".claude" / "commands"
         # Meta-command and hidden step commands
         assert (claude_dir / "deepwork_jobs.md").exists()
-        assert (claude_dir / "_deepwork_jobs.define.md").exists()
+        assert (claude_dir / "uw.deepwork_jobs.define.md").exists()
 
         # Gemini uses job_name/step_id.toml structure
         gemini_dir = mock_multi_platform_project / ".gemini" / "commands"
         # Meta-command (index.toml) and hidden step commands
         assert (gemini_dir / "deepwork_jobs" / "index.toml").exists()
-        assert (gemini_dir / "deepwork_jobs" / "_define.toml").exists()
+        assert (gemini_dir / "deepwork_jobs" / "uw.define.toml").exists()
 
     def test_install_with_specified_platform_when_missing(self, mock_git_repo: Path) -> None:
         """Test that install fails when specified platform is not present."""
@@ -164,7 +164,7 @@ class TestInstallCommand:
         claude_dir = mock_claude_project / ".claude" / "commands"
         # Meta-command and step commands
         assert (claude_dir / "deepwork_jobs.md").exists()
-        assert (claude_dir / "_deepwork_jobs.define.md").exists()
+        assert (claude_dir / "uw.deepwork_jobs.define.md").exists()
         assert (claude_dir / "deepwork_jobs.learn.md").exists()
 
     def test_install_creates_rules_directory(self, mock_claude_project: Path) -> None:

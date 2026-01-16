@@ -180,8 +180,8 @@ class AgentAdapter(ABC):
         return f"{job_name}.md"
 
     def get_step_command_filename(self, job_name: str, step_id: str, exposed: bool = False) -> str:
-        """Get filename for step command. Hidden by default (underscore prefix)."""
-        prefix = "" if exposed else "_"
+        """Get filename for step command. Hidden by default (uw. prefix)."""
+        prefix = "" if exposed else "uw."
         return f"{prefix}{job_name}.{step_id}.md"
 
     def detect(self, project_root: Path) -> bool:
@@ -244,14 +244,14 @@ This component is called by the `sync` command to regenerate all commands:
 
 **Meta-Command Architecture**:
 
-Each job gets a single user-facing meta-command (e.g., `/deepwork_jobs`) that interprets user intent and routes to appropriate hidden step commands. Steps are hidden by default (underscore prefix) unless marked `exposed: true` in job.yml.
+Each job gets a single user-facing meta-command (e.g., `/deepwork_jobs`) that interprets user intent and routes to appropriate hidden step commands. Steps are hidden by default (uw. prefix) unless marked `exposed: true` in job.yml.
 
 ```yaml
 # In job.yml
 steps:
   - id: define
     name: "Define Job"
-    # ...  (hidden by default → _deepwork_jobs.define.md)
+    # ...  (hidden by default → uw.deepwork_jobs.define.md)
 
   - id: learn
     name: "Learn from Execution"
@@ -283,7 +283,7 @@ class CommandGenerator:
         # ... build context ...
 
         # Write to platform's commands directory
-        # Hidden by default (underscore prefix) unless step.exposed is True
+        # Hidden by default (uw. prefix) unless step.exposed is True
         command_filename = adapter.get_step_command_filename(job.name, step.id, step.exposed)
         command_path = output_dir / adapter.config_dir / adapter.commands_dir / command_filename
         write_file(command_path, rendered)
@@ -305,13 +305,13 @@ my-project/                     # User's project (target)
 │   ├── settings.json           # Includes installed hooks
 │   └── commands/               # Command files
 │       ├── deepwork_jobs.md                # Meta-command (user-facing entry point)
-│       ├── _deepwork_jobs.define.md        # Hidden step (underscore prefix)
-│       ├── _deepwork_jobs.implement.md     # Hidden step
-│       ├── deepwork_jobs.learn.md          # Exposed step (no underscore)
+│       ├── uw.deepwork_jobs.define.md      # Hidden step (uw. prefix)
+│       ├── uw.deepwork_jobs.implement.md   # Hidden step
+│       ├── deepwork_jobs.learn.md          # Exposed step (no uw. prefix)
 │       ├── deepwork_rules.md               # Rules meta-command
-│       ├── _deepwork_rules.define.md       # Hidden step
+│       ├── uw.deepwork_rules.define.md     # Hidden step
 │       ├── competitive_research.md         # User job meta-command
-│       ├── _competitive_research.identify_competitors.md  # Hidden steps
+│       ├── uw.competitive_research.identify_competitors.md  # Hidden steps
 │       └── ...
 ├── .deepwork/                  # DeepWork configuration
 │   ├── config.yml              # Platform config
@@ -560,7 +560,7 @@ When the job is defined and `sync` is run, DeepWork generates command files. Exa
 
 `.deepwork/jobs/competitive_research` generates:
 - Meta-command: `.claude/commands/competitive_research.md` (user-facing entry point)
-- Hidden step commands: `.claude/commands/_competitive_research.identify_competitors.md` (prefixed with underscore)
+- Hidden step commands: `.claude/commands/uw.competitive_research.identify_competitors.md` (prefixed with uw.)
 - Exposed step commands: `.claude/commands/competitive_research.step_name.md` (if `exposed: true` in job.yml)
 
 The meta-command routes user intent to the appropriate step command via the Skill tool.

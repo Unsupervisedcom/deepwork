@@ -27,7 +27,7 @@ This job has 1 step(s):
 
 ### job
 **Update Standard Job**: Edit standard job source files and sync to installed locations
-- Command: `_update.job`
+- Command: `uw.update.job`
 
 ## Instructions
 

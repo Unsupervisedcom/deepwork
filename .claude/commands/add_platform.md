@@ -30,18 +30,18 @@ This job has 4 step(s):
 
 ### research
 **Research Platform Documentation**: Capture CLI configuration and hooks system documentation for the new platform
-- Command: `_add_platform.research`
+- Command: `uw.add_platform.research`
 ### add_capabilities
 **Add Hook Capabilities**: Update job schema and adapters with any new hook events the platform supports
-- Command: `_add_platform.add_capabilities`
+- Command: `uw.add_platform.add_capabilities`
 - Requires: research
 ### implement
 **Implement Platform Support**: Add platform adapter, templates, tests with 100% coverage, and README documentation
-- Command: `_add_platform.implement`
+- Command: `uw.add_platform.implement`
 - Requires: research, add_capabilities
 ### verify
 **Verify Installation**: Set up platform directories and verify deepwork install works correctly
-- Command: `_add_platform.verify`
+- Command: `uw.add_platform.verify`
 - Requires: implement
 
 ## Instructions

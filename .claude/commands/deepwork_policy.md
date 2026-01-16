@@ -29,7 +29,7 @@ This job has 1 step(s):
 
 ### define
 **Define Policy**: Create or update policy entries in .deepwork.policy.yml
-- Command: `_deepwork_policy.define`
+- Command: `uw.deepwork_policy.define`
 
 ## Instructions
 

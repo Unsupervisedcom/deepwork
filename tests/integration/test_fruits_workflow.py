@@ -85,8 +85,8 @@ class TestFruitsWorkflow:
 
         # Verify command files exist
         meta_cmd = commands_dir / "commands" / "fruits.md"
-        identify_cmd = commands_dir / "commands" / "_fruits.identify.md"
-        classify_cmd = commands_dir / "commands" / "_fruits.classify.md"
+        identify_cmd = commands_dir / "commands" / "uw.fruits.identify.md"
+        classify_cmd = commands_dir / "commands" / "uw.fruits.classify.md"
         assert meta_cmd.exists()
         assert identify_cmd.exists()
         assert classify_cmd.exists()
@@ -103,8 +103,8 @@ class TestFruitsWorkflow:
 
         generator.generate_all_commands(job, adapter, commands_dir)
 
-        # Step commands are now hidden (underscore prefix)
-        identify_cmd = commands_dir / "commands" / "_fruits.identify.md"
+        # Step commands are now hidden (uw. prefix)
+        identify_cmd = commands_dir / "commands" / "uw.fruits.identify.md"
         content = identify_cmd.read_text()
 
         # Check header
@@ -134,8 +134,8 @@ class TestFruitsWorkflow:
 
         generator.generate_all_commands(job, adapter, commands_dir)
 
-        # Step commands are now hidden (underscore prefix)
-        classify_cmd = commands_dir / "commands" / "_fruits.classify.md"
+        # Step commands are now hidden (uw. prefix)
+        classify_cmd = commands_dir / "commands" / "uw.fruits.classify.md"
         content = classify_cmd.read_text()
 
         # Check header

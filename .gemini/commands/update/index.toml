@@ -32,7 +32,7 @@ This job has 1 step(s):
 
 ### job
 **Update Standard Job**: Edit standard job source files and sync to installed locations
-- Command: `/update:_job`
+- Command: `/update:uw.job`
 
 ## Instructions
 
@@ -44,7 +44,7 @@ Determine what the user wants to do and route to the appropriate step.
    - job: Edit standard job source files and sync to installed locations
 
 3. **Invoke the matched step**: Tell the user to run the appropriate command:
-   - For job: `/update:_job`
+   - For job: `/update:uw.job`
 
 4. **If intent is ambiguous**, ask the user which step they want:
    - Present the available steps as numbered options

@@ -133,7 +133,7 @@ class TestClaudeAdapter:
 
         result = adapter.get_step_command_filename("my_job", "step_one")
 
-        assert result == "_my_job.step_one.md"
+        assert result == "uw.my_job.step_one.md"
 
     def test_get_step_command_filename_exposed(self) -> None:
         """Test get_step_command_filename returns visible filename when exposed."""
@@ -278,8 +278,8 @@ class TestGeminiAdapter:
         result = adapter.get_step_command_filename("my_job", "step_one")
 
         # Gemini uses subdirectories for namespacing (colon becomes path)
-        # Hidden steps have underscore prefix
-        assert result == "my_job/_step_one.toml"
+        # Hidden steps have uw. prefix
+        assert result == "my_job/uw.step_one.toml"
 
     def test_get_step_command_filename_exposed(self) -> None:
         """Test get_step_command_filename returns visible TOML when exposed."""
@@ -287,7 +287,7 @@ class TestGeminiAdapter:
 
         result = adapter.get_step_command_filename("my_job", "step_one", exposed=True)
 
-        # Exposed steps have no underscore prefix
+        # Exposed steps have no uw. prefix
         assert result == "my_job/step_one.toml"
 
     def test_get_step_command_filename_with_underscores(self) -> None:
@@ -296,7 +296,7 @@ class TestGeminiAdapter:
 
         result = adapter.get_step_command_filename("competitive_research", "identify_competitors")
 
-        assert result == "competitive_research/_identify_competitors.toml"
+        assert result == "competitive_research/uw.identify_competitors.toml"
 
     def test_hook_name_mapping_is_empty(self) -> None:
         """Test that Gemini has no command-level hooks."""

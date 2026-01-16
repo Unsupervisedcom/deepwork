@@ -219,14 +219,14 @@ class CommandGenerator:
         for step in job.steps:
             command_filename = adapter.get_step_command_filename(job.name, step.id, step.exposed)
             # Extract just the command name (without path and extension)
-            # For Claude: _job_name.step_id.md -> _job_name.step_id
-            # For Gemini: job_name/_step_id.toml -> job_name:_step_id
+            # For Claude: uw.job_name.step_id.md -> uw.job_name.step_id
+            # For Gemini: job_name/uw.step_id.toml -> job_name:uw.step_id
             if adapter.name == "gemini":
-                # Gemini uses colon for namespacing: job_name:step_id or job_name:_step_id
+                # Gemini uses colon for namespacing: job_name:step_id or job_name:uw.step_id
                 parts = command_filename.replace(".toml", "").split("/")
                 command_name = ":".join(parts)
             else:
-                # Claude uses dot for namespacing: _job_name.step_id
+                # Claude uses dot for namespacing: uw.job_name.step_id
                 command_name = command_filename.replace(".md", "")
 
             steps_info.append(

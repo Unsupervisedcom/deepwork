@@ -173,18 +173,18 @@ class AgentAdapter(ABC):
         """
         Get the filename for a step command.
 
-        Step commands are hidden by default (underscore prefix) unless exposed=True.
+        Step commands are hidden by default (uw. prefix) unless exposed=True.
         Can be overridden for different file formats (e.g., TOML for Gemini).
 
         Args:
             job_name: Name of the job
             step_id: ID of the step
-            exposed: If True, command is visible (no underscore prefix). Default: False.
+            exposed: If True, command is visible (no uw. prefix). Default: False.
 
         Returns:
-            Command filename (e.g., "_job_name.step_id.md" or "job_name.step_id.md" if exposed)
+            Command filename (e.g., "uw.job_name.step_id.md" or "job_name.step_id.md" if exposed)
         """
-        prefix = "" if exposed else "_"
+        prefix = "" if exposed else "uw."
         return f"{prefix}{job_name}.{step_id}.md"
 
     def detect(self, project_root: Path | None = None) -> bool:
@@ -396,18 +396,18 @@ class GeminiAdapter(AgentAdapter):
         Get the filename for a Gemini step command.
 
         Gemini uses TOML files and colon namespacing via subdirectories.
-        Step commands are hidden by default (underscore prefix) unless exposed=True.
-        For job "my_job" and step "step_one", creates: my_job/_step_one.toml
+        Step commands are hidden by default (uw. prefix) unless exposed=True.
+        For job "my_job" and step "step_one", creates: my_job/uw.step_one.toml
 
         Args:
             job_name: Name of the job
             step_id: ID of the step
-            exposed: If True, command is visible (no underscore prefix). Default: False.
+            exposed: If True, command is visible (no uw. prefix). Default: False.
 
         Returns:
-            Command filename path (e.g., "my_job/_step_one.toml" or "my_job/step_one.toml" if exposed)
+            Command filename path (e.g., "my_job/uw.step_one.toml" or "my_job/step_one.toml" if exposed)
         """
-        prefix = "" if exposed else "_"
+        prefix = "" if exposed else "uw."
         return f"{job_name}/{prefix}{step_id}.toml"
 
     def sync_hooks(self, project_path: Path, hooks: dict[str, list[dict[str, Any]]]) -> int:

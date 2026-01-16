@@ -46,8 +46,8 @@ class TestCommandGenerator:
         command_path = generator.generate_step_command(job, job.steps[0], adapter, temp_dir)
 
         assert command_path.exists()
-        # Step commands are hidden by default (underscore prefix)
-        assert command_path.name == "_simple_job.single_step.md"
+        # Step commands are hidden by default (uw. prefix)
+        assert command_path.name == "uw.simple_job.single_step.md"
 
         content = command_path.read_text()
         assert "# simple_job.single_step" in content
@@ -193,10 +193,10 @@ class TestCommandGenerator:
         # Check filenames - meta-command first, then hidden step commands
         expected_names = [
             "competitive_research.md",  # Meta-command
-            "_competitive_research.identify_competitors.md",  # Hidden steps
-            "_competitive_research.primary_research.md",
-            "_competitive_research.secondary_research.md",
-            "_competitive_research.comparative_report.md",
+            "uw.competitive_research.identify_competitors.md",  # Hidden steps
+            "uw.competitive_research.primary_research.md",
+            "uw.competitive_research.secondary_research.md",
+            "uw.competitive_research.comparative_report.md",
         ]
         actual_names = [p.name for p in command_paths]
         assert actual_names == expected_names
@@ -223,7 +223,7 @@ class TestCommandGenerator:
         assert "Skill tool" in content
 
     def test_generate_step_command_exposed_step(self, fixtures_dir: Path, temp_dir: Path) -> None:
-        """Test generating command for exposed step (no underscore prefix)."""
+        """Test generating command for exposed step (no uw. prefix)."""
         job_dir = fixtures_dir / "jobs" / "exposed_step_job"
         job = parse_job_definition(job_dir)
 
@@ -234,7 +234,7 @@ class TestCommandGenerator:
         command_path = generator.generate_step_command(job, job.steps[1], adapter, temp_dir)
 
         assert command_path.exists()
-        # Exposed step should NOT have underscore prefix
+        # Exposed step should NOT have uw. prefix
         assert command_path.name == "exposed_job.exposed_step.md"
 
     def test_generate_all_commands_with_exposed_steps(
@@ -253,11 +253,11 @@ class TestCommandGenerator:
         assert len(command_paths) == 3
         assert all(p.exists() for p in command_paths)
 
-        # Check filenames - hidden step has underscore, exposed doesn't
+        # Check filenames - hidden step has uw. prefix, exposed doesn't
         expected_names = [
             "exposed_job.md",  # Meta-command
-            "_exposed_job.hidden_step.md",  # Hidden step
-            "exposed_job.exposed_step.md",  # Exposed step (no underscore)
+            "uw.exposed_job.hidden_step.md",  # Hidden step
+            "exposed_job.exposed_step.md",  # Exposed step (no uw. prefix)
         ]
         actual_names = [p.name for p in command_paths]
         assert actual_names == expected_names

@@ -108,7 +108,7 @@ class Step:
     # Event names: after_agent, before_tool, before_prompt
     hooks: dict[str, list[HookAction]] = field(default_factory=dict)
 
-    # If true, step command is visible (no underscore prefix). Default: false (hidden).
+    # If true, step command is visible (no tilde prefix). Default: false (hidden).
     exposed: bool = False
 
     @property

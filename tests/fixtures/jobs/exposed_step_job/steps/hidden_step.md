@@ -1,6 +1,6 @@
 # Hidden Step Instructions
 
-This step is hidden by default (no underscore prefix).
+This step is hidden by default (has uw. prefix).
 
 ## Task
 

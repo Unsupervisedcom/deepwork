@@ -205,7 +205,7 @@ JOB_SCHEMA: dict[str, Any] = {
                     },
                     "exposed": {
                         "type": "boolean",
-                        "description": "If true, step command is visible (no underscore prefix). Default: false (hidden).",
+                        "description": "If true, step command is visible (no tilde prefix). Default: false (hidden).",
                         "default": False,
                     },
                 },

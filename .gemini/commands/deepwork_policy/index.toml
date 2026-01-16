@@ -34,7 +34,7 @@ This job has 1 step(s):
 
 ### define
 **Define Policy**: Create or update policy entries in .deepwork.policy.yml
-- Command: `/deepwork_policy:_define`
+- Command: `/deepwork_policy:uw.define`
 
 ## Instructions
 
@@ -46,7 +46,7 @@ Determine what the user wants to do and route to the appropriate step.
    - define: Create or update policy entries in .deepwork.policy.yml
 
 3. **Invoke the matched step**: Tell the user to run the appropriate command:
-   - For define: `/deepwork_policy:_define`
+   - For define: `/deepwork_policy:uw.define`
 
 4. **If intent is ambiguous**, ask the user which step they want:
    - Present the available steps as numbered options
