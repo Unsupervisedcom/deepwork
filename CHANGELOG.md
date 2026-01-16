@@ -12,25 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `wrapper.py`: Normalizes input/output between Claude Code and Gemini CLI
   - `claude_hook.sh` and `gemini_hook.sh`: Platform-specific shell wrappers
   - `policy_check.py`: Cross-platform policy evaluation hook
-- Platform documentation in `doc/platform/` with hook references and learnings
-- 46 new tests for the hook wrapper system
-
-### Changed
-- Updated `README.md` project structure to include hooks directory
-- Updated `doc/architecture.md` with cross-platform hook wrapper documentation
-
-## [0.2.0] - 2026-01-16
-
-### Added
+- Platform documentation in `doc/platform/` and `doc/platforms/` with hook references and learnings
+- Claude Code platform documentation (`doc/platforms/claude/`)
 - `update.job` for maintaining standard jobs (#41)
 - `make_new_job.sh` script and templates directory for job scaffolding (#37)
 - Default policy template file created during `deepwork install` (#42)
 - Full e2e test suite: define → implement → execute workflow (#45)
-- Automated tests for all shell scripts (#40)
+- Automated tests for all shell scripts and hook wrappers (#40)
 
 ### Changed
 - Standardized on "ask structured questions" phrasing across all jobs (#48)
 - deepwork_jobs bumped to v0.5.0, deepwork_policy to v0.2.0
+- Updated `README.md` project structure to include hooks directory
+- Updated `doc/architecture.md` with cross-platform hook wrapper documentation
 
 ### Fixed
 - Stop hooks now properly return blocking JSON (#38)
@@ -73,6 +67,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Initial version.
 
 [0.3.0]: https://github.com/anthropics/deepwork/releases/tag/0.3.0
-[0.2.0]: https://github.com/anthropics/deepwork/releases/tag/0.2.0
 [0.1.1]: https://github.com/anthropics/deepwork/releases/tag/0.1.1
 [0.1.0]: https://github.com/anthropics/deepwork/releases/tag/0.1.0
