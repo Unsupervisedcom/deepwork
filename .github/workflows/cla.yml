@@ -8,6 +8,7 @@ on:
     branches: [main]
   # Run in merge queue but skip the step (shows as passing check)
   merge_group:
+    branches: [main]
   workflow_dispatch:
 
 # Explicitly set permissions for the workflow
