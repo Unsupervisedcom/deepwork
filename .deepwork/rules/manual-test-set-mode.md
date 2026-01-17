@@ -1,8 +1,8 @@
 ---
 name: "Manual Test: Set Mode"
 set:
-  - manual_tests/claude/test_set_mode_source.py
-  - manual_tests/claude/test_set_mode_test.py
+  - manual_tests/test_set_mode_source.py
+  - manual_tests/test_set_mode_test.py
 ---
 
 # Manual Test: Set Mode (Bidirectional Correspondence)
