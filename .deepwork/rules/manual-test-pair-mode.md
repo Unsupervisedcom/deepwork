@@ -1,8 +1,8 @@
 ---
 name: "Manual Test: Pair Mode"
 pair:
-  trigger: manual_tests/test_pair_mode_trigger.py
-  expects: manual_tests/test_pair_mode_expected.md
+  trigger: manual_tests/test_pair_mode/test_pair_mode_trigger.py
+  expects: manual_tests/test_pair_mode/test_pair_mode_expected.md
 ---
 
 # Manual Test: Pair Mode (Directional Correspondence)

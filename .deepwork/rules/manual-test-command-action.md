@@ -1,8 +1,8 @@
 ---
 name: "Manual Test: Command Action"
-trigger: manual_tests/test_command_action.txt
+trigger: manual_tests/test_command_action/test_command_action.txt
 action:
-  command: echo "$(date '+%Y-%m-%d %H:%M:%S') - Command triggered by edit to {file}" >> manual_tests/test_command_action_log.txt
+  command: echo "$(date '+%Y-%m-%d %H:%M:%S') - Command triggered by edit to {file}" >> manual_tests/test_command_action/test_command_action_log.txt
   run_for: each_match
 ---
 
