@@ -1,8 +1,8 @@
 # DeepWork Rules Hooks Configuration
-# Maps Claude Code lifecycle events to hook scripts
+# Maps lifecycle events to hook scripts or Python modules
 
 UserPromptSubmit:
   - user_prompt_submit.sh
 
 Stop:
-  - rules_stop_hook.sh
+  - module: deepwork.hooks.rules_check
