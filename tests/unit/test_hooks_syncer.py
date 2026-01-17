@@ -47,7 +47,7 @@ class TestJobHooks:
 UserPromptSubmit:
   - capture.sh
 Stop:
-  - policy_check.sh
+  - rules_check.sh
   - cleanup.sh
 """
         )
@@ -57,7 +57,7 @@ Stop:
         assert result is not None
         assert result.job_name == "test_job"
         assert result.hooks["UserPromptSubmit"] == ["capture.sh"]
-        assert result.hooks["Stop"] == ["policy_check.sh", "cleanup.sh"]
+        assert result.hooks["Stop"] == ["rules_check.sh", "cleanup.sh"]
 
     def test_from_job_dir_no_hooks_file(self, temp_dir: Path) -> None:
         """Test returns None when no hooks file exists."""

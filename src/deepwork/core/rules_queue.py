@@ -1,4 +1,4 @@
-"""Queue system for tracking policy state in .deepwork/tmp/policy/queue/."""
+"""Queue system for tracking rule state in .deepwork/tmp/rules/queue/."""
 
 import hashlib
 import json
@@ -13,14 +13,14 @@ class QueueEntryStatus(Enum):
     """Status of a queue entry."""
 
     QUEUED = "queued"  # Detected, awaiting evaluation
-    PASSED = "passed"  # Evaluated, policy satisfied (promise found or action succeeded)
-    FAILED = "failed"  # Evaluated, policy not satisfied
+    PASSED = "passed"  # Evaluated, rule satisfied (promise found or action succeeded)
+    FAILED = "failed"  # Evaluated, rule not satisfied
     SKIPPED = "skipped"  # Safety pattern matched, skipped
 
 
 @dataclass
 class ActionResult:
-    """Result of executing a policy action."""
+    """Result of executing a rule action."""
 
     type: str  # "prompt" or "command"
     output: str | None = None  # Command stdout or prompt message shown
@@ -29,11 +29,11 @@ class ActionResult:
 
 @dataclass
 class QueueEntry:
-    """A single entry in the policy queue."""
+    """A single entry in the rules queue."""
 
     # Identity
-    policy_name: str  # Human-friendly name
-    policy_file: str  # Filename (e.g., "source-test-pairing.md")
+    rule_name: str  # Human-friendly name
+    rule_file: str  # Filename (e.g., "source-test-pairing.md")
     trigger_hash: str  # Hash for deduplication
 
     # State
@@ -70,8 +70,8 @@ class QueueEntry:
             action_result = ActionResult(**data["action_result"])
 
         return cls(
-            policy_name=data["policy_name"],
-            policy_file=data["policy_file"],
+            rule_name=data.get("rule_name", data.get("policy_name", "")),
+            rule_file=data.get("rule_file", data.get("policy_file", "")),
             trigger_hash=data["trigger_hash"],
             status=QueueEntryStatus(data["status"]),
             created_at=data.get("created_at", ""),
@@ -85,7 +85,7 @@ class QueueEntry:
 
 
 def compute_trigger_hash(
-    policy_name: str,
+    rule_name: str,
     trigger_files: list[str],
     baseline_ref: str,
 ) -> str:
@@ -93,20 +93,20 @@ def compute_trigger_hash(
     Compute a hash for deduplication.
 
     The hash is based on:
-    - Policy name
+    - Rule name
     - Sorted list of trigger files
     - Baseline reference (commit hash or timestamp)
 
     Returns:
         12-character hex hash
     """
-    hash_input = f"{policy_name}:{sorted(trigger_files)}:{baseline_ref}"
+    hash_input = f"{rule_name}:{sorted(trigger_files)}:{baseline_ref}"
     return hashlib.sha256(hash_input.encode()).hexdigest()[:12]
 
 
-class PolicyQueue:
+class RulesQueue:
     """
-    Manages the policy queue in .deepwork/tmp/policy/queue/.
+    Manages the rules queue in .deepwork/tmp/rules/queue/.
 
     Queue entries are stored as JSON files named {hash}.{status}.json
     """
@@ -116,10 +116,10 @@ class PolicyQueue:
         Initialize the queue.
 
         Args:
-            queue_dir: Path to queue directory. Defaults to .deepwork/tmp/policy/queue/
+            queue_dir: Path to queue directory. Defaults to .deepwork/tmp/rules/queue/
         """
         if queue_dir is None:
-            queue_dir = Path(".deepwork/tmp/policy/queue")
+            queue_dir = Path(".deepwork/tmp/rules/queue")
         self.queue_dir = queue_dir
 
     def _ensure_dir(self) -> None:
@@ -157,8 +157,8 @@ class PolicyQueue:
 
     def create_entry(
         self,
-        policy_name: str,
-        policy_file: str,
+        rule_name: str,
+        rule_file: str,
         trigger_files: list[str],
         baseline_ref: str,
         expected_files: list[str] | None = None,
@@ -167,16 +167,16 @@ class PolicyQueue:
         Create a new queue entry if one doesn't already exist.
 
         Args:
-            policy_name: Human-friendly policy name
-            policy_file: Policy filename (e.g., "source-test-pairing.md")
-            trigger_files: Files that triggered the policy
+            rule_name: Human-friendly rule name
+            rule_file: Rule filename (e.g., "source-test-pairing.md")
+            trigger_files: Files that triggered the rule
             baseline_ref: Baseline reference for change detection
             expected_files: Expected corresponding files (for set/pair)
 
         Returns:
             Created QueueEntry, or None if entry already exists
         """
-        trigger_hash = compute_trigger_hash(policy_name, trigger_files, baseline_ref)
+        trigger_hash = compute_trigger_hash(rule_name, trigger_files, baseline_ref)
 
         # Check if already exists
         if self.has_entry(trigger_hash):
@@ -185,8 +185,8 @@ class PolicyQueue:
         self._ensure_dir()
 
         entry = QueueEntry(
-            policy_name=policy_name,
-            policy_file=policy_file,
+            rule_name=rule_name,
+            rule_file=rule_file,
             trigger_hash=trigger_hash,
             status=QueueEntryStatus.QUEUED,
             baseline_ref=baseline_ref,

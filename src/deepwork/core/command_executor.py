@@ -1,10 +1,10 @@
-"""Execute command actions for policies."""
+"""Execute command actions for rules."""
 
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from deepwork.core.policy_parser import CommandAction
+from deepwork.core.rules_parser import CommandAction
 
 
 @dataclass
@@ -118,7 +118,7 @@ def run_command_action(
 
     Args:
         action: CommandAction configuration
-        trigger_files: Files that triggered the policy
+        trigger_files: Files that triggered the rule
         repo_root: Repository root path
 
     Returns:

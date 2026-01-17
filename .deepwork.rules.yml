@@ -21,16 +21,16 @@
 - name: "Standard Jobs Source of Truth"
   trigger:
     - ".deepwork/jobs/deepwork_jobs/**/*"
-    - ".deepwork/jobs/deepwork_policy/**/*"
+    - ".deepwork/jobs/deepwork_rules/**/*"
   safety:
     - "src/deepwork/standard_jobs/deepwork_jobs/**/*"
-    - "src/deepwork/standard_jobs/deepwork_policy/**/*"
+    - "src/deepwork/standard_jobs/deepwork_rules/**/*"
   instructions: |
-    You modified files in `.deepwork/jobs/deepwork_jobs/` or `.deepwork/jobs/deepwork_policy/`.
+    You modified files in `.deepwork/jobs/deepwork_jobs/` or `.deepwork/jobs/deepwork_rules/`.
 
     **These are installed copies, NOT the source of truth!**
 
-    Standard jobs (deepwork_jobs, deepwork_policy) must be edited in their source location:
+    Standard jobs (deepwork_jobs, deepwork_rules) must be edited in their source location:
     - Source: `src/deepwork/standard_jobs/[job_name]/`
     - Installed copy: `.deepwork/jobs/[job_name]/` (DO NOT edit directly)
 
@@ -68,4 +68,4 @@
     **If NO version update is needed** (e.g., tests only, comments, internal refactoring with no behavior change):
     - Explicitly state why no version bump is required
 
-    **This policy requires explicit action** - either update both files or justify why no update is needed.
+    **This rule requires explicit action** - either update both files or justify why no update is needed.

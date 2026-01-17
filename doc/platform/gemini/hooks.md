@@ -34,11 +34,11 @@ Hooks are configured in `settings.json` at various levels:
         "matcher": "*",
         "hooks": [
           {
-            "name": "policy-check",
+            "name": "rules-check",
             "type": "command",
-            "command": ".gemini/hooks/policy_check.sh",
+            "command": ".gemini/hooks/rules_check.sh",
             "timeout": 60000,
-            "description": "Evaluates DeepWork policies"
+            "description": "Evaluates DeepWork rules"
           }
         ]
       }
@@ -264,7 +264,7 @@ Block the agent from completing:
 ```json
 {
   "decision": "deny",
-  "reason": "Policy X requires attention before completing"
+  "reason": "Rule X requires attention before completing"
 }
 ```
 
@@ -287,7 +287,7 @@ Block tool execution:
 ```json
 {
   "decision": "deny",
-  "reason": "Security policy violation"
+  "reason": "Security rule violation"
 }
 ```
 

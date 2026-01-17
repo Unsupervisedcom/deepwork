@@ -23,8 +23,8 @@ def git_repo(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def git_repo_with_policy(tmp_path: Path) -> Path:
-    """Create a git repo with policy that will fire."""
+def git_repo_with_rule(tmp_path: Path) -> Path:
+    """Create a git repo with rule that will fire."""
     repo = Repo.init(tmp_path)
 
     readme = tmp_path / "README.md"
@@ -32,15 +32,15 @@ def git_repo_with_policy(tmp_path: Path) -> Path:
     repo.index.add(["README.md"])
     repo.index.commit("Initial commit")
 
-    # Create v2 policy directory and file
-    policies_dir = tmp_path / ".deepwork" / "policies"
-    policies_dir.mkdir(parents=True, exist_ok=True)
+    # Create v2 rules directory and file
+    rules_dir = tmp_path / ".deepwork" / "rules"
+    rules_dir.mkdir(parents=True, exist_ok=True)
 
-    # Policy that triggers on any Python file (v2 format)
-    policy_file = policies_dir / "python-file-policy.md"
-    policy_file.write_text(
+    # Rule that triggers on any Python file (v2 format)
+    rule_file = rules_dir / "python-file-rule.md"
+    rule_file.write_text(
         """---
-name: Python File Policy
+name: Python File Rule
 trigger: "**/*.py"
 compare_to: prompt
 ---
@@ -56,14 +56,14 @@ Review Python files for quality.
 
 
 @pytest.fixture
-def policy_hooks_dir() -> Path:
-    """Return the path to the policy hooks scripts directory."""
+def rules_hooks_dir() -> Path:
+    """Return the path to the rules hooks scripts directory."""
     return (
         Path(__file__).parent.parent.parent
         / "src"
         / "deepwork"
         / "standard_jobs"
-        / "deepwork_policy"
+        / "deepwork_rules"
         / "hooks"
     )
 

@@ -1,4 +1,4 @@
-"""Pattern matching with variable extraction for policy file correspondence."""
+"""Pattern matching with variable extraction for rule file correspondence."""
 
 import re
 from dataclasses import dataclass

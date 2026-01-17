@@ -6,9 +6,9 @@ Automated tests for DeepWork shell scripts, with a focus on validating Claude Co
 
 | Script | Type | Description |
 |--------|------|-------------|
-| `policy_stop_hook.sh` | Stop Hook | Evaluates policies and blocks agent stop if policies are triggered |
+| `rules_stop_hook.sh` | Stop Hook | Evaluates rules and blocks agent stop if rules are triggered |
 | `user_prompt_submit.sh` | UserPromptSubmit Hook | Captures work tree state when user submits a prompt |
-| `capture_prompt_work_tree.sh` | Helper | Records current git state for `compare_to: prompt` policies |
+| `capture_prompt_work_tree.sh` | Helper | Records current git state for `compare_to: prompt` rules |
 | `make_new_job.sh` | Utility | Creates directory structure for new DeepWork jobs |
 
 ## Claude Code Hooks JSON Format
@@ -38,7 +38,7 @@ Hook scripts must return valid JSON responses. The tests enforce these formats:
 uv run pytest tests/shell_script_tests/ -v
 
 # Run tests for a specific script
-uv run pytest tests/shell_script_tests/test_policy_stop_hook.py -v
+uv run pytest tests/shell_script_tests/test_rules_stop_hook.py -v
 
 # Run with coverage
 uv run pytest tests/shell_script_tests/ --cov=src/deepwork
@@ -49,7 +49,7 @@ uv run pytest tests/shell_script_tests/ --cov=src/deepwork
 ```
 tests/shell_script_tests/
 ├── conftest.py                      # Shared fixtures and helpers
-├── test_policy_stop_hook.py         # Stop hook blocking/allowing tests
+├── test_rules_stop_hook.py          # Stop hook blocking/allowing tests
 ├── test_user_prompt_submit.py       # Prompt submission hook tests
 ├── test_capture_prompt_work_tree.py # Work tree capture tests
 ├── test_hooks_json_format.py        # JSON format validation tests
@@ -63,8 +63,8 @@ Available in `conftest.py`:
 | Fixture | Description |
 |---------|-------------|
 | `git_repo` | Basic git repo with initial commit |
-| `git_repo_with_policy` | Git repo with a Python file policy |
-| `policy_hooks_dir` | Path to policy hooks scripts |
+| `git_repo_with_rule` | Git repo with a Python file rule |
+| `rules_hooks_dir` | Path to rules hooks scripts |
 | `jobs_scripts_dir` | Path to job management scripts |
 
 ## Adding New Tests

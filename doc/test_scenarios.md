@@ -1,6 +1,6 @@
-# Policy System Test Scenarios
+# Rules System Test Scenarios
 
-This document describes test scenarios for validating the policy system implementation.
+This document describes test scenarios for validating the rules system implementation.
 
 ## 1. Pattern Matching
 
@@ -44,19 +44,19 @@ This document describes test scenarios for validating the policy system implemen
 | PM-1.3.2 | Nested path | `tests/{path}_test.py` | `{path: "a/b/c"}` | `tests/a/b/c_test.py` |
 | PM-1.3.3 | Multiple vars | `{dir}/test_{name}.py` | `{dir: "tests", name: "foo"}` | `tests/test_foo.py` |
 
-## 2. Instruction Policies
+## 2. Instruction Rules
 
 ### 2.1 Basic Trigger/Safety
 
 | ID | Scenario | Changed Files | Trigger | Safety | Expected |
 |----|----------|---------------|---------|--------|----------|
-| IP-2.1.1 | Trigger match, no safety | `["src/main.py"]` | `src/**/*.py` | None | Fire |
-| IP-2.1.2 | Trigger match, safety match | `["src/main.py", "README.md"]` | `src/**/*.py` | `README.md` | No fire |
-| IP-2.1.3 | Trigger no match | `["docs/readme.md"]` | `src/**/*.py` | None | No fire |
-| IP-2.1.4 | Multiple triggers, one match | `["lib/utils.py"]` | `["src/**/*.py", "lib/**/*.py"]` | None | Fire |
-| IP-2.1.5 | Safety match only | `["README.md"]` | `src/**/*.py` | `README.md` | No fire |
-| IP-2.1.6 | Multiple safety, one match | `["src/main.py", "CHANGELOG.md"]` | `src/**/*.py` | `["README.md", "CHANGELOG.md"]` | No fire |
-| IP-2.1.7 | Multiple triggers, multiple files | `["src/a.py", "lib/b.py"]` | `["src/**/*.py", "lib/**/*.py"]` | None | Fire |
+| IR-2.1.1 | Trigger match, no safety | `["src/main.py"]` | `src/**/*.py` | None | Fire |
+| IR-2.1.2 | Trigger match, safety match | `["src/main.py", "README.md"]` | `src/**/*.py` | `README.md` | No fire |
+| IR-2.1.3 | Trigger no match | `["docs/readme.md"]` | `src/**/*.py` | None | No fire |
+| IR-2.1.4 | Multiple triggers, one match | `["lib/utils.py"]` | `["src/**/*.py", "lib/**/*.py"]` | None | Fire |
+| IR-2.1.5 | Safety match only | `["README.md"]` | `src/**/*.py` | `README.md` | No fire |
+| IR-2.1.6 | Multiple safety, one match | `["src/main.py", "CHANGELOG.md"]` | `src/**/*.py` | `["README.md", "CHANGELOG.md"]` | No fire |
+| IR-2.1.7 | Multiple triggers, multiple files | `["src/a.py", "lib/b.py"]` | `["src/**/*.py", "lib/**/*.py"]` | None | Fire |
 
 ### 2.2 Compare Modes
 
@@ -70,23 +70,23 @@ Setup: Branch diverged 3 commits ago from main
 
 | ID | Scenario | compare_to | Expected Changed Files |
 |----|----------|------------|----------------------|
-| IP-2.2.1 | Base comparison | `base` | `["src/feature.py", "tests/feature_test.py", "src/utils.py"]` |
-| IP-2.2.2 | Default tip (main ahead 1) | `default_tip` | All base + main's changes |
-| IP-2.2.3 | Prompt baseline (captured after commit 2) | `prompt` | `["tests/feature_test.py", "src/utils.py"]` |
+| IR-2.2.1 | Base comparison | `base` | `["src/feature.py", "tests/feature_test.py", "src/utils.py"]` |
+| IR-2.2.2 | Default tip (main ahead 1) | `default_tip` | All base + main's changes |
+| IR-2.2.3 | Prompt baseline (captured after commit 2) | `prompt` | `["tests/feature_test.py", "src/utils.py"]` |
 
 ### 2.3 Promise Tags
 
-Promise tags use the policy's `name` field (not filename) with a checkmark prefix for human readability.
+Promise tags use the rule's `name` field (not filename) with a checkmark prefix for human readability.
 
-| ID | Scenario | Conversation Contains | Policy `name` | Expected |
+| ID | Scenario | Conversation Contains | Rule `name` | Expected |
 |----|----------|----------------------|---------------|----------|
-| IP-2.3.1 | Standard promise | `<promise>✓ README Accuracy</promise>` | `README Accuracy` | Suppressed |
-| IP-2.3.2 | Without checkmark | `<promise>README Accuracy</promise>` | `README Accuracy` | Suppressed |
-| IP-2.3.3 | Case insensitive | `<promise>✓ readme accuracy</promise>` | `README Accuracy` | Suppressed |
-| IP-2.3.4 | Whitespace | `<promise>  ✓ README Accuracy  </promise>` | `README Accuracy` | Suppressed |
-| IP-2.3.5 | No promise | (none) | `README Accuracy` | Not suppressed |
-| IP-2.3.6 | Wrong promise | `<promise>✓ Other Policy</promise>` | `README Accuracy` | Not suppressed |
-| IP-2.3.7 | Multiple promises | `<promise>✓ A</promise><promise>✓ B</promise>` | `A` | Suppressed |
+| IR-2.3.1 | Standard promise | `<promise>✓ README Accuracy</promise>` | `README Accuracy` | Suppressed |
+| IR-2.3.2 | Without checkmark | `<promise>README Accuracy</promise>` | `README Accuracy` | Suppressed |
+| IR-2.3.3 | Case insensitive | `<promise>✓ readme accuracy</promise>` | `README Accuracy` | Suppressed |
+| IR-2.3.4 | Whitespace | `<promise>  ✓ README Accuracy  </promise>` | `README Accuracy` | Suppressed |
+| IR-2.3.5 | No promise | (none) | `README Accuracy` | Not suppressed |
+| IR-2.3.6 | Wrong promise | `<promise>✓ Other Rule</promise>` | `README Accuracy` | Not suppressed |
+| IR-2.3.7 | Multiple promises | `<promise>✓ A</promise><promise>✓ B</promise>` | `A` | Suppressed |
 
 ## 3. Correspondence Sets
 
@@ -168,7 +168,7 @@ pair:
 | CP-4.2.3 | Only trigger | `["api/users.py"]` | Fire (missing both) |
 | CP-4.2.4 | Both expects only | `["docs/api/users.md", "openapi/users.yaml"]` | No fire |
 
-## 5. Command Policies
+## 5. Command Rules
 
 ### 5.1 Basic Commands
 
@@ -224,12 +224,12 @@ action:
 
 ### 6.2 Hash Calculation
 
-| ID | Scenario | Policy | Files | Baseline | Expected Hash Differs? |
+| ID | Scenario | Rule | Files | Baseline | Expected Hash Differs? |
 |----|----------|--------|-------|----------|------------------------|
-| QS-6.2.1 | Same everything | PolicyA | `[a.py]` | commit1 | Same hash |
-| QS-6.2.2 | Different files | PolicyA | `[a.py]` vs `[b.py]` | commit1 | Different |
-| QS-6.2.3 | Different baseline | PolicyA | `[a.py]` | commit1 vs commit2 | Different |
-| QS-6.2.4 | Different policy | PolicyA vs PolicyB | `[a.py]` | commit1 | Different |
+| QS-6.2.1 | Same everything | RuleA | `[a.py]` | commit1 | Same hash |
+| QS-6.2.2 | Different files | RuleA | `[a.py]` vs `[b.py]` | commit1 | Different |
+| QS-6.2.3 | Different baseline | RuleA | `[a.py]` | commit1 vs commit2 | Different |
+| QS-6.2.4 | Different rule | RuleA vs RuleB | `[a.py]` | commit1 | Different |
 
 ### 6.3 Queue Cleanup
 
@@ -253,20 +253,20 @@ action:
 
 ### 7.1 Output Batching
 
-| ID | Scenario | Triggered Policies | Expected Output |
-|----|----------|-------------------|-----------------|
-| OM-7.1.1 | Single policy | 1 | Full instructions |
-| OM-7.1.2 | Two policies | 2 | Both, grouped |
-| OM-7.1.3 | Many policies | 10 | Batched by policy name |
-| OM-7.1.4 | Same policy multiple files | 3 Source/Test pairs | Grouped under single heading |
+| ID | Scenario | Triggered Rules | Expected Output |
+|----|----------|-----------------|-----------------|
+| OM-7.1.1 | Single rule | 1 | Full instructions |
+| OM-7.1.2 | Two rules | 2 | Both, grouped |
+| OM-7.1.3 | Many rules | 10 | Batched by rule name |
+| OM-7.1.4 | Same rule multiple files | 3 Source/Test pairs | Grouped under single heading |
 
 ### 7.2 Output Format
 
 | ID | Scenario | Input | Expected Format |
 |----|----------|-------|-----------------|
 | OM-7.2.1 | Correspondence violation | `src/foo.py` missing `tests/foo_test.py` | `src/foo.py → tests/foo_test.py` |
-| OM-7.2.2 | Multiple same policy | 3 correspondence violations | Single heading, 3 lines |
-| OM-7.2.3 | Instruction policy | Source files changed | Short summary + instructions |
+| OM-7.2.2 | Multiple same rule | 3 correspondence violations | Single heading, 3 lines |
+| OM-7.2.3 | Instruction rule | Source files changed | Short summary + instructions |
 
 ## 8. Schema Validation
 
@@ -276,7 +276,7 @@ action:
 |----|----------|---------------|----------------|
 | SV-8.1.1 | Missing name | `name` | "required field 'name'" |
 | SV-8.1.2 | Missing detection mode | no `trigger`, `set`, or `pair` | "must have 'trigger', 'set', or 'pair'" |
-| SV-8.1.3 | Missing markdown body | empty body (prompt action) | "instruction policies require markdown body" |
+| SV-8.1.3 | Missing markdown body | empty body (prompt action) | "instruction rules require markdown body" |
 | SV-8.1.4 | Missing set patterns | `set` is empty | "set requires at least 2 patterns" |
 
 ### 8.2 Mutually Exclusive Fields
@@ -305,26 +305,26 @@ action:
 
 ## 9. Integration Tests
 
-### 9.1 End-to-End Instruction Policy
+### 9.1 End-to-End Instruction Rule
 
 ```
-Given: Policy requiring tests for source changes
+Given: Rule requiring tests for source changes
 When: User modifies src/auth/login.py without test
 Then:
   1. Stop hook fires
   2. Detector creates queue entry
   3. Evaluator returns instructions
-  4. Agent sees policy message
+  4. Agent sees rule message
   5. Agent adds tests
   6. Agent includes promise tag
   7. Next stop: queue entry marked passed
   8. Agent can stop successfully
 ```
 
-### 9.2 End-to-End Command Policy
+### 9.2 End-to-End Command Rule
 
 ```
-Given: Auto-format policy for Python files
+Given: Auto-format rule for Python files
 When: User creates unformatted src/new_file.py
 Then:
   1. Stop hook fires
@@ -339,7 +339,7 @@ Then:
 ### 9.3 End-to-End Correspondence Set
 
 ```
-Given: Source/test pairing policy
+Given: Source/test pairing rule
 When: User modifies src/utils.py only
 Then:
   1. Detector matches src/utils.py to pattern
@@ -350,33 +350,33 @@ Then:
   6. Agent sees "expected tests/utils_test.py to change"
 ```
 
-### 9.4 Multiple Policies Same File
+### 9.4 Multiple Rules Same File
 
 ```
 Given:
-  - Policy A: "Format Python" (command)
-  - Policy B: "Test Coverage" (set)
-  - Policy C: "README Accuracy" (instruction)
+  - Rule A: "Format Python" (command)
+  - Rule B: "Test Coverage" (set)
+  - Rule C: "README Accuracy" (instruction)
 When: User modifies src/main.py
 Then:
-  1. All three policies trigger
-  2. Command policy runs first
-  3. Set policy checks for test
-  4. Instruction policy prepares message
+  1. All three rules trigger
+  2. Command rule runs first
+  3. Set rule checks for test
+  4. Instruction rule prepares message
   5. Agent sees batched output with all requirements
 ```
 
-### 9.5 Safety Pattern Across Policies
+### 9.5 Safety Pattern Across Rules
 
 ```
 Given:
-  - Policy A: trigger=src/**/*.py, safety=CHANGELOG.md
-  - Policy B: trigger=src/**/*.py, safety=README.md
+  - Rule A: trigger=src/**/*.py, safety=CHANGELOG.md
+  - Rule B: trigger=src/**/*.py, safety=README.md
 When: User modifies src/main.py and CHANGELOG.md
 Then:
-  1. Policy A: safety match, skipped
-  2. Policy B: no safety match, fires
-  3. Only Policy B instructions shown
+  1. Rule A: safety match, skipped
+  2. Rule B: no safety match, fires
+  3. Only Rule B instructions shown
 ```
 
 ## 10. Performance Tests
@@ -387,7 +387,7 @@ Then:
 |----|----------|------------|----------|
 | PT-10.1.1 | Many changed files | 100 | < 1s evaluation |
 | PT-10.1.2 | Very many files | 1000 | < 5s evaluation |
-| PT-10.1.3 | Pattern-heavy | 50 policies, 100 files | < 2s evaluation |
+| PT-10.1.3 | Pattern-heavy | 50 rules, 100 files | < 2s evaluation |
 
 ### 10.2 Queue Size
 
@@ -407,11 +407,11 @@ Then:
 
 ## Test Data Fixtures
 
-### Sample Policy Files
+### Sample Rule Files
 
-Policies are stored as individual markdown files in `.deepwork/policies/`:
+Rules are stored as individual markdown files in `.deepwork/rules/`:
 
-**`.deepwork/policies/readme-accuracy.md`**
+**`.deepwork/rules/readme-accuracy.md`**
 ```markdown
 ---
 name: README Accuracy
@@ -421,7 +421,7 @@ safety: README.md
 Please review README.md for accuracy.
 ```
 
-**`.deepwork/policies/source-test-pairing.md`**
+**`.deepwork/rules/source-test-pairing.md`**
 ```markdown
 ---
 name: Source/Test Pairing
@@ -432,7 +432,7 @@ set:
 Source and test should change together.
 ```
 
-**`.deepwork/policies/api-documentation.md`**
+**`.deepwork/rules/api-documentation.md`**
 ```markdown
 ---
 name: API Documentation
@@ -443,7 +443,7 @@ pair:
 API changes need documentation.
 ```
 
-**`.deepwork/policies/python-formatting.md`**
+**`.deepwork/rules/python-formatting.md`**
 ```markdown
 ---
 name: Python Formatting
@@ -459,8 +459,8 @@ Auto-formats Python files with Black.
 
 ```json
 {
-  "policy_name": "Source/Test Pairing",
-  "policy_file": "source-test-pairing.md",
+  "rule_name": "Source/Test Pairing",
+  "rule_file": "source-test-pairing.md",
   "trigger_hash": "abc123def456",
   "status": "queued",
   "created_at": "2024-01-16T10:00:00Z",
@@ -477,13 +477,13 @@ Auto-formats Python files with Black.
 
 ```
 .deepwork/
-├── policies/
+├── rules/
 │   ├── readme-accuracy.md
 │   ├── source-test-pairing.md
 │   ├── api-documentation.md
 │   └── python-formatting.md
 └── tmp/                         # GITIGNORED
-    └── policy/
+    └── rules/
         └── queue/
             └── (queue entries created during tests)
 ```

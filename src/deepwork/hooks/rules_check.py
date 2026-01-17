@@ -1,17 +1,17 @@
 """
-Policy check hook for DeepWork (v2).
+Rules check hook for DeepWork (v2).
 
-This hook evaluates policies when the agent finishes (after_agent event).
+This hook evaluates rules when the agent finishes (after_agent event).
 It uses the wrapper system for cross-platform compatibility.
 
-Policy files are loaded from .deepwork/policies/ directory as frontmatter markdown files.
+Rule files are loaded from .deepwork/rules/ directory as frontmatter markdown files.
 
 Usage (via shell wrapper):
-    claude_hook.sh deepwork.hooks.policy_check
-    gemini_hook.sh deepwork.hooks.policy_check
+    claude_hook.sh deepwork.hooks.rules_check
+    gemini_hook.sh deepwork.hooks.rules_check
 
 Or directly with platform environment variable:
-    DEEPWORK_HOOK_PLATFORM=claude python -m deepwork.hooks.policy_check
+    DEEPWORK_HOOK_PLATFORM=claude python -m deepwork.hooks.rules_check
 """
 
 from __future__ import annotations
@@ -28,18 +28,18 @@ from deepwork.core.command_executor import (
     format_command_errors,
     run_command_action,
 )
-from deepwork.core.policy_parser import (
+from deepwork.core.rules_parser import (
     ActionType,
     DetectionMode,
-    Policy,
-    PolicyEvaluationResult,
-    PolicyParseError,
-    evaluate_policies,
-    load_policies_from_directory,
+    Rule,
+    RuleEvaluationResult,
+    RulesParseError,
+    evaluate_rules,
+    load_rules_from_directory,
 )
-from deepwork.core.policy_queue import (
+from deepwork.core.rules_queue import (
     ActionResult,
-    PolicyQueue,
+    RulesQueue,
     QueueEntryStatus,
     compute_trigger_hash,
 )
@@ -240,14 +240,14 @@ def get_changed_files_for_mode(mode: str) -> list[str]:
 
 def extract_promise_tags(text: str) -> set[str]:
     """
-    Extract policy names from <promise> tags in text.
+    Extract rule names from <promise> tags in text.
 
     Supports both:
-    - <promise>✓ Policy Name</promise>
-    - <promise>Policy Name</promise>
+    - <promise>Rule Name</promise>
+    - <promise>Rule Name</promise>
     """
     # Match with or without checkmark
-    pattern = r"<promise>(?:✓\s*)?([^<]+)</promise>"
+    pattern = r"<promise>(?:\s*)?([^<]+)</promise>"
     matches = re.findall(pattern, text, re.IGNORECASE | re.DOTALL)
     return {m.strip() for m in matches}
 
@@ -305,63 +305,63 @@ def extract_conversation_from_transcript(transcript_path: str, platform: Platfor
         return ""
 
 
-def format_policy_message(results: list[PolicyEvaluationResult]) -> str:
+def format_rules_message(results: list[RuleEvaluationResult]) -> str:
     """
-    Format triggered policies into a concise message for the agent.
+    Format triggered rules into a concise message for the agent.
 
-    Groups policies by name and uses minimal formatting.
+    Groups rules by name and uses minimal formatting.
     """
-    lines = ["## DeepWork Policies Triggered", ""]
+    lines = ["## DeepWork Rules Triggered", ""]
     lines.append(
-        "Comply with the following policies. "
-        "To mark a policy as addressed, include `<promise>✓ Policy Name</promise>` "
+        "Comply with the following rules. "
+        "To mark a rule as addressed, include `<promise>Rule Name</promise>` "
         "in your response."
     )
     lines.append("")
 
-    # Group results by policy name
-    by_name: dict[str, list[PolicyEvaluationResult]] = {}
+    # Group results by rule name
+    by_name: dict[str, list[RuleEvaluationResult]] = {}
     for result in results:
-        name = result.policy.name
+        name = result.rule.name
         if name not in by_name:
             by_name[name] = []
         by_name[name].append(result)
 
-    for name, policy_results in by_name.items():
-        policy = policy_results[0].policy
+    for name, rule_results in by_name.items():
+        rule = rule_results[0].rule
         lines.append(f"## {name}")
         lines.append("")
 
         # For set/pair modes, show the correspondence violations concisely
-        if policy.detection_mode in (DetectionMode.SET, DetectionMode.PAIR):
-            for result in policy_results:
+        if rule.detection_mode in (DetectionMode.SET, DetectionMode.PAIR):
+            for result in rule_results:
                 for trigger_file in result.trigger_files:
                     for missing_file in result.missing_files:
-                        lines.append(f"{trigger_file} → {missing_file}")
+                        lines.append(f"{trigger_file} -> {missing_file}")
             lines.append("")
 
         # Show instructions
-        if policy.instructions:
-            lines.append(policy.instructions.strip())
+        if rule.instructions:
+            lines.append(rule.instructions.strip())
             lines.append("")
 
     return "\n".join(lines)
 
 
-def policy_check_hook(hook_input: HookInput) -> HookOutput:
+def rules_check_hook(hook_input: HookInput) -> HookOutput:
     """
-    Main hook logic for policy evaluation (v2).
+    Main hook logic for rules evaluation (v2).
 
-    This is called for after_agent events to check if policies need attention
+    This is called for after_agent events to check if rules need attention
     before allowing the agent to complete.
     """
     # Only process after_agent events
     if hook_input.event != NormalizedEvent.AFTER_AGENT:
         return HookOutput()
 
-    # Check if policies directory exists
-    policies_dir = Path(".deepwork/policies")
-    if not policies_dir.exists():
+    # Check if rules directory exists
+    rules_dir = Path(".deepwork/rules")
+    if not rules_dir.exists():
         return HookOutput()
 
     # Extract conversation context from transcript
@@ -370,49 +370,49 @@ def policy_check_hook(hook_input: HookInput) -> HookOutput:
     )
 
     # Extract promise tags (case-insensitive)
-    promised_policies = extract_promise_tags(conversation_context)
+    promised_rules = extract_promise_tags(conversation_context)
 
-    # Load policies
+    # Load rules
     try:
-        policies = load_policies_from_directory(policies_dir)
-    except PolicyParseError as e:
-        print(f"Error loading policies: {e}", file=sys.stderr)
+        rules = load_rules_from_directory(rules_dir)
+    except RulesParseError as e:
+        print(f"Error loading rules: {e}", file=sys.stderr)
         return HookOutput()
 
-    if not policies:
+    if not rules:
         return HookOutput()
 
     # Initialize queue
-    queue = PolicyQueue()
+    queue = RulesQueue()
 
-    # Group policies by compare_to mode
-    policies_by_mode: dict[str, list[Policy]] = {}
-    for policy in policies:
-        mode = policy.compare_to
-        if mode not in policies_by_mode:
-            policies_by_mode[mode] = []
-        policies_by_mode[mode].append(policy)
+    # Group rules by compare_to mode
+    rules_by_mode: dict[str, list[Rule]] = {}
+    for rule in rules:
+        mode = rule.compare_to
+        if mode not in rules_by_mode:
+            rules_by_mode[mode] = []
+        rules_by_mode[mode].append(rule)
 
-    # Evaluate policies and collect results
-    prompt_results: list[PolicyEvaluationResult] = []
+    # Evaluate rules and collect results
+    prompt_results: list[RuleEvaluationResult] = []
     command_errors: list[str] = []
 
-    for mode, mode_policies in policies_by_mode.items():
+    for mode, mode_rules in rules_by_mode.items():
         changed_files = get_changed_files_for_mode(mode)
         if not changed_files:
             continue
 
         baseline_ref = get_baseline_ref(mode)
 
-        # Evaluate which policies fire
-        results = evaluate_policies(mode_policies, changed_files, promised_policies)
+        # Evaluate which rules fire
+        results = evaluate_rules(mode_rules, changed_files, promised_rules)
 
         for result in results:
-            policy = result.policy
+            rule = result.rule
 
             # Compute trigger hash for queue deduplication
             trigger_hash = compute_trigger_hash(
-                policy.name,
+                rule.name,
                 result.trigger_files,
                 baseline_ref,
             )
@@ -428,20 +428,20 @@ def policy_check_hook(hook_input: HookInput) -> HookOutput:
             # Create queue entry if new
             if not existing:
                 queue.create_entry(
-                    policy_name=policy.name,
-                    policy_file=f"{policy.filename}.md",
+                    rule_name=rule.name,
+                    rule_file=f"{rule.filename}.md",
                     trigger_files=result.trigger_files,
                     baseline_ref=baseline_ref,
                     expected_files=result.missing_files,
                 )
 
             # Handle based on action type
-            if policy.action_type == ActionType.COMMAND:
+            if rule.action_type == ActionType.COMMAND:
                 # Run command action
-                if policy.command_action:
+                if rule.command_action:
                     repo_root = Path.cwd()
                     cmd_results = run_command_action(
-                        policy.command_action,
+                        rule.command_action,
                         result.trigger_files,
                         repo_root,
                     )
@@ -460,7 +460,7 @@ def policy_check_hook(hook_input: HookInput) -> HookOutput:
                     else:
                         # Command failed
                         error_msg = format_command_errors(cmd_results)
-                        command_errors.append(f"## {policy.name}\n{error_msg}")
+                        command_errors.append(f"## {rule.name}\n{error_msg}")
                         queue.update_status(
                             trigger_hash,
                             QueueEntryStatus.FAILED,
@@ -471,7 +471,7 @@ def policy_check_hook(hook_input: HookInput) -> HookOutput:
                             ),
                         )
 
-            elif policy.action_type == ActionType.PROMPT:
+            elif rule.action_type == ActionType.PROMPT:
                 # Collect for prompt output
                 prompt_results.append(result)
 
@@ -480,13 +480,13 @@ def policy_check_hook(hook_input: HookInput) -> HookOutput:
 
     # Add command errors if any
     if command_errors:
-        messages.append("## Command Policy Errors\n")
+        messages.append("## Command Rule Errors\n")
         messages.extend(command_errors)
         messages.append("")
 
-    # Add prompt policies if any
+    # Add prompt rules if any
     if prompt_results:
-        messages.append(format_policy_message(prompt_results))
+        messages.append(format_rules_message(prompt_results))
 
     if messages:
         return HookOutput(decision="block", reason="\n".join(messages))
@@ -495,7 +495,7 @@ def policy_check_hook(hook_input: HookInput) -> HookOutput:
 
 
 def main() -> None:
-    """Entry point for the policy check hook."""
+    """Entry point for the rules check hook."""
     # Determine platform from environment
     platform_str = os.environ.get("DEEPWORK_HOOK_PLATFORM", "claude")
     try:
@@ -504,7 +504,7 @@ def main() -> None:
         platform = Platform.CLAUDE
 
     # Run the hook with the wrapper
-    exit_code = run_hook(policy_check_hook, platform)
+    exit_code = run_hook(rules_check_hook, platform)
     sys.exit(exit_code)
 
 

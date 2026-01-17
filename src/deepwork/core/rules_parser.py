@@ -1,4 +1,4 @@
-"""Policy definition parser (v2 - frontmatter markdown format)."""
+"""Rule definition parser (v2 - frontmatter markdown format)."""
 
 from dataclasses import dataclass, field
 from enum import Enum
@@ -13,18 +13,18 @@ from deepwork.core.pattern_matcher import (
     matches_any_pattern,
     resolve_pattern,
 )
-from deepwork.schemas.policy_schema import POLICY_FRONTMATTER_SCHEMA
+from deepwork.schemas.rules_schema import RULES_FRONTMATTER_SCHEMA
 from deepwork.utils.validation import ValidationError, validate_against_schema
 
 
-class PolicyParseError(Exception):
-    """Exception raised for policy parsing errors."""
+class RulesParseError(Exception):
+    """Exception raised for rule parsing errors."""
 
     pass
 
 
 class DetectionMode(Enum):
-    """How the policy detects when to fire."""
+    """How the rule detects when to fire."""
 
     TRIGGER_SAFETY = "trigger_safety"  # Fire when trigger matches, safety doesn't
     SET = "set"  # Bidirectional file correspondence
@@ -32,7 +32,7 @@ class DetectionMode(Enum):
 
 
 class ActionType(Enum):
-    """What happens when the policy fires."""
+    """What happens when the rule fires."""
 
     PROMPT = "prompt"  # Show instructions to agent (default)
     COMMAND = "command"  # Run an idempotent command
@@ -60,8 +60,8 @@ class PairConfig:
 
 
 @dataclass
-class Policy:
-    """Represents a single policy definition (v2 format)."""
+class Rule:
+    """Represents a single rule definition (v2 format)."""
 
     # Identity
     name: str  # Human-friendly name (displayed in promise tags)
@@ -88,9 +88,9 @@ class Policy:
         frontmatter: dict[str, Any],
         markdown_body: str,
         filename: str,
-    ) -> "Policy":
+    ) -> "Rule":
         """
-        Create Policy from parsed frontmatter and markdown body.
+        Create Rule from parsed frontmatter and markdown body.
 
         Args:
             frontmatter: Parsed YAML frontmatter
@@ -98,15 +98,15 @@ class Policy:
             filename: Filename without .md extension
 
         Returns:
-            Policy instance
+            Rule instance
 
         Raises:
-            PolicyParseError: If validation fails
+            RulesParseError: If validation fails
         """
         # Get name (required)
         name = frontmatter.get("name", "")
         if not name:
-            raise PolicyParseError(f"Policy '{filename}' missing required 'name' field")
+            raise RulesParseError(f"Rule '{filename}' missing required 'name' field")
 
         # Determine detection mode
         has_trigger = "trigger" in frontmatter
@@ -115,9 +115,9 @@ class Policy:
 
         mode_count = sum([has_trigger, has_set, has_pair])
         if mode_count == 0:
-            raise PolicyParseError(f"Policy '{name}' must have 'trigger', 'set', or 'pair'")
+            raise RulesParseError(f"Rule '{name}' must have 'trigger', 'set', or 'pair'")
         if mode_count > 1:
-            raise PolicyParseError(f"Policy '{name}' has multiple detection modes - use only one")
+            raise RulesParseError(f"Rule '{name}' has multiple detection modes - use only one")
 
         # Parse based on detection mode
         detection_mode: DetectionMode
@@ -137,7 +137,7 @@ class Policy:
             detection_mode = DetectionMode.SET
             set_patterns = list(frontmatter["set"])
             if len(set_patterns) < 2:
-                raise PolicyParseError(f"Policy '{name}' set requires at least 2 patterns")
+                raise RulesParseError(f"Rule '{name}' set requires at least 2 patterns")
 
         elif has_pair:
             detection_mode = DetectionMode.PAIR
@@ -164,7 +164,7 @@ class Policy:
             action_type = ActionType.PROMPT
             # Markdown body is the instructions
             if not markdown_body.strip():
-                raise PolicyParseError(f"Policy '{name}' with prompt action requires markdown body")
+                raise RulesParseError(f"Rule '{name}' with prompt action requires markdown body")
 
         # Get compare_to
         compare_to = frontmatter.get("compare_to", DEFAULT_COMPARE_TO)
@@ -195,24 +195,24 @@ def parse_frontmatter_file(filepath: Path) -> tuple[dict[str, Any], str]:
         Tuple of (frontmatter_dict, markdown_body)
 
     Raises:
-        PolicyParseError: If parsing fails
+        RulesParseError: If parsing fails
     """
     try:
         content = filepath.read_text(encoding="utf-8")
     except OSError as e:
-        raise PolicyParseError(f"Failed to read policy file: {e}") from e
+        raise RulesParseError(f"Failed to read rule file: {e}") from e
 
     # Split frontmatter from body
     if not content.startswith("---"):
-        raise PolicyParseError(
-            f"Policy file '{filepath.name}' must start with '---' frontmatter delimiter"
+        raise RulesParseError(
+            f"Rule file '{filepath.name}' must start with '---' frontmatter delimiter"
         )
 
     # Find end of frontmatter
     end_marker = content.find("\n---", 3)
     if end_marker == -1:
-        raise PolicyParseError(
-            f"Policy file '{filepath.name}' missing closing '---' frontmatter delimiter"
+        raise RulesParseError(
+            f"Rule file '{filepath.name}' missing closing '---' frontmatter delimiter"
         )
 
     frontmatter_str = content[4:end_marker]  # Skip initial "---\n"
@@ -222,76 +222,76 @@ def parse_frontmatter_file(filepath: Path) -> tuple[dict[str, Any], str]:
     try:
         frontmatter = yaml.safe_load(frontmatter_str)
     except yaml.YAMLError as e:
-        raise PolicyParseError(f"Invalid YAML frontmatter in '{filepath.name}': {e}") from e
+        raise RulesParseError(f"Invalid YAML frontmatter in '{filepath.name}': {e}") from e
 
     if frontmatter is None:
         frontmatter = {}
 
     if not isinstance(frontmatter, dict):
-        raise PolicyParseError(
+        raise RulesParseError(
             f"Frontmatter in '{filepath.name}' must be a mapping, got {type(frontmatter).__name__}"
         )
 
     return frontmatter, markdown_body
 
 
-def parse_policy_file_v2(filepath: Path) -> Policy:
+def parse_rule_file(filepath: Path) -> Rule:
     """
-    Parse a single policy from a frontmatter markdown file.
+    Parse a single rule from a frontmatter markdown file.
 
     Args:
-        filepath: Path to .md file in .deepwork/policies/
+        filepath: Path to .md file in .deepwork/rules/
 
     Returns:
-        Parsed Policy object
+        Parsed Rule object
 
     Raises:
-        PolicyParseError: If parsing or validation fails
+        RulesParseError: If parsing or validation fails
     """
     if not filepath.exists():
-        raise PolicyParseError(f"Policy file does not exist: {filepath}")
+        raise RulesParseError(f"Rule file does not exist: {filepath}")
 
     if not filepath.is_file():
-        raise PolicyParseError(f"Policy path is not a file: {filepath}")
+        raise RulesParseError(f"Rule path is not a file: {filepath}")
 
     frontmatter, markdown_body = parse_frontmatter_file(filepath)
 
     # Validate against schema
     try:
-        validate_against_schema(frontmatter, POLICY_FRONTMATTER_SCHEMA)
+        validate_against_schema(frontmatter, RULES_FRONTMATTER_SCHEMA)
     except ValidationError as e:
-        raise PolicyParseError(f"Policy '{filepath.name}' validation failed: {e}") from e
+        raise RulesParseError(f"Rule '{filepath.name}' validation failed: {e}") from e
 
-    # Create Policy object
+    # Create Rule object
     filename = filepath.stem  # filename without .md extension
-    return Policy.from_frontmatter(frontmatter, markdown_body, filename)
+    return Rule.from_frontmatter(frontmatter, markdown_body, filename)
 
 
-def load_policies_from_directory(policies_dir: Path) -> list[Policy]:
+def load_rules_from_directory(rules_dir: Path) -> list[Rule]:
     """
-    Load all policies from a directory.
+    Load all rules from a directory.
 
     Args:
-        policies_dir: Path to .deepwork/policies/ directory
+        rules_dir: Path to .deepwork/rules/ directory
 
     Returns:
-        List of parsed Policy objects (sorted by filename)
+        List of parsed Rule objects (sorted by filename)
 
     Raises:
-        PolicyParseError: If any policy file fails to parse
+        RulesParseError: If any rule file fails to parse
     """
-    if not policies_dir.exists():
+    if not rules_dir.exists():
         return []
 
-    if not policies_dir.is_dir():
-        raise PolicyParseError(f"Policies path is not a directory: {policies_dir}")
+    if not rules_dir.is_dir():
+        raise RulesParseError(f"Rules path is not a directory: {rules_dir}")
 
-    policies = []
-    for filepath in sorted(policies_dir.glob("*.md")):
-        policy = parse_policy_file_v2(filepath)
-        policies.append(policy)
+    rules = []
+    for filepath in sorted(rules_dir.glob("*.md")):
+        rule = parse_rule_file(filepath)
+        rules.append(rule)
 
-    return policies
+    return rules
 
 
 # =============================================================================
@@ -300,20 +300,20 @@ def load_policies_from_directory(policies_dir: Path) -> list[Policy]:
 
 
 def evaluate_trigger_safety(
-    policy: Policy,
+    rule: Rule,
     changed_files: list[str],
 ) -> bool:
     """
-    Evaluate a trigger/safety mode policy.
+    Evaluate a trigger/safety mode rule.
 
-    Returns True if policy should fire:
+    Returns True if rule should fire:
     - At least one changed file matches a trigger pattern
     - AND no changed file matches a safety pattern
     """
     # Check if any trigger matches
     trigger_matched = False
     for file_path in changed_files:
-        if matches_any_pattern(file_path, policy.triggers):
+        if matches_any_pattern(file_path, rule.triggers):
             trigger_matched = True
             break
 
@@ -321,20 +321,20 @@ def evaluate_trigger_safety(
         return False
 
     # Check if any safety pattern matches
-    if policy.safety:
+    if rule.safety:
         for file_path in changed_files:
-            if matches_any_pattern(file_path, policy.safety):
+            if matches_any_pattern(file_path, rule.safety):
                 return False
 
     return True
 
 
 def evaluate_set_correspondence(
-    policy: Policy,
+    rule: Rule,
     changed_files: list[str],
 ) -> tuple[bool, list[str], list[str]]:
     """
-    Evaluate a set (bidirectional correspondence) policy.
+    Evaluate a set (bidirectional correspondence) rule.
 
     Returns:
         Tuple of (should_fire, trigger_files, missing_files)
@@ -348,13 +348,13 @@ def evaluate_set_correspondence(
 
     for file_path in changed_files:
         # Check each pattern in the set
-        for pattern in policy.set_patterns:
+        for pattern in rule.set_patterns:
             result = match_pattern(pattern, file_path)
             if result.matched:
                 trigger_files.append(file_path)
 
                 # Check if all other corresponding files also changed
-                for other_pattern in policy.set_patterns:
+                for other_pattern in rule.set_patterns:
                     if other_pattern == pattern:
                         continue
 
@@ -369,17 +369,17 @@ def evaluate_set_correspondence(
 
                 break  # Only match one pattern per file
 
-    # Policy fires if there are trigger files with missing correspondences
+    # Rule fires if there are trigger files with missing correspondences
     should_fire = len(trigger_files) > 0 and len(missing_files) > 0
     return should_fire, trigger_files, missing_files
 
 
 def evaluate_pair_correspondence(
-    policy: Policy,
+    rule: Rule,
     changed_files: list[str],
 ) -> tuple[bool, list[str], list[str]]:
     """
-    Evaluate a pair (directional correspondence) policy.
+    Evaluate a pair (directional correspondence) rule.
 
     Only trigger-side changes require corresponding expected files.
     Expected-side changes alone do not trigger.
@@ -387,15 +387,15 @@ def evaluate_pair_correspondence(
     Returns:
         Tuple of (should_fire, trigger_files, missing_files)
     """
-    if policy.pair_config is None:
+    if rule.pair_config is None:
         return False, [], []
 
     trigger_files: list[str] = []
     missing_files: list[str] = []
     changed_set = set(changed_files)
 
-    trigger_pattern = policy.pair_config.trigger
-    expects_patterns = policy.pair_config.expects
+    trigger_pattern = rule.pair_config.trigger
+    expects_patterns = rule.pair_config.expects
 
     for file_path in changed_files:
         # Only check trigger pattern (directional)
@@ -419,94 +419,94 @@ def evaluate_pair_correspondence(
 
 
 @dataclass
-class PolicyEvaluationResult:
-    """Result of evaluating a single policy."""
+class RuleEvaluationResult:
+    """Result of evaluating a single rule."""
 
-    policy: Policy
+    rule: Rule
     should_fire: bool
     trigger_files: list[str] = field(default_factory=list)
     missing_files: list[str] = field(default_factory=list)  # For set/pair modes
 
 
-def evaluate_policy(policy: Policy, changed_files: list[str]) -> PolicyEvaluationResult:
+def evaluate_rule(rule: Rule, changed_files: list[str]) -> RuleEvaluationResult:
     """
-    Evaluate whether a policy should fire based on changed files.
+    Evaluate whether a rule should fire based on changed files.
 
     Args:
-        policy: Policy to evaluate
+        rule: Rule to evaluate
         changed_files: List of changed file paths (relative)
 
     Returns:
-        PolicyEvaluationResult with evaluation details
+        RuleEvaluationResult with evaluation details
     """
-    if policy.detection_mode == DetectionMode.TRIGGER_SAFETY:
-        should_fire = evaluate_trigger_safety(policy, changed_files)
+    if rule.detection_mode == DetectionMode.TRIGGER_SAFETY:
+        should_fire = evaluate_trigger_safety(rule, changed_files)
         trigger_files = (
-            [f for f in changed_files if matches_any_pattern(f, policy.triggers)]
+            [f for f in changed_files if matches_any_pattern(f, rule.triggers)]
             if should_fire
             else []
         )
-        return PolicyEvaluationResult(
-            policy=policy,
+        return RuleEvaluationResult(
+            rule=rule,
             should_fire=should_fire,
             trigger_files=trigger_files,
         )
 
-    elif policy.detection_mode == DetectionMode.SET:
+    elif rule.detection_mode == DetectionMode.SET:
         should_fire, trigger_files, missing_files = evaluate_set_correspondence(
-            policy, changed_files
+            rule, changed_files
         )
-        return PolicyEvaluationResult(
-            policy=policy,
+        return RuleEvaluationResult(
+            rule=rule,
             should_fire=should_fire,
             trigger_files=trigger_files,
             missing_files=missing_files,
         )
 
-    elif policy.detection_mode == DetectionMode.PAIR:
+    elif rule.detection_mode == DetectionMode.PAIR:
         should_fire, trigger_files, missing_files = evaluate_pair_correspondence(
-            policy, changed_files
+            rule, changed_files
         )
-        return PolicyEvaluationResult(
-            policy=policy,
+        return RuleEvaluationResult(
+            rule=rule,
             should_fire=should_fire,
             trigger_files=trigger_files,
             missing_files=missing_files,
         )
 
-    return PolicyEvaluationResult(policy=policy, should_fire=False)
+    return RuleEvaluationResult(rule=rule, should_fire=False)
 
 
-def evaluate_policies(
-    policies: list[Policy],
+def evaluate_rules(
+    rules: list[Rule],
     changed_files: list[str],
-    promised_policies: set[str] | None = None,
-) -> list[PolicyEvaluationResult]:
+    promised_rules: set[str] | None = None,
+) -> list[RuleEvaluationResult]:
     """
-    Evaluate which policies should fire.
+    Evaluate which rules should fire.
 
     Args:
-        policies: List of policies to evaluate
+        rules: List of rules to evaluate
         changed_files: List of changed file paths (relative)
-        promised_policies: Set of policy names that have been marked as addressed
+        promised_rules: Set of rule names that have been marked as addressed
                           via <promise> tags (case-insensitive)
 
     Returns:
-        List of PolicyEvaluationResult for policies that should fire
+        List of RuleEvaluationResult for rules that should fire
     """
-    if promised_policies is None:
-        promised_policies = set()
+    if promised_rules is None:
+        promised_rules = set()
 
     # Normalize promised names for case-insensitive comparison
-    promised_lower = {name.lower() for name in promised_policies}
+    promised_lower = {name.lower() for name in promised_rules}
 
     results = []
-    for policy in policies:
+    for rule in rules:
         # Skip if already promised/addressed (case-insensitive)
-        if policy.name.lower() in promised_lower:
+        if rule.name.lower() in promised_lower:
             continue
 
-        result = evaluate_policy(policy, changed_files)
+        result = evaluate_rule(rule, changed_files)
         if result.should_fire:
             results.append(result)
 
