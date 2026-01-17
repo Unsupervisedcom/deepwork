@@ -1,5 +1,27 @@
 """Tests for the platform hook wrapper shell scripts.
 
+# ******************************************************************************
+# ***                         CRITICAL CONTRACT TESTS                        ***
+# ******************************************************************************
+#
+# These tests verify the integration between shell wrapper scripts and the
+# Python hook wrapper, following Claude Code hook contracts documented in:
+# doc/platforms/claude/hooks_system.md
+#
+# Hook Contract Summary:
+#   - Exit code 0: Success, stdout parsed as JSON
+#   - Exit code 2: Blocking error, stderr shown (NOT used for JSON format)
+#   - Allow response: {} (empty JSON object)
+#   - Block response: {"decision": "block", "reason": "..."}
+#
+# CRITICAL: Hooks using JSON output format MUST return exit code 0.
+# The "decision" field in the JSON controls blocking behavior, NOT the exit code.
+#
+# DO NOT MODIFY the exit code assertions without first consulting the official
+# Claude Code documentation at: https://docs.anthropic.com/en/docs/claude-code/hooks
+#
+# ******************************************************************************
+
 These tests verify that claude_hook.sh and gemini_hook.sh correctly
 invoke Python hooks and handle input/output.
 """
@@ -130,6 +152,28 @@ class TestGeminiHookWrapper:
         assert 'DEEPWORK_HOOK_PLATFORM="gemini"' in content
 
 
+# ******************************************************************************
+# ***                    DO NOT EDIT EXIT CODE ASSERTIONS!                   ***
+# ******************************************************************************
+#
+# As documented in doc/platforms/claude/hooks_system.md:
+#
+#   | Exit Code | Meaning         | Behavior                          |
+#   |-----------|-----------------|-----------------------------------|
+#   | 0         | Success         | stdout parsed as JSON             |
+#   | 2         | Blocking error  | stderr shown, operation blocked   |
+#   | Other     | Warning         | stderr logged, continues          |
+#
+# CRITICAL: Hooks using JSON output format MUST return exit code 0.
+# The "decision" field in the JSON controls blocking behavior, NOT the exit code.
+#
+# Example valid outputs:
+#   Exit 0 + stdout: {}                                      -> Allow
+#   Exit 0 + stdout: {"decision": "block", "reason": "..."}  -> Block
+#   Exit 0 + stdout: {"decision": "deny", "reason": "..."}   -> Block (Gemini)
+#
+# See: https://docs.anthropic.com/en/docs/claude-code/hooks
+# ******************************************************************************
 class TestHookWrapperIntegration:
     """Integration tests for hook wrappers with actual Python hooks."""
 

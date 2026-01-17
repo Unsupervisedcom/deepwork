@@ -1,5 +1,22 @@
 """Tests for the hook wrapper module.
 
+# ******************************************************************************
+# ***                         CRITICAL CONTRACT TESTS                        ***
+# ******************************************************************************
+#
+# These tests verify the EXACT format required by Claude Code hooks as
+# documented in: doc/platforms/claude/hooks_system.md
+#
+# Hook JSON Contract Summary:
+#   - Allow response: {} (empty JSON object)
+#   - Block response: {"decision": "block", "reason": "..."} (Claude Code)
+#   - Block response: {"decision": "deny", "reason": "..."}  (Gemini CLI)
+#
+# DO NOT MODIFY these tests without first consulting the official Claude Code
+# documentation at: https://docs.anthropic.com/en/docs/claude-code/hooks
+#
+# ******************************************************************************
+
 These tests verify that the hook wrapper correctly normalizes input/output
 between different AI CLI platforms (Claude Code, Gemini CLI).
 """
@@ -157,18 +174,34 @@ class TestHookInput:
         assert hook_input.tool_name == ""
 
 
+# ******************************************************************************
+# *** DO NOT EDIT THESE OUTPUT FORMAT TESTS! ***
+# As documented in doc/platforms/claude/hooks_system.md, hook responses must be:
+#   - {} (empty object) to allow
+#   - {"decision": "block", "reason": "..."} to block (Claude Code)
+#   - {"decision": "deny", "reason": "..."} to block (Gemini CLI)
+# Any other format may cause undefined behavior.
+# See: https://docs.anthropic.com/en/docs/claude-code/hooks
+# ******************************************************************************
 class TestHookOutput:
     """Tests for HookOutput denormalization."""
 
     def test_empty_output_produces_empty_json(self) -> None:
-        """Test that empty HookOutput produces empty dict."""
+        """Test that empty HookOutput produces empty dict.
+
+        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
+        """
         output = HookOutput()
         result = output.to_dict(Platform.CLAUDE, NormalizedEvent.AFTER_AGENT)
 
         assert result == {}
 
     def test_block_decision_claude(self) -> None:
-        """Test blocking output for Claude."""
+        """Test blocking output for Claude.
+
+        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
+        Claude Code expects {"decision": "block", "reason": "..."} to block.
+        """
         output = HookOutput(decision="block", reason="Must complete X first")
         result = output.to_dict(Platform.CLAUDE, NormalizedEvent.AFTER_AGENT)
 
@@ -176,7 +209,11 @@ class TestHookOutput:
         assert result["reason"] == "Must complete X first"
 
     def test_block_decision_gemini_converts_to_deny(self) -> None:
-        """Test that 'block' is converted to 'deny' for Gemini."""
+        """Test that 'block' is converted to 'deny' for Gemini.
+
+        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
+        Gemini CLI expects {"decision": "deny", "reason": "..."} to block.
+        """
         output = HookOutput(decision="block", reason="Must complete X first")
         result = output.to_dict(Platform.GEMINI, NormalizedEvent.AFTER_AGENT)
 
@@ -288,11 +325,22 @@ class TestNormalizeInput:
         assert hook_input.session_id == ""
 
 
+# ******************************************************************************
+# *** DO NOT EDIT THESE JSON OUTPUT TESTS! ***
+# As documented in doc/platforms/claude/hooks_system.md, hook JSON output must:
+#   - Be valid JSON
+#   - Return {} for allow
+#   - Return {"decision": "block", "reason": "..."} for block
+# See: https://docs.anthropic.com/en/docs/claude-code/hooks
+# ******************************************************************************
 class TestDenormalizeOutput:
     """Tests for the denormalize_output function."""
 
     def test_produces_valid_json(self) -> None:
-        """Test that output is valid JSON."""
+        """Test that output is valid JSON.
+
+        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
+        """
         output = HookOutput(decision="block", reason="test")
         json_str = denormalize_output(output, Platform.CLAUDE, NormalizedEvent.AFTER_AGENT)
 
@@ -301,7 +349,10 @@ class TestDenormalizeOutput:
         assert parsed["decision"] == "block"
 
     def test_empty_output_produces_empty_object(self) -> None:
-        """Test that empty output produces '{}'."""
+        """Test that empty output produces '{}' (allow response).
+
+        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
+        """
         output = HookOutput()
         json_str = denormalize_output(output, Platform.CLAUDE, NormalizedEvent.AFTER_AGENT)
 
@@ -389,11 +440,31 @@ class TestToolMappings:
                 assert TOOL_TO_NORMALIZED[Platform.GEMINI][gemini_tool] == tool
 
 
+# ******************************************************************************
+# ***                    DO NOT EDIT THESE INTEGRATION TESTS!                ***
+# ******************************************************************************
+#
+# These tests verify the complete input/output flow for both Claude Code and
+# Gemini CLI, following the hook contracts documented in:
+# doc/platforms/claude/hooks_system.md
+#
+# Claude Code contract:
+#   - Block: {"decision": "block", "reason": "..."}
+#
+# Gemini CLI contract:
+#   - Block: {"decision": "deny", "reason": "..."}
+#
+# The "block" vs "deny" terminology is a platform difference, not a bug.
+# See: https://docs.anthropic.com/en/docs/claude-code/hooks
+# ******************************************************************************
 class TestIntegration:
     """Integration tests for the full normalization flow."""
 
     def test_claude_stop_hook_flow(self) -> None:
-        """Test complete flow for Claude Stop hook."""
+        """Test complete flow for Claude Stop hook.
+
+        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
+        """
         # Input from Claude
         raw_input = json.dumps(
             {
@@ -419,7 +490,10 @@ class TestIntegration:
         assert "Rule X" in result["reason"]
 
     def test_gemini_afteragent_hook_flow(self) -> None:
-        """Test complete flow for Gemini AfterAgent hook."""
+        """Test complete flow for Gemini AfterAgent hook.
+
+        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
+        """
         # Input from Gemini
         raw_input = json.dumps(
             {
@@ -447,7 +521,11 @@ class TestIntegration:
         assert "Rule Y" in result["reason"]
 
     def test_cross_platform_same_hook_logic(self) -> None:
-        """Test that the same hook logic produces correct output for both platforms."""
+        """Test that the same hook logic produces correct output for both platforms.
+
+        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
+        The "block" vs "deny" platform difference is intentional.
+        """
 
         def sample_hook(hook_input: HookInput) -> HookOutput:
             """Sample hook that blocks if event is after_agent."""
