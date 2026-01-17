@@ -19,27 +19,42 @@ class HooksSyncError(Exception):
 class HookEntry:
     """Represents a single hook entry for a lifecycle event."""
 
-    script: str  # Script filename
     job_name: str  # Job that provides this hook
     job_dir: Path  # Full path to job directory
+    script: str | None = None  # Script filename (if script-based hook)
+    module: str | None = None  # Python module (if module-based hook)
 
-    def get_script_path(self, project_path: Path) -> str:
+    def get_command(self, project_path: Path) -> str:
         """
-        Get the script path relative to project root.
+        Get the command to run this hook.
 
         Args:
             project_path: Path to project root
 
         Returns:
-            Relative path to script from project root
+            Command string to execute
         """
-        # Script path is: .deepwork/jobs/{job_name}/hooks/{script}
-        script_path = self.job_dir / "hooks" / self.script
-        try:
-            return str(script_path.relative_to(project_path))
-        except ValueError:
-            # If not relative, return the full path
-            return str(script_path)
+        if self.module:
+            # Python module - run directly with python -m
+            return f"python -m {self.module}"
+        elif self.script:
+            # Script path is: .deepwork/jobs/{job_name}/hooks/{script}
+            script_path = self.job_dir / "hooks" / self.script
+            try:
+                return str(script_path.relative_to(project_path))
+            except ValueError:
+                # If not relative, return the full path
+                return str(script_path)
+        else:
+            raise ValueError("HookEntry must have either script or module")
+
+
+@dataclass
+class HookSpec:
+    """Specification for a single hook (either script or module)."""
+
+    script: str | None = None
+    module: str | None = None
 
 
 @dataclass
@@ -48,7 +63,7 @@ class JobHooks:
 
     job_name: str
     job_dir: Path
-    hooks: dict[str, list[str]] = field(default_factory=dict)  # event -> [scripts]
+    hooks: dict[str, list[HookSpec]] = field(default_factory=dict)  # event -> [HookSpec]
 
     @classmethod
     def from_job_dir(cls, job_dir: Path) -> "JobHooks | None":
@@ -74,13 +89,23 @@ class JobHooks:
         if not data or not isinstance(data, dict):
             return None
 
-        # Parse hooks - each key is an event, value is list of scripts
-        hooks: dict[str, list[str]] = {}
-        for event, scripts in data.items():
-            if isinstance(scripts, list):
-                hooks[event] = [str(s) for s in scripts]
-            elif isinstance(scripts, str):
-                hooks[event] = [scripts]
+        # Parse hooks - each key is an event, value is list of scripts or module specs
+        hooks: dict[str, list[HookSpec]] = {}
+        for event, entries in data.items():
+            if not isinstance(entries, list):
+                entries = [entries]
+
+            hook_specs: list[HookSpec] = []
+            for entry in entries:
+                if isinstance(entry, str):
+                    # Simple script filename
+                    hook_specs.append(HookSpec(script=entry))
+                elif isinstance(entry, dict) and "module" in entry:
+                    # Python module specification
+                    hook_specs.append(HookSpec(module=entry["module"]))
+
+            if hook_specs:
+                hooks[event] = hook_specs
 
         if not hooks:
             return None
@@ -134,17 +159,18 @@ def merge_hooks_for_platform(
     merged: dict[str, list[dict[str, Any]]] = {}
 
     for job_hooks in job_hooks_list:
-        for event, scripts in job_hooks.hooks.items():
+        for event, hook_specs in job_hooks.hooks.items():
             if event not in merged:
                 merged[event] = []
 
-            for script in scripts:
+            for spec in hook_specs:
                 entry = HookEntry(
-                    script=script,
                     job_name=job_hooks.job_name,
                     job_dir=job_hooks.job_dir,
+                    script=spec.script,
+                    module=spec.module,
                 )
-                script_path = entry.get_script_path(project_path)
+                command = entry.get_command(project_path)
 
                 # Create hook configuration for Claude Code format
                 hook_config = {
@@ -152,13 +178,13 @@ def merge_hooks_for_platform(
                     "hooks": [
                         {
                             "type": "command",
-                            "command": script_path,
+                            "command": command,
                         }
                     ],
                 }
 
                 # Check if this hook is already present (avoid duplicates)
-                if not _hook_already_present(merged[event], script_path):
+                if not _hook_already_present(merged[event], command):
                     merged[event].append(hook_config)
 
     return merged

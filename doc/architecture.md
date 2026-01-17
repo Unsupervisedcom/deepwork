@@ -46,15 +46,17 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── detector.py     # AI platform detection
 │       │   ├── generator.py    # Command file generation
 │       │   ├── parser.py       # Job definition parsing
-│       │   ├── policy_parser.py # Policy definition parsing
-│       │   └── hooks_syncer.py # Hook syncing to platforms
+│       │   ├── rules_parser.py     # Rule definition parsing
+│       │   ├── pattern_matcher.py  # Variable pattern matching for rules
+│       │   ├── rules_queue.py      # Rule state queue system
+│       │   ├── command_executor.py # Command action execution
+│       │   └── hooks_syncer.py     # Hook syncing to platforms
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── __init__.py
 │       │   ├── wrapper.py           # Cross-platform input/output normalization
 │       │   ├── claude_hook.sh       # Shell wrapper for Claude Code
 │       │   ├── gemini_hook.sh       # Shell wrapper for Gemini CLI
-│       │   ├── policy_check.py      # Cross-platform policy evaluation hook
-│       │   └── evaluate_policies.py # Legacy policy evaluation CLI
+│       │   └── rules_check.py       # Cross-platform rule evaluation hook
 │       ├── templates/          # Command templates for each platform
 │       │   ├── claude/
 │       │   │   └── command-job-step.md.jinja
@@ -64,18 +66,17 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── deepwork_jobs/
 │       │   │   ├── job.yml
 │       │   │   └── steps/
-│       │   └── deepwork_policy/   # Policy management job
+│       │   └── deepwork_rules/   # Rule management job
 │       │       ├── job.yml
 │       │       ├── steps/
 │       │       │   └── define.md
 │       │       └── hooks/         # Hook scripts
 │       │           ├── global_hooks.yml
 │       │           ├── user_prompt_submit.sh
-│       │           ├── capture_prompt_work_tree.sh
-│       │           └── policy_stop_hook.sh
+│       │           └── capture_prompt_work_tree.sh
 │       ├── schemas/            # Definition schemas
 │       │   ├── job_schema.py
-│       │   └── policy_schema.py
+│       │   └── rules_schema.py
 │       └── utils/
 │           ├── fs.py
 │           ├── git.py
@@ -120,9 +121,10 @@ def install(platform: str):
     # Inject core job definitions
     inject_deepwork_jobs(".deepwork/jobs/")
 
-    # Create default policy template (if not exists)
-    if not exists(".deepwork.policy.yml"):
-        copy_template("default_policy.yml", ".deepwork.policy.yml")
+    # Create rules directory with example templates (if not exists)
+    if not exists(".deepwork/rules/"):
+        create_directory(".deepwork/rules/")
+        copy_example_rules(".deepwork/rules/")
 
     # Update config (supports multiple platforms)
     config = load_yaml(".deepwork/config.yml") or {}
@@ -281,31 +283,35 @@ my-project/                     # User's project (target)
 │       ├── deepwork_jobs.define.md         # Core DeepWork commands
 │       ├── deepwork_jobs.implement.md
 │       ├── deepwork_jobs.refine.md
-│       ├── deepwork_policy.define.md       # Policy management
+│       ├── deepwork_rules.define.md        # Rule management
 │       ├── competitive_research.identify_competitors.md
 │       └── ...
 ├── .deepwork/                  # DeepWork configuration
 │   ├── config.yml              # Platform config
-│   ├── .gitignore              # Ignores .last_work_tree
+│   ├── .gitignore              # Ignores tmp/ directory
+│   ├── rules/                  # Rule definitions (v2 format)
+│   │   ├── source-test-pairing.md
+│   │   ├── format-python.md
+│   │   └── api-docs.md
+│   ├── tmp/                    # Temporary state (gitignored)
+│   │   └── rules/queue/        # Rule evaluation queue
 │   └── jobs/                   # Job definitions
 │       ├── deepwork_jobs/      # Core job for managing jobs
 │       │   ├── job.yml
 │       │   └── steps/
-│       ├── deepwork_policy/    # Policy management job
+│       ├── deepwork_rules/     # Rule management job
 │       │   ├── job.yml
 │       │   ├── steps/
 │       │   │   └── define.md
 │       │   └── hooks/          # Hook scripts (installed from standard_jobs)
 │       │       ├── global_hooks.yml
 │       │       ├── user_prompt_submit.sh
-│       │       ├── capture_prompt_work_tree.sh
-│       │       └── policy_stop_hook.sh
+│       │       └── capture_prompt_work_tree.sh
 │       ├── competitive_research/
 │       │   ├── job.yml         # Job metadata
 │       │   └── steps/
 │       └── ad_campaign/
 │           └── ...
-├── .deepwork.policy.yml        # Policy definitions (project root)
 ├── (rest of user's project files)
 └── README.md
 ```
@@ -994,63 +1000,131 @@ Github Actions are used for all CI/CD tasks.
 
 ---
 
-## Policies
+## Rules
 
-Policies are automated enforcement rules that trigger based on file changes during an AI agent session. They help ensure that:
+Rules are automated enforcement mechanisms that trigger based on file changes during an AI agent session. They help ensure that:
 - Documentation stays in sync with code changes
 - Security reviews happen when sensitive code is modified
 - Team guidelines are followed automatically
+- File correspondences are maintained (e.g., source/test pairing)
 
-### Policy Configuration File
+### Rules System v2 (Frontmatter Markdown)
 
-Policies are defined in `.deepwork.policy.yml` at the project root:
+Rules are defined as individual markdown files in `.deepwork/rules/`:
 
-```yaml
-- name: "Update install guide on config changes"
-  trigger: "app/config/**/*"
-  safety: "docs/install_guide.md"
-  instructions: |
-    Configuration files have been modified. Please review docs/install_guide.md
-    and update it if any installation instructions need to change.
-
-- name: "Security review for auth changes"
-  trigger:
-    - "src/auth/**/*"
-    - "src/security/**/*"
-  safety:
-    - "SECURITY.md"
-    - "docs/security_audit.md"
-  instructions: |
-    Authentication or security code has been changed. Please:
-    1. Check for hardcoded credentials
-    2. Verify input validation
-    3. Review access control logic
+```
+.deepwork/rules/
+├── source-test-pairing.md
+├── format-python.md
+└── api-docs.md
 ```
 
-### Policy Evaluation Flow
+Each rule file uses YAML frontmatter with a markdown body for instructions:
+
+```markdown
+---
+name: Source/Test Pairing
+set:
+  - src/{path}.py
+  - tests/{path}_test.py
+---
+When source files change, corresponding test files should also change.
+Please create or update tests for the modified source files.
+```
+
+### Detection Modes
+
+Rules support three detection modes:
+
+**1. Trigger/Safety (default)** - Fire when trigger matches but safety doesn't:
+```yaml
+---
+name: Update install guide
+trigger: "app/config/**/*"
+safety: "docs/install_guide.md"
+---
+```
+
+**2. Set (bidirectional)** - Enforce file correspondence in both directions:
+```yaml
+---
+name: Source/Test Pairing
+set:
+  - src/{path}.py
+  - tests/{path}_test.py
+---
+```
+Uses variable patterns like `{path}` (multi-segment) and `{name}` (single-segment) for matching.
+
+**3. Pair (directional)** - Trigger requires corresponding files, but not vice versa:
+```yaml
+---
+name: API Documentation
+pair:
+  trigger: src/api/{name}.py
+  expects: docs/api/{name}.md
+---
+```
+
+### Action Types
+
+**1. Prompt (default)** - Show instructions to the agent:
+```yaml
+---
+name: Security Review
+trigger: "src/auth/**/*"
+---
+Please check for hardcoded credentials and validate input.
+```
+
+**2. Command** - Run an idempotent command:
+```yaml
+---
+name: Format Python
+trigger: "**/*.py"
+action:
+  command: "ruff format {file}"
+  run_for: each_match  # or "all_matches"
+---
+```
+
+### Rule Evaluation Flow
 
 1. **Session Start**: When a Claude Code session begins, the baseline git state is captured
 2. **Agent Works**: The AI agent performs tasks, potentially modifying files
-3. **Session Stop**: When the agent finishes:
-   - Changed files are detected by comparing against the baseline
-   - Each policy is evaluated:
-     - If any changed file matches a `trigger` pattern AND
-     - No changed file matches a `safety` pattern AND
-     - The agent hasn't marked it with a `<promise>` tag
-     - → The policy fires
-   - If policies fire, Claude is prompted to address them
-4. **Promise Tags**: Agents can mark policies as addressed by including `<promise>✓ Policy Name</promise>` in their response
+3. **Session Stop**: When the agent finishes (after_agent event):
+   - Changed files are detected based on `compare_to` setting (base, default_tip, or prompt)
+   - Each rule is evaluated based on its detection mode
+   - Queue entries are created in `.deepwork/tmp/rules/queue/` for deduplication
+   - For command actions: commands are executed, results tracked
+   - For prompt actions: if rule fires and not already promised, agent is prompted
+4. **Promise Tags**: Agents can mark rules as addressed by including `<promise>✓ Rule Name</promise>` in their response
+
+### Queue System
+
+Rule state is tracked in `.deepwork/tmp/rules/queue/` with files named `{hash}.{status}.json`:
+- `queued` - Detected, awaiting evaluation
+- `passed` - Rule satisfied (promise found or command succeeded)
+- `failed` - Rule not satisfied
+- `skipped` - Safety pattern matched
+
+This prevents re-prompting for the same rule violation within a session.
 
 ### Hook Integration
 
-Policies are implemented using Claude Code's hooks system. The `deepwork_policy` standard job includes:
+The v2 rules system uses the cross-platform hook wrapper:
 
 ```
-.deepwork/jobs/deepwork_policy/hooks/
-├── global_hooks.yml              # Maps lifecycle events to scripts
-├── user_prompt_submit.sh         # Captures baseline at each prompt
-├── capture_prompt_work_tree.sh   # Creates git state snapshot for compare_to: prompt
-└── policy_stop_hook.sh           # Evaluates policies on stop (calls Python evaluator)
+src/deepwork/hooks/
+├── wrapper.py           # Cross-platform input/output normalization
+├── rules_check.py       # Rule evaluation hook (v2)
+├── claude_hook.sh       # Claude Code shell wrapper
+└── gemini_hook.sh       # Gemini CLI shell wrapper
+```
+
+Hooks are called via the shell wrappers:
+```bash
+claude_hook.sh deepwork.hooks.rules_check
 ```
 
 The hooks are installed to `.claude/settings.json` during `deepwork sync`:
@@ -1058,11 +1132,8 @@ The hooks are installed to `.claude/settings.json` during `deepwork sync`:
 ```json
 {
   "hooks": {
-    "UserPromptSubmit": [
-      {"matcher": "", "hooks": [{"type": "command", "command": ".deepwork/jobs/deepwork_policy/hooks/user_prompt_submit.sh"}]}
-    ],
     "Stop": [
-      {"matcher": "", "hooks": [{"type": "command", "command": ".deepwork/jobs/deepwork_policy/hooks/policy_stop_hook.sh"}]}
+      {"matcher": "", "hooks": [{"type": "command", "command": "python -m deepwork.hooks.rules_check"}]}
     ]
   }
 }
@@ -1118,34 +1189,34 @@ def my_hook(input: HookInput) -> HookOutput:
 
 See `doc/platforms/` for detailed platform-specific hook documentation.
 
-### Policy Schema
+### Rule Schema
 
-Policies are validated against a JSON Schema:
+Rules are validated against a JSON Schema:
 
 ```yaml
-- name: string          # Required: Friendly name for the policy
+- name: string          # Required: Friendly name for the rule
   trigger: string|array # Required: Glob pattern(s) for triggering files
   safety: string|array  # Optional: Glob pattern(s) for safety files
   instructions: string  # Required (unless instructions_file): What to do
   instructions_file: string  # Alternative: Path to instructions file
 ```
 
-### Defining Policies
+### Defining Rules
 
-Use the `/deepwork_policy.define` command to interactively create policies:
+Use the `/deepwork_rules.define` command to interactively create rules:
 
 ```
-User: /deepwork_policy.define
+User: /deepwork_rules.define
 
-Claude: I'll help you define a new policy. What guideline or constraint
-        should this policy enforce?
+Claude: I'll help you define a new rule. What guideline or constraint
+        should this rule enforce?
 
 User: When API code changes, the API documentation should be updated
 
 Claude: Got it. Let me ask a few questions...
         [Interactive dialog to define trigger, safety, and instructions]
 
-Claude: ✓ Created policy "API documentation update" in .deepwork.policy.yml
+Claude: Created rule "API documentation update" in .deepwork/rules/api-documentation.md
 ```
 
 ---

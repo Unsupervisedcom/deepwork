@@ -16,8 +16,7 @@ The hook system provides:
    - Cross-platform compatibility
 
 3. **Hook implementations**:
-   - `policy_check.py` - Evaluates DeepWork policies on `after_agent` events
-   - `evaluate_policies.py` - Legacy Claude-specific policy evaluation
+   - `rules_check.py` - Evaluates DeepWork rules on `after_agent` events
 
 ## Usage
 
@@ -33,7 +32,7 @@ The hook system provides:
         "hooks": [
           {
             "type": "command",
-            "command": "path/to/claude_hook.sh deepwork.hooks.policy_check"
+            "command": "path/to/claude_hook.sh deepwork.hooks.rules_check"
           }
         ]
       }
@@ -52,7 +51,7 @@ The hook system provides:
         "hooks": [
           {
             "type": "command",
-            "command": "path/to/gemini_hook.sh deepwork.hooks.policy_check"
+            "command": "path/to/gemini_hook.sh deepwork.hooks.rules_check"
           }
         ]
       }
@@ -179,5 +178,4 @@ pytest tests/shell_script_tests/test_hook_wrappers.py -v
 | `wrapper.py` | Cross-platform input/output normalization |
 | `claude_hook.sh` | Shell wrapper for Claude Code |
 | `gemini_hook.sh` | Shell wrapper for Gemini CLI |
-| `policy_check.py` | Cross-platform policy evaluation hook |
-| `evaluate_policies.py` | Legacy Claude-specific policy evaluation |
+| `rules_check.py` | Cross-platform rule evaluation hook |

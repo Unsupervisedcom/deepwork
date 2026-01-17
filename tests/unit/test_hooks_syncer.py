@@ -6,6 +6,7 @@ from pathlib import Path
 from deepwork.core.adapters import ClaudeAdapter
 from deepwork.core.hooks_syncer import (
     HookEntry,
+    HookSpec,
     JobHooks,
     collect_job_hooks,
     merge_hooks_for_platform,
@@ -16,19 +17,33 @@ from deepwork.core.hooks_syncer import (
 class TestHookEntry:
     """Tests for HookEntry dataclass."""
 
-    def test_get_script_path_relative(self, temp_dir: Path) -> None:
-        """Test getting relative script path."""
+    def test_get_command_for_script(self, temp_dir: Path) -> None:
+        """Test getting command for a script hook."""
         job_dir = temp_dir / ".deepwork" / "jobs" / "test_job"
         job_dir.mkdir(parents=True)
 
         entry = HookEntry(
-            script="test_hook.sh",
             job_name="test_job",
             job_dir=job_dir,
+            script="test_hook.sh",
         )
 
-        path = entry.get_script_path(temp_dir)
-        assert path == ".deepwork/jobs/test_job/hooks/test_hook.sh"
+        cmd = entry.get_command(temp_dir)
+        assert cmd == ".deepwork/jobs/test_job/hooks/test_hook.sh"
+
+    def test_get_command_for_module(self, temp_dir: Path) -> None:
+        """Test getting command for a module hook."""
+        job_dir = temp_dir / ".deepwork" / "jobs" / "test_job"
+        job_dir.mkdir(parents=True)
+
+        entry = HookEntry(
+            job_name="test_job",
+            job_dir=job_dir,
+            module="deepwork.hooks.rules_check",
+        )
+
+        cmd = entry.get_command(temp_dir)
+        assert cmd == "python -m deepwork.hooks.rules_check"
 
 
 class TestJobHooks:
@@ -47,7 +62,7 @@ class TestJobHooks:
 UserPromptSubmit:
   - capture.sh
 Stop:
-  - policy_check.sh
+  - rules_check.sh
   - cleanup.sh
 """
         )
@@ -56,8 +71,35 @@ Stop:
 
         assert result is not None
         assert result.job_name == "test_job"
-        assert result.hooks["UserPromptSubmit"] == ["capture.sh"]
-        assert result.hooks["Stop"] == ["policy_check.sh", "cleanup.sh"]
+        assert len(result.hooks["UserPromptSubmit"]) == 1
+        assert result.hooks["UserPromptSubmit"][0].script == "capture.sh"
+        assert len(result.hooks["Stop"]) == 2
+        assert result.hooks["Stop"][0].script == "rules_check.sh"
+        assert result.hooks["Stop"][1].script == "cleanup.sh"
+
+    def test_from_job_dir_with_module_hooks(self, temp_dir: Path) -> None:
+        """Test loading module-based hooks from job directory."""
+        job_dir = temp_dir / "test_job"
+        hooks_dir = job_dir / "hooks"
+        hooks_dir.mkdir(parents=True)
+
+        # Create global_hooks.yml with module format
+        hooks_file = hooks_dir / "global_hooks.yml"
+        hooks_file.write_text(
+            """
+UserPromptSubmit:
+  - capture.sh
+Stop:
+  - module: deepwork.hooks.rules_check
+"""
+        )
+
+        result = JobHooks.from_job_dir(job_dir)
+
+        assert result is not None
+        assert result.hooks["UserPromptSubmit"][0].script == "capture.sh"
+        assert result.hooks["Stop"][0].module == "deepwork.hooks.rules_check"
+        assert result.hooks["Stop"][0].script is None
 
     def test_from_job_dir_no_hooks_file(self, temp_dir: Path) -> None:
         """Test returns None when no hooks file exists."""
@@ -91,7 +133,8 @@ Stop:
         result = JobHooks.from_job_dir(job_dir)
 
         assert result is not None
-        assert result.hooks["Stop"] == ["cleanup.sh"]
+        assert len(result.hooks["Stop"]) == 1
+        assert result.hooks["Stop"][0].script == "cleanup.sh"
 
 
 class TestCollectJobHooks:
@@ -143,12 +186,15 @@ class TestMergeHooksForPlatform:
             JobHooks(
                 job_name="job1",
                 job_dir=job1_dir,
-                hooks={"Stop": ["hook1.sh"]},
+                hooks={"Stop": [HookSpec(script="hook1.sh")]},
             ),
             JobHooks(
                 job_name="job2",
                 job_dir=job2_dir,
-                hooks={"Stop": ["hook2.sh"], "UserPromptSubmit": ["capture.sh"]},
+                hooks={
+                    "Stop": [HookSpec(script="hook2.sh")],
+                    "UserPromptSubmit": [HookSpec(script="capture.sh")],
+                },
             ),
         ]
 
@@ -169,7 +215,7 @@ class TestMergeHooksForPlatform:
             JobHooks(
                 job_name="job1",
                 job_dir=job_dir,
-                hooks={"Stop": ["hook.sh", "hook.sh"]},
+                hooks={"Stop": [HookSpec(script="hook.sh"), HookSpec(script="hook.sh")]},
             ),
         ]
 
@@ -197,7 +243,7 @@ class TestSyncHooksToPlatform:
             JobHooks(
                 job_name="test_job",
                 job_dir=job_dir,
-                hooks={"Stop": ["test_hook.sh"]},
+                hooks={"Stop": [HookSpec(script="test_hook.sh")]},
             ),
         ]
 
@@ -250,7 +296,7 @@ class TestSyncHooksToPlatform:
             JobHooks(
                 job_name="test_job",
                 job_dir=job_dir,
-                hooks={"Stop": ["new_hook.sh"]},
+                hooks={"Stop": [HookSpec(script="new_hook.sh")]},
             ),
         ]
 

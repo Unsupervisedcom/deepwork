@@ -1,2 +1,0 @@
-- name: "Invalid policy"
-  trigger: "src/**/*"

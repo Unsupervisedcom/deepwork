@@ -1,6 +1,0 @@
-- name: "Update install guide on config changes"
-  trigger: "app/config/**/*"
-  safety: "docs/install_guide.md"
-  instructions: |
-    Configuration files have changed. Please review docs/install_guide.md
-    and update it if the installation instructions need to change.

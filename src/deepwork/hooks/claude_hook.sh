@@ -9,7 +9,7 @@
 #   claude_hook.sh <python_hook_module>
 #
 # Example:
-#   claude_hook.sh deepwork.hooks.policy_check
+#   claude_hook.sh deepwork.hooks.rules_check
 #
 # The Python module should implement a main() function that:
 # 1. Calls deepwork.hooks.wrapper.run_hook() with a hook function
@@ -31,7 +31,7 @@ PYTHON_MODULE="${1:-}"
 
 if [ -z "${PYTHON_MODULE}" ]; then
     echo "Usage: claude_hook.sh <python_hook_module>" >&2
-    echo "Example: claude_hook.sh deepwork.hooks.policy_check" >&2
+    echo "Example: claude_hook.sh deepwork.hooks.rules_check" >&2
     exit 1
 fi
 

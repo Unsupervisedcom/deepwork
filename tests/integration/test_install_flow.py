@@ -152,8 +152,8 @@ class TestInstallCommand:
         assert (claude_dir / "deepwork_jobs.define.md").exists()
         assert (claude_dir / "deepwork_jobs.learn.md").exists()
 
-    def test_install_creates_policy_template(self, mock_claude_project: Path) -> None:
-        """Test that install creates a policy template file."""
+    def test_install_creates_rules_directory(self, mock_claude_project: Path) -> None:
+        """Test that install creates the v2 rules directory with example templates."""
         runner = CliRunner()
 
         result = runner.invoke(
@@ -163,34 +163,38 @@ class TestInstallCommand:
         )
 
         assert result.exit_code == 0
-        assert ".deepwork.policy.yml template" in result.output
+        assert ".deepwork/rules/ with example templates" in result.output
 
-        # Verify policy file was created
-        policy_file = mock_claude_project / ".deepwork.policy.yml"
-        assert policy_file.exists()
+        # Verify rules directory was created
+        rules_dir = mock_claude_project / ".deepwork" / "rules"
+        assert rules_dir.exists()
 
-        # Verify it's the template (has comment header, no active policies)
-        content = policy_file.read_text()
-        assert "# DeepWork Policy Configuration" in content
-        assert "# Use /deepwork_policy.define" in content
+        # Verify README was created
+        readme_file = rules_dir / "README.md"
+        assert readme_file.exists()
+        content = readme_file.read_text()
+        assert "DeepWork Rules" in content
+        assert "YAML frontmatter" in content
 
-        # Verify it does NOT contain deepwork-specific policies
-        assert "Standard Jobs Source of Truth" not in content
-        assert "Version and Changelog Update" not in content
-        assert "pyproject.toml" not in content
+        # Verify example templates were copied
+        example_files = list(rules_dir.glob("*.md.example"))
+        assert len(example_files) >= 1  # At least one example template
 
-    def test_install_preserves_existing_policy_file(self, mock_claude_project: Path) -> None:
-        """Test that install doesn't overwrite existing policy file."""
+    def test_install_preserves_existing_rules_directory(self, mock_claude_project: Path) -> None:
+        """Test that install doesn't overwrite existing rules directory."""
         runner = CliRunner()
 
-        # Create a custom policy file before install
-        policy_file = mock_claude_project / ".deepwork.policy.yml"
-        custom_content = """- name: "My Custom Policy"
-  trigger: "src/**/*"
-  instructions: |
-    Custom instructions here.
+        # Create a custom rules directory before install
+        rules_dir = mock_claude_project / ".deepwork" / "rules"
+        rules_dir.mkdir(parents=True)
+        custom_rule = rules_dir / "my-custom-rule.md"
+        custom_content = """---
+name: My Custom Rule
+trigger: "src/**/*"
+---
+Custom instructions here.
 """
-        policy_file.write_text(custom_content)
+        custom_rule.write_text(custom_content)
 
         result = runner.invoke(
             cli,
@@ -199,10 +203,10 @@ class TestInstallCommand:
         )
 
         assert result.exit_code == 0
-        assert ".deepwork.policy.yml already exists" in result.output
+        assert ".deepwork/rules/ already exists" in result.output
 
         # Verify original content is preserved
-        assert policy_file.read_text() == custom_content
+        assert custom_rule.read_text() == custom_content
 
 
 class TestCLIEntryPoint:

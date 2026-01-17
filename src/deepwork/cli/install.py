@@ -73,9 +73,9 @@ def _inject_deepwork_jobs(jobs_dir: Path, project_path: Path) -> None:
     _inject_standard_job("deepwork_jobs", jobs_dir, project_path)
 
 
-def _inject_deepwork_policy(jobs_dir: Path, project_path: Path) -> None:
+def _inject_deepwork_rules(jobs_dir: Path, project_path: Path) -> None:
     """
-    Inject the deepwork_policy job definition into the project.
+    Inject the deepwork_rules job definition into the project.
 
     Args:
         jobs_dir: Path to .deepwork/jobs directory
@@ -84,7 +84,7 @@ def _inject_deepwork_policy(jobs_dir: Path, project_path: Path) -> None:
     Raises:
         InstallError: If injection fails
     """
-    _inject_standard_job("deepwork_policy", jobs_dir, project_path)
+    _inject_standard_job("deepwork_rules", jobs_dir, project_path)
 
 
 def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
@@ -98,7 +98,7 @@ def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
     """
     gitignore_path = deepwork_dir / ".gitignore"
     gitignore_content = """# DeepWork temporary files
-# These files are used for policy evaluation during sessions
+# These files are used for rules evaluation during sessions
 .last_work_tree
 """
 
@@ -113,44 +113,83 @@ def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
         gitignore_path.write_text(gitignore_content)
 
 
-def _create_default_policy_file(project_path: Path) -> bool:
+def _create_rules_directory(project_path: Path) -> bool:
     """
-    Create a default policy file template in the project root.
+    Create the v2 rules directory structure with example templates.
 
-    Only creates the file if it doesn't already exist.
+    Creates .deepwork/rules/ with example rule files that users can customize.
+    Only creates the directory if it doesn't already exist.
 
     Args:
         project_path: Path to the project root
 
     Returns:
-        True if the file was created, False if it already existed
+        True if the directory was created, False if it already existed
     """
-    policy_file = project_path / ".deepwork.policy.yml"
+    rules_dir = project_path / ".deepwork" / "rules"
 
-    if policy_file.exists():
+    if rules_dir.exists():
         return False
 
-    # Copy the template from the templates directory
-    template_path = Path(__file__).parent.parent / "templates" / "default_policy.yml"
+    # Create the rules directory
+    ensure_dir(rules_dir)
 
-    if template_path.exists():
-        shutil.copy(template_path, policy_file)
-    else:
-        # Fallback: create a minimal template inline
-        policy_file.write_text(
-            """# DeepWork Policy Configuration
-#
-# Policies are automated guardrails that trigger when specific files change.
-# Use /deepwork_policy.define to create new policies interactively.
-#
-# Format:
-#   - name: "Policy name"
-#     trigger: "glob/pattern/**/*"
-#     safety: "optional/pattern/**/*"
-#     instructions: |
-#       Instructions for the AI agent...
+    # Copy example rule templates from the deepwork_rules standard job
+    example_rules_dir = Path(__file__).parent.parent / "standard_jobs" / "deepwork_rules" / "rules"
+
+    if example_rules_dir.exists():
+        # Copy all .example files
+        for example_file in example_rules_dir.glob("*.md.example"):
+            dest_file = rules_dir / example_file.name
+            shutil.copy(example_file, dest_file)
+
+    # Create a README file explaining the rules system
+    readme_content = """# DeepWork Rules
+
+Rules are automated guardrails that trigger when specific files change during
+AI agent sessions. They help ensure documentation stays current, security reviews
+happen, and team guidelines are followed.
+
+## Getting Started
+
+1. Copy an example file and rename it (remove the `.example` suffix):
+   ```
+   cp readme-documentation.md.example readme-documentation.md
+   ```
+
+2. Edit the file to match your project's patterns
+
+3. The rule will automatically trigger when matching files change
+
+## Rule Format
+
+Rules use YAML frontmatter in markdown files:
+
+```markdown
+---
+name: Rule Name
+trigger: "pattern/**/*"
+safety: "optional/pattern"
+---
+Instructions in markdown here.
+```
+
+## Detection Modes
+
+- **trigger/safety**: Fire when trigger matches, unless safety also matches
+- **set**: Bidirectional file correspondence (e.g., source + test)
+- **pair**: Directional correspondence (e.g., API code -> docs)
+
+## Documentation
+
+See `doc/rules_syntax.md` in the DeepWork repository for full syntax documentation.
+
+## Creating Rules Interactively
+
+Use `/deepwork_rules.define` to create new rules with guidance.
 """
-        )
+    readme_path = rules_dir / "README.md"
+    readme_path.write_text(readme_content)
 
     return True
 
@@ -271,17 +310,17 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     # Step 3b: Inject standard jobs (core job definitions)
     console.print("[yellow]→[/yellow] Installing core job definitions...")
     _inject_deepwork_jobs(jobs_dir, project_path)
-    _inject_deepwork_policy(jobs_dir, project_path)
+    _inject_deepwork_rules(jobs_dir, project_path)
 
     # Step 3c: Create .gitignore for temporary files
     _create_deepwork_gitignore(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/.gitignore")
 
-    # Step 3d: Create default policy file template
-    if _create_default_policy_file(project_path):
-        console.print("  [green]✓[/green] Created .deepwork.policy.yml template")
+    # Step 3d: Create rules directory with v2 templates
+    if _create_rules_directory(project_path):
+        console.print("  [green]✓[/green] Created .deepwork/rules/ with example templates")
     else:
-        console.print("  [dim]•[/dim] .deepwork.policy.yml already exists")
+        console.print("  [dim]•[/dim] .deepwork/rules/ already exists")
 
     # Step 4: Load or create config.yml
     console.print("[yellow]→[/yellow] Updating configuration...")

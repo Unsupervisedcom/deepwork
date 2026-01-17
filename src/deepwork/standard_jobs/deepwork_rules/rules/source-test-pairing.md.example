@@ -1,0 +1,13 @@
+---
+name: Source/Test Pairing
+set:
+  - src/{path}.py
+  - tests/{path}_test.py
+---
+Source and test files should change together.
+
+When modifying source code, ensure corresponding tests are updated.
+When adding tests, ensure they test actual source code.
+
+Modified source: {trigger_files}
+Expected tests: {expected_files}

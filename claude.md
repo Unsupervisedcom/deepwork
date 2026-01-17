@@ -184,7 +184,7 @@ my-project/
 
 ## CRITICAL: Editing Standard Jobs
 
-**Standard jobs** (like `deepwork_jobs` and `deepwork_policy`) are bundled with DeepWork and installed to user projects. They exist in THREE locations:
+**Standard jobs** (like `deepwork_jobs` and `deepwork_rules`) are bundled with DeepWork and installed to user projects. They exist in THREE locations:
 
 1. **Source of truth**: `src/deepwork/standard_jobs/[job_name]/` - The canonical source files
 2. **Installed copy**: `.deepwork/jobs/[job_name]/` - Installed by `deepwork install`
@@ -209,7 +209,7 @@ Instead, follow this workflow:
 
 Standard jobs are defined in `src/deepwork/standard_jobs/`. Currently:
 - `deepwork_jobs` - Core job management commands (define, implement, refine)
-- `deepwork_policy` - Policy enforcement system
+- `deepwork_rules` - Rules enforcement system
 
 If a job exists in `src/deepwork/standard_jobs/`, it is a standard job and MUST be edited there.
 

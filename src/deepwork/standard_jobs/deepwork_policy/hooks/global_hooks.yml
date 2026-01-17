@@ -1,8 +1,0 @@
-# DeepWork Policy Hooks Configuration
-# Maps Claude Code lifecycle events to hook scripts
-
-UserPromptSubmit:
-  - user_prompt_submit.sh
-
-Stop:
-  - policy_stop_hook.sh

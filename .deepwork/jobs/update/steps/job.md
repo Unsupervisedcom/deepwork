@@ -25,7 +25,7 @@ Standard jobs exist in THREE locations, but only ONE is the source of truth:
 #### 1. Identify the Standard Job to Update
 
 From conversation context, determine:
-- Which standard job needs updating (e.g., `deepwork_jobs`, `deepwork_policy`)
+- Which standard job needs updating (e.g., `deepwork_jobs`, `deepwork_rules`)
 - What changes are needed (job.yml, step instructions, hooks, etc.)
 
 Current standard jobs:

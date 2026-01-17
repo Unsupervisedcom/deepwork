@@ -23,8 +23,8 @@ def git_repo(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def git_repo_with_policy(tmp_path: Path) -> Path:
-    """Create a git repo with policy that will fire."""
+def git_repo_with_rule(tmp_path: Path) -> Path:
+    """Create a git repo with rule that will fire."""
     repo = Repo.init(tmp_path)
 
     readme = tmp_path / "README.md"
@@ -32,36 +32,52 @@ def git_repo_with_policy(tmp_path: Path) -> Path:
     repo.index.add(["README.md"])
     repo.index.commit("Initial commit")
 
-    # Policy that triggers on any Python file
-    policy_file = tmp_path / ".deepwork.policy.yml"
-    policy_file.write_text(
-        """- name: "Python File Policy"
-  trigger: "**/*.py"
-  compare_to: prompt
-  instructions: |
-    Review Python files for quality.
+    # Create v2 rules directory and file
+    rules_dir = tmp_path / ".deepwork" / "rules"
+    rules_dir.mkdir(parents=True, exist_ok=True)
+
+    # Rule that triggers on any Python file (v2 format)
+    rule_file = rules_dir / "python-file-rule.md"
+    rule_file.write_text(
+        """---
+name: Python File Rule
+trigger: "**/*.py"
+compare_to: prompt
+---
+Review Python files for quality.
 """
     )
 
     # Empty baseline so new files trigger
     deepwork_dir = tmp_path / ".deepwork"
-    deepwork_dir.mkdir(exist_ok=True)
     (deepwork_dir / ".last_work_tree").write_text("")
 
     return tmp_path
 
 
 @pytest.fixture
-def policy_hooks_dir() -> Path:
-    """Return the path to the policy hooks scripts directory."""
+def rules_hooks_dir() -> Path:
+    """Return the path to the rules hooks scripts directory."""
     return (
         Path(__file__).parent.parent.parent
         / "src"
         / "deepwork"
         / "standard_jobs"
-        / "deepwork_policy"
+        / "deepwork_rules"
         / "hooks"
     )
+
+
+@pytest.fixture
+def hooks_dir() -> Path:
+    """Return the path to the main hooks directory (platform wrappers)."""
+    return Path(__file__).parent.parent.parent / "src" / "deepwork" / "hooks"
+
+
+@pytest.fixture
+def src_dir() -> Path:
+    """Return the path to the src directory for PYTHONPATH."""
+    return Path(__file__).parent.parent.parent / "src"
 
 
 @pytest.fixture
