@@ -179,12 +179,8 @@ class TestFormatCommandErrors:
     def test_multiple_errors(self) -> None:
         """Format multiple errors."""
         results = [
-            CommandResult(
-                success=False, exit_code=1, stdout="", stderr="Error 1", command="cmd1"
-            ),
-            CommandResult(
-                success=False, exit_code=2, stdout="", stderr="Error 2", command="cmd2"
-            ),
+            CommandResult(success=False, exit_code=1, stdout="", stderr="Error 1", command="cmd1"),
+            CommandResult(success=False, exit_code=2, stdout="", stderr="Error 2", command="cmd2"),
         ]
         output = format_command_errors(results)
         assert "cmd1" in output
@@ -196,9 +192,7 @@ class TestFormatCommandErrors:
         """Ignore successful commands."""
         results = [
             CommandResult(success=True, exit_code=0, stdout="ok", stderr="", command="good_cmd"),
-            CommandResult(
-                success=False, exit_code=1, stdout="", stderr="bad", command="bad_cmd"
-            ),
+            CommandResult(success=False, exit_code=1, stdout="", stderr="bad", command="bad_cmd"),
         ]
         output = format_command_errors(results)
         assert "good_cmd" not in output

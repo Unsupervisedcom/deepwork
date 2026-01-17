@@ -135,9 +135,7 @@ def _create_rules_directory(project_path: Path) -> bool:
     ensure_dir(rules_dir)
 
     # Copy example rule templates from the deepwork_rules standard job
-    example_rules_dir = (
-        Path(__file__).parent.parent / "standard_jobs" / "deepwork_rules" / "rules"
-    )
+    example_rules_dir = Path(__file__).parent.parent / "standard_jobs" / "deepwork_rules" / "rules"
 
     if example_rules_dir.exists():
         # Copy all .example files

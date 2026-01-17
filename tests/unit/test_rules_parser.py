@@ -565,7 +565,9 @@ class TestThreePatternSets:
         result = evaluate_rule(rule, changed_files)
         assert result.should_fire is True
         # Both trigger because each is incomplete
-        assert "models/user.py" in result.trigger_files or "schemas/order.py" in result.trigger_files
+        assert (
+            "models/user.py" in result.trigger_files or "schemas/order.py" in result.trigger_files
+        )
 
 
 class TestCorrespondencePairs:

@@ -410,7 +410,9 @@ class TestHooksWithTranscript:
         try:
             script_path = rules_hooks_dir / "rules_stop_hook.sh"
             hook_input = {"transcript_path": transcript_path}
-            stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule, hook_input)
+            stdout, stderr, code = run_rules_hook_script(
+                script_path, git_repo_with_rule, hook_input
+            )
 
             response = validate_json_output(stdout)
             validate_stop_hook_response(response)
@@ -450,7 +452,9 @@ class TestHooksWithTranscript:
         try:
             script_path = rules_hooks_dir / "rules_stop_hook.sh"
             hook_input = {"transcript_path": transcript_path}
-            stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule, hook_input)
+            stdout, stderr, code = run_rules_hook_script(
+                script_path, git_repo_with_rule, hook_input
+            )
 
             response = validate_json_output(stdout)
             validate_stop_hook_response(response)

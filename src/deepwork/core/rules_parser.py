@@ -453,9 +453,7 @@ def evaluate_rule(rule: Rule, changed_files: list[str]) -> RuleEvaluationResult:
         )
 
     elif rule.detection_mode == DetectionMode.SET:
-        should_fire, trigger_files, missing_files = evaluate_set_correspondence(
-            rule, changed_files
-        )
+        should_fire, trigger_files, missing_files = evaluate_set_correspondence(rule, changed_files)
         return RuleEvaluationResult(
             rule=rule,
             should_fire=should_fire,
