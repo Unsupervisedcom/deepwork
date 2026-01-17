@@ -3,6 +3,7 @@ name: "Manual Test: Pair Mode"
 pair:
   trigger: manual_tests/test_pair_mode/test_pair_mode_trigger.py
   expects: manual_tests/test_pair_mode/test_pair_mode_expected.md
+compare_to: prompt
 ---
 
 # Manual Test: Pair Mode (Directional Correspondence)

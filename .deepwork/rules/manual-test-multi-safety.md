@@ -4,6 +4,7 @@ trigger: manual_tests/test_multi_safety/test_multi_safety.py
 safety:
   - manual_tests/test_multi_safety/test_multi_safety_changelog.md
   - manual_tests/test_multi_safety/test_multi_safety_version.txt
+compare_to: prompt
 ---
 
 # Manual Test: Multiple Safety Patterns
