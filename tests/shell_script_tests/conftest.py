@@ -69,6 +69,18 @@ def rules_hooks_dir() -> Path:
 
 
 @pytest.fixture
+def hooks_dir() -> Path:
+    """Return the path to the main hooks directory (platform wrappers)."""
+    return Path(__file__).parent.parent.parent / "src" / "deepwork" / "hooks"
+
+
+@pytest.fixture
+def src_dir() -> Path:
+    """Return the path to the src directory for PYTHONPATH."""
+    return Path(__file__).parent.parent.parent / "src"
+
+
+@pytest.fixture
 def jobs_scripts_dir() -> Path:
     """Return the path to the jobs scripts directory."""
     return (
