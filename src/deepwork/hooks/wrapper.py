@@ -358,7 +358,6 @@ def run_hook(
     output_json = denormalize_output(hook_output, platform, hook_input.event)
     write_stdout(output_json)
 
-    # Return exit code based on decision
-    if hook_output.decision in ("block", "deny"):
-        return 2
+    # Always return 0 when using JSON output format
+    # The decision field in the JSON controls blocking behavior
     return 0

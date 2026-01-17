@@ -209,7 +209,8 @@ if __name__ == "__main__":
             env=env,
         )
 
-        assert result.returncode == 2, f"Expected exit code 2 for blocking. stderr: {result.stderr}"
+        # Exit code 0 even when blocking - the JSON decision field controls behavior
+        assert result.returncode == 0, f"Expected exit code 0. stderr: {result.stderr}"
 
         output = json.loads(result.stdout.strip())
         assert output["decision"] == "block"
@@ -242,7 +243,8 @@ if __name__ == "__main__":
             env=env,
         )
 
-        assert result.returncode == 2, f"Expected exit code 2 for blocking. stderr: {result.stderr}"
+        # Exit code 0 even when blocking - the JSON decision field controls behavior
+        assert result.returncode == 0, f"Expected exit code 0. stderr: {result.stderr}"
 
         output = json.loads(result.stdout.strip())
         # Gemini should get "deny" instead of "block"
