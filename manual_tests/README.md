@@ -3,6 +3,29 @@
 This directory contains files designed to manually test different types of deepwork rules/hooks.
 Each file exercises one specific rule style and includes instructions on how to trigger it.
 
+## How to Run These Tests
+
+**The best way to run these tests is as sub-agents using a fast model (e.g., haiku).**
+
+This approach works because:
+1. Sub-agents run in isolated contexts where changes can be detected
+2. The Stop hook evaluates rules when the sub-agent completes
+3. Using a fast model keeps test iterations quick and cheap
+
+Example prompt to test a rule:
+```
+Use the Task tool with model: haiku to launch a sub-agent that:
+1. Reads the trigger file
+2. Adds a comment at the bottom
+3. Does NOT edit the safety/expected file
+4. Reports what happened
+```
+
+After the sub-agent returns, manually run the hook to verify:
+```bash
+echo '{}' | python -m deepwork.hooks.rules_check
+```
+
 ## Test Folders Overview
 
 | Folder | Rule Type | How to Trigger |
