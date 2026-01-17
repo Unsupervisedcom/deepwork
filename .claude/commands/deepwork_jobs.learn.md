@@ -9,10 +9,8 @@ hooks:
 
             ## Quality Criteria
 
-            **AGENT: TAKE ACTION** - Verify the learning process meets ALL quality criteria before completing:
-
-            1. **Conversation Analyzed**: Did you review the conversation for DeepWork job executions?
-            2. **Confusion Identified**: Did you identify points of confusion, errors, or inefficiencies?
+            1. **Conversation Analyzed**: Did the agent review the conversation for DeepWork job executions?
+            2. **Confusion Identified**: Did the agent identify points of confusion, errors, or inefficiencies?
             3. **Instructions Improved**: Were job instructions updated to address identified issues?
             4. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
             5. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
@@ -22,10 +20,6 @@ hooks:
             9. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
             10. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
 
-            If ANY criterion is not met, continue working to address it.
-            If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
-
-
             ## Instructions
 
             Review the conversation and determine if ALL quality criteria above have been satisfied.
@@ -34,8 +28,8 @@ hooks:
             If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
             all criteria appear to be met, respond with: {"ok": true}
 
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
 ---
 
 # deepwork_jobs.learn
@@ -386,10 +380,9 @@ Ensure all outputs are:
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
 ### Quality Criteria
-**AGENT: TAKE ACTION** - Verify the learning process meets ALL quality criteria before completing:
 
-1. **Conversation Analyzed**: Did you review the conversation for DeepWork job executions?
-2. **Confusion Identified**: Did you identify points of confusion, errors, or inefficiencies?
+1. **Conversation Analyzed**: Did the agent review the conversation for DeepWork job executions?
+2. **Confusion Identified**: Did the agent identify points of confusion, errors, or inefficiencies?
 3. **Instructions Improved**: Were job instructions updated to address identified issues?
 4. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
 5. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
@@ -398,9 +391,6 @@ This step uses an iterative quality validation loop. After completing your work,
 8. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
 9. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
 10. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
-
-If ANY criterion is not met, continue working to address it.
-If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
 
 
 ### Completion Promise

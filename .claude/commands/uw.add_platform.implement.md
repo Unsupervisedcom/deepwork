@@ -3,27 +3,18 @@ description: Add platform adapter, templates, tests with 100% coverage, and READ
 hooks:
   Stop:
     - hooks:
-        - type: command
-          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"
         - type: prompt
           prompt: |
             You must evaluate whether Claude has met all the below quality criteria for the request.
 
             ## Quality Criteria
 
-            **AGENT: TAKE ACTION** - Verify the implementation meets ALL criteria:
-            1. Platform adapter class is added to src/deepwork/adapters.py
-            2. Templates exist in src/deepwork/templates/<platform>/ with appropriate command structure
-            3. Tests exist for all new functionality
-            4. Test coverage is 100% for new code (run: uv run pytest --cov)
-            5. All tests pass
-            6. README.md is updated with:
-               - New platform listed in supported platforms
-               - Installation instructions for the platform
-               - Any platform-specific notes
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
+            1. Is the platform adapter class added to src/deepwork/adapters.py?
+            2. Do templates exist in src/deepwork/templates/<platform>/ with appropriate command structure?
+            3. Do tests exist for all new functionality?
+            4. Is test coverage 100% for new code (run: uv run pytest --cov)?
+            5. Do all tests pass?
+            6. Is README.md updated with: New platform listed in supported platforms, Installation instructions for the platform, Any platform-specific notes
 
             ## Instructions
 
@@ -33,8 +24,8 @@ hooks:
             If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
             all criteria appear to be met, respond with: {"ok": true}
 
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
 ---
 
 # add_platform.implement
@@ -339,23 +330,18 @@ Ensure all outputs are:
 
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
+### Quality Criteria
+
+1. Is the platform adapter class added to src/deepwork/adapters.py?
+2. Do templates exist in src/deepwork/templates/<platform>/ with appropriate command structure?
+3. Do tests exist for all new functionality?
+4. Is test coverage 100% for new code (run: uv run pytest --cov)?
+5. Do all tests pass?
+6. Is README.md updated with: New platform listed in supported platforms, Installation instructions for the platform, Any platform-specific notes
+
 **Validation Script**: `.deepwork/jobs/add_platform/hooks/run_tests.sh`
 
 The validation script will be executed automatically when you attempt to complete this step.
-### Quality Criteria (2)
-**AGENT: TAKE ACTION** - Verify the implementation meets ALL criteria:
-1. Platform adapter class is added to src/deepwork/adapters.py
-2. Templates exist in src/deepwork/templates/<platform>/ with appropriate command structure
-3. Tests exist for all new functionality
-4. Test coverage is 100% for new code (run: uv run pytest --cov)
-5. All tests pass
-6. README.md is updated with:
-   - New platform listed in supported platforms
-   - Installation instructions for the platform
-   - Any platform-specific notes
-
-If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
 
 ### Completion Promise
 

@@ -40,25 +40,30 @@ This job has 3 step(s):
 
 ## Instructions
 
-Determine what the user wants to do and route to the appropriate step.
+This is a **multi-step workflow**. Determine the starting point and guide the user through the steps in sequence.
 
 1. **Analyze user intent** from the text that follows `/deepwork_jobs`
 
-2. **Match intent to a step**:
+2. **Identify the starting step** based on intent:
    - define: Create the job.yml specification file by understanding workflow requirements
    - implement: Generate instruction files for each step based on the job.yml specification
    - learn: Reflect on conversation to improve job instructions and capture learnings
 
-3. **Invoke the matched step**: Tell the user to run the appropriate command:
-   - For define: `/deepwork_jobs:uw.define`
-   - For implement: `/deepwork_jobs:uw.implement`
-   - For learn: `/deepwork_jobs:learn`
+3. **Guide the user through the workflow**:
+   - Tell the user to run the starting step command
+   - After each step completes, guide them to the next step in the workflow
+   - Continue until the workflow is complete
 
-4. **If intent is ambiguous**, ask the user which step they want:
+   Step commands:
+   - define: `/deepwork_jobs:uw.define`
+   - implement: `/deepwork_jobs:uw.implement`
+   - learn: `/deepwork_jobs:learn`
+
+4. **If intent is ambiguous**, ask the user which step to start from:
    - Present the available steps as numbered options
    - Let them choose
 
-**Note**: Gemini CLI doesn't support programmatic command invocation, so guide the user to run the appropriate step command.
+**Note**: Gemini CLI requires manual command invocation. After each step completes, remind the user to run the next step command.
 
 ## Context Files
 

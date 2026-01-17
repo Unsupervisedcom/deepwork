@@ -31,23 +31,26 @@ This job has 1 step(s):
 
 ## Instructions
 
-Determine what the user wants to do and route to the appropriate step.
+This is a **multi-step workflow**. Determine the starting point and run through the steps in sequence.
 
 1. **Analyze user intent** from the text that follows `/update`
 
-2. **Match intent to a step**:
+2. **Identify the starting step** based on intent:
    - job: Edit standard job source files and sync to installed locations
 
-3. **Invoke the matched step** using the Skill tool:
-   ```
-   Skill: <step_command_name>
-   ```
+3. **Run the workflow** starting from the identified step:
+   - Invoke the starting step using the Skill tool
+   - When that step completes, **automatically continue** to the next step in the workflow
+   - Continue until the workflow is complete or the user intervenes
 
-4. **If intent is ambiguous**, ask the user which step they want:
+4. **If intent is ambiguous**, ask the user which step to start from:
    - Present the available steps as numbered options
    - Use AskUserQuestion to let them choose
 
-**Critical**: You MUST invoke the step using the Skill tool. Do not copy/paste the step's instructions. The Skill tool invocation ensures the step's quality validation hooks fire.
+**Critical**:
+- You MUST invoke each step using the Skill tool. Do not copy/paste step instructions.
+- After each step completes, check if there's a next step and invoke it automatically.
+- The workflow continues until all dependent steps are complete.
 
 ## Context Files
 

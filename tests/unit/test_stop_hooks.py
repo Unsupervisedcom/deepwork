@@ -620,3 +620,369 @@ hooks:
         assert context["stop_hooks"][0]["type"] == "prompt"
         assert context["stop_hooks"][1]["type"] == "script"
         assert context["stop_hooks"][2]["type"] == "prompt"
+
+
+class TestQualityCriteriaSchema:
+    """Tests for quality_criteria schema validation."""
+
+    def test_valid_quality_criteria(self) -> None:
+        """Test schema accepts valid quality_criteria array."""
+        job_data = {
+            "name": "test_job",
+            "version": "1.0.0",
+            "summary": "Test job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "A step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": ["output.md"],
+                    "quality_criteria": [
+                        "First criterion",
+                        "Second criterion",
+                        "Third criterion",
+                    ],
+                }
+            ],
+        }
+        validate_against_schema(job_data, JOB_SCHEMA)
+
+    def test_empty_quality_criteria(self) -> None:
+        """Test schema accepts empty quality_criteria array."""
+        job_data = {
+            "name": "test_job",
+            "version": "1.0.0",
+            "summary": "Test job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "A step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": ["output.md"],
+                    "quality_criteria": [],
+                }
+            ],
+        }
+        validate_against_schema(job_data, JOB_SCHEMA)
+
+    def test_quality_criteria_with_hooks(self) -> None:
+        """Test schema accepts both quality_criteria and hooks."""
+        job_data = {
+            "name": "test_job",
+            "version": "1.0.0",
+            "summary": "Test job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "A step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": ["output.md"],
+                    "quality_criteria": ["First criterion"],
+                    "hooks": {
+                        "after_agent": [{"script": "hooks/run_tests.sh"}],
+                    },
+                }
+            ],
+        }
+        validate_against_schema(job_data, JOB_SCHEMA)
+
+    def test_invalid_quality_criteria_not_array(self) -> None:
+        """Test schema rejects non-array quality_criteria."""
+        job_data = {
+            "name": "test_job",
+            "version": "1.0.0",
+            "summary": "Test job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "A step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": ["output.md"],
+                    "quality_criteria": "not an array",
+                }
+            ],
+        }
+        with pytest.raises(ValidationError):
+            validate_against_schema(job_data, JOB_SCHEMA)
+
+    def test_invalid_quality_criteria_empty_string(self) -> None:
+        """Test schema rejects empty string in quality_criteria."""
+        job_data = {
+            "name": "test_job",
+            "version": "1.0.0",
+            "summary": "Test job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "A step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": ["output.md"],
+                    "quality_criteria": ["Valid criterion", ""],
+                }
+            ],
+        }
+        with pytest.raises(ValidationError):
+            validate_against_schema(job_data, JOB_SCHEMA)
+
+
+class TestStepQualityCriteria:
+    """Tests for Step with quality_criteria."""
+
+    def test_step_with_no_quality_criteria(self) -> None:
+        """Test step without quality_criteria."""
+        step = Step(
+            id="test",
+            name="Test Step",
+            description="A test step",
+            instructions_file="steps/test.md",
+            outputs=["output.md"],
+        )
+        assert step.quality_criteria == []
+
+    def test_step_with_quality_criteria(self) -> None:
+        """Test step with quality_criteria."""
+        step = Step(
+            id="test",
+            name="Test Step",
+            description="A test step",
+            instructions_file="steps/test.md",
+            outputs=["output.md"],
+            quality_criteria=["First criterion", "Second criterion"],
+        )
+        assert len(step.quality_criteria) == 2
+        assert step.quality_criteria[0] == "First criterion"
+        assert step.quality_criteria[1] == "Second criterion"
+
+    def test_step_from_dict_with_quality_criteria(self) -> None:
+        """Test Step.from_dict parses quality_criteria."""
+        data = {
+            "id": "test",
+            "name": "Test Step",
+            "description": "A test step",
+            "instructions_file": "steps/test.md",
+            "outputs": ["output.md"],
+            "quality_criteria": ["Criterion 1", "Criterion 2", "Criterion 3"],
+        }
+        step = Step.from_dict(data)
+        assert len(step.quality_criteria) == 3
+        assert step.quality_criteria[0] == "Criterion 1"
+        assert step.quality_criteria[2] == "Criterion 3"
+
+    def test_step_from_dict_without_quality_criteria(self) -> None:
+        """Test Step.from_dict with no quality_criteria returns empty list."""
+        data = {
+            "id": "test",
+            "name": "Test Step",
+            "description": "A test step",
+            "instructions_file": "steps/test.md",
+            "outputs": ["output.md"],
+        }
+        step = Step.from_dict(data)
+        assert step.quality_criteria == []
+
+    def test_step_with_both_quality_criteria_and_hooks(self) -> None:
+        """Test step with both quality_criteria and hooks."""
+        step = Step(
+            id="test",
+            name="Test Step",
+            description="A test step",
+            instructions_file="steps/test.md",
+            outputs=["output.md"],
+            quality_criteria=["Check this", "Check that"],
+            hooks={"after_agent": [HookAction(script="hooks/run_tests.sh")]},
+        )
+        assert len(step.quality_criteria) == 2
+        assert len(step.stop_hooks) == 1
+        assert step.stop_hooks[0].is_script()
+
+
+class TestGeneratorQualityCriteria:
+    """Tests for generator quality_criteria context building."""
+
+    @pytest.fixture
+    def generator(self, tmp_path: Path) -> CommandGenerator:
+        """Create generator with temp templates."""
+        templates_dir = tmp_path / "templates"
+        claude_dir = templates_dir / "claude"
+        claude_dir.mkdir(parents=True)
+
+        # Create minimal template
+        template_content = """---
+description: {{ step_description }}
+{% if quality_criteria or hooks %}
+hooks:
+{% if quality_criteria %}
+  Stop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            Quality Criteria:
+{% for criterion in quality_criteria %}
+            {{ loop.index }}. {{ criterion }}
+{% endfor %}
+{% endif %}
+{% for event_name, event_hooks in hooks.items() %}
+  {{ event_name }}:
+    - hooks:
+{% for hook in event_hooks %}
+{% if hook.type == "script" %}
+        - type: command
+          command: ".deepwork/jobs/{{ job_name }}/{{ hook.path }}"
+{% else %}
+        - type: prompt
+          prompt: "{{ hook.content }}"
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+---
+# {{ job_name }}.{{ step_id }}
+{{ instructions_content }}
+"""
+        (claude_dir / "command-job-step.md.jinja").write_text(template_content)
+        return CommandGenerator(templates_dir)
+
+    def test_build_context_with_quality_criteria(
+        self, generator: CommandGenerator, tmp_path: Path
+    ) -> None:
+        """Test context building includes quality_criteria."""
+        job_dir = tmp_path / "test_job"
+        job_dir.mkdir()
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step1.md").write_text("# Step 1 Instructions")
+
+        job = JobDefinition(
+            name="test_job",
+            version="1.0.0",
+            summary="Test job",
+            description="A test job",
+            steps=[
+                Step(
+                    id="step1",
+                    name="Step 1",
+                    description="First step",
+                    instructions_file="steps/step1.md",
+                    outputs=["output.md"],
+                    quality_criteria=["Check A", "Check B"],
+                ),
+            ],
+            job_dir=job_dir,
+        )
+
+        adapter = ClaudeAdapter()
+        context = generator._build_step_context(job, job.steps[0], 0, adapter)
+        assert "quality_criteria" in context
+        assert len(context["quality_criteria"]) == 2
+        assert context["quality_criteria"][0] == "Check A"
+        assert context["quality_criteria"][1] == "Check B"
+
+    def test_build_context_quality_criteria_empty(
+        self, generator: CommandGenerator, tmp_path: Path
+    ) -> None:
+        """Test context with no quality_criteria."""
+        job_dir = tmp_path / "test_job"
+        job_dir.mkdir()
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step1.md").write_text("# Step 1")
+
+        job = JobDefinition(
+            name="test_job",
+            version="1.0.0",
+            summary="Test",
+            description="Test",
+            steps=[
+                Step(
+                    id="step1",
+                    name="Step 1",
+                    description="Step",
+                    instructions_file="steps/step1.md",
+                    outputs=["out.md"],
+                )
+            ],
+            job_dir=job_dir,
+        )
+
+        adapter = ClaudeAdapter()
+        context = generator._build_step_context(job, job.steps[0], 0, adapter)
+        assert context["quality_criteria"] == []
+
+    def test_build_context_quality_criteria_and_hooks(
+        self, generator: CommandGenerator, tmp_path: Path
+    ) -> None:
+        """Test context with both quality_criteria and hooks."""
+        job_dir = tmp_path / "test_job"
+        job_dir.mkdir()
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step1.md").write_text("# Step 1")
+
+        job = JobDefinition(
+            name="test_job",
+            version="1.0.0",
+            summary="Test",
+            description="Test",
+            steps=[
+                Step(
+                    id="step1",
+                    name="Step 1",
+                    description="Step",
+                    instructions_file="steps/step1.md",
+                    outputs=["out.md"],
+                    quality_criteria=["Criterion A", "Criterion B"],
+                    hooks={"after_agent": [HookAction(script="hooks/test.sh")]},
+                )
+            ],
+            job_dir=job_dir,
+        )
+
+        adapter = ClaudeAdapter()
+        context = generator._build_step_context(job, job.steps[0], 0, adapter)
+        assert len(context["quality_criteria"]) == 2
+        assert len(context["stop_hooks"]) == 1
+        assert context["stop_hooks"][0]["type"] == "script"
+
+    def test_generate_command_with_quality_criteria(
+        self, generator: CommandGenerator, tmp_path: Path
+    ) -> None:
+        """Test command generation includes quality_criteria in output."""
+        job_dir = tmp_path / "test_job"
+        job_dir.mkdir()
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step1.md").write_text("# Step 1 Instructions")
+
+        job = JobDefinition(
+            name="test_job",
+            version="1.0.0",
+            summary="Test job",
+            description="A test job",
+            steps=[
+                Step(
+                    id="step1",
+                    name="Step 1",
+                    description="First step",
+                    instructions_file="steps/step1.md",
+                    outputs=["output.md"],
+                    quality_criteria=["Check output format", "Verify completeness"],
+                ),
+            ],
+            job_dir=job_dir,
+        )
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        adapter = ClaudeAdapter()
+        command_path = generator.generate_step_command(job, job.steps[0], adapter, output_dir)
+        content = command_path.read_text()
+
+        assert "Quality Criteria:" in content
+        assert "1. Check output format" in content
+        assert "2. Verify completeness" in content

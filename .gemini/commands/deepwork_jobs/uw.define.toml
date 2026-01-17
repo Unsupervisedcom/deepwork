@@ -394,6 +394,23 @@ Ensure all outputs are:
 - Well-formatted and complete
 - Ready for review or use by subsequent steps
 
+## Quality Validation
+
+This step has quality criteria that should be verified before completion.
+
+### Quality Criteria
+
+1. **User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?
+2. **Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?
+3. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
+4. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
+5. **Concise Summary**: Is the summary under 200 characters and descriptive?
+6. **Rich Description**: Does the description provide enough context for future refinement?
+7. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
+8. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
+
+**Note**: Gemini CLI does not support automated validation hooks. Please manually verify the criteria above before proceeding.
+
 ## Completion
 
 After completing this step:

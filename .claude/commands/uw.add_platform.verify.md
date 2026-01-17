@@ -9,16 +9,12 @@ hooks:
 
             ## Quality Criteria
 
-            **AGENT: TAKE ACTION** - Verify the installation meets ALL criteria:
-            1. Platform-specific directories/files are added to the deepwork repo as needed
-            2. Running `deepwork install --platform <platform>` completes without errors
-            3. Expected command files are created in the platform's command directory
-            4. Command file content matches the templates and job definitions
-            5. Established DeepWork jobs (deepwork_jobs, deepwork_rules) are installed correctly
-            6. The platform can be used alongside existing platforms without conflicts
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
+            1. Are platform-specific directories/files added to the deepwork repo as needed?
+            2. Does running `deepwork install --platform <platform>` complete without errors?
+            3. Are expected command files created in the platform's command directory?
+            4. Does command file content match the templates and job definitions?
+            5. Are established DeepWork jobs (deepwork_jobs, deepwork_policy) installed correctly?
+            6. Can the platform be used alongside existing platforms without conflicts?
 
             ## Instructions
 
@@ -28,8 +24,8 @@ hooks:
             If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
             all criteria appear to be met, respond with: {"ok": true}
 
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
 ---
 
 # add_platform.verify
@@ -121,7 +117,7 @@ Ensure the implementation step is complete:
    - `deepwork_jobs.define.md` exists (or equivalent for the platform)
    - `deepwork_jobs.implement.md` exists
    - `deepwork_jobs.refine.md` exists
-   - `deepwork_rules.define.md` exists
+   - `deepwork_policy.define.md` exists
    - All expected step commands exist
 
 4. **Validate command file content**
@@ -151,7 +147,7 @@ Ensure the implementation step is complete:
 - `deepwork install --platform <platform_name>` completes without errors
 - All expected command files are created:
   - deepwork_jobs.define, implement, refine
-  - deepwork_rules.define
+  - deepwork_policy.define
   - Any other standard job commands
 - Command file content is correct:
   - Matches platform's expected format
@@ -213,15 +209,13 @@ No specific files are output by this command.
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
 ### Quality Criteria
-**AGENT: TAKE ACTION** - Verify the installation meets ALL criteria:
-1. Platform-specific directories/files are added to the deepwork repo as needed
-2. Running `deepwork install --platform <platform>` completes without errors
-3. Expected command files are created in the platform's command directory
-4. Command file content matches the templates and job definitions
-5. Established DeepWork jobs (deepwork_jobs, deepwork_rules) are installed correctly
-6. The platform can be used alongside existing platforms without conflicts
 
-If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+1. Are platform-specific directories/files added to the deepwork repo as needed?
+2. Does running `deepwork install --platform <platform>` complete without errors?
+3. Are expected command files created in the platform's command directory?
+4. Does command file content match the templates and job definitions?
+5. Are established DeepWork jobs (deepwork_jobs, deepwork_policy) installed correctly?
+6. Can the platform be used alongside existing platforms without conflicts?
 
 
 ### Completion Promise

@@ -308,6 +308,21 @@ Ensure all outputs are:
 - Well-formatted and complete
 - Ready for review or use by subsequent steps
 
+## Quality Validation
+
+This step has quality criteria that should be verified before completion.
+
+### Quality Criteria
+
+1. Is the platform adapter class added to src/deepwork/adapters.py?
+2. Do templates exist in src/deepwork/templates/<platform>/ with appropriate command structure?
+3. Do tests exist for all new functionality?
+4. Is test coverage 100% for new code (run: uv run pytest --cov)?
+5. Do all tests pass?
+6. Is README.md updated with: New platform listed in supported platforms, Installation instructions for the platform, Any platform-specific notes
+
+**Note**: Gemini CLI does not support automated validation hooks. Please manually verify the criteria above before proceeding.
+
 ## Completion
 
 After completing this step:

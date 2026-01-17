@@ -199,6 +199,7 @@ class CommandGenerator:
             "is_standalone": is_standalone,
             "hooks": hooks,  # New: all hooks by platform event name
             "stop_hooks": stop_hooks,  # Backward compat: after_agent hooks only
+            "quality_criteria": step.quality_criteria,  # Declarative criteria with framing
         }
 
     def _build_meta_command_context(

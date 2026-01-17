@@ -208,6 +208,14 @@ JOB_SCHEMA: dict[str, Any] = {
                         "description": "If true, step command is visible (no tilde prefix). Default: false (hidden).",
                         "default": False,
                     },
+                    "quality_criteria": {
+                        "type": "array",
+                        "description": "Declarative quality criteria. Rendered with standard evaluation framing.",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1,
+                        },
+                    },
                 },
                 "additionalProperties": False,
             },

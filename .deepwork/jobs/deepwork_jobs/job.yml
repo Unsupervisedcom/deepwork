@@ -36,22 +36,15 @@ steps:
     outputs:
       - job.yml
     dependencies: []
-    hooks:
-      after_agent:
-        - prompt: |
-            **AGENT: TAKE ACTION** - Verify the job.yml output meets ALL quality criteria before completing:
-
-            1. **User Understanding**: Did you fully understand the user's workflow by asking structured questions?
-            2. **Structured Questions Used**: Did you ask structured questions (using the AskUserQuestion tool) to gather user input?
-            3. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
-            4. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
-            5. **Concise Summary**: Is the summary under 200 characters and descriptive?
-            6. **Rich Description**: Does the description provide enough context for future refinement?
-            7. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
-            8. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
-
-            If ANY criterion is not met, continue working to address it.
-            If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
+    quality_criteria:
+      - "**User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?"
+      - "**Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?"
+      - "**Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?"
+      - "**Logical Dependencies**: Do step dependencies make sense and avoid circular references?"
+      - "**Concise Summary**: Is the summary under 200 characters and descriptive?"
+      - "**Rich Description**: Does the description provide enough context for future refinement?"
+      - "**Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?"
+      - "**File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?"
 
   - id: implement
     name: "Implement Job Steps"
@@ -95,21 +88,14 @@ steps:
     outputs:
       - AGENTS.md
     dependencies: []
-    hooks:
-      after_agent:
-        - prompt: |
-            **AGENT: TAKE ACTION** - Verify the learning process meets ALL quality criteria before completing:
-
-            1. **Conversation Analyzed**: Did you review the conversation for DeepWork job executions?
-            2. **Confusion Identified**: Did you identify points of confusion, errors, or inefficiencies?
-            3. **Instructions Improved**: Were job instructions updated to address identified issues?
-            4. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
-            5. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
-            6. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
-            7. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
-            8. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
-            9. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
-            10. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
-
-            If ANY criterion is not met, continue working to address it.
-            If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
+    quality_criteria:
+      - "**Conversation Analyzed**: Did the agent review the conversation for DeepWork job executions?"
+      - "**Confusion Identified**: Did the agent identify points of confusion, errors, or inefficiencies?"
+      - "**Instructions Improved**: Were job instructions updated to address identified issues?"
+      - "**Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?"
+      - "**Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?"
+      - "**Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?"
+      - "**File References Used**: Do AGENTS.md entries reference other files where appropriate?"
+      - "**Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?"
+      - "**Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?"
+      - "**Sync Complete**: Has `deepwork sync` been run if instructions were modified?"

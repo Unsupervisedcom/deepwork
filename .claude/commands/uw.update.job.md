@@ -9,13 +9,10 @@ hooks:
 
             ## Quality Criteria
 
-            **AGENT: TAKE ACTION** - Verify the update process completed successfully:
-            1. Changes were made in src/deepwork/standard_jobs/[job_name]/ (NOT in .deepwork/jobs/)
-            2. `deepwork install --platform claude` was run
-            3. Files in .deepwork/jobs/ match the source files
-            4. Command files in .claude/commands/ were regenerated
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
+            1. Were changes made in src/deepwork/standard_jobs/[job_name]/ (NOT in .deepwork/jobs/)?
+            2. Was `deepwork install --platform claude` run?
+            3. Do files in .deepwork/jobs/ match the source files?
+            4. Were command files in .claude/commands/ regenerated?
 
             ## Instructions
 
@@ -25,8 +22,8 @@ hooks:
             If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
             all criteria appear to be met, respond with: {"ok": true}
 
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
 ---
 
 # update.job
@@ -161,12 +158,11 @@ No specific files are output by this command.
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
 ### Quality Criteria
-**AGENT: TAKE ACTION** - Verify the update process completed successfully:
-1. Changes were made in src/deepwork/standard_jobs/[job_name]/ (NOT in .deepwork/jobs/)
-2. `deepwork install --platform claude` was run
-3. Files in .deepwork/jobs/ match the source files
-4. Command files in .claude/commands/ were regenerated
-If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
+1. Were changes made in src/deepwork/standard_jobs/[job_name]/ (NOT in .deepwork/jobs/)?
+2. Was `deepwork install --platform claude` run?
+3. Do files in .deepwork/jobs/ match the source files?
+4. Were command files in .claude/commands/ regenerated?
 
 
 ### Completion Promise

@@ -30,25 +30,30 @@ This job has {{ total_steps }} step(s):
 
 ## Instructions
 
-Determine what the user wants to do and route to the appropriate step.
+This is a **multi-step workflow**. Determine the starting point and guide the user through the steps in sequence.
 
 1. **Analyze user intent** from the text that follows `/{{ job_name }}`
 
-2. **Match intent to a step**:
+2. **Identify the starting step** based on intent:
 {% for step in steps %}
    - {{ step.id }}: {{ step.description }}
 {% endfor %}
 
-3. **Invoke the matched step**: Tell the user to run the appropriate command:
+3. **Guide the user through the workflow**:
+   - Tell the user to run the starting step command
+   - After each step completes, guide them to the next step in the workflow
+   - Continue until the workflow is complete
+
+   Step commands:
 {% for step in steps %}
-   - For {{ step.id }}: `/{{ step.command_name }}`
+   - {{ step.id }}: `/{{ step.command_name }}`
 {% endfor %}
 
-4. **If intent is ambiguous**, ask the user which step they want:
+4. **If intent is ambiguous**, ask the user which step to start from:
    - Present the available steps as numbered options
    - Let them choose
 
-**Note**: Gemini CLI doesn't support programmatic command invocation, so guide the user to run the appropriate step command.
+**Note**: Gemini CLI requires manual command invocation. After each step completes, remind the user to run the next step command.
 
 ## Context Files
 

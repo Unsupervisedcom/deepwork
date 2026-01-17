@@ -9,18 +9,12 @@ hooks:
 
             ## Quality Criteria
 
-            **AGENT: TAKE ACTION** - Verify the research output meets ALL criteria:
-            1. Both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md
-            2. Each file has a comment at the top with:
-               - Last updated date
-               - Source URL where the documentation was obtained
-            3. cli_configuration.md covers how the platform's CLI is configured
-            4. hooks_system.md covers hooks available for slash command definitions ONLY
-            5. No extraneous documentation (only these two specific topics)
-            6. Documentation is comprehensive enough to implement the platform
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
+            1. Do both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md?
+            2. Does each file have a comment at the top with last updated date and source URL?
+            3. Does cli_configuration.md cover how the platform's CLI is configured?
+            4. Does hooks_system.md cover hooks available for slash command definitions ONLY?
+            5. Is there no extraneous documentation (only these two specific topics)?
+            6. Is the documentation comprehensive enough to implement the platform?
 
             ## Instructions
 
@@ -30,8 +24,8 @@ hooks:
             If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
             all criteria appear to be met, respond with: {"ok": true}
 
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
 ---
 
 # add_platform.research
@@ -288,17 +282,13 @@ Ensure all outputs are:
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
 ### Quality Criteria
-**AGENT: TAKE ACTION** - Verify the research output meets ALL criteria:
-1. Both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md
-2. Each file has a comment at the top with:
-   - Last updated date
-   - Source URL where the documentation was obtained
-3. cli_configuration.md covers how the platform's CLI is configured
-4. hooks_system.md covers hooks available for slash command definitions ONLY
-5. No extraneous documentation (only these two specific topics)
-6. Documentation is comprehensive enough to implement the platform
 
-If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+1. Do both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md?
+2. Does each file have a comment at the top with last updated date and source URL?
+3. Does cli_configuration.md cover how the platform's CLI is configured?
+4. Does hooks_system.md cover hooks available for slash command definitions ONLY?
+5. Is there no extraneous documentation (only these two specific topics)?
+6. Is the documentation comprehensive enough to implement the platform?
 
 
 ### Completion Promise

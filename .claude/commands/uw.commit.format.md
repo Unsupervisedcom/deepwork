@@ -1,0 +1,198 @@
+---
+description: Run ruff formatting and linting, fix issues until clean (max 5 attempts, runs as subagent)
+hooks:
+  Stop:
+    - hooks:
+        - type: command
+          command: ".deepwork/jobs/commit/hooks/run_ruff.sh"
+        - type: prompt
+          prompt: |
+            Evaluate the ruff format and lint check output above.
+
+            **If ruff reported issues (exit code non-zero)**: Start your response with "**AGENT: TAKE ACTION** -" followed by what needs to be fixed.
+
+            **If ruff reported no issues (exit code 0)**: Confirm the agent included `<promise>✓ Quality Criteria Met</promise>`. Allow completion.
+
+---
+
+# commit.format
+
+**Step 2 of 3** in the **commit** workflow
+
+**Summary**: Validate, format, and push changes with tests passing
+
+## Job Overview
+
+A pre-commit workflow that ensures code quality before pushing changes.
+
+This job runs through three validation and preparation steps:
+1. Runs the test suite and fixes any failures until all tests pass (max 5 attempts)
+2. Runs ruff formatting and linting, fixing issues until clean (max 5 attempts)
+3. Fetches from remote, rebases if needed, generates a simple commit message,
+   commits changes, and pushes to the remote branch
+
+Each step uses a quality validation loop to ensure it completes successfully
+before moving to the next step. The format step runs as a subagent to
+minimize token usage.
+
+Key behaviors:
+- Rebase strategy when remote has changes (keeps linear history)
+- Simple summary commit messages (no conventional commits format)
+- Maximum 5 fix attempts before stopping
+
+Designed for developers who want a reliable pre-push workflow that catches
+issues early and ensures consistent code quality.
+
+
+## Prerequisites
+
+This step requires completion of the following step(s):
+- `/commit.test`
+
+Please ensure these steps have been completed before proceeding.
+
+## Instructions
+
+# Format Code
+
+## Objective
+
+Run ruff formatting and linting checks, fixing any issues until the code is clean (maximum 5 attempts).
+
+## Task
+
+Execute ruff to check code formatting and linting. If any issues are found, fix them. Continue this cycle until ruff reports no issues or you've made 5 fix attempts.
+
+**Note**: This step is designed to run as a subagent to minimize token usage. Focus on efficient, targeted fixes.
+
+### Process
+
+1. **Check format and lint status**
+   The hook automatically runs:
+   ```bash
+   uv run ruff format --check src/ tests/
+   uv run ruff check src/ tests/
+   ```
+
+2. **Analyze ruff output**
+   - If both commands pass (exit code 0), you're done with this step
+   - If issues are reported, examine them carefully
+
+3. **Fix issues** (if needed)
+
+   **For formatting issues**:
+   ```bash
+   uv run ruff format src/ tests/
+   ```
+   This auto-fixes formatting issues.
+
+   **For linting issues**:
+   - Some can be auto-fixed: `uv run ruff check --fix src/ tests/`
+   - Others require manual fixes based on the error messages
+   - Common issues: unused imports, undefined names, line length
+
+4. **Repeat if necessary**
+   - Re-run checks after fixes
+   - Continue until all issues are resolved
+   - Track your attempts - stop after 5 fix attempts if issues remain
+   - If you cannot fix after 5 attempts, report remaining issues to the user
+
+### Common Ruff Issues and Fixes
+
+| Issue | Fix |
+|-------|-----|
+| F401 unused import | Remove the import |
+| F841 unused variable | Remove or use the variable |
+| E501 line too long | Break into multiple lines |
+| I001 import sorting | Run `ruff check --fix` or reorder manually |
+| E711 comparison to None | Use `is None` instead of `== None` |
+
+### Important Notes
+
+- **Run ruff format first** - It auto-fixes most formatting issues
+- **Use --fix for lint issues** - Many lint issues can be auto-fixed
+- **Minimal manual fixes** - Only manually fix what auto-fix can't handle
+- **Track attempts** - Keep count of fix attempts to respect the 5-attempt limit
+
+## Output Format
+
+No file output is required. Success is determined by ruff passing all checks.
+
+**On success**: Report that ruff checks pass and proceed to the next step.
+
+**On failure after 5 attempts**: Report which issues remain and why you couldn't fix them.
+
+## Quality Criteria
+
+- `uv run ruff format --check src/ tests/` passes (exit code 0)
+- `uv run ruff check src/ tests/` passes (exit code 0)
+- Any fixes made don't break functionality (tests should still pass)
+- If issues couldn't be fixed in 5 attempts, clear explanation provided
+- When all checks pass, include `<promise>✓ Quality Criteria Met</promise>` in your response
+
+## Context
+
+This is the second step in the commit workflow, after tests pass. Code must be properly formatted and lint-free before committing. The format step uses a script hook that automatically runs ruff checks, so focus on analyzing results and making fixes efficiently.
+
+
+
+## Work Branch Management
+
+All work for this job should be done on a dedicated work branch:
+
+1. **Check current branch**:
+   - If already on a work branch for this job (format: `deepwork/commit-[instance]-[date]`), continue using it
+   - If on main/master, create a new work branch
+
+2. **Create work branch** (if needed):
+   ```bash
+   git checkout -b deepwork/commit-[instance]-$(date +%Y%m%d)
+   ```
+   Replace `[instance]` with a descriptive identifier (e.g., `acme`, `q1-launch`, etc.)
+
+## Output Requirements
+
+No specific files are output by this command.
+
+## Quality Validation Loop
+
+This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
+
+
+**Validation Script**: `.deepwork/jobs/commit/hooks/run_ruff.sh`
+
+The validation script will be executed automatically when you attempt to complete this step.
+
+### Completion Promise
+
+To signal that all quality criteria have been met, include this tag in your final response:
+
+```
+<promise>✓ Quality Criteria Met</promise>
+```
+
+**Important**: Only include this promise tag when you have verified that ALL quality criteria above are satisfied. The validation loop will continue until this promise is detected.
+
+## Completion
+
+After completing this step:
+
+1. **Verify outputs**: Confirm all required files have been created
+
+2. **Inform the user**:
+   - Step 2 of 3 is complete
+   - Ready to proceed to next step: `/commit.reconcile_and_push`
+
+## Next Step
+
+To continue the workflow, run:
+```
+/commit.reconcile_and_push
+```
+
+---
+
+## Context Files
+
+- Job definition: `.deepwork/jobs/commit/job.yml`
+- Step instructions: `.deepwork/jobs/commit/steps/format.md`

@@ -9,20 +9,14 @@ hooks:
 
             ## Quality Criteria
 
-            **AGENT: TAKE ACTION** - Verify the job.yml output meets ALL quality criteria before completing:
-
-            1. **User Understanding**: Did you fully understand the user's workflow by asking structured questions?
-            2. **Structured Questions Used**: Did you ask structured questions (using the AskUserQuestion tool) to gather user input?
+            1. **User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?
+            2. **Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?
             3. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
             4. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
             5. **Concise Summary**: Is the summary under 200 characters and descriptive?
             6. **Rich Description**: Does the description provide enough context for future refinement?
             7. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
             8. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
-
-            If ANY criterion is not met, continue working to address it.
-            If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
-
 
             ## Instructions
 
@@ -32,8 +26,8 @@ hooks:
             If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
             all criteria appear to be met, respond with: {"ok": true}
 
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
 ---
 
 # deepwork_jobs.define
@@ -427,19 +421,15 @@ Ensure all outputs are:
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
 ### Quality Criteria
-**AGENT: TAKE ACTION** - Verify the job.yml output meets ALL quality criteria before completing:
 
-1. **User Understanding**: Did you fully understand the user's workflow by asking structured questions?
-2. **Structured Questions Used**: Did you ask structured questions (using the AskUserQuestion tool) to gather user input?
+1. **User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?
+2. **Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?
 3. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
 4. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
 5. **Concise Summary**: Is the summary under 200 characters and descriptive?
 6. **Rich Description**: Does the description provide enough context for future refinement?
 7. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
 8. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
-
-If ANY criterion is not met, continue working to address it.
-If ALL criteria are satisfied, include `<promise>✓ Quality Criteria Met</promise>` in your response.
 
 
 ### Completion Promise

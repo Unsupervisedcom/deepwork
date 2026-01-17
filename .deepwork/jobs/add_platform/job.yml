@@ -36,20 +36,13 @@ steps:
       - cli_configuration.md
       - hooks_system.md
     dependencies: []
-    hooks:
-      after_agent:
-        - prompt: |
-            **AGENT: TAKE ACTION** - Verify the research output meets ALL criteria:
-            1. Both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md
-            2. Each file has a comment at the top with:
-               - Last updated date
-               - Source URL where the documentation was obtained
-            3. cli_configuration.md covers how the platform's CLI is configured
-            4. hooks_system.md covers hooks available for slash command definitions ONLY
-            5. No extraneous documentation (only these two specific topics)
-            6. Documentation is comprehensive enough to implement the platform
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+    quality_criteria:
+      - "Do both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md?"
+      - "Does each file have a comment at the top with last updated date and source URL?"
+      - "Does cli_configuration.md cover how the platform's CLI is configured?"
+      - "Does hooks_system.md cover hooks available for slash command definitions ONLY?"
+      - "Is there no extraneous documentation (only these two specific topics)?"
+      - "Is the documentation comprehensive enough to implement the platform?"
 
   - id: add_capabilities
     name: "Add Hook Capabilities"
@@ -63,19 +56,13 @@ steps:
       - adapters.py
     dependencies:
       - research
-    hooks:
-      after_agent:
-        - prompt: |
-            **AGENT: TAKE ACTION** - Verify the capability additions meet ALL criteria:
-            1. Any new hooks from the platform (for slash commands only) are added to src/deepwork/schemas/job_schema.py
-            2. All existing adapters in src/deepwork/adapters.py are updated with the new hook fields
-               (set to None/null if the platform doesn't support that hook)
-            3. Only hooks available on slash command definitions are added (not general CLI hooks)
-            4. job_schema.py remains valid Python with no syntax errors
-            5. adapters.py remains consistent - all adapters have the same hook fields
-            6. If no new hooks are needed, document why in a comment
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+    quality_criteria:
+      - "Are any new hooks from the platform (for slash commands only) added to src/deepwork/schemas/job_schema.py?"
+      - "Are all existing adapters in src/deepwork/adapters.py updated with the new hook fields? (set to None/null if the platform doesn't support that hook)"
+      - "Are only hooks available on slash command definitions added (not general CLI hooks)?"
+      - "Does job_schema.py remain valid Python with no syntax errors?"
+      - "Is adapters.py consistent - all adapters have the same hook fields?"
+      - "If no new hooks are needed, is there documentation explaining why?"
 
   - id: implement
     name: "Implement Platform Support"
@@ -98,19 +85,13 @@ steps:
     hooks:
       after_agent:
         - script: hooks/run_tests.sh
-        - prompt: |
-            **AGENT: TAKE ACTION** - Verify the implementation meets ALL criteria:
-            1. Platform adapter class is added to src/deepwork/adapters.py
-            2. Templates exist in src/deepwork/templates/<platform>/ with appropriate command structure
-            3. Tests exist for all new functionality
-            4. Test coverage is 100% for new code (run: uv run pytest --cov)
-            5. All tests pass
-            6. README.md is updated with:
-               - New platform listed in supported platforms
-               - Installation instructions for the platform
-               - Any platform-specific notes
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+    quality_criteria:
+      - "Is the platform adapter class added to src/deepwork/adapters.py?"
+      - "Do templates exist in src/deepwork/templates/<platform>/ with appropriate command structure?"
+      - "Do tests exist for all new functionality?"
+      - "Is test coverage 100% for new code (run: uv run pytest --cov)?"
+      - "Do all tests pass?"
+      - "Is README.md updated with: New platform listed in supported platforms, Installation instructions for the platform, Any platform-specific notes"
 
   - id: verify
     name: "Verify Installation"

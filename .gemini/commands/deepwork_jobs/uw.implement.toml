@@ -309,6 +309,24 @@ Ensure all outputs are:
 - Well-formatted and complete
 - Ready for review or use by subsequent steps
 
+## Quality Validation
+
+This step has quality criteria that should be verified before completion.
+
+### Quality Criteria
+
+1. **Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?
+2. **Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?
+3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
+4. **Output Examples**: Does each instruction file show what good output looks like?
+5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
+6. **Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase "ask structured questions"?
+7. **Sync Complete**: Has `deepwork sync` been run successfully?
+8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+9. **Policies Considered**: Has the agent thought about whether policies would benefit this job? If relevant policies were identified, did they explain them and offer to run `/deepwork_policy.define`? Not every job needs policies - only suggest when genuinely helpful.
+
+**Note**: Gemini CLI does not support automated validation hooks. Please manually verify the criteria above before proceeding.
+
 ## Completion
 
 After completing this step:

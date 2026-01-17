@@ -213,6 +213,21 @@ Ensure all outputs are:
 - Well-formatted and complete
 - Ready for review or use by subsequent steps
 
+## Quality Validation
+
+This step has quality criteria that should be verified before completion.
+
+### Quality Criteria
+
+1. Are any new hooks from the platform (for slash commands only) added to src/deepwork/schemas/job_schema.py?
+2. Are all existing adapters in src/deepwork/adapters.py updated with the new hook fields? (set to None/null if the platform doesn't support that hook)
+3. Are only hooks available on slash command definitions added (not general CLI hooks)?
+4. Does job_schema.py remain valid Python with no syntax errors?
+5. Is adapters.py consistent - all adapters have the same hook fields?
+6. If no new hooks are needed, is there documentation explaining why?
+
+**Note**: Gemini CLI does not support automated validation hooks. Please manually verify the criteria above before proceeding.
+
 ## Completion
 
 After completing this step:

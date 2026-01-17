@@ -111,6 +111,9 @@ class Step:
     # If true, step command is visible (no tilde prefix). Default: false (hidden).
     exposed: bool = False
 
+    # Declarative quality criteria rendered with standard evaluation framing
+    quality_criteria: list[str] = field(default_factory=list)
+
     @property
     def stop_hooks(self) -> list[HookAction]:
         """
@@ -148,6 +151,7 @@ class Step:
             dependencies=data.get("dependencies", []),
             hooks=hooks,
             exposed=data.get("exposed", False),
+            quality_criteria=data.get("quality_criteria", []),
         )
 
 
