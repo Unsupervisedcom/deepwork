@@ -180,9 +180,7 @@ class TestInstallCommand:
         example_files = list(rules_dir.glob("*.md.example"))
         assert len(example_files) >= 1  # At least one example template
 
-    def test_install_preserves_existing_rules_directory(
-        self, mock_claude_project: Path
-    ) -> None:
+    def test_install_preserves_existing_rules_directory(self, mock_claude_project: Path) -> None:
         """Test that install doesn't overwrite existing rules directory."""
         runner = CliRunner()
 

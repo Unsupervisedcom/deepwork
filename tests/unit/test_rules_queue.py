@@ -207,9 +207,7 @@ class TestRulesQueue:
         assert entry is not None
 
         action_result = ActionResult(type="command", output="error", exit_code=1)
-        success = queue.update_status(
-            entry.trigger_hash, QueueEntryStatus.FAILED, action_result
-        )
+        success = queue.update_status(entry.trigger_hash, QueueEntryStatus.FAILED, action_result)
         assert success is True
 
         updated = queue.get_entry(entry.trigger_hash)
