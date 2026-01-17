@@ -1,8 +1,8 @@
-# Policy System Design
+# Rules System Design
 
 ## Overview
 
-The deepwork policy system enables automated enforcement of development standards during AI-assisted coding sessions. This document describes the architecture for the next-generation policy system with support for:
+The deepwork rules system enables automated enforcement of development standards during AI-assisted coding sessions. This document describes the architecture for the next-generation rules system with support for:
 
 1. **File correspondence matching** (sets and pairs)
 2. **Idempotent command execution**
@@ -11,11 +11,11 @@ The deepwork policy system enables automated enforcement of development standard
 
 ## Core Concepts
 
-### Policy Structure
+### Rule Structure
 
-Every policy has two orthogonal aspects:
+Every rule has two orthogonal aspects:
 
-**Detection Mode** - How the policy decides when to fire:
+**Detection Mode** - How the rule decides when to fire:
 
 | Mode | Field | Description |
 |------|-------|-------------|
@@ -23,7 +23,7 @@ Every policy has two orthogonal aspects:
 | **Set** | `set` | Fire when file correspondence is incomplete (bidirectional) |
 | **Pair** | `pair` | Fire when file correspondence is incomplete (directional) |
 
-**Action Type** - What happens when the policy fires:
+**Action Type** - What happens when the rule fires:
 
 | Type | Field | Description |
 |------|-------|-------------|
@@ -44,7 +44,7 @@ Every policy has two orthogonal aspects:
 **Pair Mode (Directional Correspondence)**
 - Define a trigger pattern and one or more expected patterns
 - Changes to trigger files require corresponding expected files to also change
-- Changes to expected files alone do not trigger the policy
+- Changes to expected files alone do not trigger the rule
 - Example: API code requires documentation updates
 
 ### Pattern Variables
@@ -65,7 +65,7 @@ Special variable names:
 ### Action Types
 
 **Prompt Action (default)**
-The markdown body of the policy file serves as instructions shown to the agent.
+The markdown body of the rule file serves as instructions shown to the agent.
 
 **Command Action**
 ```yaml
@@ -82,14 +82,14 @@ Command actions should be idempotent—running them multiple times produces the 
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Policy System                             │
+│                        Rules System                              │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
 │  │   Detector   │───▶│    Queue     │◀───│  Evaluator   │      │
 │  │              │    │              │    │              │      │
 │  │ - Watch files│    │ .deepwork/   │    │ - Process    │      │
-│  │ - Match pols │    │ tmp/policy/  │    │   queued     │      │
+│  │ - Match rules│    │ tmp/rules/   │    │   queued     │      │
 │  │ - Create     │    │ queue/       │    │ - Run action │      │
 │  │   entries    │    │              │    │ - Update     │      │
 │  └──────────────┘    └──────────────┘    │   status     │      │
@@ -109,15 +109,15 @@ Command actions should be idempotent—running them multiple times produces the 
 
 ### Detector
 
-The detector identifies when policies should be evaluated:
+The detector identifies when rules should be evaluated:
 
-1. **Trigger Detection**: Monitors for file changes that match policy triggers
+1. **Trigger Detection**: Monitors for file changes that match rule triggers
 2. **Deduplication**: Computes a hash to avoid re-processing identical triggers
 3. **Queue Entry Creation**: Creates entries for the evaluator to process
 
 **Trigger Hash Computation**:
 ```python
-hash_input = f"{policy_name}:{sorted(trigger_files)}:{baseline_ref}"
+hash_input = f"{rule_name}:{sorted(trigger_files)}:{baseline_ref}"
 trigger_hash = sha256(hash_input.encode()).hexdigest()[:12]
 ```
 
@@ -128,20 +128,20 @@ The baseline_ref varies by `compare_to` mode:
 
 ### Queue
 
-The queue persists policy trigger state in `.deepwork/tmp/policy/queue/`:
+The queue persists rule trigger state in `.deepwork/tmp/rules/queue/`:
 
 ```
-.deepwork/tmp/policy/queue/
+.deepwork/tmp/rules/queue/
 ├── {hash}.queued.json      # Detected, awaiting evaluation
-├── {hash}.passed.json      # Evaluated, policy satisfied
-├── {hash}.failed.json      # Evaluated, policy not satisfied
+├── {hash}.passed.json      # Evaluated, rule satisfied
+├── {hash}.failed.json      # Evaluated, rule not satisfied
 └── {hash}.skipped.json     # Safety pattern matched, skipped
 ```
 
 **Queue Entry Schema**:
 ```json
 {
-  "policy_name": "string",
+  "rule_name": "string",
   "trigger_hash": "string",
   "status": "queued|passed|failed|skipped",
   "created_at": "ISO8601 timestamp",
@@ -233,22 +233,22 @@ def resolve_pattern(pattern: str, variables: dict[str, str]) -> str:
 
 ## Evaluation Flow
 
-### Standard Instruction Policy
+### Standard Instruction Rule
 
 ```
 1. Detector: File changes detected
-2. Detector: Check each policy's trigger patterns
-3. Detector: For matching policy, compute trigger hash
+2. Detector: Check each rule's trigger patterns
+3. Detector: For matching rule, compute trigger hash
 4. Detector: If hash not in queue, create .queued entry
 5. Evaluator: Process queued entry
 6. Evaluator: Check safety patterns against changed files
 7. Evaluator: If safety matches, mark .skipped
 8. Evaluator: If no safety match, return instructions to agent
-9. Agent: Addresses policy, includes <promise> tag
+9. Agent: Addresses rule, includes <promise> tag
 10. Evaluator: On next check, mark .passed (promise found)
 ```
 
-### Correspondence Policy (Set)
+### Correspondence Rule (Set)
 
 ```
 1. Detector: File src/foo/bar.py changed
@@ -261,7 +261,7 @@ def resolve_pattern(pattern: str, variables: dict[str, str]) -> str:
 7. Evaluator: Return instructions prompting for test update
 ```
 
-### Correspondence Policy (Pair)
+### Correspondence Rule (Pair)
 
 ```
 1. Detector: File api/users.py changed (trigger pattern)
@@ -273,14 +273,14 @@ def resolve_pattern(pattern: str, variables: dict[str, str]) -> str:
 7. Evaluator: Return instructions
 
 Note: If only docs/api/users.md changed (not api/users.py),
-the pair policy does NOT trigger (directional).
+the pair rule does NOT trigger (directional).
 ```
 
-### Command Policy
+### Command Rule
 
 ```
 1. Detector: Python file changed, matches "**/*.py"
-2. Detector: Create .queued entry for format policy
+2. Detector: Create .queued entry for format rule
 3. Evaluator: Execute "ruff format {file}"
 4. Evaluator: Run git diff to check for changes
 5. Evaluator: If changes made, re-run command (idempotency check)
@@ -292,15 +292,15 @@ the pair policy does NOT trigger (directional).
 
 ### Problem
 
-When many policies trigger, the agent receives excessive output, degrading performance.
+When many rules trigger, the agent receives excessive output, degrading performance.
 
 ### Solution
 
 **1. Output Batching**
-Group related policies into concise sections:
+Group related rules into concise sections:
 
 ```
-The following policies require attention:
+The following rules require attention:
 
 ## Source/Test Pairing
 src/auth/login.py → tests/auth/login_test.py
@@ -313,8 +313,8 @@ api/users.py → docs/api/users.md
 Source files changed. Verify README.md is accurate.
 ```
 
-**2. Grouped by Policy Name**
-Multiple violations of the same policy are grouped together under a single heading, keeping output compact.
+**2. Grouped by Rule Name**
+Multiple violations of the same rule are grouped together under a single heading, keeping output compact.
 
 **3. Minimal Decoration**
 Avoid excessive formatting, numbering, or emphasis. Use simple arrow notation for correspondence violations.
@@ -325,13 +325,13 @@ Avoid excessive formatting, numbering, or emphasis. Use simple arrow notation fo
 
 ```
 .deepwork/
-├── policies/                # Policy definitions (frontmatter markdown)
+├── rules/                   # Rule definitions (frontmatter markdown)
 │   ├── readme-accuracy.md
 │   ├── source-test-pairing.md
 │   ├── api-documentation.md
 │   └── python-formatting.md
 ├── tmp/                     # GITIGNORED - transient state
-│   └── policy/
+│   └── rules/
 │       ├── queue/           # Queue entries
 │       │   ├── abc123.queued.json
 │       │   └── def456.passed.json
@@ -339,14 +339,14 @@ Avoid excessive formatting, numbering, or emphasis. Use simple arrow notation fo
 │       │   └── prompt_1705420800.json
 │       └── cache/           # Pattern matching cache
 │           └── patterns.json
-└── policy_state.json        # Session state summary
+└── rules_state.json         # Session state summary
 ```
 
 **Important:** The entire `.deepwork/tmp/` directory is gitignored. All queue entries, baselines, and caches are local transient state that is not committed. This means cleanup is not critical—files can accumulate and will be naturally cleaned when the directory is deleted or the repo is re-cloned.
 
-### Policy File Format
+### Rule File Format
 
-Each policy is a markdown file with YAML frontmatter:
+Each rule is a markdown file with YAML frontmatter:
 
 ```markdown
 ---
@@ -354,14 +354,14 @@ name: README Accuracy
 trigger: src/**/*.py
 safety: README.md
 ---
-Instructions shown to the agent when this policy fires.
+Instructions shown to the agent when this rule fires.
 
 These can be multi-line with full markdown formatting.
 ```
 
 This format enables:
-1. Code files to reference policies in comments
-2. Human-readable policy documentation
+1. Code files to reference rules in comments
+2. Human-readable rule documentation
 3. Easy editing with any markdown editor
 4. Clear separation of configuration and content
 
@@ -402,10 +402,10 @@ Terminal states persist in `.deepwork/tmp/` (gitignored) until manually cleared 
 
 ### Pattern Errors
 
-Invalid patterns are caught at policy load time:
+Invalid patterns are caught at rule load time:
 
 ```python
-class PatternError(PolicyError):
+class PatternError(RulesError):
     """Invalid pattern syntax."""
     pass
 
@@ -442,25 +442,25 @@ If queue entries become corrupted:
 
 ## Configuration
 
-### Policy Files
+### Rule Files
 
-Policies are stored in `.deepwork/policies/` as individual markdown files with YAML frontmatter. See `doc/policy_syntax.md` for complete syntax documentation.
+Rules are stored in `.deepwork/rules/` as individual markdown files with YAML frontmatter. See `doc/rules_syntax.md` for complete syntax documentation.
 
 **Loading Order:**
-1. All `.md` files in `.deepwork/policies/` are loaded
+1. All `.md` files in `.deepwork/rules/` are loaded
 2. Files are processed in alphabetical order
-3. Filename (without extension) becomes policy identifier
+3. Filename (without extension) becomes rule identifier
 
-**Policy Discovery:**
+**Rule Discovery:**
 ```python
-def load_policies(policies_dir: Path) -> list[Policy]:
-    """Load all policies from the policies directory."""
-    policies = []
-    for path in sorted(policies_dir.glob("*.md")):
-        policy = parse_policy_file(path)
-        policy.name = path.stem  # filename without .md
-        policies.append(policy)
-    return policies
+def load_rules(rules_dir: Path) -> list[Rule]:
+    """Load all rules from the rules directory."""
+    rules = []
+    for path in sorted(rules_dir.glob("*.md")):
+        rule = parse_rule_file(path)
+        rule.name = path.stem  # filename without .md
+        rules.append(rule)
+    return rules
 ```
 
 ### System Configuration
@@ -468,9 +468,9 @@ def load_policies(policies_dir: Path) -> list[Policy]:
 In `.deepwork/config.yml`:
 
 ```yaml
-policy:
+rules:
   enabled: true
-  policies_dir: .deepwork/policies  # Can be customized
+  rules_dir: .deepwork/rules  # Can be customized
 ```
 
 ## Performance Considerations
@@ -484,30 +484,30 @@ policy:
 ### Lazy Evaluation
 
 - Patterns only compiled when needed
-- File lists only computed for triggered policies
-- Instructions only loaded when policy fires
+- File lists only computed for triggered rules
+- Instructions only loaded when rule fires
 
 ### Parallel Processing
 
 - Multiple queue entries can be processed in parallel
 - Command actions can run concurrently (with file locking)
-- Pattern matching is parallelized across policies
+- Pattern matching is parallelized across rules
 
 ## Migration from Legacy System
 
-The legacy system used a single `.deepwork.policy.yml` file with array of policies. The new system uses individual markdown files in `.deepwork/policies/`.
+The legacy system used a single `.deepwork.rules.yml` file with array of rules. The new system uses individual markdown files in `.deepwork/rules/`.
 
 **Breaking Changes:**
 - Single YAML file replaced with folder of markdown files
-- Policy `name` field replaced with filename
+- Rule `name` field replaced with filename
 - `instructions` / `instructions_file` replaced with markdown body
 - New features: sets, pairs, commands, queue-based state
 
-**No backwards compatibility is provided.** Existing `.deepwork.policy.yml` files must be converted manually.
+**No backwards compatibility is provided.** Existing `.deepwork.rules.yml` files must be converted manually.
 
 **Conversion Example:**
 
-Old format (`.deepwork.policy.yml`):
+Old format (`.deepwork.rules.yml`):
 ```yaml
 - name: "README Accuracy"
   trigger: "src/**/*"
@@ -516,7 +516,7 @@ Old format (`.deepwork.policy.yml`):
     Please verify README.md is accurate.
 ```
 
-New format (`.deepwork/policies/readme-accuracy.md`):
+New format (`.deepwork/rules/readme-accuracy.md`):
 ```markdown
 ---
 trigger: src/**/*
@@ -542,6 +542,6 @@ Please verify README.md is accurate.
 
 ### Input Validation
 
-- All policy files validated against schema
+- All rule files validated against schema
 - Pattern variables sanitized before use
 - File paths normalized and validated

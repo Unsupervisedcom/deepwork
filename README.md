@@ -15,7 +15,7 @@ DeepWork is a tool for defining and executing multi-step workflows with AI codin
 | OpenCode | Planned | Markdown | No |
 | GitHub Copilot CLI | Planned | Markdown | No (tool permissions only) |
 
-> **Tip:** New to DeepWork? Claude Code has the most complete feature support, including quality validation hooks and automated policies. For browser automation, Claude in Chrome (Anthropic's browser extension) works well with DeepWork workflows.
+> **Tip:** New to DeepWork? Claude Code has the most complete feature support, including quality validation hooks and automated rules. For browser automation, Claude in Chrome (Anthropic's browser extension) works well with DeepWork workflows.
 
 ## Easy Installation
 In your Agent CLI (ex. `claude`), ask:
@@ -61,7 +61,7 @@ This will:
 - Create `.deepwork/` directory structure
 - Generate core DeepWork jobs
 - Install DeepWork jobs for your AI assistant
-- Configure hooks for your AI assistant to enable policies
+- Configure hooks for your AI assistant to enable rules
 
 ## Quick Start
 
@@ -177,10 +177,10 @@ DeepWork follows a **Git-native, installation-only** design:
 your-project/
 ├── .deepwork/
 │   ├── config.yml          # Platform configuration
-│   ├── policies/           # Policy definitions (v2 format)
-│   │   └── policy-name.md  # Individual policy files
+│   ├── rules/              # Rule definitions (v2 format)
+│   │   └── rule-name.md    # Individual rule files
 │   ├── tmp/                # Temporary state (gitignored)
-│   │   └── policy/queue/   # Policy evaluation queue
+│   │   └── rules/queue/    # Rule evaluation queue
 │   └── jobs/               # Job definitions
 │       └── job_name/
 │           ├── job.yml     # Job metadata
@@ -212,13 +212,13 @@ deepwork/
 │   │   ├── parser.py     # Job definition parsing
 │   │   ├── detector.py   # Platform detection
 │   │   ├── generator.py  # Skill file generation
-│   │   ├── policy_parser.py    # Policy parsing
+│   │   ├── rules_parser.py     # Rule parsing
 │   │   ├── pattern_matcher.py  # Variable pattern matching
-│   │   ├── policy_queue.py     # Policy state queue
+│   │   ├── rules_queue.py      # Rule state queue
 │   │   └── command_executor.py # Command action execution
 │   ├── hooks/            # Cross-platform hook wrappers
 │   │   ├── wrapper.py    # Input/output normalization
-│   │   ├── policy_check.py   # Policy evaluation hook
+│   │   ├── rules_check.py    # Rule evaluation hook
 │   │   ├── claude_hook.sh    # Claude Code adapter
 │   │   └── gemini_hook.sh    # Gemini CLI adapter
 │   ├── templates/        # Jinja2 templates
@@ -235,27 +235,27 @@ deepwork/
 
 ## Features
 
-### 📋 Job Definition
+### Job Definition
 Define structured, multi-step workflows where each step has clear requirements and produces specific results.
 - **Dependency Management**: Explicitly link steps with automatic sequence handling and cycle detection.
 - **Artifact Passing**: Seamlessly use file outputs from one step as inputs for future steps.
 - **Dynamic Inputs**: Support for both fixed file references and interactive user parameters.
 - **Human-Readable YAML**: Simple, declarative job definitions that are easy to version and maintain.
 
-### 🌿 Git-Native Workflow
+### Git-Native Workflow
 Maintain a clean repository with automatic branch management and isolation.
 - **Automatic Branching**: Every job execution happens on a dedicated work branch (e.g., `deepwork/my-job-2024`).
 - **Namespace Isolation**: Run multiple concurrent jobs or instances without versioning conflicts.
 - **Full Traceability**: All AI-generated changes, logs, and artifacts are tracked natively in your Git history.
 
-### 🛡️ Automated Policies
-Enforce project standards and best practices without manual oversight. Policies monitor file changes and automatically prompt your AI assistant to follow specific guidelines when relevant code is modified.
-- **Automatic Triggers**: Detect when specific files or directories are changed to fire relevant policies.
+### Automated Rules
+Enforce project standards and best practices without manual oversight. Rules monitor file changes and automatically prompt your AI assistant to follow specific guidelines when relevant code is modified.
+- **Automatic Triggers**: Detect when specific files or directories are changed to fire relevant rules.
 - **File Correspondence**: Define bidirectional (set) or directional (pair) relationships between files.
 - **Command Actions**: Run idempotent commands (formatters, linters) automatically when files change.
 - **Contextual Guidance**: Instructions are injected directly into the AI's workflow at the right moment.
 
-**Example Policy** (`.deepwork/policies/source-test-pairing.md`):
+**Example Rule** (`.deepwork/rules/source-test-pairing.md`):
 ```markdown
 ---
 name: Source/Test Pairing
@@ -267,7 +267,7 @@ When source files change, corresponding test files should also change.
 Please create or update tests for the modified source files.
 ```
 
-**Example Command Policy** (`.deepwork/policies/format-python.md`):
+**Example Command Rule** (`.deepwork/rules/format-python.md`):
 ```markdown
 ---
 name: Format Python
@@ -278,7 +278,7 @@ action:
 ---
 ```
 
-### 🚀 Multi-Platform Support
+### Multi-Platform Support
 Generate native commands and skills tailored for your AI coding assistant.
 - **Native Integration**: Works directly with the skill/command formats of supported agents.
 - **Context-Aware**: Skills include all necessary context (instructions, inputs, and dependencies) for the AI.

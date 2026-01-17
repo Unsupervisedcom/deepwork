@@ -38,7 +38,7 @@ hooks:
 ## Job Overview
 
 A workflow for maintaining standard jobs bundled with DeepWork. Standard jobs
-(like `deepwork_jobs` and `deepwork_policy`) are source-controlled in
+(like `deepwork_jobs` and `deepwork_rules`) are source-controlled in
 `src/deepwork/standard_jobs/` and must be edited there—never in `.deepwork/jobs/`
 or `.claude/commands/` directly.
 
@@ -82,7 +82,7 @@ Standard jobs exist in THREE locations, but only ONE is the source of truth:
 #### 1. Identify the Standard Job to Update
 
 From conversation context, determine:
-- Which standard job needs updating (e.g., `deepwork_jobs`, `deepwork_policy`)
+- Which standard job needs updating (e.g., `deepwork_jobs`, `deepwork_rules`)
 - What changes are needed (job.yml, step instructions, hooks, etc.)
 
 Current standard jobs:

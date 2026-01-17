@@ -409,14 +409,14 @@ class TestIntegration:
         assert hook_input.event == NormalizedEvent.AFTER_AGENT
 
         # Process (would call hook function here)
-        hook_output = HookOutput(decision="block", reason="Policy X requires attention")
+        hook_output = HookOutput(decision="block", reason="Rule X requires attention")
 
         # Denormalize
         output_json = denormalize_output(hook_output, Platform.CLAUDE, hook_input.event)
         result = json.loads(output_json)
 
         assert result["decision"] == "block"
-        assert "Policy X" in result["reason"]
+        assert "Rule X" in result["reason"]
 
     def test_gemini_afteragent_hook_flow(self) -> None:
         """Test complete flow for Gemini AfterAgent hook."""
@@ -436,7 +436,7 @@ class TestIntegration:
         assert hook_input.event == NormalizedEvent.AFTER_AGENT
 
         # Process (would call hook function here)
-        hook_output = HookOutput(decision="block", reason="Policy Y requires attention")
+        hook_output = HookOutput(decision="block", reason="Rule Y requires attention")
 
         # Denormalize
         output_json = denormalize_output(hook_output, Platform.GEMINI, hook_input.event)
@@ -444,7 +444,7 @@ class TestIntegration:
 
         # Gemini should get "deny" instead of "block"
         assert result["decision"] == "deny"
-        assert "Policy Y" in result["reason"]
+        assert "Rule Y" in result["reason"]
 
     def test_cross_platform_same_hook_logic(self) -> None:
         """Test that the same hook logic produces correct output for both platforms."""

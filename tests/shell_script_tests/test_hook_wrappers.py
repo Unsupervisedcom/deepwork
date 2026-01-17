@@ -282,19 +282,19 @@ if __name__ == "__main__":
         assert output == {} or output.get("decision", "") not in ("block", "deny")
 
 
-class TestPolicyCheckHook:
-    """Tests for the policy_check hook module."""
+class TestRulesCheckHook:
+    """Tests for the rules_check hook module."""
 
     def test_module_imports(self) -> None:
-        """Test that the policy_check module can be imported."""
-        from deepwork.hooks import policy_check
+        """Test that the rules_check module can be imported."""
+        from deepwork.hooks import rules_check
 
-        assert hasattr(policy_check, "main")
-        assert hasattr(policy_check, "policy_check_hook")
+        assert hasattr(rules_check, "main")
+        assert hasattr(rules_check, "rules_check_hook")
 
     def test_hook_function_returns_output(self) -> None:
-        """Test that policy_check_hook returns a HookOutput."""
-        from deepwork.hooks.policy_check import policy_check_hook
+        """Test that rules_check_hook returns a HookOutput."""
+        from deepwork.hooks.rules_check import rules_check_hook
         from deepwork.hooks.wrapper import HookInput, HookOutput, NormalizedEvent, Platform
 
         # Create a minimal hook input
@@ -304,7 +304,7 @@ class TestPolicyCheckHook:
             session_id="test",
         )
 
-        output = policy_check_hook(hook_input)
+        output = rules_check_hook(hook_input)
 
         assert isinstance(output, HookOutput)
         # Should not block for before_prompt event

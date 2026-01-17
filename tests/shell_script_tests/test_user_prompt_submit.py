@@ -28,34 +28,34 @@ def run_user_prompt_submit_hook(
 class TestUserPromptSubmitHookExecution:
     """Tests for user_prompt_submit.sh execution behavior."""
 
-    def test_exits_successfully(self, policy_hooks_dir: Path, git_repo: Path) -> None:
+    def test_exits_successfully(self, rules_hooks_dir: Path, git_repo: Path) -> None:
         """Test that the hook exits with code 0."""
-        script_path = policy_hooks_dir / "user_prompt_submit.sh"
+        script_path = rules_hooks_dir / "user_prompt_submit.sh"
         stdout, stderr, code = run_user_prompt_submit_hook(script_path, git_repo)
 
         assert code == 0, f"Expected exit code 0, got {code}. stderr: {stderr}"
 
-    def test_creates_deepwork_directory(self, policy_hooks_dir: Path, git_repo: Path) -> None:
+    def test_creates_deepwork_directory(self, rules_hooks_dir: Path, git_repo: Path) -> None:
         """Test that the hook creates .deepwork directory if it doesn't exist."""
         deepwork_dir = git_repo / ".deepwork"
         assert not deepwork_dir.exists(), "Precondition: .deepwork should not exist"
 
-        script_path = policy_hooks_dir / "user_prompt_submit.sh"
+        script_path = rules_hooks_dir / "user_prompt_submit.sh"
         stdout, stderr, code = run_user_prompt_submit_hook(script_path, git_repo)
 
         assert code == 0, f"Script failed with stderr: {stderr}"
         assert deepwork_dir.exists(), "Hook should create .deepwork directory"
 
-    def test_creates_last_work_tree_file(self, policy_hooks_dir: Path, git_repo: Path) -> None:
+    def test_creates_last_work_tree_file(self, rules_hooks_dir: Path, git_repo: Path) -> None:
         """Test that the hook creates .deepwork/.last_work_tree file."""
-        script_path = policy_hooks_dir / "user_prompt_submit.sh"
+        script_path = rules_hooks_dir / "user_prompt_submit.sh"
         stdout, stderr, code = run_user_prompt_submit_hook(script_path, git_repo)
 
         work_tree_file = git_repo / ".deepwork" / ".last_work_tree"
         assert code == 0, f"Script failed with stderr: {stderr}"
         assert work_tree_file.exists(), "Hook should create .last_work_tree file"
 
-    def test_captures_staged_changes(self, policy_hooks_dir: Path, git_repo: Path) -> None:
+    def test_captures_staged_changes(self, rules_hooks_dir: Path, git_repo: Path) -> None:
         """Test that the hook captures staged file changes."""
         # Create and stage a new file
         new_file = git_repo / "new_file.py"
@@ -63,7 +63,7 @@ class TestUserPromptSubmitHookExecution:
         repo = Repo(git_repo)
         repo.index.add(["new_file.py"])
 
-        script_path = policy_hooks_dir / "user_prompt_submit.sh"
+        script_path = rules_hooks_dir / "user_prompt_submit.sh"
         stdout, stderr, code = run_user_prompt_submit_hook(script_path, git_repo)
 
         assert code == 0, f"Script failed with stderr: {stderr}"
@@ -72,13 +72,13 @@ class TestUserPromptSubmitHookExecution:
         content = work_tree_file.read_text()
         assert "new_file.py" in content, "Staged file should be captured"
 
-    def test_captures_untracked_files(self, policy_hooks_dir: Path, git_repo: Path) -> None:
+    def test_captures_untracked_files(self, rules_hooks_dir: Path, git_repo: Path) -> None:
         """Test that the hook captures untracked files."""
         # Create an untracked file (don't stage it)
         untracked = git_repo / "untracked.txt"
         untracked.write_text("untracked content\n")
 
-        script_path = policy_hooks_dir / "user_prompt_submit.sh"
+        script_path = rules_hooks_dir / "user_prompt_submit.sh"
         stdout, stderr, code = run_user_prompt_submit_hook(script_path, git_repo)
 
         assert code == 0, f"Script failed with stderr: {stderr}"
@@ -99,9 +99,9 @@ class TestUserPromptSubmitHookJsonOutput:
     Either is acceptable; invalid JSON is NOT acceptable.
     """
 
-    def test_output_is_empty_or_valid_json(self, policy_hooks_dir: Path, git_repo: Path) -> None:
+    def test_output_is_empty_or_valid_json(self, rules_hooks_dir: Path, git_repo: Path) -> None:
         """Test that output is either empty or valid JSON."""
-        script_path = policy_hooks_dir / "user_prompt_submit.sh"
+        script_path = rules_hooks_dir / "user_prompt_submit.sh"
         stdout, stderr, code = run_user_prompt_submit_hook(script_path, git_repo)
 
         output = stdout.strip()
@@ -114,9 +114,9 @@ class TestUserPromptSubmitHookJsonOutput:
             except json.JSONDecodeError as e:
                 pytest.fail(f"Output is not valid JSON: {output!r}. Error: {e}")
 
-    def test_does_not_block_prompt(self, policy_hooks_dir: Path, git_repo: Path) -> None:
+    def test_does_not_block_prompt(self, rules_hooks_dir: Path, git_repo: Path) -> None:
         """Test that the hook does not return a blocking response."""
-        script_path = policy_hooks_dir / "user_prompt_submit.sh"
+        script_path = rules_hooks_dir / "user_prompt_submit.sh"
         stdout, stderr, code = run_user_prompt_submit_hook(script_path, git_repo)
 
         output = stdout.strip()
@@ -135,18 +135,18 @@ class TestUserPromptSubmitHookJsonOutput:
 class TestUserPromptSubmitHookIdempotence:
     """Tests for idempotent behavior of user_prompt_submit.sh."""
 
-    def test_multiple_runs_succeed(self, policy_hooks_dir: Path, git_repo: Path) -> None:
+    def test_multiple_runs_succeed(self, rules_hooks_dir: Path, git_repo: Path) -> None:
         """Test that the hook can be run multiple times successfully."""
-        script_path = policy_hooks_dir / "user_prompt_submit.sh"
+        script_path = rules_hooks_dir / "user_prompt_submit.sh"
 
         # Run multiple times
         for i in range(3):
             stdout, stderr, code = run_user_prompt_submit_hook(script_path, git_repo)
             assert code == 0, f"Run {i + 1} failed with stderr: {stderr}"
 
-    def test_updates_work_tree_on_new_changes(self, policy_hooks_dir: Path, git_repo: Path) -> None:
+    def test_updates_work_tree_on_new_changes(self, rules_hooks_dir: Path, git_repo: Path) -> None:
         """Test that subsequent runs update the work tree state."""
-        script_path = policy_hooks_dir / "user_prompt_submit.sh"
+        script_path = rules_hooks_dir / "user_prompt_submit.sh"
         repo = Repo(git_repo)
 
         # First run - capture initial state

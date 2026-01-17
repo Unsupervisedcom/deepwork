@@ -1,19 +1,19 @@
-# DeepWork Policy Configuration
+# DeepWork Rules Configuration
 #
-# Policies are automated guardrails that trigger when specific files change.
+# Rules are automated guardrails that trigger when specific files change.
 # They help ensure documentation stays current, security reviews happen, etc.
 #
-# Use /deepwork_policy.define to create new policies interactively.
+# Use /deepwork_rules.define to create new rules interactively.
 #
 # Format:
-#   - name: "Friendly name for the policy"
+#   - name: "Friendly name for the rule"
 #     trigger: "glob/pattern/**/*"  # or array: ["pattern1", "pattern2"]
-#     safety: "pattern/**/*"        # optional - if these also changed, skip the policy
+#     safety: "pattern/**/*"        # optional - if these also changed, skip the rule
 #     compare_to: "base"            # optional: "base" (default), "default_tip", or "prompt"
 #     instructions: |
 #       Multi-line instructions for the AI agent...
 #
-# Example policies (uncomment and customize):
+# Example rules (uncomment and customize):
 #
 # - name: "README Documentation"
 #   trigger: "src/**/*"

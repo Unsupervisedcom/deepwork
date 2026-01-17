@@ -1,37 +1,37 @@
-# Define Policy
+# Define Rule
 
 ## Objective
 
-Create or update policy entries in the `.deepwork.policy.yml` file to enforce team guidelines, documentation requirements, or other constraints when specific files change.
+Create or update rule entries in the `.deepwork.rules.yml` file to enforce team guidelines, documentation requirements, or other constraints when specific files change.
 
 ## Task
 
-Guide the user through defining a new policy by asking structured questions. **Do not create the policy without first understanding what they want to enforce.**
+Guide the user through defining a new rule by asking structured questions. **Do not create the rule without first understanding what they want to enforce.**
 
 **Important**: Use the AskUserQuestion tool to ask structured questions when gathering information from the user. This provides a better user experience with clear options and guided choices.
 
-### Step 1: Understand the Policy Purpose
+### Step 1: Understand the Rule Purpose
 
 Start by asking structured questions to understand what the user wants to enforce:
 
-1. **What guideline or constraint should this policy enforce?**
+1. **What guideline or constraint should this rule enforce?**
    - What situation triggers the need for action?
-   - What files or directories, when changed, should trigger this policy?
+   - What files or directories, when changed, should trigger this rule?
    - Examples: "When config files change", "When API code changes", "When database schema changes"
 
 2. **What action should be taken?**
-   - What should the agent do when the policy triggers?
+   - What should the agent do when the rule triggers?
    - Update documentation? Perform a security review? Update tests?
    - Is there a specific file or process that needs attention?
 
 3. **Are there any "safety" conditions?**
-   - Are there files that, if also changed, mean the policy doesn't need to fire?
+   - Are there files that, if also changed, mean the rule doesn't need to fire?
    - For example: If config changes AND install_guide.md changes, assume docs are already updated
    - This prevents redundant prompts when the user has already done the right thing
 
 ### Step 2: Define the Trigger Patterns
 
-Help the user define glob patterns for files that should trigger the policy:
+Help the user define glob patterns for files that should trigger the rule:
 
 **Common patterns:**
 - `src/**/*.py` - All Python files in src directory (recursive)
@@ -47,14 +47,14 @@ Help the user define glob patterns for files that should trigger the policy:
 
 ### Step 3: Define Safety Patterns (Optional)
 
-If there are files that, when also changed, mean the policy shouldn't fire:
+If there are files that, when also changed, mean the rule shouldn't fire:
 
 **Examples:**
-- Policy: "Update install guide when config changes"
+- Rule: "Update install guide when config changes"
   - Trigger: `app/config/**/*`
   - Safety: `docs/install_guide.md` (if already updated, don't prompt)
 
-- Policy: "Security review for auth changes"
+- Rule: "Security review for auth changes"
   - Trigger: `src/auth/**/*`
   - Safety: `SECURITY.md`, `docs/security_review.md`
 
@@ -65,18 +65,18 @@ The `compare_to` field controls what baseline is used when detecting "changed fi
 **Options:**
 - `base` (default) - Compares to the base of the current branch (merge-base with main/master). This is the most common choice for feature branches, as it shows all changes made on the branch.
 - `default_tip` - Compares to the current tip of the default branch (main/master). Useful when you want to see the difference from what's currently in production.
-- `prompt` - Compares to the state at the start of each prompt. Useful for policies that should only fire based on changes made during a single agent response.
+- `prompt` - Compares to the state at the start of each prompt. Useful for rules that should only fire based on changes made during a single agent response.
 
 **When to use each:**
-- **base**: Best for most policies. "Did this branch change config files?" → trigger docs review
-- **default_tip**: For policies about what's different from production/main
-- **prompt**: For policies that should only consider very recent changes within the current session
+- **base**: Best for most rules. "Did this branch change config files?" -> trigger docs review
+- **default_tip**: For rules about what's different from production/main
+- **prompt**: For rules that should only consider very recent changes within the current session
 
-Most policies should use the default (`base`) and don't need to specify `compare_to`.
+Most rules should use the default (`base`) and don't need to specify `compare_to`.
 
 ### Step 4: Write the Instructions
 
-Create clear, actionable instructions for what the agent should do when the policy fires.
+Create clear, actionable instructions for what the agent should do when the rule fires.
 
 **Good instructions include:**
 - What to check or review
@@ -93,15 +93,15 @@ Configuration files have changed. Please:
 4. Test that installation instructions still work
 ```
 
-### Step 5: Create the Policy Entry
+### Step 5: Create the Rule Entry
 
-Create or update `.deepwork.policy.yml` in the project root.
+Create or update `.deepwork.rules.yml` in the project root.
 
-**File Location**: `.deepwork.policy.yml` (root of project)
+**File Location**: `.deepwork.rules.yml` (root of project)
 
 **Format**:
 ```yaml
-- name: "[Friendly name for the policy]"
+- name: "[Friendly name for the rule]"
   trigger: "[glob pattern]"  # or array: ["pattern1", "pattern2"]
   safety: "[glob pattern]"   # optional, or array
   compare_to: "base"         # optional: "base" (default), "default_tip", or "prompt"
@@ -111,23 +111,23 @@ Create or update `.deepwork.policy.yml` in the project root.
 
 **Alternative with instructions_file**:
 ```yaml
-- name: "[Friendly name for the policy]"
+- name: "[Friendly name for the rule]"
   trigger: "[glob pattern]"
   safety: "[glob pattern]"
   compare_to: "base"         # optional
   instructions_file: "path/to/instructions.md"
 ```
 
-### Step 6: Verify the Policy
+### Step 6: Verify the Rule
 
-After creating the policy:
+After creating the rule:
 
 1. **Check the YAML syntax** - Ensure valid YAML formatting
 2. **Test trigger patterns** - Verify patterns match intended files
 3. **Review instructions** - Ensure they're clear and actionable
-4. **Check for conflicts** - Ensure the policy doesn't conflict with existing ones
+4. **Check for conflicts** - Ensure the rule doesn't conflict with existing ones
 
-## Example Policies
+## Example Rules
 
 ### Update Documentation on Config Changes
 ```yaml
@@ -172,13 +172,13 @@ After creating the policy:
 
 ## Output Format
 
-### .deepwork.policy.yml
-Create or update this file at the project root with the new policy entry.
+### .deepwork.rules.yml
+Create or update this file at the project root with the new rule entry.
 
 ## Quality Criteria
 
 - Asked structured questions to understand user requirements
-- Policy name is clear and descriptive
+- Rule name is clear and descriptive
 - Trigger patterns accurately match the intended files
 - Safety patterns prevent unnecessary triggering
 - Instructions are actionable and specific
@@ -186,13 +186,13 @@ Create or update this file at the project root with the new policy entry.
 
 ## Context
 
-Policies are evaluated automatically when you finish working on a task. The system:
-1. Determines which files have changed based on each policy's `compare_to` setting:
+Rules are evaluated automatically when you finish working on a task. The system:
+1. Determines which files have changed based on each rule's `compare_to` setting:
    - `base` (default): Files changed since the branch diverged from main/master
    - `default_tip`: Files different from the current main/master branch
    - `prompt`: Files changed since the last prompt submission
-2. Checks if any changes match policy trigger patterns
-3. Skips policies where safety patterns also matched
-4. Prompts you with instructions for any triggered policies
+2. Checks if any changes match rule trigger patterns
+3. Skips rules where safety patterns also matched
+4. Prompts you with instructions for any triggered rules
 
-You can mark a policy as addressed by including `<promise>✓ Policy Name</promise>` in your response (replace Policy Name with the actual policy name). This tells the system you've already handled that policy's requirements.
+You can mark a rule as addressed by including `<promise>Rule Name</promise>` in your response (replace Rule Name with the actual rule name). This tells the system you've already handled that rule's requirements.

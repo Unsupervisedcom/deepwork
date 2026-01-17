@@ -1,4 +1,4 @@
-"""JSON Schema definition for policy definitions (v2 - frontmatter format)."""
+"""JSON Schema definition for rule definitions (v2 - frontmatter format)."""
 
 from typing import Any
 
@@ -10,9 +10,9 @@ STRING_OR_ARRAY: dict[str, Any] = {
     ]
 }
 
-# JSON Schema for policy frontmatter (YAML between --- delimiters)
-# Policies are stored as individual .md files in .deepwork/policies/
-POLICY_FRONTMATTER_SCHEMA: dict[str, Any] = {
+# JSON Schema for rule frontmatter (YAML between --- delimiters)
+# Rules are stored as individual .md files in .deepwork/rules/
+RULES_FRONTMATTER_SCHEMA: dict[str, Any] = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "required": ["name"],
@@ -20,16 +20,16 @@ POLICY_FRONTMATTER_SCHEMA: dict[str, Any] = {
         "name": {
             "type": "string",
             "minLength": 1,
-            "description": "Human-friendly name for the policy (displayed in promise tags)",
+            "description": "Human-friendly name for the rule (displayed in promise tags)",
         },
         # Detection mode: trigger/safety (mutually exclusive with set/pair)
         "trigger": {
             **STRING_OR_ARRAY,
-            "description": "Glob pattern(s) for files that trigger this policy",
+            "description": "Glob pattern(s) for files that trigger this rule",
         },
         "safety": {
             **STRING_OR_ARRAY,
-            "description": "Glob pattern(s) that suppress the policy if changed",
+            "description": "Glob pattern(s) that suppress the rule if changed",
         },
         # Detection mode: set (bidirectional correspondence)
         "set": {
@@ -46,7 +46,7 @@ POLICY_FRONTMATTER_SCHEMA: dict[str, Any] = {
                 "trigger": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Pattern that triggers the policy",
+                    "description": "Pattern that triggers the rule",
                 },
                 "expects": {
                     **STRING_OR_ARRAY,

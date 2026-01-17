@@ -73,9 +73,9 @@ def _inject_deepwork_jobs(jobs_dir: Path, project_path: Path) -> None:
     _inject_standard_job("deepwork_jobs", jobs_dir, project_path)
 
 
-def _inject_deepwork_policy(jobs_dir: Path, project_path: Path) -> None:
+def _inject_deepwork_rules(jobs_dir: Path, project_path: Path) -> None:
     """
-    Inject the deepwork_policy job definition into the project.
+    Inject the deepwork_rules job definition into the project.
 
     Args:
         jobs_dir: Path to .deepwork/jobs directory
@@ -84,7 +84,7 @@ def _inject_deepwork_policy(jobs_dir: Path, project_path: Path) -> None:
     Raises:
         InstallError: If injection fails
     """
-    _inject_standard_job("deepwork_policy", jobs_dir, project_path)
+    _inject_standard_job("deepwork_rules", jobs_dir, project_path)
 
 
 def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
@@ -98,7 +98,7 @@ def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
     """
     gitignore_path = deepwork_dir / ".gitignore"
     gitignore_content = """# DeepWork temporary files
-# These files are used for policy evaluation during sessions
+# These files are used for rules evaluation during sessions
 .last_work_tree
 """
 
@@ -113,9 +113,9 @@ def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
         gitignore_path.write_text(gitignore_content)
 
 
-def _create_default_policy_file(project_path: Path) -> bool:
+def _create_default_rules_file(project_path: Path) -> bool:
     """
-    Create a default policy file template in the project root.
+    Create a default rules file template in the project root.
 
     Only creates the file if it doesn't already exist.
 
@@ -125,26 +125,26 @@ def _create_default_policy_file(project_path: Path) -> bool:
     Returns:
         True if the file was created, False if it already existed
     """
-    policy_file = project_path / ".deepwork.policy.yml"
+    rules_file = project_path / ".deepwork.rules.yml"
 
-    if policy_file.exists():
+    if rules_file.exists():
         return False
 
     # Copy the template from the templates directory
-    template_path = Path(__file__).parent.parent / "templates" / "default_policy.yml"
+    template_path = Path(__file__).parent.parent / "templates" / "default_rules.yml"
 
     if template_path.exists():
-        shutil.copy(template_path, policy_file)
+        shutil.copy(template_path, rules_file)
     else:
         # Fallback: create a minimal template inline
-        policy_file.write_text(
-            """# DeepWork Policy Configuration
+        rules_file.write_text(
+            """# DeepWork Rules Configuration
 #
-# Policies are automated guardrails that trigger when specific files change.
-# Use /deepwork_policy.define to create new policies interactively.
+# Rules are automated guardrails that trigger when specific files change.
+# Use /deepwork_rules.define to create new rules interactively.
 #
 # Format:
-#   - name: "Policy name"
+#   - name: "Rule name"
 #     trigger: "glob/pattern/**/*"
 #     safety: "optional/pattern/**/*"
 #     instructions: |
@@ -271,17 +271,17 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     # Step 3b: Inject standard jobs (core job definitions)
     console.print("[yellow]→[/yellow] Installing core job definitions...")
     _inject_deepwork_jobs(jobs_dir, project_path)
-    _inject_deepwork_policy(jobs_dir, project_path)
+    _inject_deepwork_rules(jobs_dir, project_path)
 
     # Step 3c: Create .gitignore for temporary files
     _create_deepwork_gitignore(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/.gitignore")
 
-    # Step 3d: Create default policy file template
-    if _create_default_policy_file(project_path):
-        console.print("  [green]✓[/green] Created .deepwork.policy.yml template")
+    # Step 3d: Create default rules file template
+    if _create_default_rules_file(project_path):
+        console.print("  [green]✓[/green] Created .deepwork.rules.yml template")
     else:
-        console.print("  [dim]•[/dim] .deepwork.policy.yml already exists")
+        console.print("  [dim]•[/dim] .deepwork.rules.yml already exists")
 
     # Step 4: Load or create config.yml
     console.print("[yellow]→[/yellow] Updating configuration...")

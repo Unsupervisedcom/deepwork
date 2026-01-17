@@ -130,19 +130,19 @@ This will:
 
 After running `deepwork sync`, look at the "To use the new commands" section in the output. **Relay these exact reload instructions to the user** so they know how to pick up the new commands. Don't just reference the sync output - tell them directly what they need to do (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code, or "Run '/memory refresh'" for Gemini CLI).
 
-### Step 7: Consider Policies for the New Job
+### Step 7: Consider Rules for the New Job
 
-After implementing the job, consider whether there are **policies** that would help enforce quality or consistency when working with this job's domain.
+After implementing the job, consider whether there are **rules** that would help enforce quality or consistency when working with this job's domain.
 
-**What are policies?**
+**What are rules?**
 
-Policies are automated guardrails defined in `.deepwork.policy.yml` that trigger when certain files change during an AI session. They help ensure:
+Rules are automated guardrails defined in `.deepwork.rules.yml` that trigger when certain files change during an AI session. They help ensure:
 - Documentation stays in sync with code
 - Team guidelines are followed
 - Architectural decisions are respected
 - Quality standards are maintained
 
-**When to suggest policies:**
+**When to suggest rules:**
 
 Think about the job you just implemented and ask:
 - Does this job produce outputs that other files depend on?
@@ -150,28 +150,28 @@ Think about the job you just implemented and ask:
 - Are there quality checks or reviews that should happen when certain files in this domain change?
 - Could changes to the job's output files impact other parts of the project?
 
-**Examples of policies that might make sense:**
+**Examples of rules that might make sense:**
 
-| Job Type | Potential Policy |
-|----------|------------------|
+| Job Type | Potential Rule |
+|----------|----------------|
 | API Design | "Update API docs when endpoint definitions change" |
 | Database Schema | "Review migrations when schema files change" |
 | Competitive Research | "Update strategy docs when competitor analysis changes" |
 | Feature Development | "Update changelog when feature files change" |
 | Configuration Management | "Update install guide when config files change" |
 
-**How to offer policy creation:**
+**How to offer rule creation:**
 
-If you identify one or more policies that would benefit the user, explain:
-1. **What the policy would do** - What triggers it and what action it prompts
+If you identify one or more rules that would benefit the user, explain:
+1. **What the rule would do** - What triggers it and what action it prompts
 2. **Why it would help** - How it prevents common mistakes or keeps things in sync
 3. **What files it would watch** - The trigger patterns
 
 Then ask the user:
 
-> "Would you like me to create this policy for you? I can run `/deepwork_policy.define` to set it up."
+> "Would you like me to create this rule for you? I can run `/deepwork_rules.define` to set it up."
 
-If the user agrees, invoke the `/deepwork_policy.define` command to guide them through creating the policy.
+If the user agrees, invoke the `/deepwork_rules.define` command to guide them through creating the rule.
 
 **Example dialogue:**
 
@@ -180,15 +180,15 @@ Based on the competitive_research job you just created, I noticed that when
 competitor analysis files change, it would be helpful to remind you to update
 your strategy documentation.
 
-I'd suggest a policy like:
+I'd suggest a rule like:
 - **Name**: "Update strategy when competitor analysis changes"
 - **Trigger**: `**/positioning_report.md`
 - **Action**: Prompt to review and update `docs/strategy.md`
 
-Would you like me to create this policy? I can run `/deepwork_policy.define` to set it up.
+Would you like me to create this rule? I can run `/deepwork_rules.define` to set it up.
 ```
 
-**Note:** Not every job needs policies. Only suggest them when they would genuinely help maintain consistency or quality. Don't force policies where they don't make sense.
+**Note:** Not every job needs rules. Only suggest them when they would genuinely help maintain consistency or quality. Don't force rules where they don't make sense.
 
 ## Example Implementation
 
@@ -222,8 +222,8 @@ Before marking this step complete, ensure:
 - [ ] `deepwork sync` executed successfully
 - [ ] Commands generated in platform directory
 - [ ] User informed to follow reload instructions from `deepwork sync`
-- [ ] Considered whether policies would benefit this job (Step 7)
-- [ ] If policies suggested, offered to run `/deepwork_policy.define`
+- [ ] Considered whether rules would benefit this job (Step 7)
+- [ ] If rules suggested, offered to run `/deepwork_rules.define`
 
 ## Quality Criteria
 
@@ -235,4 +235,4 @@ Before marking this step complete, ensure:
 - Steps with user inputs explicitly use "ask structured questions" phrasing
 - Sync completed successfully
 - Commands available for use
-- Thoughtfully considered relevant policies for the job domain
+- Thoughtfully considered relevant rules for the job domain
