@@ -1,0 +1,10 @@
+Multi-Safety Version File
+
+This is one of the "safety" files for the multi-safety test.
+Editing this file suppresses the rule when the source is edited.
+
+Current Version: 1.0.0
+
+---
+Edit below this line to suppress the multi-safety rule:
+---
