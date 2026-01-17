@@ -1,4 +1,4 @@
-"""Tests for Claude Code hooks JSON format validation.
+"""Tests for hook shell scripts and JSON format compliance.
 
 # ******************************************************************************
 # ***                         CRITICAL CONTRACT TESTS                        ***
@@ -12,9 +12,12 @@
 #
 # Hook Contract Summary:
 #   - Exit code 0: Success, stdout parsed as JSON
-#   - Exit code 2: Blocking error, stderr shown
+#   - Exit code 2: Blocking error, stderr shown (NOT used for JSON format)
 #   - Allow response: {} (empty JSON object)
 #   - Block response: {"decision": "block", "reason": "..."}
+#
+# CRITICAL: Hooks using JSON output format MUST return exit code 0.
+# The "decision" field in the JSON controls blocking behavior, NOT the exit code.
 #
 # ******************************************************************************
 
@@ -40,6 +43,7 @@ All hooks:
 
 import json
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -49,13 +53,50 @@ from git import Repo
 from .conftest import run_shell_script
 
 
-def run_hook_script(
+# =============================================================================
+# Helper Functions
+# =============================================================================
+
+
+def run_rules_hook_script(
     script_path: Path,
     cwd: Path,
     hook_input: dict | None = None,
 ) -> tuple[str, str, int]:
-    """Run a hook script and return its output."""
+    """Run a rules hook script and return its output."""
     return run_shell_script(script_path, cwd, hook_input=hook_input)
+
+
+def run_platform_wrapper_script(
+    script_path: Path,
+    python_module: str,
+    hook_input: dict,
+    src_dir: Path,
+) -> tuple[str, str, int]:
+    """
+    Run a platform hook wrapper script with the given input.
+
+    Args:
+        script_path: Path to the wrapper script (claude_hook.sh or gemini_hook.sh)
+        python_module: Python module to invoke
+        hook_input: JSON input to pass via stdin
+        src_dir: Path to src directory for PYTHONPATH
+
+    Returns:
+        Tuple of (stdout, stderr, return_code)
+    """
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(src_dir)
+
+    result = subprocess.run(
+        ["bash", str(script_path), python_module],
+        capture_output=True,
+        text=True,
+        input=json.dumps(hook_input),
+        env=env,
+    )
+
+    return result.stdout, result.stderr, result.returncode
 
 
 def validate_json_output(output: str) -> dict | None:
@@ -141,13 +182,87 @@ def validate_prompt_hook_response(response: dict | None) -> None:
     assert isinstance(response, dict), f"Prompt hook output must be a JSON object: {response}"
 
 
-class TestRulesStopHookJsonFormat:
-    """Tests specifically for rules_stop_hook.sh JSON format compliance."""
+# =============================================================================
+# Platform Wrapper Script Tests
+# =============================================================================
+
+
+class TestClaudeHookWrapper:
+    """Tests for claude_hook.sh wrapper script."""
+
+    def test_script_exists_and_is_executable(self, hooks_dir: Path) -> None:
+        """Test that the Claude hook script exists and is executable."""
+        script_path = hooks_dir / "claude_hook.sh"
+        assert script_path.exists(), "claude_hook.sh should exist"
+        assert os.access(script_path, os.X_OK), "claude_hook.sh should be executable"
+
+    def test_usage_error_without_module(self, hooks_dir: Path, src_dir: Path) -> None:
+        """Test that script shows usage error when no module provided."""
+        script_path = hooks_dir / "claude_hook.sh"
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(src_dir)
+
+        result = subprocess.run(
+            ["bash", str(script_path)],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+
+        assert result.returncode == 1
+        assert "Usage:" in result.stderr
+
+    def test_sets_platform_environment_variable(self, hooks_dir: Path, src_dir: Path) -> None:
+        """Test that the script sets DEEPWORK_HOOK_PLATFORM correctly."""
+        script_path = hooks_dir / "claude_hook.sh"
+        content = script_path.read_text()
+        assert 'DEEPWORK_HOOK_PLATFORM="claude"' in content
+
+
+class TestGeminiHookWrapper:
+    """Tests for gemini_hook.sh wrapper script."""
+
+    def test_script_exists_and_is_executable(self, hooks_dir: Path) -> None:
+        """Test that the Gemini hook script exists and is executable."""
+        script_path = hooks_dir / "gemini_hook.sh"
+        assert script_path.exists(), "gemini_hook.sh should exist"
+        assert os.access(script_path, os.X_OK), "gemini_hook.sh should be executable"
+
+    def test_usage_error_without_module(self, hooks_dir: Path, src_dir: Path) -> None:
+        """Test that script shows usage error when no module provided."""
+        script_path = hooks_dir / "gemini_hook.sh"
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(src_dir)
+
+        result = subprocess.run(
+            ["bash", str(script_path)],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+
+        assert result.returncode == 1
+        assert "Usage:" in result.stderr
+
+    def test_sets_platform_environment_variable(self, hooks_dir: Path, src_dir: Path) -> None:
+        """Test that the script sets DEEPWORK_HOOK_PLATFORM correctly."""
+        script_path = hooks_dir / "gemini_hook.sh"
+        content = script_path.read_text()
+        assert 'DEEPWORK_HOOK_PLATFORM="gemini"' in content
+
+
+# =============================================================================
+# Rules Hook Script Tests
+# =============================================================================
+
+
+class TestRulesStopHook:
+    """Tests for rules_stop_hook.sh JSON format compliance."""
 
     def test_allow_response_is_empty_json(self, rules_hooks_dir: Path, git_repo: Path) -> None:
         """Test that allow response is empty JSON object."""
         script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_hook_script(script_path, git_repo)
+        stdout, stderr, code = run_rules_hook_script(script_path, git_repo)
 
         response = validate_json_output(stdout)
         validate_stop_hook_response(response)
@@ -166,7 +281,7 @@ class TestRulesStopHookJsonFormat:
         repo.index.add(["test.py"])
 
         script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_hook_script(script_path, git_repo_with_rule)
+        stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule)
 
         response = validate_json_output(stdout)
         validate_stop_hook_response(response)
@@ -186,7 +301,7 @@ class TestRulesStopHookJsonFormat:
         repo.index.add(["test.py"])
 
         script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_hook_script(script_path, git_repo_with_rule)
+        stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule)
 
         response = validate_json_output(stdout)
 
@@ -206,7 +321,7 @@ class TestRulesStopHookJsonFormat:
         repo.index.add(["test.py"])
 
         script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_hook_script(script_path, git_repo_with_rule)
+        stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule)
 
         response = validate_json_output(stdout)
 
@@ -228,7 +343,7 @@ class TestRulesStopHookJsonFormat:
         repo.index.add(["test.py"])
 
         script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_hook_script(script_path, git_repo_with_rule)
+        stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule)
 
         # Remove trailing newline and check for internal newlines
         output = stdout.strip()
@@ -242,13 +357,13 @@ class TestRulesStopHookJsonFormat:
             json.loads(json_line)
 
 
-class TestUserPromptSubmitHookJsonFormat:
+class TestUserPromptSubmitHook:
     """Tests for user_prompt_submit.sh JSON format compliance."""
 
     def test_output_is_valid_json_or_empty(self, rules_hooks_dir: Path, git_repo: Path) -> None:
         """Test that output is valid JSON or empty."""
         script_path = rules_hooks_dir / "user_prompt_submit.sh"
-        stdout, stderr, code = run_hook_script(script_path, git_repo)
+        stdout, stderr, code = run_rules_hook_script(script_path, git_repo)
 
         response = validate_json_output(stdout)
         validate_prompt_hook_response(response)
@@ -256,7 +371,7 @@ class TestUserPromptSubmitHookJsonFormat:
     def test_does_not_block_prompt_submission(self, rules_hooks_dir: Path, git_repo: Path) -> None:
         """Test that hook does not block prompt submission."""
         script_path = rules_hooks_dir / "user_prompt_submit.sh"
-        stdout, stderr, code = run_hook_script(script_path, git_repo)
+        stdout, stderr, code = run_rules_hook_script(script_path, git_repo)
 
         response = validate_json_output(stdout)
 
@@ -267,7 +382,7 @@ class TestUserPromptSubmitHookJsonFormat:
             )
 
 
-class TestHooksJsonFormatWithTranscript:
+class TestHooksWithTranscript:
     """Tests for hook JSON format when using transcript input."""
 
     def test_stop_hook_with_transcript_input(
@@ -295,7 +410,7 @@ class TestHooksJsonFormatWithTranscript:
         try:
             script_path = rules_hooks_dir / "rules_stop_hook.sh"
             hook_input = {"transcript_path": transcript_path}
-            stdout, stderr, code = run_hook_script(script_path, git_repo_with_rule, hook_input)
+            stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule, hook_input)
 
             response = validate_json_output(stdout)
             validate_stop_hook_response(response)
@@ -335,7 +450,7 @@ class TestHooksJsonFormatWithTranscript:
         try:
             script_path = rules_hooks_dir / "rules_stop_hook.sh"
             hook_input = {"transcript_path": transcript_path}
-            stdout, stderr, code = run_hook_script(script_path, git_repo_with_rule, hook_input)
+            stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule, hook_input)
 
             response = validate_json_output(stdout)
             validate_stop_hook_response(response)
@@ -366,10 +481,13 @@ class TestHooksJsonFormatWithTranscript:
 # Example valid outputs:
 #   Exit 0 + stdout: {}                                      -> Allow
 #   Exit 0 + stdout: {"decision": "block", "reason": "..."}  -> Block
+#   Exit 0 + stdout: {"decision": "deny", "reason": "..."}   -> Block (Gemini)
 #
 # See: https://docs.anthropic.com/en/docs/claude-code/hooks
 # ******************************************************************************
-class TestHooksExitCodes:
+
+
+class TestHookExitCodes:
     """Tests for hook script exit codes.
 
     CRITICAL: These tests verify the documented Claude Code hook contract.
@@ -382,7 +500,7 @@ class TestHooksExitCodes:
         DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
         """
         script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_hook_script(script_path, git_repo)
+        stdout, stderr, code = run_rules_hook_script(script_path, git_repo)
 
         assert code == 0, f"Allow should exit 0. stderr: {stderr}"
 
@@ -400,7 +518,7 @@ class TestHooksExitCodes:
         repo.index.add(["test.py"])
 
         script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_hook_script(script_path, git_repo_with_rule)
+        stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule)
 
         # Hooks should exit 0 and communicate via JSON
         assert code == 0, f"Block should still exit 0. stderr: {stderr}"
@@ -411,7 +529,7 @@ class TestHooksExitCodes:
         DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
         """
         script_path = rules_hooks_dir / "user_prompt_submit.sh"
-        stdout, stderr, code = run_hook_script(script_path, git_repo)
+        stdout, stderr, code = run_rules_hook_script(script_path, git_repo)
 
         assert code == 0, f"User prompt hook should exit 0. stderr: {stderr}"
 
@@ -421,6 +539,199 @@ class TestHooksExitCodes:
         DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
         """
         script_path = rules_hooks_dir / "capture_prompt_work_tree.sh"
-        stdout, stderr, code = run_hook_script(script_path, git_repo)
+        stdout, stderr, code = run_rules_hook_script(script_path, git_repo)
 
         assert code == 0, f"Capture script should exit 0. stderr: {stderr}"
+
+
+# =============================================================================
+# Integration Tests
+# =============================================================================
+
+
+class TestHookWrapperIntegration:
+    """Integration tests for hook wrappers with actual Python hooks."""
+
+    @pytest.fixture
+    def test_hook_module(self, tmp_path: Path) -> tuple[Path, str]:
+        """Create a temporary test hook module."""
+        module_dir = tmp_path / "test_hooks"
+        module_dir.mkdir(parents=True)
+
+        # Create __init__.py
+        (module_dir / "__init__.py").write_text("")
+
+        # Create the hook module
+        hook_code = '''
+"""Test hook module."""
+import os
+import sys
+
+from deepwork.hooks.wrapper import (
+    HookInput,
+    HookOutput,
+    NormalizedEvent,
+    Platform,
+    run_hook,
+)
+
+
+def test_hook(hook_input: HookInput) -> HookOutput:
+    """Test hook that blocks for after_agent events."""
+    if hook_input.event == NormalizedEvent.AFTER_AGENT:
+        return HookOutput(decision="block", reason="Test block reason")
+    return HookOutput()
+
+
+def main() -> None:
+    platform_str = os.environ.get("DEEPWORK_HOOK_PLATFORM", "claude")
+    try:
+        platform = Platform(platform_str)
+    except ValueError:
+        platform = Platform.CLAUDE
+
+    exit_code = run_hook(test_hook, platform)
+    sys.exit(exit_code)
+
+
+if __name__ == "__main__":
+    main()
+'''
+        (module_dir / "test_hook.py").write_text(hook_code)
+
+        return tmp_path, "test_hooks.test_hook"
+
+    def test_claude_wrapper_with_stop_event(
+        self,
+        hooks_dir: Path,
+        src_dir: Path,
+        test_hook_module: tuple[Path, str],
+    ) -> None:
+        """Test Claude wrapper processes Stop event correctly."""
+        tmp_path, module_name = test_hook_module
+        script_path = hooks_dir / "claude_hook.sh"
+
+        hook_input = {
+            "session_id": "test123",
+            "hook_event_name": "Stop",
+            "cwd": "/project",
+        }
+
+        env = os.environ.copy()
+        env["PYTHONPATH"] = f"{src_dir}:{tmp_path}"
+
+        result = subprocess.run(
+            ["bash", str(script_path), module_name],
+            capture_output=True,
+            text=True,
+            input=json.dumps(hook_input),
+            env=env,
+        )
+
+        # Exit code 0 even when blocking - the JSON decision field controls behavior
+        assert result.returncode == 0, f"Expected exit code 0. stderr: {result.stderr}"
+
+        output = json.loads(result.stdout.strip())
+        assert output["decision"] == "block"
+        assert "Test block reason" in output["reason"]
+
+    def test_gemini_wrapper_with_afteragent_event(
+        self,
+        hooks_dir: Path,
+        src_dir: Path,
+        test_hook_module: tuple[Path, str],
+    ) -> None:
+        """Test Gemini wrapper processes AfterAgent event correctly."""
+        tmp_path, module_name = test_hook_module
+        script_path = hooks_dir / "gemini_hook.sh"
+
+        hook_input = {
+            "session_id": "test456",
+            "hook_event_name": "AfterAgent",
+            "cwd": "/project",
+        }
+
+        env = os.environ.copy()
+        env["PYTHONPATH"] = f"{src_dir}:{tmp_path}"
+
+        result = subprocess.run(
+            ["bash", str(script_path), module_name],
+            capture_output=True,
+            text=True,
+            input=json.dumps(hook_input),
+            env=env,
+        )
+
+        # Exit code 0 even when blocking - the JSON decision field controls behavior
+        assert result.returncode == 0, f"Expected exit code 0. stderr: {result.stderr}"
+
+        output = json.loads(result.stdout.strip())
+        # Gemini should get "deny" instead of "block"
+        assert output["decision"] == "deny"
+        assert "Test block reason" in output["reason"]
+
+    def test_non_blocking_event(
+        self,
+        hooks_dir: Path,
+        src_dir: Path,
+        test_hook_module: tuple[Path, str],
+    ) -> None:
+        """Test that non-blocking events return exit code 0."""
+        tmp_path, module_name = test_hook_module
+        script_path = hooks_dir / "claude_hook.sh"
+
+        # SessionStart is not blocked by the test hook
+        hook_input = {
+            "session_id": "test789",
+            "hook_event_name": "SessionStart",
+            "cwd": "/project",
+        }
+
+        env = os.environ.copy()
+        env["PYTHONPATH"] = f"{src_dir}:{tmp_path}"
+
+        result = subprocess.run(
+            ["bash", str(script_path), module_name],
+            capture_output=True,
+            text=True,
+            input=json.dumps(hook_input),
+            env=env,
+        )
+
+        assert result.returncode == 0, f"Expected exit code 0. stderr: {result.stderr}"
+        output = json.loads(result.stdout.strip())
+        assert output == {} or output.get("decision", "") not in ("block", "deny")
+
+
+# =============================================================================
+# Python Module Tests
+# =============================================================================
+
+
+class TestRulesCheckModule:
+    """Tests for the rules_check hook module."""
+
+    def test_module_imports(self) -> None:
+        """Test that the rules_check module can be imported."""
+        from deepwork.hooks import rules_check
+
+        assert hasattr(rules_check, "main")
+        assert hasattr(rules_check, "rules_check_hook")
+
+    def test_hook_function_returns_output(self) -> None:
+        """Test that rules_check_hook returns a HookOutput."""
+        from deepwork.hooks.rules_check import rules_check_hook
+        from deepwork.hooks.wrapper import HookInput, HookOutput, NormalizedEvent, Platform
+
+        # Create a minimal hook input
+        hook_input = HookInput(
+            platform=Platform.CLAUDE,
+            event=NormalizedEvent.BEFORE_PROMPT,  # Not after_agent, so no blocking
+            session_id="test",
+        )
+
+        output = rules_check_hook(hook_input)
+
+        assert isinstance(output, HookOutput)
+        # Should not block for before_prompt event
+        assert output.decision != "block"
