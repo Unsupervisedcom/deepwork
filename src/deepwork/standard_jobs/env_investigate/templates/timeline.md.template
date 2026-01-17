@@ -1,0 +1,59 @@
+# Incident Timeline
+
+**Investigation**: [from triage.md]
+
+## Timeline Overview
+
+**Incident Duration**: [start] to [end] ([duration])
+**Time to Detection**: [duration]
+
+## Detailed Timeline
+
+### [Timestamp] - Pre-Incident State
+**State**: Normal operation
+**Evidence**: [metrics]
+
+---
+
+### [Timestamp] - Trigger Event
+**Event**: [what happened]
+**Source**: [where from]
+**Evidence**: [logs, metrics, alerts]
+
+---
+
+### [Timestamp] - Initial Failure
+**Event**: [first failure]
+**Symptoms**: [what broke]
+**Evidence**:
+- Metrics: [change]
+- Logs: [pattern]
+
+---
+
+### [Timestamp] - Alert Fired
+**Alert**: [name]
+**Severity**: [level]
+
+---
+
+### [Timestamp] - User Impact Began
+**Symptoms**: [what users experienced]
+**Scope**: [how many]
+
+---
+
+### [Timestamp] - Current State
+**State**: [Ongoing/Resolved]
+**Status**: [description]
+
+## Timeline Summary
+
+**Key Observations**:
+1. [Observation 1]
+
+**Critical Timestamps**:
+- **Trigger**: [time]
+- **First Failure**: [time]
+- **First Alert**: [time]
+- **User Impact**: [time]

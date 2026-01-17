@@ -1,0 +1,61 @@
+# Root Cause Analysis
+
+**Investigation**: [from triage.md]
+**Completed**: [current timestamp]
+**Confidence**: [High/Medium/Low]
+
+## Executive Summary
+
+[Summary of the root cause]
+
+## Root Cause
+
+### What Failed
+[Component that failed]
+
+### Why It Failed
+[Underlying cause]
+
+### Evidence
+- **Alerts**: [specific alerts]
+- **Metrics**: [specific metrics]
+- **Logs**: [specific log patterns]
+
+### Trigger Event
+[What initiated the failure]
+
+**Timestamp**: [when]
+**Evidence**: [how we know]
+
+## Impact Analysis
+
+### User Impact
+- **Scope**: [percentage/segments]
+- **Symptoms**: [what users experienced]
+- **Duration**: [how long]
+
+### System Impact
+- **Services Affected**: [list]
+
+## Alternative Hypotheses Considered
+
+### Hypothesis 1: [Description]
+**Ruled Out Because**: [Evidence]
+
+## Evidence Gaps
+
+[Areas where evidence is incomplete]
+
+## Confidence Assessment
+
+**Confidence Level**: [High/Medium/Low]
+
+**Strong Evidence**:
+- [Evidence point 1]
+
+**Weak/Missing Evidence**:
+- [Gap 1]
+
+## Prevention
+
+[Thoughts on prevention]

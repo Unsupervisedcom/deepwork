@@ -1,0 +1,38 @@
+# Alertmanager Analysis
+
+**Investigation**: [from triage.md]
+**Time Range**: [from triage.md]
+**Query Time**: [current timestamp]
+
+## Summary
+
+- **Total Alerts**: [count]
+- **Critical**: [count]
+- **Warning**: [count]
+- **Info**: [count]
+
+## Critical Alerts (Top Priority)
+
+| Alert Name | Status | Started | Labels | Description |
+|------------|--------|---------|--------|-------------|
+| [name] | [firing/resolved] | [timestamp] | [key=value] | [brief description] |
+
+## Warning Alerts
+
+| Alert Name | Status | Started | Labels | Description |
+|------------|--------|---------|--------|-------------|
+| [name] | [firing/resolved] | [timestamp] | [key=value] | [brief description] |
+
+## Patterns & Insights
+
+- [Pattern 1: e.g., "All critical alerts are for service-x"]
+- [Pattern 2: e.g., "Alerts started at same time as incident"]
+
+## Correlation with Issue
+
+[Brief analysis of how alerts relate to the reported issue]
+
+## Next Steps
+
+- Investigate metrics for alerted components (metrics_analysis step)
+- Cross-reference alert timing with log patterns (log_investigation step)

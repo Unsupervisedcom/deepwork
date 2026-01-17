@@ -1,0 +1,42 @@
+# Investigation Triage: [Issue Title]
+
+## Issue Summary
+[Brief description of the problem]
+
+**Status**: [Ongoing/Resolved]
+**First Detected**: [Timestamp]
+**Impact Scope**: [Description]
+
+## Investigation Scope
+
+### Time Range
+- **Start**: [ISO timestamp]
+- **End**: [ISO timestamp]
+- **Duration**: [Human-readable duration]
+- **Prometheus Range**: [e.g., [1h]]
+- **Loki Range**: [e.g., 1h]
+
+### Affected Components
+- Service 1: [Service name and description]
+- Service 2: [Service name and description]
+
+### Key Questions
+1. [Question 1]
+2. [Question 2]
+
+### Investigation Hypotheses
+1. [Hypothesis 1]
+2. [Hypothesis 2]
+
+## Expected vs Actual Behavior
+
+**Expected**: [What should happen]
+
+**Actual**: [What is happening]
+
+**Symptoms**: [Observable symptoms, error messages, etc.]
+
+## Next Steps
+- Check Alertmanager for active alerts (alert_check step)
+- Analyze Prometheus metrics (metrics_analysis step)
+- Review Loki logs (log_investigation step)

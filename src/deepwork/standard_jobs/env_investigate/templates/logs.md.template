@@ -1,0 +1,54 @@
+# Loki Log Analysis
+
+**Investigation**: [from triage.md]
+**Time Range**: [from triage.md]
+**Query Time**: [current timestamp]
+
+## Summary
+
+- **Total Log Entries**: [approximate count]
+- **Services Queried**: [list]
+- **Primary Focus**: [error types, time windows]
+
+## Log Patterns
+
+| Pattern | Count | Severity | First Seen | Last Seen |
+|---------|-------|----------|------------|-----------|
+| [pattern] | [count] | [ERROR/WARN] | [timestamp] | [timestamp] |
+
+## Timeline of Key Events
+
+| Timestamp | Event | Service | Severity |
+|-----------|-------|---------|----------|
+| [time] | [event] | [service] | [level] |
+
+## Representative Log Entries (Max 5)
+
+### 1. [Brief description]
+**Timestamp**: [time]
+**Service**: [name]
+**Level**: [ERROR/WARN/INFO]
+```
+[Truncated log line, max 200 chars]...
+```
+
+## Error Categories
+
+### [Category 1]
+- **Count**: [number]
+- **Pattern**: [description]
+
+## Cross-Reference with Metrics
+
+- **Correlation 1**: [correlation]
+
+## Insights
+
+[Analysis of what the logs reveal]
+
+Key findings:
+1. [Finding 1]
+
+## Next Steps
+
+- Synthesize findings into root cause analysis (root_cause step)

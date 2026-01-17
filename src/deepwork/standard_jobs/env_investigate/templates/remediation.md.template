@@ -1,0 +1,96 @@
+# Remediation Plan
+
+**Investigation**: [from triage.md]
+**Root Cause**: [brief summary]
+**Plan Created**: [current timestamp]
+
+## Executive Summary
+
+[Summary of remediation approach]
+
+## Immediate Actions (P0 - Next 24 Hours)
+
+### Action 1: [Title]
+**Priority**: P0
+**Owner**: [Team/Person]
+**Timeline**: [Hours/Date]
+**Status**: [Not Started]
+
+**Description**: [What needs to be done]
+
+**Steps**:
+1. [Step 1]
+
+**Success Criteria**: [How to verify]
+
+## Short-Term Fixes (P1 - Next 7 Days)
+
+### Action 1: [Title]
+**Priority**: P1
+**Owner**: [Team/Person]
+**Timeline**: [Date]
+
+**Description**: [What needs to be done]
+**Testing Plan**: [How to validate]
+
+## Long-Term Prevention (P2 - Next 4 Weeks)
+
+### Action 1: [Title]
+**Priority**: P2
+**Owner**: [Team/Person]
+**Timeline**: [Date]
+
+**Description**: [What needs to be done]
+**Why This Prevents Recurrence**: [Connection to root cause]
+
+## Monitoring & Observability Improvements
+
+### Grafana MCP Enhancements
+
+#### New Prometheus Metrics
+- **Metric 1**: `[metric_name]`
+  - **Type**: [counter/gauge/histogram]
+  - **Purpose**: [Why this helps]
+
+#### New Loki Log Streams
+- **Service 1**: [service_name]
+  - **Current Gap**: [What's missing]
+  - **Add**: [What to add]
+
+#### New Alertmanager Rules
+- **Alert 1**: `[AlertName]`
+  - **Condition**: [PromQL query]
+  - **Severity**: [critical/warning/info]
+  - **Why Needed**: [Justification]
+
+### Dashboard Improvements
+- **Dashboard 1**: [Name]
+  - **Add Panels**: [List]
+
+## Communication Plan
+
+### Internal Communication
+- **Team Notification**: [When/how]
+- **Post-Mortem**: [When to schedule]
+
+## Testing & Validation
+
+### How to Test the Fix
+1. [Test scenario 1]
+
+### How to Verify Prevention
+- **Scenario**: [Recreate condition]
+- **Expected**: [New behavior]
+
+## Success Metrics
+
+### Immediate Success (24 hours)
+- [ ] Issue resolved
+- [ ] No recurrence
+
+### Short-Term Success (7 days)
+- [ ] Root cause fix deployed
+- [ ] New monitoring in place
+
+### Long-Term Success (30 days)
+- [ ] Prevention measures implemented

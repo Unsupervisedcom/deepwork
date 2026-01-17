@@ -1,0 +1,38 @@
+# Prometheus Metrics Analysis
+
+**Investigation**: [from triage.md]
+**Time Range**: [from triage.md]
+**Query Time**: [current timestamp]
+
+## Key Metrics Overview
+
+| Metric | Trend | Anomaly | Correlation with Issue |
+|--------|-------|---------|------------------------|
+| [name] | [increasing/decreasing/stable/spike] | [yes/no] | [brief note] |
+
+## Detailed Metrics
+
+### [Metric 1: e.g., CPU Usage]
+
+**PromQL**: `[query]`
+**Trend**: [increasing/decreasing/stable/spike]
+**Sample Values** (max 10 points):
+- [timestamp]: [value]
+
+**Analysis**: [Brief interpretation]
+
+## Anomalies & Correlations
+
+### Identified Anomalies
+1. [Anomaly 1]
+
+### Cross-Metric Correlations
+- [Correlation 1]
+
+## Insights
+
+[Analysis of what the metrics reveal]
+
+## Next Steps
+
+- Investigate logs around anomaly timestamps (log_investigation step)
