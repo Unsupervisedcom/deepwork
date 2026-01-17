@@ -125,11 +125,11 @@ def pattern_to_regex(pattern: str) -> tuple[str, list[str]]:
         if var_spec.startswith("**"):
             # Explicit multi-segment: {**name}
             var_name = var_spec[2:] or "path"
-            regex_part = "(?P<{}>.+)".format(re.escape(var_name))
+            regex_part = f"(?P<{re.escape(var_name)}>.+)"
         elif var_spec.startswith("*"):
             # Explicit single-segment: {*name}
             var_name = var_spec[1:] or "name"
-            regex_part = "(?P<{}>[^/]+)".format(re.escape(var_name))
+            regex_part = f"(?P<{re.escape(var_name)}>[^/]+)"
         elif var_spec == "path":
             # Conventional multi-segment
             var_name = "path"
@@ -137,7 +137,7 @@ def pattern_to_regex(pattern: str) -> tuple[str, list[str]]:
         else:
             # Default single-segment (including custom names)
             var_name = var_spec
-            regex_part = "(?P<{}>[^/]+)".format(re.escape(var_name))
+            regex_part = f"(?P<{re.escape(var_name)}>[^/]+)"
 
         result.append(regex_part)
         var_names.append(var_name)

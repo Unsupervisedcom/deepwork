@@ -8,6 +8,7 @@ from deepwork.core.pattern_matcher import matches_any_pattern as matches_pattern
 from deepwork.core.rules_parser import (
     DEFAULT_COMPARE_TO,
     DetectionMode,
+    PairConfig,
     Rule,
     RulesParseError,
     evaluate_rules,
@@ -362,3 +363,373 @@ action:
         assert rules[0].command_action is not None
         assert rules[0].command_action.command == "ruff format {file}"
         assert rules[0].command_action.run_for == "each_match"
+
+
+class TestCorrespondenceSets:
+    """Tests for set correspondence evaluation (CS-3.x from test_scenarios.md)."""
+
+    def test_both_changed_no_fire(self) -> None:
+        """CS-3.1.1: Both source and test changed - no fire."""
+        rule = Rule(
+            name="Source/Test Pairing",
+            filename="source-test-pairing",
+            detection_mode=DetectionMode.SET,
+            set_patterns=["src/{path}.py", "tests/{path}_test.py"],
+            instructions="Update tests",
+        )
+        changed_files = ["src/foo.py", "tests/foo_test.py"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is False
+
+    def test_only_source_fires(self) -> None:
+        """CS-3.1.2: Only source changed - fires."""
+        rule = Rule(
+            name="Source/Test Pairing",
+            filename="source-test-pairing",
+            detection_mode=DetectionMode.SET,
+            set_patterns=["src/{path}.py", "tests/{path}_test.py"],
+            instructions="Update tests",
+        )
+        changed_files = ["src/foo.py"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is True
+        assert "src/foo.py" in result.trigger_files
+        assert "tests/foo_test.py" in result.missing_files
+
+    def test_only_test_fires(self) -> None:
+        """CS-3.1.3: Only test changed - fires."""
+        rule = Rule(
+            name="Source/Test Pairing",
+            filename="source-test-pairing",
+            detection_mode=DetectionMode.SET,
+            set_patterns=["src/{path}.py", "tests/{path}_test.py"],
+            instructions="Update source",
+        )
+        changed_files = ["tests/foo_test.py"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is True
+        assert "tests/foo_test.py" in result.trigger_files
+        assert "src/foo.py" in result.missing_files
+
+    def test_nested_both_no_fire(self) -> None:
+        """CS-3.1.4: Nested paths - both changed."""
+        rule = Rule(
+            name="Source/Test Pairing",
+            filename="source-test-pairing",
+            detection_mode=DetectionMode.SET,
+            set_patterns=["src/{path}.py", "tests/{path}_test.py"],
+            instructions="Update tests",
+        )
+        changed_files = ["src/a/b.py", "tests/a/b_test.py"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is False
+
+    def test_nested_only_source_fires(self) -> None:
+        """CS-3.1.5: Nested paths - only source."""
+        rule = Rule(
+            name="Source/Test Pairing",
+            filename="source-test-pairing",
+            detection_mode=DetectionMode.SET,
+            set_patterns=["src/{path}.py", "tests/{path}_test.py"],
+            instructions="Update tests",
+        )
+        changed_files = ["src/a/b.py"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is True
+        assert "tests/a/b_test.py" in result.missing_files
+
+    def test_unrelated_file_no_fire(self) -> None:
+        """CS-3.1.6: Unrelated file - no fire."""
+        rule = Rule(
+            name="Source/Test Pairing",
+            filename="source-test-pairing",
+            detection_mode=DetectionMode.SET,
+            set_patterns=["src/{path}.py", "tests/{path}_test.py"],
+            instructions="Update tests",
+        )
+        changed_files = ["docs/readme.md"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is False
+
+    def test_source_plus_unrelated_fires(self) -> None:
+        """CS-3.1.7: Source + unrelated - fires."""
+        rule = Rule(
+            name="Source/Test Pairing",
+            filename="source-test-pairing",
+            detection_mode=DetectionMode.SET,
+            set_patterns=["src/{path}.py", "tests/{path}_test.py"],
+            instructions="Update tests",
+        )
+        changed_files = ["src/foo.py", "docs/readme.md"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is True
+
+    def test_both_plus_unrelated_no_fire(self) -> None:
+        """CS-3.1.8: Both + unrelated - no fire."""
+        rule = Rule(
+            name="Source/Test Pairing",
+            filename="source-test-pairing",
+            detection_mode=DetectionMode.SET,
+            set_patterns=["src/{path}.py", "tests/{path}_test.py"],
+            instructions="Update tests",
+        )
+        changed_files = ["src/foo.py", "tests/foo_test.py", "docs/readme.md"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is False
+
+
+class TestThreePatternSets:
+    """Tests for three-pattern set correspondence (CS-3.2.x)."""
+
+    def test_all_three_no_fire(self) -> None:
+        """CS-3.2.1: All three files changed - no fire."""
+        rule = Rule(
+            name="Model/Schema/Migration",
+            filename="model-schema-migration",
+            detection_mode=DetectionMode.SET,
+            set_patterns=[
+                "models/{name}.py",
+                "schemas/{name}.py",
+                "migrations/{name}.sql",
+            ],
+            instructions="Update all related files",
+        )
+        changed_files = ["models/user.py", "schemas/user.py", "migrations/user.sql"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is False
+
+    def test_two_of_three_fires(self) -> None:
+        """CS-3.2.2: Two of three - fires (missing migration)."""
+        rule = Rule(
+            name="Model/Schema/Migration",
+            filename="model-schema-migration",
+            detection_mode=DetectionMode.SET,
+            set_patterns=[
+                "models/{name}.py",
+                "schemas/{name}.py",
+                "migrations/{name}.sql",
+            ],
+            instructions="Update all related files",
+        )
+        changed_files = ["models/user.py", "schemas/user.py"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is True
+        assert "migrations/user.sql" in result.missing_files
+
+    def test_one_of_three_fires(self) -> None:
+        """CS-3.2.3: One of three - fires (missing 2)."""
+        rule = Rule(
+            name="Model/Schema/Migration",
+            filename="model-schema-migration",
+            detection_mode=DetectionMode.SET,
+            set_patterns=[
+                "models/{name}.py",
+                "schemas/{name}.py",
+                "migrations/{name}.sql",
+            ],
+            instructions="Update all related files",
+        )
+        changed_files = ["models/user.py"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is True
+        assert len(result.missing_files) == 2
+        assert "schemas/user.py" in result.missing_files
+        assert "migrations/user.sql" in result.missing_files
+
+    def test_different_names_fire_both(self) -> None:
+        """CS-3.2.4: Different names - both incomplete."""
+        rule = Rule(
+            name="Model/Schema/Migration",
+            filename="model-schema-migration",
+            detection_mode=DetectionMode.SET,
+            set_patterns=[
+                "models/{name}.py",
+                "schemas/{name}.py",
+                "migrations/{name}.sql",
+            ],
+            instructions="Update all related files",
+        )
+        changed_files = ["models/user.py", "schemas/order.py"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is True
+        # Both trigger because each is incomplete
+        assert "models/user.py" in result.trigger_files or "schemas/order.py" in result.trigger_files
+
+
+class TestCorrespondencePairs:
+    """Tests for pair correspondence evaluation (CP-4.x from test_scenarios.md)."""
+
+    def test_both_changed_no_fire(self) -> None:
+        """CP-4.1.1: Both trigger and expected changed - no fire."""
+        rule = Rule(
+            name="API Documentation",
+            filename="api-documentation",
+            detection_mode=DetectionMode.PAIR,
+            pair_config=PairConfig(
+                trigger="api/{path}.py",
+                expects=["docs/api/{path}.md"],
+            ),
+            instructions="Update API docs",
+        )
+        changed_files = ["api/users.py", "docs/api/users.md"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is False
+
+    def test_only_trigger_fires(self) -> None:
+        """CP-4.1.2: Only trigger changed - fires."""
+        rule = Rule(
+            name="API Documentation",
+            filename="api-documentation",
+            detection_mode=DetectionMode.PAIR,
+            pair_config=PairConfig(
+                trigger="api/{path}.py",
+                expects=["docs/api/{path}.md"],
+            ),
+            instructions="Update API docs",
+        )
+        changed_files = ["api/users.py"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is True
+        assert "api/users.py" in result.trigger_files
+        assert "docs/api/users.md" in result.missing_files
+
+    def test_only_expected_no_fire(self) -> None:
+        """CP-4.1.3: Only expected changed - no fire (directional)."""
+        rule = Rule(
+            name="API Documentation",
+            filename="api-documentation",
+            detection_mode=DetectionMode.PAIR,
+            pair_config=PairConfig(
+                trigger="api/{path}.py",
+                expects=["docs/api/{path}.md"],
+            ),
+            instructions="Update API docs",
+        )
+        changed_files = ["docs/api/users.md"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is False
+
+    def test_trigger_plus_unrelated_fires(self) -> None:
+        """CP-4.1.4: Trigger + unrelated - fires."""
+        rule = Rule(
+            name="API Documentation",
+            filename="api-documentation",
+            detection_mode=DetectionMode.PAIR,
+            pair_config=PairConfig(
+                trigger="api/{path}.py",
+                expects=["docs/api/{path}.md"],
+            ),
+            instructions="Update API docs",
+        )
+        changed_files = ["api/users.py", "README.md"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is True
+
+    def test_expected_plus_unrelated_no_fire(self) -> None:
+        """CP-4.1.5: Expected + unrelated - no fire."""
+        rule = Rule(
+            name="API Documentation",
+            filename="api-documentation",
+            detection_mode=DetectionMode.PAIR,
+            pair_config=PairConfig(
+                trigger="api/{path}.py",
+                expects=["docs/api/{path}.md"],
+            ),
+            instructions="Update API docs",
+        )
+        changed_files = ["docs/api/users.md", "README.md"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is False
+
+
+class TestMultiExpectsPairs:
+    """Tests for multi-expects pair correspondence (CP-4.2.x)."""
+
+    def test_all_three_no_fire(self) -> None:
+        """CP-4.2.1: All three changed - no fire."""
+        rule = Rule(
+            name="API Full Documentation",
+            filename="api-full-documentation",
+            detection_mode=DetectionMode.PAIR,
+            pair_config=PairConfig(
+                trigger="api/{path}.py",
+                expects=["docs/api/{path}.md", "openapi/{path}.yaml"],
+            ),
+            instructions="Update API docs and OpenAPI",
+        )
+        changed_files = ["api/users.py", "docs/api/users.md", "openapi/users.yaml"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is False
+
+    def test_trigger_plus_one_expect_fires(self) -> None:
+        """CP-4.2.2: Trigger + one expect - fires (missing openapi)."""
+        rule = Rule(
+            name="API Full Documentation",
+            filename="api-full-documentation",
+            detection_mode=DetectionMode.PAIR,
+            pair_config=PairConfig(
+                trigger="api/{path}.py",
+                expects=["docs/api/{path}.md", "openapi/{path}.yaml"],
+            ),
+            instructions="Update API docs and OpenAPI",
+        )
+        changed_files = ["api/users.py", "docs/api/users.md"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is True
+        assert "openapi/users.yaml" in result.missing_files
+
+    def test_only_trigger_fires_missing_both(self) -> None:
+        """CP-4.2.3: Only trigger - fires (missing both)."""
+        rule = Rule(
+            name="API Full Documentation",
+            filename="api-full-documentation",
+            detection_mode=DetectionMode.PAIR,
+            pair_config=PairConfig(
+                trigger="api/{path}.py",
+                expects=["docs/api/{path}.md", "openapi/{path}.yaml"],
+            ),
+            instructions="Update API docs and OpenAPI",
+        )
+        changed_files = ["api/users.py"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is True
+        assert len(result.missing_files) == 2
+        assert "docs/api/users.md" in result.missing_files
+        assert "openapi/users.yaml" in result.missing_files
+
+    def test_both_expects_only_no_fire(self) -> None:
+        """CP-4.2.4: Both expects only - no fire."""
+        rule = Rule(
+            name="API Full Documentation",
+            filename="api-full-documentation",
+            detection_mode=DetectionMode.PAIR,
+            pair_config=PairConfig(
+                trigger="api/{path}.py",
+                expects=["docs/api/{path}.md", "openapi/{path}.yaml"],
+            ),
+            instructions="Update API docs and OpenAPI",
+        )
+        changed_files = ["docs/api/users.md", "openapi/users.yaml"]
+
+        result = evaluate_rule(rule, changed_files)
+        assert result.should_fire is False
