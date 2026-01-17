@@ -1,5 +1,23 @@
 """Tests for Claude Code hooks JSON format validation.
 
+# ******************************************************************************
+# ***                         CRITICAL CONTRACT TESTS                        ***
+# ******************************************************************************
+#
+# These tests verify the EXACT format required by Claude Code hooks as
+# documented in: doc/platforms/claude/hooks_system.md
+#
+# DO NOT MODIFY these tests without first consulting the official Claude Code
+# documentation at: https://docs.anthropic.com/en/docs/claude-code/hooks
+#
+# Hook Contract Summary:
+#   - Exit code 0: Success, stdout parsed as JSON
+#   - Exit code 2: Blocking error, stderr shown
+#   - Allow response: {} (empty JSON object)
+#   - Block response: {"decision": "block", "reason": "..."}
+#
+# ******************************************************************************
+
 Claude Code hooks have specific JSON response formats that must be followed:
 
 Stop hooks (hooks.after_agent):
@@ -66,6 +84,13 @@ def validate_json_output(output: str) -> dict | None:
         pytest.fail(f"Invalid JSON output: {stripped!r}. Error: {e}")
 
 
+# ******************************************************************************
+# *** DO NOT EDIT THIS FUNCTION! ***
+# As documented in doc/platforms/claude/hooks_system.md, Stop hooks must return:
+#   - {} (empty object) to allow
+#   - {"decision": "block", "reason": "..."} to block
+# Any other format will cause undefined behavior in Claude Code.
+# ******************************************************************************
 def validate_stop_hook_response(response: dict | None) -> None:
     """
     Validate a Stop hook response follows Claude Code format.
@@ -323,11 +348,39 @@ class TestHooksJsonFormatWithTranscript:
             os.unlink(transcript_path)
 
 
+# ******************************************************************************
+# ***                    DO NOT EDIT THESE EXIT CODE TESTS!                  ***
+# ******************************************************************************
+#
+# As documented in doc/platforms/claude/hooks_system.md:
+#
+#   | Exit Code | Meaning         | Behavior                          |
+#   |-----------|-----------------|-----------------------------------|
+#   | 0         | Success         | stdout parsed as JSON             |
+#   | 2         | Blocking error  | stderr shown, operation blocked   |
+#   | Other     | Warning         | stderr logged, continues          |
+#
+# CRITICAL: Hooks using JSON output format MUST return exit code 0.
+# The "decision" field in the JSON controls blocking behavior, NOT the exit code.
+#
+# Example valid outputs:
+#   Exit 0 + stdout: {}                                      -> Allow
+#   Exit 0 + stdout: {"decision": "block", "reason": "..."}  -> Block
+#
+# See: https://docs.anthropic.com/en/docs/claude-code/hooks
+# ******************************************************************************
 class TestHooksExitCodes:
-    """Tests for hook script exit codes."""
+    """Tests for hook script exit codes.
+
+    CRITICAL: These tests verify the documented Claude Code hook contract.
+    All hooks MUST exit 0 when using JSON output format.
+    """
 
     def test_stop_hook_exits_zero_on_allow(self, rules_hooks_dir: Path, git_repo: Path) -> None:
-        """Test that stop hook exits 0 when allowing."""
+        """Test that stop hook exits 0 when allowing.
+
+        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
+        """
         script_path = rules_hooks_dir / "rules_stop_hook.sh"
         stdout, stderr, code = run_hook_script(script_path, git_repo)
 
@@ -336,7 +389,11 @@ class TestHooksExitCodes:
     def test_stop_hook_exits_zero_on_block(
         self, rules_hooks_dir: Path, git_repo_with_rule: Path
     ) -> None:
-        """Test that stop hook exits 0 even when blocking."""
+        """Test that stop hook exits 0 even when blocking.
+
+        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
+        Blocking is communicated via JSON {"decision": "block"}, NOT via exit code.
+        """
         py_file = git_repo_with_rule / "test.py"
         py_file.write_text("# Python file\n")
         repo = Repo(git_repo_with_rule)
@@ -349,14 +406,20 @@ class TestHooksExitCodes:
         assert code == 0, f"Block should still exit 0. stderr: {stderr}"
 
     def test_user_prompt_hook_exits_zero(self, rules_hooks_dir: Path, git_repo: Path) -> None:
-        """Test that user prompt hook always exits 0."""
+        """Test that user prompt hook always exits 0.
+
+        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
+        """
         script_path = rules_hooks_dir / "user_prompt_submit.sh"
         stdout, stderr, code = run_hook_script(script_path, git_repo)
 
         assert code == 0, f"User prompt hook should exit 0. stderr: {stderr}"
 
     def test_capture_script_exits_zero(self, rules_hooks_dir: Path, git_repo: Path) -> None:
-        """Test that capture script exits 0."""
+        """Test that capture script exits 0.
+
+        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
+        """
         script_path = rules_hooks_dir / "capture_prompt_work_tree.sh"
         stdout, stderr, code = run_hook_script(script_path, git_repo)
 
