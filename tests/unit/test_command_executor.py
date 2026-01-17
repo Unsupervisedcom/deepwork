@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import pytest
-
 from deepwork.core.command_executor import (
     CommandResult,
     all_commands_succeeded,
