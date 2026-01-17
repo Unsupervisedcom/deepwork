@@ -1,12 +1,12 @@
 # Shell Script Tests
 
-Automated tests for DeepWork shell scripts, with a focus on validating Claude Code hooks JSON response formats.
+Automated tests for DeepWork shell scripts and hooks, with a focus on validating Claude Code hooks JSON response formats.
 
-## Scripts Tested
+## Hooks and Scripts Tested
 
-| Script | Type | Description |
-|--------|------|-------------|
-| `rules_stop_hook.sh` | Stop Hook | Evaluates rules and blocks agent stop if rules are triggered |
+| Hook/Script | Type | Description |
+|-------------|------|-------------|
+| `deepwork.hooks.rules_check` | Stop Hook (Python) | Evaluates rules and blocks agent stop if rules are triggered |
 | `user_prompt_submit.sh` | UserPromptSubmit Hook | Captures work tree state when user submits a prompt |
 | `capture_prompt_work_tree.sh` | Helper | Records current git state for `compare_to: prompt` rules |
 | `make_new_job.sh` | Utility | Creates directory structure for new DeepWork jobs |
@@ -49,10 +49,10 @@ uv run pytest tests/shell_script_tests/ --cov=src/deepwork
 ```
 tests/shell_script_tests/
 ├── conftest.py                      # Shared fixtures and helpers
+├── test_hooks.py                    # Consolidated hook tests (JSON format, exit codes)
 ├── test_rules_stop_hook.py          # Stop hook blocking/allowing tests
 ├── test_user_prompt_submit.py       # Prompt submission hook tests
 ├── test_capture_prompt_work_tree.py # Work tree capture tests
-├── test_hooks_json_format.py        # JSON format validation tests
 └── test_make_new_job.py             # Job directory creation tests
 ```
 
