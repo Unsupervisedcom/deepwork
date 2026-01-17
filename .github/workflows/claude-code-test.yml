@@ -14,6 +14,7 @@ on:
     branches: [main]
   # Run in the merge queue to validate before merging
   merge_group:
+    branches: [main]
 
 # Ensure only one instance runs at a time per PR/branch
 concurrency:
