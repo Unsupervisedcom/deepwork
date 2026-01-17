@@ -3,7 +3,7 @@
 import hashlib
 import json
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -52,7 +52,7 @@ class QueueEntry:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -149,7 +149,7 @@ class RulesQueue:
             return None
 
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
             return QueueEntry.from_dict(data)
         except (json.JSONDecodeError, OSError, KeyError):
@@ -225,14 +225,14 @@ class RulesQueue:
 
         # Load existing entry
         try:
-            with open(old_path, "r", encoding="utf-8") as f:
+            with open(old_path, encoding="utf-8") as f:
                 data = json.load(f)
         except (json.JSONDecodeError, OSError):
             return False
 
         # Update fields
         data["status"] = new_status.value
-        data["evaluated_at"] = datetime.now(timezone.utc).isoformat()
+        data["evaluated_at"] = datetime.now(UTC).isoformat()
         if action_result:
             data["action_result"] = asdict(action_result)
 
@@ -259,7 +259,7 @@ class RulesQueue:
         entries = []
         for path in self.queue_dir.glob("*.queued.json"):
             try:
-                with open(path, "r", encoding="utf-8") as f:
+                with open(path, encoding="utf-8") as f:
                     data = json.load(f)
                 entries.append(QueueEntry.from_dict(data))
             except (json.JSONDecodeError, OSError, KeyError):
@@ -275,7 +275,7 @@ class RulesQueue:
         entries = []
         for path in self.queue_dir.glob("*.json"):
             try:
-                with open(path, "r", encoding="utf-8") as f:
+                with open(path, encoding="utf-8") as f:
                     data = json.load(f)
                 entries.append(QueueEntry.from_dict(data))
             except (json.JSONDecodeError, OSError, KeyError):

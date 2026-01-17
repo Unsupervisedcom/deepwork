@@ -1,5 +1,6 @@
 """Execute command actions for rules."""
 
+import shlex
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -44,13 +45,16 @@ def substitute_command_variables(
     result = command_template
 
     if file is not None:
-        result = result.replace("{file}", file)
+        # Quote file path to prevent command injection
+        result = result.replace("{file}", shlex.quote(file))
 
     if files is not None:
-        result = result.replace("{files}", " ".join(files))
+        # Quote each file path individually
+        quoted_files = " ".join(shlex.quote(f) for f in files)
+        result = result.replace("{files}", quoted_files)
 
     if repo_root is not None:
-        result = result.replace("{repo_root}", str(repo_root))
+        result = result.replace("{repo_root}", shlex.quote(str(repo_root)))
 
     return result
 

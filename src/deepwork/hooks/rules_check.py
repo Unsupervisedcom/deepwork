@@ -39,8 +39,8 @@ from deepwork.core.rules_parser import (
 )
 from deepwork.core.rules_queue import (
     ActionResult,
-    RulesQueue,
     QueueEntryStatus,
+    RulesQueue,
     compute_trigger_hash,
 )
 from deepwork.hooks.wrapper import (
