@@ -7,14 +7,17 @@ Tests the "set" detection mode where files must change together:
 - If EITHER file changes, the OTHER must also change
 - This is BIDIRECTIONAL (works in both directions)
 
-=== HOW TO TRIGGER ===
-Option A: Edit this file alone (without test_set_mode_test.py)
-Option B: Edit test_set_mode_test.py alone (without this file)
+=== TEST CASE 1: Rule SHOULD fire ===
+1. Edit this file (add a comment below the marker)
+2. Do NOT edit test_set_mode_test.py
+3. Run: echo '{}' | python -m deepwork.hooks.rules_check
+4. Expected: "Manual Test: Set Mode" appears in output
 
-=== EXPECTED BEHAVIOR ===
-- Edit this file alone -> Rule fires, expects test file to also change
-- Edit test file alone -> Rule fires, expects this file to also change
-- Edit BOTH files -> Rule is satisfied (no fire)
+=== TEST CASE 2: Rule should NOT fire ===
+1. Edit this file (add a comment below the marker)
+2. ALSO edit test_set_mode_test.py
+3. Run: echo '{}' | python -m deepwork.hooks.rules_check
+4. Expected: "Manual Test: Set Mode" does NOT appear
 
 === RULE LOCATION ===
 .deepwork/rules/manual-test-set-mode.md

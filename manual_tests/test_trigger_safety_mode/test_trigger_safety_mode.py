@@ -3,18 +3,20 @@ MANUAL TEST: Trigger/Safety Mode Rule
 
 === WHAT THIS TESTS ===
 Tests the basic trigger/safety detection mode where:
-- Rule FIRES when this file is edited
+- Rule FIRES when this file is edited alone
 - Rule is SUPPRESSED when test_trigger_safety_mode_doc.md is also edited
 
-=== HOW TO TRIGGER ===
-1. Edit this file (add/remove a line, change a comment, etc.)
+=== TEST CASE 1: Rule SHOULD fire ===
+1. Edit this file (add a comment below the marker)
 2. Do NOT edit test_trigger_safety_mode_doc.md
-3. The rule "Manual Test: Trigger Safety" should fire
-4. To suppress the rule: also edit test_trigger_safety_mode_doc.md
+3. Run: echo '{}' | python -m deepwork.hooks.rules_check
+4. Expected: "Manual Test: Trigger Safety" appears in output
 
-=== EXPECTED BEHAVIOR ===
-- Edit this file alone -> Rule fires with prompt about updating documentation
-- Edit this file + doc file -> Rule is suppressed (safety pattern matched)
+=== TEST CASE 2: Rule should NOT fire ===
+1. Edit this file (add a comment below the marker)
+2. ALSO edit test_trigger_safety_mode_doc.md
+3. Run: echo '{}' | python -m deepwork.hooks.rules_check
+4. Expected: "Manual Test: Trigger Safety" does NOT appear
 
 === RULE LOCATION ===
 .deepwork/rules/manual-test-trigger-safety.md
