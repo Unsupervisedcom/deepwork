@@ -2,7 +2,7 @@
 
 ## Objective
 
-Create or update rule entries in the `.deepwork.rules.yml` file to enforce team guidelines, documentation requirements, or other constraints when specific files change.
+Create a new rule file in the `.deepwork/rules/` directory to enforce team guidelines, documentation requirements, or other constraints when specific files change.
 
 ## Task
 
@@ -29,9 +29,28 @@ Start by asking structured questions to understand what the user wants to enforc
    - For example: If config changes AND install_guide.md changes, assume docs are already updated
    - This prevents redundant prompts when the user has already done the right thing
 
-### Step 2: Define the Trigger Patterns
+### Step 2: Choose the Detection Mode
 
-Help the user define glob patterns for files that should trigger the rule:
+Help the user select the appropriate detection mode:
+
+**Trigger/Safety Mode** (most common):
+- Fires when trigger patterns match AND no safety patterns match
+- Use for: "When X changes, check Y" rules
+- Example: When config changes, verify install docs
+
+**Set Mode** (bidirectional correspondence):
+- Fires when files that should change together don't all change
+- Use for: Source/test pairing, model/migration sync
+- Example: `src/foo.py` and `tests/foo_test.py` should change together
+
+**Pair Mode** (directional correspondence):
+- Fires when a trigger file changes but expected files don't
+- Changes to expected files alone do NOT trigger
+- Use for: API code requires documentation updates (but docs can update independently)
+
+### Step 3: Define the Patterns
+
+Help the user define glob patterns for files.
 
 **Common patterns:**
 - `src/**/*.py` - All Python files in src directory (recursive)
@@ -40,41 +59,28 @@ Help the user define glob patterns for files that should trigger the rule:
 - `src/api/**/*` - All files in the API directory
 - `migrations/**/*.sql` - All SQL migrations
 
+**Variable patterns (for set/pair modes):**
+- `src/{path}.py` - Captures path variable (e.g., `foo/bar` from `src/foo/bar.py`)
+- `tests/{path}_test.py` - Uses same path variable in corresponding file
+- `{name}` matches single segment, `{path}` matches multiple segments
+
 **Pattern syntax:**
 - `*` - Matches any characters within a single path segment
 - `**` - Matches any characters across multiple path segments (recursive)
 - `?` - Matches a single character
 
-### Step 3: Define Safety Patterns (Optional)
-
-If there are files that, when also changed, mean the rule shouldn't fire:
-
-**Examples:**
-- Rule: "Update install guide when config changes"
-  - Trigger: `app/config/**/*`
-  - Safety: `docs/install_guide.md` (if already updated, don't prompt)
-
-- Rule: "Security review for auth changes"
-  - Trigger: `src/auth/**/*`
-  - Safety: `SECURITY.md`, `docs/security_review.md`
-
-### Step 3b: Choose the Comparison Mode (Optional)
+### Step 4: Choose the Comparison Mode (Optional)
 
 The `compare_to` field controls what baseline is used when detecting "changed files":
 
 **Options:**
-- `base` (default) - Compares to the base of the current branch (merge-base with main/master). This is the most common choice for feature branches, as it shows all changes made on the branch.
-- `default_tip` - Compares to the current tip of the default branch (main/master). Useful when you want to see the difference from what's currently in production.
-- `prompt` - Compares to the state at the start of each prompt. Useful for rules that should only fire based on changes made during a single agent response.
-
-**When to use each:**
-- **base**: Best for most rules. "Did this branch change config files?" -> trigger docs review
-- **default_tip**: For rules about what's different from production/main
-- **prompt**: For rules that should only consider very recent changes within the current session
+- `base` (default) - Compares to the base of the current branch (merge-base with main/master). Best for feature branches.
+- `default_tip` - Compares to the current tip of the default branch. Useful for seeing difference from production.
+- `prompt` - Compares to the state at the start of each prompt. For rules about very recent changes.
 
 Most rules should use the default (`base`) and don't need to specify `compare_to`.
 
-### Step 4: Write the Instructions
+### Step 5: Write the Instructions
 
 Create clear, actionable instructions for what the agent should do when the rule fires.
 
@@ -84,45 +90,62 @@ Create clear, actionable instructions for what the agent should do when the rule
 - Specific actions to take
 - Quality criteria for completion
 
-**Example:**
-```
-Configuration files have changed. Please:
-1. Review docs/install_guide.md for accuracy
-2. Update any installation steps that reference changed config
-3. Verify environment variable documentation is current
-4. Test that installation instructions still work
-```
+**Template variables available in instructions:**
+- `{trigger_files}` - Files that triggered the rule
+- `{expected_files}` - Expected corresponding files (for set/pair modes)
 
-### Step 5: Create the Rule Entry
+### Step 6: Create the Rule File
 
-Create or update `.deepwork.rules.yml` in the project root.
+Create a new file in `.deepwork/rules/` with a kebab-case filename:
 
-**File Location**: `.deepwork.rules.yml` (root of project)
+**File Location**: `.deepwork/rules/{rule-name}.md`
 
-**Format**:
-```yaml
-- name: "[Friendly name for the rule]"
-  trigger: "[glob pattern]"  # or array: ["pattern1", "pattern2"]
-  safety: "[glob pattern]"   # optional, or array
-  compare_to: "base"         # optional: "base" (default), "default_tip", or "prompt"
-  instructions: |
-    [Multi-line instructions for the agent...]
+**Format for Trigger/Safety Mode:**
+```markdown
+---
+name: Friendly Name for the Rule
+trigger: "glob/pattern/**/*"  # or array: ["pattern1", "pattern2"]
+safety: "optional/pattern"    # optional, or array
+compare_to: base              # optional: "base" (default), "default_tip", or "prompt"
+---
+Instructions for the agent when this rule fires.
+
+Multi-line markdown content is supported.
 ```
 
-**Alternative with instructions_file**:
-```yaml
-- name: "[Friendly name for the rule]"
-  trigger: "[glob pattern]"
-  safety: "[glob pattern]"
-  compare_to: "base"         # optional
-  instructions_file: "path/to/instructions.md"
+**Format for Set Mode (bidirectional):**
+```markdown
+---
+name: Source/Test Pairing
+set:
+  - src/{path}.py
+  - tests/{path}_test.py
+---
+Source and test files should change together.
+
+Modified: {trigger_files}
+Expected: {expected_files}
 ```
 
-### Step 6: Verify the Rule
+**Format for Pair Mode (directional):**
+```markdown
+---
+name: API Documentation
+pair:
+  trigger: api/{path}.py
+  expects: docs/api/{path}.md
+---
+API code requires documentation updates.
+
+Changed API: {trigger_files}
+Update docs: {expected_files}
+```
+
+### Step 7: Verify the Rule
 
 After creating the rule:
 
-1. **Check the YAML syntax** - Ensure valid YAML formatting
+1. **Check the YAML frontmatter** - Ensure valid YAML formatting
 2. **Test trigger patterns** - Verify patterns match intended files
 3. **Review instructions** - Ensure they're clear and actionable
 4. **Check for conflicts** - Ensure the rule doesn't conflict with existing ones
@@ -130,69 +153,97 @@ After creating the rule:
 ## Example Rules
 
 ### Update Documentation on Config Changes
-```yaml
-- name: "Update install guide on config changes"
-  trigger: "app/config/**/*"
-  safety: "docs/install_guide.md"
-  instructions: |
-    Configuration files have been modified. Please review docs/install_guide.md
-    and update it if any installation instructions need to change based on the
-    new configuration.
+`.deepwork/rules/config-docs.md`:
+```markdown
+---
+name: Update Install Guide on Config Changes
+trigger: app/config/**/*
+safety: docs/install_guide.md
+---
+Configuration files have been modified. Please review docs/install_guide.md
+and update it if any installation instructions need to change based on the
+new configuration.
 ```
 
 ### Security Review for Auth Code
-```yaml
-- name: "Security review for authentication changes"
-  trigger:
-    - "src/auth/**/*"
-    - "src/security/**/*"
-  safety:
-    - "SECURITY.md"
-    - "docs/security_audit.md"
-  instructions: |
-    Authentication or security code has been changed. Please:
-    1. Review for hardcoded credentials or secrets
-    2. Check input validation on user inputs
-    3. Verify access control logic is correct
-    4. Update security documentation if needed
+`.deepwork/rules/security-review.md`:
+```markdown
+---
+name: Security Review for Authentication Changes
+trigger:
+  - src/auth/**/*
+  - src/security/**/*
+safety:
+  - SECURITY.md
+  - docs/security_audit.md
+---
+Authentication or security code has been changed. Please:
+
+1. Review for hardcoded credentials or secrets
+2. Check input validation on user inputs
+3. Verify access control logic is correct
+4. Update security documentation if needed
+```
+
+### Source/Test Pairing
+`.deepwork/rules/source-test-pairing.md`:
+```markdown
+---
+name: Source/Test Pairing
+set:
+  - src/{path}.py
+  - tests/{path}_test.py
+---
+Source and test files should change together.
+
+When modifying source code, ensure corresponding tests are updated.
+When adding tests, ensure they test actual source code.
+
+Modified: {trigger_files}
+Expected: {expected_files}
 ```
 
 ### API Documentation Sync
-```yaml
-- name: "API documentation update"
-  trigger: "src/api/**/*.py"
-  safety: "docs/api/**/*.md"
-  instructions: |
-    API code has changed. Please verify that API documentation in docs/api/
-    is up to date with the code changes. Pay special attention to:
-    - New or changed endpoints
-    - Modified request/response schemas
-    - Updated authentication requirements
+`.deepwork/rules/api-docs.md`:
+```markdown
+---
+name: API Documentation Update
+pair:
+  trigger: src/api/{path}.py
+  expects: docs/api/{path}.md
+---
+API code has changed. Please verify that API documentation in docs/api/
+is up to date with the code changes. Pay special attention to:
+
+- New or changed endpoints
+- Modified request/response schemas
+- Updated authentication requirements
+
+Changed API: {trigger_files}
+Update: {expected_files}
 ```
 
 ## Output Format
 
-### .deepwork.rules.yml
-Create or update this file at the project root with the new rule entry.
+### .deepwork/rules/{rule-name}.md
+Create a new file with the rule definition using YAML frontmatter and markdown body.
 
 ## Quality Criteria
 
 - Asked structured questions to understand user requirements
-- Rule name is clear and descriptive
-- Trigger patterns accurately match the intended files
-- Safety patterns prevent unnecessary triggering
+- Rule name is clear and descriptive (used in promise tags)
+- Correct detection mode selected for the use case
+- Patterns accurately match the intended files
+- Safety patterns prevent unnecessary triggering (if applicable)
 - Instructions are actionable and specific
-- YAML is valid and properly formatted
+- YAML frontmatter is valid
 
 ## Context
 
-Rules are evaluated automatically when you finish working on a task. The system:
-1. Determines which files have changed based on each rule's `compare_to` setting:
-   - `base` (default): Files changed since the branch diverged from main/master
-   - `default_tip`: Files different from the current main/master branch
-   - `prompt`: Files changed since the last prompt submission
-2. Checks if any changes match rule trigger patterns
-3. Skips rules where safety patterns also matched
+Rules are evaluated automatically when the agent finishes a task. The system:
+1. Determines which files have changed based on each rule's `compare_to` setting
+2. Evaluates rules based on their detection mode (trigger/safety, set, or pair)
+3. Skips rules where the correspondence is satisfied (for set/pair) or safety matched
 4. Prompts you with instructions for any triggered rules
 
-You can mark a rule as addressed by including `<promise>Rule Name</promise>` in your response (replace Rule Name with the actual rule name). This tells the system you've already handled that rule's requirements.
+You can mark a rule as addressed by including `<promise>Rule Name</promise>` in your response (replace Rule Name with the actual rule name from the `name` field). This tells the system you've already handled that rule's requirements.

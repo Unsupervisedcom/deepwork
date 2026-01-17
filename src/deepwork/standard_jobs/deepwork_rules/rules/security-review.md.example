@@ -1,0 +1,11 @@
+---
+name: Security Review for Auth Changes
+trigger:
+  - src/auth/**/*
+  - src/security/**/*
+---
+Authentication or security code has been changed. Please:
+
+1. Review for hardcoded credentials or secrets
+2. Check input validation on user inputs
+3. Verify access control logic is correct
