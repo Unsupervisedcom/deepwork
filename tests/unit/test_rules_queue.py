@@ -1,6 +1,5 @@
 """Tests for rules queue system (QS-6.x from test_scenarios.md)."""
 
-import json
 from pathlib import Path
 
 import pytest

@@ -2,17 +2,13 @@
 
 from pathlib import Path
 
-import pytest
-
 from deepwork.core.pattern_matcher import matches_any_pattern as matches_pattern
 from deepwork.core.rules_parser import (
-    DEFAULT_COMPARE_TO,
     DetectionMode,
     PairConfig,
     Rule,
-    RulesParseError,
-    evaluate_rules,
     evaluate_rule,
+    evaluate_rules,
     load_rules_from_directory,
 )
 
