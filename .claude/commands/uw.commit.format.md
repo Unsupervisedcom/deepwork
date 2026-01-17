@@ -5,14 +5,6 @@ hooks:
     - hooks:
         - type: command
           command: ".deepwork/jobs/commit/hooks/run_ruff.sh"
-        - type: prompt
-          prompt: |
-            Evaluate the ruff format and lint check output above.
-
-            **If ruff reported issues (exit code non-zero)**: Start your response with "**AGENT: TAKE ACTION** -" followed by what needs to be fixed.
-
-            **If ruff reported no issues (exit code 0)**: Confirm the agent included `<promise>✓ Quality Criteria Met</promise>`. Allow completion.
-
 ---
 
 # commit.format
@@ -128,11 +120,20 @@ No file output is required. Success is determined by ruff passing all checks.
 - `uv run ruff check src/ tests/` passes (exit code 0)
 - Any fixes made don't break functionality (tests should still pass)
 - If issues couldn't be fixed in 5 attempts, clear explanation provided
-- When all checks pass, include `<promise>✓ Quality Criteria Met</promise>` in your response
+
+## Hook Behavior
+
+After you complete this step, a hook will automatically run ruff format and lint checks and show you the results.
+
+**Interpreting the hook output:**
+- **Both checks passed (exit code 0)**: The step is complete. Proceed to the next step.
+- **Checks failed (exit code non-zero)**: You must fix the issues. Use `uv run ruff format src/ tests/` for formatting and `uv run ruff check --fix src/ tests/` for auto-fixable lint issues. For remaining issues, fix manually. The hook will re-run after each attempt.
+
+**Important**: The hook runs automatically - you don't need to run the checks yourself after fixing. Just focus on making fixes, and the hook will verify them.
 
 ## Context
 
-This is the second step in the commit workflow, after tests pass. Code must be properly formatted and lint-free before committing. The format step uses a script hook that automatically runs ruff checks, so focus on analyzing results and making fixes efficiently.
+This is the second step in the commit workflow, after tests pass. Code must be properly formatted and lint-free before committing.
 
 
 

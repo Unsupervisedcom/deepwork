@@ -12,7 +12,7 @@ prompt = """
 You are executing the **update** job. Update standard jobs in src/ and sync to installed locations
 
 A workflow for maintaining standard jobs bundled with DeepWork. Standard jobs
-(like `deepwork_jobs` and `deepwork_policy`) are source-controlled in
+(like `deepwork_jobs` and `deepwork_rules`) are source-controlled in
 `src/deepwork/standard_jobs/` and must be edited there—never in `.deepwork/jobs/`
 or `.claude/commands/` directly.
 

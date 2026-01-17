@@ -6,7 +6,69 @@ from typing import Any
 # These values must match CommandLifecycleHook enum in adapters.py
 LIFECYCLE_HOOK_EVENTS = ["after_agent", "before_tool", "before_prompt"]
 
-# Schema definition for a single hook action (prompt, prompt_file, or script)
+# Schema definitions for hook actions - each type is separate to enforce no mixing
+PROMPT_HOOK_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": ["prompt"],
+    "properties": {
+        "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Inline prompt for validation/action",
+        },
+    },
+    "additionalProperties": False,
+}
+
+PROMPT_FILE_HOOK_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": ["prompt_file"],
+    "properties": {
+        "prompt_file": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Path to prompt file (relative to job directory)",
+        },
+    },
+    "additionalProperties": False,
+}
+
+SCRIPT_HOOK_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": ["script"],
+    "properties": {
+        "script": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Path to shell script (relative to job directory)",
+        },
+    },
+    "additionalProperties": False,
+}
+
+# Schema for a hook event - must be all one type (no mixing script and prompt hooks)
+# Each hook event is an array containing only one type of hook action
+HOOK_EVENT_SCHEMA: dict[str, Any] = {
+    "oneOf": [
+        {
+            "type": "array",
+            "description": "Array of script hooks only",
+            "items": SCRIPT_HOOK_SCHEMA,
+        },
+        {
+            "type": "array",
+            "description": "Array of prompt hooks only",
+            "items": PROMPT_HOOK_SCHEMA,
+        },
+        {
+            "type": "array",
+            "description": "Array of prompt_file hooks only",
+            "items": PROMPT_FILE_HOOK_SCHEMA,
+        },
+    ],
+}
+
+# Legacy schema for backward compatibility in stop_hooks (allows mixing)
 HOOK_ACTION_SCHEMA: dict[str, Any] = {
     "type": "object",
     "oneOf": [
@@ -177,22 +239,19 @@ JOB_SCHEMA: dict[str, Any] = {
                     },
                     "hooks": {
                         "type": "object",
-                        "description": "Lifecycle hooks for this step, keyed by event type",
+                        "description": "Lifecycle hooks for this step, keyed by event type. Each event must use only one hook type (script, prompt, or prompt_file) - mixing is not allowed.",
                         "properties": {
                             "after_agent": {
-                                "type": "array",
-                                "description": "Hooks triggered after the agent finishes (quality validation)",
-                                "items": HOOK_ACTION_SCHEMA,
+                                **HOOK_EVENT_SCHEMA,
+                                "description": "Hooks triggered after the agent finishes (quality validation). Must be all scripts OR all prompts.",
                             },
                             "before_tool": {
-                                "type": "array",
-                                "description": "Hooks triggered before a tool is used",
-                                "items": HOOK_ACTION_SCHEMA,
+                                **HOOK_EVENT_SCHEMA,
+                                "description": "Hooks triggered before a tool is used. Must be all scripts OR all prompts.",
                             },
                             "before_prompt": {
-                                "type": "array",
-                                "description": "Hooks triggered when user submits a prompt",
-                                "items": HOOK_ACTION_SCHEMA,
+                                **HOOK_EVENT_SCHEMA,
+                                "description": "Hooks triggered when user submits a prompt. Must be all scripts OR all prompts.",
                             },
                         },
                         "additionalProperties": False,

@@ -13,7 +13,7 @@ hooks:
             2. Does running `deepwork install --platform <platform>` complete without errors?
             3. Are expected command files created in the platform's command directory?
             4. Does command file content match the templates and job definitions?
-            5. Are established DeepWork jobs (deepwork_jobs, deepwork_policy) installed correctly?
+            5. Are established DeepWork jobs (deepwork_jobs, deepwork_rules) installed correctly?
             6. Can the platform be used alongside existing platforms without conflicts?
 
             ## Instructions
@@ -117,7 +117,7 @@ Ensure the implementation step is complete:
    - `deepwork_jobs.define.md` exists (or equivalent for the platform)
    - `deepwork_jobs.implement.md` exists
    - `deepwork_jobs.refine.md` exists
-   - `deepwork_policy.define.md` exists
+   - `deepwork_rules.define.md` exists
    - All expected step commands exist
 
 4. **Validate command file content**
@@ -147,7 +147,7 @@ Ensure the implementation step is complete:
 - `deepwork install --platform <platform_name>` completes without errors
 - All expected command files are created:
   - deepwork_jobs.define, implement, refine
-  - deepwork_policy.define
+  - deepwork_rules.define
   - Any other standard job commands
 - Command file content is correct:
   - Matches platform's expected format
@@ -214,7 +214,7 @@ This step uses an iterative quality validation loop. After completing your work,
 2. Does running `deepwork install --platform <platform>` complete without errors?
 3. Are expected command files created in the platform's command directory?
 4. Does command file content match the templates and job definitions?
-5. Are established DeepWork jobs (deepwork_jobs, deepwork_policy) installed correctly?
+5. Are established DeepWork jobs (deepwork_jobs, deepwork_rules) installed correctly?
 6. Can the platform be used alongside existing platforms without conflicts?
 
 

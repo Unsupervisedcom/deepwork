@@ -355,6 +355,104 @@ class TestSchemaValidation:
         }
         validate_against_schema(job_data, JOB_SCHEMA)
 
+    def test_invalid_hooks_mixed_script_and_prompt(self) -> None:
+        """Test schema rejects mixing script and prompt hooks in same event."""
+        job_data = {
+            "name": "test_job",
+            "version": "1.0.0",
+            "summary": "Test job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "A step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": ["output.md"],
+                    "hooks": {
+                        "after_agent": [
+                            {"script": "hooks/run_tests.sh"},
+                            {"prompt": "Evaluate the test results"},
+                        ],
+                    },
+                }
+            ],
+        }
+        with pytest.raises(ValidationError):
+            validate_against_schema(job_data, JOB_SCHEMA)
+
+    def test_invalid_hooks_mixed_script_and_prompt_file(self) -> None:
+        """Test schema rejects mixing script and prompt_file hooks in same event."""
+        job_data = {
+            "name": "test_job",
+            "version": "1.0.0",
+            "summary": "Test job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "A step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": ["output.md"],
+                    "hooks": {
+                        "after_agent": [
+                            {"script": "hooks/run_tests.sh"},
+                            {"prompt_file": "hooks/evaluate.md"},
+                        ],
+                    },
+                }
+            ],
+        }
+        with pytest.raises(ValidationError):
+            validate_against_schema(job_data, JOB_SCHEMA)
+
+    def test_valid_hooks_multiple_scripts_same_event(self) -> None:
+        """Test schema accepts multiple scripts in same event (no mixing)."""
+        job_data = {
+            "name": "test_job",
+            "version": "1.0.0",
+            "summary": "Test job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "A step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": ["output.md"],
+                    "hooks": {
+                        "after_agent": [
+                            {"script": "hooks/run_tests.sh"},
+                            {"script": "hooks/run_lint.sh"},
+                        ],
+                    },
+                }
+            ],
+        }
+        validate_against_schema(job_data, JOB_SCHEMA)
+
+    def test_valid_hooks_multiple_prompts_same_event(self) -> None:
+        """Test schema accepts multiple prompts in same event (no mixing)."""
+        job_data = {
+            "name": "test_job",
+            "version": "1.0.0",
+            "summary": "Test job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "A step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": ["output.md"],
+                    "hooks": {
+                        "after_agent": [
+                            {"prompt": "Check quality criteria 1"},
+                            {"prompt": "Check quality criteria 2"},
+                        ],
+                    },
+                }
+            ],
+        }
+        validate_against_schema(job_data, JOB_SCHEMA)
+
 
 class TestGeneratorStopHooks:
     """Tests for generator stop hooks context building."""

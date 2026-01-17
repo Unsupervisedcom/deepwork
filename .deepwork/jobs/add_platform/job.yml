@@ -103,15 +103,10 @@ steps:
     outputs: []
     dependencies:
       - implement
-    hooks:
-      after_agent:
-        - prompt: |
-            **AGENT: TAKE ACTION** - Verify the installation meets ALL criteria:
-            1. Platform-specific directories/files are added to the deepwork repo as needed
-            2. Running `deepwork install --platform <platform>` completes without errors
-            3. Expected command files are created in the platform's command directory
-            4. Command file content matches the templates and job definitions
-            5. Established DeepWork jobs (deepwork_jobs, deepwork_rules) are installed correctly
-            6. The platform can be used alongside existing platforms without conflicts
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+    quality_criteria:
+      - "Are platform-specific directories/files added to the deepwork repo as needed?"
+      - "Does running `deepwork install --platform <platform>` complete without errors?"
+      - "Are expected command files created in the platform's command directory?"
+      - "Does command file content match the templates and job definitions?"
+      - "Are established DeepWork jobs (deepwork_jobs, deepwork_rules) installed correctly?"
+      - "Can the platform be used alongside existing platforms without conflicts?"

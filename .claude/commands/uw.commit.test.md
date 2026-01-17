@@ -5,14 +5,6 @@ hooks:
     - hooks:
         - type: command
           command: ".deepwork/jobs/commit/hooks/run_tests.sh"
-        - type: prompt
-          prompt: |
-            Evaluate the pytest output above.
-
-            **If any tests failed**: Start your response with "**AGENT: TAKE ACTION** -" followed by which tests failed and why.
-
-            **If ALL tests passed**: Confirm the agent included `<promise>✓ Quality Criteria Met</promise>`. Allow completion.
-
 ---
 
 # commit.test
@@ -100,11 +92,20 @@ No file output is required. Success is determined by all tests passing.
 - All tests pass (`uv run pytest tests/ -v` exits with code 0)
 - Any fixes made are minimal and don't break other functionality
 - If tests couldn't be fixed in 5 attempts, clear explanation provided
-- When all tests pass, include `<promise>✓ Quality Criteria Met</promise>` in your response
+
+## Hook Behavior
+
+After you complete this step, a hook will automatically run `uv run pytest tests/ -v` and show you the results.
+
+**Interpreting the hook output:**
+- **All tests passed (exit code 0)**: The step is complete. Proceed to the next step.
+- **Tests failed (exit code non-zero)**: You must fix the failing tests. Analyze the output, make fixes, and try again. The hook will re-run after each attempt.
+
+**Important**: The hook runs automatically - you don't need to run pytest yourself after the initial run. Just focus on making fixes when tests fail, and the hook will verify your fixes.
 
 ## Context
 
-This is the first step in the commit workflow. Tests must pass before code formatting is checked, ensuring that any changes being committed are functionally correct. The test step uses a script hook that automatically runs pytest, so focus on analyzing results and making fixes.
+This is the first step in the commit workflow. Tests must pass before code formatting is checked, ensuring that any changes being committed are functionally correct.
 
 
 
