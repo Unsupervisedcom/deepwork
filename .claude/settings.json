@@ -108,7 +108,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".deepwork/jobs/deepwork_rules/hooks/rules_stop_hook.sh"
+            "command": "python -m deepwork.hooks.rules_check"
           }
         ]
       }

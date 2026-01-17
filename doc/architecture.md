@@ -73,8 +73,7 @@ deepwork/                       # DeepWork tool repository
 │       │       └── hooks/         # Hook scripts
 │       │           ├── global_hooks.yml
 │       │           ├── user_prompt_submit.sh
-│       │           ├── capture_prompt_work_tree.sh
-│       │           └── rules_stop_hook.sh
+│       │           └── capture_prompt_work_tree.sh
 │       ├── schemas/            # Definition schemas
 │       │   ├── job_schema.py
 │       │   └── rules_schema.py
@@ -307,8 +306,7 @@ my-project/                     # User's project (target)
 │       │   └── hooks/          # Hook scripts (installed from standard_jobs)
 │       │       ├── global_hooks.yml
 │       │       ├── user_prompt_submit.sh
-│       │       ├── capture_prompt_work_tree.sh
-│       │       └── rules_stop_hook.sh
+│       │       └── capture_prompt_work_tree.sh
 │       ├── competitive_research/
 │       │   ├── job.yml         # Job metadata
 │       │   └── steps/
@@ -1135,7 +1133,7 @@ The hooks are installed to `.claude/settings.json` during `deepwork sync`:
 {
   "hooks": {
     "Stop": [
-      {"matcher": "", "hooks": [{"type": "command", "command": ".deepwork/jobs/deepwork_rules/hooks/rules_stop_hook.sh"}]}
+      {"matcher": "", "hooks": [{"type": "command", "command": "python -m deepwork.hooks.rules_check"}]}
     ]
   }
 }

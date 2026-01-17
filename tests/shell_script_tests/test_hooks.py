@@ -66,6 +66,31 @@ def run_rules_hook_script(
     return run_shell_script(script_path, cwd, hook_input=hook_input)
 
 
+def run_rules_check_module(
+    cwd: Path,
+    hook_input: dict | None = None,
+    src_dir: Path | None = None,
+) -> tuple[str, str, int]:
+    """Run the rules_check Python module directly and return its output."""
+    env = os.environ.copy()
+    env["DEEPWORK_HOOK_PLATFORM"] = "claude"
+    if src_dir:
+        env["PYTHONPATH"] = str(src_dir)
+
+    stdin_data = json.dumps(hook_input) if hook_input else ""
+
+    result = subprocess.run(
+        ["python", "-m", "deepwork.hooks.rules_check"],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        input=stdin_data,
+        env=env,
+    )
+
+    return result.stdout, result.stderr, result.returncode
+
+
 def run_platform_wrapper_script(
     script_path: Path,
     python_module: str,
@@ -256,12 +281,11 @@ class TestGeminiHookWrapper:
 
 
 class TestRulesStopHook:
-    """Tests for rules_stop_hook.sh JSON format compliance."""
+    """Tests for rules stop hook (deepwork.hooks.rules_check) JSON format compliance."""
 
-    def test_allow_response_is_empty_json(self, rules_hooks_dir: Path, git_repo: Path) -> None:
+    def test_allow_response_is_empty_json(self, src_dir: Path, git_repo: Path) -> None:
         """Test that allow response is empty JSON object."""
-        script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_rules_hook_script(script_path, git_repo)
+        stdout, stderr, code = run_rules_check_module(git_repo, src_dir=src_dir)
 
         response = validate_json_output(stdout)
         validate_stop_hook_response(response)
@@ -270,7 +294,7 @@ class TestRulesStopHook:
             assert response == {}, f"Allow response should be empty: {response}"
 
     def test_block_response_has_required_fields(
-        self, rules_hooks_dir: Path, git_repo_with_rule: Path
+        self, src_dir: Path, git_repo_with_rule: Path
     ) -> None:
         """Test that block response has decision and reason."""
         # Create a file that triggers the rule
@@ -279,8 +303,7 @@ class TestRulesStopHook:
         repo = Repo(git_repo_with_rule)
         repo.index.add(["test.py"])
 
-        script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule)
+        stdout, stderr, code = run_rules_check_module(git_repo_with_rule, src_dir=src_dir)
 
         response = validate_json_output(stdout)
         validate_stop_hook_response(response)
@@ -290,17 +313,14 @@ class TestRulesStopHook:
         assert response.get("decision") == "block", "Expected block decision"
         assert "reason" in response, "Expected reason field"
 
-    def test_block_reason_contains_rule_info(
-        self, rules_hooks_dir: Path, git_repo_with_rule: Path
-    ) -> None:
+    def test_block_reason_contains_rule_info(self, src_dir: Path, git_repo_with_rule: Path) -> None:
         """Test that block reason contains rule information."""
         py_file = git_repo_with_rule / "test.py"
         py_file.write_text("# Python file\n")
         repo = Repo(git_repo_with_rule)
         repo.index.add(["test.py"])
 
-        script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule)
+        stdout, stderr, code = run_rules_check_module(git_repo_with_rule, src_dir=src_dir)
 
         response = validate_json_output(stdout)
 
@@ -310,17 +330,14 @@ class TestRulesStopHook:
         # Should contain useful rule information
         assert "Rule" in reason or "rule" in reason, f"Reason should mention rule: {reason}"
 
-    def test_no_extraneous_keys_in_response(
-        self, rules_hooks_dir: Path, git_repo_with_rule: Path
-    ) -> None:
+    def test_no_extraneous_keys_in_response(self, src_dir: Path, git_repo_with_rule: Path) -> None:
         """Test that response only contains expected keys."""
         py_file = git_repo_with_rule / "test.py"
         py_file.write_text("# Python file\n")
         repo = Repo(git_repo_with_rule)
         repo.index.add(["test.py"])
 
-        script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule)
+        stdout, stderr, code = run_rules_check_module(git_repo_with_rule, src_dir=src_dir)
 
         response = validate_json_output(stdout)
 
@@ -332,17 +349,14 @@ class TestRulesStopHook:
                 f"Unexpected keys in response: {actual_keys - valid_keys}"
             )
 
-    def test_output_is_single_line_json(
-        self, rules_hooks_dir: Path, git_repo_with_rule: Path
-    ) -> None:
+    def test_output_is_single_line_json(self, src_dir: Path, git_repo_with_rule: Path) -> None:
         """Test that JSON output is single-line (no pretty printing)."""
         py_file = git_repo_with_rule / "test.py"
         py_file.write_text("# Python file\n")
         repo = Repo(git_repo_with_rule)
         repo.index.add(["test.py"])
 
-        script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule)
+        stdout, stderr, code = run_rules_check_module(git_repo_with_rule, src_dir=src_dir)
 
         # Remove trailing newline and check for internal newlines
         output = stdout.strip()
@@ -384,9 +398,7 @@ class TestUserPromptSubmitHook:
 class TestHooksWithTranscript:
     """Tests for hook JSON format when using transcript input."""
 
-    def test_stop_hook_with_transcript_input(
-        self, rules_hooks_dir: Path, git_repo_with_rule: Path
-    ) -> None:
+    def test_stop_hook_with_transcript_input(self, src_dir: Path, git_repo_with_rule: Path) -> None:
         """Test stop hook JSON format when transcript is provided."""
         py_file = git_repo_with_rule / "test.py"
         py_file.write_text("# Python file\n")
@@ -407,10 +419,9 @@ class TestHooksWithTranscript:
             f.write("\n")
 
         try:
-            script_path = rules_hooks_dir / "rules_stop_hook.sh"
             hook_input = {"transcript_path": transcript_path}
-            stdout, stderr, code = run_rules_hook_script(
-                script_path, git_repo_with_rule, hook_input
+            stdout, stderr, code = run_rules_check_module(
+                git_repo_with_rule, hook_input, src_dir=src_dir
             )
 
             response = validate_json_output(stdout)
@@ -420,7 +431,7 @@ class TestHooksWithTranscript:
             os.unlink(transcript_path)
 
     def test_stop_hook_with_promise_returns_empty(
-        self, rules_hooks_dir: Path, git_repo_with_rule: Path
+        self, src_dir: Path, git_repo_with_rule: Path
     ) -> None:
         """Test that promised rules return empty JSON."""
         py_file = git_repo_with_rule / "test.py"
@@ -449,10 +460,9 @@ class TestHooksWithTranscript:
             f.write("\n")
 
         try:
-            script_path = rules_hooks_dir / "rules_stop_hook.sh"
             hook_input = {"transcript_path": transcript_path}
-            stdout, stderr, code = run_rules_hook_script(
-                script_path, git_repo_with_rule, hook_input
+            stdout, stderr, code = run_rules_check_module(
+                git_repo_with_rule, hook_input, src_dir=src_dir
             )
 
             response = validate_json_output(stdout)
@@ -491,25 +501,22 @@ class TestHooksWithTranscript:
 
 
 class TestHookExitCodes:
-    """Tests for hook script exit codes.
+    """Tests for hook exit codes.
 
     CRITICAL: These tests verify the documented Claude Code hook contract.
     All hooks MUST exit 0 when using JSON output format.
     """
 
-    def test_stop_hook_exits_zero_on_allow(self, rules_hooks_dir: Path, git_repo: Path) -> None:
+    def test_stop_hook_exits_zero_on_allow(self, src_dir: Path, git_repo: Path) -> None:
         """Test that stop hook exits 0 when allowing.
 
         DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
         """
-        script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_rules_hook_script(script_path, git_repo)
+        stdout, stderr, code = run_rules_check_module(git_repo, src_dir=src_dir)
 
         assert code == 0, f"Allow should exit 0. stderr: {stderr}"
 
-    def test_stop_hook_exits_zero_on_block(
-        self, rules_hooks_dir: Path, git_repo_with_rule: Path
-    ) -> None:
+    def test_stop_hook_exits_zero_on_block(self, src_dir: Path, git_repo_with_rule: Path) -> None:
         """Test that stop hook exits 0 even when blocking.
 
         DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
@@ -520,8 +527,7 @@ class TestHookExitCodes:
         repo = Repo(git_repo_with_rule)
         repo.index.add(["test.py"])
 
-        script_path = rules_hooks_dir / "rules_stop_hook.sh"
-        stdout, stderr, code = run_rules_hook_script(script_path, git_repo_with_rule)
+        stdout, stderr, code = run_rules_check_module(git_repo_with_rule, src_dir=src_dir)
 
         # Hooks should exit 0 and communicate via JSON
         assert code == 0, f"Block should still exit 0. stderr: {stderr}"
