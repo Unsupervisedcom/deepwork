@@ -174,7 +174,7 @@ After implementing the job, consider whether there are **rules** that would help
 
 **What are rules?**
 
-Rules are automated guardrails defined in `.deepwork.rules.yml` that trigger when certain files change during an AI session. They help ensure:
+Rules are automated guardrails stored as markdown files in `.deepwork/rules/` that trigger when certain files change during an AI session. They help ensure:
 - Documentation stays in sync with code
 - Team guidelines are followed
 - Architectural decisions are respected

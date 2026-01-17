@@ -1,0 +1,10 @@
+---
+name: API Documentation Sync
+trigger: src/api/**/*
+safety: docs/api/**/*.md
+---
+API code has changed. Please verify that API documentation is up to date:
+
+- New or changed endpoints
+- Modified request/response schemas
+- Updated authentication requirements

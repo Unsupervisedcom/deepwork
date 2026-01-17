@@ -122,9 +122,10 @@ def install(platform: str):
     # Inject core job definitions
     inject_deepwork_jobs(".deepwork/jobs/")
 
-    # Create default rules template (if not exists)
-    if not exists(".deepwork.rules.yml"):
-        copy_template("default_rules.yml", ".deepwork.rules.yml")
+    # Create rules directory with example templates (if not exists)
+    if not exists(".deepwork/rules/"):
+        create_directory(".deepwork/rules/")
+        copy_example_rules(".deepwork/rules/")
 
     # Update config (supports multiple platforms)
     config = load_yaml(".deepwork/config.yml") or {}
@@ -1217,7 +1218,7 @@ User: When API code changes, the API documentation should be updated
 Claude: Got it. Let me ask a few questions...
         [Interactive dialog to define trigger, safety, and instructions]
 
-Claude: ✓ Created rule "API documentation update" in .deepwork.rules.yml
+Claude: Created rule "API documentation update" in .deepwork/rules/api-documentation.md
 ```
 
 ---
