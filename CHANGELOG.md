@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `wrapper.py`: Normalizes input/output between Claude Code and Gemini CLI
   - `claude_hook.sh` and `gemini_hook.sh`: Platform-specific shell wrappers
   - `policy_check.py`: Cross-platform policy evaluation hook
-- Platform documentation in `doc/platform/` and `doc/platforms/` with hook references and learnings
+- Platform documentation in `doc/platforms/` with hook references and learnings
 - Claude Code platform documentation (`doc/platforms/claude/`)
 - `update.job` for maintaining standard jobs (#41)
 - `make_new_job.sh` script and templates directory for job scaffolding (#37)

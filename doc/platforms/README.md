@@ -24,14 +24,18 @@ When you discover something about how a platform behaves that isn't obvious from
 ## Directory Structure
 
 ```
-doc/platform/
-├── README.md           # This file
+doc/platforms/
+├── README.md               # This file
 ├── claude/
-│   ├── hooks.md        # Claude Code hooks system documentation
-│   └── learnings.md    # Discovered behaviors and quirks
+│   ├── cli_configuration.md  # Claude Code CLI configuration
+│   ├── hooks.md              # Claude Code hooks system (input/output schemas)
+│   ├── hooks_system.md       # Command-level hook support
+│   └── learnings.md          # Discovered behaviors and quirks
 └── gemini/
-    ├── hooks.md        # Gemini CLI hooks system documentation
-    └── learnings.md    # Discovered behaviors and quirks
+    ├── cli_configuration.md  # Gemini CLI configuration
+    ├── hooks.md              # Gemini CLI hooks system (input/output schemas)
+    ├── hooks_system.md       # Command-level hook limitations
+    └── learnings.md          # Discovered behaviors and quirks
 ```
 
 ## Platform Comparison Summary
@@ -51,4 +55,3 @@ doc/platform/
 
 - `src/deepwork/core/adapters.py` - Platform adapter implementations
 - `src/deepwork/hooks/` - Hook wrapper scripts
-- `doc/platforms/` - External platform documentation (configuration, commands)

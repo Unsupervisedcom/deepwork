@@ -1116,7 +1116,7 @@ def my_hook(input: HookInput) -> HookOutput:
 # Called via: claude_hook.sh mymodule or gemini_hook.sh mymodule
 ```
 
-See `doc/platform/` for detailed platform-specific hook documentation.
+See `doc/platforms/` for detailed platform-specific hook documentation.
 
 ### Policy Schema
 
