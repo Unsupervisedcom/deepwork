@@ -14,13 +14,9 @@ A workflow for maintaining standard jobs bundled with DeepWork. Standard jobs
 `src/deepwork/standard_jobs/` and must be edited there—never in `.deepwork/jobs/`
 or `.claude/commands/` directly.
 
-This job guides you through:
-1. Identifying which standard job(s) to update from conversation context
-2. Making changes in the correct source location (`src/deepwork/standard_jobs/[job_name]/`)
-3. Running `deepwork install` to propagate changes to `.deepwork/` and command directories
-4. Verifying the sync completed successfully
-
-Use this job whenever you need to modify job.yml files, step instructions, or hooks
+This job identifies which standard jobs to update from conversation context, makes
+changes in the correct source location, and propagates them via `deepwork install`.
+Use this whenever you need to modify job.yml files, step instructions, or hooks
 for any standard job in the DeepWork repository.
 
 

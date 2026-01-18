@@ -139,14 +139,11 @@ Take time to verify each aspect - finding issues now is much better than having 
 
 A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
 
-This job guides you through four phases:
-1. **Research**: Capture the platform's CLI configuration and hooks system documentation
-2. **Add Capabilities**: Update the job schema and adapters with any new hook events
-3. **Implement**: Create the platform adapter, templates, tests (100% coverage), and README updates
-4. **Verify**: Ensure installation works correctly and produces expected files
-
 The workflow ensures consistency across all supported platforms and maintains
-comprehensive test coverage for new functionality.
+comprehensive test coverage for new functionality. It starts with research to
+capture the platform's configuration and hooks documentation, then adds any new
+hook capabilities to the schema and existing adapters, implements the full adapter
+with templates and tests, and finally verifies installation works correctly.
 
 **Important Notes**:
 - Only hooks available on slash command definitions should be captured

@@ -11,14 +11,10 @@ description: "Run tests, lint, and commit code changes"
 
 A workflow for preparing and committing code changes with quality checks.
 
-This job runs tests until they pass, formats and lints code with ruff,
-then reviews changed files before committing and pushing. The lint step
-uses a sub-agent to reduce context usage.
-
-Steps:
-1. test - Pull latest code and run tests until they pass
-2. lint - Format and lint code with ruff (runs in sub-agent)
-3. commit_and_push - Review changes and commit/push
+This job ensures code quality before committing by running the test suite until
+all tests pass, then formatting and linting with ruff. The lint step runs in a
+sub-agent to reduce context usage. Finally, it reviews changed files with you
+before creating the commit and pushing to the remote.
 
 
 ## Available Steps
