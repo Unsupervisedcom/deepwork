@@ -1,0 +1,6 @@
+{
+  "$schema": "./test-schema.json",
+  "name": "",
+  "version": "not-a-version",
+  "extra_field": "not allowed"
+}

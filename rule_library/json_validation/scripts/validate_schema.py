@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-Validate YAML files against their declared JSON Schema.
+Validate YAML and JSON files against their declared JSON Schema.
 
-Looks for a $schema declaration at the top of YAML files and validates
-the file content against that schema. The schema can be a URL or a local path.
+This script first performs a quick text search for $schema in the file.
+Only if a schema reference is found does it fully parse the file and validate.
+
+Supported file types: .yml, .yaml, .json
 
 Exit codes:
     0 - Validation passed (or no schema declared)
@@ -12,6 +14,7 @@ Exit codes:
 """
 
 import json
+import re
 import sys
 import urllib.request
 import urllib.error
@@ -20,15 +23,11 @@ from pathlib import Path
 try:
     import yaml
 except ImportError:
-    print(json.dumps({
-        "status": "error",
-        "message": "PyYAML is not installed. Run: pip install pyyaml"
-    }))
-    sys.exit(2)
+    yaml = None
 
 try:
     import jsonschema
-    from jsonschema import Draft7Validator, ValidationError
+    from jsonschema import Draft7Validator
 except ImportError:
     print(json.dumps({
         "status": "error",
@@ -37,12 +36,59 @@ except ImportError:
     sys.exit(2)
 
 
-def load_yaml_file(file_path: str) -> tuple[dict | list | None, str | None]:
-    """Load a YAML file and return its contents."""
+# Pattern to quickly detect $schema in file content without full parsing
+# Matches both JSON ("$schema": "...") and YAML ($schema: ...)
+SCHEMA_PATTERN = re.compile(
+    r'''["']?\$schema["']?\s*[:=]\s*["']?([^"'\s,}\]]+)''',
+    re.IGNORECASE
+)
+
+
+def quick_detect_schema(file_path: str) -> str | None:
+    """
+    Quickly scan file for $schema declaration without full parsing.
+    Returns the schema reference if found, None otherwise.
+    """
     try:
         with open(file_path, "r", encoding="utf-8") as f:
-            content = yaml.safe_load(f)
-        return content, None
+            # Read first 4KB - schema should be near the top
+            content = f.read(4096)
+
+        match = SCHEMA_PATTERN.search(content)
+        if match:
+            return match.group(1).rstrip("'\"")
+        return None
+
+    except Exception:
+        return None
+
+
+def parse_file(file_path: str) -> tuple[dict | list | None, str | None]:
+    """Parse a YAML or JSON file and return its contents."""
+    path = Path(file_path)
+    suffix = path.suffix.lower()
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        if suffix == ".json":
+            return json.loads(content), None
+        elif suffix in (".yml", ".yaml"):
+            if yaml is None:
+                return None, "PyYAML is not installed. Run: pip install pyyaml"
+            return yaml.safe_load(content), None
+        else:
+            # Try JSON first, then YAML
+            try:
+                return json.loads(content), None
+            except json.JSONDecodeError:
+                if yaml:
+                    return yaml.safe_load(content), None
+                return None, f"Unsupported file type: {suffix}"
+
+    except json.JSONDecodeError as e:
+        return None, f"Invalid JSON syntax: {e}"
     except yaml.YAMLError as e:
         return None, f"Invalid YAML syntax: {e}"
     except FileNotFoundError:
@@ -52,7 +98,7 @@ def load_yaml_file(file_path: str) -> tuple[dict | list | None, str | None]:
 
 
 def extract_schema_reference(content: dict) -> str | None:
-    """Extract the $schema reference from YAML content."""
+    """Extract the $schema reference from parsed content."""
     if not isinstance(content, dict):
         return None
     return content.get("$schema")
@@ -63,7 +109,7 @@ def fetch_schema_from_url(url: str) -> tuple[dict | None, str | None]:
     try:
         req = urllib.request.Request(
             url,
-            headers={"User-Agent": "yaml-schema-validator/1.0"}
+            headers={"User-Agent": "schema-validator/1.0"}
         )
         with urllib.request.urlopen(req, timeout=30) as response:
             schema_content = response.read().decode("utf-8")
@@ -72,10 +118,12 @@ def fetch_schema_from_url(url: str) -> tuple[dict | None, str | None]:
         try:
             return json.loads(schema_content), None
         except json.JSONDecodeError:
-            try:
-                return yaml.safe_load(schema_content), None
-            except yaml.YAMLError as e:
-                return None, f"Invalid schema format at URL: {e}"
+            if yaml:
+                try:
+                    return yaml.safe_load(schema_content), None
+                except yaml.YAMLError as e:
+                    return None, f"Invalid schema format at URL: {e}"
+            return None, "Invalid JSON schema format at URL"
 
     except urllib.error.URLError as e:
         return None, f"Failed to fetch schema from URL: {e}"
@@ -83,13 +131,13 @@ def fetch_schema_from_url(url: str) -> tuple[dict | None, str | None]:
         return None, f"Error fetching schema: {e}"
 
 
-def load_schema_from_path(schema_path: str, yaml_file_path: str) -> tuple[dict | None, str | None]:
+def load_schema_from_path(schema_path: str, source_file_path: str) -> tuple[dict | None, str | None]:
     """Load a JSON Schema from a local file path."""
-    # Resolve relative paths relative to the YAML file's directory
+    # Resolve relative paths relative to the source file's directory
     path = Path(schema_path)
     if not path.is_absolute():
-        yaml_dir = Path(yaml_file_path).parent
-        path = yaml_dir / path
+        source_dir = Path(source_file_path).parent
+        path = source_dir / path
 
     path = path.resolve()
 
@@ -104,21 +152,23 @@ def load_schema_from_path(schema_path: str, yaml_file_path: str) -> tuple[dict |
         try:
             return json.loads(content), None
         except json.JSONDecodeError:
-            try:
-                return yaml.safe_load(content), None
-            except yaml.YAMLError as e:
-                return None, f"Invalid schema format: {e}"
+            if yaml:
+                try:
+                    return yaml.safe_load(content), None
+                except yaml.YAMLError as e:
+                    return None, f"Invalid schema format: {e}"
+            return None, "Invalid JSON schema format"
 
     except Exception as e:
         return None, f"Error reading schema file: {e}"
 
 
-def load_schema(schema_ref: str, yaml_file_path: str) -> tuple[dict | None, str | None]:
+def load_schema(schema_ref: str, source_file_path: str) -> tuple[dict | None, str | None]:
     """Load a schema from either a URL or local path."""
     if schema_ref.startswith(("http://", "https://")):
         return fetch_schema_from_url(schema_ref)
     else:
-        return load_schema_from_path(schema_ref, yaml_file_path)
+        return load_schema_from_path(schema_ref, source_file_path)
 
 
 def validate_against_schema(content: dict, schema: dict) -> list[dict]:
@@ -146,14 +196,25 @@ def main():
     if len(sys.argv) < 2:
         print(json.dumps({
             "status": "error",
-            "message": "Usage: validate_yaml_schema.py <file.yaml>"
+            "message": "Usage: validate_schema.py <file.yaml|file.json>"
         }))
         sys.exit(2)
 
     file_path = sys.argv[1]
 
-    # Load the YAML file
-    content, error = load_yaml_file(file_path)
+    # Step 1: Quick detection - scan for $schema without parsing
+    quick_schema = quick_detect_schema(file_path)
+    if not quick_schema:
+        # No schema found in quick scan - pass without full parsing
+        print(json.dumps({
+            "status": "pass",
+            "file": file_path,
+            "message": "No $schema declared, skipping validation"
+        }))
+        sys.exit(0)
+
+    # Step 2: Schema detected - now do full parsing
+    content, error = parse_file(file_path)
     if error:
         print(json.dumps({
             "status": "error",
@@ -162,10 +223,10 @@ def main():
         }))
         sys.exit(2)
 
-    # Check for $schema reference
+    # Get the actual schema reference from parsed content
     schema_ref = extract_schema_reference(content)
     if not schema_ref:
-        # No schema declared - pass silently
+        # Quick scan found something but it wasn't actually a $schema field
         print(json.dumps({
             "status": "pass",
             "file": file_path,
@@ -173,7 +234,7 @@ def main():
         }))
         sys.exit(0)
 
-    # Load the schema
+    # Step 3: Load the schema
     schema, error = load_schema(schema_ref, file_path)
     if error:
         print(json.dumps({
@@ -184,7 +245,7 @@ def main():
         }))
         sys.exit(2)
 
-    # Validate
+    # Step 4: Validate
     errors = validate_against_schema(content, schema)
 
     if not errors:
