@@ -1,0 +1,3 @@
+$schema: ./test-schema.json
+name: example
+version: 123
