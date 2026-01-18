@@ -1269,3 +1269,4 @@ Claude: Created rule "API documentation update" in .deepwork/rules/api-documenta
 - [Git Workflows](https://www.atlassian.com/git/tutorials/comparing-workflows)
 - [JSON Schema](https://json-schema.org/)
 - [Jinja2 Documentation](https://jinja.palletsprojects.com/)
+
