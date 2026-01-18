@@ -481,6 +481,10 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
     # Add command errors if any
     if command_errors:
         messages.append("## Command Rule Errors\n")
+        messages.append(
+            "The following command rules failed. "
+            "To skip a rule, include `<promise>Rule Name</promise>` in your response.\n"
+        )
         messages.extend(command_errors)
         messages.append("")
 
