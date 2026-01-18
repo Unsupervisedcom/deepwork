@@ -134,6 +134,19 @@ All work for this job should be done on a dedicated work branch:
 
 No specific files are output by this command.
 
+## Quality Validation
+
+This step has quality criteria that should be verified before completion.
+
+### Quality Criteria
+
+1. Were changes made in src/deepwork/standard_jobs/[job_name]/ (NOT in .deepwork/jobs/)?
+2. Was `deepwork install --platform claude` run?
+3. Do files in .deepwork/jobs/ match the source files?
+4. Were command files in .claude/commands/ regenerated?
+
+**Note**: Gemini CLI does not support automated validation hooks. Please manually verify the criteria above before proceeding.
+
 ## Completion
 
 After completing this step:

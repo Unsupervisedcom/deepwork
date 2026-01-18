@@ -18,12 +18,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `rules_queue.py`: Queue system for rule state persistence
   - `command_executor.py`: Command action execution with variable substitution
 - Updated `rules_check.py` hook to use v2 system with queue-based deduplication
+- **Meta-command architecture**: Each job now generates a single user-facing meta-command (e.g., `/deepwork_jobs`) that interprets user intent and routes to appropriate steps
+- New `exposed` field in job.yml steps to control visibility (steps are hidden by default)
+- New templates: `command-job-meta.md.jinja` for Claude, `command-job-meta.toml.jinja` for Gemini
+- `generate_meta_command()` method in CommandGenerator
+- `get_meta_command_filename()` and `get_step_command_filename()` methods in adapters
 
 ### Changed
 - Documentation updated with v2 rules examples and configuration
+- Step commands are now hidden by default (underscore prefix, e.g., `_deepwork_jobs.define.md`)
+- Steps with `exposed: true` in job.yml remain visible (e.g., `deepwork_jobs.learn.md`)
+- Renamed `get_command_filename()` to `get_step_command_filename()` with new `exposed` parameter
+- `generate_all_commands()` now generates meta-command first, then step commands
+- Updated deepwork_jobs job: `learn` step marked as `exposed: true`
 
 ### Removed
 - v1 rules format (`.deepwork.rules.yml`) - now only v2 frontmatter markdown format is supported
+
+### Migration
+- Users should invoke jobs via meta-commands: `/deepwork_jobs define a new job` instead of `/deepwork_jobs.define`
+- Exposed steps remain directly accessible: `/deepwork_jobs.learn`
 
 ## [0.3.0] - 2026-01-16
 

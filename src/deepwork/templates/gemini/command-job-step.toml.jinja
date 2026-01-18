@@ -92,18 +92,18 @@ Ensure all outputs are:
 No specific files are output by this command.
 {% endif %}
 
-{% if stop_hooks %}
+{% if quality_criteria or stop_hooks %}
 ## Quality Validation
 
 This step has quality criteria that should be verified before completion.
 
-{% for hook in stop_hooks %}
-{% if hook.type != "script" %}
-### Quality Criteria{% if stop_hooks | length > 1 %} ({{ loop.index }}){% endif %}
+{% if quality_criteria %}
+### Quality Criteria
 
-{{ hook.content }}
-{% endif %}
+{% for criterion in quality_criteria %}
+{{ loop.index }}. {{ criterion }}
 {% endfor %}
+{% endif %}
 
 **Note**: Gemini CLI does not support automated validation hooks. Please manually verify the criteria above before proceeding.
 

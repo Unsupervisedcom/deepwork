@@ -70,39 +70,45 @@ Jobs are multi-step workflows where each Step has clear input and output artifac
 
 The process of defining a job itself is actually a DeepWork job. You can see it at `.deepwork/jobs/deepwork_jobs/`.
 
-To start the process, just run the first Step in the job:
+To start the process, just run the job's meta-command:
 
 ```
-/deepwork_jobs.define
+/deepwork_jobs define a new job
 ```
 
-Follow the interactive prompts to:
+The meta-command routes to the appropriate step. Follow the interactive prompts to:
 - Name your job
 - Define steps with inputs/outputs
 - Specify dependencies between steps
 
 It will also prompt you to go on the the next Step in the job.
 
-### 2. Execute Steps
+### 2. Execute Jobs
 
-Run individual steps of your job:
+Run your job using its meta-command:
 
 ```
-/your_job_name.step_1
+/your_job_name start the workflow
 ```
 
-The AI will:
+The meta-command analyzes your intent and routes to the appropriate step. The AI will:
 - Create a work branch
 - Execute the step's instructions
 - Generate required outputs
 - Guide you to the next step
 
-### 3. Manage Workflows
-
-Use the refine skill to update existing jobs:
+You can also run specific steps directly if they're exposed:
 
 ```
-/deepwork_jobs.refine
+/your_job_name.exposed_step
+```
+
+### 3. Learn from Execution
+
+After running a job, use the learn command to improve it:
+
+```
+/deepwork_jobs.learn
 ```
 
 ## Example: Competitive Research Workflow
@@ -153,11 +159,13 @@ steps:
 
 Usage:
 ```
-/competitive_research.identify_competitors
+/competitive_research identify competitors
+# Meta-command routes to identify_competitors step
 # AI creates work branch and asks for market_segment, product_category
 # Generates competitors.md
 
-/competitive_research.primary_research
+/competitive_research continue with primary research
+# Meta-command routes to primary_research step
 # AI reads competitors.md
 # Generates primary_research.md and competitor_profiles/
 ```
@@ -187,12 +195,15 @@ your-project/
 │           └── steps/      # Step instructions
 ├── .claude/                # Claude Code commands (auto-generated)
 │   └── commands/
-│       ├── deepwork_jobs.define.md
-│       └── job_name.step_name.md
+│       ├── deepwork_jobs.md          # Meta-command (user-facing)
+│       ├── _deepwork_jobs.define.md  # Hidden step (underscore prefix)
+│       ├── deepwork_jobs.learn.md    # Exposed step (no underscore)
+│       └── job_name.md               # Job meta-commands
 └── .gemini/                # Gemini CLI commands (auto-generated)
     └── commands/
         └── job_name/
-            └── step_name.toml
+            ├── index.toml            # Meta-command
+            └── _step_name.toml       # Hidden steps
 ```
 
 **Note**: Work outputs are created on dedicated Git branches (e.g., `deepwork/job_name-instance-date`), not in a separate directory.

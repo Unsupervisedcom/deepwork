@@ -258,6 +258,21 @@ Ensure all outputs are:
 - Well-formatted and complete
 - Ready for review or use by subsequent steps
 
+## Quality Validation
+
+This step has quality criteria that should be verified before completion.
+
+### Quality Criteria
+
+1. Do both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md?
+2. Does each file have a comment at the top with last updated date and source URL?
+3. Does cli_configuration.md cover how the platform's CLI is configured?
+4. Does hooks_system.md cover hooks available for slash command definitions ONLY?
+5. Is there no extraneous documentation (only these two specific topics)?
+6. Is the documentation comprehensive enough to implement the platform?
+
+**Note**: Gemini CLI does not support automated validation hooks. Please manually verify the criteria above before proceeding.
+
 ## Completion
 
 After completing this step:

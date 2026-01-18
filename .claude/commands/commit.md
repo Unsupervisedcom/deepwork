@@ -1,0 +1,73 @@
+---
+description: Validate, format, and push changes with tests passing
+---
+
+# commit
+
+You are executing the **commit** job. Validate, format, and push changes with tests passing
+
+A pre-commit workflow that ensures code quality before pushing changes.
+
+This job runs through three validation and preparation steps:
+1. Runs the test suite and fixes any failures until all tests pass (max 5 attempts)
+2. Runs ruff formatting and linting, fixing issues until clean (max 5 attempts)
+3. Fetches from remote, rebases if needed, generates a simple commit message,
+   commits changes, and pushes to the remote branch
+
+Each step uses a quality validation loop to ensure it completes successfully
+before moving to the next step. The format step runs as a subagent to
+minimize token usage.
+
+Key behaviors:
+- Rebase strategy when remote has changes (keeps linear history)
+- Simple summary commit messages (no conventional commits format)
+- Maximum 5 fix attempts before stopping
+
+Designed for developers who want a reliable pre-push workflow that catches
+issues early and ensures consistent code quality.
+
+
+## Available Steps
+
+This job has 3 step(s):
+
+### test
+**Run Tests**: Run pytest and fix any failures until all tests pass (max 5 attempts)
+- Command: `uw.commit.test`
+### format
+**Format Code**: Run ruff formatting and linting, fix issues until clean (max 5 attempts, runs as subagent)
+- Command: `uw.commit.format`
+- Requires: test
+### reconcile_and_push
+**Reconcile and Push**: Fetch remote, rebase if needed, commit with simple summary message, and push
+- Command: `uw.commit.reconcile_and_push`
+- Requires: format
+
+## Instructions
+
+This is a **multi-step workflow**. Determine the starting point and run through the steps in sequence.
+
+1. **Analyze user intent** from the text that follows `/commit`
+
+2. **Identify the starting step** based on intent:
+   - test: Run pytest and fix any failures until all tests pass (max 5 attempts)
+   - format: Run ruff formatting and linting, fix issues until clean (max 5 attempts, runs as subagent)
+   - reconcile_and_push: Fetch remote, rebase if needed, commit with simple summary message, and push
+
+3. **Run the workflow** starting from the identified step:
+   - Invoke the starting step using the Skill tool
+   - When that step completes, **automatically continue** to the next step in the workflow
+   - Continue until the workflow is complete or the user intervenes
+
+4. **If intent is ambiguous**, ask the user which step to start from:
+   - Present the available steps as numbered options
+   - Use AskUserQuestion to let them choose
+
+**Critical**:
+- You MUST invoke each step using the Skill tool. Do not copy/paste step instructions.
+- After each step completes, check if there's a next step and invoke it automatically.
+- The workflow continues until all dependent steps are complete.
+
+## Context Files
+
+- Job definition: `.deepwork/jobs/commit/job.yml`

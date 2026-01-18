@@ -1,0 +1,70 @@
+# DeepWork Job: commit
+#
+# Validates code quality, runs formatters, and pushes changes to remote.
+
+name: commit
+version: "1.0.0"
+summary: "Validate, format, and push changes with tests passing"
+description: |
+  A pre-commit workflow that ensures code quality before pushing changes.
+
+  This job runs through three validation and preparation steps:
+  1. Runs the test suite and fixes any failures until all tests pass (max 5 attempts)
+  2. Runs ruff formatting and linting, fixing issues until clean (max 5 attempts)
+  3. Fetches from remote, rebases if needed, generates a simple commit message,
+     commits changes, and pushes to the remote branch
+
+  Each step uses a quality validation loop to ensure it completes successfully
+  before moving to the next step. The format step runs as a subagent to
+  minimize token usage.
+
+  Key behaviors:
+  - Rebase strategy when remote has changes (keeps linear history)
+  - Simple summary commit messages (no conventional commits format)
+  - Maximum 5 fix attempts before stopping
+
+  Designed for developers who want a reliable pre-push workflow that catches
+  issues early and ensures consistent code quality.
+
+changelog:
+  - version: "1.0.0"
+    changes: "Initial job creation"
+
+steps:
+  - id: test
+    name: "Run Tests"
+    description: "Run pytest and fix any failures until all tests pass (max 5 attempts)"
+    instructions_file: steps/test.md
+    inputs: []
+    outputs: []
+    dependencies: []
+    hooks:
+      after_agent:
+        - script: hooks/run_tests.sh
+
+  - id: format
+    name: "Format Code"
+    description: "Run ruff formatting and linting, fix issues until clean (max 5 attempts, runs as subagent)"
+    instructions_file: steps/format.md
+    inputs: []
+    outputs: []
+    dependencies:
+      - test
+    hooks:
+      after_agent:
+        - script: hooks/run_ruff.sh
+
+  - id: reconcile_and_push
+    name: "Reconcile and Push"
+    description: "Fetch remote, rebase if needed, commit with simple summary message, and push"
+    instructions_file: steps/reconcile_and_push.md
+    inputs: []
+    outputs: []
+    dependencies:
+      - format
+    quality_criteria:
+      - "Did the agent fetch from the remote to check for updates?"
+      - "If there were remote changes, did the agent rebase local changes on top?"
+      - "Did the agent generate a simple summary commit message based on the changes?"
+      - "Did the agent commit the changes?"
+      - "Did the agent push to the remote branch?"

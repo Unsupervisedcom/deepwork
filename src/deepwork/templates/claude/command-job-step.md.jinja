@@ -1,23 +1,19 @@
 ---
 description: {{ step_description }}
-{% if hooks %}
+{% if quality_criteria or hooks %}
 hooks:
-{% for event_name, event_hooks in hooks.items() %}
-  {{ event_name }}:
+{% if quality_criteria %}
+  Stop:
     - hooks:
-{% for hook in event_hooks %}
-{% if hook.type == "script" %}
-        - type: command
-          command: ".deepwork/jobs/{{ job_name }}/{{ hook.path }}"
-{% else %}
         - type: prompt
           prompt: |
-{% if event_name == "Stop" %}
             You must evaluate whether Claude has met all the below quality criteria for the request.
 
             ## Quality Criteria
 
-            {{ hook.content | indent(12) }}
+{% for criterion in quality_criteria %}
+            {{ loop.index }}. {{ criterion }}
+{% endfor %}
 
             ## Instructions
 
@@ -27,13 +23,24 @@ hooks:
             If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
             all criteria appear to be met, respond with: {"ok": true}
 
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
+{% endif %}
+{% for event_name, event_hooks in hooks.items() %}
+{% if not (event_name == "Stop" and quality_criteria) %}
+  {{ event_name }}:
+    - hooks:
+{% for hook in event_hooks %}
+{% if hook.type == "script" %}
+        - type: command
+          command: ".deepwork/jobs/{{ job_name }}/{{ hook.path }}"
 {% else %}
+        - type: prompt
+          prompt: |
             {{ hook.content | indent(12) }}
 {% endif %}
-{% endif %}
 {% endfor %}
+{% endif %}
 {% endfor %}
 {% endif %}
 ---
@@ -122,20 +129,24 @@ Ensure all outputs are:
 No specific files are output by this command.
 {% endif %}
 
-{% if stop_hooks %}
+{% if quality_criteria or stop_hooks %}
 ## Quality Validation Loop
 
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
+
+{% if quality_criteria %}
+### Quality Criteria
+
+{% for criterion in quality_criteria %}
+{{ loop.index }}. {{ criterion }}
+{% endfor %}
+{% endif %}
 
 {% for hook in stop_hooks %}
 {% if hook.type == "script" %}
 **Validation Script**: `.deepwork/jobs/{{ job_name }}/{{ hook.path }}`
 
 The validation script will be executed automatically when you attempt to complete this step.
-{% else %}
-### Quality Criteria{% if stop_hooks | length > 1 %} ({{ loop.index }}){% endif %}
-
-{{ hook.content }}
 {% endif %}
 {% endfor %}
 

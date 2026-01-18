@@ -86,6 +86,33 @@ class TestStep:
         assert step.inputs[1].is_file_input()
         assert step.dependencies == ["step0"]
 
+    def test_from_dict_exposed_default_false(self) -> None:
+        """Test that exposed defaults to False."""
+        data = {
+            "id": "step1",
+            "name": "Step 1",
+            "description": "First step",
+            "instructions_file": "steps/step1.md",
+            "outputs": ["output.md"],
+        }
+        step = Step.from_dict(data)
+
+        assert step.exposed is False
+
+    def test_from_dict_exposed_true(self) -> None:
+        """Test creating step with exposed=True."""
+        data = {
+            "id": "step1",
+            "name": "Step 1",
+            "description": "First step",
+            "instructions_file": "steps/step1.md",
+            "outputs": ["output.md"],
+            "exposed": True,
+        }
+        step = Step.from_dict(data)
+
+        assert step.exposed is True
+
 
 class TestJobDefinition:
     """Tests for JobDefinition dataclass."""
@@ -283,6 +310,19 @@ class TestParseJobDefinition:
         assert step.inputs[0].is_file_input()
         assert step.inputs[0].file == "competitors.md"
         assert step.inputs[0].from_step == "identify_competitors"
+
+    def test_parses_exposed_steps(self, fixtures_dir: Path) -> None:
+        """Test parsing job with exposed and hidden steps."""
+        job_dir = fixtures_dir / "jobs" / "exposed_step_job"
+        job = parse_job_definition(job_dir)
+
+        assert len(job.steps) == 2
+        # First step is hidden by default
+        assert job.steps[0].id == "hidden_step"
+        assert job.steps[0].exposed is False
+        # Second step is explicitly exposed
+        assert job.steps[1].id == "exposed_step"
+        assert job.steps[1].exposed is True
 
     def test_raises_for_missing_directory(self, temp_dir: Path) -> None:
         """Test parsing fails for missing directory."""
