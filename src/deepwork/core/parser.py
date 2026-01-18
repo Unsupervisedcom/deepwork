@@ -108,6 +108,12 @@ class Step:
     # Event names: after_agent, before_tool, before_prompt
     hooks: dict[str, list[HookAction]] = field(default_factory=dict)
 
+    # If true, step command is visible (no uw. prefix). Default: false (hidden).
+    exposed: bool = False
+
+    # Declarative quality criteria rendered with standard evaluation framing
+    quality_criteria: list[str] = field(default_factory=list)
+
     @property
     def stop_hooks(self) -> list[HookAction]:
         """
@@ -144,6 +150,8 @@ class Step:
             outputs=data["outputs"],
             dependencies=data.get("dependencies", []),
             hooks=hooks,
+            exposed=data.get("exposed", False),
+            quality_criteria=data.get("quality_criteria", []),
         )
 
 

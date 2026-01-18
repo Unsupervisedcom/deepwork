@@ -7,10 +7,6 @@ hooks:
           command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"
         - type: prompt
           prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
             Verify the implementation meets ALL criteria:
             1. Platform adapter class is added to src/deepwork/adapters.py
             2. Templates exist in src/deepwork/templates/<platform>/ with appropriate command structure
@@ -24,17 +20,6 @@ hooks:
 
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
-            all criteria appear to be met, respond with: {"ok": true}
-
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
 ---
 
 # add_platform.implement
@@ -339,23 +324,10 @@ Ensure all outputs are:
 
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
+
 **Validation Script**: `.deepwork/jobs/add_platform/hooks/run_tests.sh`
 
 The validation script will be executed automatically when you attempt to complete this step.
-### Quality Criteria (2)
-Verify the implementation meets ALL criteria:
-1. Platform adapter class is added to src/deepwork/adapters.py
-2. Templates exist in src/deepwork/templates/<platform>/ with appropriate command structure
-3. Tests exist for all new functionality
-4. Test coverage is 100% for new code (run: uv run pytest --cov)
-5. All tests pass
-6. README.md is updated with:
-   - New platform listed in supported platforms
-   - Installation instructions for the platform
-   - Any platform-specific notes
-
-If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
 
 ### Completion Promise
 

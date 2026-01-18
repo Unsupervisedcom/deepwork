@@ -5,10 +5,6 @@ hooks:
     - hooks:
         - type: prompt
           prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
             Verify the update process completed successfully:
             1. Changes were made in src/deepwork/standard_jobs/[job_name]/ (NOT in .deepwork/jobs/)
             2. `deepwork install --platform claude` was run
@@ -16,17 +12,6 @@ hooks:
             4. Command files in .claude/commands/ were regenerated
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
-            all criteria appear to be met, respond with: {"ok": true}
-
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
 ---
 
 # update.job
@@ -160,13 +145,6 @@ No specific files are output by this command.
 
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
-### Quality Criteria
-Verify the update process completed successfully:
-1. Changes were made in src/deepwork/standard_jobs/[job_name]/ (NOT in .deepwork/jobs/)
-2. `deepwork install --platform claude` was run
-3. Files in .deepwork/jobs/ match the source files
-4. Command files in .claude/commands/ were regenerated
-If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
 
 ### Completion Promise

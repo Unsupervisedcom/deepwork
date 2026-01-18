@@ -36,7 +36,7 @@ class TestCommandGenerator:
             CommandGenerator(nonexistent)
 
     def test_generate_step_command_simple_job(self, fixtures_dir: Path, temp_dir: Path) -> None:
-        """Test generating command for simple job step."""
+        """Test generating command for simple job step (hidden by default)."""
         job_dir = fixtures_dir / "jobs" / "simple_job"
         job = parse_job_definition(job_dir)
 
@@ -46,7 +46,8 @@ class TestCommandGenerator:
         command_path = generator.generate_step_command(job, job.steps[0], adapter, temp_dir)
 
         assert command_path.exists()
-        assert command_path.name == "simple_job.single_step.md"
+        # Step commands are hidden by default (uw. prefix)
+        assert command_path.name == "uw.simple_job.single_step.md"
 
         content = command_path.read_text()
         assert "# simple_job.single_step" in content
@@ -176,7 +177,7 @@ class TestCommandGenerator:
             instructions_file.write_text(original_content)
 
     def test_generate_all_commands(self, fixtures_dir: Path, temp_dir: Path) -> None:
-        """Test generating commands for all steps in a job."""
+        """Test generating commands for all steps in a job (meta + hidden steps)."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
@@ -185,15 +186,78 @@ class TestCommandGenerator:
 
         command_paths = generator.generate_all_commands(job, adapter, temp_dir)
 
-        assert len(command_paths) == 4
+        # Now includes meta-command plus step commands
+        assert len(command_paths) == 5  # 1 meta + 4 steps
         assert all(p.exists() for p in command_paths)
 
-        # Check filenames
+        # Check filenames - meta-command first, then hidden step commands
         expected_names = [
-            "competitive_research.identify_competitors.md",
-            "competitive_research.primary_research.md",
-            "competitive_research.secondary_research.md",
-            "competitive_research.comparative_report.md",
+            "competitive_research.md",  # Meta-command
+            "uw.competitive_research.identify_competitors.md",  # Hidden steps
+            "uw.competitive_research.primary_research.md",
+            "uw.competitive_research.secondary_research.md",
+            "uw.competitive_research.comparative_report.md",
+        ]
+        actual_names = [p.name for p in command_paths]
+        assert actual_names == expected_names
+
+    def test_generate_meta_command(self, fixtures_dir: Path, temp_dir: Path) -> None:
+        """Test generating meta-command for a job."""
+        job_dir = fixtures_dir / "jobs" / "complex_job"
+        job = parse_job_definition(job_dir)
+
+        generator = CommandGenerator()
+        adapter = ClaudeAdapter()
+
+        meta_command_path = generator.generate_meta_command(job, adapter, temp_dir)
+
+        assert meta_command_path.exists()
+        assert meta_command_path.name == "competitive_research.md"
+
+        content = meta_command_path.read_text()
+        # Check meta-command content
+        assert "# competitive_research" in content
+        assert "Available Steps" in content
+        assert "identify_competitors" in content
+        assert "primary_research" in content
+        assert "Skill tool" in content
+
+    def test_generate_step_command_exposed_step(self, fixtures_dir: Path, temp_dir: Path) -> None:
+        """Test generating command for exposed step (no uw. prefix)."""
+        job_dir = fixtures_dir / "jobs" / "exposed_step_job"
+        job = parse_job_definition(job_dir)
+
+        generator = CommandGenerator()
+        adapter = ClaudeAdapter()
+
+        # Generate the exposed step (index 1)
+        command_path = generator.generate_step_command(job, job.steps[1], adapter, temp_dir)
+
+        assert command_path.exists()
+        # Exposed step should NOT have uw. prefix
+        assert command_path.name == "exposed_job.exposed_step.md"
+
+    def test_generate_all_commands_with_exposed_steps(
+        self, fixtures_dir: Path, temp_dir: Path
+    ) -> None:
+        """Test generating all commands with mix of hidden and exposed steps."""
+        job_dir = fixtures_dir / "jobs" / "exposed_step_job"
+        job = parse_job_definition(job_dir)
+
+        generator = CommandGenerator()
+        adapter = ClaudeAdapter()
+
+        command_paths = generator.generate_all_commands(job, adapter, temp_dir)
+
+        # Meta-command + 2 steps (1 hidden, 1 exposed)
+        assert len(command_paths) == 3
+        assert all(p.exists() for p in command_paths)
+
+        # Check filenames - hidden step has uw. prefix, exposed doesn't
+        expected_names = [
+            "exposed_job.md",  # Meta-command
+            "uw.exposed_job.hidden_step.md",  # Hidden step
+            "exposed_job.exposed_step.md",  # Exposed step (no uw. prefix)
         ]
         actual_names = [p.name for p in command_paths]
         assert actual_names == expected_names

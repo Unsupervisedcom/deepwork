@@ -5,10 +5,6 @@ hooks:
     - hooks:
         - type: prompt
           prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
             Verify the capability additions meet ALL criteria:
             1. Any new hooks from the platform (for slash commands only) are added to src/deepwork/schemas/job_schema.py
             2. All existing adapters in src/deepwork/adapters.py are updated with the new hook fields
@@ -20,17 +16,6 @@ hooks:
 
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
-            all criteria appear to be met, respond with: {"ok": true}
-
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
 ---
 
 # add_platform.add_capabilities
@@ -241,17 +226,6 @@ Ensure all outputs are:
 
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
-### Quality Criteria
-Verify the capability additions meet ALL criteria:
-1. Any new hooks from the platform (for slash commands only) are added to src/deepwork/schemas/job_schema.py
-2. All existing adapters in src/deepwork/adapters.py are updated with the new hook fields
-   (set to None/null if the platform doesn't support that hook)
-3. Only hooks available on slash command definitions are added (not general CLI hooks)
-4. job_schema.py remains valid Python with no syntax errors
-5. adapters.py remains consistent - all adapters have the same hook fields
-6. If no new hooks are needed, document why in a comment
-
-If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
 
 ### Completion Promise
