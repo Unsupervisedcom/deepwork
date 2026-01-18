@@ -460,7 +460,8 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
                     else:
                         # Command failed
                         error_msg = format_command_errors(cmd_results)
-                        command_errors.append(f"## {rule.name}\n{error_msg}")
+                        skip_hint = f"To skip, include `<promise>{rule.name}</promise>` in your response.\n"
+                        command_errors.append(f"## {rule.name}\n{error_msg}{skip_hint}")
                         queue.update_status(
                             trigger_hash,
                             QueueEntryStatus.FAILED,
@@ -481,10 +482,7 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
     # Add command errors if any
     if command_errors:
         messages.append("## Command Rule Errors\n")
-        messages.append(
-            "The following command rules failed. "
-            "To skip a rule, include `<promise>Rule Name</promise>` in your response.\n"
-        )
+        messages.append("The following command rules failed.\n")
         messages.extend(command_errors)
         messages.append("")
 
