@@ -100,31 +100,6 @@ Present the list of changed files for user review, ensure they match expectation
    git push -u origin HEAD
    ```
 
-## Output Format
-
-### commit_summary.md
-
-A summary of the commit.
-
-**Structure**:
-```markdown
-# Commit Summary
-
-## Changed Files
-[List of files that were committed]
-
-## Commit Details
-- Hash: [commit hash]
-- Message: [commit message]
-- Branch: [branch name]
-
-## Push Status
-[Pushed to origin/branch-name]
-
-## User Confirmation
-[User confirmed changes matched expectations at: timestamp]
-```
-
 ## Quality Criteria
 
 - Changed files list was presented to user
@@ -132,7 +107,6 @@ A summary of the commit.
 - Commit message follows project conventions
 - Commit was created successfully
 - Changes were pushed to remote
-- Summary is captured in commit_summary.md
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
@@ -154,11 +128,6 @@ Steps:
 3. commit_and_push - Review changes and commit/push
 
 
-## Required Inputs
-
-
-**Files from Previous Steps** - Read these first:
-- `lint_results.md` (from `lint`)
 
 ## Work Branch
 
@@ -169,8 +138,8 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 
 ## Outputs
 
-**Required outputs**:
-- `commit_summary.md`
+No specific file outputs required.
+
 ## Quality Validation
 
 Stop hooks will automatically validate your work. The loop continues until all criteria pass.
@@ -182,7 +151,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 3/3 complete, outputs: commit_summary.md"
+2. Inform user: "Step 3/3 complete"
 3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
 
 ---

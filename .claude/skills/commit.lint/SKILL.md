@@ -91,41 +91,11 @@ Run ruff to format and lint the codebase:
 Report the results of each command.
 ```
 
-## Output Format
-
-### lint_results.md
-
-A summary of the linting results.
-
-**Structure**:
-```markdown
-# Lint Results
-
-## Status
-[CLEAN/ISSUES REMAINING]
-
-## ruff format
-- Files formatted: [N]
-- Status: [success/failed]
-
-## ruff check
-- Issues found: [N]
-- Auto-fixed: [N]
-- Remaining: [N]
-
-## Remaining Issues
-[List any issues that couldn't be auto-fixed, or "None"]
-
-## Actions Taken
-[List any manual fixes made, or "None - all issues auto-fixed"]
-```
-
 ## Quality Criteria
 
 - ruff format was run successfully
 - ruff check was run with --fix flag
 - No remaining lint errors (or all are documented and intentional)
-- Results are captured in lint_results.md
 - Sub-agent was used to conserve context
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
@@ -148,11 +118,6 @@ Steps:
 3. commit_and_push - Review changes and commit/push
 
 
-## Required Inputs
-
-
-**Files from Previous Steps** - Read these first:
-- `test_results.md` (from `test`)
 
 ## Work Branch
 
@@ -163,8 +128,8 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 
 ## Outputs
 
-**Required outputs**:
-- `lint_results.md`
+No specific file outputs required.
+
 ## Quality Validation
 
 Stop hooks will automatically validate your work. The loop continues until all criteria pass.
@@ -176,7 +141,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 2/3 complete, outputs: lint_results.md"
+2. Inform user: "Step 2/3 complete"
 3. **Continue workflow**: Use Skill tool to invoke `/commit.commit_and_push`
 
 ---

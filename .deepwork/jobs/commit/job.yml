@@ -25,8 +25,7 @@ steps:
     inputs:
       - name: test_command
         description: "Test command to run (optional - will auto-detect if not provided)"
-    outputs:
-      - test_results.md
+    outputs: []
     dependencies: []
     hooks:
       after_agent:
@@ -42,11 +41,8 @@ steps:
     name: "Lint Code"
     description: "Format and lint code with ruff using a sub-agent"
     instructions_file: steps/lint.md
-    inputs:
-      - file: test_results.md
-        from_step: test
-    outputs:
-      - lint_results.md
+    inputs: []
+    outputs: []
     dependencies:
       - test
     hooks:
@@ -62,11 +58,8 @@ steps:
     name: "Commit and Push"
     description: "Review changed files, commit, and push to remote"
     instructions_file: steps/commit_and_push.md
-    inputs:
-      - file: lint_results.md
-        from_step: lint
-    outputs:
-      - commit_summary.md
+    inputs: []
+    outputs: []
     dependencies:
       - lint
     hooks:
