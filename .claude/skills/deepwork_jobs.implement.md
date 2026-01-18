@@ -1,5 +1,5 @@
 ---
-description: Generate instruction files for each step based on the job.yml specification
+description: "Generate instruction files for each step based on the job.yml specification"
 user-invocable: false
 hooks:
   Stop:
@@ -34,32 +34,18 @@ hooks:
 
 # deepwork_jobs.implement
 
-**Step 2 of 3** in the **deepwork_jobs** workflow
+**Step 2/3** in **deepwork_jobs** workflow
 
-**Summary**: DeepWork job management commands
+> DeepWork job management commands
 
-## Job Overview
+## Prerequisites (Verify First)
 
-Core commands for managing DeepWork jobs. These commands help you define new multi-step
-workflows and learn from running them.
-
-The `define` command guides you through an interactive process to create a new job by
-asking structured questions about your workflow, understanding each step's inputs and outputs,
-and generating all necessary files.
-
-The `learn` command reflects on conversations where DeepWork jobs were run, identifies
-confusion or inefficiencies, and improves job instructions. It also captures bespoke
-learnings specific to the current run into AGENTS.md files in the working folder.
-
-
-## Prerequisites
-
-This step requires completion of the following step(s):
+Before proceeding, confirm these steps are complete:
 - `/deepwork_jobs.define`
 
-Please ensure these steps have been completed before proceeding.
-
 ## Instructions
+
+**Goal**: Generate instruction files for each step based on the job.yml specification
 
 # Implement Job Steps
 
@@ -301,44 +287,42 @@ Before marking this step complete, ensure:
 - Thoughtfully considered relevant rules for the job domain
 
 
-## Inputs
+### Job Context
+
+Core commands for managing DeepWork jobs. These commands help you define new multi-step
+workflows and learn from running them.
+
+The `define` command guides you through an interactive process to create a new job by
+asking structured questions about your workflow, understanding each step's inputs and outputs,
+and generating all necessary files.
+
+The `learn` command reflects on conversations where DeepWork jobs were run, identifies
+confusion or inefficiencies, and improves job instructions. It also captures bespoke
+learnings specific to the current run into AGENTS.md files in the working folder.
 
 
-### Required Files
+## Required Inputs
 
-This step requires the following files from previous steps:
-- `job.yml` (from step `define`)
 
-Make sure to read and use these files as context for this step.
+**Files from Previous Steps** - Read these first:
+- `job.yml` (from `define`)
 
-## Work Branch Management
+## Work Branch
 
-All work for this job should be done on a dedicated work branch:
+Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
-1. **Check current branch**:
-   - If already on a work branch for this job (format: `deepwork/deepwork_jobs-[instance]-[date]`), continue using it
-   - If on main/master, create a new work branch
+- If on a matching work branch: continue using it
+- If on main/master: create new branch with `git checkout -b deepwork/deepwork_jobs-[instance]-$(date +%Y%m%d)`
 
-2. **Create work branch** (if needed):
-   ```bash
-   git checkout -b deepwork/deepwork_jobs-[instance]-$(date +%Y%m%d)
-   ```
-   Replace `[instance]` with a descriptive identifier (e.g., `acme`, `q1-launch`, etc.)
+## Outputs
 
-## Output Requirements
-
-Create the following output(s):
+**Required outputs**:
 - `steps/` (directory)
-Ensure all outputs are:
-- Well-formatted and complete
-- Ready for review or use by subsequent steps
+## Quality Validation
 
-## Quality Validation Loop
+Stop hooks will automatically validate your work. The loop continues until all criteria pass.
 
-This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
-
-### Quality Criteria
-
+**Criteria (all must be satisfied)**:
 1. **Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?
 2. **Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?
 3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
@@ -350,37 +334,14 @@ This step uses an iterative quality validation loop. After completing your work,
 9. **Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to run `/deepwork_rules.define`? Not every job needs rules - only suggest when genuinely helpful.
 
 
-### Completion Promise
+**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
 
-To signal that all quality criteria have been met, include this tag in your final response:
+## On Completion
 
-```
-<promise>✓ Quality Criteria Met</promise>
-```
-
-**Important**: Only include this promise tag when you have verified that ALL quality criteria above are satisfied. The validation loop will continue until this promise is detected.
-
-## Completion
-
-After completing this step:
-
-1. **Verify outputs**: Confirm all required files have been created
-
-2. **Inform the user**:
-   - Step 2 of 3 is complete
-   - Outputs created: steps/
-   - Ready to proceed to next step: `/deepwork_jobs.learn`
-
-## Next Step
-
-To continue the workflow, run:
-```
-/deepwork_jobs.learn
-```
+1. Verify outputs are created
+2. Inform user: "Step 2/3 complete, outputs: steps/"
+3. **Continue workflow**: Use Skill tool to invoke `/deepwork_jobs.learn`
 
 ---
 
-## Context Files
-
-- Job definition: `.deepwork/jobs/deepwork_jobs/job.yml`
-- Step instructions: `.deepwork/jobs/deepwork_jobs/steps/implement.md`
+**Reference files**: `.deepwork/jobs/deepwork_jobs/job.yml`, `.deepwork/jobs/deepwork_jobs/steps/implement.md`

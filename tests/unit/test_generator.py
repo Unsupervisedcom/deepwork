@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from deepwork.core.adapters import ClaudeAdapter
-from deepwork.core.generator import SkillGenerator, GeneratorError
+from deepwork.core.generator import GeneratorError, SkillGenerator
 from deepwork.core.parser import parse_job_definition
 
 

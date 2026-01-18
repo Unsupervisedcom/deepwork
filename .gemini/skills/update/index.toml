@@ -9,7 +9,9 @@ description = "Update standard jobs in src/ and sync to installed locations"
 prompt = """
 # update
 
-You are executing the **update** job. Update standard jobs in src/ and sync to installed locations
+**Multi-step workflow**: Update standard jobs in src/ and sync to installed locations
+
+> **NOTE**: Gemini CLI requires manual command invocation. After each step, tell the user which command to run next.
 
 A workflow for maintaining standard jobs bundled with DeepWork. Standard jobs
 (like `deepwork_jobs` and `deepwork_rules`) are source-controlled in
@@ -28,36 +30,34 @@ for any standard job in the DeepWork repository.
 
 ## Available Steps
 
-This job has 1 step(s):
+1. **job** - Edit standard job source files and sync to installed locations
+   Command: `/update:job`
 
-### job
-**Update Standard Job**: Edit standard job source files and sync to installed locations
-- Command: `/update:job`
+## Execution Instructions
 
-## Instructions
+### Step 1: Analyze Intent
 
-This is a **multi-step workflow**. Determine the starting point and guide the user through the steps in sequence.
+Parse any text following `/update` to determine user intent:
+- "job" or related terms → start at `/update:job`
 
-1. **Analyze user intent** from the text that follows `/update`
+### Step 2: Direct User to Starting Step
 
-2. **Identify the starting step** based on intent:
-   - job: Edit standard job source files and sync to installed locations
+Tell the user which command to run:
+```
+/update:job
+```
 
-3. **Guide the user through the workflow**:
-   - Tell the user to run the starting step command
-   - After each step completes, guide them to the next step in the workflow
-   - Continue until the workflow is complete
+### Step 3: Guide Through Workflow
 
-   Step commands:
-   - job: `/update:job`
+After each step completes, tell the user the next command to run until workflow is complete.
 
-4. **If intent is ambiguous**, ask the user which step to start from:
-   - Present the available steps as numbered options
-   - Let them choose
+### Handling Ambiguous Intent
 
-**Note**: Gemini CLI requires manual command invocation. After each step completes, remind the user to run the next step command.
+If user intent is unclear:
+- Present available steps as numbered options
+- Ask user to select the starting point
 
-## Context Files
+## Reference
 
 - Job definition: `.deepwork/jobs/update/job.yml`
 """

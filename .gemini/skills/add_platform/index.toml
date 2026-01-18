@@ -9,7 +9,9 @@ description = "Add a new AI platform to DeepWork with adapter, templates, and te
 prompt = """
 # add_platform
 
-You are executing the **add_platform** job. Add a new AI platform to DeepWork with adapter, templates, and tests
+**Multi-step workflow**: Add a new AI platform to DeepWork with adapter, templates, and tests
+
+> **NOTE**: Gemini CLI requires manual command invocation. After each step, tell the user which command to run next.
 
 A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
 
@@ -31,54 +33,43 @@ comprehensive test coverage for new functionality.
 
 ## Available Steps
 
-This job has 4 step(s):
+1. **research** - Capture CLI configuration and hooks system documentation for the new platform
+   Command: `/add_platform:research`
+2. **add_capabilities** - Update job schema and adapters with any new hook events the platform supports (requires: research)
+   Command: `/add_platform:add_capabilities`
+3. **implement** - Add platform adapter, templates, tests with 100% coverage, and README documentation (requires: research, add_capabilities)
+   Command: `/add_platform:implement`
+4. **verify** - Set up platform directories and verify deepwork install works correctly (requires: implement)
+   Command: `/add_platform:verify`
 
-### research
-**Research Platform Documentation**: Capture CLI configuration and hooks system documentation for the new platform
-- Command: `/add_platform:research`
-### add_capabilities
-**Add Hook Capabilities**: Update job schema and adapters with any new hook events the platform supports
-- Command: `/add_platform:add_capabilities`
-- Requires: research
-### implement
-**Implement Platform Support**: Add platform adapter, templates, tests with 100% coverage, and README documentation
-- Command: `/add_platform:implement`
-- Requires: research, add_capabilities
-### verify
-**Verify Installation**: Set up platform directories and verify deepwork install works correctly
-- Command: `/add_platform:verify`
-- Requires: implement
+## Execution Instructions
 
-## Instructions
+### Step 1: Analyze Intent
 
-This is a **multi-step workflow**. Determine the starting point and guide the user through the steps in sequence.
+Parse any text following `/add_platform` to determine user intent:
+- "research" or related terms → start at `/add_platform:research`
+- "add_capabilities" or related terms → start at `/add_platform:add_capabilities`
+- "implement" or related terms → start at `/add_platform:implement`
+- "verify" or related terms → start at `/add_platform:verify`
 
-1. **Analyze user intent** from the text that follows `/add_platform`
+### Step 2: Direct User to Starting Step
 
-2. **Identify the starting step** based on intent:
-   - research: Capture CLI configuration and hooks system documentation for the new platform
-   - add_capabilities: Update job schema and adapters with any new hook events the platform supports
-   - implement: Add platform adapter, templates, tests with 100% coverage, and README documentation
-   - verify: Set up platform directories and verify deepwork install works correctly
+Tell the user which command to run:
+```
+/add_platform:research
+```
 
-3. **Guide the user through the workflow**:
-   - Tell the user to run the starting step command
-   - After each step completes, guide them to the next step in the workflow
-   - Continue until the workflow is complete
+### Step 3: Guide Through Workflow
 
-   Step commands:
-   - research: `/add_platform:research`
-   - add_capabilities: `/add_platform:add_capabilities`
-   - implement: `/add_platform:implement`
-   - verify: `/add_platform:verify`
+After each step completes, tell the user the next command to run until workflow is complete.
 
-4. **If intent is ambiguous**, ask the user which step to start from:
-   - Present the available steps as numbered options
-   - Let them choose
+### Handling Ambiguous Intent
 
-**Note**: Gemini CLI requires manual command invocation. After each step completes, remind the user to run the next step command.
+If user intent is unclear:
+- Present available steps as numbered options
+- Ask user to select the starting point
 
-## Context Files
+## Reference
 
 - Job definition: `.deepwork/jobs/add_platform/job.yml`
 """

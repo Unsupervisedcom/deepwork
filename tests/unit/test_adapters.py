@@ -9,8 +9,8 @@ from deepwork.core.adapters import (
     AdapterError,
     AgentAdapter,
     ClaudeAdapter,
-    SkillLifecycleHook,
     GeminiAdapter,
+    SkillLifecycleHook,
 )
 
 

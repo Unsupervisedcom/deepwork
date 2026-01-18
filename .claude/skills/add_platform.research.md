@@ -1,5 +1,5 @@
 ---
-description: Capture CLI configuration and hooks system documentation for the new platform
+description: "Capture CLI configuration and hooks system documentation for the new platform"
 user-invocable: false
 hooks:
   Stop:
@@ -22,32 +22,14 @@ hooks:
 
 # add_platform.research
 
-**Step 1 of 4** in the **add_platform** workflow
+**Step 1/4** in **add_platform** workflow
 
-**Summary**: Add a new AI platform to DeepWork with adapter, templates, and tests
-
-## Job Overview
-
-A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
-
-This job guides you through four phases:
-1. **Research**: Capture the platform's CLI configuration and hooks system documentation
-2. **Add Capabilities**: Update the job schema and adapters with any new hook events
-3. **Implement**: Create the platform adapter, templates, tests (100% coverage), and README updates
-4. **Verify**: Ensure installation works correctly and produces expected files
-
-The workflow ensures consistency across all supported platforms and maintains
-comprehensive test coverage for new functionality.
-
-**Important Notes**:
-- Only hooks available on slash command definitions should be captured
-- Each existing adapter must be updated when new hooks are added (typically with null values)
-- Tests must achieve 100% coverage for any new functionality
-- Installation verification confirms the platform integrates correctly with existing jobs
-
+> Add a new AI platform to DeepWork with adapter, templates, and tests
 
 
 ## Instructions
+
+**Goal**: Capture CLI configuration and hooks system documentation for the new platform
 
 # Research Platform Documentation
 
@@ -239,73 +221,57 @@ Take time to be thorough - incomplete documentation will slow down subsequent st
 - Include code examples from the official docs where available
 
 
-## Inputs
+### Job Context
 
-### User Parameters
+A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
 
-Please gather the following information from the user:
+This job guides you through four phases:
+1. **Research**: Capture the platform's CLI configuration and hooks system documentation
+2. **Add Capabilities**: Update the job schema and adapters with any new hook events
+3. **Implement**: Create the platform adapter, templates, tests (100% coverage), and README updates
+4. **Verify**: Ensure installation works correctly and produces expected files
+
+The workflow ensures consistency across all supported platforms and maintains
+comprehensive test coverage for new functionality.
+
+**Important Notes**:
+- Only hooks available on slash command definitions should be captured
+- Each existing adapter must be updated when new hooks are added (typically with null values)
+- Tests must achieve 100% coverage for any new functionality
+- Installation verification confirms the platform integrates correctly with existing jobs
+
+
+## Required Inputs
+
+**User Parameters** - Gather from user before starting:
 - **platform_name**: Clear identifier of the platform (e.g., 'cursor', 'windsurf-editor', 'github-copilot-chat')
 
 
-## Work Branch Management
+## Work Branch
 
-All work for this job should be done on a dedicated work branch:
+Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 
-1. **Check current branch**:
-   - If already on a work branch for this job (format: `deepwork/add_platform-[instance]-[date]`), continue using it
-   - If on main/master, create a new work branch
+- If on a matching work branch: continue using it
+- If on main/master: create new branch with `git checkout -b deepwork/add_platform-[instance]-$(date +%Y%m%d)`
 
-2. **Create work branch** (if needed):
-   ```bash
-   git checkout -b deepwork/add_platform-[instance]-$(date +%Y%m%d)
-   ```
-   Replace `[instance]` with a descriptive identifier (e.g., `acme`, `q1-launch`, etc.)
+## Outputs
 
-## Output Requirements
-
-Create the following output(s):
+**Required outputs**:
 - `cli_configuration.md`- `hooks_system.md`
-Ensure all outputs are:
-- Well-formatted and complete
-- Ready for review or use by subsequent steps
+## Quality Validation
 
-## Quality Validation Loop
-
-This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
+Stop hooks will automatically validate your work. The loop continues until all criteria pass.
 
 
 
-### Completion Promise
+**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
 
-To signal that all quality criteria have been met, include this tag in your final response:
+## On Completion
 
-```
-<promise>✓ Quality Criteria Met</promise>
-```
-
-**Important**: Only include this promise tag when you have verified that ALL quality criteria above are satisfied. The validation loop will continue until this promise is detected.
-
-## Completion
-
-After completing this step:
-
-1. **Verify outputs**: Confirm all required files have been created
-
-2. **Inform the user**:
-   - Step 1 of 4 is complete
-   - Outputs created: cli_configuration.md, hooks_system.md
-   - Ready to proceed to next step: `/add_platform.add_capabilities`
-
-## Next Step
-
-To continue the workflow, run:
-```
-/add_platform.add_capabilities
-```
+1. Verify outputs are created
+2. Inform user: "Step 1/4 complete, outputs: cli_configuration.md, hooks_system.md"
+3. **Continue workflow**: Use Skill tool to invoke `/add_platform.add_capabilities`
 
 ---
 
-## Context Files
-
-- Job definition: `.deepwork/jobs/add_platform/job.yml`
-- Step instructions: `.deepwork/jobs/add_platform/steps/research.md`
+**Reference files**: `.deepwork/jobs/add_platform/job.yml`, `.deepwork/jobs/add_platform/steps/research.md`

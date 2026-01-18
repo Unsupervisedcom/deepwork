@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from deepwork.core.adapters import ClaudeAdapter
-from deepwork.core.generator import SkillGenerator, GeneratorError
+from deepwork.core.generator import GeneratorError, SkillGenerator
 from deepwork.core.parser import HookAction, JobDefinition, Step, StopHook
 from deepwork.schemas.job_schema import JOB_SCHEMA
 from deepwork.utils.validation import ValidationError, validate_against_schema
@@ -580,9 +580,7 @@ hooks:
         context = generator._build_step_context(job, job.steps[0], 0, adapter)
         assert context["stop_hooks"] == []
 
-    def test_build_context_multiple_hooks(
-        self, generator: SkillGenerator, tmp_path: Path
-    ) -> None:
+    def test_build_context_multiple_hooks(self, generator: SkillGenerator, tmp_path: Path) -> None:
         """Test context with multiple stop hooks."""
         job_dir = tmp_path / "test_job"
         job_dir.mkdir()

@@ -1,5 +1,5 @@
 ---
-description: Update job schema and adapters with any new hook events the platform supports
+description: "Update job schema and adapters with any new hook events the platform supports"
 user-invocable: false
 hooks:
   Stop:
@@ -21,38 +21,18 @@ hooks:
 
 # add_platform.add_capabilities
 
-**Step 2 of 4** in the **add_platform** workflow
+**Step 2/4** in **add_platform** workflow
 
-**Summary**: Add a new AI platform to DeepWork with adapter, templates, and tests
+> Add a new AI platform to DeepWork with adapter, templates, and tests
 
-## Job Overview
+## Prerequisites (Verify First)
 
-A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
-
-This job guides you through four phases:
-1. **Research**: Capture the platform's CLI configuration and hooks system documentation
-2. **Add Capabilities**: Update the job schema and adapters with any new hook events
-3. **Implement**: Create the platform adapter, templates, tests (100% coverage), and README updates
-4. **Verify**: Ensure installation works correctly and produces expected files
-
-The workflow ensures consistency across all supported platforms and maintains
-comprehensive test coverage for new functionality.
-
-**Important Notes**:
-- Only hooks available on slash command definitions should be captured
-- Each existing adapter must be updated when new hooks are added (typically with null values)
-- Tests must achieve 100% coverage for any new functionality
-- Installation verification confirms the platform integrates correctly with existing jobs
-
-
-## Prerequisites
-
-This step requires completion of the following step(s):
+Before proceeding, confirm these steps are complete:
 - `/add_platform.research`
 
-Please ensure these steps have been completed before proceeding.
-
 ## Instructions
+
+**Goal**: Update job schema and adapters with any new hook events the platform supports
 
 # Add Hook Capabilities
 
@@ -191,75 +171,57 @@ For reference, here are common hook patterns across platforms:
 When you find a new hook type, consider whether it maps to an existing pattern or is genuinely new functionality.
 
 
-## Inputs
+### Job Context
+
+A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
+
+This job guides you through four phases:
+1. **Research**: Capture the platform's CLI configuration and hooks system documentation
+2. **Add Capabilities**: Update the job schema and adapters with any new hook events
+3. **Implement**: Create the platform adapter, templates, tests (100% coverage), and README updates
+4. **Verify**: Ensure installation works correctly and produces expected files
+
+The workflow ensures consistency across all supported platforms and maintains
+comprehensive test coverage for new functionality.
+
+**Important Notes**:
+- Only hooks available on slash command definitions should be captured
+- Each existing adapter must be updated when new hooks are added (typically with null values)
+- Tests must achieve 100% coverage for any new functionality
+- Installation verification confirms the platform integrates correctly with existing jobs
 
 
-### Required Files
+## Required Inputs
 
-This step requires the following files from previous steps:
-- `hooks_system.md` (from step `research`)
 
-Make sure to read and use these files as context for this step.
+**Files from Previous Steps** - Read these first:
+- `hooks_system.md` (from `research`)
 
-## Work Branch Management
+## Work Branch
 
-All work for this job should be done on a dedicated work branch:
+Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 
-1. **Check current branch**:
-   - If already on a work branch for this job (format: `deepwork/add_platform-[instance]-[date]`), continue using it
-   - If on main/master, create a new work branch
+- If on a matching work branch: continue using it
+- If on main/master: create new branch with `git checkout -b deepwork/add_platform-[instance]-$(date +%Y%m%d)`
 
-2. **Create work branch** (if needed):
-   ```bash
-   git checkout -b deepwork/add_platform-[instance]-$(date +%Y%m%d)
-   ```
-   Replace `[instance]` with a descriptive identifier (e.g., `acme`, `q1-launch`, etc.)
+## Outputs
 
-## Output Requirements
-
-Create the following output(s):
+**Required outputs**:
 - `job_schema.py`- `adapters.py`
-Ensure all outputs are:
-- Well-formatted and complete
-- Ready for review or use by subsequent steps
+## Quality Validation
 
-## Quality Validation Loop
-
-This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
+Stop hooks will automatically validate your work. The loop continues until all criteria pass.
 
 
 
-### Completion Promise
+**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
 
-To signal that all quality criteria have been met, include this tag in your final response:
+## On Completion
 
-```
-<promise>✓ Quality Criteria Met</promise>
-```
-
-**Important**: Only include this promise tag when you have verified that ALL quality criteria above are satisfied. The validation loop will continue until this promise is detected.
-
-## Completion
-
-After completing this step:
-
-1. **Verify outputs**: Confirm all required files have been created
-
-2. **Inform the user**:
-   - Step 2 of 4 is complete
-   - Outputs created: job_schema.py, adapters.py
-   - Ready to proceed to next step: `/add_platform.implement`
-
-## Next Step
-
-To continue the workflow, run:
-```
-/add_platform.implement
-```
+1. Verify outputs are created
+2. Inform user: "Step 2/4 complete, outputs: job_schema.py, adapters.py"
+3. **Continue workflow**: Use Skill tool to invoke `/add_platform.implement`
 
 ---
 
-## Context Files
-
-- Job definition: `.deepwork/jobs/add_platform/job.yml`
-- Step instructions: `.deepwork/jobs/add_platform/steps/add_capabilities.md`
+**Reference files**: `.deepwork/jobs/add_platform/job.yml`, `.deepwork/jobs/add_platform/steps/add_capabilities.md`

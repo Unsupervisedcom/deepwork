@@ -9,7 +9,9 @@ description = "Rules enforcement for AI agent sessions"
 prompt = """
 # deepwork_rules
 
-You are executing the **deepwork_rules** job. Rules enforcement for AI agent sessions
+**Multi-step workflow**: Rules enforcement for AI agent sessions
+
+> **NOTE**: Gemini CLI requires manual command invocation. After each step, tell the user which command to run next.
 
 Manages rules that automatically trigger when certain files change during an AI agent session.
 Rules help ensure that code changes follow team guidelines, documentation is updated,
@@ -30,36 +32,34 @@ Example use cases:
 
 ## Available Steps
 
-This job has 1 step(s):
+1. **define** - Create a new rule file in .deepwork/rules/
+   Command: `/deepwork_rules:define`
 
-### define
-**Define Rule**: Create a new rule file in .deepwork/rules/
-- Command: `/deepwork_rules:define`
+## Execution Instructions
 
-## Instructions
+### Step 1: Analyze Intent
 
-This is a **multi-step workflow**. Determine the starting point and guide the user through the steps in sequence.
+Parse any text following `/deepwork_rules` to determine user intent:
+- "define" or related terms → start at `/deepwork_rules:define`
 
-1. **Analyze user intent** from the text that follows `/deepwork_rules`
+### Step 2: Direct User to Starting Step
 
-2. **Identify the starting step** based on intent:
-   - define: Create a new rule file in .deepwork/rules/
+Tell the user which command to run:
+```
+/deepwork_rules:define
+```
 
-3. **Guide the user through the workflow**:
-   - Tell the user to run the starting step command
-   - After each step completes, guide them to the next step in the workflow
-   - Continue until the workflow is complete
+### Step 3: Guide Through Workflow
 
-   Step commands:
-   - define: `/deepwork_rules:define`
+After each step completes, tell the user the next command to run until workflow is complete.
 
-4. **If intent is ambiguous**, ask the user which step to start from:
-   - Present the available steps as numbered options
-   - Let them choose
+### Handling Ambiguous Intent
 
-**Note**: Gemini CLI requires manual command invocation. After each step completes, remind the user to run the next step command.
+If user intent is unclear:
+- Present available steps as numbered options
+- Ask user to select the starting point
 
-## Context Files
+## Reference
 
 - Job definition: `.deepwork/jobs/deepwork_rules/job.yml`
 """

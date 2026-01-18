@@ -1,10 +1,12 @@
 ---
-description: Rules enforcement for AI agent sessions
+description: "Rules enforcement for AI agent sessions"
 ---
 
 # deepwork_rules
 
-You are executing the **deepwork_rules** job. Rules enforcement for AI agent sessions
+**Multi-step workflow**: Rules enforcement for AI agent sessions
+
+> **CRITICAL**: Always invoke steps using the Skill tool. Never copy/paste step instructions directly.
 
 Manages rules that automatically trigger when certain files change during an AI agent session.
 Rules help ensure that code changes follow team guidelines, documentation is updated,
@@ -25,34 +27,34 @@ Example use cases:
 
 ## Available Steps
 
-This job has 1 step(s):
+1. **define** - Create a new rule file in .deepwork/rules/
 
-### define
-**Define Rule**: Create a new rule file in .deepwork/rules/
-- Command: `deepwork_rules.define`
+## Execution Instructions
 
-## Instructions
+### Step 1: Analyze Intent
 
-This is a **multi-step workflow**. Determine the starting point and run through the steps in sequence.
+Parse any text following `/deepwork_rules` to determine user intent:
+- "define" or related terms → start at `deepwork_rules.define`
 
-1. **Analyze user intent** from the text that follows `/deepwork_rules`
+### Step 2: Invoke Starting Step
 
-2. **Identify the starting step** based on intent:
-   - define: Create a new rule file in .deepwork/rules/
+Use the Skill tool to invoke the identified starting step:
+```
+Skill tool: deepwork_rules.define
+```
 
-3. **Run the workflow** starting from the identified step:
-   - Invoke the starting step using the Skill tool
-   - When that step completes, **automatically continue** to the next step in the workflow
-   - Continue until the workflow is complete or the user intervenes
+### Step 3: Continue Workflow Automatically
 
-4. **If intent is ambiguous**, ask the user which step to start from:
-   - Present the available steps as numbered options
-   - Use AskUserQuestion to let them choose
+After each step completes:
+1. Check if there's a next step in the sequence
+2. Invoke the next step using the Skill tool
+3. Repeat until workflow is complete or user intervenes
 
-**Critical**:
-- You MUST invoke each step using the Skill tool. Do not copy/paste step instructions.
-- After each step completes, check if there's a next step and invoke it automatically.
-- The workflow continues until all dependent steps are complete.
+### Handling Ambiguous Intent
+
+If user intent is unclear, use AskUserQuestion to clarify:
+- Present available steps as numbered options
+- Let user select the starting point
 
 ## Context Files
 

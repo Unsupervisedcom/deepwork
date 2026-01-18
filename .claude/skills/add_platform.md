@@ -1,10 +1,12 @@
 ---
-description: Add a new AI platform to DeepWork with adapter, templates, and tests
+description: "Add a new AI platform to DeepWork with adapter, templates, and tests"
 ---
 
 # add_platform
 
-You are executing the **add_platform** job. Add a new AI platform to DeepWork with adapter, templates, and tests
+**Multi-step workflow**: Add a new AI platform to DeepWork with adapter, templates, and tests
+
+> **CRITICAL**: Always invoke steps using the Skill tool. Never copy/paste step instructions directly.
 
 A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
 
@@ -26,49 +28,40 @@ comprehensive test coverage for new functionality.
 
 ## Available Steps
 
-This job has 4 step(s):
+1. **research** - Capture CLI configuration and hooks system documentation for the new platform
+2. **add_capabilities** - Update job schema and adapters with any new hook events the platform supports (requires: research)
+3. **implement** - Add platform adapter, templates, tests with 100% coverage, and README documentation (requires: research, add_capabilities)
+4. **verify** - Set up platform directories and verify deepwork install works correctly (requires: implement)
 
-### research
-**Research Platform Documentation**: Capture CLI configuration and hooks system documentation for the new platform
-- Command: `add_platform.research`
-### add_capabilities
-**Add Hook Capabilities**: Update job schema and adapters with any new hook events the platform supports
-- Command: `add_platform.add_capabilities`
-- Requires: research
-### implement
-**Implement Platform Support**: Add platform adapter, templates, tests with 100% coverage, and README documentation
-- Command: `add_platform.implement`
-- Requires: research, add_capabilities
-### verify
-**Verify Installation**: Set up platform directories and verify deepwork install works correctly
-- Command: `add_platform.verify`
-- Requires: implement
+## Execution Instructions
 
-## Instructions
+### Step 1: Analyze Intent
 
-This is a **multi-step workflow**. Determine the starting point and run through the steps in sequence.
+Parse any text following `/add_platform` to determine user intent:
+- "research" or related terms → start at `add_platform.research`
+- "add_capabilities" or related terms → start at `add_platform.add_capabilities`
+- "implement" or related terms → start at `add_platform.implement`
+- "verify" or related terms → start at `add_platform.verify`
 
-1. **Analyze user intent** from the text that follows `/add_platform`
+### Step 2: Invoke Starting Step
 
-2. **Identify the starting step** based on intent:
-   - research: Capture CLI configuration and hooks system documentation for the new platform
-   - add_capabilities: Update job schema and adapters with any new hook events the platform supports
-   - implement: Add platform adapter, templates, tests with 100% coverage, and README documentation
-   - verify: Set up platform directories and verify deepwork install works correctly
+Use the Skill tool to invoke the identified starting step:
+```
+Skill tool: add_platform.research
+```
 
-3. **Run the workflow** starting from the identified step:
-   - Invoke the starting step using the Skill tool
-   - When that step completes, **automatically continue** to the next step in the workflow
-   - Continue until the workflow is complete or the user intervenes
+### Step 3: Continue Workflow Automatically
 
-4. **If intent is ambiguous**, ask the user which step to start from:
-   - Present the available steps as numbered options
-   - Use AskUserQuestion to let them choose
+After each step completes:
+1. Check if there's a next step in the sequence
+2. Invoke the next step using the Skill tool
+3. Repeat until workflow is complete or user intervenes
 
-**Critical**:
-- You MUST invoke each step using the Skill tool. Do not copy/paste step instructions.
-- After each step completes, check if there's a next step and invoke it automatically.
-- The workflow continues until all dependent steps are complete.
+### Handling Ambiguous Intent
+
+If user intent is unclear, use AskUserQuestion to clarify:
+- Present available steps as numbered options
+- Let user select the starting point
 
 ## Context Files
 

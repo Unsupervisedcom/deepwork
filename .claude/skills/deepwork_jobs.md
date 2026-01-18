@@ -1,10 +1,12 @@
 ---
-description: DeepWork job management commands
+description: "DeepWork job management commands"
 ---
 
 # deepwork_jobs
 
-You are executing the **deepwork_jobs** job. DeepWork job management commands
+**Multi-step workflow**: DeepWork job management commands
+
+> **CRITICAL**: Always invoke steps using the Skill tool. Never copy/paste step instructions directly.
 
 Core commands for managing DeepWork jobs. These commands help you define new multi-step
 workflows and learn from running them.
@@ -20,43 +22,38 @@ learnings specific to the current run into AGENTS.md files in the working folder
 
 ## Available Steps
 
-This job has 3 step(s):
+1. **define** - Create the job.yml specification file by understanding workflow requirements
+2. **implement** - Generate instruction files for each step based on the job.yml specification (requires: define)
+3. **learn** - Reflect on conversation to improve job instructions and capture learnings
 
-### define
-**Define Job Specification**: Create the job.yml specification file by understanding workflow requirements
-- Command: `deepwork_jobs.define`
-### implement
-**Implement Job Steps**: Generate instruction files for each step based on the job.yml specification
-- Command: `deepwork_jobs.implement`
-- Requires: define
-### learn
-**Learn from Job Execution**: Reflect on conversation to improve job instructions and capture learnings
-- Command: `deepwork_jobs.learn`
+## Execution Instructions
 
-## Instructions
+### Step 1: Analyze Intent
 
-This is a **multi-step workflow**. Determine the starting point and run through the steps in sequence.
+Parse any text following `/deepwork_jobs` to determine user intent:
+- "define" or related terms → start at `deepwork_jobs.define`
+- "implement" or related terms → start at `deepwork_jobs.implement`
+- "learn" or related terms → start at `deepwork_jobs.learn`
 
-1. **Analyze user intent** from the text that follows `/deepwork_jobs`
+### Step 2: Invoke Starting Step
 
-2. **Identify the starting step** based on intent:
-   - define: Create the job.yml specification file by understanding workflow requirements
-   - implement: Generate instruction files for each step based on the job.yml specification
-   - learn: Reflect on conversation to improve job instructions and capture learnings
+Use the Skill tool to invoke the identified starting step:
+```
+Skill tool: deepwork_jobs.define
+```
 
-3. **Run the workflow** starting from the identified step:
-   - Invoke the starting step using the Skill tool
-   - When that step completes, **automatically continue** to the next step in the workflow
-   - Continue until the workflow is complete or the user intervenes
+### Step 3: Continue Workflow Automatically
 
-4. **If intent is ambiguous**, ask the user which step to start from:
-   - Present the available steps as numbered options
-   - Use AskUserQuestion to let them choose
+After each step completes:
+1. Check if there's a next step in the sequence
+2. Invoke the next step using the Skill tool
+3. Repeat until workflow is complete or user intervenes
 
-**Critical**:
-- You MUST invoke each step using the Skill tool. Do not copy/paste step instructions.
-- After each step completes, check if there's a next step and invoke it automatically.
-- The workflow continues until all dependent steps are complete.
+### Handling Ambiguous Intent
+
+If user intent is unclear, use AskUserQuestion to clarify:
+- Present available steps as numbered options
+- Let user select the starting point
 
 ## Context Files
 

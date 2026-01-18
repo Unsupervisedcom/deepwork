@@ -1,35 +1,18 @@
 ---
-description: Create a new rule file in .deepwork/rules/
+description: "Create a new rule file in .deepwork/rules/"
 user-invocable: false
 ---
 
 # deepwork_rules.define
 
-**Standalone skill** in the **deepwork_rules** job - can be run anytime
+**Standalone skill** - can be run anytime
 
-**Summary**: Rules enforcement for AI agent sessions
-
-## Job Overview
-
-Manages rules that automatically trigger when certain files change during an AI agent session.
-Rules help ensure that code changes follow team guidelines, documentation is updated,
-and architectural decisions are respected.
-
-Rules are stored as individual markdown files with YAML frontmatter in the `.deepwork/rules/`
-directory. Each rule file specifies:
-- Detection mode: trigger/safety, set (bidirectional), or pair (directional)
-- Patterns: Glob patterns for matching files, with optional variable capture
-- Instructions: Markdown content describing what the agent should do
-
-Example use cases:
-- Update installation docs when configuration files change
-- Require security review when authentication code is modified
-- Ensure API documentation stays in sync with API code
-- Enforce source/test file pairing
-
+> Rules enforcement for AI agent sessions
 
 
 ## Instructions
+
+**Goal**: Create a new rule file in .deepwork/rules/
 
 # Define Rule
 
@@ -282,59 +265,49 @@ Rules are evaluated automatically when the agent finishes a task. The system:
 You can mark a rule as addressed by including `<promise>Rule Name</promise>` in your response (replace Rule Name with the actual rule name from the `name` field). This tells the system you've already handled that rule's requirements.
 
 
-## Inputs
+### Job Context
 
-### User Parameters
+Manages rules that automatically trigger when certain files change during an AI agent session.
+Rules help ensure that code changes follow team guidelines, documentation is updated,
+and architectural decisions are respected.
 
-Please gather the following information from the user:
+Rules are stored as individual markdown files with YAML frontmatter in the `.deepwork/rules/`
+directory. Each rule file specifies:
+- Detection mode: trigger/safety, set (bidirectional), or pair (directional)
+- Patterns: Glob patterns for matching files, with optional variable capture
+- Instructions: Markdown content describing what the agent should do
+
+Example use cases:
+- Update installation docs when configuration files change
+- Require security review when authentication code is modified
+- Ensure API documentation stays in sync with API code
+- Enforce source/test file pairing
+
+
+## Required Inputs
+
+**User Parameters** - Gather from user before starting:
 - **rule_purpose**: What guideline or constraint should this rule enforce?
 
 
-## Work Branch Management
+## Work Branch
 
-All work for this job should be done on a dedicated work branch:
+Use branch format: `deepwork/deepwork_rules-[instance]-YYYYMMDD`
 
-1. **Check current branch**:
-   - If already on a work branch for this job (format: `deepwork/deepwork_rules-[instance]-[date]`), continue using it
-   - If on main/master, create a new work branch
+- If on a matching work branch: continue using it
+- If on main/master: create new branch with `git checkout -b deepwork/deepwork_rules-[instance]-$(date +%Y%m%d)`
 
-2. **Create work branch** (if needed):
-   ```bash
-   git checkout -b deepwork/deepwork_rules-[instance]-$(date +%Y%m%d)
-   ```
-   Replace `[instance]` with a descriptive identifier (e.g., `acme`, `q1-launch`, etc.)
+## Outputs
 
-## Output Requirements
-
-Create the following output(s):
+**Required outputs**:
 - `.deepwork/rules/{rule-name}.md`
-Ensure all outputs are:
-- Well-formatted and complete
-- Ready for review or use by subsequent steps
+## On Completion
 
-## Completion
+1. Verify outputs are created
+2. Inform user: "define complete, outputs: .deepwork/rules/{rule-name}.md"
 
-After completing this step:
-
-1. **Verify outputs**: Confirm all required files have been created
-
-2. **Inform the user**:
-   - The define skill is complete
-   - Outputs created: .deepwork/rules/{rule-name}.md
-   - This skill can be run again anytime to make further changes
-
-## Skill Complete
-
-This is a standalone skill that can be run anytime. The outputs are ready for use.
-
-Consider:
-- Reviewing the outputs
-- Running `deepwork sync` if job definitions were changed
-- Re-running this skill later if further changes are needed
+This standalone skill can be re-run anytime.
 
 ---
 
-## Context Files
-
-- Job definition: `.deepwork/jobs/deepwork_rules/job.yml`
-- Step instructions: `.deepwork/jobs/deepwork_rules/steps/define.md`
+**Reference files**: `.deepwork/jobs/deepwork_rules/job.yml`, `.deepwork/jobs/deepwork_rules/steps/define.md`

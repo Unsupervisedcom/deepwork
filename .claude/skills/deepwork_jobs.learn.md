@@ -1,5 +1,5 @@
 ---
-description: Reflect on conversation to improve job instructions and capture learnings
+description: "Reflect on conversation to improve job instructions and capture learnings"
 hooks:
   Stop:
     - hooks:
@@ -34,26 +34,14 @@ hooks:
 
 # deepwork_jobs.learn
 
-**Standalone skill** in the **deepwork_jobs** job - can be run anytime
+**Standalone skill** - can be run anytime
 
-**Summary**: DeepWork job management commands
-
-## Job Overview
-
-Core commands for managing DeepWork jobs. These commands help you define new multi-step
-workflows and learn from running them.
-
-The `define` command guides you through an interactive process to create a new job by
-asking structured questions about your workflow, understanding each step's inputs and outputs,
-and generating all necessary files.
-
-The `learn` command reflects on conversations where DeepWork jobs were run, identifies
-confusion or inefficiencies, and improves job instructions. It also captures bespoke
-learnings specific to the current run into AGENTS.md files in the working folder.
-
+> DeepWork job management commands
 
 
 ## Instructions
+
+**Goal**: Reflect on conversation to improve job instructions and capture learnings
 
 # Learn from Job Execution
 
@@ -345,42 +333,42 @@ Updated job instructions and created AGENTS.md with bespoke learnings. To get th
 - Reference config files instead of including values
 
 
-## Inputs
+### Job Context
 
-### User Parameters
+Core commands for managing DeepWork jobs. These commands help you define new multi-step
+workflows and learn from running them.
 
-Please gather the following information from the user:
+The `define` command guides you through an interactive process to create a new job by
+asking structured questions about your workflow, understanding each step's inputs and outputs,
+and generating all necessary files.
+
+The `learn` command reflects on conversations where DeepWork jobs were run, identifies
+confusion or inefficiencies, and improves job instructions. It also captures bespoke
+learnings specific to the current run into AGENTS.md files in the working folder.
+
+
+## Required Inputs
+
+**User Parameters** - Gather from user before starting:
 - **job_name**: Name of the job that was run (optional - will auto-detect from conversation)
 
 
-## Work Branch Management
+## Work Branch
 
-All work for this job should be done on a dedicated work branch:
+Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
-1. **Check current branch**:
-   - If already on a work branch for this job (format: `deepwork/deepwork_jobs-[instance]-[date]`), continue using it
-   - If on main/master, create a new work branch
+- If on a matching work branch: continue using it
+- If on main/master: create new branch with `git checkout -b deepwork/deepwork_jobs-[instance]-$(date +%Y%m%d)`
 
-2. **Create work branch** (if needed):
-   ```bash
-   git checkout -b deepwork/deepwork_jobs-[instance]-$(date +%Y%m%d)
-   ```
-   Replace `[instance]` with a descriptive identifier (e.g., `acme`, `q1-launch`, etc.)
+## Outputs
 
-## Output Requirements
-
-Create the following output(s):
+**Required outputs**:
 - `AGENTS.md`
-Ensure all outputs are:
-- Well-formatted and complete
-- Ready for review or use by subsequent steps
+## Quality Validation
 
-## Quality Validation Loop
+Stop hooks will automatically validate your work. The loop continues until all criteria pass.
 
-This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
-
-### Quality Criteria
-
+**Criteria (all must be satisfied)**:
 1. **Conversation Analyzed**: Did the agent review the conversation for DeepWork job executions?
 2. **Confusion Identified**: Did the agent identify points of confusion, errors, or inefficiencies?
 3. **Instructions Improved**: Were job instructions updated to address identified issues?
@@ -393,39 +381,15 @@ This step uses an iterative quality validation loop. After completing your work,
 10. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
 
 
-### Completion Promise
+**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
 
-To signal that all quality criteria have been met, include this tag in your final response:
+## On Completion
 
-```
-<promise>✓ Quality Criteria Met</promise>
-```
+1. Verify outputs are created
+2. Inform user: "learn complete, outputs: AGENTS.md"
 
-**Important**: Only include this promise tag when you have verified that ALL quality criteria above are satisfied. The validation loop will continue until this promise is detected.
-
-## Completion
-
-After completing this step:
-
-1. **Verify outputs**: Confirm all required files have been created
-
-2. **Inform the user**:
-   - The learn skill is complete
-   - Outputs created: AGENTS.md
-   - This skill can be run again anytime to make further changes
-
-## Skill Complete
-
-This is a standalone skill that can be run anytime. The outputs are ready for use.
-
-Consider:
-- Reviewing the outputs
-- Running `deepwork sync` if job definitions were changed
-- Re-running this skill later if further changes are needed
+This standalone skill can be re-run anytime.
 
 ---
 
-## Context Files
-
-- Job definition: `.deepwork/jobs/deepwork_jobs/job.yml`
-- Step instructions: `.deepwork/jobs/deepwork_jobs/steps/learn.md`
+**Reference files**: `.deepwork/jobs/deepwork_jobs/job.yml`, `.deepwork/jobs/deepwork_jobs/steps/learn.md`
