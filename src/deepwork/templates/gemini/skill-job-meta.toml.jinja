@@ -1,3 +1,22 @@
+{#
+Template: skill-job-meta.toml.jinja
+Purpose: Generates the job overview skill file for Gemini CLI
+
+Template Variables:
+  - job_name: string - Job identifier (e.g., "competitive_research")
+  - job_summary: string - Short one-line summary of the job
+  - job_description: string|null - Full description (optional)
+  - total_steps: int - Number of steps in the job
+  - steps: list - Array of step objects:
+      - id: string - Step identifier
+      - name: string - Human-readable step name
+      - description: string - What the step does
+      - command_name: string - Slash command (e.g., "job_name:step_id")
+      - dependencies: list[string]|null - Required prior steps
+
+Note: Gemini uses TOML format with description + prompt fields.
+      Commands use colon separator (/job_name:step_id) not period.
+#}
 # {{ job_name }}
 #
 # {{ job_summary }}
@@ -9,7 +28,9 @@ description = "{{ job_summary | replace('"', '\\"') }}"
 prompt = """
 # {{ job_name }}
 
-You are executing the **{{ job_name }}** job. {{ job_summary }}
+**Multi-step workflow**: {{ job_summary }}
+
+> **NOTE**: Gemini CLI requires manual command invocation. After each step, tell the user which command to run next.
 
 {% if job_description %}
 {{ job_description }}
@@ -17,45 +38,39 @@ You are executing the **{{ job_name }}** job. {{ job_summary }}
 
 ## Available Steps
 
-This job has {{ total_steps }} step(s):
-
 {% for step in steps %}
-### {{ step.id }}
-**{{ step.name }}**: {{ step.description }}
-- Command: `/{{ step.command_name }}`
-{% if step.dependencies %}
-- Requires: {{ step.dependencies | join(', ') }}
-{% endif %}
+{{ loop.index }}. **{{ step.id }}** - {{ step.description }}{% if step.dependencies %} (requires: {{ step.dependencies | join(', ') }}){% endif %}
+
+   Command: `/{{ step.command_name }}`
 {% endfor %}
 
-## Instructions
+## Execution Instructions
 
-This is a **multi-step workflow**. Determine the starting point and guide the user through the steps in sequence.
+### Step 1: Analyze Intent
 
-1. **Analyze user intent** from the text that follows `/{{ job_name }}`
-
-2. **Identify the starting step** based on intent:
+Parse any text following `/{{ job_name }}` to determine user intent:
 {% for step in steps %}
-   - {{ step.id }}: {{ step.description }}
+- "{{ step.id }}" or related terms → start at `/{{ step.command_name }}`
 {% endfor %}
 
-3. **Guide the user through the workflow**:
-   - Tell the user to run the starting step command
-   - After each step completes, guide them to the next step in the workflow
-   - Continue until the workflow is complete
+### Step 2: Direct User to Starting Step
 
-   Step commands:
-{% for step in steps %}
-   - {{ step.id }}: `/{{ step.command_name }}`
-{% endfor %}
+Tell the user which command to run:
+```
+/{{ steps[0].command_name }}
+```
 
-4. **If intent is ambiguous**, ask the user which step to start from:
-   - Present the available steps as numbered options
-   - Let them choose
+### Step 3: Guide Through Workflow
 
-**Note**: Gemini CLI requires manual command invocation. After each step completes, remind the user to run the next step command.
+After each step completes, tell the user the next command to run until workflow is complete.
 
-## Context Files
+### Handling Ambiguous Intent
+
+If user intent is unclear:
+- Present available steps as numbered options
+- Ask user to select the starting point
+
+## Reference
 
 - Job definition: `.deepwork/jobs/{{ job_name }}/job.yml`
 """

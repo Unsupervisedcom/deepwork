@@ -1,10 +1,28 @@
+{#
+Template: skill-job-meta.md.jinja
+Purpose: Generates the job overview skill file for Claude Code
+
+Template Variables:
+  - job_name: string - Job identifier (e.g., "competitive_research")
+  - job_summary: string - Short one-line summary of the job
+  - job_description: string|null - Full description (optional)
+  - total_steps: int - Number of steps in the job
+  - steps: list - Array of step objects:
+      - id: string - Step identifier
+      - name: string - Human-readable step name
+      - description: string - What the step does
+      - command_name: string - Slash command (e.g., "job_name.step_id")
+      - dependencies: list[string]|null - Required prior steps
+#}
 ---
-description: {{ job_summary }}
+description: "{{ job_summary }}"
 ---
 
 # {{ job_name }}
 
-You are executing the **{{ job_name }}** job. {{ job_summary }}
+**Multi-step workflow**: {{ job_summary }}
+
+> **CRITICAL**: Always invoke steps using the Skill tool. Never copy/paste step instructions directly.
 
 {% if job_description %}
 {{ job_description }}
@@ -12,41 +30,39 @@ You are executing the **{{ job_name }}** job. {{ job_summary }}
 
 ## Available Steps
 
-This job has {{ total_steps }} step(s):
-
 {% for step in steps %}
-### {{ step.id }}
-**{{ step.name }}**: {{ step.description }}
-- Command: `{{ step.command_name }}`
-{% if step.dependencies %}
-- Requires: {{ step.dependencies | join(', ') }}
-{% endif %}
+{{ loop.index }}. **{{ step.id }}** - {{ step.description }}{% if step.dependencies %} (requires: {{ step.dependencies | join(', ') }}){% endif %}
+
 {% endfor %}
 
-## Instructions
+## Execution Instructions
 
-This is a **multi-step workflow**. Determine the starting point and run through the steps in sequence.
+### Step 1: Analyze Intent
 
-1. **Analyze user intent** from the text that follows `/{{ job_name }}`
-
-2. **Identify the starting step** based on intent:
+Parse any text following `/{{ job_name }}` to determine user intent:
 {% for step in steps %}
-   - {{ step.id }}: {{ step.description }}
+- "{{ step.id }}" or related terms → start at `{{ step.command_name }}`
 {% endfor %}
 
-3. **Run the workflow** starting from the identified step:
-   - Invoke the starting step using the Skill tool
-   - When that step completes, **automatically continue** to the next step in the workflow
-   - Continue until the workflow is complete or the user intervenes
+### Step 2: Invoke Starting Step
 
-4. **If intent is ambiguous**, ask the user which step to start from:
-   - Present the available steps as numbered options
-   - Use AskUserQuestion to let them choose
+Use the Skill tool to invoke the identified starting step:
+```
+Skill tool: {{ steps[0].command_name }}
+```
 
-**Critical**:
-- You MUST invoke each step using the Skill tool. Do not copy/paste step instructions.
-- After each step completes, check if there's a next step and invoke it automatically.
-- The workflow continues until all dependent steps are complete.
+### Step 3: Continue Workflow Automatically
+
+After each step completes:
+1. Check if there's a next step in the sequence
+2. Invoke the next step using the Skill tool
+3. Repeat until workflow is complete or user intervenes
+
+### Handling Ambiguous Intent
+
+If user intent is unclear, use AskUserQuestion to clarify:
+- Present available steps as numbered options
+- Let user select the starting point
 
 ## Context Files
 
