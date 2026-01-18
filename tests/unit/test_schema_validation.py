@@ -16,6 +16,7 @@ class TestRequiredFields:
         rule_file.write_text(
             """---
 trigger: "src/**/*"
+compare_to: base
 ---
 Instructions here.
 """
@@ -30,12 +31,28 @@ Instructions here.
         rule_file.write_text(
             """---
 name: Test Rule
+compare_to: base
 ---
 Instructions here.
 """
         )
 
         with pytest.raises(RulesParseError):
+            parse_rule_file(rule_file)
+
+    def test_missing_compare_to(self, tmp_path: Path) -> None:
+        """SV-8.1.5: Missing compare_to field."""
+        rule_file = tmp_path / "test.md"
+        rule_file.write_text(
+            """---
+name: Test Rule
+trigger: "src/**/*"
+---
+Instructions here.
+"""
+        )
+
+        with pytest.raises(RulesParseError, match="compare_to"):
             parse_rule_file(rule_file)
 
     def test_missing_markdown_body(self, tmp_path: Path) -> None:
@@ -45,6 +62,7 @@ Instructions here.
             """---
 name: Test Rule
 trigger: "src/**/*"
+compare_to: base
 ---
 """
         )
@@ -63,6 +81,7 @@ trigger: "src/**/*"
 name: Test Rule
 set:
   - src/{path}.py
+compare_to: base
 ---
 Instructions here.
 """
@@ -86,6 +105,7 @@ trigger: "src/**/*"
 set:
   - src/{path}.py
   - tests/{path}_test.py
+compare_to: base
 ---
 Instructions here.
 """
@@ -104,6 +124,7 @@ trigger: "src/**/*"
 pair:
   trigger: api/{path}.py
   expects: docs/{path}.md
+compare_to: base
 ---
 Instructions here.
 """
@@ -125,6 +146,7 @@ set:
 pair:
   trigger: api/{path}.py
   expects: docs/{path}.md
+compare_to: base
 ---
 Instructions here.
 """
@@ -163,6 +185,7 @@ trigger: "**/*.py"
 action:
   command: "ruff format {file}"
   run_for: first_match
+compare_to: prompt
 ---
 """
         )
@@ -182,6 +205,7 @@ class TestValidRules:
 name: Test Rule
 trigger: "src/**/*"
 safety: README.md
+compare_to: base
 ---
 Please check the code.
 """
@@ -191,6 +215,7 @@ Please check the code.
         assert rule.name == "Test Rule"
         assert rule.triggers == ["src/**/*"]
         assert rule.safety == ["README.md"]
+        assert rule.compare_to == "base"
 
     def test_valid_set_rule(self, tmp_path: Path) -> None:
         """Valid set rule parses successfully."""
@@ -201,6 +226,7 @@ name: Source/Test Pairing
 set:
   - src/{path}.py
   - tests/{path}_test.py
+compare_to: base
 ---
 Source and test should change together.
 """
@@ -209,6 +235,7 @@ Source and test should change together.
         rule = parse_rule_file(rule_file)
         assert rule.name == "Source/Test Pairing"
         assert len(rule.set_patterns) == 2
+        assert rule.compare_to == "base"
 
     def test_valid_pair_rule(self, tmp_path: Path) -> None:
         """Valid pair rule parses successfully."""
@@ -219,6 +246,7 @@ name: API Documentation
 pair:
   trigger: api/{module}.py
   expects: docs/api/{module}.md
+compare_to: base
 ---
 API changes need documentation.
 """
@@ -229,6 +257,7 @@ API changes need documentation.
         assert rule.pair_config is not None
         assert rule.pair_config.trigger == "api/{module}.py"
         assert rule.pair_config.expects == ["docs/api/{module}.md"]
+        assert rule.compare_to == "base"
 
     def test_valid_command_rule(self, tmp_path: Path) -> None:
         """Valid command rule parses successfully."""
@@ -240,6 +269,7 @@ trigger: "**/*.py"
 action:
   command: "ruff format {file}"
   run_for: each_match
+compare_to: prompt
 ---
 """
         )
@@ -249,6 +279,7 @@ action:
         assert rule.command_action is not None
         assert rule.command_action.command == "ruff format {file}"
         assert rule.command_action.run_for == "each_match"
+        assert rule.compare_to == "prompt"
 
     def test_valid_compare_to_values(self, tmp_path: Path) -> None:
         """Valid compare_to values parse successfully."""
@@ -276,6 +307,7 @@ name: Test Rule
 trigger:
   - src/**/*.py
   - lib/**/*.py
+compare_to: base
 ---
 Instructions here.
 """
@@ -283,6 +315,7 @@ Instructions here.
 
         rule = parse_rule_file(rule_file)
         assert rule.triggers == ["src/**/*.py", "lib/**/*.py"]
+        assert rule.compare_to == "base"
 
     def test_multiple_safety_patterns(self, tmp_path: Path) -> None:
         """Multiple safety patterns as array parses successfully."""
@@ -294,6 +327,7 @@ trigger: src/**/*
 safety:
   - README.md
   - CHANGELOG.md
+compare_to: base
 ---
 Instructions here.
 """
@@ -301,6 +335,7 @@ Instructions here.
 
         rule = parse_rule_file(rule_file)
         assert rule.safety == ["README.md", "CHANGELOG.md"]
+        assert rule.compare_to == "base"
 
     def test_multiple_expects(self, tmp_path: Path) -> None:
         """Multiple expects patterns parses successfully."""
@@ -313,6 +348,7 @@ pair:
   expects:
     - docs/api/{module}.md
     - openapi/{module}.yaml
+compare_to: base
 ---
 Instructions here.
 """
@@ -321,3 +357,4 @@ Instructions here.
         rule = parse_rule_file(rule_file)
         assert rule.pair_config is not None
         assert rule.pair_config.expects == ["docs/api/{module}.md", "openapi/{module}.yaml"]
+        assert rule.compare_to == "base"
