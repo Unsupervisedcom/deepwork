@@ -1,7 +1,5 @@
 """Tests for rules_check hook module."""
 
-import pytest
-
 from deepwork.hooks.rules_check import extract_promise_tags
 
 
