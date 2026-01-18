@@ -218,9 +218,7 @@ class CommandGenerator:
         # Build step info for the meta-command
         steps_info = []
         for step in job.steps:
-            command_filename = adapter.get_step_command_filename(
-                job.name, step.id, step.exposed
-            )
+            command_filename = adapter.get_step_command_filename(job.name, step.id, step.exposed)
             # Extract just the command name (without path and extension)
             # For Claude: uw.job_name.step_id.md -> uw.job_name.step_id
             # For Gemini: job_name/uw.step_id.toml -> job_name:uw.step_id
