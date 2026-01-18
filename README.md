@@ -19,14 +19,14 @@ DeepWork is a tool for defining and executing multi-step workflows with AI codin
 
 ## Easy Installation
 
-### Super Quick (No Installation Required)
-Use `uvx` to run deepwork directly without installing anything:
+### Super Quick (No Global Installation Required)
+Use `uvx` to run deepwork directly without installing it globally:
 
 ```bash
 uvx deepwork install --platform claude
 ```
 
-This installs deepwork into your project without managing a global installation.
+This sets up DeepWork in your project without managing a persistent installation.
 
 ### Via Agent CLI
 In your Agent CLI (ex. `claude`), ask:
@@ -49,7 +49,7 @@ Please fully install https://pypi.org/project/deepwork/ and make sure you see th
 ### Install DeepWork
 
 ```bash
-# Using uvx (fastest - no installation needed)
+# Using uvx (fastest - no global installation needed)
 uvx deepwork install --platform claude
 
 # Or using pipx (recommended - isolated environment)
