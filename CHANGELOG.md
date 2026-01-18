@@ -7,7 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.0] - 2026-01-18
 
-### Changed
 - **BREAKING**: Refactored "commands" terminology to "skills" throughout the codebase
   - Directory structure changed from `.claude/commands/` to `.claude/skills/`
   - Directory structure changed from `.gemini/commands/` to `.gemini/skills/`
@@ -26,6 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Run `deepwork install --platform claude` to regenerate skills in the new location
 - Remove old `.claude/commands/` and `.gemini/commands/` directories manually
 - Update any custom code that imports `CommandGenerator` or `CommandLifecycleHook`
+
+## [0.4.1] - 2026-01-18
+
+### Fixed
+- Command rule errors now include promise skip instructions with the exact rule name
+  - Previously, failed command rules only showed "Command failed" with no guidance
+  - Now each failed rule shows: `To skip, include <promise>Rule Name</promise> in your response`
+  - This allows agents to understand how to proceed when a command rule fails
+
 
 ## [0.4.0] - 2026-01-16
 
@@ -106,6 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
+[0.4.1]: https://github.com/anthropics/deepwork/releases/tag/0.4.1
 [0.4.0]: https://github.com/anthropics/deepwork/releases/tag/0.4.0
 [0.3.0]: https://github.com/anthropics/deepwork/releases/tag/0.3.0
 [0.1.1]: https://github.com/anthropics/deepwork/releases/tag/0.1.1
