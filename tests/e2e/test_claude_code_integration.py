@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from deepwork.core.adapters import ClaudeAdapter
-from deepwork.core.generator import CommandGenerator
+from deepwork.core.generator import SkillGenerator
 from deepwork.core.parser import parse_job_definition
 
 # Test input for deterministic validation
@@ -84,86 +84,86 @@ class TestCommandGenerationE2E:
                 capture_output=True,
             )
 
-            # Parse job and generate commands
+            # Parse job and generate skills
             job = parse_job_definition(deepwork_dir / "fruits")
-            generator = CommandGenerator()
+            generator = SkillGenerator()
             adapter = ClaudeAdapter()
 
-            commands_dir = project_dir / ".claude"
-            commands_dir.mkdir()
+            skills_dir = project_dir / ".claude"
+            skills_dir.mkdir()
 
-            command_paths = generator.generate_all_commands(job, adapter, commands_dir)
+            skill_paths = generator.generate_all_skills(job, adapter, skills_dir)
 
-            # Validate commands were generated (meta + steps)
-            assert len(command_paths) == 3  # 1 meta + 2 steps
+            # Validate skills were generated (meta + steps)
+            assert len(skill_paths) == 3  # 1 meta + 2 steps
 
-            meta_cmd = commands_dir / "commands" / "fruits.md"
-            identify_cmd = commands_dir / "commands" / "uw.fruits.identify.md"
-            classify_cmd = commands_dir / "commands" / "uw.fruits.classify.md"
+            meta_skill = skills_dir / "skills" / "fruits" / "SKILL.md"
+            identify_skill = skills_dir / "skills" / "fruits.identify" / "SKILL.md"
+            classify_skill = skills_dir / "skills" / "fruits.classify" / "SKILL.md"
 
-            assert meta_cmd.exists()
-            assert identify_cmd.exists()
-            assert classify_cmd.exists()
+            assert meta_skill.exists()
+            assert identify_skill.exists()
+            assert classify_skill.exists()
 
-            # Validate command content
-            identify_content = identify_cmd.read_text()
+            # Validate skill content
+            identify_content = identify_skill.read_text()
             assert "# fruits.identify" in identify_content
             assert "raw_items" in identify_content
             assert "identified_fruits.md" in identify_content
 
-            classify_content = classify_cmd.read_text()
+            classify_content = classify_skill.read_text()
             assert "# fruits.classify" in classify_content
             assert "identified_fruits.md" in classify_content
             assert "classified_fruits.md" in classify_content
 
-    def test_command_structure_matches_claude_code_expectations(self) -> None:
-        """Test that generated commands have the structure Claude Code expects."""
+    def test_skill_structure_matches_claude_code_expectations(self) -> None:
+        """Test that generated skills have the structure Claude Code expects."""
         fixtures_dir = Path(__file__).parent.parent / "fixtures" / "jobs" / "fruits"
         job = parse_job_definition(fixtures_dir)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            commands_dir = Path(tmpdir) / ".claude"
-            commands_dir.mkdir()
+            skills_dir = Path(tmpdir) / ".claude"
+            skills_dir.mkdir()
 
-            generator = CommandGenerator()
+            generator = SkillGenerator()
             adapter = ClaudeAdapter()
-            generator.generate_all_commands(job, adapter, commands_dir)
+            generator.generate_all_skills(job, adapter, skills_dir)
 
-            # Step commands now have uw. prefix
-            identify_cmd = commands_dir / "commands" / "uw.fruits.identify.md"
-            content = identify_cmd.read_text()
+            # Step skills use directory/SKILL.md format
+            identify_skill = skills_dir / "skills" / "fruits.identify" / "SKILL.md"
+            content = identify_skill.read_text()
 
             # Claude Code expects specific sections
-            assert "# fruits.identify" in content  # Command name header
+            assert "# fruits.identify" in content  # Skill name header
             assert "## Instructions" in content  # Instructions section
-            assert "## Inputs" in content  # Inputs section
-            assert "## Output" in content  # Output section
+            assert "## Required Inputs" in content  # Inputs section
+            assert "## Outputs" in content  # Outputs section
 
             # Check for user input prompt
             assert "raw_items" in content
 
-    def test_dependency_chain_in_commands(self) -> None:
-        """Test that dependency chain is correctly represented in commands."""
+    def test_dependency_chain_in_skills(self) -> None:
+        """Test that dependency chain is correctly represented in skills."""
         fixtures_dir = Path(__file__).parent.parent / "fixtures" / "jobs" / "fruits"
         job = parse_job_definition(fixtures_dir)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            commands_dir = Path(tmpdir) / ".claude"
-            commands_dir.mkdir()
+            skills_dir = Path(tmpdir) / ".claude"
+            skills_dir.mkdir()
 
-            generator = CommandGenerator()
+            generator = SkillGenerator()
             adapter = ClaudeAdapter()
-            generator.generate_all_commands(job, adapter, commands_dir)
+            generator.generate_all_skills(job, adapter, skills_dir)
 
-            # Step commands now have uw. prefix
+            # Step skills use directory/SKILL.md format
             # First step should have no prerequisites
-            identify_cmd = commands_dir / "commands" / "uw.fruits.identify.md"
-            identify_content = identify_cmd.read_text()
+            identify_skill = skills_dir / "skills" / "fruits.identify" / "SKILL.md"
+            identify_content = identify_skill.read_text()
             assert "## Prerequisites" not in identify_content
 
             # Second step should reference first step
-            classify_cmd = commands_dir / "commands" / "uw.fruits.classify.md"
-            classify_content = classify_cmd.read_text()
+            classify_skill = skills_dir / "skills" / "fruits.classify" / "SKILL.md"
+            classify_content = classify_skill.read_text()
             assert "## Prerequisites" in classify_content
             assert "identify" in classify_content.lower()
 
@@ -217,14 +217,14 @@ class TestClaudeCodeExecution:
             capture_output=True,
         )
 
-        # Generate commands
+        # Generate skills
         job = parse_job_definition(deepwork_dir / "fruits")
-        generator = CommandGenerator()
+        generator = SkillGenerator()
         adapter = ClaudeAdapter()
 
-        commands_dir = project_dir / ".claude"
-        commands_dir.mkdir()
-        generator.generate_all_commands(job, adapter, commands_dir)
+        skills_dir = project_dir / ".claude"
+        skills_dir.mkdir()
+        generator.generate_all_skills(job, adapter, skills_dir)
 
         yield project_dir
 

@@ -168,7 +168,7 @@ DeepWork follows a **Git-native, installation-only** design:
 
 - **No runtime daemon**: DeepWork is purely a CLI tool
 - **Git-based workflow**: All work happens on dedicated branches
-- **Skills as interface**: AI agents interact via generated markdown skill files
+- **Skills as interface**: AI agents interact via generated skill files
 - **Platform-agnostic**: Works with any AI coding assistant that supports skills
 
 ### Directory Structure
@@ -185,12 +185,12 @@ your-project/
 │       └── job_name/
 │           ├── job.yml     # Job metadata
 │           └── steps/      # Step instructions
-├── .claude/                # Claude Code commands (auto-generated)
-│   └── commands/
+├── .claude/                # Claude Code skills (auto-generated)
+│   └── skills/
 │       ├── deepwork_jobs.define.md
 │       └── job_name.step_name.md
-└── .gemini/                # Gemini CLI commands (auto-generated)
-    └── commands/
+└── .gemini/                # Gemini CLI skills (auto-generated)
+    └── skills/
         └── job_name/
             └── step_name.toml
 ```

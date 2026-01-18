@@ -97,9 +97,9 @@ cd my-project/
 deepwork install --claude
 ```
 
-This installs core commands into `.claude/commands/`:
+This installs core skills into `.claude/skills/`:
 - `deepwork_jobs.define` - Interactive job definition wizard
-- `deepwork_jobs.implement` - Generates step files and syncs commands
+- `deepwork_jobs.implement` - Generates step files and syncs skills
 - `deepwork_jobs.refine` - Refine existing job definitions
 
 ### 2. Job Definition
@@ -118,7 +118,7 @@ This creates the `job.yml` file. Then run:
 /deepwork_jobs.implement
 ```
 
-This generates step instruction files and syncs commands to `.claude/commands/`.
+This generates step instruction files and syncs skills to `.claude/skills/`.
 
 Job definitions are stored in `.deepwork/jobs/[job-name]/` and tracked in Git.
 
@@ -146,7 +146,7 @@ Each step:
 my-project/
 ├── .git/
 ├── .claude/                    # Claude Code directory
-│   └── commands/               # Command files
+│   └── skills/                 # Skill files
 │       ├── deepwork_jobs.define.md
 │       ├── deepwork_jobs.implement.md
 │       ├── deepwork_jobs.refine.md
@@ -188,11 +188,11 @@ my-project/
 
 1. **Source of truth**: `src/deepwork/standard_jobs/[job_name]/` - The canonical source files
 2. **Installed copy**: `.deepwork/jobs/[job_name]/` - Installed by `deepwork install`
-3. **Generated commands**: `.claude/commands/[job_name].[step].md` - Generated from installed jobs
+3. **Generated skills**: `.claude/skills/[job_name].[step].md` - Generated from installed jobs
 
 ### Editing Workflow for Standard Jobs
 
-**NEVER edit files in `.deepwork/jobs/` or `.claude/commands/` for standard jobs directly!**
+**NEVER edit files in `.deepwork/jobs/` or `.claude/skills/` for standard jobs directly!**
 
 Instead, follow this workflow:
 
@@ -201,7 +201,7 @@ Instead, follow this workflow:
    - `steps/*.md` - Step instruction files
    - `hooks/*` - Any hook scripts
 
-2. **Run `deepwork install --platform claude`** to sync changes to `.deepwork/jobs/` and `.claude/commands/`
+2. **Run `deepwork install --platform claude`** to sync changes to `.deepwork/jobs/` and `.claude/skills/`
 
 3. **Verify** the changes propagated correctly to all locations
 

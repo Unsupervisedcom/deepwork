@@ -171,7 +171,7 @@ If instruction files were modified:
    deepwork sync
    ```
 
-2. **If commands were regenerated**, look at the "To use the new commands" section in the `deepwork sync` output and **relay these exact reload instructions to the user** (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code)
+2. **If skills were regenerated**, look at the "To use the new skills" section in the `deepwork sync` output and **relay these exact reload instructions to the user** (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code)
 
 ## File Reference Patterns
 
@@ -261,7 +261,7 @@ I found the following job executions:
 
 **Summary**
 
-Updated job instructions and created AGENTS.md with bespoke learnings. To get the updated commands, type 'exit' then run 'claude --resume'.
+Updated job instructions and created AGENTS.md with bespoke learnings. To get the updated skills, type 'exit' then run 'claude --resume'.
 ```
 
 ## Handling Edge Cases

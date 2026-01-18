@@ -1,6 +1,11 @@
 {
   "permissions": {
     "allow": [
+      "WebFetch(domain:code.claude.com)",
+      "WebFetch(domain:www.anthropic.com)",
+      "WebFetch(domain:anthropic.com)",
+      "WebFetch(domain:platform.claude.com)",
+      "WebFetch(domain:docs.anthropic.com)",
       "Bash(ls:*)",
       "Bash(grep:*)",
       "Bash(find:*)",
