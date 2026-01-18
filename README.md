@@ -18,6 +18,17 @@ DeepWork is a tool for defining and executing multi-step workflows with AI codin
 > **Tip:** New to DeepWork? Claude Code has the most complete feature support, including quality validation hooks and automated rules. For browser automation, Claude in Chrome (Anthropic's browser extension) works well with DeepWork workflows.
 
 ## Easy Installation
+
+### Super Quick (No Installation Required)
+Use `uvx` to run deepwork directly without installing anything:
+
+```bash
+uvx deepwork install --platform claude
+```
+
+This installs deepwork into your project without managing a global installation.
+
+### Via Agent CLI
 In your Agent CLI (ex. `claude`), ask:
 
 ```
@@ -38,7 +49,10 @@ Please fully install https://pypi.org/project/deepwork/ and make sure you see th
 ### Install DeepWork
 
 ```bash
-# Using pipx (recommended - isolated environment)
+# Using uvx (fastest - no installation needed)
+uvx deepwork install --platform claude
+
+# Or using pipx (recommended - isolated environment)
 pipx install deepwork
 
 # Or using uv
@@ -49,6 +63,9 @@ pip install deepwork
 ```
 
 ### Install in Your Project
+
+If you installed deepwork globally (pipx, uv tool, or pip), run:
+
 ```bash
 cd your-project/
 deepwork install --platform claude
@@ -56,6 +73,8 @@ deepwork install --platform claude
 # Or Gemini CLI, etc.
 deepwork install --platform gemini
 ```
+
+If you used `uvx`, you've already installed it in your project!
 
 This will:
 - Create `.deepwork/` directory structure
