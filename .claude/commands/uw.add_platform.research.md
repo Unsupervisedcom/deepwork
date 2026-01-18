@@ -5,10 +5,6 @@ hooks:
     - hooks:
         - type: prompt
           prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
             Verify the research output meets ALL criteria:
             1. Both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md
             2. Each file has a comment at the top with:
@@ -21,17 +17,6 @@ hooks:
 
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
-            all criteria appear to be met, respond with: {"ok": true}
-
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
 ---
 
 # add_platform.research
@@ -287,18 +272,6 @@ Ensure all outputs are:
 
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
-### Quality Criteria
-Verify the research output meets ALL criteria:
-1. Both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md
-2. Each file has a comment at the top with:
-   - Last updated date
-   - Source URL where the documentation was obtained
-3. cli_configuration.md covers how the platform's CLI is configured
-4. hooks_system.md covers hooks available for slash command definitions ONLY
-5. No extraneous documentation (only these two specific topics)
-6. Documentation is comprehensive enough to implement the platform
-
-If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
 
 ### Completion Promise

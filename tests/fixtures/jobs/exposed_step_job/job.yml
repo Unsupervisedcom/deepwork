@@ -1,0 +1,29 @@
+name: exposed_job
+version: "0.1.0"
+summary: "A job with exposed and hidden steps for testing"
+description: |
+  A test job demonstrating the exposed step feature.
+
+  This job has two steps: one hidden by default and one explicitly exposed.
+
+changelog:
+  - version: "0.1.0"
+    changes: "Initial version"
+
+steps:
+  - id: hidden_step
+    name: "Hidden Step"
+    description: "A step that is hidden by default"
+    instructions_file: steps/hidden_step.md
+    outputs:
+      - hidden_output.md
+    dependencies: []
+
+  - id: exposed_step
+    name: "Exposed Step"
+    description: "A step that is explicitly exposed"
+    instructions_file: steps/exposed_step.md
+    exposed: true
+    outputs:
+      - exposed_output.md
+    dependencies: []

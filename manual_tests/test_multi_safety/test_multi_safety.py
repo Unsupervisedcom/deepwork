@@ -30,7 +30,6 @@ Tests trigger/safety mode with MULTIPLE safety patterns:
 .deepwork/rules/manual-test-multi-safety.md
 """
 
-
 VERSION = "1.0.0"
 
 

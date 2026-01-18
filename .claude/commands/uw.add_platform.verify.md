@@ -5,10 +5,6 @@ hooks:
     - hooks:
         - type: prompt
           prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
             Verify the installation meets ALL criteria:
             1. Platform-specific directories/files are added to the deepwork repo as needed
             2. Running `deepwork install --platform <platform>` completes without errors
@@ -19,17 +15,6 @@ hooks:
 
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
-            all criteria appear to be met, respond with: {"ok": true}
-
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "Continue working. [specific feedback on what's wrong]"}
 ---
 
 # add_platform.verify
@@ -212,16 +197,6 @@ No specific files are output by this command.
 
 This step uses an iterative quality validation loop. After completing your work, stop hook(s) will evaluate whether the outputs meet quality criteria. If criteria are not met, you will be prompted to continue refining.
 
-### Quality Criteria
-Verify the installation meets ALL criteria:
-1. Platform-specific directories/files are added to the deepwork repo as needed
-2. Running `deepwork install --platform <platform>` completes without errors
-3. Expected command files are created in the platform's command directory
-4. Command file content matches the templates and job definitions
-5. Established DeepWork jobs (deepwork_jobs, deepwork_rules) are installed correctly
-6. The platform can be used alongside existing platforms without conflicts
-
-If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
 
 ### Completion Promise

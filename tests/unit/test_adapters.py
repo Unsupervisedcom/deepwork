@@ -119,11 +119,27 @@ class TestClaudeAdapter:
         with pytest.raises(AdapterError, match="No project root specified"):
             adapter.get_commands_dir()
 
-    def test_get_command_filename(self) -> None:
-        """Test get_command_filename."""
+    def test_get_meta_command_filename(self) -> None:
+        """Test get_meta_command_filename."""
         adapter = ClaudeAdapter()
 
-        result = adapter.get_command_filename("my_job", "step_one")
+        result = adapter.get_meta_command_filename("my_job")
+
+        assert result == "my_job.md"
+
+    def test_get_step_command_filename_hidden_by_default(self) -> None:
+        """Test get_step_command_filename returns hidden filename by default."""
+        adapter = ClaudeAdapter()
+
+        result = adapter.get_step_command_filename("my_job", "step_one")
+
+        assert result == "uw.my_job.step_one.md"
+
+    def test_get_step_command_filename_exposed(self) -> None:
+        """Test get_step_command_filename returns visible filename when exposed."""
+        adapter = ClaudeAdapter()
+
+        result = adapter.get_step_command_filename("my_job", "step_one", exposed=True)
 
         assert result == "my_job.step_one.md"
 
@@ -246,22 +262,41 @@ class TestGeminiAdapter:
         with pytest.raises(AdapterError, match="No project root specified"):
             adapter.get_commands_dir()
 
-    def test_get_command_filename(self) -> None:
-        """Test get_command_filename returns TOML with subdirectory."""
+    def test_get_meta_command_filename(self) -> None:
+        """Test get_meta_command_filename returns index.toml in subdirectory."""
         adapter = GeminiAdapter()
 
-        result = adapter.get_command_filename("my_job", "step_one")
+        result = adapter.get_meta_command_filename("my_job")
+
+        # Gemini uses subdirectories with index.toml for meta-commands
+        assert result == "my_job/index.toml"
+
+    def test_get_step_command_filename_hidden_by_default(self) -> None:
+        """Test get_step_command_filename returns hidden TOML with subdirectory."""
+        adapter = GeminiAdapter()
+
+        result = adapter.get_step_command_filename("my_job", "step_one")
 
         # Gemini uses subdirectories for namespacing (colon becomes path)
-        assert result == "my_job/step_one.toml"
+        # Hidden steps have uw. prefix
+        assert result == "my_job/uw.step_one.toml"
 
-    def test_get_command_filename_with_underscores(self) -> None:
-        """Test get_command_filename with underscores in names."""
+    def test_get_step_command_filename_exposed(self) -> None:
+        """Test get_step_command_filename returns visible TOML when exposed."""
         adapter = GeminiAdapter()
 
-        result = adapter.get_command_filename("competitive_research", "identify_competitors")
+        result = adapter.get_step_command_filename("my_job", "step_one", exposed=True)
 
-        assert result == "competitive_research/identify_competitors.toml"
+        # Exposed steps have no uw. prefix
+        assert result == "my_job/step_one.toml"
+
+    def test_get_step_command_filename_with_underscores(self) -> None:
+        """Test get_step_command_filename with underscores in names."""
+        adapter = GeminiAdapter()
+
+        result = adapter.get_step_command_filename("competitive_research", "identify_competitors")
+
+        assert result == "competitive_research/uw.identify_competitors.toml"
 
     def test_hook_name_mapping_is_empty(self) -> None:
         """Test that Gemini has no command-level hooks."""
