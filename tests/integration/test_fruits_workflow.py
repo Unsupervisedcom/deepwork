@@ -83,10 +83,10 @@ class TestFruitsWorkflow:
         # Now includes meta-skill + step skills
         assert len(skill_paths) == 3  # 1 meta + 2 steps
 
-        # Verify skill files exist
-        meta_skill = skills_dir / "skills" / "fruits.md"
-        identify_skill = skills_dir / "skills" / "fruits.identify.md"
-        classify_skill = skills_dir / "skills" / "fruits.classify.md"
+        # Verify skill directories with SKILL.md files exist
+        meta_skill = skills_dir / "skills" / "fruits" / "SKILL.md"
+        identify_skill = skills_dir / "skills" / "fruits.identify" / "SKILL.md"
+        classify_skill = skills_dir / "skills" / "fruits.classify" / "SKILL.md"
         assert meta_skill.exists()
         assert identify_skill.exists()
         assert classify_skill.exists()
@@ -103,15 +103,15 @@ class TestFruitsWorkflow:
 
         generator.generate_all_skills(job, adapter, skills_dir)
 
-        # Step skills have clean names (no prefix)
-        identify_skill = skills_dir / "skills" / "fruits.identify.md"
+        # Step skills use directory/SKILL.md format
+        identify_skill = skills_dir / "skills" / "fruits.identify" / "SKILL.md"
         content = identify_skill.read_text()
 
         # Check header
         assert "# fruits.identify" in content
 
         # Check step info
-        assert "Step 1 of 2" in content
+        assert "Step 1/2" in content
 
         # Check user input is mentioned
         assert "raw_items" in content
@@ -134,25 +134,25 @@ class TestFruitsWorkflow:
 
         generator.generate_all_skills(job, adapter, skills_dir)
 
-        # Step skills have clean names (no prefix)
-        classify_skill = skills_dir / "skills" / "fruits.classify.md"
+        # Step skills use directory/SKILL.md format
+        classify_skill = skills_dir / "skills" / "fruits.classify" / "SKILL.md"
         content = classify_skill.read_text()
 
         # Check header
         assert "# fruits.classify" in content
 
         # Check step info
-        assert "Step 2 of 2" in content
+        assert "Step 2/2" in content
 
         # Check file input is mentioned
         assert "identified_fruits.md" in content
-        assert "from step `identify`" in content
+        assert "from `identify`" in content
 
         # Check output is mentioned
         assert "classified_fruits.md" in content
 
         # Check workflow complete (last step)
-        assert "Workflow Complete" in content
+        assert "Workflow complete" in content
 
     def test_fruits_dependency_validation(self, fixtures_dir: Path) -> None:
         """Test that dependency validation passes for fruits job."""

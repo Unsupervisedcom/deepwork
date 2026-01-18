@@ -1,4 +1,5 @@
 ---
+name: commit
 description: "Run tests, lint, and commit code changes"
 ---
 

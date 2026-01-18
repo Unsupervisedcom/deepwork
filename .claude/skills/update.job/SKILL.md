@@ -1,4 +1,5 @@
 ---
+name: update.job
 description: "Edit standard job source files and sync to installed locations"
 user-invocable: false
 hooks:

@@ -220,15 +220,16 @@ class SkillGenerator:
         for step in job.steps:
             skill_filename = adapter.get_step_skill_filename(job.name, step.id, step.exposed)
             # Extract just the skill name (without path and extension)
-            # For Claude: job_name.step_id.md -> job_name.step_id
+            # For Claude: job_name.step_id/SKILL.md -> job_name.step_id
             # For Gemini: job_name/step_id.toml -> job_name:step_id
             if adapter.name == "gemini":
                 # Gemini uses colon for namespacing: job_name:step_id
                 parts = skill_filename.replace(".toml", "").split("/")
                 skill_name = ":".join(parts)
             else:
-                # Claude uses dot for namespacing: job_name.step_id
-                skill_name = skill_filename.replace(".md", "")
+                # Claude uses directory/SKILL.md format, extract directory name
+                # job_name.step_id/SKILL.md -> job_name.step_id
+                skill_name = skill_filename.replace("/SKILL.md", "")
 
             steps_info.append(
                 {

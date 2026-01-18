@@ -45,7 +45,7 @@ class TestJobWorkflow:
             assert f"# {job.name}.{job.steps[i].id}" in content
 
             # Check step numbers
-            assert f"Step {i + 1} of 4" in content
+            assert f"Step {i + 1}/4" in content
 
     def test_simple_job_workflow(self, fixtures_dir: Path, temp_dir: Path) -> None:
         """Test workflow with simple single-step job."""
@@ -72,7 +72,7 @@ class TestJobWorkflow:
         # Single step with no dependencies is treated as standalone
         assert "Standalone skill" in content
         assert "input_param" in content
-        assert "Skill Complete" in content  # Standalone completion message
+        assert "standalone skill can be re-run" in content  # Standalone completion message
 
     def test_skill_generation_with_dependencies(self, fixtures_dir: Path, temp_dir: Path) -> None:
         """Test that generated skills properly handle dependencies."""
@@ -102,7 +102,7 @@ class TestJobWorkflow:
         # Check last step (has prerequisites, no next step)
         step4_content = skill_paths[4].read_text()
         assert "## Prerequisites" in step4_content
-        assert "## Workflow Complete" in step4_content
+        assert "**Workflow complete**" in step4_content
         assert "## Next Step" not in step4_content
 
     def test_skill_generation_with_file_inputs(self, fixtures_dir: Path, temp_dir: Path) -> None:
@@ -121,10 +121,10 @@ class TestJobWorkflow:
 
         # Check step with file input
         step2_content = skill_paths[2].read_text()  # primary_research (index 2)
-        assert "## Inputs" in step2_content
-        assert "### Required Files" in step2_content
+        assert "## Required Inputs" in step2_content
+        assert "**Files from Previous Steps**" in step2_content
         assert "competitors.md" in step2_content
-        assert "from step `identify_competitors`" in step2_content
+        assert "from `identify_competitors`" in step2_content
 
         # Check step with multiple file inputs
         step4_content = skill_paths[4].read_text()  # comparative_report (index 4)
@@ -147,7 +147,7 @@ class TestJobWorkflow:
 
         # Check step with user inputs
         step1_content = skill_paths[1].read_text()  # identify_competitors (index 1)
-        assert "## Inputs" in step1_content
-        assert "### User Parameters" in step1_content
+        assert "## Required Inputs" in step1_content
+        assert "**User Parameters**" in step1_content
         assert "market_segment" in step1_content
         assert "product_category" in step1_content

@@ -1,4 +1,5 @@
 ---
+name: deepwork_jobs.learn
 description: "Reflect on conversation to improve job instructions and capture learnings"
 hooks:
   Stop:

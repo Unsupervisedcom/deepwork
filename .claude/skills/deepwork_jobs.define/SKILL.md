@@ -1,4 +1,5 @@
 ---
+name: deepwork_jobs.define
 description: "Create the job.yml specification file by understanding workflow requirements"
 user-invocable: false
 hooks:

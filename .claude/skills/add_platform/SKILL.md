@@ -1,4 +1,5 @@
 ---
+name: add_platform
 description: "Add a new AI platform to DeepWork with adapter, templates, and tests"
 ---
 

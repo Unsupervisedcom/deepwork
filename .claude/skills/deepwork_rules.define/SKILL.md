@@ -1,4 +1,5 @@
 ---
+name: deepwork_rules.define
 description: "Create a new rule file in .deepwork/rules/"
 user-invocable: false
 ---

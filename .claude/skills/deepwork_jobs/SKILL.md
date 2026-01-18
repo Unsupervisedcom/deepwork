@@ -1,4 +1,5 @@
 ---
+name: deepwork_jobs
 description: "DeepWork job management commands"
 ---
 

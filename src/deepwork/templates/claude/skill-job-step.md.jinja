@@ -38,6 +38,7 @@ Template Variables:
     - hooks: dict|null - All hooks by event name (Stop, PreToolUse, etc.)
 #}
 ---
+name: {{ job_name }}.{{ step_id }}
 description: "{{ step_description }}"
 {% if not exposed %}
 user-invocable: false

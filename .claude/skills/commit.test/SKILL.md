@@ -1,4 +1,5 @@
 ---
+name: commit.test
 description: "Pull latest code and run the test suite until all tests pass"
 user-invocable: false
 hooks:

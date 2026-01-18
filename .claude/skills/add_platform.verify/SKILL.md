@@ -1,4 +1,5 @@
 ---
+name: add_platform.verify
 description: "Set up platform directories and verify deepwork install works correctly"
 user-invocable: false
 hooks:

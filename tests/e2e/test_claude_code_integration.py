@@ -97,9 +97,9 @@ class TestCommandGenerationE2E:
             # Validate skills were generated (meta + steps)
             assert len(skill_paths) == 3  # 1 meta + 2 steps
 
-            meta_skill = skills_dir / "skills" / "fruits.md"
-            identify_skill = skills_dir / "skills" / "fruits.identify.md"
-            classify_skill = skills_dir / "skills" / "fruits.classify.md"
+            meta_skill = skills_dir / "skills" / "fruits" / "SKILL.md"
+            identify_skill = skills_dir / "skills" / "fruits.identify" / "SKILL.md"
+            classify_skill = skills_dir / "skills" / "fruits.classify" / "SKILL.md"
 
             assert meta_skill.exists()
             assert identify_skill.exists()
@@ -129,15 +129,15 @@ class TestCommandGenerationE2E:
             adapter = ClaudeAdapter()
             generator.generate_all_skills(job, adapter, skills_dir)
 
-            # Step skills have clean names (no prefix)
-            identify_skill = skills_dir / "skills" / "fruits.identify.md"
+            # Step skills use directory/SKILL.md format
+            identify_skill = skills_dir / "skills" / "fruits.identify" / "SKILL.md"
             content = identify_skill.read_text()
 
             # Claude Code expects specific sections
             assert "# fruits.identify" in content  # Skill name header
             assert "## Instructions" in content  # Instructions section
-            assert "## Inputs" in content  # Inputs section
-            assert "## Output" in content  # Output section
+            assert "## Required Inputs" in content  # Inputs section
+            assert "## Outputs" in content  # Outputs section
 
             # Check for user input prompt
             assert "raw_items" in content
@@ -155,14 +155,14 @@ class TestCommandGenerationE2E:
             adapter = ClaudeAdapter()
             generator.generate_all_skills(job, adapter, skills_dir)
 
-            # Step skills have clean names (no prefix)
+            # Step skills use directory/SKILL.md format
             # First step should have no prerequisites
-            identify_skill = skills_dir / "skills" / "fruits.identify.md"
+            identify_skill = skills_dir / "skills" / "fruits.identify" / "SKILL.md"
             identify_content = identify_skill.read_text()
             assert "## Prerequisites" not in identify_content
 
             # Second step should reference first step
-            classify_skill = skills_dir / "skills" / "fruits.classify.md"
+            classify_skill = skills_dir / "skills" / "fruits.classify" / "SKILL.md"
             classify_content = classify_skill.read_text()
             assert "## Prerequisites" in classify_content
             assert "identify" in classify_content.lower()

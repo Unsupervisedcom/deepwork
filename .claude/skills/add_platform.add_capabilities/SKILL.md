@@ -1,4 +1,5 @@
 ---
+name: add_platform.add_capabilities
 description: "Update job schema and adapters with any new hook events the platform supports"
 user-invocable: false
 hooks:

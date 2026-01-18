@@ -1,4 +1,5 @@
 ---
+name: deepwork_jobs.implement
 description: "Generate instruction files for each step based on the job.yml specification"
 user-invocable: false
 hooks:

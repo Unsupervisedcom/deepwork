@@ -1,4 +1,5 @@
 ---
+name: deepwork_rules
 description: "Rules enforcement for AI agent sessions"
 ---
 

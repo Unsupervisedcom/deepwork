@@ -46,8 +46,9 @@ class TestSkillGenerator:
         skill_path = generator.generate_step_skill(job, job.steps[0], adapter, temp_dir)
 
         assert skill_path.exists()
-        # Step skills have clean names (no prefix)
-        assert skill_path.name == "simple_job.single_step.md"
+        # Step skills use directory/SKILL.md format
+        assert skill_path.name == "SKILL.md"
+        assert skill_path.parent.name == "simple_job.single_step"
 
         content = skill_path.read_text()
         assert "# simple_job.single_step" in content
@@ -70,7 +71,7 @@ class TestSkillGenerator:
 
         content = skill_path.read_text()
         assert "# competitive_research.identify_competitors" in content
-        assert "Step 1 of 4" in content
+        assert "Step 1/4" in content
         assert "market_segment" in content
         assert "product_category" in content
         # First step has no prerequisites
@@ -93,13 +94,13 @@ class TestSkillGenerator:
 
         content = skill_path.read_text()
         assert "# competitive_research.primary_research" in content
-        assert "Step 2 of 4" in content
+        assert "Step 2/4" in content
         # Has prerequisites
         assert "## Prerequisites" in content
         assert "/competitive_research.identify_competitors" in content
         # Has file input
         assert "competitors.md" in content
-        assert "from step `identify_competitors`" in content
+        assert "from `identify_competitors`" in content
         # Has next step
         assert "/competitive_research.secondary_research" in content
 
@@ -118,14 +119,14 @@ class TestSkillGenerator:
 
         content = skill_path.read_text()
         assert "# competitive_research.comparative_report" in content
-        assert "Step 4 of 4" in content
+        assert "Step 4/4" in content
         # Has prerequisites
         assert "## Prerequisites" in content
         # Has multiple file inputs
         assert "primary_research.md" in content
         assert "secondary_research.md" in content
         # Final step - no next step
-        assert "## Workflow Complete" in content
+        assert "**Workflow complete**" in content
         assert "## Next Step" not in content
 
     def test_generate_step_skill_raises_for_missing_step(
@@ -190,16 +191,18 @@ class TestSkillGenerator:
         assert len(skill_paths) == 5  # 1 meta + 4 steps
         assert all(p.exists() for p in skill_paths)
 
-        # Check filenames - meta-skill first, then step skills (no prefix)
-        expected_names = [
-            "competitive_research.md",  # Meta-skill
-            "competitive_research.identify_competitors.md",  # Step skills
-            "competitive_research.primary_research.md",
-            "competitive_research.secondary_research.md",
-            "competitive_research.comparative_report.md",
+        # Check directory names - meta-skill first, then step skills
+        # All files are named SKILL.md inside skill directories
+        expected_dirs = [
+            "competitive_research",  # Meta-skill
+            "competitive_research.identify_competitors",  # Step skills
+            "competitive_research.primary_research",
+            "competitive_research.secondary_research",
+            "competitive_research.comparative_report",
         ]
-        actual_names = [p.name for p in skill_paths]
-        assert actual_names == expected_names
+        actual_dirs = [p.parent.name for p in skill_paths]
+        assert actual_dirs == expected_dirs
+        assert all(p.name == "SKILL.md" for p in skill_paths)
 
     def test_generate_meta_skill(self, fixtures_dir: Path, temp_dir: Path) -> None:
         """Test generating meta-skill for a job."""
@@ -212,7 +215,8 @@ class TestSkillGenerator:
         meta_skill_path = generator.generate_meta_skill(job, adapter, temp_dir)
 
         assert meta_skill_path.exists()
-        assert meta_skill_path.name == "competitive_research.md"
+        assert meta_skill_path.name == "SKILL.md"
+        assert meta_skill_path.parent.name == "competitive_research"
 
         content = meta_skill_path.read_text()
         # Check meta-skill content
@@ -234,8 +238,9 @@ class TestSkillGenerator:
         skill_path = generator.generate_step_skill(job, job.steps[1], adapter, temp_dir)
 
         assert skill_path.exists()
-        # Same filename whether exposed or not (no prefix)
-        assert skill_path.name == "exposed_job.exposed_step.md"
+        # Uses directory/SKILL.md format whether exposed or not
+        assert skill_path.name == "SKILL.md"
+        assert skill_path.parent.name == "exposed_job.exposed_step"
 
     def test_generate_all_skills_with_exposed_steps(
         self, fixtures_dir: Path, temp_dir: Path
@@ -253,11 +258,12 @@ class TestSkillGenerator:
         assert len(skill_paths) == 3
         assert all(p.exists() for p in skill_paths)
 
-        # Check filenames - all have clean names (no prefix)
-        expected_names = [
-            "exposed_job.md",  # Meta-skill
-            "exposed_job.hidden_step.md",  # Step skill
-            "exposed_job.exposed_step.md",  # Step skill
+        # Check directory names - all use directory/SKILL.md format
+        expected_dirs = [
+            "exposed_job",  # Meta-skill
+            "exposed_job.hidden_step",  # Step skill
+            "exposed_job.exposed_step",  # Step skill
         ]
-        actual_names = [p.name for p in skill_paths]
-        assert actual_names == expected_names
+        actual_dirs = [p.parent.name for p in skill_paths]
+        assert actual_dirs == expected_dirs
+        assert all(p.name == "SKILL.md" for p in skill_paths)

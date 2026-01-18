@@ -120,28 +120,28 @@ class TestClaudeAdapter:
             adapter.get_skills_dir()
 
     def test_get_meta_skill_filename(self) -> None:
-        """Test get_meta_skill_filename."""
+        """Test get_meta_skill_filename returns directory/SKILL.md format."""
         adapter = ClaudeAdapter()
 
         result = adapter.get_meta_skill_filename("my_job")
 
-        assert result == "my_job.md"
+        assert result == "my_job/SKILL.md"
 
-    def test_get_step_skill_filename_returns_clean_name(self) -> None:
-        """Test get_step_skill_filename returns clean filename (no prefix)."""
+    def test_get_step_skill_filename_returns_directory_format(self) -> None:
+        """Test get_step_skill_filename returns directory/SKILL.md format."""
         adapter = ClaudeAdapter()
 
         result = adapter.get_step_skill_filename("my_job", "step_one")
 
-        assert result == "my_job.step_one.md"
+        assert result == "my_job.step_one/SKILL.md"
 
     def test_get_step_skill_filename_exposed(self) -> None:
-        """Test get_step_skill_filename with exposed=True (same result, no prefix)."""
+        """Test get_step_skill_filename with exposed=True (same format)."""
         adapter = ClaudeAdapter()
 
         result = adapter.get_step_skill_filename("my_job", "step_one", exposed=True)
 
-        assert result == "my_job.step_one.md"
+        assert result == "my_job.step_one/SKILL.md"
 
     def test_sync_hooks_creates_settings_file(self, temp_dir: Path) -> None:
         """Test sync_hooks creates settings.json when it doesn't exist."""

@@ -163,9 +163,9 @@ class AgentAdapter(ABC):
             job_name: Name of the job
 
         Returns:
-            Meta-skill filename (e.g., "job_name.md")
+            Meta-skill filename (e.g., "job_name/SKILL.md" for Claude)
         """
-        return f"{job_name}.md"
+        return f"{job_name}/SKILL.md"
 
     def get_step_skill_filename(self, job_name: str, step_id: str, exposed: bool = False) -> str:
         """
@@ -180,9 +180,9 @@ class AgentAdapter(ABC):
             exposed: If True, skill is user-invocable (for template context). Default: False.
 
         Returns:
-            Skill filename (e.g., "job_name.step_id.md")
+            Skill filename (e.g., "job_name.step_id/SKILL.md" for Claude)
         """
-        return f"{job_name}.{step_id}.md"
+        return f"{job_name}.{step_id}/SKILL.md"
 
     def detect(self, project_root: Path | None = None) -> bool:
         """

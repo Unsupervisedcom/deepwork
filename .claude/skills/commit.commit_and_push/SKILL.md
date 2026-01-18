@@ -1,4 +1,5 @@
 ---
+name: commit.commit_and_push
 description: "Review changed files, commit, and push to remote"
 user-invocable: false
 hooks:

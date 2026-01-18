@@ -1,4 +1,5 @@
 ---
+name: commit.lint
 description: "Format and lint code with ruff using a sub-agent"
 user-invocable: false
 hooks:

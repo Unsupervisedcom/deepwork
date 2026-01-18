@@ -1,4 +1,5 @@
 ---
+name: update
 description: "Update standard jobs in src/ and sync to installed locations"
 ---
 
