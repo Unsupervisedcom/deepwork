@@ -1,5 +1,6 @@
 ---
 description: Generate instruction files for each step based on the job.yml specification
+user-invocable: false
 hooks:
   Stop:
     - hooks:
@@ -175,9 +176,9 @@ See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for det
 
 Verify that `job.yml` is in the correct location at `.deepwork/jobs/[job_name]/job.yml`. The define step should have created it there. If for some reason it's not there, you may need to create or move it.
 
-### Step 5: Sync Commands
+### Step 5: Sync Skills
 
-Run `deepwork sync` to generate the slash-commands for this job:
+Run `deepwork sync` to generate the skills for this job:
 
 ```bash
 deepwork sync
@@ -185,12 +186,12 @@ deepwork sync
 
 This will:
 - Parse the job definition
-- Generate slash-commands for each step
-- Make the commands available in `.claude/commands/` (or appropriate platform directory)
+- Generate skills for each step
+- Make the skills available in `.claude/skills/` (or appropriate platform directory)
 
 ### Step 6: Relay Reload Instructions
 
-After running `deepwork sync`, look at the "To use the new commands" section in the output. **Relay these exact reload instructions to the user** so they know how to pick up the new commands. Don't just reference the sync output - tell them directly what they need to do (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code, or "Run '/memory refresh'" for Gemini CLI).
+After running `deepwork sync`, look at the "To use the new skills" section in the output. **Relay these exact reload instructions to the user** so they know how to pick up the new skills. Don't just reference the sync output - tell them directly what they need to do (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code, or "Run '/memory refresh'" for Gemini CLI).
 
 ### Step 7: Consider Rules for the New Job
 
@@ -282,7 +283,7 @@ Before marking this step complete, ensure:
 - [ ] All step instruction files created
 - [ ] Each instruction file is complete and actionable
 - [ ] `deepwork sync` executed successfully
-- [ ] Commands generated in platform directory
+- [ ] Skills generated in platform directory
 - [ ] User informed to follow reload instructions from `deepwork sync`
 - [ ] Considered whether rules would benefit this job (Step 7)
 - [ ] If rules suggested, offered to run `/deepwork_rules.define`
@@ -296,7 +297,7 @@ Before marking this step complete, ensure:
 - Quality criteria defined for each step
 - Steps with user inputs explicitly use "ask structured questions" phrasing
 - Sync completed successfully
-- Commands available for use
+- Skills available for use
 - Thoughtfully considered relevant rules for the job domain
 
 

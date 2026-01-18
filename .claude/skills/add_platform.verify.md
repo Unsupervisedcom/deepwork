@@ -1,5 +1,6 @@
 ---
 description: Set up platform directories and verify deepwork install works correctly
+user-invocable: false
 hooks:
   Stop:
     - hooks:
@@ -191,7 +192,7 @@ All work for this job should be done on a dedicated work branch:
 
 ## Output Requirements
 
-No specific files are output by this command.
+No specific files are output by this skill.
 
 ## Quality Validation Loop
 

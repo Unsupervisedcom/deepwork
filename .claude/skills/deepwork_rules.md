@@ -29,7 +29,7 @@ This job has 1 step(s):
 
 ### define
 **Define Rule**: Create a new rule file in .deepwork/rules/
-- Command: `uw.deepwork_rules.define`
+- Command: `deepwork_rules.define`
 
 ## Instructions
 

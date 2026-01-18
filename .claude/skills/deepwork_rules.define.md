@@ -1,10 +1,11 @@
 ---
 description: Create a new rule file in .deepwork/rules/
+user-invocable: false
 ---
 
 # deepwork_rules.define
 
-**Standalone command** in the **deepwork_rules** job - can be run anytime
+**Standalone skill** in the **deepwork_rules** job - can be run anytime
 
 **Summary**: Rules enforcement for AI agent sessions
 
@@ -318,18 +319,18 @@ After completing this step:
 1. **Verify outputs**: Confirm all required files have been created
 
 2. **Inform the user**:
-   - The define command is complete
+   - The define skill is complete
    - Outputs created: .deepwork/rules/{rule-name}.md
-   - This command can be run again anytime to make further changes
+   - This skill can be run again anytime to make further changes
 
-## Command Complete
+## Skill Complete
 
-This is a standalone command that can be run anytime. The outputs are ready for use.
+This is a standalone skill that can be run anytime. The outputs are ready for use.
 
 Consider:
 - Reviewing the outputs
 - Running `deepwork sync` if job definitions were changed
-- Re-running this command later if further changes are needed
+- Re-running this skill later if further changes are needed
 
 ---
 

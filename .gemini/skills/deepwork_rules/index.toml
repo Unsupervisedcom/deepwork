@@ -34,7 +34,7 @@ This job has 1 step(s):
 
 ### define
 **Define Rule**: Create a new rule file in .deepwork/rules/
-- Command: `/deepwork_rules:uw.define`
+- Command: `/deepwork_rules:define`
 
 ## Instructions
 
@@ -51,7 +51,7 @@ This is a **multi-step workflow**. Determine the starting point and guide the us
    - Continue until the workflow is complete
 
    Step commands:
-   - define: `/deepwork_rules:uw.define`
+   - define: `/deepwork_rules:define`
 
 4. **If intent is ambiguous**, ask the user which step to start from:
    - Present the available steps as numbered options

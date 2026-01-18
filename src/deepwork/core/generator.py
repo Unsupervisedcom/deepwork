@@ -1,24 +1,24 @@
-"""Slash-command file generator using Jinja2 templates."""
+"""Skill file generator using Jinja2 templates."""
 
 from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
-from deepwork.core.adapters import AgentAdapter, CommandLifecycleHook
+from deepwork.core.adapters import AgentAdapter, SkillLifecycleHook
 from deepwork.core.parser import JobDefinition, Step
 from deepwork.schemas.job_schema import LIFECYCLE_HOOK_EVENTS
 from deepwork.utils.fs import safe_read, safe_write
 
 
 class GeneratorError(Exception):
-    """Exception raised for command generation errors."""
+    """Exception raised for skill generation errors."""
 
     pass
 
 
-class CommandGenerator:
-    """Generates slash-command files from job definitions."""
+class SkillGenerator:
+    """Generates skill files from job definitions."""
 
     def __init__(self, templates_dir: Path | str | None = None):
         """
@@ -163,7 +163,7 @@ class CommandGenerator:
         for event in LIFECYCLE_HOOK_EVENTS:
             if event in step.hooks:
                 # Get platform-specific event name from adapter
-                hook_enum = CommandLifecycleHook(event)
+                hook_enum = SkillLifecycleHook(event)
                 platform_event_name = adapter.get_platform_hook_name(hook_enum)
                 if platform_event_name:
                     hook_contexts = [
@@ -175,7 +175,7 @@ class CommandGenerator:
 
         # Backward compatibility: stop_hooks is after_agent hooks
         stop_hooks = hooks.get(
-            adapter.get_platform_hook_name(CommandLifecycleHook.AFTER_AGENT) or "Stop", []
+            adapter.get_platform_hook_name(SkillLifecycleHook.AFTER_AGENT) or "Stop", []
         )
 
         return {
@@ -202,11 +202,11 @@ class CommandGenerator:
             "quality_criteria": step.quality_criteria,  # Declarative criteria with framing
         }
 
-    def _build_meta_command_context(
+    def _build_meta_skill_context(
         self, job: JobDefinition, adapter: AgentAdapter
     ) -> dict[str, Any]:
         """
-        Build template context for a job's meta-command.
+        Build template context for a job's meta-skill.
 
         Args:
             job: Job definition
@@ -215,27 +215,27 @@ class CommandGenerator:
         Returns:
             Template context dictionary
         """
-        # Build step info for the meta-command
+        # Build step info for the meta-skill
         steps_info = []
         for step in job.steps:
-            command_filename = adapter.get_step_command_filename(job.name, step.id, step.exposed)
-            # Extract just the command name (without path and extension)
-            # For Claude: uw.job_name.step_id.md -> uw.job_name.step_id
-            # For Gemini: job_name/uw.step_id.toml -> job_name:uw.step_id
+            skill_filename = adapter.get_step_skill_filename(job.name, step.id, step.exposed)
+            # Extract just the skill name (without path and extension)
+            # For Claude: job_name.step_id.md -> job_name.step_id
+            # For Gemini: job_name/step_id.toml -> job_name:step_id
             if adapter.name == "gemini":
-                # Gemini uses colon for namespacing: job_name:step_id or job_name:uw.step_id
-                parts = command_filename.replace(".toml", "").split("/")
-                command_name = ":".join(parts)
+                # Gemini uses colon for namespacing: job_name:step_id
+                parts = skill_filename.replace(".toml", "").split("/")
+                skill_name = ":".join(parts)
             else:
-                # Claude uses dot for namespacing: uw.job_name.step_id
-                command_name = command_filename.replace(".md", "")
+                # Claude uses dot for namespacing: job_name.step_id
+                skill_name = skill_filename.replace(".md", "")
 
             steps_info.append(
                 {
                     "id": step.id,
                     "name": step.name,
                     "description": step.description,
-                    "command_name": command_name,
+                    "command_name": skill_name,
                     "dependencies": step.dependencies,
                     "exposed": step.exposed,
                 }
@@ -250,65 +250,65 @@ class CommandGenerator:
             "steps": steps_info,
         }
 
-    def generate_meta_command(
+    def generate_meta_skill(
         self,
         job: JobDefinition,
         adapter: AgentAdapter,
         output_dir: Path | str,
     ) -> Path:
         """
-        Generate the meta-command file for a job.
+        Generate the meta-skill file for a job.
 
-        The meta-command is the primary user interface for a job, routing
+        The meta-skill is the primary user interface for a job, routing
         user intent to the appropriate step.
 
         Args:
             job: Job definition
             adapter: Agent adapter for the target platform
-            output_dir: Directory to write command file to
+            output_dir: Directory to write skill file to
 
         Returns:
-            Path to generated meta-command file
+            Path to generated meta-skill file
 
         Raises:
             GeneratorError: If generation fails
         """
         output_dir = Path(output_dir)
 
-        # Create commands subdirectory if needed
-        commands_dir = output_dir / adapter.commands_dir
-        commands_dir.mkdir(parents=True, exist_ok=True)
+        # Create skills subdirectory if needed
+        skills_dir = output_dir / adapter.skills_dir
+        skills_dir.mkdir(parents=True, exist_ok=True)
 
         # Build context
-        context = self._build_meta_command_context(job, adapter)
+        context = self._build_meta_skill_context(job, adapter)
 
         # Load and render template
         env = self._get_jinja_env(adapter)
         try:
-            template = env.get_template(adapter.meta_command_template)
+            template = env.get_template(adapter.meta_skill_template)
         except TemplateNotFound as e:
-            raise GeneratorError(f"Meta-command template not found: {e}") from e
+            raise GeneratorError(f"Meta-skill template not found: {e}") from e
 
         try:
             rendered = template.render(**context)
         except Exception as e:
-            raise GeneratorError(f"Meta-command template rendering failed: {e}") from e
+            raise GeneratorError(f"Meta-skill template rendering failed: {e}") from e
 
-        # Write meta-command file
-        command_filename = adapter.get_meta_command_filename(job.name)
-        command_path = commands_dir / command_filename
+        # Write meta-skill file
+        skill_filename = adapter.get_meta_skill_filename(job.name)
+        skill_path = skills_dir / skill_filename
 
         # Ensure parent directories exist (for Gemini's job_name/index.toml structure)
-        command_path.parent.mkdir(parents=True, exist_ok=True)
+        skill_path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
-            safe_write(command_path, rendered)
+            safe_write(skill_path, rendered)
         except Exception as e:
-            raise GeneratorError(f"Failed to write meta-command file: {e}") from e
+            raise GeneratorError(f"Failed to write meta-skill file: {e}") from e
 
-        return command_path
+        return skill_path
 
-    def generate_step_command(
+    def generate_step_skill(
         self,
         job: JobDefinition,
         step: Step,
@@ -316,25 +316,25 @@ class CommandGenerator:
         output_dir: Path | str,
     ) -> Path:
         """
-        Generate slash-command file for a single step.
+        Generate skill file for a single step.
 
         Args:
             job: Job definition
-            step: Step to generate command for
+            step: Step to generate skill for
             adapter: Agent adapter for the target platform
-            output_dir: Directory to write command file to
+            output_dir: Directory to write skill file to
 
         Returns:
-            Path to generated command file
+            Path to generated skill file
 
         Raises:
             GeneratorError: If generation fails
         """
         output_dir = Path(output_dir)
 
-        # Create commands subdirectory if needed
-        commands_dir = output_dir / adapter.commands_dir
-        commands_dir.mkdir(parents=True, exist_ok=True)
+        # Create skills subdirectory if needed
+        skills_dir = output_dir / adapter.skills_dir
+        skills_dir.mkdir(parents=True, exist_ok=True)
 
         # Find step index
         try:
@@ -342,13 +342,14 @@ class CommandGenerator:
         except StopIteration as e:
             raise GeneratorError(f"Step '{step.id}' not found in job '{job.name}'") from e
 
-        # Build context
+        # Build context (include exposed for template user-invocable setting)
         context = self._build_step_context(job, step, step_index, adapter)
+        context["exposed"] = step.exposed
 
         # Load and render template
         env = self._get_jinja_env(adapter)
         try:
-            template = env.get_template(adapter.command_template)
+            template = env.get_template(adapter.skill_template)
         except TemplateNotFound as e:
             raise GeneratorError(f"Template not found: {e}") from e
 
@@ -357,49 +358,49 @@ class CommandGenerator:
         except Exception as e:
             raise GeneratorError(f"Template rendering failed: {e}") from e
 
-        # Write command file (hidden by default unless step.exposed is True)
-        command_filename = adapter.get_step_command_filename(job.name, step.id, step.exposed)
-        command_path = commands_dir / command_filename
+        # Write skill file
+        skill_filename = adapter.get_step_skill_filename(job.name, step.id, step.exposed)
+        skill_path = skills_dir / skill_filename
 
         # Ensure parent directories exist (for Gemini's job_name/step_id.toml structure)
-        command_path.parent.mkdir(parents=True, exist_ok=True)
+        skill_path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
-            safe_write(command_path, rendered)
+            safe_write(skill_path, rendered)
         except Exception as e:
-            raise GeneratorError(f"Failed to write command file: {e}") from e
+            raise GeneratorError(f"Failed to write skill file: {e}") from e
 
-        return command_path
+        return skill_path
 
-    def generate_all_commands(
+    def generate_all_skills(
         self,
         job: JobDefinition,
         adapter: AgentAdapter,
         output_dir: Path | str,
     ) -> list[Path]:
         """
-        Generate all command files for a job: meta-command and step commands.
+        Generate all skill files for a job: meta-skill and step skills.
 
         Args:
             job: Job definition
             adapter: Agent adapter for the target platform
-            output_dir: Directory to write command files to
+            output_dir: Directory to write skill files to
 
         Returns:
-            List of paths to generated command files (meta-command first, then steps)
+            List of paths to generated skill files (meta-skill first, then steps)
 
         Raises:
             GeneratorError: If generation fails
         """
-        command_paths = []
+        skill_paths = []
 
-        # Generate meta-command first (job-level entry point)
-        meta_command_path = self.generate_meta_command(job, adapter, output_dir)
-        command_paths.append(meta_command_path)
+        # Generate meta-skill first (job-level entry point)
+        meta_skill_path = self.generate_meta_skill(job, adapter, output_dir)
+        skill_paths.append(meta_skill_path)
 
-        # Generate step commands (hidden by default unless step.exposed is True)
+        # Generate step skills
         for step in job.steps:
-            command_path = self.generate_step_command(job, step, adapter, output_dir)
-            command_paths.append(command_path)
+            skill_path = self.generate_step_skill(job, step, adapter, output_dir)
+            skill_paths.append(skill_path)
 
-        return command_paths
+        return skill_paths

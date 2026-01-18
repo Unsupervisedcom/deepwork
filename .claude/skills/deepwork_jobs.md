@@ -24,10 +24,10 @@ This job has 3 step(s):
 
 ### define
 **Define Job Specification**: Create the job.yml specification file by understanding workflow requirements
-- Command: `uw.deepwork_jobs.define`
+- Command: `deepwork_jobs.define`
 ### implement
 **Implement Job Steps**: Generate instruction files for each step based on the job.yml specification
-- Command: `uw.deepwork_jobs.implement`
+- Command: `deepwork_jobs.implement`
 - Requires: define
 ### learn
 **Learn from Job Execution**: Reflect on conversation to improve job instructions and capture learnings

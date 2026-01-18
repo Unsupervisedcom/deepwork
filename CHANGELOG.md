@@ -5,6 +5,28 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-01-18
+
+### Changed
+- **BREAKING**: Refactored "commands" terminology to "skills" throughout the codebase
+  - Directory structure changed from `.claude/commands/` to `.claude/skills/`
+  - Directory structure changed from `.gemini/commands/` to `.gemini/skills/`
+  - Class renamed: `CommandGenerator` → `SkillGenerator`
+  - Enum renamed: `CommandLifecycleHook` → `SkillLifecycleHook`
+  - Class attributes renamed: `commands_dir` → `skills_dir`, `command_template` → `skill_template`
+  - Methods renamed: `get_commands_dir()` → `get_skills_dir()`, `generate_all_commands()` → `generate_all_skills()`, etc.
+  - Template files renamed: `command-job-step.md.jinja` → `skill-job-step.md.jinja`, etc.
+- **BREAKING**: Removed `uw.` prefix convention for hidden steps
+  - Step skills now use clean filenames (e.g., `job_name.step_id.md` instead of `uw.job_name.step_id.md`)
+  - Hidden steps use `user-invocable: false` in YAML frontmatter instead
+  - The `exposed` field in job.yml now controls the `user-invocable` frontmatter setting
+- CLI output messages updated to use "skills" terminology
+
+### Migration Guide
+- Run `deepwork install --platform claude` to regenerate skills in the new location
+- Remove old `.claude/commands/` and `.gemini/commands/` directories manually
+- Update any custom code that imports `CommandGenerator` or `CommandLifecycleHook`
+
 ## [0.4.0] - 2026-01-16
 
 ### Added

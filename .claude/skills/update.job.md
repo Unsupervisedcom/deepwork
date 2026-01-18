@@ -1,5 +1,6 @@
 ---
 description: Edit standard job source files and sync to installed locations
+user-invocable: false
 hooks:
   Stop:
     - hooks:
@@ -16,7 +17,7 @@ hooks:
 
 # update.job
 
-**Standalone command** in the **update** job - can be run anytime
+**Standalone skill** in the **update** job - can be run anytime
 
 **Summary**: Update standard jobs in src/ and sync to installed locations
 
@@ -139,7 +140,7 @@ All work for this job should be done on a dedicated work branch:
 
 ## Output Requirements
 
-No specific files are output by this command.
+No specific files are output by this skill.
 
 ## Quality Validation Loop
 
@@ -164,17 +165,17 @@ After completing this step:
 1. **Verify outputs**: Confirm all required files have been created
 
 2. **Inform the user**:
-   - The job command is complete
-   - This command can be run again anytime to make further changes
+   - The job skill is complete
+   - This skill can be run again anytime to make further changes
 
-## Command Complete
+## Skill Complete
 
-This is a standalone command that can be run anytime. The outputs are ready for use.
+This is a standalone skill that can be run anytime. The outputs are ready for use.
 
 Consider:
 - Reviewing the outputs
 - Running `deepwork sync` if job definitions were changed
-- Re-running this command later if further changes are needed
+- Re-running this skill later if further changes are needed
 
 ---
 

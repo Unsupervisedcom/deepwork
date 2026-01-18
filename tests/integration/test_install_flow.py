@@ -39,24 +39,24 @@ class TestInstallCommand:
         assert config is not None
         assert "claude" in config["platforms"]
 
-        # Verify core commands were created
-        claude_dir = mock_claude_project / ".claude" / "commands"
-        # Meta-command
+        # Verify core skills were created
+        claude_dir = mock_claude_project / ".claude" / "skills"
+        # Meta-skill
         assert (claude_dir / "deepwork_jobs.md").exists()
-        # Hidden step command (uw. prefix)
-        assert (claude_dir / "uw.deepwork_jobs.define.md").exists()
-        # Exposed step command (no uw. prefix - learn has exposed: true)
+        # Step skill (no prefix, but has user-invocable: false in frontmatter)
+        assert (claude_dir / "deepwork_jobs.define.md").exists()
+        # Exposed step skill (user-invocable - learn has exposed: true)
         assert (claude_dir / "deepwork_jobs.learn.md").exists()
 
-        # Verify meta-command content
-        meta_command = (claude_dir / "deepwork_jobs.md").read_text()
-        assert "# deepwork_jobs" in meta_command
-        assert "Available Steps" in meta_command
+        # Verify meta-skill content
+        meta_skill = (claude_dir / "deepwork_jobs.md").read_text()
+        assert "# deepwork_jobs" in meta_skill
+        assert "Available Steps" in meta_skill
 
-        # Verify hidden step command content
-        define_command = (claude_dir / "uw.deepwork_jobs.define.md").read_text()
-        assert "# deepwork_jobs.define" in define_command
-        assert "Define Job Specification" in define_command
+        # Verify step skill content
+        define_skill = (claude_dir / "deepwork_jobs.define.md").read_text()
+        assert "# deepwork_jobs.define" in define_skill
+        assert "Define Job Specification" in define_skill
 
     def test_install_with_auto_detect(self, mock_claude_project: Path) -> None:
         """Test installing with auto-detection."""
@@ -113,17 +113,17 @@ class TestInstallCommand:
         assert "claude" in config["platforms"]
         assert "gemini" in config["platforms"]
 
-        # Verify commands were created for both platforms
-        claude_dir = mock_multi_platform_project / ".claude" / "commands"
-        # Meta-command and hidden step commands
+        # Verify skills were created for both platforms
+        claude_dir = mock_multi_platform_project / ".claude" / "skills"
+        # Meta-skill and step skills
         assert (claude_dir / "deepwork_jobs.md").exists()
-        assert (claude_dir / "uw.deepwork_jobs.define.md").exists()
+        assert (claude_dir / "deepwork_jobs.define.md").exists()
 
         # Gemini uses job_name/step_id.toml structure
-        gemini_dir = mock_multi_platform_project / ".gemini" / "commands"
-        # Meta-command (index.toml) and hidden step commands
+        gemini_dir = mock_multi_platform_project / ".gemini" / "skills"
+        # Meta-skill (index.toml) and step skills
         assert (gemini_dir / "deepwork_jobs" / "index.toml").exists()
-        assert (gemini_dir / "deepwork_jobs" / "uw.define.toml").exists()
+        assert (gemini_dir / "deepwork_jobs" / "define.toml").exists()
 
     def test_install_with_specified_platform_when_missing(self, mock_git_repo: Path) -> None:
         """Test that install fails when specified platform is not present."""
@@ -161,10 +161,10 @@ class TestInstallCommand:
         deepwork_dir = mock_claude_project / ".deepwork"
         assert (deepwork_dir / "config.yml").exists()
 
-        claude_dir = mock_claude_project / ".claude" / "commands"
-        # Meta-command and step commands
+        claude_dir = mock_claude_project / ".claude" / "skills"
+        # Meta-skill and step skills
         assert (claude_dir / "deepwork_jobs.md").exists()
-        assert (claude_dir / "uw.deepwork_jobs.define.md").exists()
+        assert (claude_dir / "deepwork_jobs.define.md").exists()
         assert (claude_dir / "deepwork_jobs.learn.md").exists()
 
     def test_install_creates_rules_directory(self, mock_claude_project: Path) -> None:

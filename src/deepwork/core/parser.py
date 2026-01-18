@@ -108,7 +108,7 @@ class Step:
     # Event names: after_agent, before_tool, before_prompt
     hooks: dict[str, list[HookAction]] = field(default_factory=dict)
 
-    # If true, step command is visible (no uw. prefix). Default: false (hidden).
+    # If true, skill is user-invocable in menus. Default: false (hidden from menus).
     exposed: bool = False
 
     # Declarative quality criteria rendered with standard evaluation framing

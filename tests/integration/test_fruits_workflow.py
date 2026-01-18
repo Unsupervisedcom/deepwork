@@ -7,7 +7,7 @@ designed for automated CI testing of the DeepWork framework.
 from pathlib import Path
 
 from deepwork.core.adapters import ClaudeAdapter
-from deepwork.core.generator import CommandGenerator
+from deepwork.core.generator import SkillGenerator
 from deepwork.core.parser import parse_job_definition
 
 
@@ -68,44 +68,44 @@ class TestFruitsWorkflow:
         # Depends on identify step
         assert classify_step.dependencies == ["identify"]
 
-    def test_fruits_command_generation(self, fixtures_dir: Path, temp_dir: Path) -> None:
-        """Test that fruits job generates valid Claude commands."""
+    def test_fruits_skill_generation(self, fixtures_dir: Path, temp_dir: Path) -> None:
+        """Test that fruits job generates valid Claude skills."""
         job_dir = fixtures_dir / "jobs" / "fruits"
         job = parse_job_definition(job_dir)
 
-        generator = CommandGenerator()
+        generator = SkillGenerator()
         adapter = ClaudeAdapter()
-        commands_dir = temp_dir / ".claude"
-        commands_dir.mkdir()
+        skills_dir = temp_dir / ".claude"
+        skills_dir.mkdir()
 
-        command_paths = generator.generate_all_commands(job, adapter, commands_dir)
+        skill_paths = generator.generate_all_skills(job, adapter, skills_dir)
 
-        # Now includes meta-command + step commands
-        assert len(command_paths) == 3  # 1 meta + 2 steps
+        # Now includes meta-skill + step skills
+        assert len(skill_paths) == 3  # 1 meta + 2 steps
 
-        # Verify command files exist
-        meta_cmd = commands_dir / "commands" / "fruits.md"
-        identify_cmd = commands_dir / "commands" / "uw.fruits.identify.md"
-        classify_cmd = commands_dir / "commands" / "uw.fruits.classify.md"
-        assert meta_cmd.exists()
-        assert identify_cmd.exists()
-        assert classify_cmd.exists()
+        # Verify skill files exist
+        meta_skill = skills_dir / "skills" / "fruits.md"
+        identify_skill = skills_dir / "skills" / "fruits.identify.md"
+        classify_skill = skills_dir / "skills" / "fruits.classify.md"
+        assert meta_skill.exists()
+        assert identify_skill.exists()
+        assert classify_skill.exists()
 
-    def test_fruits_identify_command_content(self, fixtures_dir: Path, temp_dir: Path) -> None:
-        """Test the identify command has correct content."""
+    def test_fruits_identify_skill_content(self, fixtures_dir: Path, temp_dir: Path) -> None:
+        """Test the identify skill has correct content."""
         job_dir = fixtures_dir / "jobs" / "fruits"
         job = parse_job_definition(job_dir)
 
-        generator = CommandGenerator()
+        generator = SkillGenerator()
         adapter = ClaudeAdapter()
-        commands_dir = temp_dir / ".claude"
-        commands_dir.mkdir()
+        skills_dir = temp_dir / ".claude"
+        skills_dir.mkdir()
 
-        generator.generate_all_commands(job, adapter, commands_dir)
+        generator.generate_all_skills(job, adapter, skills_dir)
 
-        # Step commands now have uw. prefix
-        identify_cmd = commands_dir / "commands" / "uw.fruits.identify.md"
-        content = identify_cmd.read_text()
+        # Step skills have clean names (no prefix)
+        identify_skill = skills_dir / "skills" / "fruits.identify.md"
+        content = identify_skill.read_text()
 
         # Check header
         assert "# fruits.identify" in content
@@ -122,21 +122,21 @@ class TestFruitsWorkflow:
         # Check next step is suggested
         assert "/fruits.classify" in content
 
-    def test_fruits_classify_command_content(self, fixtures_dir: Path, temp_dir: Path) -> None:
-        """Test the classify command has correct content."""
+    def test_fruits_classify_skill_content(self, fixtures_dir: Path, temp_dir: Path) -> None:
+        """Test the classify skill has correct content."""
         job_dir = fixtures_dir / "jobs" / "fruits"
         job = parse_job_definition(job_dir)
 
-        generator = CommandGenerator()
+        generator = SkillGenerator()
         adapter = ClaudeAdapter()
-        commands_dir = temp_dir / ".claude"
-        commands_dir.mkdir()
+        skills_dir = temp_dir / ".claude"
+        skills_dir.mkdir()
 
-        generator.generate_all_commands(job, adapter, commands_dir)
+        generator.generate_all_skills(job, adapter, skills_dir)
 
-        # Step commands now have uw. prefix
-        classify_cmd = commands_dir / "commands" / "uw.fruits.classify.md"
-        content = classify_cmd.read_text()
+        # Step skills have clean names (no prefix)
+        classify_skill = skills_dir / "skills" / "fruits.classify.md"
+        content = classify_skill.read_text()
 
         # Check header
         assert "# fruits.classify" in content

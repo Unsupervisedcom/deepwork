@@ -15,10 +15,10 @@ class AdapterError(Exception):
     pass
 
 
-class CommandLifecycleHook(str, Enum):
-    """Generic command lifecycle hook events supported by DeepWork.
+class SkillLifecycleHook(str, Enum):
+    """Generic skill lifecycle hook events supported by DeepWork.
 
-    These represent hook points in the AI agent's command execution lifecycle.
+    These represent hook points in the AI agent's skill execution lifecycle.
     Each adapter maps these generic names to platform-specific event names.
     The enum values are the generic names used in job.yml files.
     """
@@ -36,8 +36,8 @@ class CommandLifecycleHook(str, Enum):
     BEFORE_PROMPT = "before_prompt"
 
 
-# List of all supported command lifecycle hooks
-COMMAND_LIFECYCLE_HOOKS_SUPPORTED: list[CommandLifecycleHook] = list(CommandLifecycleHook)
+# List of all supported skill lifecycle hooks
+SKILL_LIFECYCLE_HOOKS_SUPPORTED: list[SkillLifecycleHook] = list(SkillLifecycleHook)
 
 
 class AgentAdapter(ABC):
@@ -54,19 +54,19 @@ class AgentAdapter(ABC):
     name: ClassVar[str]
     display_name: ClassVar[str]
     config_dir: ClassVar[str]
-    commands_dir: ClassVar[str] = "commands"
-    command_template: ClassVar[str] = "command-job-step.md.jinja"
-    meta_command_template: ClassVar[str] = "command-job-meta.md.jinja"
+    skills_dir: ClassVar[str] = "skills"
+    skill_template: ClassVar[str] = "skill-job-step.md.jinja"
+    meta_skill_template: ClassVar[str] = "skill-job-meta.md.jinja"
 
-    # Instructions for reloading commands after sync (shown to users)
+    # Instructions for reloading skills after sync (shown to users)
     # Subclasses should override with platform-specific instructions.
     reload_instructions: ClassVar[str] = (
-        "Restart your AI assistant session to use the new commands."
+        "Restart your AI assistant session to use the new skills."
     )
 
-    # Mapping from generic CommandLifecycleHook to platform-specific event names.
+    # Mapping from generic SkillLifecycleHook to platform-specific event names.
     # Subclasses should override this to provide platform-specific mappings.
-    hook_name_mapping: ClassVar[dict[CommandLifecycleHook, str]] = {}
+    hook_name_mapping: ClassVar[dict[SkillLifecycleHook, str]] = {}
 
     def __init__(self, project_root: Path | str | None = None):
         """
@@ -136,15 +136,15 @@ class AgentAdapter(ABC):
         """
         return templates_root / self.name
 
-    def get_commands_dir(self, project_root: Path | None = None) -> Path:
+    def get_skills_dir(self, project_root: Path | None = None) -> Path:
         """
-        Get the commands directory path.
+        Get the skills directory path.
 
         Args:
             project_root: Project root (uses instance's project_root if not provided)
 
         Returns:
-            Path to commands directory
+            Path to skills directory
 
         Raises:
             AdapterError: If no project root specified
@@ -152,40 +152,39 @@ class AgentAdapter(ABC):
         root = project_root or self.project_root
         if not root:
             raise AdapterError("No project root specified")
-        return root / self.config_dir / self.commands_dir
+        return root / self.config_dir / self.skills_dir
 
-    def get_meta_command_filename(self, job_name: str) -> str:
+    def get_meta_skill_filename(self, job_name: str) -> str:
         """
-        Get the filename for a job's meta-command.
+        Get the filename for a job's meta-skill.
 
-        The meta-command is the primary user interface for a job.
+        The meta-skill is the primary user interface for a job.
         Can be overridden for different file formats.
 
         Args:
             job_name: Name of the job
 
         Returns:
-            Meta-command filename (e.g., "job_name.md")
+            Meta-skill filename (e.g., "job_name.md")
         """
         return f"{job_name}.md"
 
-    def get_step_command_filename(self, job_name: str, step_id: str, exposed: bool = False) -> str:
+    def get_step_skill_filename(self, job_name: str, step_id: str, exposed: bool = False) -> str:
         """
-        Get the filename for a step command.
+        Get the filename for a step skill.
 
-        Step commands are hidden by default (uw. prefix) unless exposed=True.
-        Can be overridden for different file formats (e.g., TOML for Gemini).
+        All step skills use the same filename format. The exposed parameter
+        is used for template context (user-invocable frontmatter setting).
 
         Args:
             job_name: Name of the job
             step_id: ID of the step
-            exposed: If True, command is visible (no uw. prefix). Default: False.
+            exposed: If True, skill is user-invocable (for template context). Default: False.
 
         Returns:
-            Command filename (e.g., "uw.job_name.step_id.md" or "job_name.step_id.md" if exposed)
+            Skill filename (e.g., "job_name.step_id.md")
         """
-        prefix = "" if exposed else "uw."
-        return f"{prefix}{job_name}.{step_id}.md"
+        return f"{job_name}.{step_id}.md"
 
     def detect(self, project_root: Path | None = None) -> bool:
         """
@@ -203,24 +202,24 @@ class AgentAdapter(ABC):
         config_path = root / self.config_dir
         return config_path.exists() and config_path.is_dir()
 
-    def get_platform_hook_name(self, hook: CommandLifecycleHook) -> str | None:
+    def get_platform_hook_name(self, hook: SkillLifecycleHook) -> str | None:
         """
         Get the platform-specific event name for a generic hook.
 
         Args:
-            hook: Generic CommandLifecycleHook
+            hook: Generic SkillLifecycleHook
 
         Returns:
             Platform-specific event name, or None if not supported
         """
         return self.hook_name_mapping.get(hook)
 
-    def supports_hook(self, hook: CommandLifecycleHook) -> bool:
+    def supports_hook(self, hook: SkillLifecycleHook) -> bool:
         """
         Check if this adapter supports a specific hook.
 
         Args:
-            hook: Generic CommandLifecycleHook
+            hook: Generic SkillLifecycleHook
 
         Returns:
             True if the hook is supported
@@ -260,15 +259,15 @@ def _hook_already_present(hooks: list[dict[str, Any]], script_path: str) -> bool
 # =============================================================================
 #
 # Each adapter must define hook_name_mapping to indicate which hooks it supports.
-# Use an empty dict {} for platforms that don't support command-level hooks.
+# Use an empty dict {} for platforms that don't support skill-level hooks.
 #
 # Hook support reviewed:
 # - Claude Code: Full support (Stop, PreToolUse, UserPromptSubmit) - reviewed 2026-01-16
-#   All three command lifecycle hooks are supported in markdown frontmatter.
+#   All three skill lifecycle hooks are supported in markdown frontmatter.
 #   See: doc/platforms/claude/hooks_system.md
-# - Gemini CLI: No command-level hooks (reviewed 2026-01-12)
-#   Gemini's hooks are global/project-level in settings.json, not per-command.
-#   TOML command files only support 'prompt' and 'description' fields.
+# - Gemini CLI: No skill-level hooks (reviewed 2026-01-12)
+#   Gemini's hooks are global/project-level in settings.json, not per-skill.
+#   TOML skill files only support 'prompt' and 'description' fields.
 #   See: doc/platforms/gemini/hooks_system.md
 # =============================================================================
 
@@ -287,10 +286,10 @@ class ClaudeAdapter(AgentAdapter):
     )
 
     # Claude Code uses PascalCase event names
-    hook_name_mapping: ClassVar[dict[CommandLifecycleHook, str]] = {
-        CommandLifecycleHook.AFTER_AGENT: "Stop",
-        CommandLifecycleHook.BEFORE_TOOL: "PreToolUse",
-        CommandLifecycleHook.BEFORE_PROMPT: "UserPromptSubmit",
+    hook_name_mapping: ClassVar[dict[SkillLifecycleHook, str]] = {
+        SkillLifecycleHook.AFTER_AGENT: "Stop",
+        SkillLifecycleHook.BEFORE_TOOL: "PreToolUse",
+        SkillLifecycleHook.BEFORE_PROMPT: "UserPromptSubmit",
     }
 
     def sync_hooks(self, project_path: Path, hooks: dict[str, list[dict[str, Any]]]) -> int:
@@ -351,11 +350,11 @@ class ClaudeAdapter(AgentAdapter):
 class GeminiAdapter(AgentAdapter):
     """Adapter for Gemini CLI.
 
-    Gemini CLI uses TOML format for custom commands stored in .gemini/commands/.
-    Commands use colon (:) for namespacing instead of dot (.).
+    Gemini CLI uses TOML format for custom skills stored in .gemini/skills/.
+    Skills use colon (:) for namespacing instead of dot (.).
 
-    Note: Gemini CLI does NOT support command-level hooks. Hooks are configured
-    globally in settings.json, not per-command. Therefore, hook_name_mapping
+    Note: Gemini CLI does NOT support skill-level hooks. Hooks are configured
+    globally in settings.json, not per-skill. Therefore, hook_name_mapping
     is empty and sync_hooks returns 0.
 
     See: doc/platforms/gemini/hooks_system.md
@@ -364,21 +363,21 @@ class GeminiAdapter(AgentAdapter):
     name = "gemini"
     display_name = "Gemini CLI"
     config_dir = ".gemini"
-    command_template = "command-job-step.toml.jinja"
-    meta_command_template = "command-job-meta.toml.jinja"
+    skill_template = "skill-job-step.toml.jinja"
+    meta_skill_template = "skill-job-meta.toml.jinja"
 
     # Gemini CLI can reload with /memory refresh
     reload_instructions: ClassVar[str] = (
-        "Run '/memory refresh' to reload commands, or restart your Gemini CLI session."
+        "Run '/memory refresh' to reload skills, or restart your Gemini CLI session."
     )
 
-    # Gemini CLI does NOT support command-level hooks
-    # Hooks are global/project-level in settings.json, not per-command
-    hook_name_mapping: ClassVar[dict[CommandLifecycleHook, str]] = {}
+    # Gemini CLI does NOT support skill-level hooks
+    # Hooks are global/project-level in settings.json, not per-skill
+    hook_name_mapping: ClassVar[dict[SkillLifecycleHook, str]] = {}
 
-    def get_meta_command_filename(self, job_name: str) -> str:
+    def get_meta_skill_filename(self, job_name: str) -> str:
         """
-        Get the filename for a Gemini job's meta-command.
+        Get the filename for a Gemini job's meta-skill.
 
         Gemini uses TOML files and colon namespacing via subdirectories.
         For job "my_job", creates: my_job/index.toml
@@ -387,34 +386,34 @@ class GeminiAdapter(AgentAdapter):
             job_name: Name of the job
 
         Returns:
-            Meta-command filename path (e.g., "my_job/index.toml")
+            Meta-skill filename path (e.g., "my_job/index.toml")
         """
         return f"{job_name}/index.toml"
 
-    def get_step_command_filename(self, job_name: str, step_id: str, exposed: bool = False) -> str:
+    def get_step_skill_filename(self, job_name: str, step_id: str, exposed: bool = False) -> str:
         """
-        Get the filename for a Gemini step command.
+        Get the filename for a Gemini step skill.
 
         Gemini uses TOML files and colon namespacing via subdirectories.
-        Step commands are hidden by default (uw. prefix) unless exposed=True.
-        For job "my_job" and step "step_one", creates: my_job/uw.step_one.toml
+        All step skills use the same filename format. The exposed parameter
+        is used for template context (user-invocable setting).
+        For job "my_job" and step "step_one", creates: my_job/step_one.toml
 
         Args:
             job_name: Name of the job
             step_id: ID of the step
-            exposed: If True, command is visible (no uw. prefix). Default: False.
+            exposed: If True, skill is user-invocable (for template context). Default: False.
 
         Returns:
-            Command filename path (e.g., "my_job/uw.step_one.toml" or "my_job/step_one.toml" if exposed)
+            Skill filename path (e.g., "my_job/step_one.toml")
         """
-        prefix = "" if exposed else "uw."
-        return f"{job_name}/{prefix}{step_id}.toml"
+        return f"{job_name}/{step_id}.toml"
 
     def sync_hooks(self, project_path: Path, hooks: dict[str, list[dict[str, Any]]]) -> int:
         """
         Sync hooks to Gemini CLI settings.
 
-        Gemini CLI does not support command-level hooks. All hooks are
+        Gemini CLI does not support skill-level hooks. All hooks are
         configured globally in settings.json. This method is a no-op
         that always returns 0.
 
@@ -423,8 +422,8 @@ class GeminiAdapter(AgentAdapter):
             hooks: Dict mapping lifecycle events to hook configurations (ignored)
 
         Returns:
-            0 (Gemini does not support command-level hooks)
+            0 (Gemini does not support skill-level hooks)
         """
-        # Gemini CLI does not support command-level hooks
-        # Hooks are configured globally in settings.json, not per-command
+        # Gemini CLI does not support skill-level hooks
+        # Hooks are configured globally in settings.json, not per-skill
         return 0

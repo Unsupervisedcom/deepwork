@@ -9,7 +9,7 @@ from deepwork.core.adapters import (
     AdapterError,
     AgentAdapter,
     ClaudeAdapter,
-    CommandLifecycleHook,
+    SkillLifecycleHook,
     GeminiAdapter,
 )
 
@@ -53,7 +53,7 @@ class TestClaudeAdapter:
         assert ClaudeAdapter.name == "claude"
         assert ClaudeAdapter.display_name == "Claude Code"
         assert ClaudeAdapter.config_dir == ".claude"
-        assert ClaudeAdapter.commands_dir == "commands"
+        assert ClaudeAdapter.skills_dir == "skills"
 
     def test_init_with_project_root(self, temp_dir: Path) -> None:
         """Test initialization with project root."""
@@ -96,50 +96,50 @@ class TestClaudeAdapter:
 
         assert result == templates_root / "claude"
 
-    def test_get_commands_dir(self, temp_dir: Path) -> None:
-        """Test get_commands_dir."""
+    def test_get_skills_dir(self, temp_dir: Path) -> None:
+        """Test get_skills_dir."""
         adapter = ClaudeAdapter(temp_dir)
 
-        result = adapter.get_commands_dir()
+        result = adapter.get_skills_dir()
 
-        assert result == temp_dir / ".claude" / "commands"
+        assert result == temp_dir / ".claude" / "skills"
 
-    def test_get_commands_dir_with_explicit_root(self, temp_dir: Path) -> None:
-        """Test get_commands_dir with explicit project root."""
+    def test_get_skills_dir_with_explicit_root(self, temp_dir: Path) -> None:
+        """Test get_skills_dir with explicit project root."""
         adapter = ClaudeAdapter()
 
-        result = adapter.get_commands_dir(temp_dir)
+        result = adapter.get_skills_dir(temp_dir)
 
-        assert result == temp_dir / ".claude" / "commands"
+        assert result == temp_dir / ".claude" / "skills"
 
-    def test_get_commands_dir_raises_without_root(self) -> None:
-        """Test get_commands_dir raises when no project root specified."""
+    def test_get_skills_dir_raises_without_root(self) -> None:
+        """Test get_skills_dir raises when no project root specified."""
         adapter = ClaudeAdapter()
 
         with pytest.raises(AdapterError, match="No project root specified"):
-            adapter.get_commands_dir()
+            adapter.get_skills_dir()
 
-    def test_get_meta_command_filename(self) -> None:
-        """Test get_meta_command_filename."""
+    def test_get_meta_skill_filename(self) -> None:
+        """Test get_meta_skill_filename."""
         adapter = ClaudeAdapter()
 
-        result = adapter.get_meta_command_filename("my_job")
+        result = adapter.get_meta_skill_filename("my_job")
 
         assert result == "my_job.md"
 
-    def test_get_step_command_filename_hidden_by_default(self) -> None:
-        """Test get_step_command_filename returns hidden filename by default."""
+    def test_get_step_skill_filename_returns_clean_name(self) -> None:
+        """Test get_step_skill_filename returns clean filename (no prefix)."""
         adapter = ClaudeAdapter()
 
-        result = adapter.get_step_command_filename("my_job", "step_one")
+        result = adapter.get_step_skill_filename("my_job", "step_one")
 
-        assert result == "uw.my_job.step_one.md"
+        assert result == "my_job.step_one.md"
 
-    def test_get_step_command_filename_exposed(self) -> None:
-        """Test get_step_command_filename returns visible filename when exposed."""
+    def test_get_step_skill_filename_exposed(self) -> None:
+        """Test get_step_skill_filename with exposed=True (same result, no prefix)."""
         adapter = ClaudeAdapter()
 
-        result = adapter.get_step_command_filename("my_job", "step_one", exposed=True)
+        result = adapter.get_step_skill_filename("my_job", "step_one", exposed=True)
 
         assert result == "my_job.step_one.md"
 
@@ -195,8 +195,8 @@ class TestGeminiAdapter:
         assert GeminiAdapter.name == "gemini"
         assert GeminiAdapter.display_name == "Gemini CLI"
         assert GeminiAdapter.config_dir == ".gemini"
-        assert GeminiAdapter.commands_dir == "commands"
-        assert GeminiAdapter.command_template == "command-job-step.toml.jinja"
+        assert GeminiAdapter.skills_dir == "skills"
+        assert GeminiAdapter.skill_template == "skill-job-step.toml.jinja"
 
     def test_init_with_project_root(self, temp_dir: Path) -> None:
         """Test initialization with project root."""
@@ -239,81 +239,81 @@ class TestGeminiAdapter:
 
         assert result == templates_root / "gemini"
 
-    def test_get_commands_dir(self, temp_dir: Path) -> None:
-        """Test get_commands_dir."""
+    def test_get_skills_dir(self, temp_dir: Path) -> None:
+        """Test get_skills_dir."""
         adapter = GeminiAdapter(temp_dir)
 
-        result = adapter.get_commands_dir()
+        result = adapter.get_skills_dir()
 
-        assert result == temp_dir / ".gemini" / "commands"
+        assert result == temp_dir / ".gemini" / "skills"
 
-    def test_get_commands_dir_with_explicit_root(self, temp_dir: Path) -> None:
-        """Test get_commands_dir with explicit project root."""
+    def test_get_skills_dir_with_explicit_root(self, temp_dir: Path) -> None:
+        """Test get_skills_dir with explicit project root."""
         adapter = GeminiAdapter()
 
-        result = adapter.get_commands_dir(temp_dir)
+        result = adapter.get_skills_dir(temp_dir)
 
-        assert result == temp_dir / ".gemini" / "commands"
+        assert result == temp_dir / ".gemini" / "skills"
 
-    def test_get_commands_dir_raises_without_root(self) -> None:
-        """Test get_commands_dir raises when no project root specified."""
+    def test_get_skills_dir_raises_without_root(self) -> None:
+        """Test get_skills_dir raises when no project root specified."""
         adapter = GeminiAdapter()
 
         with pytest.raises(AdapterError, match="No project root specified"):
-            adapter.get_commands_dir()
+            adapter.get_skills_dir()
 
-    def test_get_meta_command_filename(self) -> None:
-        """Test get_meta_command_filename returns index.toml in subdirectory."""
+    def test_get_meta_skill_filename(self) -> None:
+        """Test get_meta_skill_filename returns index.toml in subdirectory."""
         adapter = GeminiAdapter()
 
-        result = adapter.get_meta_command_filename("my_job")
+        result = adapter.get_meta_skill_filename("my_job")
 
-        # Gemini uses subdirectories with index.toml for meta-commands
+        # Gemini uses subdirectories with index.toml for meta-skills
         assert result == "my_job/index.toml"
 
-    def test_get_step_command_filename_hidden_by_default(self) -> None:
-        """Test get_step_command_filename returns hidden TOML with subdirectory."""
+    def test_get_step_skill_filename_returns_clean_name(self) -> None:
+        """Test get_step_skill_filename returns clean TOML with subdirectory."""
         adapter = GeminiAdapter()
 
-        result = adapter.get_step_command_filename("my_job", "step_one")
+        result = adapter.get_step_skill_filename("my_job", "step_one")
 
         # Gemini uses subdirectories for namespacing (colon becomes path)
-        # Hidden steps have uw. prefix
-        assert result == "my_job/uw.step_one.toml"
-
-    def test_get_step_command_filename_exposed(self) -> None:
-        """Test get_step_command_filename returns visible TOML when exposed."""
-        adapter = GeminiAdapter()
-
-        result = adapter.get_step_command_filename("my_job", "step_one", exposed=True)
-
-        # Exposed steps have no uw. prefix
+        # No prefix on skill filenames
         assert result == "my_job/step_one.toml"
 
-    def test_get_step_command_filename_with_underscores(self) -> None:
-        """Test get_step_command_filename with underscores in names."""
+    def test_get_step_skill_filename_exposed(self) -> None:
+        """Test get_step_skill_filename with exposed=True (same result, no prefix)."""
         adapter = GeminiAdapter()
 
-        result = adapter.get_step_command_filename("competitive_research", "identify_competitors")
+        result = adapter.get_step_skill_filename("my_job", "step_one", exposed=True)
 
-        assert result == "competitive_research/uw.identify_competitors.toml"
+        # Same filename whether exposed or not
+        assert result == "my_job/step_one.toml"
+
+    def test_get_step_skill_filename_with_underscores(self) -> None:
+        """Test get_step_skill_filename with underscores in names."""
+        adapter = GeminiAdapter()
+
+        result = adapter.get_step_skill_filename("competitive_research", "identify_competitors")
+
+        assert result == "competitive_research/identify_competitors.toml"
 
     def test_hook_name_mapping_is_empty(self) -> None:
-        """Test that Gemini has no command-level hooks."""
+        """Test that Gemini has no skill-level hooks."""
         assert GeminiAdapter.hook_name_mapping == {}
 
     def test_supports_hook_returns_false_for_all_hooks(self) -> None:
-        """Test that Gemini doesn't support any command-level hooks."""
+        """Test that Gemini doesn't support any skill-level hooks."""
         adapter = GeminiAdapter()
 
-        for hook in CommandLifecycleHook:
+        for hook in SkillLifecycleHook:
             assert adapter.supports_hook(hook) is False
 
     def test_get_platform_hook_name_returns_none(self) -> None:
         """Test that get_platform_hook_name returns None for all hooks."""
         adapter = GeminiAdapter()
 
-        for hook in CommandLifecycleHook:
+        for hook in SkillLifecycleHook:
             assert adapter.get_platform_hook_name(hook) is None
 
     def test_sync_hooks_returns_zero(self, temp_dir: Path) -> None:

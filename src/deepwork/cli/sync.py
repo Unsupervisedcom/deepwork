@@ -7,7 +7,7 @@ from rich.console import Console
 from rich.table import Table
 
 from deepwork.core.adapters import AgentAdapter
-from deepwork.core.generator import CommandGenerator
+from deepwork.core.generator import SkillGenerator
 from deepwork.core.hooks_syncer import collect_job_hooks, sync_hooks_to_platform
 from deepwork.core.parser import parse_job_definition
 from deepwork.utils.fs import ensure_dir
@@ -31,13 +31,13 @@ class SyncError(Exception):
 )
 def sync(path: Path) -> None:
     """
-    Sync DeepWork commands to all configured platforms.
+    Sync DeepWork skills to all configured platforms.
 
-    Regenerates all slash-commands for job steps and core commands based on
+    Regenerates all skills for job steps and core skills based on
     the current job definitions in .deepwork/jobs/.
     """
     try:
-        sync_commands(path)
+        sync_skills(path)
     except SyncError as e:
         console.print(f"[red]Error:[/red] {e}")
         raise click.Abort() from e
@@ -46,9 +46,9 @@ def sync(path: Path) -> None:
         raise
 
 
-def sync_commands(project_path: Path) -> None:
+def sync_skills(project_path: Path) -> None:
     """
-    Sync commands to all configured platforms.
+    Sync skills to all configured platforms.
 
     Args:
         project_path: Path to project directory
@@ -78,7 +78,7 @@ def sync_commands(project_path: Path) -> None:
             "Run 'deepwork install --platform <platform>' to add a platform."
         )
 
-    console.print("[bold cyan]Syncing DeepWork Commands[/bold cyan]\n")
+    console.print("[bold cyan]Syncing DeepWork Skills[/bold cyan]\n")
 
     # Discover jobs
     jobs_dir = deepwork_dir / "jobs"
@@ -115,8 +115,8 @@ def sync_commands(project_path: Path) -> None:
         console.print(f"[yellow]→[/yellow] Found {len(job_hooks_list)} job(s) with hooks")
 
     # Sync each platform
-    generator = CommandGenerator()
-    stats = {"platforms": 0, "commands": 0, "hooks": 0}
+    generator = SkillGenerator()
+    stats = {"platforms": 0, "skills": 0, "hooks": 0}
     synced_adapters: list[AgentAdapter] = []
 
     for platform_name in platforms:
@@ -130,19 +130,19 @@ def sync_commands(project_path: Path) -> None:
         console.print(f"\n[yellow]→[/yellow] Syncing to {adapter.display_name}...")
 
         platform_dir = project_path / adapter.config_dir
-        commands_dir = platform_dir / adapter.commands_dir
+        skills_dir = platform_dir / adapter.skills_dir
 
-        # Create commands directory
-        ensure_dir(commands_dir)
+        # Create skills directory
+        ensure_dir(skills_dir)
 
-        # Generate commands for all jobs
+        # Generate skills for all jobs
         if jobs:
-            console.print("  [dim]•[/dim] Generating commands...")
+            console.print("  [dim]•[/dim] Generating skills...")
             for job in jobs:
                 try:
-                    job_paths = generator.generate_all_commands(job, adapter, platform_dir)
-                    stats["commands"] += len(job_paths)
-                    console.print(f"    [green]✓[/green] {job.name} ({len(job_paths)} commands)")
+                    job_paths = generator.generate_all_skills(job, adapter, platform_dir)
+                    stats["skills"] += len(job_paths)
+                    console.print(f"    [green]✓[/green] {job.name} ({len(job_paths)} skills)")
                 except Exception as e:
                     console.print(f"    [red]✗[/red] Failed for {job.name}: {e}")
 
@@ -170,7 +170,7 @@ def sync_commands(project_path: Path) -> None:
     table.add_column("Count", style="green")
 
     table.add_row("Platforms synced", str(stats["platforms"]))
-    table.add_row("Total commands", str(stats["commands"]))
+    table.add_row("Total skills", str(stats["skills"]))
     if stats["hooks"] > 0:
         table.add_row("Hooks synced", str(stats["hooks"]))
 
@@ -178,8 +178,8 @@ def sync_commands(project_path: Path) -> None:
     console.print()
 
     # Show reload instructions for each synced platform
-    if synced_adapters and stats["commands"] > 0:
-        console.print("[bold]To use the new commands:[/bold]")
+    if synced_adapters and stats["skills"] > 0:
+        console.print("[bold]To use the new skills:[/bold]")
         for adapter in synced_adapters:
             console.print(f"  [cyan]{adapter.display_name}:[/cyan] {adapter.reload_instructions}")
         console.print()

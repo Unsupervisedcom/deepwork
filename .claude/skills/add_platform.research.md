@@ -1,5 +1,6 @@
 ---
 description: Capture CLI configuration and hooks system documentation for the new platform
+user-invocable: false
 hooks:
   Stop:
     - hooks:

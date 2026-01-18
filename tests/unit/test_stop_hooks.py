@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from deepwork.core.adapters import ClaudeAdapter
-from deepwork.core.generator import CommandGenerator, GeneratorError
+from deepwork.core.generator import SkillGenerator, GeneratorError
 from deepwork.core.parser import HookAction, JobDefinition, Step, StopHook
 from deepwork.schemas.job_schema import JOB_SCHEMA
 from deepwork.utils.validation import ValidationError, validate_against_schema
@@ -360,7 +360,7 @@ class TestGeneratorStopHooks:
     """Tests for generator stop hooks context building."""
 
     @pytest.fixture
-    def generator(self, tmp_path: Path) -> CommandGenerator:
+    def generator(self, tmp_path: Path) -> SkillGenerator:
         """Create generator with temp templates."""
         templates_dir = tmp_path / "templates"
         claude_dir = templates_dir / "claude"
@@ -387,8 +387,8 @@ hooks:
 # {{ job_name }}.{{ step_id }}
 {{ instructions_content }}
 """
-        (claude_dir / "command-job-step.md.jinja").write_text(template_content)
-        return CommandGenerator(templates_dir)
+        (claude_dir / "skill-job-step.md.jinja").write_text(template_content)
+        return SkillGenerator(templates_dir)
 
     @pytest.fixture
     def job_with_hooks(self, tmp_path: Path) -> JobDefinition:
@@ -481,7 +481,7 @@ hooks:
         )
 
     def test_build_context_with_prompt_hook(
-        self, generator: CommandGenerator, job_with_hooks: JobDefinition
+        self, generator: SkillGenerator, job_with_hooks: JobDefinition
     ) -> None:
         """Test context building includes prompt stop hook."""
         adapter = ClaudeAdapter()
@@ -492,7 +492,7 @@ hooks:
         assert context["stop_hooks"][0]["content"] == "Verify quality criteria"
 
     def test_build_context_with_script_hook(
-        self, generator: CommandGenerator, job_with_script_hook: JobDefinition
+        self, generator: SkillGenerator, job_with_script_hook: JobDefinition
     ) -> None:
         """Test context building includes script stop hook."""
         adapter = ClaudeAdapter()
@@ -505,7 +505,7 @@ hooks:
         assert context["stop_hooks"][0]["path"] == "hooks/validate.sh"
 
     def test_build_context_with_prompt_file_hook(
-        self, generator: CommandGenerator, job_with_prompt_file_hook: JobDefinition
+        self, generator: SkillGenerator, job_with_prompt_file_hook: JobDefinition
     ) -> None:
         """Test context building reads prompt file content."""
         adapter = ClaudeAdapter()
@@ -518,7 +518,7 @@ hooks:
         assert context["stop_hooks"][0]["content"] == "Check all quality criteria"
 
     def test_build_context_with_missing_prompt_file(
-        self, generator: CommandGenerator, tmp_path: Path
+        self, generator: SkillGenerator, tmp_path: Path
     ) -> None:
         """Test error when prompt file is missing."""
         job_dir = tmp_path / "test_job"
@@ -551,7 +551,7 @@ hooks:
         with pytest.raises(GeneratorError, match="prompt file not found"):
             generator._build_step_context(job, job.steps[0], 0, adapter)
 
-    def test_build_context_no_hooks(self, generator: CommandGenerator, tmp_path: Path) -> None:
+    def test_build_context_no_hooks(self, generator: SkillGenerator, tmp_path: Path) -> None:
         """Test context with no stop hooks."""
         job_dir = tmp_path / "test_job"
         job_dir.mkdir()
@@ -581,7 +581,7 @@ hooks:
         assert context["stop_hooks"] == []
 
     def test_build_context_multiple_hooks(
-        self, generator: CommandGenerator, tmp_path: Path
+        self, generator: SkillGenerator, tmp_path: Path
     ) -> None:
         """Test context with multiple stop hooks."""
         job_dir = tmp_path / "test_job"

@@ -1,5 +1,6 @@
 ---
 description: Add platform adapter, templates, tests with 100% coverage, and README documentation
+user-invocable: false
 hooks:
   Stop:
     - hooks:
