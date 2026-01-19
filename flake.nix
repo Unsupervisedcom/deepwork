@@ -37,7 +37,12 @@
           meta = with pkgs.lib; {
             description = "Framework for enabling AI agents to perform complex, multi-step work tasks";
             homepage = "https://github.com/Unsupervisedcom/deepwork";
-            license = licenses.unfree; # Business Source License 1.1
+            # Business Source License 1.1 - not OSI approved
+            license = {
+              fullName = "Business Source License 1.1";
+              url = "https://github.com/Unsupervisedcom/deepwork/blob/main/LICENSE.md";
+              free = false;
+            };
           };
         };
       in
@@ -80,7 +85,10 @@
 
             # Auto-sync dependencies and activate venv for direct deepwork access
             echo "Setting up DeepWork development environment..."
-            uv sync --quiet 2>/dev/null || uv sync
+            if ! uv sync --quiet 2>/dev/null; then
+              echo "Running uv sync..."
+              uv sync
+            fi
 
             # Activate the virtual environment so 'deepwork' command is directly available
             if [ -f .venv/bin/activate ]; then
