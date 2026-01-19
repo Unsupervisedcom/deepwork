@@ -36,3 +36,22 @@ jobs:
 
       - name: Run tests
         run: pytest tests/ -v
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Build deepwork package
+        run: nix build .#deepwork
+
+      - name: Verify package output
+        run: |
+          ls -la result/bin/deepwork
+          ./result/bin/deepwork --version
