@@ -12,6 +12,34 @@
         pkgs = import nixpkgs {
           inherit system;
         };
+        deepwork = pkgs.python311Packages.buildPythonPackage {
+          pname = "deepwork";
+          version = "0.3.0";
+          src = ./.;
+          format = "pyproject";
+          
+          nativeBuildInputs = with pkgs.python311Packages; [
+            hatchling
+          ];
+          
+          propagatedBuildInputs = with pkgs.python311Packages; [
+            jinja2
+            pyyaml
+            gitpython
+            click
+            rich
+            jsonschema
+          ];
+
+          # Skip tests during build (they can be run in devShell)
+          doCheck = false;
+
+          meta = with pkgs.lib; {
+            description = "Framework for enabling AI agents to perform complex, multi-step work tasks";
+            homepage = "https://github.com/Unsupervisedcom/deepwork";
+            license = licenses.unfree; # Business Source License 1.1
+          };
+        };
       in
       {
         devShells.default = pkgs.mkShell {
@@ -81,33 +109,13 @@
         };
 
         # Make the package available as a flake output
-        packages.default = pkgs.python311Packages.buildPythonPackage {
-          pname = "deepwork";
-          version = "0.3.0";
-          src = ./.;
-          format = "pyproject";
-          
-          nativeBuildInputs = with pkgs.python311Packages; [
-            hatchling
-          ];
-          
-          propagatedBuildInputs = with pkgs.python311Packages; [
-            jinja2
-            pyyaml
-            gitpython
-            click
-            rich
-            jsonschema
-          ];
+        packages.default = deepwork;
+        packages.deepwork = deepwork;
 
-          # Skip tests during build (they can be run in devShell)
-          doCheck = false;
-
-          meta = with pkgs.lib; {
-            description = "Framework for enabling AI agents to perform complex, multi-step work tasks";
-            homepage = "https://github.com/deepwork/deepwork";
-            license = licenses.unfree; # Business Source License 1.1
-          };
+        # Make deepwork runnable with 'nix run'
+        apps.default = {
+          type = "app";
+          program = "${deepwork}/bin/deepwork";
         };
       }
     );

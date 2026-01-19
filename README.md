@@ -220,6 +220,21 @@ nix-shell
 
 The Nix environment provides all dependencies including Python 3.11, uv, pytest, ruff, and mypy.
 
+### Installing DeepWork from Flake
+
+You can also install deepwork directly from the flake:
+
+```bash
+# Install deepwork from this flake
+nix profile install github:Unsupervisedcom/deepwork
+
+# Or run it without installing
+nix run github:Unsupervisedcom/deepwork -- --help
+
+# Or build the package
+nix build github:Unsupervisedcom/deepwork
+```
+
 ## Project Structure
 
 ```
