@@ -1,0 +1,105 @@
+name: status
+version: "1.0.0"
+summary: "Search git and GitHub to build comprehensive status report"
+description: |
+  A workflow for building a comprehensive status report of repository work.
+
+  This job searches git branches, commits, GitHub PRs, and issues using
+  optional filter substrings to build context for decision makers. It helps
+  quickly get up to speed on all work relating to specific topics or features.
+
+  Steps:
+  1. gather_filters - Collect filter substrings from user (optional)
+  2. search_git - Search local git branches and commits
+  3. search_github - Search GitHub PRs and issues
+  4. compile_report - Compile and format comprehensive status report
+
+changelog:
+  - version: "1.0.0"
+    changes: "Initial job creation"
+
+steps:
+  - id: gather_filters
+    name: "Gather Filters"
+    description: "Collect optional filter substrings from user to scope the status search"
+    instructions_file: steps/gather_filters.md
+    inputs:
+      - name: filter_keywords
+        description: "Optional comma-separated keywords to filter results (e.g., 'feature,bugfix')"
+    outputs:
+      - filters.txt
+    dependencies: []
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the filters were gathered:
+            1. User was prompted for filter keywords (or none provided)
+            2. filters.txt was created with the filter list
+            3. User understands how filters will be applied
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
+  - id: search_git
+    name: "Search Git"
+    description: "Search local git branches and commits using filter substrings"
+    instructions_file: steps/search_git.md
+    inputs:
+      - file: filters.txt
+        from_step: gather_filters
+    outputs:
+      - git_results.md
+    dependencies:
+      - gather_filters
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the git search is complete:
+            1. All branches were searched for matching filter keywords
+            2. Commit history was searched for matching keywords
+            3. Results were formatted clearly in git_results.md
+            4. Each result includes relevant context (branch name, commit SHA, message)
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
+  - id: search_github
+    name: "Search GitHub"
+    description: "Search GitHub PRs and issues using filter substrings"
+    instructions_file: steps/search_github.md
+    inputs:
+      - file: filters.txt
+        from_step: gather_filters
+    outputs:
+      - github_results.md
+    dependencies:
+      - gather_filters
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the GitHub search is complete:
+            1. Open PRs were searched for matching filter keywords
+            2. Open issues were searched for matching keywords
+            3. Results were formatted clearly in github_results.md
+            4. Each result includes relevant context (title, number, author, labels)
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
+  - id: compile_report
+    name: "Compile Report"
+    description: "Compile all search results into a comprehensive status report"
+    instructions_file: steps/compile_report.md
+    inputs:
+      - file: git_results.md
+        from_step: search_git
+      - file: github_results.md
+        from_step: search_github
+    outputs:
+      - status_report.md
+    dependencies:
+      - search_git
+      - search_github
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the status report is complete:
+            1. All results from git and GitHub searches were integrated
+            2. Report is organized clearly with sections for each category
+            3. Summary section provides high-level overview
+            4. Decision makers can quickly understand current work status
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
