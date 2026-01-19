@@ -48,7 +48,7 @@ Read the git and GitHub search results, integrate them into a unified report, an
    - Include a table of contents for easy navigation
    - Use visual indicators (✓, ⚠️, 🔄, etc.) for status
    - Keep most recent work at the top
-   - Use collapsible sections for detailed information (if markdown supports it)
+   - Use standard markdown formatting (tables, headers, lists) for broad compatibility
 
 ## Example Output Structure
 

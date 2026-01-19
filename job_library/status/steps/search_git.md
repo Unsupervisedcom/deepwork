@@ -37,7 +37,7 @@ Search git branches and commit history for matches against the filter keywords, 
      - Include author name
      - Include date
      - Include which branch(es) contain the commit
-   - Limit to recent commits (last 100 or so) to keep output manageable
+   - Limit to recent commits (last 100 commits) to keep output manageable
 
 4. **Organize results**
    - Create git_results.md with clear sections:
@@ -109,4 +109,4 @@ This step searches the local git repository for work matching the filter criteri
 - Consider using `git log --all --format=...` for consistent output formatting
 - Filter case-insensitively for better matching
 - Handle empty filter list (show all results)
-- Limit results to keep output manageable (e.g., last 100 commits)
+- Limit to last 100 commits to keep output manageable (adjust if needed for specific repositories)
