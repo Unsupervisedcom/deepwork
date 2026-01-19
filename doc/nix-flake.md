@@ -98,20 +98,51 @@ ls -la result/bin/deepwork
 
 ## Using in Your Project
 
+DeepWork can be added to your existing Nix flake using a GitHub reference. This allows you to use DeepWork in your development environment or as a dependency for your projects.
+
 ### As a Development Dependency
 
-Create a `flake.nix` in your project that uses DeepWork:
+Create a `flake.nix` in your project that references DeepWork via GitHub:
 
 ```nix
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Add DeepWork via GitHub reference
     deepwork.url = "github:Unsupervisedcom/deepwork";
   };
 
   outputs = { self, nixpkgs, deepwork }:
     let
       system = "x86_64-linux"; # or your system
+      pkgs = import nixpkgs { inherit system; };
+    in {
+      devShells.${system}.default = pkgs.mkShell {
+        buildInputs = [
+          deepwork.packages.${system}.default
+        ];
+      };
+    };
+}
+```
+
+You can also pin to a specific version, tag, or commit:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Pin to a specific tag
+    deepwork.url = "github:Unsupervisedcom/deepwork/0.3.0";
+    # Or pin to a specific commit
+    # deepwork.url = "github:Unsupervisedcom/deepwork/abc1234";
+    # Or pin to a specific branch
+    # deepwork.url = "github:Unsupervisedcom/deepwork/main";
+  };
+
+  outputs = { self, nixpkgs, deepwork }:
+    let
+      system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
     in {
       devShells.${system}.default = pkgs.mkShell {
@@ -131,6 +162,7 @@ If you're building a Nix package that depends on DeepWork:
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Add DeepWork as a dependency via GitHub reference
     deepwork.url = "github:Unsupervisedcom/deepwork";
   };
 
@@ -147,6 +179,83 @@ If you're building a Nix package that depends on DeepWork:
       };
     };
 }
+```
+
+### Using with flake-utils for Multi-System Support
+
+For projects that need to support multiple systems (Linux, macOS, etc.):
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+    # Add DeepWork via GitHub reference
+    deepwork.url = "github:Unsupervisedcom/deepwork";
+  };
+
+  outputs = { self, nixpkgs, flake-utils, deepwork }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+      in {
+        devShells.default = pkgs.mkShell {
+          buildInputs = [
+            deepwork.packages.${system}.default
+          ];
+        };
+      }
+    );
+}
+```
+
+### Complete Example with direnv
+
+Create a complete development environment with DeepWork and direnv:
+
+**flake.nix:**
+```nix
+{
+  description = "My project using DeepWork";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Reference DeepWork from GitHub
+    deepwork.url = "github:Unsupervisedcom/deepwork";
+  };
+
+  outputs = { self, nixpkgs, deepwork }:
+    let
+      system = "x86_64-linux";
+      pkgs = import nixpkgs { inherit system; };
+    in {
+      devShells.${system}.default = pkgs.mkShell {
+        buildInputs = [
+          # Include DeepWork in the development environment
+          deepwork.packages.${system}.default
+          # Add other dependencies
+          pkgs.python311
+          pkgs.git
+        ];
+
+        shellHook = ''
+          echo "DeepWork is available!"
+          deepwork --version
+        '';
+      };
+    };
+}
+```
+
+**.envrc:**
+```bash
+use flake
+```
+
+Then run:
+```bash
+direnv allow
+# Environment with DeepWork loads automatically
 ```
 
 ## Flake Outputs
