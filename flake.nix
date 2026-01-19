@@ -11,6 +11,8 @@
       let
         pkgs = import nixpkgs {
           inherit system;
+          # Allow unfree packages to support the Business Source License 1.1
+          config.allowUnfree = true;
         };
         deepwork = pkgs.python311Packages.buildPythonPackage {
           pname = "deepwork";
