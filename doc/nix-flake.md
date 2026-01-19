@@ -321,6 +321,51 @@ If you get an error about flakes not being recognized:
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 ```
 
+### Hooks Not Finding DeepWork Module
+
+When using DeepWork from a Nix flake in your project, hooks may fail with "No module named 'deepwork'" because they run outside of `nix develop`. The flake package includes wrapper scripts that solve this:
+
+**Solution:**
+
+Instead of using `python -m deepwork.hooks.rules_check` directly in hooks, use the provided wrapper commands:
+
+- For Claude Code: Use `deepwork-python -m deepwork.hooks.rules_check`
+- For Gemini CLI: Use `deepwork-python -m deepwork.hooks.rules_check`
+
+Or use the dedicated hook wrappers:
+- `deepwork-claude-hook deepwork.hooks.rules_check`
+- `deepwork-gemini-hook deepwork.hooks.rules_check`
+
+These wrappers ensure the Python environment has access to the deepwork module even when running outside of the Nix development shell.
+
+**In your flake.nix:**
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    deepwork.url = "github:Unsupervisedcom/deepwork";
+  };
+
+  outputs = { self, nixpkgs, deepwork }:
+    let
+      system = "x86_64-linux";
+      pkgs = import nixpkgs { inherit system; };
+    in {
+      devShells.${system}.default = pkgs.mkShell {
+        buildInputs = [
+          deepwork.packages.${system}.default
+        ];
+        
+        # Optional: Add deepwork binaries to PATH for easier hook usage
+        shellHook = ''
+          export PATH="${deepwork.packages.${system}.default}/bin:$PATH"
+        '';
+      };
+    };
+}
+```
+
 ### direnv Not Working
 
 1. Make sure direnv is installed:
