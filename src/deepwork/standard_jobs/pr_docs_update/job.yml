@@ -1,0 +1,68 @@
+name: pr_docs_update
+version: "1.0.0"
+summary: "Update documentation from recently merged PRs"
+description: |
+  A workflow that analyzes recently merged pull requests and updates either AGENTS.md
+  or copilot-specific instructions based on the PR content. Tracks processed PRs to
+  avoid duplicates and can be run multiple times to go further back in PR history.
+
+  This job helps maintain up-to-date documentation by:
+  1. Fetching recently merged PRs from GitHub
+  2. Analyzing PR content to identify documentation-relevant changes
+  3. Updating AGENTS.md (for general context) or copilot instructions (for copilot-specific changes)
+  4. Tracking which PRs have been processed to enable incremental updates
+
+  Use this job periodically to keep documentation in sync with code changes.
+
+changelog:
+  - version: "1.0.0"
+    changes: "Initial job creation"
+
+steps:
+  - id: fetch_prs
+    name: "Fetch Recently Merged PRs"
+    description: "Retrieve list of recently merged pull requests from GitHub"
+    instructions_file: steps/fetch_prs.md
+    inputs:
+      - name: pr_count
+        description: "Number of recent PRs to fetch (default: 10)"
+      - name: state_file
+        description: "Path to state file tracking processed PRs (default: .deepwork/pr_docs_state.json)"
+    outputs:
+      - pr_list.json
+    dependencies: []
+
+  - id: analyze_prs
+    name: "Analyze PR Content"
+    description: "Analyze PR content to identify documentation-relevant changes"
+    instructions_file: steps/analyze_prs.md
+    inputs:
+      - file: pr_list.json
+        from_step: fetch_prs
+    outputs:
+      - pr_analysis.md
+    dependencies:
+      - fetch_prs
+
+  - id: update_docs
+    name: "Update Documentation"
+    description: "Update AGENTS.md or copilot instructions based on PR analysis"
+    instructions_file: steps/update_docs.md
+    inputs:
+      - file: pr_analysis.md
+        from_step: analyze_prs
+      - name: state_file
+        description: "Path to state file tracking processed PRs (default: .deepwork/pr_docs_state.json)"
+    outputs:
+      - updated_files_list.md
+    dependencies:
+      - analyze_prs
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the documentation update is complete:
+            1. Relevant documentation files (AGENTS.md or copilot instructions) were identified
+            2. Documentation was updated with insights from analyzed PRs
+            3. State file was updated with processed PR numbers
+            4. Changes are ready to be committed
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
