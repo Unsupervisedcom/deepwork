@@ -201,6 +201,7 @@ your-project/
 
 - **[Architecture](doc/architecture.md)**: Complete design specification
 - **[Contributing](CONTRIBUTING.md)**: Setup development environment and contribute
+- **[Nix Flakes Guide](doc/nix-flake.md)**: Comprehensive guide for using DeepWork with Nix flakes
 
 ## Development with Nix
 
