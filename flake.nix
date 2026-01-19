@@ -72,6 +72,7 @@
             python311Packages.pytest-cov
             python311Packages.click
             python311Packages.rich
+            python311Packages.jsonschema
 
             # Linting and type checking
             ruff
