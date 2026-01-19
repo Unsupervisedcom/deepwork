@@ -202,6 +202,24 @@ your-project/
 - **[Architecture](doc/architecture.md)**: Complete design specification
 - **[Contributing](CONTRIBUTING.md)**: Setup development environment and contribute
 
+## Development with Nix
+
+DeepWork is available as a Nix flake for reproducible development environments:
+
+```bash
+# Using Nix flakes
+nix develop
+
+# Or with direnv (automatic activation)
+echo "use flake" > .envrc
+direnv allow
+
+# Legacy Nix shell
+nix-shell
+```
+
+The Nix environment provides all dependencies including Python 3.11, uv, pytest, ruff, and mypy.
+
 ## Project Structure
 
 ```

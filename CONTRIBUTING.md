@@ -19,6 +19,8 @@ Thank you for your interest in contributing to DeepWork! This guide will help yo
 - **Python 3.11 or higher** - Required for running DeepWork
 - **Git** - For version control
 - **Nix** (optional but recommended) - For reproducible development environment
+  - Nix flakes enabled (add `experimental-features = nix-command flakes` to `~/.config/nix/nix.conf`)
+- **direnv** (optional) - For automatic environment activation when using Nix flakes
 - **uv** - Modern Python package installer (included in Nix environment)
 - **Signed CLA** - All contributors must sign the Contributor License Agreement (see below)
 
@@ -61,9 +63,62 @@ For the full text, see [CLA.md](CLA/version_1/CLA.md).
 
 ## Development Setup
 
-### Option 1: Using Nix (Recommended)
+### Setting Up direnv (Optional but Recommended)
 
-The easiest way to get started is using Nix, which provides a fully reproducible development environment with all dependencies pre-configured.
+direnv automatically loads the Nix environment when you `cd` into the project directory:
+
+```bash
+# Install direnv (if not already installed)
+# On macOS with Homebrew:
+brew install direnv
+
+# On Linux (Debian/Ubuntu):
+apt-get install direnv
+
+# On NixOS or with Nix:
+nix-env -i direnv
+
+# Add direnv hook to your shell
+# For bash, add to ~/.bashrc:
+eval "$(direnv hook bash)"
+
+# For zsh, add to ~/.zshrc:
+eval "$(direnv hook zsh)"
+
+# For fish, add to ~/.config/fish/config.fish:
+direnv hook fish | source
+
+# Restart your shell or source your rc file
+source ~/.bashrc  # or ~/.zshrc
+```
+
+Once direnv is set up, the environment will activate automatically when you enter the directory.
+
+### Option 1: Using Nix Flakes (Recommended)
+
+The easiest way to get started is using Nix flakes, which provides a fully reproducible development environment with all dependencies pre-configured.
+
+#### Quick Start with direnv (Automatic)
+
+If you have direnv installed, the environment will activate automatically:
+
+```bash
+# Clone the repository
+git clone https://github.com/deepwork/deepwork.git
+cd deepwork
+
+# Allow direnv (first time only)
+direnv allow
+
+# Environment activates automatically!
+# You'll see the DeepWork welcome message
+```
+
+The `.envrc` file configures direnv to use the Nix flake, so you'll automatically enter the development environment whenever you `cd` into the directory.
+
+#### Manual Flake Usage
+
+If you don't use direnv, you can manually enter the development environment:
 
 ```bash
 # Clone the repository
@@ -71,15 +126,26 @@ git clone https://github.com/deepwork/deepwork.git
 cd deepwork
 
 # Enter the Nix development environment
+nix develop
+```
+
+#### Legacy Support (shell.nix)
+
+For compatibility, `shell.nix` is still available:
+
+```bash
 nix-shell
 ```
 
-When you enter `nix-shell`, you'll see a welcome message with available tools. The environment includes:
+#### What's Included
+
+When you enter the Nix environment (via flake or shell.nix), you'll see a welcome message with available tools. The environment includes:
 - Python 3.11
 - uv (package manager)
 - pytest, ruff, mypy
 - All Python dependencies
 - Environment variables (`PYTHONPATH`, `DEEPWORK_DEV=1`)
+- Automatic virtual environment activation
 
 ### Option 2: Manual Setup (Without Nix)
 
