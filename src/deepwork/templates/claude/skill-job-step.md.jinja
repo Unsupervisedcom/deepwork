@@ -149,7 +149,33 @@ Use branch format: `deepwork/{{ job_name }}-[instance]-YYYYMMDD`
 {% if outputs %}
 **Required outputs**:
 {% for output in outputs %}
-- `{{ output }}`{% if output.endswith('/') %} (directory){% endif %}
+- `{{ output.file }}`{% if output.file.endswith('/') %} (directory){% endif %}
+
+{% if output.has_document_type and output.document_type %}
+  **Document Type**: {{ output.document_type.name }}
+  > {{ output.document_type.description }}
+  **Definition**: `{{ output.document_type.path }}`
+{% if output.document_type.target_audience %}
+  **Target Audience**: {{ output.document_type.target_audience }}
+{% endif %}
+{% if output.document_type.quality_criteria %}
+  **Quality Criteria**:
+{% for criterion in output.document_type.quality_criteria %}
+  {{ loop.index }}. **{{ criterion.name }}**: {{ criterion.description }}
+{% endfor %}
+{% endif %}
+{% if output.document_type.example_document %}
+
+  <details>
+  <summary>Example Document Structure</summary>
+
+  ```markdown
+  {{ output.document_type.example_document | indent(2) }}
+  ```
+
+  </details>
+{% endif %}
+{% endif %}
 {% endfor %}
 {% else %}
 No specific file outputs required.
@@ -180,12 +206,12 @@ Stop hooks will automatically validate your work. The loop continues until all c
 
 {% if is_standalone %}
 1. Verify outputs are created
-2. Inform user: "{{ step_id }} complete{% if outputs %}, outputs: {{ outputs | join(', ') }}{% endif %}"
+2. Inform user: "{{ step_id }} complete{% if outputs %}, outputs: {{ outputs | map(attribute='file') | join(', ') }}{% endif %}"
 
 This standalone skill can be re-run anytime.
 {% else %}
 1. Verify outputs are created
-2. Inform user: "Step {{ step_number }}/{{ total_steps }} complete{% if outputs %}, outputs: {{ outputs | join(', ') }}{% endif %}"
+2. Inform user: "Step {{ step_number }}/{{ total_steps }} complete{% if outputs %}, outputs: {{ outputs | map(attribute='file') | join(', ') }}{% endif %}"
 {% if next_step %}
 3. **Continue workflow**: Use Skill tool to invoke `/{{ job_name }}.{{ next_step }}`
 {% else %}

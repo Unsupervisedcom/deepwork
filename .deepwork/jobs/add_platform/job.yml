@@ -1,5 +1,5 @@
 name: add_platform
-version: "0.1.0"
+version: "0.2.0"
 summary: "Add a new AI platform to DeepWork with adapter, templates, and tests"
 
 description: |
@@ -23,6 +23,8 @@ description: |
 changelog:
   - version: "0.1.0"
     changes: "Initial version"
+  - version: "0.2.0"
+    changes: "Added verification_checklist.md output to verify step for doc spec compliance"
 
 steps:
   - id: research
@@ -119,7 +121,8 @@ steps:
     inputs:
       - file: templates/
         from_step: implement
-    outputs: []
+    outputs:
+      - verification_checklist.md
     dependencies:
       - implement
     hooks:

@@ -208,7 +208,9 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 ## Outputs
 
 **Required outputs**:
-- `job_schema.py`- `adapters.py`
+- `job_schema.py`
+- `adapters.py`
+
 ## Quality Validation
 
 Stop hooks will automatically validate your work. The loop continues until all criteria pass.

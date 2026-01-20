@@ -55,6 +55,17 @@ def _inject_standard_job(job_name: str, jobs_dir: Path, project_path: Path) -> N
         console.print(
             f"  [green]✓[/green] Installed {job_name} ({target_dir.relative_to(project_path)})"
         )
+
+        # Copy any doc specs from the standard job to .deepwork/doc_specs/
+        doc_specs_source = standard_jobs_dir / "doc_specs"
+        doc_specs_target = project_path / ".deepwork" / "doc_specs"
+        if doc_specs_source.exists():
+            for doc_spec_file in doc_specs_source.glob("*.md"):
+                target_doc_spec = doc_specs_target / doc_spec_file.name
+                shutil.copy(doc_spec_file, target_doc_spec)
+                console.print(
+                    f"  [green]✓[/green] Installed doc spec {doc_spec_file.name} ({target_doc_spec.relative_to(project_path)})"
+                )
     except Exception as e:
         raise InstallError(f"Failed to install {job_name}: {e}") from e
 
@@ -307,8 +318,10 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     console.print("[yellow]→[/yellow] Creating DeepWork directory structure...")
     deepwork_dir = project_path / ".deepwork"
     jobs_dir = deepwork_dir / "jobs"
+    doc_specs_dir = deepwork_dir / "doc_specs"
     ensure_dir(deepwork_dir)
     ensure_dir(jobs_dir)
+    ensure_dir(doc_specs_dir)
     console.print(f"  [green]✓[/green] Created {deepwork_dir.relative_to(project_path)}/")
 
     # Step 3b: Inject standard jobs (core job definitions)

@@ -2,7 +2,7 @@
 
 ## Objective
 
-Generate the DeepWork job directory structure and instruction files for each step based on the `job.yml` specification created in the previous step.
+Generate the DeepWork job directory structure and instruction files for each step based on the validated `job.yml` specification from the review_job_spec step.
 
 ## Task
 
@@ -32,7 +32,7 @@ touch .deepwork/jobs/[job_name]/hooks/.gitkeep .deepwork/jobs/[job_name]/templat
 ### Step 2: Read and Validate the Specification
 
 1. **Locate the job.yml file**
-   - Read `.deepwork/jobs/[job_name]/job.yml` from the define step
+   - Read `.deepwork/jobs/[job_name]/job.yml` from the review_job_spec step
    - Parse the YAML content
 
 2. **Validate the specification**
@@ -111,7 +111,7 @@ See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for det
 
 ### Step 4: Verify job.yml Location
 
-Verify that `job.yml` is in the correct location at `.deepwork/jobs/[job_name]/job.yml`. The define step should have created it there. If for some reason it's not there, you may need to create or move it.
+Verify that `job.yml` is in the correct location at `.deepwork/jobs/[job_name]/job.yml`. The define and review_job_spec steps should have created and validated it. If for some reason it's not there, you may need to create or move it.
 
 ### Step 5: Sync Skills
 

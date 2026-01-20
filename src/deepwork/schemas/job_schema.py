@@ -161,10 +161,32 @@ JOB_SCHEMA: dict[str, Any] = {
                     },
                     "outputs": {
                         "type": "array",
-                        "description": "List of output files/directories",
+                        "description": "List of output files/directories, optionally with document type references",
                         "items": {
-                            "type": "string",
-                            "minLength": 1,
+                            "oneOf": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "description": "Simple output file path (backward compatible)",
+                                },
+                                {
+                                    "type": "object",
+                                    "required": ["file"],
+                                    "properties": {
+                                        "file": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "description": "Output file path",
+                                        },
+                                        "document_type": {
+                                            "type": "string",
+                                            "pattern": r"^\.deepwork/doc_specs/[a-z][a-z0-9_-]*\.md$",
+                                            "description": "Path to doc spec file",
+                                        },
+                                    },
+                                    "additionalProperties": False,
+                                },
+                            ],
                         },
                     },
                     "dependencies": {

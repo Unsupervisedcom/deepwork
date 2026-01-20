@@ -1,5 +1,5 @@
 name: commit
-version: "1.0.1"
+version: "1.1.0"
 summary: "Run tests, lint, and commit code changes"
 description: |
   A workflow for preparing and committing code changes with quality checks.
@@ -18,6 +18,8 @@ changelog:
     changes: "Changed file review from user confirmation to agent self-verification - agent now checks files match its own expectations instead of asking user every time"
   - version: "1.0.0"
     changes: "Initial job creation"
+  - version: "1.1.0"
+    changes: "Added nominal outputs to process-oriented steps for doc spec compliance (tests_passing, code_formatted, changes_committed)"
 
 steps:
   - id: test
@@ -27,7 +29,8 @@ steps:
     inputs:
       - name: test_command
         description: "Test command to run (optional - will auto-detect if not provided)"
-    outputs: []
+    outputs:
+      - tests_passing  # implicit state: all tests pass
     dependencies: []
     hooks:
       after_agent:
@@ -44,7 +47,8 @@ steps:
     description: "Format and lint code with ruff using a sub-agent"
     instructions_file: steps/lint.md
     inputs: []
-    outputs: []
+    outputs:
+      - code_formatted  # implicit state: code formatted and linted
     dependencies:
       - test
     hooks:
@@ -61,7 +65,8 @@ steps:
     description: "Verify changed files, commit, and push to remote"
     instructions_file: steps/commit_and_push.md
     inputs: []
-    outputs: []
+    outputs:
+      - changes_committed  # implicit state: changes committed and pushed
     dependencies:
       - lint
     hooks:

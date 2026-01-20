@@ -1,0 +1,18 @@
+name: job_with_document_type
+version: "1.0.0"
+summary: "Job with document type output for testing"
+description: |
+  A test job that produces a document with a document type reference.
+
+steps:
+  - id: generate_report
+    name: "Generate Report"
+    description: "Generate a report following the document type specification"
+    instructions_file: steps/generate_report.md
+    inputs:
+      - name: report_title
+        description: "Title for the report"
+    outputs:
+      - file: report.md
+        document_type: .deepwork/doc_specs/valid_report.md
+    dependencies: []
