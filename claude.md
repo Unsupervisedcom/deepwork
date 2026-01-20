@@ -42,10 +42,12 @@ deepwork/
 │   │   ├── claude/
 │   │   ├── gemini/
 │   │   └── copilot/
-│   ├── standard_jobs/    # Built-in job definitions
-│   │   └── deepwork_jobs/
+│   ├── standard_jobs/    # Built-in job definitions (auto-installed)
+│   │   ├── deepwork_jobs/
+│   │   └── deepwork_rules/
 │   ├── schemas/          # Job definition schemas
 │   └── utils/            # Utilities (fs, git, yaml, validation)
+├── library_jobs/         # Reusable example jobs (not auto-installed)
 ├── tests/                # Test suite
 ├── doc/                  # Documentation
 └── doc/architecture.md   # Detailed architecture document
@@ -97,9 +99,9 @@ cd my-project/
 deepwork install --claude
 ```
 
-This installs core commands into `.claude/commands/`:
+This installs core skills into `.claude/skills/`:
 - `deepwork_jobs.define` - Interactive job definition wizard
-- `deepwork_jobs.implement` - Generates step files and syncs commands
+- `deepwork_jobs.implement` - Generates step files and syncs skills
 - `deepwork_jobs.refine` - Refine existing job definitions
 
 ### 2. Job Definition
@@ -118,7 +120,7 @@ This creates the `job.yml` file. Then run:
 /deepwork_jobs.implement
 ```
 
-This generates step instruction files and syncs commands to `.claude/commands/`.
+This generates step instruction files and syncs skills to `.claude/skills/`.
 
 Job definitions are stored in `.deepwork/jobs/[job-name]/` and tracked in Git.
 
@@ -146,7 +148,7 @@ Each step:
 my-project/
 ├── .git/
 ├── .claude/                    # Claude Code directory
-│   └── commands/               # Command files
+│   └── skills/                 # Skill files
 │       ├── deepwork_jobs.define.md
 │       ├── deepwork_jobs.implement.md
 │       ├── deepwork_jobs.refine.md
@@ -182,17 +184,25 @@ my-project/
 6. **No Auto-Commit**: DO NOT automatically commit changes to git. Let the user review and commit changes themselves.
 7. **Documentation Sync**: CRITICAL - When making implementation changes, always update `doc/architecture.md` and `README.md` to reflect those changes. The architecture document must stay in sync with the actual codebase (terminology, file paths, structure, behavior, etc.).
 
-## CRITICAL: Editing Standard Jobs
+## CRITICAL: Job Types and Where to Edit
+
+**See `AGENTS.md` for the complete job classification guide.** This repository has THREE types of jobs:
+
+| Type | Location | Purpose |
+|------|----------|---------|
+| **Standard Jobs** | `src/deepwork/standard_jobs/` | Framework core, auto-installed to users |
+| **Library Jobs** | `library_jobs/` | Reusable examples users can adopt |
+| **Bespoke Jobs** | `.deepwork/jobs/` (if not in standard_jobs) | This repo's internal workflows only |
+
+### Editing Standard Jobs
 
 **Standard jobs** (like `deepwork_jobs` and `deepwork_rules`) are bundled with DeepWork and installed to user projects. They exist in THREE locations:
 
 1. **Source of truth**: `src/deepwork/standard_jobs/[job_name]/` - The canonical source files
 2. **Installed copy**: `.deepwork/jobs/[job_name]/` - Installed by `deepwork install`
-3. **Generated commands**: `.claude/commands/[job_name].[step].md` - Generated from installed jobs
+3. **Generated skills**: `.claude/skills/[job_name].[step].md` - Generated from installed jobs
 
-### Editing Workflow for Standard Jobs
-
-**NEVER edit files in `.deepwork/jobs/` or `.claude/commands/` for standard jobs directly!**
+**NEVER edit files in `.deepwork/jobs/` or `.claude/skills/` for standard jobs directly!**
 
 Instead, follow this workflow:
 
@@ -201,17 +211,17 @@ Instead, follow this workflow:
    - `steps/*.md` - Step instruction files
    - `hooks/*` - Any hook scripts
 
-2. **Run `deepwork install --platform claude`** to sync changes to `.deepwork/jobs/` and `.claude/commands/`
+2. **Run `deepwork install --platform claude`** to sync changes to `.deepwork/jobs/` and `.claude/skills/`
 
 3. **Verify** the changes propagated correctly to all locations
 
-### How to Identify Standard Jobs
+### How to Identify Job Types
 
-Standard jobs are defined in `src/deepwork/standard_jobs/`. Currently:
-- `deepwork_jobs` - Core job management commands (define, implement, refine)
-- `deepwork_rules` - Rules enforcement system
+- **Standard jobs**: Exist in `src/deepwork/standard_jobs/` (currently: `deepwork_jobs`, `deepwork_rules`)
+- **Library jobs**: Exist in `library_jobs/`
+- **Bespoke jobs**: Exist ONLY in `.deepwork/jobs/` with no corresponding standard_jobs entry
 
-If a job exists in `src/deepwork/standard_jobs/`, it is a standard job and MUST be edited there.
+**When creating a new job, always clarify which type it should be.** If uncertain, ask the user.
 
 ## Success Metrics
 

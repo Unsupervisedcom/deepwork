@@ -57,9 +57,9 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── claude_hook.sh       # Shell wrapper for Claude Code
 │       │   ├── gemini_hook.sh       # Shell wrapper for Gemini CLI
 │       │   └── rules_check.py       # Cross-platform rule evaluation hook
-│       ├── templates/          # Command templates for each platform
+│       ├── templates/          # Skill templates for each platform
 │       │   ├── claude/
-│       │   │   └── command-job-step.md.jinja
+│       │   │   └── skill-job-step.md.jinja
 │       │   ├── gemini/
 │       │   └── copilot/
 │       ├── standard_jobs/      # Built-in job definitions
@@ -136,8 +136,8 @@ def install(platform: str):
 
     write_yaml(".deepwork/config.yml", config)
 
-    # Run sync to generate commands
-    sync_commands()
+    # Run sync to generate skills
+    sync_skills()
 
     print(f"✓ DeepWork installed for {platform}")
     print(f"  Run /deepwork_jobs.define to create your first job")
@@ -149,7 +149,7 @@ Defines the modular adapter architecture for AI platforms. Each adapter encapsul
 
 **Adapter Architecture**:
 ```python
-class CommandLifecycleHook(str, Enum):
+class SkillLifecycleHook(str, Enum):
     """Generic lifecycle hook events supported by DeepWork."""
     AFTER_AGENT = "after_agent"    # After agent finishes (quality validation)
     BEFORE_TOOL = "before_tool"    # Before tool execution
@@ -165,15 +165,15 @@ class AgentAdapter(ABC):
     name: ClassVar[str]           # "claude"
     display_name: ClassVar[str]   # "Claude Code"
     config_dir: ClassVar[str]     # ".claude"
-    commands_dir: ClassVar[str] = "commands"
+    skills_dir: ClassVar[str] = "skills"
 
     # Mapping from generic hook names to platform-specific names
-    hook_name_mapping: ClassVar[dict[CommandLifecycleHook, str]] = {}
+    hook_name_mapping: ClassVar[dict[SkillLifecycleHook, str]] = {}
 
     def detect(self, project_root: Path) -> bool:
         """Check if this platform is available in the project."""
 
-    def get_platform_hook_name(self, hook: CommandLifecycleHook) -> str | None:
+    def get_platform_hook_name(self, hook: SkillLifecycleHook) -> str | None:
         """Get platform-specific event name for a generic hook."""
 
     @abstractmethod
@@ -187,9 +187,9 @@ class ClaudeAdapter(AgentAdapter):
 
     # Claude Code uses PascalCase event names
     hook_name_mapping = {
-        CommandLifecycleHook.AFTER_AGENT: "Stop",
-        CommandLifecycleHook.BEFORE_TOOL: "PreToolUse",
-        CommandLifecycleHook.BEFORE_PROMPT: "UserPromptSubmit",
+        SkillLifecycleHook.AFTER_AGENT: "Stop",
+        SkillLifecycleHook.BEFORE_TOOL: "PreToolUse",
+        SkillLifecycleHook.BEFORE_PROMPT: "UserPromptSubmit",
     }
 ```
 
@@ -217,24 +217,24 @@ class PlatformDetector:
         ]
 ```
 
-### 4. Command Generator (`generator.py`)
+### 4. Skill Generator (`generator.py`)
 
-Generates AI-platform-specific command files from job definitions.
+Generates AI-platform-specific skill files from job definitions.
 
-This component is called by the `sync` command to regenerate all commands:
+This component is called by the `sync` command to regenerate all skills:
 1. Reads the job definition from `.deepwork/jobs/[job-name]/job.yml`
 2. Loads platform-specific templates
-3. Generates command files for each step in the job
-4. Writes commands to the AI platform's commands directory
+3. Generates skill files for each step in the job
+4. Writes skills to the AI platform's skills directory
 
 **Example Generation Flow**:
 ```python
-class CommandGenerator:
-    def generate_all_commands(self, job: JobDefinition,
+class SkillGenerator:
+    def generate_all_skills(self, job: JobDefinition,
                             platform: PlatformConfig,
                             output_dir: Path) -> list[Path]:
-        """Generate command files for all steps in a job."""
-        command_paths = []
+        """Generate skill files for all steps in a job."""
+        skill_paths = []
 
         for step_index, step in enumerate(job.steps):
             # Load step instructions
@@ -252,18 +252,19 @@ class CommandGenerator:
                 "file_inputs": [inp for inp in step.inputs if inp.is_file_input()],
                 "outputs": step.outputs,
                 "dependencies": step.dependencies,
+                "exposed": step.exposed,
             }
 
             # Render template
-            template = env.get_template("command-job-step.md.jinja")
+            template = env.get_template("skill-job-step.md.jinja")
             rendered = template.render(**context)
 
-            # Write to platform's commands directory
-            command_path = output_dir / platform.config_dir / platform.commands_dir / f"{job.name}.{step.id}.md"
-            write_file(command_path, rendered)
-            command_paths.append(command_path)
+            # Write to platform's skills directory
+            skill_path = output_dir / platform.config_dir / platform.skills_dir / f"{job.name}.{step.id}.md"
+            write_file(skill_path, rendered)
+            skill_paths.append(skill_path)
 
-        return command_paths
+        return skill_paths
 ```
 
 ---
@@ -279,8 +280,8 @@ my-project/                     # User's project (target)
 ├── .git/
 ├── .claude/                    # Claude Code directory
 │   ├── settings.json           # Includes installed hooks
-│   └── commands/               # Command files
-│       ├── deepwork_jobs.define.md         # Core DeepWork commands
+│   └── skills/                 # Skill files
+│       ├── deepwork_jobs.define.md         # Core DeepWork skills
 │       ├── deepwork_jobs.implement.md
 │       ├── deepwork_jobs.refine.md
 │       ├── deepwork_rules.define.md        # Rule management
@@ -531,7 +532,7 @@ Create `competitors.md` with this structure:
 
 When the job is defined and `sync` is run, DeepWork generates command files. Example for Claude Code:
 
-`.deepwork/jobs/competitive_research` a step called `identify_competitors` will generate a command file at `.claude/commands/competitive_research.identify_competitors.md`:
+`.deepwork/jobs/competitive_research` a step called `identify_competitors` will generate a skill file at `.claude/skills/competitive_research.identify_competitors.md`:
 
 
 # Part 3: Runtime Execution Model
@@ -561,14 +562,14 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
    [Interactive dialog to define all the steps]
 
    Claude: ✓ Job 'competitive_research' created with 5 steps
-          Run /deepwork_jobs.implement to generate command files
-          Then run 'deepwork sync' to install commands
+          Run /deepwork_jobs.implement to generate skill files
+          Then run 'deepwork sync' to install skills
 
    User: /deepwork_jobs.implement
 
    Claude: [Generates step instruction files]
           [Runs deepwork sync]
-          ✓ Commands installed to .claude/commands/
+          ✓ Skills installed to .claude/skills/
           Run /competitive_research.identify_competitors to start
    ```
 
@@ -614,22 +615,22 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
           PR created: https://github.com/user/project/pull/123
    ```
 
-## How Claude Code Executes Commands
+## How Claude Code Executes Skills
 
 When user types `/competitive_research.identify_competitors`:
 
-1. **Command Discovery**:
-   - Claude Code scans `.claude/commands/` directory
+1. **Skill Discovery**:
+   - Claude Code scans `.claude/skills/` directory
    - Finds `competitive_research.identify_competitors.md`
-   - Loads the command definition
+   - Loads the skill definition
 
 2. **Context Loading**:
-   - Command file contains embedded instructions
+   - Skill file contains embedded instructions
    - References to job definition and step files
    - Claude reads these files to understand the full context
 
 3. **Execution**:
-   - Claude follows the instructions in the command
+   - Claude follows the instructions in the skill
    - Uses its tools (Read, Write, WebSearch, WebFetch, etc.)
    - Creates outputs in the specified format
 
@@ -641,7 +642,7 @@ When user types `/competitive_research.identify_competitors`:
 5. **No DeepWork Runtime**:
    - DeepWork CLI is NOT running during execution
    - Everything happens through Claude Code's native execution
-   - Commands are just markdown instruction files that Claude interprets
+   - Skills are just markdown instruction files that Claude interprets
 
 ## Context Passing Between Steps
 
@@ -669,9 +670,9 @@ Each command instructs Claude to:
 - Write specific output files for this step
 - All on the same work branch
 
-### 2. Command Instructions
+### 2. Skill Instructions
 
-Each command file explicitly states its dependencies:
+Each skill file explicitly states its dependencies:
 
 ```markdown
 ### Prerequisites
@@ -721,9 +722,9 @@ Where `instance-identifier` can be:
 
 **Date format**: `YYYY-MM-DD`
 
-### Command Behavior
+### Skill Behavior
 
-Commands should:
+Skills should:
 1. Check if we're already on a branch for this job
 2. If not, ask user for instance name or auto-generate from timestamp
 3. Create branch: `git checkout -b deepwork/[job_name]-[instance]-[date]`
@@ -785,9 +786,9 @@ When a user runs `/deepwork_jobs.define` in Claude Code:
    - Interactive question flow
    - Job.yml creation logic
 
-**Command File Structure**:
+**Skill File Structure**:
 
-The actual command file `.claude/commands/deepwork_jobs.define.md` contains:
+The actual skill file `.claude/skills/deepwork_jobs.define.md` contains:
 
 ```markdown
 ---
@@ -810,7 +811,7 @@ When creating job.yml, use this structure:
 
 ### The `/deepwork_jobs.implement` Command
 
-Generates step instruction files from job.yml and syncs commands:
+Generates step instruction files from job.yml and syncs skills:
 
 ```
 User: /deepwork_jobs.implement
@@ -824,9 +825,9 @@ Claude: Reading job definition from .deepwork/jobs/competitive_research/job.yml.
         ✓ Created steps/positioning.md
 
         Running deepwork sync...
-        ✓ Generated 5 command files in .claude/commands/
+        ✓ Generated 5 skill files in .claude/skills/
 
-        New commands available:
+        New skills available:
         - /competitive_research.identify_competitors
         - /competitive_research.primary_research
         - /competitive_research.secondary_research
@@ -1269,3 +1270,4 @@ Claude: Created rule "API documentation update" in .deepwork/rules/api-documenta
 - [Git Workflows](https://www.atlassian.com/git/tutorials/comparing-workflows)
 - [JSON Schema](https://json-schema.org/)
 - [Jinja2 Documentation](https://jinja.palletsprojects.com/)
+

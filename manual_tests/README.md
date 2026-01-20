@@ -34,6 +34,8 @@ Each test has two cases: one where the rule SHOULD fire, and one where it should
 | **Pair Mode (reverse)** | — | Edit `_expected.md` only (should NOT fire) | Manual Test: Pair Mode |
 | **Command Action** | Edit `.txt` → log appended | — (always runs) | Manual Test: Command Action |
 | **Multi Safety** | Edit `.py` only | Edit `.py` AND any safety file | Manual Test: Multi Safety |
+| **Infinite Block Prompt** | Edit `.py` (always blocks) | Provide `<promise>` tag | Manual Test: Infinite Block Prompt |
+| **Infinite Block Command** | Edit `.py` (command fails) | Provide `<promise>` tag | Manual Test: Infinite Block Command |
 
 ## Test Results Tracking
 
@@ -45,6 +47,8 @@ Each test has two cases: one where the rule SHOULD fire, and one where it should
 | Pair Mode (reverse - expected only) | — | ☐ |
 | Command Action | ☐ | — |
 | Multi Safety | ☐ | ☐ |
+| Infinite Block Prompt | ☐ | ☐ |
+| Infinite Block Command | ☐ | ☐ |
 
 ## Test Folders
 
@@ -55,6 +59,8 @@ Each test has two cases: one where the rule SHOULD fire, and one where it should
 | `test_pair_mode/` | Pair (Directional) | One-way: trigger requires expected, but not vice versa |
 | `test_command_action/` | Command Action | Automatically runs command on file change |
 | `test_multi_safety/` | Multiple Safety | Fires unless ANY of the safety files also edited |
+| `test_infinite_block_prompt/` | Infinite Block (Prompt) | Always blocks with prompt; only promise can bypass |
+| `test_infinite_block_command/` | Infinite Block (Command) | Command always fails; tests if promise skips command |
 
 ## Corresponding Rules
 
@@ -64,3 +70,5 @@ Rules are defined in `.deepwork/rules/`:
 - `manual-test-pair-mode.md`
 - `manual-test-command-action.md`
 - `manual-test-multi-safety.md`
+- `manual-test-infinite-block-prompt.md`
+- `manual-test-infinite-block-command.md`

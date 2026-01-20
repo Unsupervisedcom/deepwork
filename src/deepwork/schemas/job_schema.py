@@ -3,7 +3,7 @@
 from typing import Any
 
 # Supported lifecycle hook events (generic names, mapped to platform-specific by adapters)
-# These values must match CommandLifecycleHook enum in adapters.py
+# These values must match SkillLifecycleHook enum in adapters.py
 LIFECYCLE_HOOK_EVENTS = ["after_agent", "before_tool", "before_prompt"]
 
 # Schema definition for a single hook action (prompt, prompt_file, or script)
@@ -205,7 +205,7 @@ JOB_SCHEMA: dict[str, Any] = {
                     },
                     "exposed": {
                         "type": "boolean",
-                        "description": "If true, step command is visible (no uw. prefix). Default: false (hidden).",
+                        "description": "If true, skill is user-invocable in menus. Default: false (hidden from menus).",
                         "default": False,
                     },
                     "quality_criteria": {

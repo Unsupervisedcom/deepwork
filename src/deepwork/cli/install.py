@@ -354,17 +354,17 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     save_yaml(config_file, config_data)
     console.print(f"  [green]✓[/green] Updated {config_file.relative_to(project_path)}")
 
-    # Step 5: Run sync to generate commands
+    # Step 5: Run sync to generate skills
     console.print()
-    console.print("[yellow]→[/yellow] Running sync to generate commands...")
+    console.print("[yellow]→[/yellow] Running sync to generate skills...")
     console.print()
 
-    from deepwork.cli.sync import sync_commands
+    from deepwork.cli.sync import sync_skills
 
     try:
-        sync_commands(project_path)
+        sync_skills(project_path)
     except Exception as e:
-        raise InstallError(f"Failed to sync commands: {e}") from e
+        raise InstallError(f"Failed to sync skills: {e}") from e
 
     # Success message
     console.print()

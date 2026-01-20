@@ -1,0 +1,198 @@
+{#
+Template: skill-job-step.md.jinja
+Purpose: Generates individual step skill files for Claude Code
+
+Template Variables:
+  Job Context:
+    - job_name: string - Job identifier
+    - job_summary: string - Short job summary
+    - job_description: string|null - Full job description
+
+  Step Metadata:
+    - step_id: string - Step identifier
+    - step_description: string - What this step does
+    - step_number: int - Position in workflow (1-indexed)
+    - total_steps: int - Total steps in job
+    - is_standalone: bool - True if step can run independently
+    - exposed: bool - True if user can invoke directly (default: true)
+    - dependencies: list[string]|null - Required prior step IDs
+    - next_step: string|null - Next step ID in workflow
+    - instructions_file: string - Path to step instructions file
+
+  Step Content:
+    - instructions_content: string - Full instructions markdown
+    - user_inputs: list|null - User parameters to gather:
+        - name: string - Parameter name
+        - description: string - What to ask for
+    - file_inputs: list|null - Files from previous steps:
+        - file: string - File path
+        - from_step: string - Source step ID
+    - outputs: list[string]|null - Output file paths
+
+  Quality & Hooks:
+    - quality_criteria: list[string]|null - Criteria for completion
+    - stop_hooks: list|null - Stop hook configurations:
+        - type: "script"|"prompt"
+        - path: string (for script)
+        - content: string (for prompt)
+    - hooks: dict|null - All hooks by event name (Stop, PreToolUse, etc.)
+#}
+---
+name: {{ job_name }}.{{ step_id }}
+description: "{{ step_description }}"
+{% if not exposed %}
+user-invocable: false
+{% endif %}
+{% if quality_criteria or hooks %}
+hooks:
+{% if quality_criteria %}
+  Stop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            You must evaluate whether Claude has met all the below quality criteria for the request.
+
+            ## Quality Criteria
+
+{% for criterion in quality_criteria %}
+            {{ loop.index }}. {{ criterion }}
+{% endfor %}
+
+            ## Instructions
+
+            Review the conversation and determine if ALL quality criteria above have been satisfied.
+            Look for evidence that each criterion has been addressed.
+
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
+            all criteria appear to be met, respond with: {"ok": true}
+
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
+{% endif %}
+{% for event_name, event_hooks in hooks.items() %}
+{% if not (event_name == "Stop" and quality_criteria) %}
+  {{ event_name }}:
+    - hooks:
+{% for hook in event_hooks %}
+{% if hook.type == "script" %}
+        - type: command
+          command: ".deepwork/jobs/{{ job_name }}/{{ hook.path }}"
+{% else %}
+        - type: prompt
+          prompt: |
+            {{ hook.content | indent(12) }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+---
+
+# {{ job_name }}.{{ step_id }}
+
+{% if is_standalone %}
+**Standalone skill** - can be run anytime
+{% else %}
+**Step {{ step_number }}/{{ total_steps }}** in **{{ job_name }}** workflow
+{% endif %}
+
+> {{ job_summary }}
+
+{% if dependencies %}
+## Prerequisites (Verify First)
+
+Before proceeding, confirm these steps are complete:
+{% for dep in dependencies %}
+- `/{{ job_name }}.{{ dep }}`
+{% endfor %}
+{% endif %}
+
+## Instructions
+
+**Goal**: {{ step_description }}
+
+{{ instructions_content }}
+
+{% if job_description %}
+### Job Context
+
+{{ job_description }}
+{% endif %}
+
+{% if user_inputs or file_inputs %}
+## Required Inputs
+
+{% if user_inputs %}
+**User Parameters** - Gather from user before starting:
+{% for input in user_inputs %}
+- **{{ input.name }}**: {{ input.description }}
+{% endfor %}
+{% endif %}
+
+{% if file_inputs %}
+**Files from Previous Steps** - Read these first:
+{% for input in file_inputs %}
+- `{{ input.file }}` (from `{{ input.from_step }}`)
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Work Branch
+
+Use branch format: `deepwork/{{ job_name }}-[instance]-YYYYMMDD`
+
+- If on a matching work branch: continue using it
+- If on main/master: create new branch with `git checkout -b deepwork/{{ job_name }}-[instance]-$(date +%Y%m%d)`
+
+## Outputs
+
+{% if outputs %}
+**Required outputs**:
+{% for output in outputs %}
+- `{{ output }}`{% if output.endswith('/') %} (directory){% endif %}
+{% endfor %}
+{% else %}
+No specific file outputs required.
+{% endif %}
+
+{% if quality_criteria or stop_hooks %}
+## Quality Validation
+
+Stop hooks will automatically validate your work. The loop continues until all criteria pass.
+
+{% if quality_criteria %}
+**Criteria (all must be satisfied)**:
+{% for criterion in quality_criteria %}
+{{ loop.index }}. {{ criterion }}
+{% endfor %}
+{% endif %}
+
+{% for hook in stop_hooks %}
+{% if hook.type == "script" %}
+**Validation script**: `.deepwork/jobs/{{ job_name }}/{{ hook.path }}` (runs automatically)
+{% endif %}
+{% endfor %}
+
+**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
+
+{% endif %}
+## On Completion
+
+{% if is_standalone %}
+1. Verify outputs are created
+2. Inform user: "{{ step_id }} complete{% if outputs %}, outputs: {{ outputs | join(', ') }}{% endif %}"
+
+This standalone skill can be re-run anytime.
+{% else %}
+1. Verify outputs are created
+2. Inform user: "Step {{ step_number }}/{{ total_steps }} complete{% if outputs %}, outputs: {{ outputs | join(', ') }}{% endif %}"
+{% if next_step %}
+3. **Continue workflow**: Use Skill tool to invoke `/{{ job_name }}.{{ next_step }}`
+{% else %}
+3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
+{% endif %}
+{% endif %}
+
+---
+
+**Reference files**: `.deepwork/jobs/{{ job_name }}/job.yml`, `.deepwork/jobs/{{ job_name }}/{{ instructions_file }}`
