@@ -321,50 +321,35 @@ If you get an error about flakes not being recognized:
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 ```
 
-### Hooks Not Finding DeepWork Module
+### Hooks Working with Different Installation Methods
 
-When using DeepWork from a Nix flake in your project, hooks may fail with "No module named 'deepwork'" because they run outside of `nix develop`. The flake package includes wrapper scripts that solve this:
+DeepWork hooks use the `deepwork hook` CLI command, which works consistently regardless of how deepwork was installed:
 
-**Solution:**
+**Installation Methods Supported:**
+- Nix flake (`nix profile install github:Unsupervisedcom/deepwork`)
+- pipx (`pipx install deepwork`)
+- uv (`uv tool install deepwork`)
+- pip (`pip install deepwork`)
 
-Instead of using `python -m deepwork.hooks.rules_check` directly in hooks, use the provided wrapper commands:
+**How it Works:**
 
-- For Claude Code: Use `deepwork-python -m deepwork.hooks.rules_check`
-- For Gemini CLI: Use `deepwork-python -m deepwork.hooks.rules_check`
-
-Or use the dedicated hook wrappers:
-- `deepwork-claude-hook deepwork.hooks.rules_check`
-- `deepwork-gemini-hook deepwork.hooks.rules_check`
-
-These wrappers ensure the Python environment has access to the deepwork module even when running outside of the Nix development shell.
-
-**In your flake.nix:**
-
-```nix
-{
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    deepwork.url = "github:Unsupervisedcom/deepwork";
-  };
-
-  outputs = { self, nixpkgs, deepwork }:
-    let
-      system = "x86_64-linux";
-      pkgs = import nixpkgs { inherit system; };
-    in {
-      devShells.${system}.default = pkgs.mkShell {
-        buildInputs = [
-          deepwork.packages.${system}.default
-        ];
-        
-        # Optional: Add deepwork binaries to PATH for easier hook usage
-        shellHook = ''
-          export PATH="${deepwork.packages.${system}.default}/bin:$PATH"
-        '';
-      };
-    };
-}
+The hook wrapper scripts (`.deepwork/hooks/claude_hook.sh`, `.gemini/hooks/gemini_hook.sh`) call:
+```bash
+deepwork hook rules_check
 ```
+
+Instead of the old approach:
+```bash
+python -m deepwork.hooks.rules_check  # ❌ Doesn't work with all install methods
+```
+
+**Requirements:**
+1. The `deepwork` command must be in your PATH
+2. For Nix flake users: Install with `nix profile install github:Unsupervisedcom/deepwork`
+3. For pipx users: Install with `pipx install deepwork`
+4. For uv users: Install with `uv tool install deepwork`
+
+All these methods ensure `deepwork` is available globally, so hooks work correctly outside of development environments.
 
 ### direnv Not Working
 

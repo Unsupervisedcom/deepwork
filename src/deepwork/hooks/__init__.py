@@ -17,7 +17,7 @@ Usage with wrapper system:
         "Stop": [{
           "hooks": [{
             "type": "command",
-            "command": ".deepwork/hooks/claude_hook.sh deepwork.hooks.rules_check"
+            "command": ".deepwork/hooks/claude_hook.sh rules_check"
           }]
         }]
       }
@@ -29,11 +29,14 @@ Usage with wrapper system:
         "AfterAgent": [{
           "hooks": [{
             "type": "command",
-            "command": ".gemini/hooks/gemini_hook.sh deepwork.hooks.rules_check"
+            "command": ".gemini/hooks/gemini_hook.sh rules_check"
           }]
         }]
       }
     }
+
+The shell wrappers call `deepwork hook <hook_name>` which works regardless
+of how deepwork was installed (pipx, uv, nix flake, etc.).
 
 Writing custom hooks:
     from deepwork.hooks.wrapper import (
@@ -49,11 +52,14 @@ Writing custom hooks:
             if should_block():
                 return HookOutput(decision="block", reason="Complete X first")
         return HookOutput()
-
-    if __name__ == "__main__":
+    
+    def main():
         import os, sys
         platform = Platform(os.environ.get("DEEPWORK_HOOK_PLATFORM", "claude"))
         sys.exit(run_hook(my_hook, platform))
+
+    if __name__ == "__main__":
+        main()
 """
 
 from deepwork.hooks.wrapper import (

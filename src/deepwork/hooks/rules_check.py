@@ -6,12 +6,15 @@ It uses the wrapper system for cross-platform compatibility.
 
 Rule files are loaded from .deepwork/rules/ directory as frontmatter markdown files.
 
-Usage (via shell wrapper):
-    claude_hook.sh deepwork.hooks.rules_check
-    gemini_hook.sh deepwork.hooks.rules_check
+Usage (via shell wrapper - recommended):
+    claude_hook.sh rules_check
+    gemini_hook.sh rules_check
 
-Or directly with platform environment variable:
-    DEEPWORK_HOOK_PLATFORM=claude python -m deepwork.hooks.rules_check
+Or directly via deepwork CLI:
+    deepwork hook rules_check
+
+Or with platform environment variable:
+    DEEPWORK_HOOK_PLATFORM=claude deepwork hook rules_check
 """
 
 from __future__ import annotations

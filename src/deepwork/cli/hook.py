@@ -1,0 +1,69 @@
+"""Hook command for DeepWork CLI.
+
+This command runs hook scripts, allowing hooks to use the `deepwork` CLI
+instead of `python -m deepwork.hooks.*`, which works regardless of how
+deepwork was installed (flake, pipx, uv, etc.).
+
+Usage:
+    deepwork hook rules_check
+    deepwork hook <hook_name>
+
+This is meant to be called from hook wrapper scripts (claude_hook.sh, gemini_hook.sh).
+"""
+
+import sys
+import importlib
+from pathlib import Path
+
+import click
+from rich.console import Console
+
+console = Console()
+
+
+class HookError(Exception):
+    """Exception raised for hook errors."""
+
+    pass
+
+
+@click.command()
+@click.argument("hook_name")
+def hook(hook_name: str) -> None:
+    """
+    Run a DeepWork hook by name.
+    
+    HOOK_NAME: Name of the hook to run (e.g., 'rules_check')
+    
+    This command imports and runs the hook module from deepwork.hooks.{hook_name}.
+    The hook receives stdin input and outputs to stdout, following the hook protocol.
+    
+    Examples:
+        deepwork hook rules_check
+        echo '{}' | deepwork hook rules_check
+    """
+    try:
+        # Import the hook module
+        module_name = f"deepwork.hooks.{hook_name}"
+        try:
+            module = importlib.import_module(module_name)
+        except ModuleNotFoundError:
+            raise HookError(
+                f"Hook '{hook_name}' not found. "
+                f"Available hooks are in the deepwork.hooks package."
+            )
+        
+        # Run the hook's main function if it exists
+        if hasattr(module, "main"):
+            sys.exit(module.main())
+        else:
+            raise HookError(
+                f"Hook module '{module_name}' does not have a main() function"
+            )
+            
+    except HookError as e:
+        console.print(f"[red]Error:[/red] {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"[red]Unexpected error running hook:[/red] {e}", file=sys.stderr)
+        sys.exit(1)

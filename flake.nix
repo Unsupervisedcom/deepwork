@@ -11,83 +11,35 @@
       let
         pkgs = import nixpkgs {
           inherit system;
+          # Allow unfree packages to support the Business Source License 1.1
+          config.allowUnfree = true;
         };
-        
-        # Create a wrapped Python environment with deepwork available
-        pythonWithDeepwork = pkgs.python311.withPackages (ps: [
-          (ps.buildPythonPackage {
-            pname = "deepwork";
-            version = "0.3.0";
-            src = ./.;
-            format = "pyproject";
-            
-            nativeBuildInputs = with ps; [
-              hatchling
-            ];
-            
-            propagatedBuildInputs = with ps; [
-              jinja2
-              pyyaml
-              gitpython
-              click
-              rich
-              jsonschema
-            ];
-
-            # Skip tests during build (they can be run in devShell)
-            doCheck = false;
-
-            meta = with pkgs.lib; {
-              description = "Framework for enabling AI agents to perform complex, multi-step work tasks";
-              homepage = "https://github.com/Unsupervisedcom/deepwork";
-              # Business Source License 1.1 - not OSI approved
-              license = {
-                fullName = "Business Source License 1.1";
-                url = "https://github.com/Unsupervisedcom/deepwork/blob/main/LICENSE.md";
-                free = false;
-              };
-            };
-          })
-        ]);
-
-        # Create the main deepwork package with proper wrappers
-        deepwork = pkgs.stdenv.mkDerivation {
-          name = "deepwork-0.3.0";
+        deepwork = pkgs.python311Packages.buildPythonPackage {
+          pname = "deepwork";
+          version = "0.3.0";
           src = ./.;
+          format = "pyproject";
+          
+          nativeBuildInputs = with pkgs.python311Packages; [
+            hatchling
+          ];
+          
+          propagatedBuildInputs = with pkgs.python311Packages; [
+            jinja2
+            pyyaml
+            gitpython
+            click
+            rich
+            jsonschema
+          ];
 
-          nativeBuildInputs = [ pkgs.makeWrapper ];
-
-          buildPhase = ''
-            # Nothing to build, we just need to wrap the Python package
-          '';
-
-          installPhase = ''
-            mkdir -p $out/bin
-
-            # Create wrapper for deepwork CLI
-            makeWrapper ${pythonWithDeepwork}/bin/deepwork $out/bin/deepwork \
-              --set PYTHONPATH "${pythonWithDeepwork}/${pythonWithDeepwork.sitePackages}"
-
-            # Create wrapper scripts for claude hook
-            makeWrapper ${pythonWithDeepwork}/bin/python $out/bin/deepwork-claude-hook \
-              --add-flags "-m" \
-              --set PYTHONPATH "${pythonWithDeepwork}/${pythonWithDeepwork.sitePackages}" \
-              --set DEEPWORK_HOOK_PLATFORM "claude"
-
-            # Create wrapper scripts for gemini hook
-            makeWrapper ${pythonWithDeepwork}/bin/python $out/bin/deepwork-gemini-hook \
-              --add-flags "-m" \
-              --set PYTHONPATH "${pythonWithDeepwork}/${pythonWithDeepwork.sitePackages}" \
-              --set DEEPWORK_HOOK_PLATFORM "gemini"
-
-            # Also create a python wrapper that has deepwork in PYTHONPATH
-            makeWrapper ${pythonWithDeepwork}/bin/python $out/bin/deepwork-python \
-              --set PYTHONPATH "${pythonWithDeepwork}/${pythonWithDeepwork.sitePackages}"
-          '';
+          # Skip tests during build (they can be run in devShell)
+          doCheck = false;
 
           meta = with pkgs.lib; {
             description = "Framework for enabling AI agents to perform complex, multi-step work tasks";
             homepage = "https://github.com/Unsupervisedcom/deepwork";
+            # Business Source License 1.1 - not OSI approved
             license = {
               fullName = "Business Source License 1.1";
               url = "https://github.com/Unsupervisedcom/deepwork/blob/main/LICENSE.md";
