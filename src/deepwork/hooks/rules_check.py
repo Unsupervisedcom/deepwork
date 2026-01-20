@@ -201,27 +201,59 @@ def get_changed_files_default_tip() -> list[str]:
 def get_changed_files_prompt() -> list[str]:
     """Get files changed since prompt was submitted.
 
-    Returns ALL files with staged changes (modified, added, deleted).
+    Returns files that changed since the prompt was submitted, including:
+    - Committed changes (compared to captured HEAD ref)
+    - Staged changes (not yet committed)
+    - Untracked files
+
     This is used by trigger/safety, set, and pair mode rules to detect
     file modifications during the agent response.
-
-    Note: The baseline file (.last_work_tree) is NOT used here - it's only
-    used by get_created_files_prompt() to detect truly NEW files for
-    created: mode rules.
     """
+    baseline_ref_path = Path(".deepwork/.last_head_ref")
+    changed_files: set[str] = set()
+
     try:
+        # Stage all changes first
         subprocess.run(["git", "add", "-A"], capture_output=True, check=False)
 
+        # If we have a captured HEAD ref, compare committed changes against it
+        if baseline_ref_path.exists():
+            baseline_ref = baseline_ref_path.read_text().strip()
+            if baseline_ref:
+                # Get files changed in commits since the baseline
+                result = subprocess.run(
+                    ["git", "diff", "--name-only", baseline_ref, "HEAD"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    committed_files = set(result.stdout.strip().split("\n"))
+                    changed_files.update(f for f in committed_files if f)
+
+        # Also get currently staged changes (in case not everything is committed)
         result = subprocess.run(
             ["git", "diff", "--name-only", "--cached"],
             capture_output=True,
             text=True,
             check=False,
         )
-        current_files = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
-        current_files = {f for f in current_files if f}
+        if result.stdout.strip():
+            staged_files = set(result.stdout.strip().split("\n"))
+            changed_files.update(f for f in staged_files if f)
 
-        return sorted(current_files)
+        # Include untracked files
+        result = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.stdout.strip():
+            untracked_files = set(result.stdout.strip().split("\n"))
+            changed_files.update(f for f in untracked_files if f)
+
+        return sorted(changed_files)
 
     except (subprocess.CalledProcessError, OSError):
         return []

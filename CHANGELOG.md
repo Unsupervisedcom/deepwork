@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed `created` mode rules incorrectly firing on modified files (#83)
+- Fixed `compare_to: prompt` mode not detecting files that were committed during agent response
+  - Rules like `uv-lock-sync` now correctly fire even when changes are committed before the Stop hook runs
 
 ## [0.3.0] - 2026-01-18
 
