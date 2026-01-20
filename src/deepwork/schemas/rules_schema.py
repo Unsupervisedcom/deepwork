@@ -56,6 +56,11 @@ RULES_FRONTMATTER_SCHEMA: dict[str, Any] = {
             "additionalProperties": False,
             "description": "Directional file correspondence (trigger -> expects)",
         },
+        # Detection mode: created (fire when files are created matching patterns)
+        "created": {
+            **STRING_OR_ARRAY,
+            "description": "Glob pattern(s) for newly created files that trigger this rule",
+        },
         # Action type: command (default is prompt using markdown body)
         "action": {
             "type": "object",
@@ -84,19 +89,47 @@ RULES_FRONTMATTER_SCHEMA: dict[str, Any] = {
         },
     },
     "additionalProperties": False,
-    # Detection mode must be exactly one of: trigger, set, or pair
+    # Detection mode must be exactly one of: trigger, set, pair, or created
     "oneOf": [
         {
             "required": ["trigger"],
-            "not": {"anyOf": [{"required": ["set"]}, {"required": ["pair"]}]},
+            "not": {
+                "anyOf": [
+                    {"required": ["set"]},
+                    {"required": ["pair"]},
+                    {"required": ["created"]},
+                ]
+            },
         },
         {
             "required": ["set"],
-            "not": {"anyOf": [{"required": ["trigger"]}, {"required": ["pair"]}]},
+            "not": {
+                "anyOf": [
+                    {"required": ["trigger"]},
+                    {"required": ["pair"]},
+                    {"required": ["created"]},
+                ]
+            },
         },
         {
             "required": ["pair"],
-            "not": {"anyOf": [{"required": ["trigger"]}, {"required": ["set"]}]},
+            "not": {
+                "anyOf": [
+                    {"required": ["trigger"]},
+                    {"required": ["set"]},
+                    {"required": ["created"]},
+                ]
+            },
+        },
+        {
+            "required": ["created"],
+            "not": {
+                "anyOf": [
+                    {"required": ["trigger"]},
+                    {"required": ["set"]},
+                    {"required": ["pair"]},
+                ]
+            },
         },
     ],
 }

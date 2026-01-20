@@ -99,6 +99,21 @@ This rule runs `ruff format` on any changed Python files to ensure
 consistent code style across the codebase.
 ```
 
+### Created Mode (file creation trigger)
+
+`.deepwork/rules/new-module-docs.md`:
+```markdown
+---
+name: New Module Documentation
+created: src/**/*.py
+---
+A new Python module was created. Please ensure:
+
+- Add module docstring explaining the purpose
+- Update relevant documentation if adding a public API
+- Consider adding tests for the new module
+```
+
 ## Rule Structure
 
 Every rule has two orthogonal aspects:
@@ -112,6 +127,7 @@ How the rule decides when to fire:
 | **Trigger/Safety** | `trigger`, `safety` | Fire when trigger matches and safety doesn't |
 | **Set** | `set` | Fire when file correspondence is incomplete (bidirectional) |
 | **Pair** | `pair` | Fire when file correspondence is incomplete (directional) |
+| **Created** | `created` | Fire when newly created files match patterns |
 
 ### Action Type
 
@@ -205,6 +221,47 @@ If `api/users/create.py` changes:
 
 If `docs/api/users/create.md` changes alone:
 - No trigger (documentation can be updated independently)
+
+### Created Mode (File Creation Detection)
+
+Fires only when files are newly created (not modified). Useful for enforcing standards on new files.
+
+```yaml
+---
+name: New Component Documentation
+created:
+  - src/components/**/*.tsx
+  - src/components/**/*.ts
+---
+```
+
+**How it works:**
+
+1. A file is created that matches a `created` pattern
+2. Rule fires with instructions
+
+Key differences from Trigger/Safety mode:
+- Only fires for **new** files, not modifications to existing files
+- No safety patterns (use Trigger/Safety mode if you need safety)
+- Good for enforcing documentation, tests, or standards on new code
+
+**Examples:**
+
+```yaml
+# Single pattern
+created: src/api/**/*.py
+
+# Multiple patterns
+created:
+  - src/models/**/*.py
+  - src/services/**/*.py
+```
+
+If a new file `src/api/users.py` is created:
+- Rule fires with instructions for new API modules
+
+If an existing file `src/api/users.py` is modified:
+- Rule does NOT fire (file already existed)
 
 ## Action Types
 
@@ -382,6 +439,22 @@ pair:
 ---
 ```
 
+### created
+
+File patterns that trigger when files are newly created (created mode). Only fires for new files, not modifications. Can be string or array.
+
+```yaml
+---
+created: src/**/*.py
+---
+
+---
+created:
+  - src/**/*.py
+  - lib/**/*.py
+---
+```
+
 ### action (optional)
 
 Specifies a command to run instead of prompting.
@@ -517,6 +590,39 @@ This rule is suppressed if you've already modified pyproject.toml
 or CHANGELOG.md, as that indicates you're handling versioning.
 ```
 
+### Example 6: New File Standards (Created Mode)
+
+`.deepwork/rules/new-module-standards.md`:
+```markdown
+---
+name: New Module Standards
+created:
+  - src/**/*.py
+  - lib/**/*.py
+---
+A new Python module was created. Please ensure it follows our standards:
+
+1. **Module docstring**: Add a docstring at the top explaining the module's purpose
+2. **Type hints**: Use type hints for all function parameters and return values
+3. **Tests**: Create a corresponding test file in tests/
+4. **Imports**: Follow the import order (stdlib, third-party, local)
+
+This rule only fires for newly created files, not modifications.
+```
+
+### Example 7: New Component Checklist (Created Mode with Command)
+
+`.deepwork/rules/new-component-lint.md`:
+```markdown
+---
+name: New Component Lint
+created: src/components/**/*.tsx
+action:
+  command: eslint --fix {file}
+---
+Automatically lints newly created React components.
+```
+
 ## Promise Tags
 
 When a rule fires but should be dismissed, use promise tags in the conversation. The tag content should be human-readable, using the rule's `name` field:
@@ -539,7 +645,7 @@ Error: .deepwork/rules/my-rule.md - invalid YAML frontmatter
 
 **Missing required field:**
 ```
-Error: .deepwork/rules/my-rule.md - must have 'trigger', 'set', or 'pair'
+Error: .deepwork/rules/my-rule.md - must have 'trigger', 'set', 'pair', or 'created'
 ```
 
 **Invalid pattern:**
