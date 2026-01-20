@@ -55,6 +55,17 @@ def _inject_standard_job(job_name: str, jobs_dir: Path, project_path: Path) -> N
         console.print(
             f"  [green]✓[/green] Installed {job_name} ({target_dir.relative_to(project_path)})"
         )
+
+        # Copy any DTDs from the standard job to .deepwork/dtds/
+        dtds_source = standard_jobs_dir / "dtds"
+        dtds_target = project_path / ".deepwork" / "dtds"
+        if dtds_source.exists():
+            for dtd_file in dtds_source.glob("*.md"):
+                target_dtd = dtds_target / dtd_file.name
+                shutil.copy(dtd_file, target_dtd)
+                console.print(
+                    f"  [green]✓[/green] Installed DTD {dtd_file.name} ({target_dtd.relative_to(project_path)})"
+                )
     except Exception as e:
         raise InstallError(f"Failed to install {job_name}: {e}") from e
 

@@ -220,6 +220,8 @@ This creates:
 
 (Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`)
 
+**Document Type Definition**: See `.deepwork/dtds/job_spec.md` for the complete specification with quality criteria.
+
 **Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.template` for the standard structure.
 
 **Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.example` for a fully worked example.

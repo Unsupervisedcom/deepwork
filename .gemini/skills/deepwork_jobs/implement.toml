@@ -293,6 +293,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `steps/` (directory)
+
 ## Quality Validation (Manual)
 
 **NOTE**: Gemini CLI does not support automated validation. Manually verify criteria before completing.

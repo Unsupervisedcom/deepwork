@@ -195,7 +195,9 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 ## Outputs
 
 **Required outputs**:
-- `job_schema.py`- `adapters.py`
+- `job_schema.py`
+- `adapters.py`
+
 ## On Completion
 
 1. Verify outputs are created

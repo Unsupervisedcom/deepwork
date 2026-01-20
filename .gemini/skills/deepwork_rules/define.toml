@@ -305,6 +305,7 @@ Use branch format: `deepwork/deepwork_rules-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `.deepwork/rules/{rule-name}.md`
+
 ## On Completion
 
 1. Verify outputs are created

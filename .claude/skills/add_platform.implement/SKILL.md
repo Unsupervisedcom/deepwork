@@ -306,7 +306,10 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 ## Outputs
 
 **Required outputs**:
-- `templates/` (directory)- `tests/` (directory)- `README.md`
+- `templates/` (directory)
+- `tests/` (directory)
+- `README.md`
+
 ## Quality Validation
 
 Stop hooks will automatically validate your work. The loop continues until all criteria pass.

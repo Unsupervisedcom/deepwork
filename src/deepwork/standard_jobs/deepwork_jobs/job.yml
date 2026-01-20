@@ -1,5 +1,5 @@
 name: deepwork_jobs
-version: "0.6.0"
+version: "0.7.0"
 summary: "DeepWork job management commands"
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -26,6 +26,8 @@ changelog:
     changes: "Standardized on 'ask structured questions' phrasing for user input; Updated quality criteria hooks to verify phrase usage; Added guidance in implement.md to use phrase in generated instructions"
   - version: "0.6.0"
     changes: "Added Document Type Definition (DTD) support; define.md now detects document-oriented workflows and guides DTD creation; learn.md now identifies and applies DTD-related improvements"
+  - version: "0.7.0"
+    changes: "Added job.yml DTD; define step now outputs job.yml with document_type reference for quality validation"
 
 steps:
   - id: define
@@ -36,14 +38,16 @@ steps:
       - name: job_purpose
         description: "What complex task or workflow are you trying to accomplish?"
     outputs:
-      - job.yml
+      - file: job.yml
+        document_type: .deepwork/dtds/job_spec.md
     dependencies: []
     quality_criteria:
       - "**User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?"
       - "**Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?"
       - "**Document Detection**: For document-oriented workflows, did the agent detect patterns and offer DTD creation?"
       - "**DTD Created (if applicable)**: If a DTD was needed, was it created in `.deepwork/dtds/[dtd_name].md` with proper quality criteria?"
-      - "**DTD References**: Are document outputs properly linked to their DTDs using `{file, dtd}` format?"
+      - "**DTD References**: Are document outputs properly linked to their DTDs using `{file, document_type}` format?"
+      - "**Valid Against DTD**: Does the job.yml conform to the job.yml DTD quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?"
       - "**Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?"
       - "**Logical Dependencies**: Do step dependencies make sense and avoid circular references?"
       - "**Concise Summary**: Is the summary under 200 characters and descriptive?"

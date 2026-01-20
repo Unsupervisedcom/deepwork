@@ -65,6 +65,15 @@ For each learning identified, determine if it is:
   - "Quality criteria should include checking for Y"
   - "Add example of correct output format"
 
+**DTD-Related** (should improve document type definitions):
+- Improvements to document quality criteria
+- Changes to document structure or format
+- Updated audience or frequency information
+- Examples:
+  - "The report should include a summary table"
+  - "Quality criterion 'Visualization' needs clearer requirements"
+  - "Documents need a section for action items"
+
 **Bespoke** (should go in AGENTS.md):
 - Specific to THIS project/codebase/run
 - Depends on local conventions or structure
@@ -74,6 +83,30 @@ For each learning identified, determine if it is:
   - "In this codebase, API endpoints are in `src/api/`"
   - "This project uses camelCase for function names"
   - "The main config file is at `config/settings.yml`"
+
+### Step 3.5: Identify DTD-Related Learnings
+
+Review the conversation for DTD-related improvements:
+
+1. **Quality Criteria Changes**
+   - Were any quality criteria unclear or insufficient?
+   - Did the agent repeatedly fail certain criteria?
+   - Are there new criteria that should be added?
+
+2. **Document Structure Changes**
+   - Did the user request different sections?
+   - Were parts of the document format confusing?
+   - Should the example document be updated?
+
+3. **Metadata Updates**
+   - Has the target audience changed?
+   - Should frequency or path patterns be updated?
+
+**Signals for DTD improvements:**
+- User asked for changes to document format
+- Repeated validation failures on specific criteria
+- Feedback about missing sections or information
+- Changes to how documents are organized/stored
 
 ### Step 4: Update Job Instructions (Generalizable Learnings)
 
@@ -127,6 +160,41 @@ Review all instruction files for the job and identify content that:
    - Single source of truth - update once, applies everywhere
    - Shorter instruction files - easier to read and maintain
    - Consistent guidance across steps
+
+### Step 4.5: Update DTD Files (DTD-Related Learnings)
+
+If DTD-related learnings were identified:
+
+1. **Locate the DTD file**
+   - Find DTD references in job.yml outputs (look for `dtd: [dtd_name]`)
+   - DTD files are at `.deepwork/dtds/[dtd_name].md`
+
+2. **Update quality_criteria array**
+   - Add new criteria with name and description
+   - Modify existing criteria descriptions for clarity
+   - Remove criteria that are no longer relevant
+
+3. **Update example document**
+   - Modify the markdown body to reflect structure changes
+   - Ensure the example matches updated criteria
+
+4. **Update metadata as needed**
+   - target_audience: If audience has changed
+   - frequency: If production cadence has changed
+   - path_patterns: If storage location has changed
+
+**Example DTD update:**
+```yaml
+# Before
+quality_criteria:
+  - name: Visualization
+    description: Include charts
+
+# After
+quality_criteria:
+  - name: Visualization
+    description: Include Mermaid.js charts showing spend breakdown by service and month-over-month trend
+```
 
 ### Step 5: Create/Update AGENTS.md (Bespoke Learnings)
 
