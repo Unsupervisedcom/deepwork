@@ -24,8 +24,9 @@ learnings specific to the current run into AGENTS.md files in the working folder
 ## Available Steps
 
 1. **define** - Create the job.yml specification file by understanding workflow requirements
-2. **implement** - Generate instruction files for each step based on the job.yml specification (requires: define)
-3. **learn** - Reflect on conversation to improve job instructions and capture learnings
+2. **review_job_spec** - Use sub-agent to review job.yml against DTD quality criteria (requires: define)
+3. **implement** - Generate instruction files for each step based on the job.yml specification (requires: review_job_spec)
+4. **learn** - Reflect on conversation to improve job instructions and capture learnings
 
 ## Execution Instructions
 
@@ -33,6 +34,7 @@ learnings specific to the current run into AGENTS.md files in the working folder
 
 Parse any text following `/deepwork_jobs` to determine user intent:
 - "define" or related terms → start at `deepwork_jobs.define`
+- "review_job_spec" or related terms → start at `deepwork_jobs.review_job_spec`
 - "implement" or related terms → start at `deepwork_jobs.implement`
 - "learn" or related terms → start at `deepwork_jobs.learn`
 

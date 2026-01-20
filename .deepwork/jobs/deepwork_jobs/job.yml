@@ -1,5 +1,5 @@
 name: deepwork_jobs
-version: "0.7.0"
+version: "0.8.0"
 summary: "DeepWork job management commands"
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -55,17 +55,33 @@ steps:
       - "**Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?"
       - "**File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?"
 
+  - id: review_job_spec
+    name: "Review Job Specification"
+    description: "Use sub-agent to review job.yml against DTD quality criteria"
+    instructions_file: steps/review_job_spec.md
+    inputs:
+      - file: job.yml
+        from_step: define
+    outputs:
+      - file: job.yml
+        document_type: .deepwork/dtds/job_spec.md
+    dependencies:
+      - define
+    quality_criteria:
+      - "**Sub-Agent Used**: Was a sub-agent spawned to provide unbiased review?"
+      - "**Validation Loop Complete**: Did the review-fix cycle continue until all criteria passed?"
+
   - id: implement
     name: "Implement Job Steps"
     description: "Generate instruction files for each step based on the job.yml specification"
     instructions_file: steps/implement.md
     inputs:
       - file: job.yml
-        from_step: define
+        from_step: review_job_spec
     outputs:
       - steps/
     dependencies:
-      - define
+      - review_job_spec
     quality_criteria:
       - "**Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?"
       - "**Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?"

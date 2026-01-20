@@ -341,7 +341,7 @@ Claude: Great! Creating the job.yml specification now...
 - .deepwork/jobs/competitive_research/job.yml
 
 **Next step:**
-Run `/deepwork_jobs.implement` to generate the instruction files for each step based on this specification.
+Run `/deepwork_jobs.review_job_spec` to validate the specification against quality criteria.
 ```
 
 ## Important Guidelines
@@ -381,7 +381,7 @@ The complete YAML specification file (example shown in Step 5 above).
 After creating the file:
 1. Inform the user that the specification is complete
 2. Recommend that they review the job.yml file
-3. Tell them to run `/deepwork_jobs.implement` next
+3. Tell them to run `/deepwork_jobs.review_job_spec` next
 
 ## Quality Criteria
 
