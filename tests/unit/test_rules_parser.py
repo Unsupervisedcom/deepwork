@@ -58,6 +58,7 @@ class TestEvaluateRule:
             triggers=["src/**/*.py"],
             safety=[],
             instructions="Check it",
+            compare_to="base",
         )
         changed_files = ["src/main.py", "README.md"]
 
@@ -73,6 +74,7 @@ class TestEvaluateRule:
             triggers=["src/**/*.py"],
             safety=[],
             instructions="Check it",
+            compare_to="base",
         )
         changed_files = ["test/main.py", "README.md"]
 
@@ -88,6 +90,7 @@ class TestEvaluateRule:
             triggers=["app/config/**/*"],
             safety=["docs/install_guide.md"],
             instructions="Update docs",
+            compare_to="base",
         )
         changed_files = ["app/config/settings.py", "docs/install_guide.md"]
 
@@ -103,6 +106,7 @@ class TestEvaluateRule:
             triggers=["app/config/**/*"],
             safety=["docs/install_guide.md"],
             instructions="Update docs",
+            compare_to="base",
         )
         changed_files = ["app/config/settings.py", "app/main.py"]
 
@@ -118,6 +122,7 @@ class TestEvaluateRule:
             triggers=["src/auth/**/*"],
             safety=["SECURITY.md", "docs/security_review.md"],
             instructions="Security review",
+            compare_to="base",
         )
 
         # Should not fire if any safety file is changed
@@ -144,6 +149,7 @@ class TestEvaluateRules:
                 triggers=["src/**/*"],
                 safety=[],
                 instructions="Do 1",
+                compare_to="base",
             ),
             Rule(
                 name="Rule 2",
@@ -152,6 +158,7 @@ class TestEvaluateRules:
                 triggers=["test/**/*"],
                 safety=[],
                 instructions="Do 2",
+                compare_to="base",
             ),
         ]
         changed_files = ["src/main.py", "test/test_main.py"]
@@ -172,6 +179,7 @@ class TestEvaluateRules:
                 triggers=["src/**/*"],
                 safety=[],
                 instructions="Do 1",
+                compare_to="base",
             ),
             Rule(
                 name="Rule 2",
@@ -180,6 +188,7 @@ class TestEvaluateRules:
                 triggers=["src/**/*"],
                 safety=[],
                 instructions="Do 2",
+                compare_to="base",
             ),
         ]
         changed_files = ["src/main.py"]
@@ -200,6 +209,7 @@ class TestEvaluateRules:
                 triggers=["src/**/*"],
                 safety=[],
                 instructions="Do 1",
+                compare_to="base",
             ),
         ]
         changed_files = ["test/test_main.py"]
@@ -223,6 +233,7 @@ class TestLoadRulesFromDirectory:
             """---
 name: Test Rule
 trigger: "src/**/*"
+compare_to: base
 ---
 Please check the source files.
 """
@@ -246,6 +257,7 @@ Please check the source files.
             """---
 name: Rule 1
 trigger: "src/**/*"
+compare_to: base
 ---
 Instructions for rule 1.
 """
@@ -254,6 +266,7 @@ Instructions for rule 1.
             """---
 name: Rule 2
 trigger: "test/**/*"
+compare_to: base
 ---
 Instructions for rule 2.
 """
@@ -294,6 +307,7 @@ name: Source/Test Pairing
 set:
   - src/{path}.py
   - tests/{path}_test.py
+compare_to: base
 ---
 Source and test files should change together.
 """
@@ -318,6 +332,7 @@ name: API Documentation
 pair:
   trigger: src/api/{name}.py
   expects: docs/api/{name}.md
+compare_to: base
 ---
 API code requires documentation.
 """
@@ -345,6 +360,7 @@ trigger: "**/*.py"
 action:
   command: "ruff format {file}"
   run_for: each_match
+compare_to: prompt
 ---
 """
         )
@@ -372,6 +388,7 @@ class TestCorrespondenceSets:
             detection_mode=DetectionMode.SET,
             set_patterns=["src/{path}.py", "tests/{path}_test.py"],
             instructions="Update tests",
+            compare_to="base",
         )
         changed_files = ["src/foo.py", "tests/foo_test.py"]
 
@@ -386,6 +403,7 @@ class TestCorrespondenceSets:
             detection_mode=DetectionMode.SET,
             set_patterns=["src/{path}.py", "tests/{path}_test.py"],
             instructions="Update tests",
+            compare_to="base",
         )
         changed_files = ["src/foo.py"]
 
@@ -402,6 +420,7 @@ class TestCorrespondenceSets:
             detection_mode=DetectionMode.SET,
             set_patterns=["src/{path}.py", "tests/{path}_test.py"],
             instructions="Update source",
+            compare_to="base",
         )
         changed_files = ["tests/foo_test.py"]
 
@@ -418,6 +437,7 @@ class TestCorrespondenceSets:
             detection_mode=DetectionMode.SET,
             set_patterns=["src/{path}.py", "tests/{path}_test.py"],
             instructions="Update tests",
+            compare_to="base",
         )
         changed_files = ["src/a/b.py", "tests/a/b_test.py"]
 
@@ -432,6 +452,7 @@ class TestCorrespondenceSets:
             detection_mode=DetectionMode.SET,
             set_patterns=["src/{path}.py", "tests/{path}_test.py"],
             instructions="Update tests",
+            compare_to="base",
         )
         changed_files = ["src/a/b.py"]
 
@@ -447,6 +468,7 @@ class TestCorrespondenceSets:
             detection_mode=DetectionMode.SET,
             set_patterns=["src/{path}.py", "tests/{path}_test.py"],
             instructions="Update tests",
+            compare_to="base",
         )
         changed_files = ["docs/readme.md"]
 
@@ -461,6 +483,7 @@ class TestCorrespondenceSets:
             detection_mode=DetectionMode.SET,
             set_patterns=["src/{path}.py", "tests/{path}_test.py"],
             instructions="Update tests",
+            compare_to="base",
         )
         changed_files = ["src/foo.py", "docs/readme.md"]
 
@@ -475,6 +498,7 @@ class TestCorrespondenceSets:
             detection_mode=DetectionMode.SET,
             set_patterns=["src/{path}.py", "tests/{path}_test.py"],
             instructions="Update tests",
+            compare_to="base",
         )
         changed_files = ["src/foo.py", "tests/foo_test.py", "docs/readme.md"]
 
@@ -497,6 +521,7 @@ class TestThreePatternSets:
                 "migrations/{name}.sql",
             ],
             instructions="Update all related files",
+            compare_to="base",
         )
         changed_files = ["models/user.py", "schemas/user.py", "migrations/user.sql"]
 
@@ -515,6 +540,7 @@ class TestThreePatternSets:
                 "migrations/{name}.sql",
             ],
             instructions="Update all related files",
+            compare_to="base",
         )
         changed_files = ["models/user.py", "schemas/user.py"]
 
@@ -534,6 +560,7 @@ class TestThreePatternSets:
                 "migrations/{name}.sql",
             ],
             instructions="Update all related files",
+            compare_to="base",
         )
         changed_files = ["models/user.py"]
 
@@ -555,6 +582,7 @@ class TestThreePatternSets:
                 "migrations/{name}.sql",
             ],
             instructions="Update all related files",
+            compare_to="base",
         )
         changed_files = ["models/user.py", "schemas/order.py"]
 
@@ -580,6 +608,7 @@ class TestCorrespondencePairs:
                 expects=["docs/api/{path}.md"],
             ),
             instructions="Update API docs",
+            compare_to="base",
         )
         changed_files = ["api/users.py", "docs/api/users.md"]
 
@@ -597,6 +626,7 @@ class TestCorrespondencePairs:
                 expects=["docs/api/{path}.md"],
             ),
             instructions="Update API docs",
+            compare_to="base",
         )
         changed_files = ["api/users.py"]
 
@@ -616,6 +646,7 @@ class TestCorrespondencePairs:
                 expects=["docs/api/{path}.md"],
             ),
             instructions="Update API docs",
+            compare_to="base",
         )
         changed_files = ["docs/api/users.md"]
 
@@ -633,6 +664,7 @@ class TestCorrespondencePairs:
                 expects=["docs/api/{path}.md"],
             ),
             instructions="Update API docs",
+            compare_to="base",
         )
         changed_files = ["api/users.py", "README.md"]
 
@@ -650,6 +682,7 @@ class TestCorrespondencePairs:
                 expects=["docs/api/{path}.md"],
             ),
             instructions="Update API docs",
+            compare_to="base",
         )
         changed_files = ["docs/api/users.md", "README.md"]
 
@@ -671,6 +704,7 @@ class TestMultiExpectsPairs:
                 expects=["docs/api/{path}.md", "openapi/{path}.yaml"],
             ),
             instructions="Update API docs and OpenAPI",
+            compare_to="base",
         )
         changed_files = ["api/users.py", "docs/api/users.md", "openapi/users.yaml"]
 
@@ -688,6 +722,7 @@ class TestMultiExpectsPairs:
                 expects=["docs/api/{path}.md", "openapi/{path}.yaml"],
             ),
             instructions="Update API docs and OpenAPI",
+            compare_to="base",
         )
         changed_files = ["api/users.py", "docs/api/users.md"]
 
@@ -706,6 +741,7 @@ class TestMultiExpectsPairs:
                 expects=["docs/api/{path}.md", "openapi/{path}.yaml"],
             ),
             instructions="Update API docs and OpenAPI",
+            compare_to="base",
         )
         changed_files = ["api/users.py"]
 
@@ -726,8 +762,234 @@ class TestMultiExpectsPairs:
                 expects=["docs/api/{path}.md", "openapi/{path}.yaml"],
             ),
             instructions="Update API docs and OpenAPI",
+            compare_to="base",
         )
         changed_files = ["docs/api/users.md", "openapi/users.yaml"]
 
         result = evaluate_rule(rule, changed_files)
         assert result.should_fire is False
+
+
+class TestCreatedMode:
+    """Tests for created mode evaluation."""
+
+    def test_fires_when_created_file_matches(self) -> None:
+        """Test rule fires when a created file matches the pattern."""
+        rule = Rule(
+            name="New Module Docs",
+            filename="new-module-docs",
+            detection_mode=DetectionMode.CREATED,
+            created_patterns=["src/**/*.py"],
+            instructions="Document the new module",
+            compare_to="base",
+        )
+        created_files = ["src/new_module.py"]
+
+        result = evaluate_rule(rule, [], created_files)
+        assert result.should_fire is True
+        assert "src/new_module.py" in result.trigger_files
+
+    def test_does_not_fire_when_no_match(self) -> None:
+        """Test rule doesn't fire when no created file matches."""
+        rule = Rule(
+            name="New Module Docs",
+            filename="new-module-docs",
+            detection_mode=DetectionMode.CREATED,
+            created_patterns=["src/**/*.py"],
+            instructions="Document the new module",
+            compare_to="base",
+        )
+        created_files = ["tests/test_new.py"]
+
+        result = evaluate_rule(rule, [], created_files)
+        assert result.should_fire is False
+
+    def test_does_not_fire_for_modified_files(self) -> None:
+        """Test rule doesn't fire for modified files (only created)."""
+        rule = Rule(
+            name="New Module Docs",
+            filename="new-module-docs",
+            detection_mode=DetectionMode.CREATED,
+            created_patterns=["src/**/*.py"],
+            instructions="Document the new module",
+            compare_to="base",
+        )
+        # File is in changed_files but NOT in created_files
+        changed_files = ["src/existing_module.py"]
+        created_files: list[str] = []
+
+        result = evaluate_rule(rule, changed_files, created_files)
+        assert result.should_fire is False
+
+    def test_multiple_created_patterns(self) -> None:
+        """Test rule with multiple created patterns."""
+        rule = Rule(
+            name="New Code Standards",
+            filename="new-code-standards",
+            detection_mode=DetectionMode.CREATED,
+            created_patterns=["src/**/*.py", "lib/**/*.py"],
+            instructions="Follow code standards",
+            compare_to="base",
+        )
+
+        # Matches first pattern
+        result1 = evaluate_rule(rule, [], ["src/foo.py"])
+        assert result1.should_fire is True
+
+        # Matches second pattern
+        result2 = evaluate_rule(rule, [], ["lib/bar.py"])
+        assert result2.should_fire is True
+
+        # Matches neither
+        result3 = evaluate_rule(rule, [], ["tests/test_foo.py"])
+        assert result3.should_fire is False
+
+    def test_created_with_nested_path(self) -> None:
+        """Test created mode with nested paths."""
+        rule = Rule(
+            name="New Component",
+            filename="new-component",
+            detection_mode=DetectionMode.CREATED,
+            created_patterns=["src/components/**/*.tsx"],
+            instructions="Document the component",
+            compare_to="base",
+        )
+        created_files = ["src/components/ui/Button.tsx"]
+
+        result = evaluate_rule(rule, [], created_files)
+        assert result.should_fire is True
+        assert "src/components/ui/Button.tsx" in result.trigger_files
+
+    def test_created_mixed_with_changed(self) -> None:
+        """Test that changed_files don't affect created mode rules."""
+        rule = Rule(
+            name="New Module Docs",
+            filename="new-module-docs",
+            detection_mode=DetectionMode.CREATED,
+            created_patterns=["src/**/*.py"],
+            instructions="Document the new module",
+            compare_to="base",
+        )
+        # src/existing.py is modified (in changed_files)
+        # src/new.py is created (in created_files)
+        changed_files = ["src/existing.py", "src/new.py"]
+        created_files = ["src/new.py"]
+
+        result = evaluate_rule(rule, changed_files, created_files)
+        assert result.should_fire is True
+        # Only the created file should be in trigger_files
+        assert result.trigger_files == ["src/new.py"]
+
+    def test_evaluate_rules_with_created_mode(self) -> None:
+        """Test evaluate_rules passes created_files correctly."""
+        rules = [
+            Rule(
+                name="Trigger Rule",
+                filename="trigger-rule",
+                detection_mode=DetectionMode.TRIGGER_SAFETY,
+                triggers=["src/**/*.py"],
+                safety=[],
+                instructions="Check source",
+                compare_to="base",
+            ),
+            Rule(
+                name="Created Rule",
+                filename="created-rule",
+                detection_mode=DetectionMode.CREATED,
+                created_patterns=["src/**/*.py"],
+                instructions="Document new files",
+                compare_to="base",
+            ),
+        ]
+        # src/existing.py is modified, src/new.py is created
+        changed_files = ["src/existing.py", "src/new.py"]
+        created_files = ["src/new.py"]
+
+        results = evaluate_rules(rules, changed_files, None, created_files)
+
+        # Both rules should fire
+        assert len(results) == 2
+        rule_names = {r.rule.name for r in results}
+        assert "Trigger Rule" in rule_names
+        assert "Created Rule" in rule_names
+
+
+class TestLoadCreatedModeRule:
+    """Tests for loading rules with created detection mode."""
+
+    def test_loads_rule_with_created_detection_mode(self, temp_dir: Path) -> None:
+        """Test loading a rule with created detection mode."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "new-module-docs.md"
+        rule_file.write_text(
+            """---
+name: New Module Documentation
+created: src/**/*.py
+compare_to: base
+---
+A new Python module was created. Please add documentation.
+"""
+        )
+
+        rules = load_rules_from_directory(rules_dir)
+
+        assert len(rules) == 1
+        assert rules[0].name == "New Module Documentation"
+        assert rules[0].detection_mode == DetectionMode.CREATED
+        assert rules[0].created_patterns == ["src/**/*.py"]
+
+    def test_loads_rule_with_multiple_created_patterns(self, temp_dir: Path) -> None:
+        """Test loading a rule with multiple created patterns."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "new-code-standards.md"
+        rule_file.write_text(
+            """---
+name: New Code Standards
+created:
+  - src/**/*.py
+  - lib/**/*.py
+compare_to: base
+---
+New code must follow standards.
+"""
+        )
+
+        rules = load_rules_from_directory(rules_dir)
+
+        assert len(rules) == 1
+        assert rules[0].name == "New Code Standards"
+        assert rules[0].detection_mode == DetectionMode.CREATED
+        assert rules[0].created_patterns == ["src/**/*.py", "lib/**/*.py"]
+
+    def test_loads_created_rule_with_command_action(self, temp_dir: Path) -> None:
+        """Test loading a created mode rule with command action."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "new-file-lint.md"
+        rule_file.write_text(
+            """---
+name: New File Lint
+created: "**/*.py"
+compare_to: base
+action:
+  command: "ruff check {file}"
+  run_for: each_match
+---
+"""
+        )
+
+        rules = load_rules_from_directory(rules_dir)
+
+        assert len(rules) == 1
+        assert rules[0].name == "New File Lint"
+        assert rules[0].detection_mode == DetectionMode.CREATED
+        from deepwork.core.rules_parser import ActionType
+
+        assert rules[0].action_type == ActionType.COMMAND
+        assert rules[0].command_action is not None
+        assert rules[0].command_action.command == "ruff check {file}"

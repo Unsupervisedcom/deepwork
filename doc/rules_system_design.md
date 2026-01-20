@@ -22,6 +22,7 @@ Every rule has two orthogonal aspects:
 | **Trigger/Safety** | `trigger`, `safety` | Fire when trigger matches and safety doesn't |
 | **Set** | `set` | Fire when file correspondence is incomplete (bidirectional) |
 | **Pair** | `pair` | Fire when file correspondence is incomplete (directional) |
+| **Created** | `created` | Fire when newly created files match patterns |
 
 **Action Type** - What happens when the rule fires:
 
@@ -46,6 +47,12 @@ Every rule has two orthogonal aspects:
 - Changes to trigger files require corresponding expected files to also change
 - Changes to expected files alone do not trigger the rule
 - Example: API code requires documentation updates
+
+**Created Mode (File Creation Detection)**
+- Define patterns for newly created files
+- Only fires when files are created, not when existing files are modified
+- Useful for enforcing standards on new code (documentation, tests, etc.)
+- Example: New modules require documentation and tests
 
 ### Pattern Variables
 
@@ -287,6 +294,21 @@ the pair rule does NOT trigger (directional).
 6. Evaluator: If no additional changes, mark .passed
 7. Evaluator: If changes keep occurring, mark .failed, alert user
 ```
+
+### Created Rule
+
+```
+1. Detector: New file created, matches "src/**/*.py" created pattern
+2. Detector: Verify file is newly created (not just modified)
+3. Detector: Create .queued entry for new file rule
+4. Evaluator: Return instructions for new file standards
+5. Agent: Addresses rule, includes <promise> tag
+6. Evaluator: On next check, mark .passed (promise found)
+```
+
+Note: Created mode uses separate file detection to distinguish newly
+created files from modified files. Untracked files and files added
+since the baseline are considered "created".
 
 ## Agent Output Management
 

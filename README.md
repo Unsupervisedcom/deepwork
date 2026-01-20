@@ -262,6 +262,7 @@ name: Source/Test Pairing
 set:
   - src/{path}.py
   - tests/{path}_test.py
+compare_to: base
 ---
 When source files change, corresponding test files should also change.
 Please create or update tests for the modified source files.
@@ -275,6 +276,7 @@ trigger: "**/*.py"
 action:
   command: "ruff format {file}"
   run_for: each_match
+compare_to: prompt
 ---
 ```
 
