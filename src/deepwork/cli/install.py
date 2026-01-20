@@ -283,21 +283,25 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
         available_adapters = detector.detect_all_platforms()
 
         if not available_adapters:
-            supported = ", ".join(
-                f"{AgentAdapter.get(name).display_name} ({AgentAdapter.get(name).config_dir}/)"
-                for name in AgentAdapter.list_names()
-            )
-            raise InstallError(
-                f"No AI platform detected.\n"
-                f"DeepWork supports: {supported}.\n"
-                "Please set up one of these platforms first, or use --platform to specify."
-            )
+            # No platforms detected - default to Claude Code
+            console.print("  [dim]•[/dim] No AI platform detected, defaulting to Claude Code")
 
-        # Add all detected platforms
-        for adapter in available_adapters:
-            console.print(f"  [green]✓[/green] {adapter.display_name} detected")
-            platforms_to_add.append(adapter.name)
-        detected_adapters = available_adapters
+            # Create .claude directory
+            claude_dir = project_path / ".claude"
+            ensure_dir(claude_dir)
+            console.print(f"  [green]✓[/green] Created {claude_dir.relative_to(project_path)}/")
+
+            # Get Claude adapter
+            claude_adapter_class = AgentAdapter.get("claude")
+            claude_adapter = claude_adapter_class(project_root=project_path)
+            platforms_to_add = [claude_adapter.name]
+            detected_adapters = [claude_adapter]
+        else:
+            # Add all detected platforms
+            for adapter in available_adapters:
+                console.print(f"  [green]✓[/green] {adapter.display_name} detected")
+                platforms_to_add.append(adapter.name)
+            detected_adapters = available_adapters
 
     # Step 3: Create .deepwork/ directory structure
     console.print("[yellow]→[/yellow] Creating DeepWork directory structure...")
