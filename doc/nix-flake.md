@@ -351,6 +351,61 @@ python -m deepwork.hooks.rules_check  # ❌ Doesn't work with all install method
 
 All these methods ensure `deepwork` is available globally, so hooks work correctly outside of development environments.
 
+### Custom Hooks and Direct Python Invocation
+
+**Standard Hooks:**
+Standard hooks (like `rules_check`) work seamlessly with all installation methods because they use the `deepwork hook` CLI command:
+
+```bash
+# This works with Nix flake, pipx, uv, and pip installations
+deepwork hook rules_check
+```
+
+**Custom Hooks:**
+If you have custom hooks that need to invoke Python directly (e.g., `python -m deepwork.hooks.custom_hook` or `python myscript.py`), there are important considerations:
+
+**Nix Flake Installation:**
+When deepwork is installed via `nix profile install`, only the `deepwork` command is exposed, not a Python interpreter with deepwork in its module path. This means:
+
+- ✅ **Works:** `deepwork hook custom_hook` (if you've registered your custom hook via the CLI)
+- ❌ **Doesn't Work:** `python -m deepwork.hooks.custom_hook` (Python won't find the deepwork module)
+- ❌ **Doesn't Work:** `python /path/to/custom_script.py` (if it imports deepwork)
+
+**Recommended Approach for Custom Hooks:**
+
+1. **Use the `deepwork hook` command** (Recommended):
+   Register your custom hook so it can be invoked via `deepwork hook`:
+   ```bash
+   # Your hook wrapper calls this
+   deepwork hook my_custom_hook
+   ```
+   
+   This approach works consistently across all installation methods.
+
+2. **Use pipx or uv for custom hooks** (Alternative):
+   If you need direct Python access to deepwork modules:
+   ```bash
+   # Install with pipx (recommended for global tools)
+   pipx install deepwork
+   
+   # Now python can find deepwork
+   python -m deepwork.hooks.custom_hook
+   ```
+
+3. **Development Environment Only** (Local Development):
+   For development and testing:
+   ```bash
+   # Use nix develop for full Python environment
+   nix develop
+   # Now python has access to deepwork modules
+   python -m deepwork.hooks.custom_hook
+   ```
+
+**Summary:**
+- **Standard hooks:** Work with all installation methods via `deepwork hook`
+- **Custom hooks needing Python:** Use `deepwork hook` command or install via pipx/uv instead of Nix flake
+- **Development/Testing:** Use `nix develop` for full Python environment access
+
 ### direnv Not Working
 
 1. Make sure direnv is installed:
