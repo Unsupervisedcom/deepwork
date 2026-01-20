@@ -284,9 +284,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 **Criteria (all must be satisfied)**:
 1. **Sub-Agent Used**: Was a sub-agent spawned to provide unbiased review?
-2. **All DTD Criteria Evaluated**: Did the sub-agent assess all 9 quality criteria?
-3. **Findings Addressed**: Were all failed criteria addressed by the main agent?
-4. **Validation Loop Complete**: Did the review-fix cycle continue until all criteria passed?
+2. **Validation Loop Complete**: Did the review-fix cycle continue until all criteria passed?
 ## On Completion
 
 1. Verify outputs are created

@@ -134,7 +134,8 @@ Use branch format: `deepwork/update-[instance]-YYYYMMDD`
 
 ## Outputs
 
-No specific file outputs required.
+**Required outputs**:
+- `files_synced`
 
 ## Quality Validation
 
@@ -147,7 +148,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "job complete"
+2. Inform user: "job complete, outputs: files_synced"
 
 This standalone skill can be re-run anytime.
 

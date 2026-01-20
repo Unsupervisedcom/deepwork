@@ -12,9 +12,7 @@ hooks:
             ## Quality Criteria
 
             1. **Sub-Agent Used**: Was a sub-agent spawned to provide unbiased review?
-            2. **All DTD Criteria Evaluated**: Did the sub-agent assess all 9 quality criteria?
-            3. **Findings Addressed**: Were all failed criteria addressed by the main agent?
-            4. **Validation Loop Complete**: Did the review-fix cycle continue until all criteria passed?
+            2. **Validation Loop Complete**: Did the review-fix cycle continue until all criteria passed?
 
             ## Instructions
 
@@ -473,9 +471,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 
 **Criteria (all must be satisfied)**:
 1. **Sub-Agent Used**: Was a sub-agent spawned to provide unbiased review?
-2. **All DTD Criteria Evaluated**: Did the sub-agent assess all 9 quality criteria?
-3. **Findings Addressed**: Were all failed criteria addressed by the main agent?
-4. **Validation Loop Complete**: Did the review-fix cycle continue until all criteria passed?
+2. **Validation Loop Complete**: Did the review-fix cycle continue until all criteria passed?
 
 
 **To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.

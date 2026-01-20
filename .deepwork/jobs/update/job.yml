@@ -1,5 +1,5 @@
 name: update
-version: "1.1.0"
+version: "1.2.0"
 summary: "Update standard jobs in src/ and sync to installed locations"
 description: |
   A workflow for maintaining standard jobs bundled with DeepWork. Standard jobs
@@ -21,6 +21,8 @@ changelog:
     changes: "Initial job creation"
   - version: "1.1.0"
     changes: "Removed sync_verification.md output requirement"
+  - version: "1.2.0"
+    changes: "Added nominal output for DTD compliance (files_synced)"
 
 steps:
   - id: job
@@ -30,7 +32,8 @@ steps:
     inputs:
       - name: job_context
         description: "Determine from conversation context which standard job(s) to update and what changes are needed"
-    outputs: []
+    outputs:
+      - files_synced  # implicit state: source files synced to installed locations
     dependencies: []
     stop_hooks:
       - prompt: |

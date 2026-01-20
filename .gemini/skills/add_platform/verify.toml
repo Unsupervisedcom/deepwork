@@ -170,12 +170,13 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 
 ## Outputs
 
-No specific file outputs required.
+**Required outputs**:
+- `verification_checklist.md`
 
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 4/4 complete"
+2. Inform user: "Step 4/4 complete, outputs: verification_checklist.md"
 3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
 
 ---
