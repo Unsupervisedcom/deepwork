@@ -5,57 +5,7 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.0] - 2026-01-18
-
-- **BREAKING**: Refactored "commands" terminology to "skills" throughout the codebase
-  - Directory structure changed from `.claude/commands/` to `.claude/skills/`
-  - Directory structure changed from `.gemini/commands/` to `.gemini/skills/`
-  - Class renamed: `CommandGenerator` → `SkillGenerator`
-  - Enum renamed: `CommandLifecycleHook` → `SkillLifecycleHook`
-  - Class attributes renamed: `commands_dir` → `skills_dir`, `command_template` → `skill_template`
-  - Methods renamed: `get_commands_dir()` → `get_skills_dir()`, `generate_all_commands()` → `generate_all_skills()`, etc.
-  - Template files renamed: `command-job-step.md.jinja` → `skill-job-step.md.jinja`, etc.
-- **BREAKING**: Removed `uw.` prefix convention for hidden steps
-  - Step skills now use clean filenames (e.g., `job_name.step_id.md` instead of `uw.job_name.step_id.md`)
-  - Hidden steps use `user-invocable: false` in YAML frontmatter instead
-  - The `exposed` field in job.yml now controls the `user-invocable` frontmatter setting
-- CLI output messages updated to use "skills" terminology
-
-### Migration Guide
-- Run `deepwork install --platform claude` to regenerate skills in the new location
-- Remove old `.claude/commands/` and `.gemini/commands/` directories manually
-- Update any custom code that imports `CommandGenerator` or `CommandLifecycleHook`
-
-## [0.4.1] - 2026-01-18
-
-### Fixed
-- Command rule errors now include promise skip instructions with the exact rule name
-  - Previously, failed command rules only showed "Command failed" with no guidance
-  - Now each failed rule shows: `To skip, include <promise>Rule Name</promise> in your response`
-  - This allows agents to understand how to proceed when a command rule fails
-
-
-## [0.4.0] - 2026-01-16
-
-### Added
-- Rules system v2 with frontmatter markdown format in `.deepwork/rules/`
-  - Detection modes: trigger/safety (default), set (bidirectional), pair (directional)
-  - Action types: prompt (show instructions), command (run idempotent commands)
-  - Variable pattern matching with `{path}` (multi-segment) and `{name}` (single-segment)
-  - Queue system in `.deepwork/tmp/rules/queue/` for state tracking and deduplication
-- New core modules:
-  - `pattern_matcher.py`: Variable pattern matching with regex-based capture
-  - `rules_queue.py`: Queue system for rule state persistence
-  - `command_executor.py`: Command action execution with variable substitution
-- Updated `rules_check.py` hook to use v2 system with queue-based deduplication
-
-### Changed
-- Documentation updated with v2 rules examples and configuration
-
-### Removed
-- v1 rules format (`.deepwork.rules.yml`) - now only v2 frontmatter markdown format is supported
-
-## [0.3.0] - 2026-01-16
+## [0.3.0] - 2026-01-18
 
 ### Added
 - Cross-platform hook wrapper system for writing hooks once and running on multiple platforms
@@ -69,14 +19,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Default rules template file created during `deepwork install` (#42)
 - Full e2e test suite: define → implement → execute workflow (#45)
 - Automated tests for all shell scripts and hook wrappers (#40)
+- Rules system v2 with frontmatter markdown format in `.deepwork/rules/`
+  - Detection modes: trigger/safety (default), set (bidirectional), pair (directional)
+  - Action types: prompt (show instructions), command (run idempotent commands)
+  - Variable pattern matching with `{path}` (multi-segment) and `{name}` (single-segment)
+  - Queue system in `.deepwork/tmp/rules/queue/` for state tracking and deduplication
+- New core modules:
+  - `pattern_matcher.py`: Variable pattern matching with regex-based capture
+  - `rules_queue.py`: Queue system for rule state persistence
+  - `command_executor.py`: Command action execution with variable substitution
+- Updated `rules_check.py` hook to use v2 system with queue-based deduplication
 
 ### Changed
+- **BREAKING**: Refactored "commands" terminology to "skills" throughout the codebase
+  - Directory structure changed from `.claude/commands/` to `.claude/skills/`
+  - Directory structure changed from `.gemini/commands/` to `.gemini/skills/`
+  - Class renamed: `CommandGenerator` → `SkillGenerator`
+  - Enum renamed: `CommandLifecycleHook` → `SkillLifecycleHook`
+  - Class attributes renamed: `commands_dir` → `skills_dir`, `command_template` → `skill_template`
+  - Methods renamed: `get_commands_dir()` → `get_skills_dir()`, `generate_all_commands()` → `generate_all_skills()`, etc.
+  - Template files renamed: `command-job-step.md.jinja` → `skill-job-step.md.jinja`, etc.
+- **BREAKING**: Removed `uw.` prefix convention for hidden steps
+  - Step skills now use clean filenames (e.g., `job_name.step_id.md` instead of `uw.job_name.step_id.md`)
+  - Hidden steps use `user-invocable: false` in YAML frontmatter instead
+  - The `exposed` field in job.yml now controls the `user-invocable` frontmatter setting
+- CLI output messages updated to use "skills" terminology
 - Standardized on "ask structured questions" phrasing across all jobs (#48)
 - deepwork_jobs bumped to v0.5.0, deepwork_rules to v0.2.0
+- Documentation updated with v2 rules examples and configuration
 
 ### Fixed
 - Stop hooks now properly return blocking JSON (#38)
 - Various CI workflow fixes (#35, #46, #47, #51, #52)
+- Command rule errors now include promise skip instructions with the exact rule name
+  - Previously, failed command rules only showed "Command failed" with no guidance
+  - Now each failed rule shows: `To skip, include <promise>Rule Name</promise> in your response`
+  - This allows agents to understand how to proceed when a command rule fails
+
+### Removed
+- v1 rules format (`.deepwork.rules.yml`) - now only v2 frontmatter markdown format is supported
+
+### Migration Guide
+- Run `deepwork install --platform claude` to regenerate skills in the new location
+- Remove old `.claude/commands/` and `.gemini/commands/` directories manually
+- Update any custom code that imports `CommandGenerator` or `CommandLifecycleHook`
 
 ## [0.1.1] - 2026-01-15
 
@@ -114,8 +100,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[0.4.1]: https://github.com/anthropics/deepwork/releases/tag/0.4.1
-[0.4.0]: https://github.com/anthropics/deepwork/releases/tag/0.4.0
 [0.3.0]: https://github.com/anthropics/deepwork/releases/tag/0.3.0
 [0.1.1]: https://github.com/anthropics/deepwork/releases/tag/0.1.1
 [0.1.0]: https://github.com/anthropics/deepwork/releases/tag/0.1.0
