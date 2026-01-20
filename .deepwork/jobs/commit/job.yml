@@ -1,5 +1,5 @@
 name: commit
-version: "1.0.0"
+version: "1.0.1"
 summary: "Run tests, lint, and commit code changes"
 description: |
   A workflow for preparing and committing code changes with quality checks.
@@ -14,6 +14,8 @@ description: |
   3. commit_and_push - Review changes and commit/push
 
 changelog:
+  - version: "1.0.1"
+    changes: "Changed file review from user confirmation to agent self-verification - agent now checks files match its own expectations instead of asking user every time"
   - version: "1.0.0"
     changes: "Initial job creation"
 
@@ -56,7 +58,7 @@ steps:
 
   - id: commit_and_push
     name: "Commit and Push"
-    description: "Review changed files, commit, and push to remote"
+    description: "Verify changed files, commit, and push to remote"
     instructions_file: steps/commit_and_push.md
     inputs: []
     outputs: []
@@ -66,8 +68,8 @@ steps:
       after_agent:
         - prompt: |
             Verify the commit is ready:
-            1. Changed files list was reviewed with user
-            2. User confirmed the files match expectations
+            1. Changed files list was reviewed by the agent
+            2. Files match what was modified during this session (or unexpected changes were investigated)
             3. Commit was created with appropriate message
             4. Changes were pushed to remote
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
