@@ -1028,6 +1028,7 @@ name: Source/Test Pairing
 set:
   - src/{path}.py
   - tests/{path}_test.py
+compare_to: base
 ---
 When source files change, corresponding test files should also change.
 Please create or update tests for the modified source files.
@@ -1043,6 +1044,7 @@ Rules support three detection modes:
 name: Update install guide
 trigger: "app/config/**/*"
 safety: "docs/install_guide.md"
+compare_to: base
 ---
 ```
 
@@ -1053,6 +1055,7 @@ name: Source/Test Pairing
 set:
   - src/{path}.py
   - tests/{path}_test.py
+compare_to: base
 ---
 ```
 Uses variable patterns like `{path}` (multi-segment) and `{name}` (single-segment) for matching.
@@ -1064,6 +1067,7 @@ name: API Documentation
 pair:
   trigger: src/api/{name}.py
   expects: docs/api/{name}.md
+compare_to: base
 ---
 ```
 
@@ -1074,6 +1078,7 @@ pair:
 ---
 name: Security Review
 trigger: "src/auth/**/*"
+compare_to: base
 ---
 Please check for hardcoded credentials and validate input.
 ```
@@ -1086,6 +1091,7 @@ trigger: "**/*.py"
 action:
   command: "ruff format {file}"
   run_for: each_match  # or "all_matches"
+compare_to: prompt
 ---
 ```
 
