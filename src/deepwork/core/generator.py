@@ -6,6 +6,11 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
 from deepwork.core.adapters import AgentAdapter, SkillLifecycleHook
+from deepwork.core.dtd_parser import (
+    DocumentTypeDefinition,
+    DTDParseError,
+    load_dtds_from_directory,
+)
 from deepwork.core.parser import JobDefinition, Step
 from deepwork.schemas.job_schema import LIFECYCLE_HOOK_EVENTS
 from deepwork.utils.fs import safe_read, safe_write
@@ -36,6 +41,31 @@ class SkillGenerator:
 
         if not self.templates_dir.exists():
             raise GeneratorError(f"Templates directory not found: {self.templates_dir}")
+
+        # Cache for loaded DTDs (keyed by project root)
+        self._dtd_cache: dict[Path, dict[str, DocumentTypeDefinition]] = {}
+
+    def _load_dtds(self, project_root: Path) -> dict[str, DocumentTypeDefinition]:
+        """
+        Load DTDs from project's .deepwork/dtds/ directory with caching.
+
+        Args:
+            project_root: Path to project root
+
+        Returns:
+            Dictionary mapping DTD name to DocumentTypeDefinition
+        """
+        if project_root in self._dtd_cache:
+            return self._dtd_cache[project_root]
+
+        dtds_dir = project_root / ".deepwork" / "dtds"
+        try:
+            dtds = load_dtds_from_directory(dtds_dir)
+        except DTDParseError as e:
+            raise GeneratorError(f"Failed to load DTDs: {e}") from e
+
+        self._dtd_cache[project_root] = dtds
+        return dtds
 
     def _get_jinja_env(self, adapter: AgentAdapter) -> Environment:
         """
@@ -113,7 +143,12 @@ class SkillGenerator:
         return hook_ctx
 
     def _build_step_context(
-        self, job: JobDefinition, step: Step, step_index: int, adapter: AgentAdapter
+        self,
+        job: JobDefinition,
+        step: Step,
+        step_index: int,
+        adapter: AgentAdapter,
+        dtds: dict[str, DocumentTypeDefinition] | None = None,
     ) -> dict[str, Any]:
         """
         Build template context for a step.
@@ -123,10 +158,12 @@ class SkillGenerator:
             step: Step to generate context for
             step_index: Index of step in job (0-based)
             adapter: Agent adapter for platform-specific hook name mapping
+            dtds: Optional dictionary of loaded DTDs for enriching outputs
 
         Returns:
             Template context dictionary
         """
+        dtds = dtds or {}
         # Read step instructions
         instructions_file = job.job_dir / step.instructions_file
         instructions_content = safe_read(instructions_file)
@@ -178,6 +215,26 @@ class SkillGenerator:
             adapter.get_platform_hook_name(SkillLifecycleHook.AFTER_AGENT) or "Stop", []
         )
 
+        # Build rich outputs context with DTD information
+        outputs_context = []
+        for output in step.outputs:
+            output_ctx: dict[str, Any] = {
+                "file": output.file,
+                "has_dtd": output.has_dtd(),
+            }
+            if output.has_dtd() and output.dtd and output.dtd in dtds:
+                dtd = dtds[output.dtd]
+                output_ctx["dtd"] = {
+                    "name": dtd.name,
+                    "description": dtd.description,
+                    "target_audience": dtd.target_audience,
+                    "quality_criteria": [
+                        {"name": c.name, "description": c.description} for c in dtd.quality_criteria
+                    ],
+                    "example_document": dtd.example_document,
+                }
+            outputs_context.append(output_ctx)
+
         return {
             "job_name": job.name,
             "job_version": job.version,
@@ -192,7 +249,7 @@ class SkillGenerator:
             "instructions_content": instructions_content,
             "user_inputs": user_inputs,
             "file_inputs": file_inputs,
-            "outputs": step.outputs,
+            "outputs": outputs_context,
             "dependencies": step.dependencies,
             "next_step": next_step,
             "prev_step": prev_step,
@@ -315,6 +372,7 @@ class SkillGenerator:
         step: Step,
         adapter: AgentAdapter,
         output_dir: Path | str,
+        project_root: Path | str | None = None,
     ) -> Path:
         """
         Generate skill file for a single step.
@@ -324,6 +382,7 @@ class SkillGenerator:
             step: Step to generate skill for
             adapter: Agent adapter for the target platform
             output_dir: Directory to write skill file to
+            project_root: Optional project root for loading DTDs (defaults to output_dir)
 
         Returns:
             Path to generated skill file
@@ -332,10 +391,14 @@ class SkillGenerator:
             GeneratorError: If generation fails
         """
         output_dir = Path(output_dir)
+        project_root_path = Path(project_root) if project_root else output_dir
 
         # Create skills subdirectory if needed
         skills_dir = output_dir / adapter.skills_dir
         skills_dir.mkdir(parents=True, exist_ok=True)
+
+        # Load DTDs for enriching outputs
+        dtds = self._load_dtds(project_root_path)
 
         # Find step index
         try:
@@ -344,7 +407,7 @@ class SkillGenerator:
             raise GeneratorError(f"Step '{step.id}' not found in job '{job.name}'") from e
 
         # Build context (include exposed for template user-invocable setting)
-        context = self._build_step_context(job, step, step_index, adapter)
+        context = self._build_step_context(job, step, step_index, adapter, dtds)
         context["exposed"] = step.exposed
 
         # Load and render template
@@ -378,6 +441,7 @@ class SkillGenerator:
         job: JobDefinition,
         adapter: AgentAdapter,
         output_dir: Path | str,
+        project_root: Path | str | None = None,
     ) -> list[Path]:
         """
         Generate all skill files for a job: meta-skill and step skills.
@@ -386,6 +450,7 @@ class SkillGenerator:
             job: Job definition
             adapter: Agent adapter for the target platform
             output_dir: Directory to write skill files to
+            project_root: Optional project root for loading DTDs (defaults to output_dir)
 
         Returns:
             List of paths to generated skill files (meta-skill first, then steps)
@@ -394,6 +459,7 @@ class SkillGenerator:
             GeneratorError: If generation fails
         """
         skill_paths = []
+        project_root_path = Path(project_root) if project_root else Path(output_dir)
 
         # Generate meta-skill first (job-level entry point)
         meta_skill_path = self.generate_meta_skill(job, adapter, output_dir)
@@ -401,7 +467,7 @@ class SkillGenerator:
 
         # Generate step skills
         for step in job.steps:
-            skill_path = self.generate_step_skill(job, step, adapter, output_dir)
+            skill_path = self.generate_step_skill(job, step, adapter, output_dir, project_root_path)
             skill_paths.append(skill_path)
 
         return skill_paths

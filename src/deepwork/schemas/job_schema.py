@@ -161,10 +161,32 @@ JOB_SCHEMA: dict[str, Any] = {
                     },
                     "outputs": {
                         "type": "array",
-                        "description": "List of output files/directories",
+                        "description": "List of output files/directories, optionally with DTD references",
                         "items": {
-                            "type": "string",
-                            "minLength": 1,
+                            "oneOf": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "description": "Simple output file path (backward compatible)",
+                                },
+                                {
+                                    "type": "object",
+                                    "required": ["file"],
+                                    "properties": {
+                                        "file": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "description": "Output file path",
+                                        },
+                                        "dtd": {
+                                            "type": "string",
+                                            "pattern": "^[a-z][a-z0-9_-]*$",
+                                            "description": "DTD name (filename without .md extension)",
+                                        },
+                                    },
+                                    "additionalProperties": False,
+                                },
+                            ],
                         },
                     },
                     "dependencies": {

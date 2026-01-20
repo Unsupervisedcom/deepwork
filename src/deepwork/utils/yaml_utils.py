@@ -69,6 +69,30 @@ def save_yaml(path: Path | str, data: dict[str, Any]) -> None:
         raise YAMLError(f"Failed to write YAML file {path_obj}: {e}") from e
 
 
+def load_yaml_from_string(content: str) -> dict[str, Any] | None:
+    """
+    Load YAML from a string and return parsed data.
+
+    Args:
+        content: YAML content as string
+
+    Returns:
+        Parsed YAML data as dictionary, or None if content is empty
+
+    Raises:
+        YAMLError: If YAML parsing fails
+    """
+    try:
+        data = yaml.safe_load(content)
+        if data is None:
+            return None
+        if not isinstance(data, dict):
+            raise YAMLError(f"YAML content must be a dictionary, got {type(data).__name__}")
+        return data
+    except yaml.YAMLError as e:
+        raise YAMLError(f"Failed to parse YAML content: {e}") from e
+
+
 def validate_yaml_structure(data: dict[str, Any], required_keys: list[str]) -> None:
     """
     Validate that YAML data contains required keys.

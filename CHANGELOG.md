@@ -5,6 +5,34 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-01-20
+
+### Added
+- Document Type Definitions (DTDs) as a first-class feature for formalizing document specifications
+  - New `src/deepwork/schemas/dtd_schema.py` with JSON schema validation
+  - New `src/deepwork/core/dtd_parser.py` with parser for frontmatter markdown DTD files
+  - DTD files stored in `.deepwork/dtds/` directory with quality criteria and example documents
+  - Auto-creates `.deepwork/dtds/` directory during `deepwork install`
+- Extended job.yml output schema to support DTD references
+  - Outputs can now be strings (backward compatible) or objects with `file` and optional `dtd` fields
+  - Example: `outputs: [{file: "report.md", dtd: "monthly_report"}]`
+- DTD-aware skill generation
+  - Step skills now include DTD quality criteria, target audience, and example documents
+  - Both Claude and Gemini templates updated for DTD rendering
+- Document detection workflow in `deepwork_jobs.define`
+  - Steps 1.5, 1.6, 1.7 guide users through creating DTDs for document-oriented jobs
+  - Pattern indicators: "report", "summary", "create", "monthly", "for stakeholders"
+- DTD improvement workflow in `deepwork_jobs.learn`
+  - Steps 3.5, 4.5 capture DTD-related learnings and update DTD files
+- New `OutputSpec` dataclass in parser for structured output handling
+- Comprehensive DTD documentation in `doc/document-type-definitions.md`
+- New test fixtures for DTD validation and parsing
+
+### Changed
+- `Step.outputs` changed from `list[str]` to `list[OutputSpec]` for richer output metadata
+- `SkillGenerator.generate_all_skills()` now accepts `project_root` parameter for DTD loading
+- Updated `deepwork_jobs` to v0.6.0 with DTD-related quality criteria
+
 ## [0.3.0] - 2026-01-18
 
 ### Added
@@ -100,6 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
+[0.4.0]: https://github.com/anthropics/deepwork/releases/tag/0.4.0
 [0.3.0]: https://github.com/anthropics/deepwork/releases/tag/0.3.0
 [0.1.1]: https://github.com/anthropics/deepwork/releases/tag/0.1.1
 [0.1.0]: https://github.com/anthropics/deepwork/releases/tag/0.1.0

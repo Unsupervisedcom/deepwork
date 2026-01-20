@@ -200,6 +200,7 @@ your-project/
 ## Documentation
 
 - **[Architecture](doc/architecture.md)**: Complete design specification
+- **[Document Type Definitions](doc/document-type-definitions.md)**: DTD format for output quality criteria
 - **[Contributing](CONTRIBUTING.md)**: Setup development environment and contribute
 
 ## Project Structure
@@ -241,6 +242,7 @@ Define structured, multi-step workflows where each step has clear requirements a
 - **Artifact Passing**: Seamlessly use file outputs from one step as inputs for future steps.
 - **Dynamic Inputs**: Support for both fixed file references and interactive user parameters.
 - **Human-Readable YAML**: Simple, declarative job definitions that are easy to version and maintain.
+- **Document Type Definitions**: Reference DTDs to enforce quality criteria on document outputs (see [DTD documentation](doc/document-type-definitions.md)).
 
 ### Git-Native Workflow
 Maintain a clean repository with automatic branch management and isolation.

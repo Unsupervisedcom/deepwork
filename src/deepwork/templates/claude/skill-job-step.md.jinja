@@ -149,7 +149,32 @@ Use branch format: `deepwork/{{ job_name }}-[instance]-YYYYMMDD`
 {% if outputs %}
 **Required outputs**:
 {% for output in outputs %}
-- `{{ output }}`{% if output.endswith('/') %} (directory){% endif %}
+- `{{ output.file }}`{% if output.file.endswith('/') %} (directory){% endif %}
+
+{% if output.has_dtd and output.dtd %}
+  **Document Type**: {{ output.dtd.name }}
+  > {{ output.dtd.description }}
+{% if output.dtd.target_audience %}
+  **Target Audience**: {{ output.dtd.target_audience }}
+{% endif %}
+{% if output.dtd.quality_criteria %}
+  **Quality Criteria**:
+{% for criterion in output.dtd.quality_criteria %}
+  {{ loop.index }}. **{{ criterion.name }}**: {{ criterion.description }}
+{% endfor %}
+{% endif %}
+{% if output.dtd.example_document %}
+
+  <details>
+  <summary>Example Document Structure</summary>
+
+  ```markdown
+  {{ output.dtd.example_document | indent(2) }}
+  ```
+
+  </details>
+{% endif %}
+{% endif %}
 {% endfor %}
 {% else %}
 No specific file outputs required.
@@ -180,12 +205,12 @@ Stop hooks will automatically validate your work. The loop continues until all c
 
 {% if is_standalone %}
 1. Verify outputs are created
-2. Inform user: "{{ step_id }} complete{% if outputs %}, outputs: {{ outputs | join(', ') }}{% endif %}"
+2. Inform user: "{{ step_id }} complete{% if outputs %}, outputs: {{ outputs | map(attribute='file') | join(', ') }}{% endif %}"
 
 This standalone skill can be re-run anytime.
 {% else %}
 1. Verify outputs are created
-2. Inform user: "Step {{ step_number }}/{{ total_steps }} complete{% if outputs %}, outputs: {{ outputs | join(', ') }}{% endif %}"
+2. Inform user: "Step {{ step_number }}/{{ total_steps }} complete{% if outputs %}, outputs: {{ outputs | map(attribute='file') | join(', ') }}{% endif %}"
 {% if next_step %}
 3. **Continue workflow**: Use Skill tool to invoke `/{{ job_name }}.{{ next_step }}`
 {% else %}

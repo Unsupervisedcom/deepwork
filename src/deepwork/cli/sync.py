@@ -140,7 +140,9 @@ def sync_skills(project_path: Path) -> None:
             console.print("  [dim]•[/dim] Generating skills...")
             for job in jobs:
                 try:
-                    job_paths = generator.generate_all_skills(job, adapter, platform_dir)
+                    job_paths = generator.generate_all_skills(
+                        job, adapter, platform_dir, project_root=project_path
+                    )
                     stats["skills"] += len(job_paths)
                     console.print(f"    [green]✓[/green] {job.name} ({len(job_paths)} skills)")
                 except Exception as e:

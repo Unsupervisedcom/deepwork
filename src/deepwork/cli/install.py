@@ -307,8 +307,10 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     console.print("[yellow]→[/yellow] Creating DeepWork directory structure...")
     deepwork_dir = project_path / ".deepwork"
     jobs_dir = deepwork_dir / "jobs"
+    dtds_dir = deepwork_dir / "dtds"
     ensure_dir(deepwork_dir)
     ensure_dir(jobs_dir)
+    ensure_dir(dtds_dir)
     console.print(f"  [green]✓[/green] Created {deepwork_dir.relative_to(project_path)}/")
 
     # Step 3b: Inject standard jobs (core job definitions)

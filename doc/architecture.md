@@ -46,6 +46,7 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── detector.py     # AI platform detection
 │       │   ├── generator.py    # Command file generation
 │       │   ├── parser.py       # Job definition parsing
+│       │   ├── dtd_parser.py   # Document Type Definition parsing
 │       │   ├── rules_parser.py     # Rule definition parsing
 │       │   ├── pattern_matcher.py  # Variable pattern matching for rules
 │       │   ├── rules_queue.py      # Rule state queue system
@@ -65,7 +66,10 @@ deepwork/                       # DeepWork tool repository
 │       ├── standard_jobs/      # Built-in job definitions
 │       │   ├── deepwork_jobs/
 │       │   │   ├── job.yml
-│       │   │   └── steps/
+│       │   │   ├── steps/
+│       │   │   └── templates/
+│       │   │       ├── dtd.md.template
+│       │   │       └── dtd.md.example
 │       │   └── deepwork_rules/   # Rule management job
 │       │       ├── job.yml
 │       │       ├── steps/
@@ -76,6 +80,7 @@ deepwork/                       # DeepWork tool repository
 │       │           └── capture_prompt_work_tree.sh
 │       ├── schemas/            # Definition schemas
 │       │   ├── job_schema.py
+│       │   ├── dtd_schema.py   # DTD schema definition
 │       │   └── rules_schema.py
 │       └── utils/
 │           ├── fs.py
@@ -290,6 +295,8 @@ my-project/                     # User's project (target)
 ├── .deepwork/                  # DeepWork configuration
 │   ├── config.yml              # Platform config
 │   ├── .gitignore              # Ignores tmp/ directory
+│   ├── dtds/                   # Document Type Definitions
+│   │   └── monthly_aws_report.md
 │   ├── rules/                  # Rule definitions (v2 format)
 │   │   ├── source-test-pairing.md
 │   │   ├── format-python.md
@@ -1195,6 +1202,90 @@ def my_hook(input: HookInput) -> HookOutput:
 ```
 
 See `doc/platforms/` for detailed platform-specific hook documentation.
+
+---
+
+## Document Type Definitions (DTDs)
+
+Document Type Definitions (DTDs) formalize document specifications for job outputs. They enable consistent document structure and automated quality validation.
+
+### Purpose
+
+DTDs solve a common problem with AI-generated documents: inconsistent quality and structure. By defining:
+- Required quality criteria
+- Target audience
+- Document structure (via example)
+
+DTDs ensure that documents produced by job steps meet consistent standards.
+
+### DTD File Format
+
+DTDs are stored in `.deepwork/dtds/[dtd_name].md` using frontmatter markdown:
+
+```markdown
+---
+name: "Monthly AWS Spending Report"
+description: "A Markdown summary of AWS spend across accounts"
+path_patterns:
+  - "finance/aws-reports/*.md"
+target_audience: "Finance team and Engineering leadership"
+frequency: "Monthly, following AWS invoice arrival"
+quality_criteria:
+  - name: Visualization
+    description: Must include Mermaid.js charts showing spend per service
+  - name: Variance Analysis
+    description: Must compare current month against previous with percentages
+---
+
+# Monthly AWS Spending Report: [Month, Year]
+
+## Executive Summary
+[Example content...]
+```
+
+### Using DTDs in Jobs
+
+Reference DTDs in job.yml outputs:
+
+```yaml
+outputs:
+  - file: reports/monthly_spending.md
+    dtd: monthly_aws_report  # References .deepwork/dtds/monthly_aws_report.md
+```
+
+### Generated Skills
+
+When `deepwork sync` runs, skills with DTD-referenced outputs include:
+- Document name and description
+- Target audience
+- All quality criteria with descriptions
+- Example document structure (collapsible)
+
+### DTD Schema
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Human-readable document name |
+| `description` | Yes | Purpose of the document |
+| `quality_criteria` | Yes | Array of `{name, description}` quality requirements |
+| `path_patterns` | No | Where documents should be stored |
+| `target_audience` | No | Who reads the document |
+| `frequency` | No | How often produced |
+
+### Workflow Integration
+
+The `/deepwork_jobs.define` command:
+1. Detects document-oriented workflows (keywords: "report", "summary", "monthly")
+2. Guides users through DTD creation
+3. Links DTDs to job outputs
+
+The `/deepwork_jobs.learn` command:
+1. Identifies DTD-related learnings (quality criteria issues, structure changes)
+2. Updates DTD files with improvements
+
+See `doc/document-type-definitions.md` for complete documentation.
+
+---
 
 ### Rule Schema
 

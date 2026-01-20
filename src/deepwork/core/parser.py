@@ -47,6 +47,34 @@ class StepInput:
 
 
 @dataclass
+class OutputSpec:
+    """Represents a step output specification, optionally with DTD reference."""
+
+    file: str
+    dtd: str | None = None
+
+    def has_dtd(self) -> bool:
+        """Check if this output has a DTD reference."""
+        return self.dtd is not None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any] | str) -> "OutputSpec":
+        """
+        Create OutputSpec from dictionary or string.
+
+        Supports both formats:
+        - String: "output.md" -> OutputSpec(file="output.md")
+        - Dict: {"file": "output.md", "dtd": "report"} -> OutputSpec(file="output.md", dtd="report")
+        """
+        if isinstance(data, str):
+            return cls(file=data)
+        return cls(
+            file=data["file"],
+            dtd=data.get("dtd"),
+        )
+
+
+@dataclass
 class HookAction:
     """Represents a hook action configuration.
 
@@ -101,7 +129,7 @@ class Step:
     description: str
     instructions_file: str
     inputs: list[StepInput] = field(default_factory=list)
-    outputs: list[str] = field(default_factory=list)
+    outputs: list[OutputSpec] = field(default_factory=list)
     dependencies: list[str] = field(default_factory=list)
 
     # New: hooks dict mapping lifecycle event names to HookAction lists
@@ -147,7 +175,7 @@ class Step:
             description=data["description"],
             instructions_file=data["instructions_file"],
             inputs=[StepInput.from_dict(inp) for inp in data.get("inputs", [])],
-            outputs=data["outputs"],
+            outputs=[OutputSpec.from_dict(out) for out in data["outputs"]],
             dependencies=data.get("dependencies", []),
             hooks=hooks,
             exposed=data.get("exposed", False),
@@ -245,6 +273,40 @@ class JobDefinition:
                             f"Step '{step.id}' has file input from '{inp.from_step}' "
                             f"but '{inp.from_step}' is not in dependencies"
                         )
+
+    def validate_dtd_references(self, dtds_dir: Path) -> None:
+        """
+        Validate that DTD references in outputs point to existing DTD files.
+
+        Args:
+            dtds_dir: Path to the DTDs directory
+
+        Raises:
+            ParseError: If DTD references are invalid
+        """
+        for step in self.steps:
+            for output in step.outputs:
+                if output.has_dtd():
+                    dtd_file = dtds_dir / f"{output.dtd}.md"
+                    if not dtd_file.exists():
+                        raise ParseError(
+                            f"Step '{step.id}' references non-existent DTD '{output.dtd}'. "
+                            f"Expected file at {dtd_file}"
+                        )
+
+    def get_dtd_references(self) -> list[str]:
+        """
+        Get all unique DTD names referenced in this job's outputs.
+
+        Returns:
+            List of DTD names (without .md extension)
+        """
+        dtd_refs = set()
+        for step in self.steps:
+            for output in step.outputs:
+                if output.has_dtd() and output.dtd:
+                    dtd_refs.add(output.dtd)
+        return list(dtd_refs)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], job_dir: Path) -> "JobDefinition":

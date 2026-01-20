@@ -1,0 +1,18 @@
+name: job_with_dtd
+version: "1.0.0"
+summary: "Job with DTD output for testing"
+description: |
+  A test job that produces a document with a DTD reference.
+
+steps:
+  - id: generate_report
+    name: "Generate Report"
+    description: "Generate a report following the DTD specification"
+    instructions_file: steps/generate_report.md
+    inputs:
+      - name: report_title
+        description: "Title for the report"
+    outputs:
+      - file: report.md
+        dtd: valid_report
+    dependencies: []

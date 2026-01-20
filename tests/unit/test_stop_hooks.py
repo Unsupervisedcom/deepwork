@@ -6,7 +6,7 @@ import pytest
 
 from deepwork.core.adapters import ClaudeAdapter
 from deepwork.core.generator import GeneratorError, SkillGenerator
-from deepwork.core.parser import HookAction, JobDefinition, Step, StopHook
+from deepwork.core.parser import HookAction, JobDefinition, OutputSpec, Step, StopHook
 from deepwork.schemas.job_schema import JOB_SCHEMA
 from deepwork.utils.validation import ValidationError, validate_against_schema
 
@@ -70,7 +70,7 @@ class TestStepWithStopHooks:
             name="Test Step",
             description="A test step",
             instructions_file="steps/test.md",
-            outputs=["output.md"],
+            outputs=[OutputSpec(file="output.md")],
         )
         assert step.stop_hooks == []
 
@@ -81,7 +81,7 @@ class TestStepWithStopHooks:
             name="Test Step",
             description="A test step",
             instructions_file="steps/test.md",
-            outputs=["output.md"],
+            outputs=[OutputSpec(file="output.md")],
             hooks={"after_agent": [HookAction(prompt="Check quality")]},
         )
         assert len(step.stop_hooks) == 1
@@ -95,7 +95,7 @@ class TestStepWithStopHooks:
             name="Test Step",
             description="A test step",
             instructions_file="steps/test.md",
-            outputs=["output.md"],
+            outputs=[OutputSpec(file="output.md")],
             hooks={
                 "after_agent": [
                     HookAction(prompt="Check criteria 1"),
@@ -410,7 +410,7 @@ hooks:
                     name="Step 1",
                     description="First step",
                     instructions_file="steps/step1.md",
-                    outputs=["output.md"],
+                    outputs=[OutputSpec(file="output.md")],
                     hooks={
                         "after_agent": [HookAction(prompt="Verify quality criteria")],
                     },
@@ -439,7 +439,7 @@ hooks:
                     name="Step 1",
                     description="First step",
                     instructions_file="steps/step1.md",
-                    outputs=["output.md"],
+                    outputs=[OutputSpec(file="output.md")],
                     hooks={
                         "after_agent": [HookAction(script="hooks/validate.sh")],
                     },
@@ -471,7 +471,7 @@ hooks:
                     name="Step 1",
                     description="First step",
                     instructions_file="steps/step1.md",
-                    outputs=["output.md"],
+                    outputs=[OutputSpec(file="output.md")],
                     hooks={
                         "after_agent": [HookAction(prompt_file="hooks/quality.md")],
                     },
@@ -538,7 +538,7 @@ hooks:
                     name="Step 1",
                     description="Step",
                     instructions_file="steps/step1.md",
-                    outputs=["out.md"],
+                    outputs=[OutputSpec(file="out.md")],
                     hooks={
                         "after_agent": [HookAction(prompt_file="missing.md")],
                     },
@@ -570,7 +570,7 @@ hooks:
                     name="Step 1",
                     description="Step",
                     instructions_file="steps/step1.md",
-                    outputs=["out.md"],
+                    outputs=[OutputSpec(file="out.md")],
                 )
             ],
             job_dir=job_dir,
@@ -599,7 +599,7 @@ hooks:
                     name="Step 1",
                     description="Step",
                     instructions_file="steps/step1.md",
-                    outputs=["out.md"],
+                    outputs=[OutputSpec(file="out.md")],
                     hooks={
                         "after_agent": [
                             HookAction(prompt="Check criteria 1"),
