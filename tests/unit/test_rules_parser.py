@@ -731,3 +731,217 @@ class TestMultiExpectsPairs:
 
         result = evaluate_rule(rule, changed_files)
         assert result.should_fire is False
+
+
+class TestCreatedMode:
+    """Tests for created mode evaluation."""
+
+    def test_fires_when_created_file_matches(self) -> None:
+        """Test rule fires when a created file matches the pattern."""
+        rule = Rule(
+            name="New Module Docs",
+            filename="new-module-docs",
+            detection_mode=DetectionMode.CREATED,
+            created_patterns=["src/**/*.py"],
+            instructions="Document the new module",
+        )
+        created_files = ["src/new_module.py"]
+
+        result = evaluate_rule(rule, [], created_files)
+        assert result.should_fire is True
+        assert "src/new_module.py" in result.trigger_files
+
+    def test_does_not_fire_when_no_match(self) -> None:
+        """Test rule doesn't fire when no created file matches."""
+        rule = Rule(
+            name="New Module Docs",
+            filename="new-module-docs",
+            detection_mode=DetectionMode.CREATED,
+            created_patterns=["src/**/*.py"],
+            instructions="Document the new module",
+        )
+        created_files = ["tests/test_new.py"]
+
+        result = evaluate_rule(rule, [], created_files)
+        assert result.should_fire is False
+
+    def test_does_not_fire_for_modified_files(self) -> None:
+        """Test rule doesn't fire for modified files (only created)."""
+        rule = Rule(
+            name="New Module Docs",
+            filename="new-module-docs",
+            detection_mode=DetectionMode.CREATED,
+            created_patterns=["src/**/*.py"],
+            instructions="Document the new module",
+        )
+        # File is in changed_files but NOT in created_files
+        changed_files = ["src/existing_module.py"]
+        created_files: list[str] = []
+
+        result = evaluate_rule(rule, changed_files, created_files)
+        assert result.should_fire is False
+
+    def test_multiple_created_patterns(self) -> None:
+        """Test rule with multiple created patterns."""
+        rule = Rule(
+            name="New Code Standards",
+            filename="new-code-standards",
+            detection_mode=DetectionMode.CREATED,
+            created_patterns=["src/**/*.py", "lib/**/*.py"],
+            instructions="Follow code standards",
+        )
+
+        # Matches first pattern
+        result1 = evaluate_rule(rule, [], ["src/foo.py"])
+        assert result1.should_fire is True
+
+        # Matches second pattern
+        result2 = evaluate_rule(rule, [], ["lib/bar.py"])
+        assert result2.should_fire is True
+
+        # Matches neither
+        result3 = evaluate_rule(rule, [], ["tests/test_foo.py"])
+        assert result3.should_fire is False
+
+    def test_created_with_nested_path(self) -> None:
+        """Test created mode with nested paths."""
+        rule = Rule(
+            name="New Component",
+            filename="new-component",
+            detection_mode=DetectionMode.CREATED,
+            created_patterns=["src/components/**/*.tsx"],
+            instructions="Document the component",
+        )
+        created_files = ["src/components/ui/Button.tsx"]
+
+        result = evaluate_rule(rule, [], created_files)
+        assert result.should_fire is True
+        assert "src/components/ui/Button.tsx" in result.trigger_files
+
+    def test_created_mixed_with_changed(self) -> None:
+        """Test that changed_files don't affect created mode rules."""
+        rule = Rule(
+            name="New Module Docs",
+            filename="new-module-docs",
+            detection_mode=DetectionMode.CREATED,
+            created_patterns=["src/**/*.py"],
+            instructions="Document the new module",
+        )
+        # src/existing.py is modified (in changed_files)
+        # src/new.py is created (in created_files)
+        changed_files = ["src/existing.py", "src/new.py"]
+        created_files = ["src/new.py"]
+
+        result = evaluate_rule(rule, changed_files, created_files)
+        assert result.should_fire is True
+        # Only the created file should be in trigger_files
+        assert result.trigger_files == ["src/new.py"]
+
+    def test_evaluate_rules_with_created_mode(self) -> None:
+        """Test evaluate_rules passes created_files correctly."""
+        rules = [
+            Rule(
+                name="Trigger Rule",
+                filename="trigger-rule",
+                detection_mode=DetectionMode.TRIGGER_SAFETY,
+                triggers=["src/**/*.py"],
+                safety=[],
+                instructions="Check source",
+            ),
+            Rule(
+                name="Created Rule",
+                filename="created-rule",
+                detection_mode=DetectionMode.CREATED,
+                created_patterns=["src/**/*.py"],
+                instructions="Document new files",
+            ),
+        ]
+        # src/existing.py is modified, src/new.py is created
+        changed_files = ["src/existing.py", "src/new.py"]
+        created_files = ["src/new.py"]
+
+        results = evaluate_rules(rules, changed_files, None, created_files)
+
+        # Both rules should fire
+        assert len(results) == 2
+        rule_names = {r.rule.name for r in results}
+        assert "Trigger Rule" in rule_names
+        assert "Created Rule" in rule_names
+
+
+class TestLoadCreatedModeRule:
+    """Tests for loading rules with created detection mode."""
+
+    def test_loads_rule_with_created_detection_mode(self, temp_dir: Path) -> None:
+        """Test loading a rule with created detection mode."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "new-module-docs.md"
+        rule_file.write_text(
+            """---
+name: New Module Documentation
+created: src/**/*.py
+---
+A new Python module was created. Please add documentation.
+"""
+        )
+
+        rules = load_rules_from_directory(rules_dir)
+
+        assert len(rules) == 1
+        assert rules[0].name == "New Module Documentation"
+        assert rules[0].detection_mode == DetectionMode.CREATED
+        assert rules[0].created_patterns == ["src/**/*.py"]
+
+    def test_loads_rule_with_multiple_created_patterns(self, temp_dir: Path) -> None:
+        """Test loading a rule with multiple created patterns."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "new-code-standards.md"
+        rule_file.write_text(
+            """---
+name: New Code Standards
+created:
+  - src/**/*.py
+  - lib/**/*.py
+---
+New code must follow standards.
+"""
+        )
+
+        rules = load_rules_from_directory(rules_dir)
+
+        assert len(rules) == 1
+        assert rules[0].name == "New Code Standards"
+        assert rules[0].detection_mode == DetectionMode.CREATED
+        assert rules[0].created_patterns == ["src/**/*.py", "lib/**/*.py"]
+
+    def test_loads_created_rule_with_command_action(self, temp_dir: Path) -> None:
+        """Test loading a created mode rule with command action."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "new-file-lint.md"
+        rule_file.write_text(
+            """---
+name: New File Lint
+created: "**/*.py"
+action:
+  command: "ruff check {file}"
+  run_for: each_match
+---
+"""
+        )
+
+        rules = load_rules_from_directory(rules_dir)
+
+        assert len(rules) == 1
+        assert rules[0].name == "New File Lint"
+        assert rules[0].detection_mode == DetectionMode.CREATED
+        from deepwork.core.rules_parser import ActionType
+
+        assert rules[0].action_type == ActionType.COMMAND
+        assert rules[0].command_action is not None
+        assert rules[0].command_action.command == "ruff check {file}"

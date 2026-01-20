@@ -29,6 +29,7 @@ class DetectionMode(Enum):
     TRIGGER_SAFETY = "trigger_safety"  # Fire when trigger matches, safety doesn't
     SET = "set"  # Bidirectional file correspondence
     PAIR = "pair"  # Directional file correspondence
+    CREATED = "created"  # Fire when created files match patterns
 
 
 class ActionType(Enum):
@@ -73,6 +74,7 @@ class Rule:
     safety: list[str] = field(default_factory=list)  # For TRIGGER_SAFETY mode
     set_patterns: list[str] = field(default_factory=list)  # For SET mode
     pair_config: PairConfig | None = None  # For PAIR mode
+    created_patterns: list[str] = field(default_factory=list)  # For CREATED mode
 
     # Action type
     action_type: ActionType = ActionType.PROMPT
@@ -112,10 +114,13 @@ class Rule:
         has_trigger = "trigger" in frontmatter
         has_set = "set" in frontmatter
         has_pair = "pair" in frontmatter
+        has_created = "created" in frontmatter
 
-        mode_count = sum([has_trigger, has_set, has_pair])
+        mode_count = sum([has_trigger, has_set, has_pair, has_created])
         if mode_count == 0:
-            raise RulesParseError(f"Rule '{name}' must have 'trigger', 'set', or 'pair'")
+            raise RulesParseError(
+                f"Rule '{name}' must have 'trigger', 'set', 'pair', or 'created'"
+            )
         if mode_count > 1:
             raise RulesParseError(f"Rule '{name}' has multiple detection modes - use only one")
 
@@ -125,6 +130,7 @@ class Rule:
         safety: list[str] = []
         set_patterns: list[str] = []
         pair_config: PairConfig | None = None
+        created_patterns: list[str] = []
 
         if has_trigger:
             detection_mode = DetectionMode.TRIGGER_SAFETY
@@ -148,6 +154,11 @@ class Rule:
                 trigger=pair_data["trigger"],
                 expects=expects_list,
             )
+
+        elif has_created:
+            detection_mode = DetectionMode.CREATED
+            created = frontmatter["created"]
+            created_patterns = [created] if isinstance(created, str) else list(created)
 
         # Determine action type
         action_type: ActionType
@@ -177,6 +188,7 @@ class Rule:
             safety=safety,
             set_patterns=set_patterns,
             pair_config=pair_config,
+            created_patterns=created_patterns,
             action_type=action_type,
             instructions=markdown_body.strip(),
             command_action=command_action,
@@ -418,6 +430,22 @@ def evaluate_pair_correspondence(
     return should_fire, trigger_files, missing_files
 
 
+def evaluate_created(
+    rule: Rule,
+    created_files: list[str],
+) -> bool:
+    """
+    Evaluate a created mode rule.
+
+    Returns True if rule should fire:
+    - At least one created file matches a created pattern
+    """
+    for file_path in created_files:
+        if matches_any_pattern(file_path, rule.created_patterns):
+            return True
+    return False
+
+
 @dataclass
 class RuleEvaluationResult:
     """Result of evaluating a single rule."""
@@ -428,13 +456,18 @@ class RuleEvaluationResult:
     missing_files: list[str] = field(default_factory=list)  # For set/pair modes
 
 
-def evaluate_rule(rule: Rule, changed_files: list[str]) -> RuleEvaluationResult:
+def evaluate_rule(
+    rule: Rule,
+    changed_files: list[str],
+    created_files: list[str] | None = None,
+) -> RuleEvaluationResult:
     """
     Evaluate whether a rule should fire based on changed files.
 
     Args:
         rule: Rule to evaluate
         changed_files: List of changed file paths (relative)
+        created_files: List of newly created file paths (relative), for CREATED mode
 
     Returns:
         RuleEvaluationResult with evaluation details
@@ -472,6 +505,20 @@ def evaluate_rule(rule: Rule, changed_files: list[str]) -> RuleEvaluationResult:
             missing_files=missing_files,
         )
 
+    elif rule.detection_mode == DetectionMode.CREATED:
+        files_to_check = created_files if created_files is not None else []
+        should_fire = evaluate_created(rule, files_to_check)
+        trigger_files = (
+            [f for f in files_to_check if matches_any_pattern(f, rule.created_patterns)]
+            if should_fire
+            else []
+        )
+        return RuleEvaluationResult(
+            rule=rule,
+            should_fire=should_fire,
+            trigger_files=trigger_files,
+        )
+
     return RuleEvaluationResult(rule=rule, should_fire=False)
 
 
@@ -479,6 +526,7 @@ def evaluate_rules(
     rules: list[Rule],
     changed_files: list[str],
     promised_rules: set[str] | None = None,
+    created_files: list[str] | None = None,
 ) -> list[RuleEvaluationResult]:
     """
     Evaluate which rules should fire.
@@ -488,6 +536,7 @@ def evaluate_rules(
         changed_files: List of changed file paths (relative)
         promised_rules: Set of rule names that have been marked as addressed
                           via <promise> tags (case-insensitive)
+        created_files: List of newly created file paths (relative), for CREATED mode
 
     Returns:
         List of RuleEvaluationResult for rules that should fire
@@ -504,7 +553,7 @@ def evaluate_rules(
         if rule.name.lower() in promised_lower:
             continue
 
-        result = evaluate_rule(rule, changed_files)
+        result = evaluate_rule(rule, changed_files, created_files)
         if result.should_fire:
             results.append(result)
 
