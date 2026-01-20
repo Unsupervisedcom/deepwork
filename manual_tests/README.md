@@ -36,6 +36,7 @@ Each test has two cases: one where the rule SHOULD fire, and one where it should
 | **Multi Safety** | Edit `.py` only | Edit `.py` AND any safety file | Manual Test: Multi Safety |
 | **Infinite Block Prompt** | Edit `.py` (always blocks) | Provide `<promise>` tag | Manual Test: Infinite Block Prompt |
 | **Infinite Block Command** | Edit `.py` (command fails) | Provide `<promise>` tag | Manual Test: Infinite Block Command |
+| **Created Mode** | Create NEW `.yml` file | Modify EXISTING `.yml` file | Manual Test: Created Mode |
 
 ## Test Results Tracking
 
@@ -49,6 +50,7 @@ Each test has two cases: one where the rule SHOULD fire, and one where it should
 | Multi Safety | ☐ | ☐ |
 | Infinite Block Prompt | ☐ | ☐ |
 | Infinite Block Command | ☐ | ☐ |
+| Created Mode | ☐ | ☐ |
 
 ## Test Folders
 
@@ -61,6 +63,7 @@ Each test has two cases: one where the rule SHOULD fire, and one where it should
 | `test_multi_safety/` | Multiple Safety | Fires unless ANY of the safety files also edited |
 | `test_infinite_block_prompt/` | Infinite Block (Prompt) | Always blocks with prompt; only promise can bypass |
 | `test_infinite_block_command/` | Infinite Block (Command) | Command always fails; tests if promise skips command |
+| `test_created_mode/` | Created (New Files Only) | Fires ONLY when NEW files are created, not when existing modified |
 
 ## Corresponding Rules
 
@@ -72,3 +75,4 @@ Rules are defined in `.deepwork/rules/`:
 - `manual-test-multi-safety.md`
 - `manual-test-infinite-block-prompt.md`
 - `manual-test-infinite-block-command.md`
+- `manual-test-created-mode.md`
