@@ -438,7 +438,7 @@ deepwork/
 ├── doc/                  # Documentation
 │   ├── architecture.md   # Comprehensive architecture doc
 │   └── TEMPLATE_REVIEW.md
-├── shell.nix             # Nix development environment
+├── flake.nix             # Nix flake for development environment
 ├── pyproject.toml        # Python project configuration
 ├── CLAUDE.md             # Project context for Claude Code
 └── README.md             # Project overview
@@ -516,10 +516,10 @@ deepwork/
 ### Quick Development Cycle
 
 ```bash
-# In one terminal: Enter nix-shell and keep it open
-nix-shell
+# In one terminal: Enter Nix development environment
+nix develop
 
-# In nix-shell: Watch tests
+# In Nix environment: Watch tests
 uv run pytest tests/unit/ --watch
 
 # In another terminal: Make changes to src/deepwork/
@@ -571,11 +571,12 @@ pip list | grep deepwork
 # Should show: deepwork 0.1.0 /path/to/your/local/deepwork/src
 ```
 
-### Issue: Nix shell not loading
-**Solution**: Make sure Nix is installed and `<nixpkgs>` is available:
+### Issue: Nix environment not loading
+**Solution**: Make sure Nix is installed with flakes enabled:
 ```bash
-nix-shell --version
-echo $NIX_PATH
+nix --version
+# Add to ~/.config/nix/nix.conf if not already there:
+# experimental-features = nix-command flakes
 ```
 
 ## License

@@ -387,22 +387,6 @@ Or ensure you're in the Nix environment:
 nix develop
 ```
 
-## Backward Compatibility
-
-The `shell.nix` file is maintained as a compatibility wrapper for users who prefer the traditional `nix-shell` approach. It uses `flake-compat` to import the development shell from `flake.nix`, ensuring you get the same environment whether you use:
-
-```bash
-# Modern approach (recommended)
-nix develop
-
-# Legacy approach (still works)
-nix-shell
-```
-
-Both commands provide the same development environment, with all dependencies and environment variables properly configured. The only difference is the command syntax.
-
-**Note:** New users should prefer `nix develop` or direnv integration (`direnv allow`) as these are the modern, actively maintained approaches.
-
 ## Additional Resources
 
 - [Nix Flakes Documentation](https://nixos.wiki/wiki/Flakes)
