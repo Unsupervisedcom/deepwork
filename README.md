@@ -211,12 +211,9 @@ DeepWork is available as a Nix flake for reproducible development environments:
 # Using Nix flakes
 nix develop
 
-# Or with direnv (automatic activation)
+# Or with direnv (automatic activation - recommended)
 echo "use flake" > .envrc
 direnv allow
-
-# Legacy Nix shell
-nix-shell
 ```
 
 The Nix environment provides all dependencies including Python 3.11, uv, pytest, ruff, and mypy.
