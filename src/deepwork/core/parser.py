@@ -48,14 +48,14 @@ class StepInput:
 
 @dataclass
 class OutputSpec:
-    """Represents a step output specification, optionally with DTD reference."""
+    """Represents a step output specification, optionally with document type reference."""
 
     file: str
-    dtd: str | None = None
+    document_type: str | None = None
 
-    def has_dtd(self) -> bool:
-        """Check if this output has a DTD reference."""
-        return self.dtd is not None
+    def has_document_type(self) -> bool:
+        """Check if this output has a document type reference."""
+        return self.document_type is not None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | str) -> "OutputSpec":
@@ -64,13 +64,13 @@ class OutputSpec:
 
         Supports both formats:
         - String: "output.md" -> OutputSpec(file="output.md")
-        - Dict: {"file": "output.md", "dtd": "report"} -> OutputSpec(file="output.md", dtd="report")
+        - Dict: {"file": "output.md", "document_type": ".deepwork/dtds/report.md"}
         """
         if isinstance(data, str):
             return cls(file=data)
         return cls(
             file=data["file"],
-            dtd=data.get("dtd"),
+            document_type=data.get("document_type"),
         )
 
 
@@ -274,39 +274,39 @@ class JobDefinition:
                             f"but '{inp.from_step}' is not in dependencies"
                         )
 
-    def validate_dtd_references(self, dtds_dir: Path) -> None:
+    def validate_document_type_references(self, project_root: Path) -> None:
         """
-        Validate that DTD references in outputs point to existing DTD files.
+        Validate that document type references in outputs point to existing files.
 
         Args:
-            dtds_dir: Path to the DTDs directory
+            project_root: Path to the project root directory
 
         Raises:
-            ParseError: If DTD references are invalid
+            ParseError: If document type references are invalid
         """
         for step in self.steps:
             for output in step.outputs:
-                if output.has_dtd():
-                    dtd_file = dtds_dir / f"{output.dtd}.md"
-                    if not dtd_file.exists():
+                if output.has_document_type():
+                    doc_type_file = project_root / output.document_type
+                    if not doc_type_file.exists():
                         raise ParseError(
-                            f"Step '{step.id}' references non-existent DTD '{output.dtd}'. "
-                            f"Expected file at {dtd_file}"
+                            f"Step '{step.id}' references non-existent document type "
+                            f"'{output.document_type}'. Expected file at {doc_type_file}"
                         )
 
-    def get_dtd_references(self) -> list[str]:
+    def get_document_type_references(self) -> list[str]:
         """
-        Get all unique DTD names referenced in this job's outputs.
+        Get all unique document type file paths referenced in this job's outputs.
 
         Returns:
-            List of DTD names (without .md extension)
+            List of document type file paths (e.g., ".deepwork/dtds/report.md")
         """
-        dtd_refs = set()
+        doc_type_refs = set()
         for step in self.steps:
             for output in step.outputs:
-                if output.has_dtd() and output.dtd:
-                    dtd_refs.add(output.dtd)
-        return list(dtd_refs)
+                if output.has_document_type() and output.document_type:
+                    doc_type_refs.add(output.document_type)
+        return list(doc_type_refs)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], job_dir: Path) -> "JobDefinition":

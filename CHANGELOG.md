@@ -13,9 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New `src/deepwork/core/dtd_parser.py` with parser for frontmatter markdown DTD files
   - DTD files stored in `.deepwork/dtds/` directory with quality criteria and example documents
   - Auto-creates `.deepwork/dtds/` directory during `deepwork install`
-- Extended job.yml output schema to support DTD references
-  - Outputs can now be strings (backward compatible) or objects with `file` and optional `dtd` fields
-  - Example: `outputs: [{file: "report.md", dtd: "monthly_report"}]`
+- Extended job.yml output schema to support document type references
+  - Outputs can now be strings (backward compatible) or objects with `file` and optional `document_type` fields
+  - Example: `outputs: [{file: "report.md", document_type: ".deepwork/dtds/monthly_report.md"}]`
+  - The `document_type` uses the full path to the DTD file, making references self-documenting
 - DTD-aware skill generation
   - Step skills now include DTD quality criteria, target audience, and example documents
   - Both Claude and Gemini templates updated for DTD rendering

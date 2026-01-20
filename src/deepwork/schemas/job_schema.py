@@ -161,7 +161,7 @@ JOB_SCHEMA: dict[str, Any] = {
                     },
                     "outputs": {
                         "type": "array",
-                        "description": "List of output files/directories, optionally with DTD references",
+                        "description": "List of output files/directories, optionally with document type references",
                         "items": {
                             "oneOf": [
                                 {
@@ -178,10 +178,10 @@ JOB_SCHEMA: dict[str, Any] = {
                                             "minLength": 1,
                                             "description": "Output file path",
                                         },
-                                        "dtd": {
+                                        "document_type": {
                                             "type": "string",
-                                            "pattern": "^[a-z][a-z0-9_-]*$",
-                                            "description": "DTD name (filename without .md extension)",
+                                            "pattern": r"^\.deepwork/dtds/[a-z][a-z0-9_-]*\.md$",
+                                            "description": "Path to document type definition file",
                                         },
                                     },
                                     "additionalProperties": False,

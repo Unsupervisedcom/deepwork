@@ -151,25 +151,26 @@ Use branch format: `deepwork/{{ job_name }}-[instance]-YYYYMMDD`
 {% for output in outputs %}
 - `{{ output.file }}`{% if output.file.endswith('/') %} (directory){% endif %}
 
-{% if output.has_dtd and output.dtd %}
-  **Document Type**: {{ output.dtd.name }}
-  > {{ output.dtd.description }}
-{% if output.dtd.target_audience %}
-  **Target Audience**: {{ output.dtd.target_audience }}
+{% if output.has_document_type and output.document_type %}
+  **Document Type**: {{ output.document_type.name }}
+  > {{ output.document_type.description }}
+  **Definition**: `{{ output.document_type.path }}`
+{% if output.document_type.target_audience %}
+  **Target Audience**: {{ output.document_type.target_audience }}
 {% endif %}
-{% if output.dtd.quality_criteria %}
+{% if output.document_type.quality_criteria %}
   **Quality Criteria**:
-{% for criterion in output.dtd.quality_criteria %}
+{% for criterion in output.document_type.quality_criteria %}
   {{ loop.index }}. **{{ criterion.name }}**: {{ criterion.description }}
 {% endfor %}
 {% endif %}
-{% if output.dtd.example_document %}
+{% if output.document_type.example_document %}
 
   <details>
   <summary>Example Document Structure</summary>
 
   ```markdown
-  {{ output.dtd.example_document | indent(2) }}
+  {{ output.document_type.example_document | indent(2) }}
   ```
 
   </details>

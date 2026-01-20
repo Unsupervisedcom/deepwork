@@ -54,46 +54,46 @@ class TestOutputSpec:
     """Tests for OutputSpec dataclass."""
 
     def test_simple_output(self) -> None:
-        """Test simple output without DTD."""
+        """Test simple output without document type."""
         output = OutputSpec(file="output.md")
 
         assert output.file == "output.md"
-        assert output.dtd is None
-        assert not output.has_dtd()
+        assert output.document_type is None
+        assert not output.has_document_type()
 
-    def test_output_with_dtd(self) -> None:
-        """Test output with DTD reference."""
-        output = OutputSpec(file="report.md", dtd="monthly_report")
+    def test_output_with_document_type(self) -> None:
+        """Test output with document type reference."""
+        output = OutputSpec(file="report.md", document_type=".deepwork/dtds/monthly_report.md")
 
         assert output.file == "report.md"
-        assert output.dtd == "monthly_report"
-        assert output.has_dtd()
+        assert output.document_type == ".deepwork/dtds/monthly_report.md"
+        assert output.has_document_type()
 
     def test_from_dict_string(self) -> None:
         """Test creating output from string."""
         output = OutputSpec.from_dict("output.md")
 
         assert output.file == "output.md"
-        assert output.dtd is None
-        assert not output.has_dtd()
+        assert output.document_type is None
+        assert not output.has_document_type()
 
     def test_from_dict_simple_object(self) -> None:
-        """Test creating output from dict without DTD."""
+        """Test creating output from dict without document type."""
         data = {"file": "output.md"}
         output = OutputSpec.from_dict(data)
 
         assert output.file == "output.md"
-        assert output.dtd is None
-        assert not output.has_dtd()
+        assert output.document_type is None
+        assert not output.has_document_type()
 
-    def test_from_dict_with_dtd(self) -> None:
-        """Test creating output from dict with DTD."""
-        data = {"file": "report.md", "dtd": "monthly_report"}
+    def test_from_dict_with_document_type(self) -> None:
+        """Test creating output from dict with document type."""
+        data = {"file": "report.md", "document_type": ".deepwork/dtds/monthly_report.md"}
         output = OutputSpec.from_dict(data)
 
         assert output.file == "report.md"
-        assert output.dtd == "monthly_report"
-        assert output.has_dtd()
+        assert output.document_type == ".deepwork/dtds/monthly_report.md"
+        assert output.has_document_type()
 
 
 class TestStep:
@@ -116,12 +116,12 @@ class TestStep:
         assert step.instructions_file == "steps/step1.md"
         assert len(step.outputs) == 1
         assert step.outputs[0].file == "output.md"
-        assert not step.outputs[0].has_dtd()
+        assert not step.outputs[0].has_document_type()
         assert step.inputs == []
         assert step.dependencies == []
 
-    def test_from_dict_with_dtd_output(self) -> None:
-        """Test creating step with DTD-referenced output."""
+    def test_from_dict_with_document_type_output(self) -> None:
+        """Test creating step with document type-referenced output."""
         data = {
             "id": "step1",
             "name": "Step 1",
@@ -129,17 +129,17 @@ class TestStep:
             "instructions_file": "steps/step1.md",
             "outputs": [
                 "simple_output.md",
-                {"file": "report.md", "dtd": "monthly_report"},
+                {"file": "report.md", "document_type": ".deepwork/dtds/monthly_report.md"},
             ],
         }
         step = Step.from_dict(data)
 
         assert len(step.outputs) == 2
         assert step.outputs[0].file == "simple_output.md"
-        assert not step.outputs[0].has_dtd()
+        assert not step.outputs[0].has_document_type()
         assert step.outputs[1].file == "report.md"
-        assert step.outputs[1].dtd == "monthly_report"
-        assert step.outputs[1].has_dtd()
+        assert step.outputs[1].document_type == ".deepwork/dtds/monthly_report.md"
+        assert step.outputs[1].has_document_type()
 
     def test_from_dict_with_inputs(self) -> None:
         """Test creating step with inputs."""

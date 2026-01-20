@@ -86,7 +86,7 @@ The markdown body after the frontmatter serves as an example document. This show
 
 ### Referencing a DTD in job.yml
 
-When a step produces a document that should follow a DTD, reference it in the outputs:
+When a step produces a document that should follow a DTD, reference it in the outputs using the full path:
 
 ```yaml
 steps:
@@ -96,15 +96,17 @@ steps:
     instructions_file: steps/generate_report.md
     outputs:
       - file: reports/aws_spending.md
-        dtd: monthly_aws_report  # References .deepwork/dtds/monthly_aws_report.md
+        document_type: .deepwork/dtds/monthly_aws_report.md
 ```
+
+The `document_type` field uses the full path to the DTD file (starting with `.deepwork`). This makes references self-documenting and allows agents to understand them without additional context.
 
 ### What Happens During Sync
 
 When you run `deepwork sync`:
 
-1. The generator loads all DTDs from `.deepwork/dtds/`
-2. For outputs with DTD references, the DTD information is included in the generated skill
+1. For outputs with `document_type` references, the DTD file is loaded from the specified path
+2. The DTD information is included in the generated skill
 3. The skill includes:
    - Document name and description
    - Target audience (if specified)
@@ -123,6 +125,7 @@ The skill will include a section like:
 
   **Document Type**: Monthly AWS Spending Report
   > A Markdown summary of AWS spend across accounts
+  **Definition**: `.deepwork/dtds/monthly_aws_report.md`
 
   **Target Audience**: Finance team and Engineering leadership
 
@@ -136,6 +139,8 @@ The skill will include a section like:
   [Example markdown content...]
   </details>
 ```
+
+Note how the **Definition** field includes the full path to the DTD file, making it easy for agents to reference the source specification.
 
 ## Creating DTDs
 
@@ -220,7 +225,7 @@ When updating a DTD:
    ```yaml
    outputs:
      - file: reports/aws_$(date +%Y_%m).md
-       dtd: monthly_aws_report
+       document_type: .deepwork/dtds/monthly_aws_report.md
    ```
 
 4. **Sync generates skill** with quality criteria included

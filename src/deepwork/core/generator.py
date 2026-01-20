@@ -9,7 +9,7 @@ from deepwork.core.adapters import AgentAdapter, SkillLifecycleHook
 from deepwork.core.dtd_parser import (
     DocumentTypeDefinition,
     DTDParseError,
-    load_dtds_from_directory,
+    parse_dtd_file,
 )
 from deepwork.core.parser import JobDefinition, Step
 from deepwork.schemas.job_schema import LIFECYCLE_HOOK_EVENTS
@@ -42,30 +42,36 @@ class SkillGenerator:
         if not self.templates_dir.exists():
             raise GeneratorError(f"Templates directory not found: {self.templates_dir}")
 
-        # Cache for loaded DTDs (keyed by project root)
-        self._dtd_cache: dict[Path, dict[str, DocumentTypeDefinition]] = {}
+        # Cache for loaded document types (keyed by absolute file path)
+        self._doc_type_cache: dict[Path, DocumentTypeDefinition] = {}
 
-    def _load_dtds(self, project_root: Path) -> dict[str, DocumentTypeDefinition]:
+    def _load_document_type(
+        self, project_root: Path, document_type_path: str
+    ) -> DocumentTypeDefinition | None:
         """
-        Load DTDs from project's .deepwork/dtds/ directory with caching.
+        Load a document type definition by file path with caching.
 
         Args:
             project_root: Path to project root
+            document_type_path: Relative path to document type file (e.g., ".deepwork/dtds/report.md")
 
         Returns:
-            Dictionary mapping DTD name to DocumentTypeDefinition
+            DocumentTypeDefinition if file exists and parses, None otherwise
         """
-        if project_root in self._dtd_cache:
-            return self._dtd_cache[project_root]
+        full_path = project_root / document_type_path
+        if full_path in self._doc_type_cache:
+            return self._doc_type_cache[full_path]
 
-        dtds_dir = project_root / ".deepwork" / "dtds"
+        if not full_path.exists():
+            return None
+
         try:
-            dtds = load_dtds_from_directory(dtds_dir)
-        except DTDParseError as e:
-            raise GeneratorError(f"Failed to load DTDs: {e}") from e
+            doc_type = parse_dtd_file(full_path)
+        except DTDParseError:
+            return None
 
-        self._dtd_cache[project_root] = dtds
-        return dtds
+        self._doc_type_cache[full_path] = doc_type
+        return doc_type
 
     def _get_jinja_env(self, adapter: AgentAdapter) -> Environment:
         """
@@ -148,7 +154,7 @@ class SkillGenerator:
         step: Step,
         step_index: int,
         adapter: AgentAdapter,
-        dtds: dict[str, DocumentTypeDefinition] | None = None,
+        project_root: Path | None = None,
     ) -> dict[str, Any]:
         """
         Build template context for a step.
@@ -158,12 +164,11 @@ class SkillGenerator:
             step: Step to generate context for
             step_index: Index of step in job (0-based)
             adapter: Agent adapter for platform-specific hook name mapping
-            dtds: Optional dictionary of loaded DTDs for enriching outputs
+            project_root: Optional project root for loading document types
 
         Returns:
             Template context dictionary
         """
-        dtds = dtds or {}
         # Read step instructions
         instructions_file = job.job_dir / step.instructions_file
         instructions_content = safe_read(instructions_file)
@@ -215,24 +220,27 @@ class SkillGenerator:
             adapter.get_platform_hook_name(SkillLifecycleHook.AFTER_AGENT) or "Stop", []
         )
 
-        # Build rich outputs context with DTD information
+        # Build rich outputs context with document type information
         outputs_context = []
         for output in step.outputs:
             output_ctx: dict[str, Any] = {
                 "file": output.file,
-                "has_dtd": output.has_dtd(),
+                "has_document_type": output.has_document_type(),
             }
-            if output.has_dtd() and output.dtd and output.dtd in dtds:
-                dtd = dtds[output.dtd]
-                output_ctx["dtd"] = {
-                    "name": dtd.name,
-                    "description": dtd.description,
-                    "target_audience": dtd.target_audience,
-                    "quality_criteria": [
-                        {"name": c.name, "description": c.description} for c in dtd.quality_criteria
-                    ],
-                    "example_document": dtd.example_document,
-                }
+            if output.has_document_type() and output.document_type and project_root:
+                doc_type = self._load_document_type(project_root, output.document_type)
+                if doc_type:
+                    output_ctx["document_type"] = {
+                        "path": output.document_type,
+                        "name": doc_type.name,
+                        "description": doc_type.description,
+                        "target_audience": doc_type.target_audience,
+                        "quality_criteria": [
+                            {"name": c.name, "description": c.description}
+                            for c in doc_type.quality_criteria
+                        ],
+                        "example_document": doc_type.example_document,
+                    }
             outputs_context.append(output_ctx)
 
         return {
@@ -397,9 +405,6 @@ class SkillGenerator:
         skills_dir = output_dir / adapter.skills_dir
         skills_dir.mkdir(parents=True, exist_ok=True)
 
-        # Load DTDs for enriching outputs
-        dtds = self._load_dtds(project_root_path)
-
         # Find step index
         try:
             step_index = next(i for i, s in enumerate(job.steps) if s.id == step.id)
@@ -407,7 +412,7 @@ class SkillGenerator:
             raise GeneratorError(f"Step '{step.id}' not found in job '{job.name}'") from e
 
         # Build context (include exposed for template user-invocable setting)
-        context = self._build_step_context(job, step, step_index, adapter, dtds)
+        context = self._build_step_context(job, step, step_index, adapter, project_root_path)
         context["exposed"] = step.exposed
 
         # Load and render template
