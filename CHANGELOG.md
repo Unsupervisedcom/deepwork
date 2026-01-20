@@ -5,6 +5,18 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-01-20
+
+### Added
+- `created` rule mode for matching only newly created files (#76)
+  - Rules with `mode: created` only fire when files are first added, not on modifications
+  - Useful for enforcing patterns on new files without triggering on existing file edits
+
+### Fixed
+- Fixed `created` mode rules incorrectly firing on modified files (#83)
+- Fixed `compare_to: prompt` mode not detecting files that were committed during agent response
+  - Rules like `uv-lock-sync` now correctly fire even when changes are committed before the Stop hook runs
+
 ## [0.3.0] - 2026-01-18
 
 ### Added
@@ -100,6 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
+[0.3.1]: https://github.com/anthropics/deepwork/releases/tag/0.3.1
 [0.3.0]: https://github.com/anthropics/deepwork/releases/tag/0.3.0
 [0.1.1]: https://github.com/anthropics/deepwork/releases/tag/0.1.1
 [0.1.0]: https://github.com/anthropics/deepwork/releases/tag/0.1.0
