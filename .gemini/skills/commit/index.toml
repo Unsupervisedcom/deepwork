@@ -31,7 +31,7 @@ Steps:
    Command: `/commit:test`
 2. **lint** - Format and lint code with ruff using a sub-agent (requires: test)
    Command: `/commit:lint`
-3. **commit_and_push** - Review changed files, commit, and push to remote (requires: lint)
+3. **commit_and_push** - Verify changed files, commit, and push to remote (requires: lint)
    Command: `/commit:commit_and_push`
 
 ## Execution Instructions

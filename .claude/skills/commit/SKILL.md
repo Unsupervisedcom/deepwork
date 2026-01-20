@@ -25,7 +25,7 @@ Steps:
 
 1. **test** - Pull latest code and run the test suite until all tests pass
 2. **lint** - Format and lint code with ruff using a sub-agent (requires: test)
-3. **commit_and_push** - Review changed files, commit, and push to remote (requires: lint)
+3. **commit_and_push** - Verify changed files, commit, and push to remote (requires: lint)
 
 ## Execution Instructions
 
