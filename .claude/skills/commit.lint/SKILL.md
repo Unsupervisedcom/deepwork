@@ -128,7 +128,8 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 
 ## Outputs
 
-No specific file outputs required.
+**Required outputs**:
+- `code_formatted`
 
 ## Quality Validation
 
@@ -141,7 +142,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 2/3 complete"
+2. Inform user: "Step 2/3 complete, outputs: code_formatted"
 3. **Continue workflow**: Use Skill tool to invoke `/commit.commit_and_push`
 
 ---

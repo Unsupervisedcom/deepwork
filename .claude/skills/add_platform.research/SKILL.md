@@ -258,7 +258,9 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 ## Outputs
 
 **Required outputs**:
-- `cli_configuration.md`- `hooks_system.md`
+- `cli_configuration.md`
+- `hooks_system.md`
+
 ## Quality Validation
 
 Stop hooks will automatically validate your work. The loop continues until all criteria pass.

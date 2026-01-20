@@ -272,10 +272,17 @@ Manages rules that automatically trigger when certain files change during an AI 
 Rules help ensure that code changes follow team guidelines, documentation is updated,
 and architectural decisions are respected.
 
+IMPORTANT: Rules are evaluated at the "Stop" hook, which fires when an agent finishes its turn.
+This includes when sub-agents complete their work. Rules are NOT evaluated immediately after
+each file edit - they batch up and run once at the end of the agent's response cycle.
+- Command action rules: Execute their command (e.g., `uv sync`) when the agent stops
+- Prompt action rules: Display instructions to the agent, blocking until addressed
+
 Rules are stored as individual markdown files with YAML frontmatter in the `.deepwork/rules/`
 directory. Each rule file specifies:
 - Detection mode: trigger/safety, set (bidirectional), or pair (directional)
 - Patterns: Glob patterns for matching files, with optional variable capture
+- Action type: prompt (default) to show instructions, or command to run a shell command
 - Instructions: Markdown content describing what the agent should do
 
 Example use cases:
@@ -283,6 +290,7 @@ Example use cases:
 - Require security review when authentication code is modified
 - Ensure API documentation stays in sync with API code
 - Enforce source/test file pairing
+- Auto-run `uv sync` when pyproject.toml changes (command action)
 
 
 ## Required Inputs
@@ -302,6 +310,7 @@ Use branch format: `deepwork/deepwork_rules-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `.deepwork/rules/{rule-name}.md`
+
 ## On Completion
 
 1. Verify outputs are created

@@ -200,6 +200,7 @@ your-project/
 ## Documentation
 
 - **[Architecture](doc/architecture.md)**: Complete design specification
+- **[Doc Specs](doc/doc-specs.md)**: Document specification format for output quality criteria
 - **[Contributing](CONTRIBUTING.md)**: Setup development environment and contribute
 
 ## Project Structure
@@ -241,6 +242,7 @@ Define structured, multi-step workflows where each step has clear requirements a
 - **Artifact Passing**: Seamlessly use file outputs from one step as inputs for future steps.
 - **Dynamic Inputs**: Support for both fixed file references and interactive user parameters.
 - **Human-Readable YAML**: Simple, declarative job definitions that are easy to version and maintain.
+- **Doc Specs**: Reference doc specs to enforce quality criteria on document outputs (see [doc specs documentation](doc/doc-specs.md)).
 
 ### Git-Native Workflow
 Maintain a clean repository with automatic branch management and isolation.
@@ -262,6 +264,7 @@ name: Source/Test Pairing
 set:
   - src/{path}.py
   - tests/{path}_test.py
+compare_to: base
 ---
 When source files change, corresponding test files should also change.
 Please create or update tests for the modified source files.
@@ -275,6 +278,7 @@ trigger: "**/*.py"
 action:
   command: "ruff format {file}"
   run_for: each_match
+compare_to: prompt
 ---
 ```
 

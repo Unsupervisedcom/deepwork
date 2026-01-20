@@ -1,6 +1,6 @@
 ---
 name: commit.commit_and_push
-description: "Review changed files, commit, and push to remote"
+description: "Verify changed files, commit, and push to remote"
 user-invocable: false
 hooks:
   Stop:
@@ -8,8 +8,8 @@ hooks:
         - type: prompt
           prompt: |
             Verify the commit is ready:
-            1. Changed files list was reviewed with user
-            2. User confirmed the files match expectations
+            1. Changed files list was reviewed by the agent
+            2. Files match what was modified during this session (or unexpected changes were investigated)
             3. Commit was created with appropriate message
             4. Changes were pushed to remote
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
@@ -29,17 +29,17 @@ Before proceeding, confirm these steps are complete:
 
 ## Instructions
 
-**Goal**: Review changed files, commit, and push to remote
+**Goal**: Verify changed files, commit, and push to remote
 
 # Commit and Push
 
 ## Objective
 
-Review the changed files with the user, create a commit with an appropriate message, and push to the remote repository.
+Review the changed files to verify they match the agent's expectations, create a commit with an appropriate message, and push to the remote repository.
 
 ## Task
 
-Present the list of changed files for user review, ensure they match expectations, then commit and push the changes.
+Check the list of changed files against what was modified during this session, ensure they match expectations, then commit and push the changes.
 
 ### Process
 
@@ -49,31 +49,26 @@ Present the list of changed files for user review, ensure they match expectation
    ```
    Also run `git diff --stat` to see a summary of changes.
 
-2. **Present changes to the user for review**
+2. **Verify changes match expectations**
 
-   Use the AskUserQuestion tool to ask structured questions about the changes:
+   Compare the changed files against what you modified during this session:
+   - Do the modified files match what you edited?
+   - Are there any unexpected new files?
+   - Are there any unexpected deleted files?
+   - Do the line counts seem reasonable for the changes you made?
 
-   Show the user:
-   - List of modified files
-   - List of new files
-   - List of deleted files
-   - Summary of changes (lines added/removed)
+   If changes match expectations, proceed to commit.
 
-   Ask them to confirm:
-   - "Do these changed files match your expectations?"
-   - Provide options: "Yes, proceed with commit" / "No, let me review first" / "No, some files shouldn't be included"
+   If there are unexpected changes:
+   - Investigate why (e.g., lint auto-fixes, generated files)
+   - If they're legitimate side effects of your work, include them
+   - If they're unrelated or shouldn't be committed, use `git restore` to discard them
 
-3. **Handle user response**
-
-   - If user confirms, proceed to commit
-   - If user wants to review first, wait for them to come back
-   - If user says some files shouldn't be included, ask which files to exclude and use `git restore` or `git checkout` to unstage them
-
-4. **Stage all appropriate changes**
+3. **Stage all appropriate changes**
    ```bash
    git add -A
    ```
-   Or stage specific files if user excluded some.
+   Or stage specific files if some were excluded.
 
 5. **View recent commit messages for style reference**
    ```bash
@@ -102,8 +97,8 @@ Present the list of changed files for user review, ensure they match expectation
 
 ## Quality Criteria
 
-- Changed files list was presented to user
-- User explicitly confirmed the files match expectations
+- Changed files list was reviewed by the agent
+- Files match what was modified during this session (or unexpected changes were investigated and handled)
 - Commit message follows project conventions
 - Commit was created successfully
 - Changes were pushed to remote
@@ -111,7 +106,7 @@ Present the list of changed files for user review, ensure they match expectation
 
 ## Context
 
-This is the final step of the commit workflow. It ensures the user has reviewed and approved the changes before they are committed and pushed. This prevents accidental commits of unintended files or changes.
+This is the final step of the commit workflow. The agent verifies that the changed files match its own expectations from the work done during the session, then commits and pushes. This catches unexpected changes while avoiding unnecessary user interruptions.
 
 
 ### Job Context
@@ -138,7 +133,8 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 
 ## Outputs
 
-No specific file outputs required.
+**Required outputs**:
+- `changes_committed`
 
 ## Quality Validation
 
@@ -151,7 +147,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 3/3 complete"
+2. Inform user: "Step 3/3 complete, outputs: changes_committed"
 3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
 
 ---

@@ -199,28 +199,61 @@ def get_changed_files_default_tip() -> list[str]:
 
 
 def get_changed_files_prompt() -> list[str]:
-    """Get files changed since prompt was submitted."""
-    baseline_path = Path(".deepwork/.last_work_tree")
+    """Get files changed since prompt was submitted.
+
+    Returns files that changed since the prompt was submitted, including:
+    - Committed changes (compared to captured HEAD ref)
+    - Staged changes (not yet committed)
+    - Untracked files
+
+    This is used by trigger/safety, set, and pair mode rules to detect
+    file modifications during the agent response.
+    """
+    baseline_ref_path = Path(".deepwork/.last_head_ref")
+    changed_files: set[str] = set()
 
     try:
+        # Stage all changes first
         subprocess.run(["git", "add", "-A"], capture_output=True, check=False)
 
+        # If we have a captured HEAD ref, compare committed changes against it
+        if baseline_ref_path.exists():
+            baseline_ref = baseline_ref_path.read_text().strip()
+            if baseline_ref:
+                # Get files changed in commits since the baseline
+                result = subprocess.run(
+                    ["git", "diff", "--name-only", baseline_ref, "HEAD"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    committed_files = set(result.stdout.strip().split("\n"))
+                    changed_files.update(f for f in committed_files if f)
+
+        # Also get currently staged changes (in case not everything is committed)
         result = subprocess.run(
             ["git", "diff", "--name-only", "--cached"],
             capture_output=True,
             text=True,
             check=False,
         )
-        current_files = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
-        current_files = {f for f in current_files if f}
+        if result.stdout.strip():
+            staged_files = set(result.stdout.strip().split("\n"))
+            changed_files.update(f for f in staged_files if f)
 
-        if baseline_path.exists():
-            baseline_files = set(baseline_path.read_text().strip().split("\n"))
-            baseline_files = {f for f in baseline_files if f}
-            new_files = current_files - baseline_files
-            return sorted(new_files)
-        else:
-            return sorted(current_files)
+        # Include untracked files
+        result = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.stdout.strip():
+            untracked_files = set(result.stdout.strip().split("\n"))
+            changed_files.update(f for f in untracked_files if f)
+
+        return sorted(changed_files)
 
     except (subprocess.CalledProcessError, OSError):
         return []
@@ -236,6 +269,156 @@ def get_changed_files_for_mode(mode: str) -> list[str]:
         return get_changed_files_prompt()
     else:
         return get_changed_files_base()
+
+
+def get_created_files_base() -> list[str]:
+    """Get files created (added) relative to branch base."""
+    default_branch = get_default_branch()
+
+    try:
+        result = subprocess.run(
+            ["git", "merge-base", "HEAD", f"origin/{default_branch}"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        merge_base = result.stdout.strip()
+
+        subprocess.run(["git", "add", "-A"], capture_output=True, check=False)
+
+        # Get only added files (not modified) using --diff-filter=A
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "--diff-filter=A", merge_base, "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        committed_added = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
+
+        # Staged new files that don't exist in merge_base
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "--diff-filter=A", "--cached", merge_base],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        staged_added = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
+
+        # Untracked files are by definition "created"
+        result = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        untracked_files = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
+
+        all_created = committed_added | staged_added | untracked_files
+        return sorted([f for f in all_created if f])
+
+    except subprocess.CalledProcessError:
+        return []
+
+
+def get_created_files_default_tip() -> list[str]:
+    """Get files created compared to default branch tip."""
+    default_branch = get_default_branch()
+
+    try:
+        subprocess.run(["git", "add", "-A"], capture_output=True, check=False)
+
+        # Get only added files using --diff-filter=A
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "--diff-filter=A", f"origin/{default_branch}..HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        committed_added = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
+
+        result = subprocess.run(
+            [
+                "git",
+                "diff",
+                "--name-only",
+                "--diff-filter=A",
+                "--cached",
+                f"origin/{default_branch}",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        staged_added = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
+
+        # Untracked files are by definition "created"
+        result = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        untracked_files = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
+
+        all_created = committed_added | staged_added | untracked_files
+        return sorted([f for f in all_created if f])
+
+    except subprocess.CalledProcessError:
+        return []
+
+
+def get_created_files_prompt() -> list[str]:
+    """Get files created since prompt was submitted."""
+    baseline_path = Path(".deepwork/.last_work_tree")
+
+    try:
+        subprocess.run(["git", "add", "-A"], capture_output=True, check=False)
+
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "--cached"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        current_files = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
+        current_files = {f for f in current_files if f}
+
+        # Untracked files
+        result = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        untracked_files = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
+        untracked_files = {f for f in untracked_files if f}
+
+        all_current = current_files | untracked_files
+
+        if baseline_path.exists():
+            baseline_files = set(baseline_path.read_text().strip().split("\n"))
+            baseline_files = {f for f in baseline_files if f}
+            # Created files are those that didn't exist at baseline
+            created_files = all_current - baseline_files
+            return sorted(created_files)
+        else:
+            # No baseline means all current files are "new" to this prompt
+            return sorted(all_current)
+
+    except (subprocess.CalledProcessError, OSError):
+        return []
+
+
+def get_created_files_for_mode(mode: str) -> list[str]:
+    """Get created files for a specific compare_to mode."""
+    if mode == "base":
+        return get_created_files_base()
+    elif mode == "default_tip":
+        return get_created_files_default_tip()
+    elif mode == "prompt":
+        return get_created_files_prompt()
+    else:
+        return get_created_files_base()
 
 
 def extract_promise_tags(text: str) -> set[str]:
@@ -399,13 +582,16 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
 
     for mode, mode_rules in rules_by_mode.items():
         changed_files = get_changed_files_for_mode(mode)
-        if not changed_files:
+        created_files = get_created_files_for_mode(mode)
+
+        # Skip if no changed or created files
+        if not changed_files and not created_files:
             continue
 
         baseline_ref = get_baseline_ref(mode)
 
         # Evaluate which rules fire
-        results = evaluate_rules(mode_rules, changed_files, promised_rules)
+        results = evaluate_rules(mode_rules, changed_files, promised_rules, created_files)
 
         for result in results:
             rule = result.rule

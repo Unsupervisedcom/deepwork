@@ -111,7 +111,8 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 
 ## Outputs
 
-No specific file outputs required.
+**Required outputs**:
+- `tests_passing`
 
 ## Quality Validation
 
@@ -124,7 +125,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 1/3 complete"
+2. Inform user: "Step 1/3 complete, outputs: tests_passing"
 3. **Continue workflow**: Use Skill tool to invoke `/commit.lint`
 
 ---

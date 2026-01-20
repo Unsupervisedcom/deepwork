@@ -42,7 +42,8 @@ class TestFruitsWorkflow:
         assert identify_step.inputs[0].name == "raw_items"
 
         # Has output
-        assert identify_step.outputs == ["identified_fruits.md"]
+        assert len(identify_step.outputs) == 1
+        assert identify_step.outputs[0].file == "identified_fruits.md"
 
         # No dependencies (first step)
         assert identify_step.dependencies == []
@@ -63,7 +64,8 @@ class TestFruitsWorkflow:
         assert classify_step.inputs[0].from_step == "identify"
 
         # Has output
-        assert classify_step.outputs == ["classified_fruits.md"]
+        assert len(classify_step.outputs) == 1
+        assert classify_step.outputs[0].file == "classified_fruits.md"
 
         # Depends on identify step
         assert classify_step.dependencies == ["identify"]
@@ -190,5 +192,7 @@ class TestFruitsWorkflow:
         assert classify_step.inputs[0].from_step == "identify"
 
         # Outputs are well-defined markdown files
-        assert identify_step.outputs == ["identified_fruits.md"]
-        assert classify_step.outputs == ["classified_fruits.md"]
+        assert len(identify_step.outputs) == 1
+        assert identify_step.outputs[0].file == "identified_fruits.md"
+        assert len(classify_step.outputs) == 1
+        assert classify_step.outputs[0].file == "classified_fruits.md"

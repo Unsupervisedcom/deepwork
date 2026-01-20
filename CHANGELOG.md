@@ -5,6 +5,47 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-01-20
+
+### Added
+- Doc specs (document specifications) as a first-class feature for formalizing document quality criteria
+  - New `src/deepwork/schemas/doc_spec_schema.py` with JSON schema validation
+  - New `src/deepwork/core/doc_spec_parser.py` with parser for frontmatter markdown doc spec files
+  - Doc spec files stored in `.deepwork/doc_specs/` directory with quality criteria and example documents
+  - Auto-creates `.deepwork/doc_specs/` directory during `deepwork install`
+- Extended job.yml output schema to support document type references
+  - Outputs can now be strings (backward compatible) or objects with `file` and optional `document_type` fields
+  - Example: `outputs: [{file: "report.md", document_type: ".deepwork/doc_specs/monthly_report.md"}]`
+  - The `document_type` uses the full path to the doc spec file, making references self-documenting
+- Doc spec-aware skill generation
+  - Step skills now include doc spec quality criteria, target audience, and example documents
+  - Both Claude and Gemini templates updated for doc spec rendering
+- Document detection workflow in `deepwork_jobs.define`
+  - Steps 1.5, 1.6, 1.7 guide users through creating doc specs for document-oriented jobs
+  - Pattern indicators: "report", "summary", "create", "monthly", "for stakeholders"
+- Doc spec improvement workflow in `deepwork_jobs.learn`
+  - Steps 3.5, 4.5 capture doc spec-related learnings and update doc spec files
+- New `OutputSpec` dataclass in parser for structured output handling
+- Comprehensive doc spec documentation in `doc/doc-specs.md`
+- New test fixtures for doc spec validation and parsing
+
+### Changed
+- `Step.outputs` changed from `list[str]` to `list[OutputSpec]` for richer output metadata
+- `SkillGenerator.generate_all_skills()` now accepts `project_root` parameter for doc spec loading
+- Updated `deepwork_jobs` to v0.6.0 with doc spec-related quality criteria
+
+## [0.3.1] - 2026-01-20
+
+### Added
+- `created` rule mode for matching only newly created files (#76)
+  - Rules with `mode: created` only fire when files are first added, not on modifications
+  - Useful for enforcing patterns on new files without triggering on existing file edits
+
+### Fixed
+- Fixed `created` mode rules incorrectly firing on modified files (#83)
+- Fixed `compare_to: prompt` mode not detecting files that were committed during agent response
+  - Rules like `uv-lock-sync` now correctly fire even when changes are committed before the Stop hook runs
+
 ## [0.3.0] - 2026-01-18
 
 ### Added
@@ -100,6 +141,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
+[0.4.0]: https://github.com/anthropics/deepwork/releases/tag/0.4.0
+[0.3.1]: https://github.com/anthropics/deepwork/releases/tag/0.3.1
 [0.3.0]: https://github.com/anthropics/deepwork/releases/tag/0.3.0
 [0.1.1]: https://github.com/anthropics/deepwork/releases/tag/0.1.1
 [0.1.0]: https://github.com/anthropics/deepwork/releases/tag/0.1.0

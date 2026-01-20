@@ -244,7 +244,9 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 ## Outputs
 
 **Required outputs**:
-- `cli_configuration.md`- `hooks_system.md`
+- `cli_configuration.md`
+- `hooks_system.md`
+
 ## On Completion
 
 1. Verify outputs are created

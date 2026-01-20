@@ -13,12 +13,16 @@ hooks:
 
             1. **User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?
             2. **Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?
-            3. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
-            4. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
-            5. **Concise Summary**: Is the summary under 200 characters and descriptive?
-            6. **Rich Description**: Does the description provide enough context for future refinement?
-            7. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
-            8. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
+            3. **Document Detection**: For document-oriented workflows, did the agent detect patterns and offer doc spec creation?
+            4. **doc spec Created (if applicable)**: If a doc spec was needed, was it created in `.deepwork/doc_specs/[doc_spec_name].md` with proper quality criteria?
+            5. **doc spec References**: Are document outputs properly linked to their doc specs using `{file, document_type}` format?
+            6. **Valid Against doc spec**: Does the job.yml conform to the job.yml doc spec quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?
+            7. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
+            8. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
+            9. **Concise Summary**: Is the summary under 200 characters and descriptive?
+            10. **Rich Description**: Does the description provide enough context for future refinement?
+            11. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
+            12. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 
             ## Instructions
 
@@ -34,7 +38,7 @@ hooks:
 
 # deepwork_jobs.define
 
-**Step 1/3** in **deepwork_jobs** workflow
+**Step 1/4** in **deepwork_jobs** workflow
 
 > DeepWork job management commands
 
@@ -76,6 +80,55 @@ Start by asking structured questions to understand what the user wants to accomp
    - What are the distinct stages from start to finish?
    - Are there any dependencies between phases?
 
+### Step 1.5: Detect Document-Oriented Workflows
+
+**Check for document-focused patterns** in the user's description:
+- Keywords: "report", "summary", "document", "create", "monthly", "quarterly", "for stakeholders", "for leadership"
+- Final deliverable is a specific document type (e.g., "AWS spending report", "competitive analysis", "sprint summary")
+- Recurring documents with consistent structure
+
+**If a document-oriented workflow is detected:**
+
+1. Inform the user: "This workflow produces a specific document type. I recommend defining a Document Type Definition (doc spec) first to ensure consistent quality."
+
+2. Ask structured questions to understand if they want to:
+   - Create a doc spec for the document type
+   - Use an existing doc spec (if any exist in `.deepwork/doc_specs/`)
+   - Skip doc spec and proceed with simple outputs
+
+### Step 1.6: Define the Document Type Definition (if needed)
+
+When creating a doc spec, gather the following information:
+
+1. **Document Identity**
+   - What is the document called? (e.g., "Monthly AWS Spending Report")
+   - Brief description of its purpose
+   - Where should these documents be stored? (path patterns like `finance/aws-reports/*.md`)
+
+2. **Audience and Context**
+   - Who reads this document? (target audience)
+   - How often is it produced? (frequency)
+
+3. **Quality Criteria** (3-5 criteria, each with name and description)
+   Examples for a spending report:
+   - **Visualization**: Must include charts showing spend breakdown by service
+   - **Variance Analysis**: Must compare current month against previous with percentages
+   - **Action Items**: Must include recommended cost optimization actions
+
+4. **Document Structure**
+   - What sections should it have?
+   - Any required elements (tables, charts, summaries)?
+
+### Step 1.7: Create the doc spec File (if needed)
+
+Create the doc spec file at `.deepwork/doc_specs/[doc_spec_name].md`:
+
+**Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/doc_spec.md.template` for the standard structure.
+
+**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/doc_spec.md.example` for a fully worked example.
+
+After creating the doc spec, proceed to Step 2 with the doc spec reference for the final step's output.
+
 ### Step 2: Define Each Step
 
 For each major phase they mentioned, ask structured questions to gather details:
@@ -97,6 +150,7 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Where should each output be saved? (filename/path)
    - Should outputs be organized in subdirectories? (e.g., `reports/`, `data/`, `drafts/`)
    - Will other steps need this output?
+   - **Does this output have a doc spec?** If a doc spec was created in Step 1.6/1.7, reference it for the appropriate output
 
 4. **Step Dependencies**
    - Which previous steps must complete before this one?
@@ -108,6 +162,18 @@ For each major phase they mentioned, ask structured questions to gather details:
    - What makes a good vs. bad output for this step?
 
 **Note**: You're gathering this information to understand what instructions will be needed, but you won't create the instruction files yet - that happens in the `implement` step.
+
+#### Doc Spec-Aware Output Format
+
+When a step produces a document with a doc spec reference, use this format in job.yml:
+
+```yaml
+outputs:
+  - file: reports/monthly_spending.md
+    document_type: .deepwork/doc_specs/monthly_aws_report.md
+```
+
+The doc spec's quality criteria will automatically be included in the generated skill, ensuring consistent document quality.
 
 ### Capability Considerations
 
@@ -202,6 +268,8 @@ This creates:
 **Then create the job.yml file** at `.deepwork/jobs/[job_name]/job.yml`
 
 (Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`)
+
+**Document Type Definition**: See `.deepwork/doc_specs/job_spec.md` for the complete specification with quality criteria.
 
 **Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.template` for the standard structure.
 
@@ -322,7 +390,7 @@ Claude: Great! Creating the job.yml specification now...
 - .deepwork/jobs/competitive_research/job.yml
 
 **Next step:**
-Run `/deepwork_jobs.implement` to generate the instruction files for each step based on this specification.
+Run `/deepwork_jobs.review_job_spec` to validate the specification against quality criteria.
 ```
 
 ## Important Guidelines
@@ -362,7 +430,7 @@ The complete YAML specification file (example shown in Step 5 above).
 After creating the file:
 1. Inform the user that the specification is complete
 2. Recommend that they review the job.yml file
-3. Tell them to run `/deepwork_jobs.implement` next
+3. Tell them to run `/deepwork_jobs.review_job_spec` next
 
 ## Quality Criteria
 
@@ -407,6 +475,190 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `job.yml`
+  **Document Type**: DeepWork Job Specification
+  > YAML specification file that defines a multi-step workflow job for AI agents
+  **Definition**: `.deepwork/doc_specs/job_spec.md`
+  **Target Audience**: AI agents executing jobs and developers defining workflows
+  **Quality Criteria**:
+  1. **Valid Identifier**: Job name must be lowercase with underscores, no spaces or special characters (e.g., `competitive_research`, `monthly_report`)
+  2. **Semantic Version**: Version must follow semantic versioning format X.Y.Z (e.g., `1.0.0`, `2.1.3`)
+  3. **Concise Summary**: Summary must be under 200 characters and clearly describe what the job accomplishes
+  4. **Rich Description**: Description must be multi-line and explain: the problem solved, the process, expected outcomes, and target users
+  5. **Changelog Present**: Must include a changelog array with at least the initial version entry. Changelog should only include one entry per branch at most
+  6. **Complete Steps**: Each step must have: id (lowercase_underscores), name, description, instructions_file, outputs (at least one), and dependencies array
+  7. **Valid Dependencies**: Dependencies must reference existing step IDs with no circular references
+  8. **Input Consistency**: File inputs with `from_step` must reference a step that is in the dependencies array
+  9. **Output Paths**: Outputs must be valid filenames or paths (e.g., `report.md` or `reports/analysis.md`)
+  10. **Concise Instructions**: The content of the file, particularly the description, must not have excessively redundant information. It should be concise and to the point given that extra tokens will confuse the AI.
+
+  <details>
+  <summary>Example Document Structure</summary>
+
+  ```markdown
+  # DeepWork Job Specification: [job_name]
+
+  A `job.yml` file defines a complete multi-step workflow that AI agents can execute. Each job breaks down a complex task into reviewable steps with clear inputs and outputs.
+
+  ## Required Fields
+
+  ### Top-Level Metadata
+
+  ```yaml
+  name: job_name                    # lowercase, underscores only
+  version: "1.0.0"                  # semantic versioning
+  summary: "Brief description"      # max 200 characters
+  description: |                    # detailed multi-line explanation
+    [Explain what this workflow does, why it exists,
+    what outputs it produces, and who should use it]
+  ```
+
+  ### Changelog
+
+  ```yaml
+  changelog:
+    - version: "1.0.0"
+      changes: "Initial job creation"
+    - version: "1.1.0"
+      changes: "Added quality validation hooks"
+  ```
+
+  ### Steps Array
+
+  ```yaml
+  steps:
+    - id: step_id                   # unique, lowercase_underscores
+      name: "Human Readable Name"
+      description: "What this step accomplishes"
+      instructions_file: steps/step_id.md
+      inputs:
+        # User-provided inputs:
+        - name: param_name
+          description: "What the user provides"
+        # File inputs from previous steps:
+        - file: output.md
+          from_step: previous_step_id
+      outputs:
+        - filename.md               # simple filename
+        - reports/analysis.md       # path with directory
+        # With document type reference:
+        - file: report.md
+          document_type: .deepwork/doc_specs/report_type.md
+      dependencies:
+        - previous_step_id          # steps that must complete first
+  ```
+
+  ## Optional Fields
+
+  ### Exposed Steps
+
+  ```yaml
+  steps:
+    - id: learn
+      exposed: true                 # Makes step available without running dependencies
+  ```
+
+  ### Quality Hooks
+
+  ```yaml
+  steps:
+    - id: step_id
+      hooks:
+        after_agent:
+          # Inline prompt for quality validation:
+          - prompt: |
+              Verify the output meets criteria:
+              1. [Criterion 1]
+              2. [Criterion 2]
+              If ALL criteria are met, include `<promise>...</promise>`.
+          # External prompt file:
+          - prompt_file: hooks/quality_check.md
+          # Script for programmatic validation:
+          - script: hooks/run_tests.sh
+  ```
+
+  ### Stop Hooks (Legacy)
+
+  ```yaml
+  steps:
+    - id: step_id
+      stop_hooks:
+        - prompt: "Validation prompt..."
+        - prompt_file: hooks/check.md
+        - script: hooks/validate.sh
+  ```
+
+  ## Validation Rules
+
+  1. **No circular dependencies**: Step A cannot depend on Step B if Step B depends on Step A
+  2. **File inputs require dependencies**: If a step uses `from_step: X`, then X must be in its dependencies
+  3. **Unique step IDs**: No two steps can have the same id
+  4. **Valid file paths**: Output paths must not contain invalid characters
+  5. **Instructions files exist**: Each `instructions_file` path should have a corresponding file created
+
+  ## Example: Complete Job Specification
+
+  ```yaml
+  name: competitive_research
+  version: "1.0.0"
+  summary: "Systematic competitive analysis workflow"
+  description: |
+    A comprehensive workflow for analyzing competitors in your market segment.
+    Helps product teams understand the competitive landscape through systematic
+    identification, research, comparison, and positioning recommendations.
+
+    Produces:
+    - Vetted competitor list
+    - Research notes per competitor
+    - Comparison matrix
+    - Strategic positioning report
+
+  changelog:
+    - version: "1.0.0"
+      changes: "Initial job creation"
+
+  steps:
+    - id: identify_competitors
+      name: "Identify Competitors"
+      description: "Identify 5-7 key competitors in the target market"
+      instructions_file: steps/identify_competitors.md
+      inputs:
+        - name: market_segment
+          description: "The market segment to analyze"
+        - name: product_category
+          description: "The product category"
+      outputs:
+        - competitors_list.md
+      dependencies: []
+
+    - id: research_competitors
+      name: "Research Competitors"
+      description: "Deep dive research on each identified competitor"
+      instructions_file: steps/research_competitors.md
+      inputs:
+        - file: competitors_list.md
+          from_step: identify_competitors
+      outputs:
+        - research_notes.md
+      dependencies:
+        - identify_competitors
+
+    - id: positioning_report
+      name: "Positioning Report"
+      description: "Strategic positioning recommendations"
+      instructions_file: steps/positioning_report.md
+      inputs:
+        - file: research_notes.md
+          from_step: research_competitors
+      outputs:
+        - file: positioning_report.md
+          document_type: .deepwork/doc_specs/positioning_report.md
+      dependencies:
+        - research_competitors
+  ```
+  ```
+
+  </details>
+
 ## Quality Validation
 
 Stop hooks will automatically validate your work. The loop continues until all criteria pass.
@@ -414,12 +666,16 @@ Stop hooks will automatically validate your work. The loop continues until all c
 **Criteria (all must be satisfied)**:
 1. **User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?
 2. **Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?
-3. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
-4. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
-5. **Concise Summary**: Is the summary under 200 characters and descriptive?
-6. **Rich Description**: Does the description provide enough context for future refinement?
-7. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
-8. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
+3. **Document Detection**: For document-oriented workflows, did the agent detect patterns and offer doc spec creation?
+4. **doc spec Created (if applicable)**: If a doc spec was needed, was it created in `.deepwork/doc_specs/[doc_spec_name].md` with proper quality criteria?
+5. **doc spec References**: Are document outputs properly linked to their doc specs using `{file, document_type}` format?
+6. **Valid Against doc spec**: Does the job.yml conform to the job.yml doc spec quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?
+7. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
+8. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
+9. **Concise Summary**: Is the summary under 200 characters and descriptive?
+10. **Rich Description**: Does the description provide enough context for future refinement?
+11. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
+12. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 
 
 **To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
@@ -427,8 +683,8 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 1/3 complete, outputs: job.yml"
-3. **Continue workflow**: Use Skill tool to invoke `/deepwork_jobs.implement`
+2. Inform user: "Step 1/4 complete, outputs: job.yml"
+3. **Continue workflow**: Use Skill tool to invoke `/deepwork_jobs.review_job_spec`
 
 ---
 
