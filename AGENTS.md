@@ -21,20 +21,18 @@ When creating or modifying jobs in this repository, you MUST understand which ty
 - NEVER edit the installed copies in `.deepwork/jobs/` directly
 - After editing, run `deepwork install --platform claude` to sync
 
-### 2. Library Jobs (`library_jobs/`)
+### 2. Library Jobs (`library/jobs/`)
 
-**What they are**: Example or reusable jobs that any repository is welcome to use, but are NOT auto-installed. Users must explicitly copy or import these into their projects.
+**What they are**: Example or reusable jobs that any repository is welcome to use, but are NOT auto-installed. Users must explicitly copy or import these into their projects. Some library jobs may be symlinks to bespoke jobs that serve as good examples.
 
-**Location**: `library_jobs/[job_name]/`
+**Location**: `library/jobs/[job_name]/`
 
-**Examples** (potential):
-- Competitive research workflows
-- Code review processes
-- Documentation generation
-- Release management
+**Examples**:
+- `commit` - Lint, test, and commit workflow (symlink to `.deepwork/jobs/commit`)
 
 **Editing rules**:
-- Edit directly in `library_jobs/[job_name]/`
+- If the job is a symlink, edit the source in `.deepwork/jobs/[job_name]/`
+- If the job is a standalone directory, edit directly in `library/jobs/[job_name]/`
 - These are templates/examples for users to adopt
 - Should be well-documented and self-contained
 
@@ -77,10 +75,17 @@ deepwork/
 ├── src/deepwork/standard_jobs/    # Standard jobs (source of truth)
 │   ├── deepwork_jobs/
 │   └── deepwork_rules/
-├── library_jobs/                   # Library/example jobs
-│   └── [example_job]/
-└── .deepwork/jobs/                 # Installed standard jobs + bespoke jobs
-    ├── deepwork_jobs/              # ← Installed copy, NOT source of truth
-    ├── deepwork_rules/             # ← Installed copy, NOT source of truth
-    └── [bespoke_job]/              # ← Source of truth for bespoke only
+├── library/                        # Library of examples
+│   ├── jobs/                       # Library jobs (may be symlinks)
+│   │   ├── commit -> ../../.deepwork/jobs/commit
+│   │   └── README.md
+│   └── rules/                      # Library rules (may be symlinks)
+│       └── json_validation -> ../../.deepwork/rules/json_validation
+└── .deepwork/                      # Repo-specific configuration
+    ├── jobs/                       # Installed standard jobs + bespoke jobs
+    │   ├── deepwork_jobs/          # ← Installed copy, NOT source of truth
+    │   ├── deepwork_rules/         # ← Installed copy, NOT source of truth
+    │   └── commit/                 # ← Bespoke job (also exposed in library/)
+    └── rules/                      # Repo-specific rules
+        └── json_validation/        # ← Bespoke rule (also exposed in library/)
 ```

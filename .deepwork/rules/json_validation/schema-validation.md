@@ -5,7 +5,7 @@ trigger:
   - "**/*.yaml"
   - "**/*.json"
 action:
-  command: python3 rule_library/json_validation/scripts/validate_schema.py {file}
+  command: python3 .deepwork/rules/json_validation/scripts/validate_schema.py {file}
   run_for: each_match
 compare_to: prompt
 ---
