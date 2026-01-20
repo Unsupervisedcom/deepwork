@@ -129,19 +129,9 @@ cd deepwork
 nix develop
 ```
 
-#### Legacy Support (nix-shell)
-
-For users who prefer the traditional `nix-shell` command, `shell.nix` is available as a compatibility wrapper. It uses `flake-compat` to provide the same environment as the flake:
-
-```bash
-nix-shell
-```
-
-**Note:** The `shell.nix` file imports the development shell from `flake.nix` via flake-compat, ensuring consistency between `nix-shell` and `nix develop`.
-
 #### What's Included
 
-When you enter the Nix environment (via `nix develop`, `nix-shell`, or direnv), you'll see a welcome message with available tools. The environment includes:
+When you enter the Nix environment (via `nix develop` or direnv), you'll see a welcome message with available tools. The environment includes:
 - Python 3.11
 - uv (package manager)
 - pytest, ruff, mypy
@@ -183,7 +173,7 @@ To use your local development version of DeepWork, install it in **editable mode
 # Install in editable mode with development dependencies
 uv pip install -e ".[dev]"
 
-# Or if you're inside nix-shell
+# Inside the Nix development environment
 uv sync  # Automatically installs in editable mode
 ```
 
@@ -271,7 +261,7 @@ uv run pytest
 # Or with explicit paths
 uv run pytest tests/ -v
 
-# Using pytest directly (if in nix-shell or venv)
+# Using pytest directly (in Nix environment or venv)
 pytest
 ```
 
