@@ -31,6 +31,7 @@
             click
             rich
             jsonschema
+            rpds-py  # Required by jsonschema's referencing dependency
           ];
 
           # Skip tests during build (they can be run in devShell)
