@@ -199,9 +199,16 @@ def get_changed_files_default_tip() -> list[str]:
 
 
 def get_changed_files_prompt() -> list[str]:
-    """Get files changed since prompt was submitted."""
-    baseline_path = Path(".deepwork/.last_work_tree")
+    """Get files changed since prompt was submitted.
 
+    Returns ALL files with staged changes (modified, added, deleted).
+    This is used by trigger/safety, set, and pair mode rules to detect
+    file modifications during the agent response.
+
+    Note: The baseline file (.last_work_tree) is NOT used here - it's only
+    used by get_created_files_prompt() to detect truly NEW files for
+    created: mode rules.
+    """
     try:
         subprocess.run(["git", "add", "-A"], capture_output=True, check=False)
 
@@ -214,13 +221,7 @@ def get_changed_files_prompt() -> list[str]:
         current_files = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
         current_files = {f for f in current_files if f}
 
-        if baseline_path.exists():
-            baseline_files = set(baseline_path.read_text().strip().split("\n"))
-            baseline_files = {f for f in baseline_files if f}
-            new_files = current_files - baseline_files
-            return sorted(new_files)
-        else:
-            return sorted(current_files)
+        return sorted(current_files)
 
     except (subprocess.CalledProcessError, OSError):
         return []
