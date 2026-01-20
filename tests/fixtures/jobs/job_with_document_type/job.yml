@@ -14,5 +14,5 @@ steps:
         description: "Title for the report"
     outputs:
       - file: report.md
-        document_type: .deepwork/dtds/valid_report.md
+        document_type: .deepwork/doc_specs/valid_report.md
     dependencies: []

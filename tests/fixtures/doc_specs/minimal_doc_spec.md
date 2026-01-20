@@ -1,5 +1,5 @@
 ---
-name: "Minimal DTD"
+name: "Minimal Doc Spec"
 description: "A minimal document type definition"
 quality_criteria:
   - name: Completeness

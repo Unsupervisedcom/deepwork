@@ -2,7 +2,7 @@
 
 ## Objective
 
-Review the `job.yml` created in the define step against the DTD quality criteria using a sub-agent for unbiased evaluation, then iterate on fixes until all criteria pass.
+Review the `job.yml` created in the define step against the doc spec quality criteria using a sub-agent for unbiased evaluation, then iterate on fixes until all criteria pass.
 
 ## Why This Step Exists
 
@@ -10,7 +10,7 @@ The define step focuses on understanding user requirements and creating a job sp
 
 ## Task
 
-Use a sub-agent to review the job.yml against all 9 DTD quality criteria, then fix any failed criteria. Repeat until all criteria pass.
+Use a sub-agent to review the job.yml against all 9 doc spec quality criteria, then fix any failed criteria. Repeat until all criteria pass.
 
 ### Step 1: Read the Job Specification
 
@@ -20,10 +20,10 @@ Read the `job.yml` file created in the define step:
 .deepwork/jobs/[job_name]/job.yml
 ```
 
-Also read the DTD for reference:
+Also read the doc spec for reference:
 
 ```
-.deepwork/dtds/job_spec.md
+.deepwork/doc_specs/job_spec.md
 ```
 
 ### Step 2: Spawn Review Sub-Agent
@@ -34,14 +34,14 @@ Use the Task tool to spawn a sub-agent that will provide an unbiased review:
 Task tool parameters:
 - subagent_type: "general-purpose"
 - model: "haiku"
-- description: "Review job.yml against DTD"
+- description: "Review job.yml against doc spec"
 - prompt: [see below]
 ```
 
 **Sub-agent prompt template:**
 
 ```
-Review this job.yml against the following 9 quality criteria from the DTD.
+Review this job.yml against the following 9 quality criteria from the doc spec.
 
 For each criterion, respond with:
 - PASS or FAIL
@@ -131,7 +131,7 @@ If any criteria failed:
 
 When all 9 criteria pass:
 
-1. **Announce success**: "All 9 DTD quality criteria pass."
+1. **Announce success**: "All 9 doc spec quality criteria pass."
 2. **List what was validated**:
    - Valid Identifier
    - Semantic Version
@@ -148,7 +148,7 @@ When all 9 criteria pass:
 ## Example Review Cycle
 
 ```
-Claude: Let me review the job.yml against the DTD quality criteria.
+Claude: Let me review the job.yml against the doc spec quality criteria.
 
 [Spawns sub-agent with haiku model]
 
@@ -188,7 +188,7 @@ Sub-agent response:
 ### Summary of Required Fixes
 No fixes required - all criteria pass
 
-Claude: All 9 DTD quality criteria pass.
+Claude: All 9 doc spec quality criteria pass.
 
 <promise>Quality Criteria Met</promise>
 
@@ -198,11 +198,11 @@ Claude: All 9 DTD quality criteria pass.
 ## Quality Criteria
 
 - **Sub-Agent Used**: A sub-agent was spawned to provide unbiased review (not just self-review)
-- **All DTD Criteria Evaluated**: The sub-agent assessed all 9 quality criteria from the DTD
+- **All doc spec Criteria Evaluated**: The sub-agent assessed all 9 quality criteria from the doc spec
 - **Findings Addressed**: All failed criteria were fixed by the main agent
 - **Validation Loop Complete**: The review-fix cycle continued until all criteria passed
 - **Promise Included**: The response includes `<promise>Quality Criteria Met</promise>` when complete
 
 ## Output
 
-The validated `job.yml` file at `.deepwork/jobs/[job_name]/job.yml` that passes all 9 DTD quality criteria.
+The validated `job.yml` file at `.deepwork/jobs/[job_name]/job.yml` that passes all 9 doc spec quality criteria.

@@ -180,8 +180,8 @@ JOB_SCHEMA: dict[str, Any] = {
                                         },
                                         "document_type": {
                                             "type": "string",
-                                            "pattern": r"^\.deepwork/dtds/[a-z][a-z0-9_-]*\.md$",
-                                            "description": "Path to document type definition file",
+                                            "pattern": r"^\.deepwork/doc_specs/[a-z][a-z0-9_-]*\.md$",
+                                            "description": "Path to doc spec file",
                                         },
                                     },
                                     "additionalProperties": False,

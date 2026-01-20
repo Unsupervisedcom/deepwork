@@ -1,19 +1,19 @@
-# Document Type Definitions (DTDs)
+# Doc Specs (Document Specifications)
 
-Document Type Definitions (DTDs) are a first-class feature in DeepWork that formalize document specifications with quality criteria. They enable consistent document structure across job outputs and automated quality validation.
+Doc specs are a first-class feature in DeepWork that formalize document specifications with quality criteria. They enable consistent document structure across job outputs and automated quality validation.
 
 ## Overview
 
-DTDs solve a common problem: when AI agents produce documents (reports, summaries, analyses), the quality can be inconsistent. DTDs provide:
+Doc specs solve a common problem: when AI agents produce documents (reports, summaries, analyses), the quality can be inconsistent. Doc specs provide:
 
 - **Consistent Structure**: Define the required sections and format once
 - **Quality Criteria**: Specify measurable quality requirements
 - **Example Documents**: Show what good output looks like
-- **Reusability**: Use the same DTD across multiple jobs
+- **Reusability**: Use the same doc spec across multiple jobs
 
-## DTD File Format
+## Doc Spec File Format
 
-DTD files use frontmatter markdown format and are stored in `.deepwork/dtds/[dtd_name].md`:
+Doc spec files use frontmatter markdown format and are stored in `.deepwork/doc_specs/[doc_spec_name].md`:
 
 ```markdown
 ---
@@ -82,11 +82,11 @@ The markdown body after the frontmatter serves as an example document. This show
 - Placeholder content format
 - Any required elements (tables, charts, etc.)
 
-## Using DTDs in Jobs
+## Using Doc Specs in Jobs
 
-### Referencing a DTD in job.yml
+### Referencing a Doc Spec in job.yml
 
-When a step produces a document that should follow a DTD, reference it in the outputs using the full path:
+When a step produces a document that should follow a doc spec, reference it in the outputs using the full path:
 
 ```yaml
 steps:
@@ -96,17 +96,17 @@ steps:
     instructions_file: steps/generate_report.md
     outputs:
       - file: reports/aws_spending.md
-        document_type: .deepwork/dtds/monthly_aws_report.md
+        document_type: .deepwork/doc_specs/monthly_aws_report.md
 ```
 
-The `document_type` field uses the full path to the DTD file (starting with `.deepwork`). This makes references self-documenting and allows agents to understand them without additional context.
+The `document_type` field uses the full path to the doc spec file (starting with `.deepwork`). This makes references self-documenting and allows agents to understand them without additional context.
 
 ### What Happens During Sync
 
 When you run `deepwork sync`:
 
-1. For outputs with `document_type` references, the DTD file is loaded from the specified path
-2. The DTD information is included in the generated skill
+1. For outputs with `document_type` references, the doc spec file is loaded from the specified path
+2. The doc spec information is included in the generated skill
 3. The skill includes:
    - Document name and description
    - Target audience (if specified)
@@ -125,7 +125,7 @@ The skill will include a section like:
 
   **Document Type**: Monthly AWS Spending Report
   > A Markdown summary of AWS spend across accounts
-  **Definition**: `.deepwork/dtds/monthly_aws_report.md`
+  **Definition**: `.deepwork/doc_specs/monthly_aws_report.md`
 
   **Target Audience**: Finance team and Engineering leadership
 
@@ -140,41 +140,41 @@ The skill will include a section like:
   </details>
 ```
 
-Note how the **Definition** field includes the full path to the DTD file, making it easy for agents to reference the source specification.
+Note how the **Definition** field includes the full path to the doc spec file, making it easy for agents to reference the source specification.
 
-## Creating DTDs
+## Creating Doc Specs
 
 ### Using /deepwork_jobs.define
 
 When you run `/deepwork_jobs.define` to create a new job, the agent will:
 
 1. Detect document-oriented workflows (keywords like "report", "summary", "monthly")
-2. Offer to create a DTD for the document type
+2. Offer to create a doc spec for the document type
 3. Ask structured questions about quality criteria, audience, and structure
-4. Create the DTD file before proceeding with job definition
+4. Create the doc spec file before proceeding with job definition
 
 ### Manual Creation
 
-You can also create DTDs manually:
+You can also create doc specs manually:
 
-1. Create a new file in `.deepwork/dtds/[dtd_name].md`
+1. Create a new file in `.deepwork/doc_specs/[doc_spec_name].md`
 2. Use lowercase with underscores for the filename (e.g., `monthly_aws_report.md`)
-3. Follow the template in `.deepwork/jobs/deepwork_jobs/templates/dtd.md.template`
+3. Follow the template in `.deepwork/jobs/deepwork_jobs/templates/doc_spec.md.template`
 
-## Improving DTDs Over Time
+## Improving Doc Specs Over Time
 
 ### Using /deepwork_jobs.learn
 
-When you run `/deepwork_jobs.learn` after executing a job with DTD outputs, the agent will:
+When you run `/deepwork_jobs.learn` after executing a job with doc spec outputs, the agent will:
 
-1. Review the conversation for DTD-related learnings
+1. Review the conversation for doc spec-related learnings
 2. Identify quality criteria that were unclear or insufficient
 3. Note structural changes that were requested
-4. Update the DTD file with improvements
+4. Update the doc spec file with improvements
 
 ### What to Look For
 
-Signs that a DTD needs improvement:
+Signs that a doc spec needs improvement:
 - Repeated validation failures on specific criteria
 - User requests for additional sections
 - Confusion about what a criterion requires
@@ -182,7 +182,7 @@ Signs that a DTD needs improvement:
 
 ### Making Updates
 
-When updating a DTD:
+When updating a doc spec:
 
 1. **Quality criteria**: Add, modify, or remove criteria based on learnings
 2. **Example document**: Update structure to reflect changes
@@ -205,32 +205,32 @@ When updating a DTD:
 
 ### Organization
 
-1. **One DTD per document type**: Don't combine different document types
+1. **One doc spec per document type**: Don't combine different document types
 2. **Use descriptive filenames**: `quarterly_review.md` not `report.md`
 3. **Group related path patterns**: All storage locations for a document type
 
 ## Example: Complete Workflow
 
-1. **Define job with DTD**:
+1. **Define job with doc spec**:
    ```
    User: /deepwork_jobs.define
    Agent: What workflow would you like to create?
    User: I need to create monthly AWS spending reports for leadership
-   Agent: I detect this is a document-oriented workflow. Let me help you define a DTD first...
+   Agent: I detect this is a document-oriented workflow. Let me help you define a doc spec first...
    ```
 
-2. **DTD is created** at `.deepwork/dtds/monthly_aws_report.md`
+2. **Doc spec is created** at `.deepwork/doc_specs/monthly_aws_report.md`
 
-3. **Job references DTD** in final step output:
+3. **Job references doc spec** in final step output:
    ```yaml
    outputs:
      - file: reports/aws_$(date +%Y_%m).md
-       document_type: .deepwork/dtds/monthly_aws_report.md
+       document_type: .deepwork/doc_specs/monthly_aws_report.md
    ```
 
 4. **Sync generates skill** with quality criteria included
 
-5. **Execute job**: Agent produces document following DTD structure and criteria
+5. **Execute job**: Agent produces document following doc spec structure and criteria
 
 6. **Learn and improve**:
    ```
@@ -241,7 +241,7 @@ When updating a DTD:
 
 ## Validation
 
-DTD files are validated against a JSON schema when loaded. Required fields:
+Doc spec files are validated against a JSON schema when loaded. Required fields:
 - `name`: Non-empty string
 - `description`: Non-empty string
 - `quality_criteria`: Array with at least one criterion, each having `name` and `description`

@@ -19,7 +19,7 @@ changelog:
   - version: "1.0.0"
     changes: "Initial job creation"
   - version: "1.1.0"
-    changes: "Added nominal outputs to process-oriented steps for DTD compliance (tests_passing, code_formatted, changes_committed)"
+    changes: "Added nominal outputs to process-oriented steps for doc spec compliance (tests_passing, code_formatted, changes_committed)"
 
 steps:
   - id: test

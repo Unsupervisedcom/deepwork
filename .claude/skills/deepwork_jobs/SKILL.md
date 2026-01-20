@@ -24,7 +24,7 @@ learnings specific to the current run into AGENTS.md files in the working folder
 ## Available Steps
 
 1. **define** - Create the job.yml specification file by understanding workflow requirements
-2. **review_job_spec** - Use sub-agent to review job.yml against DTD quality criteria (requires: define)
+2. **review_job_spec** - Use sub-agent to review job.yml against doc spec quality criteria (requires: define)
 3. **implement** - Generate instruction files for each step based on the job.yml specification (requires: review_job_spec)
 4. **learn** - Reflect on conversation to improve job instructions and capture learnings
 

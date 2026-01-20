@@ -89,6 +89,8 @@
       "Bash(python3:*)",
       "Bash(pip:*)",
       "Bash(pip3:*)",
+      "Bash(pytest:*)",
+      "Bash(uv:*)",
       "Bash(node:*)",
       "Bash(npm:*)",
       "Bash(npx:*)",

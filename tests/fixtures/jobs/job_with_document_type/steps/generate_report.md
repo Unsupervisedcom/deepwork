@@ -1,6 +1,6 @@
 # Generate Report
 
-Generate a report following the DTD specification.
+Generate a report following the doc spec specification.
 
 ## Instructions
 

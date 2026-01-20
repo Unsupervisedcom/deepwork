@@ -24,7 +24,7 @@ changelog:
   - version: "0.1.0"
     changes: "Initial version"
   - version: "0.2.0"
-    changes: "Added verification_checklist.md output to verify step for DTD compliance"
+    changes: "Added verification_checklist.md output to verify step for doc spec compliance"
 
 steps:
   - id: research

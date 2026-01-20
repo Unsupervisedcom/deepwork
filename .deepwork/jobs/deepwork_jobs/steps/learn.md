@@ -65,7 +65,7 @@ For each learning identified, determine if it is:
   - "Quality criteria should include checking for Y"
   - "Add example of correct output format"
 
-**DTD-Related** (should improve document type definitions):
+**doc spec-Related** (should improve document type definitions):
 - Improvements to document quality criteria
 - Changes to document structure or format
 - Updated audience or frequency information
@@ -84,9 +84,9 @@ For each learning identified, determine if it is:
   - "This project uses camelCase for function names"
   - "The main config file is at `config/settings.yml`"
 
-### Step 3.5: Identify DTD-Related Learnings
+### Step 3.5: Identify doc spec-Related Learnings
 
-Review the conversation for DTD-related improvements:
+Review the conversation for doc spec-related improvements:
 
 1. **Quality Criteria Changes**
    - Were any quality criteria unclear or insufficient?
@@ -102,7 +102,7 @@ Review the conversation for DTD-related improvements:
    - Has the target audience changed?
    - Should frequency or path patterns be updated?
 
-**Signals for DTD improvements:**
+**Signals for doc spec improvements:**
 - User asked for changes to document format
 - Repeated validation failures on specific criteria
 - Feedback about missing sections or information
@@ -161,13 +161,13 @@ Review all instruction files for the job and identify content that:
    - Shorter instruction files - easier to read and maintain
    - Consistent guidance across steps
 
-### Step 4.5: Update DTD Files (DTD-Related Learnings)
+### Step 4.5: Update doc spec Files (doc spec-Related Learnings)
 
-If DTD-related learnings were identified:
+If doc spec-related learnings were identified:
 
-1. **Locate the DTD file**
-   - Find DTD references in job.yml outputs (look for `dtd: [dtd_name]`)
-   - DTD files are at `.deepwork/dtds/[dtd_name].md`
+1. **Locate the doc spec file**
+   - Find doc spec references in job.yml outputs (look for `document_type: .deepwork/doc_specs/[doc_spec_name].md`)
+   - doc spec files are at `.deepwork/doc_specs/[doc_spec_name].md`
 
 2. **Update quality_criteria array**
    - Add new criteria with name and description
@@ -183,7 +183,7 @@ If DTD-related learnings were identified:
    - frequency: If production cadence has changed
    - path_patterns: If storage location has changed
 
-**Example DTD update:**
+**Example doc spec update:**
 ```yaml
 # Before
 quality_criteria:

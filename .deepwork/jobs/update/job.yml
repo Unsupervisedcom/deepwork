@@ -22,7 +22,7 @@ changelog:
   - version: "1.1.0"
     changes: "Removed sync_verification.md output requirement"
   - version: "1.2.0"
-    changes: "Added nominal output for DTD compliance (files_synced)"
+    changes: "Added nominal output for doc spec compliance (files_synced)"
 
 steps:
   - id: job

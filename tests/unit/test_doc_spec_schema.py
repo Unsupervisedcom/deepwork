@@ -1,8 +1,8 @@
-"""Tests for DTD schema validation."""
+"""Tests for doc spec schema validation."""
 
 import pytest
 
-from deepwork.schemas.dtd_schema import DTD_FRONTMATTER_SCHEMA, QUALITY_CRITERION_SCHEMA
+from deepwork.schemas.doc_spec_schema import DOC_SPEC_FRONTMATTER_SCHEMA, QUALITY_CRITERION_SCHEMA
 from deepwork.utils.validation import ValidationError, validate_against_schema
 
 
@@ -40,23 +40,23 @@ class TestQualityCriterionSchema:
             validate_against_schema(data, QUALITY_CRITERION_SCHEMA)
 
 
-class TestDTDFrontmatterSchema:
-    """Tests for DTD frontmatter schema."""
+class TestDocSpecFrontmatterSchema:
+    """Tests for doc spec frontmatter schema."""
 
-    def test_valid_minimal_dtd(self) -> None:
-        """Test valid minimal DTD frontmatter."""
+    def test_valid_minimal_doc_spec(self) -> None:
+        """Test valid minimal doc spec frontmatter."""
         data = {
-            "name": "Test DTD",
+            "name": "Test Doc Spec",
             "description": "A test document type",
             "quality_criteria": [{"name": "Test", "description": "Test criterion"}],
         }
         # Should not raise
-        validate_against_schema(data, DTD_FRONTMATTER_SCHEMA)
+        validate_against_schema(data, DOC_SPEC_FRONTMATTER_SCHEMA)
 
-    def test_valid_full_dtd(self) -> None:
-        """Test valid DTD with all optional fields."""
+    def test_valid_full_doc_spec(self) -> None:
+        """Test valid doc spec with all optional fields."""
         data = {
-            "name": "Full DTD",
+            "name": "Full Doc Spec",
             "description": "A complete document type",
             "path_patterns": ["reports/*.md", "docs/*.md"],
             "target_audience": "Engineering team",
@@ -67,63 +67,63 @@ class TestDTDFrontmatterSchema:
             ],
         }
         # Should not raise
-        validate_against_schema(data, DTD_FRONTMATTER_SCHEMA)
+        validate_against_schema(data, DOC_SPEC_FRONTMATTER_SCHEMA)
 
     def test_missing_name(self) -> None:
-        """Test DTD missing name."""
+        """Test doc spec missing name."""
         data = {
             "description": "A test document type",
             "quality_criteria": [{"name": "Test", "description": "Test criterion"}],
         }
         with pytest.raises(ValidationError, match="name"):
-            validate_against_schema(data, DTD_FRONTMATTER_SCHEMA)
+            validate_against_schema(data, DOC_SPEC_FRONTMATTER_SCHEMA)
 
     def test_missing_description(self) -> None:
-        """Test DTD missing description."""
+        """Test doc spec missing description."""
         data = {
-            "name": "Test DTD",
+            "name": "Test Doc Spec",
             "quality_criteria": [{"name": "Test", "description": "Test criterion"}],
         }
         with pytest.raises(ValidationError, match="description"):
-            validate_against_schema(data, DTD_FRONTMATTER_SCHEMA)
+            validate_against_schema(data, DOC_SPEC_FRONTMATTER_SCHEMA)
 
     def test_missing_quality_criteria(self) -> None:
-        """Test DTD missing quality criteria."""
+        """Test doc spec missing quality criteria."""
         data = {
-            "name": "Test DTD",
+            "name": "Test Doc Spec",
             "description": "A test document type",
         }
         with pytest.raises(ValidationError, match="quality_criteria"):
-            validate_against_schema(data, DTD_FRONTMATTER_SCHEMA)
+            validate_against_schema(data, DOC_SPEC_FRONTMATTER_SCHEMA)
 
     def test_empty_quality_criteria(self) -> None:
-        """Test DTD with empty quality criteria array."""
+        """Test doc spec with empty quality criteria array."""
         data = {
-            "name": "Test DTD",
+            "name": "Test Doc Spec",
             "description": "A test document type",
             "quality_criteria": [],
         }
         with pytest.raises(ValidationError):
-            validate_against_schema(data, DTD_FRONTMATTER_SCHEMA)
+            validate_against_schema(data, DOC_SPEC_FRONTMATTER_SCHEMA)
 
     def test_invalid_path_patterns(self) -> None:
-        """Test DTD with invalid path patterns type."""
+        """Test doc spec with invalid path patterns type."""
         data = {
-            "name": "Test DTD",
+            "name": "Test Doc Spec",
             "description": "A test document type",
             "path_patterns": "reports/*.md",  # Should be array
             "quality_criteria": [{"name": "Test", "description": "Test criterion"}],
         }
         with pytest.raises(ValidationError):
-            validate_against_schema(data, DTD_FRONTMATTER_SCHEMA)
+            validate_against_schema(data, DOC_SPEC_FRONTMATTER_SCHEMA)
 
     def test_additional_properties_not_allowed(self) -> None:
-        """Test DTD with additional properties."""
+        """Test doc spec with additional properties."""
         data = {
-            "name": "Test DTD",
+            "name": "Test Doc Spec",
             "description": "A test document type",
             "quality_criteria": [{"name": "Test", "description": "Test criterion"}],
             "extra_field": "not allowed",
         }
         with pytest.raises(ValidationError):
-            validate_against_schema(data, DTD_FRONTMATTER_SCHEMA)
+            validate_against_schema(data, DOC_SPEC_FRONTMATTER_SCHEMA)

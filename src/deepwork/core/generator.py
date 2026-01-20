@@ -6,10 +6,10 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
 from deepwork.core.adapters import AgentAdapter, SkillLifecycleHook
-from deepwork.core.dtd_parser import (
+from deepwork.core.doc_spec_parser import (
+    DocSpecParseError,
     DocumentTypeDefinition,
-    DTDParseError,
-    parse_dtd_file,
+    parse_doc_spec_file,
 )
 from deepwork.core.parser import JobDefinition, Step
 from deepwork.schemas.job_schema import LIFECYCLE_HOOK_EVENTS
@@ -53,7 +53,7 @@ class SkillGenerator:
 
         Args:
             project_root: Path to project root
-            document_type_path: Relative path to document type file (e.g., ".deepwork/dtds/report.md")
+            document_type_path: Relative path to doc spec file (e.g., ".deepwork/doc_specs/report.md")
 
         Returns:
             DocumentTypeDefinition if file exists and parses, None otherwise
@@ -66,8 +66,8 @@ class SkillGenerator:
             return None
 
         try:
-            doc_type = parse_dtd_file(full_path)
-        except DTDParseError:
+            doc_type = parse_doc_spec_file(full_path)
+        except DocSpecParseError:
             return None
 
         self._doc_type_cache[full_path] = doc_type
@@ -390,7 +390,7 @@ class SkillGenerator:
             step: Step to generate skill for
             adapter: Agent adapter for the target platform
             output_dir: Directory to write skill file to
-            project_root: Optional project root for loading DTDs (defaults to output_dir)
+            project_root: Optional project root for loading doc specs (defaults to output_dir)
 
         Returns:
             Path to generated skill file
@@ -455,7 +455,7 @@ class SkillGenerator:
             job: Job definition
             adapter: Agent adapter for the target platform
             output_dir: Directory to write skill files to
-            project_root: Optional project root for loading DTDs (defaults to output_dir)
+            project_root: Optional project root for loading doc specs (defaults to output_dir)
 
         Returns:
             List of paths to generated skill files (meta-skill first, then steps)

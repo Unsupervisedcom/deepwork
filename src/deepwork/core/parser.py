@@ -64,7 +64,7 @@ class OutputSpec:
 
         Supports both formats:
         - String: "output.md" -> OutputSpec(file="output.md")
-        - Dict: {"file": "output.md", "document_type": ".deepwork/dtds/report.md"}
+        - Dict: {"file": "output.md", "document_type": ".deepwork/doc_specs/report.md"}
         """
         if isinstance(data, str):
             return cls(file=data)
@@ -299,7 +299,7 @@ class JobDefinition:
         Get all unique document type file paths referenced in this job's outputs.
 
         Returns:
-            List of document type file paths (e.g., ".deepwork/dtds/report.md")
+            List of doc spec file paths (e.g., ".deepwork/doc_specs/report.md")
         """
         doc_type_refs = set()
         for step in self.steps:

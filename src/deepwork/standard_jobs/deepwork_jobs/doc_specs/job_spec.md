@@ -15,7 +15,7 @@ quality_criteria:
   - name: Rich Description
     description: "Description must be multi-line and explain: the problem solved, the process, expected outcomes, and target users"
   - name: Changelog Present
-    description: "Must include a changelog array with at least the initial version entry"
+    description: "Must include a changelog array with at least the initial version entry. Changelog should only include one entry per branch at most"
   - name: Complete Steps
     description: "Each step must have: id (lowercase_underscores), name, description, instructions_file, outputs (at least one), and dependencies array"
   - name: Valid Dependencies
@@ -24,6 +24,8 @@ quality_criteria:
     description: "File inputs with `from_step` must reference a step that is in the dependencies array"
   - name: Output Paths
     description: "Outputs must be valid filenames or paths (e.g., `report.md` or `reports/analysis.md`)"
+  - name: Concise Instructions
+    description: "The content of the file, particularly the description, must not have excessively redundant information. It should be concise and to the point given that extra tokens will confuse the AI."
 ---
 
 # DeepWork Job Specification: [job_name]
@@ -73,7 +75,7 @@ steps:
       - reports/analysis.md       # path with directory
       # With document type reference:
       - file: report.md
-        document_type: .deepwork/dtds/report_type.md
+        document_type: .deepwork/doc_specs/report_type.md
     dependencies:
       - previous_step_id          # steps that must complete first
 ```
@@ -182,7 +184,7 @@ steps:
         from_step: research_competitors
     outputs:
       - file: positioning_report.md
-        document_type: .deepwork/dtds/positioning_report.md
+        document_type: .deepwork/doc_specs/positioning_report.md
     dependencies:
       - research_competitors
 ```

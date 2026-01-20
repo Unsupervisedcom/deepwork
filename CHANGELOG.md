@@ -8,31 +8,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2026-01-20
 
 ### Added
-- Document Type Definitions (DTDs) as a first-class feature for formalizing document specifications
-  - New `src/deepwork/schemas/dtd_schema.py` with JSON schema validation
-  - New `src/deepwork/core/dtd_parser.py` with parser for frontmatter markdown DTD files
-  - DTD files stored in `.deepwork/dtds/` directory with quality criteria and example documents
-  - Auto-creates `.deepwork/dtds/` directory during `deepwork install`
+- Doc specs (document specifications) as a first-class feature for formalizing document quality criteria
+  - New `src/deepwork/schemas/doc_spec_schema.py` with JSON schema validation
+  - New `src/deepwork/core/doc_spec_parser.py` with parser for frontmatter markdown doc spec files
+  - Doc spec files stored in `.deepwork/doc_specs/` directory with quality criteria and example documents
+  - Auto-creates `.deepwork/doc_specs/` directory during `deepwork install`
 - Extended job.yml output schema to support document type references
   - Outputs can now be strings (backward compatible) or objects with `file` and optional `document_type` fields
-  - Example: `outputs: [{file: "report.md", document_type: ".deepwork/dtds/monthly_report.md"}]`
-  - The `document_type` uses the full path to the DTD file, making references self-documenting
-- DTD-aware skill generation
-  - Step skills now include DTD quality criteria, target audience, and example documents
-  - Both Claude and Gemini templates updated for DTD rendering
+  - Example: `outputs: [{file: "report.md", document_type: ".deepwork/doc_specs/monthly_report.md"}]`
+  - The `document_type` uses the full path to the doc spec file, making references self-documenting
+- Doc spec-aware skill generation
+  - Step skills now include doc spec quality criteria, target audience, and example documents
+  - Both Claude and Gemini templates updated for doc spec rendering
 - Document detection workflow in `deepwork_jobs.define`
-  - Steps 1.5, 1.6, 1.7 guide users through creating DTDs for document-oriented jobs
+  - Steps 1.5, 1.6, 1.7 guide users through creating doc specs for document-oriented jobs
   - Pattern indicators: "report", "summary", "create", "monthly", "for stakeholders"
-- DTD improvement workflow in `deepwork_jobs.learn`
-  - Steps 3.5, 4.5 capture DTD-related learnings and update DTD files
+- Doc spec improvement workflow in `deepwork_jobs.learn`
+  - Steps 3.5, 4.5 capture doc spec-related learnings and update doc spec files
 - New `OutputSpec` dataclass in parser for structured output handling
-- Comprehensive DTD documentation in `doc/document-type-definitions.md`
-- New test fixtures for DTD validation and parsing
+- Comprehensive doc spec documentation in `doc/doc-specs.md`
+- New test fixtures for doc spec validation and parsing
 
 ### Changed
 - `Step.outputs` changed from `list[str]` to `list[OutputSpec]` for richer output metadata
-- `SkillGenerator.generate_all_skills()` now accepts `project_root` parameter for DTD loading
-- Updated `deepwork_jobs` to v0.6.0 with DTD-related quality criteria
+- `SkillGenerator.generate_all_skills()` now accepts `project_root` parameter for doc spec loading
+- Updated `deepwork_jobs` to v0.6.0 with doc spec-related quality criteria
 
 ## [0.3.0] - 2026-01-18
 

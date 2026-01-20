@@ -40,16 +40,16 @@ Start by asking structured questions to understand what the user wants to accomp
 
 **If a document-oriented workflow is detected:**
 
-1. Inform the user: "This workflow produces a specific document type. I recommend defining a Document Type Definition (DTD) first to ensure consistent quality."
+1. Inform the user: "This workflow produces a specific document type. I recommend defining a Document Type Definition (doc spec) first to ensure consistent quality."
 
 2. Ask structured questions to understand if they want to:
-   - Create a DTD for the document type
-   - Use an existing DTD (if any exist in `.deepwork/dtds/`)
-   - Skip DTD and proceed with simple outputs
+   - Create a doc spec for the document type
+   - Use an existing doc spec (if any exist in `.deepwork/doc_specs/`)
+   - Skip doc spec and proceed with simple outputs
 
 ### Step 1.6: Define the Document Type Definition (if needed)
 
-When creating a DTD, gather the following information:
+When creating a doc spec, gather the following information:
 
 1. **Document Identity**
    - What is the document called? (e.g., "Monthly AWS Spending Report")
@@ -70,15 +70,15 @@ When creating a DTD, gather the following information:
    - What sections should it have?
    - Any required elements (tables, charts, summaries)?
 
-### Step 1.7: Create the DTD File (if needed)
+### Step 1.7: Create the doc spec File (if needed)
 
-Create the DTD file at `.deepwork/dtds/[dtd_name].md`:
+Create the doc spec file at `.deepwork/doc_specs/[doc_spec_name].md`:
 
-**Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/dtd.md.template` for the standard structure.
+**Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/doc_spec.md.template` for the standard structure.
 
-**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/dtd.md.example` for a fully worked example.
+**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/doc_spec.md.example` for a fully worked example.
 
-After creating the DTD, proceed to Step 2 with the DTD reference for the final step's output.
+After creating the doc spec, proceed to Step 2 with the doc spec reference for the final step's output.
 
 ### Step 2: Define Each Step
 
@@ -101,7 +101,7 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Where should each output be saved? (filename/path)
    - Should outputs be organized in subdirectories? (e.g., `reports/`, `data/`, `drafts/`)
    - Will other steps need this output?
-   - **Does this output have a DTD?** If a DTD was created in Step 1.6/1.7, reference it for the appropriate output
+   - **Does this output have a doc spec?** If a doc spec was created in Step 1.6/1.7, reference it for the appropriate output
 
 4. **Step Dependencies**
    - Which previous steps must complete before this one?
@@ -114,17 +114,17 @@ For each major phase they mentioned, ask structured questions to gather details:
 
 **Note**: You're gathering this information to understand what instructions will be needed, but you won't create the instruction files yet - that happens in the `implement` step.
 
-#### DTD-Aware Output Format
+#### Doc Spec-Aware Output Format
 
-When a step produces a document with a DTD reference, use this format in job.yml:
+When a step produces a document with a doc spec reference, use this format in job.yml:
 
 ```yaml
 outputs:
   - file: reports/monthly_spending.md
-    dtd: monthly_aws_report  # References .deepwork/dtds/monthly_aws_report.md
+    document_type: .deepwork/doc_specs/monthly_aws_report.md
 ```
 
-The DTD's quality criteria will automatically be included in the generated skill, ensuring consistent document quality.
+The doc spec's quality criteria will automatically be included in the generated skill, ensuring consistent document quality.
 
 ### Capability Considerations
 
@@ -220,7 +220,7 @@ This creates:
 
 (Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`)
 
-**Document Type Definition**: See `.deepwork/dtds/job_spec.md` for the complete specification with quality criteria.
+**Document Type Definition**: See `.deepwork/doc_specs/job_spec.md` for the complete specification with quality criteria.
 
 **Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.template` for the standard structure.
 

@@ -25,11 +25,11 @@ changelog:
   - version: "0.5.0"
     changes: "Standardized on 'ask structured questions' phrasing for user input; Updated quality criteria hooks to verify phrase usage; Added guidance in implement.md to use phrase in generated instructions"
   - version: "0.6.0"
-    changes: "Added Document Type Definition (DTD) support; define.md now detects document-oriented workflows and guides DTD creation; learn.md now identifies and applies DTD-related improvements"
+    changes: "Added Document Type Definition (doc spec) support; define.md now detects document-oriented workflows and guides doc spec creation; learn.md now identifies and applies doc spec-related improvements"
   - version: "0.7.0"
-    changes: "Added job.yml DTD; define step now outputs job.yml with document_type reference for quality validation"
+    changes: "Added job.yml doc spec; define step now outputs job.yml with document_type reference for quality validation"
   - version: "0.8.0"
-    changes: "Added review_job_spec step between define and implement for DTD-based quality validation using sub-agent review"
+    changes: "Added review_job_spec step between define and implement for doc spec-based quality validation using sub-agent review"
 
 steps:
   - id: define
@@ -41,15 +41,15 @@ steps:
         description: "What complex task or workflow are you trying to accomplish?"
     outputs:
       - file: job.yml
-        document_type: .deepwork/dtds/job_spec.md
+        document_type: .deepwork/doc_specs/job_spec.md
     dependencies: []
     quality_criteria:
       - "**User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?"
       - "**Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?"
-      - "**Document Detection**: For document-oriented workflows, did the agent detect patterns and offer DTD creation?"
-      - "**DTD Created (if applicable)**: If a DTD was needed, was it created in `.deepwork/dtds/[dtd_name].md` with proper quality criteria?"
-      - "**DTD References**: Are document outputs properly linked to their DTDs using `{file, document_type}` format?"
-      - "**Valid Against DTD**: Does the job.yml conform to the job.yml DTD quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?"
+      - "**Document Detection**: For document-oriented workflows, did the agent detect patterns and offer doc spec creation?"
+      - "**doc spec Created (if applicable)**: If a doc spec was needed, was it created in `.deepwork/doc_specs/[doc_spec_name].md` with proper quality criteria?"
+      - "**doc spec References**: Are document outputs properly linked to their doc specs using `{file, document_type}` format?"
+      - "**Valid Against doc spec**: Does the job.yml conform to the job.yml doc spec quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?"
       - "**Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?"
       - "**Logical Dependencies**: Do step dependencies make sense and avoid circular references?"
       - "**Concise Summary**: Is the summary under 200 characters and descriptive?"
@@ -59,19 +59,19 @@ steps:
 
   - id: review_job_spec
     name: "Review Job Specification"
-    description: "Use sub-agent to review job.yml against DTD quality criteria"
+    description: "Use sub-agent to review job.yml against doc spec quality criteria"
     instructions_file: steps/review_job_spec.md
     inputs:
       - file: job.yml
         from_step: define
     outputs:
       - file: job.yml
-        document_type: .deepwork/dtds/job_spec.md
+        document_type: .deepwork/doc_specs/job_spec.md
     dependencies:
       - define
     quality_criteria:
       - "**Sub-Agent Used**: Was a sub-agent spawned to provide unbiased review?"
-      - "**All DTD Criteria Evaluated**: Did the sub-agent assess all 9 quality criteria?"
+      - "**All doc spec Criteria Evaluated**: Did the sub-agent assess all 9 quality criteria?"
       - "**Findings Addressed**: Were all failed criteria addressed by the main agent?"
       - "**Validation Loop Complete**: Did the review-fix cycle continue until all criteria passed?"
 
@@ -114,8 +114,8 @@ steps:
       - "**Instructions Improved**: Were job instructions updated to address identified issues?"
       - "**Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?"
       - "**Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?"
-      - "**DTD Reviewed (if applicable)**: For jobs with DTD outputs, were DTD-related learnings identified?"
-      - "**DTD Updated (if applicable)**: Were DTD files updated with improved quality criteria or structure?"
+      - "**doc spec Reviewed (if applicable)**: For jobs with doc spec outputs, were doc spec-related learnings identified?"
+      - "**doc spec Updated (if applicable)**: Were doc spec files updated with improved quality criteria or structure?"
       - "**Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?"
       - "**File References Used**: Do AGENTS.md entries reference other files where appropriate?"
       - "**Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?"

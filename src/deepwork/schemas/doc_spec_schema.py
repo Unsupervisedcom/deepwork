@@ -1,4 +1,4 @@
-"""JSON Schema definition for Document Type Definitions (DTDs)."""
+"""JSON Schema definition for doc specs (document type definitions)."""
 
 from typing import Any
 
@@ -21,8 +21,8 @@ QUALITY_CRITERION_SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
 }
 
-# Schema for DTD frontmatter
-DTD_FRONTMATTER_SCHEMA: dict[str, Any] = {
+# Schema for doc spec frontmatter
+DOC_SPEC_FRONTMATTER_SCHEMA: dict[str, Any] = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "required": ["name", "description", "quality_criteria"],

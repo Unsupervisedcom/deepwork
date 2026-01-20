@@ -63,10 +63,10 @@ class TestOutputSpec:
 
     def test_output_with_document_type(self) -> None:
         """Test output with document type reference."""
-        output = OutputSpec(file="report.md", document_type=".deepwork/dtds/monthly_report.md")
+        output = OutputSpec(file="report.md", document_type=".deepwork/doc_specs/monthly_report.md")
 
         assert output.file == "report.md"
-        assert output.document_type == ".deepwork/dtds/monthly_report.md"
+        assert output.document_type == ".deepwork/doc_specs/monthly_report.md"
         assert output.has_document_type()
 
     def test_from_dict_string(self) -> None:
@@ -88,11 +88,11 @@ class TestOutputSpec:
 
     def test_from_dict_with_document_type(self) -> None:
         """Test creating output from dict with document type."""
-        data = {"file": "report.md", "document_type": ".deepwork/dtds/monthly_report.md"}
+        data = {"file": "report.md", "document_type": ".deepwork/doc_specs/monthly_report.md"}
         output = OutputSpec.from_dict(data)
 
         assert output.file == "report.md"
-        assert output.document_type == ".deepwork/dtds/monthly_report.md"
+        assert output.document_type == ".deepwork/doc_specs/monthly_report.md"
         assert output.has_document_type()
 
 
@@ -129,7 +129,7 @@ class TestStep:
             "instructions_file": "steps/step1.md",
             "outputs": [
                 "simple_output.md",
-                {"file": "report.md", "document_type": ".deepwork/dtds/monthly_report.md"},
+                {"file": "report.md", "document_type": ".deepwork/doc_specs/monthly_report.md"},
             ],
         }
         step = Step.from_dict(data)
@@ -138,7 +138,7 @@ class TestStep:
         assert step.outputs[0].file == "simple_output.md"
         assert not step.outputs[0].has_document_type()
         assert step.outputs[1].file == "report.md"
-        assert step.outputs[1].document_type == ".deepwork/dtds/monthly_report.md"
+        assert step.outputs[1].document_type == ".deepwork/doc_specs/monthly_report.md"
         assert step.outputs[1].has_document_type()
 
     def test_from_dict_with_inputs(self) -> None:

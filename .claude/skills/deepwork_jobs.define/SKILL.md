@@ -13,10 +13,10 @@ hooks:
 
             1. **User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?
             2. **Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?
-            3. **Document Detection**: For document-oriented workflows, did the agent detect patterns and offer DTD creation?
-            4. **DTD Created (if applicable)**: If a DTD was needed, was it created in `.deepwork/dtds/[dtd_name].md` with proper quality criteria?
-            5. **DTD References**: Are document outputs properly linked to their DTDs using `{file, document_type}` format?
-            6. **Valid Against DTD**: Does the job.yml conform to the job.yml DTD quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?
+            3. **Document Detection**: For document-oriented workflows, did the agent detect patterns and offer doc spec creation?
+            4. **doc spec Created (if applicable)**: If a doc spec was needed, was it created in `.deepwork/doc_specs/[doc_spec_name].md` with proper quality criteria?
+            5. **doc spec References**: Are document outputs properly linked to their doc specs using `{file, document_type}` format?
+            6. **Valid Against doc spec**: Does the job.yml conform to the job.yml doc spec quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?
             7. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
             8. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
             9. **Concise Summary**: Is the summary under 200 characters and descriptive?
@@ -89,16 +89,16 @@ Start by asking structured questions to understand what the user wants to accomp
 
 **If a document-oriented workflow is detected:**
 
-1. Inform the user: "This workflow produces a specific document type. I recommend defining a Document Type Definition (DTD) first to ensure consistent quality."
+1. Inform the user: "This workflow produces a specific document type. I recommend defining a Document Type Definition (doc spec) first to ensure consistent quality."
 
 2. Ask structured questions to understand if they want to:
-   - Create a DTD for the document type
-   - Use an existing DTD (if any exist in `.deepwork/dtds/`)
-   - Skip DTD and proceed with simple outputs
+   - Create a doc spec for the document type
+   - Use an existing doc spec (if any exist in `.deepwork/doc_specs/`)
+   - Skip doc spec and proceed with simple outputs
 
 ### Step 1.6: Define the Document Type Definition (if needed)
 
-When creating a DTD, gather the following information:
+When creating a doc spec, gather the following information:
 
 1. **Document Identity**
    - What is the document called? (e.g., "Monthly AWS Spending Report")
@@ -119,15 +119,15 @@ When creating a DTD, gather the following information:
    - What sections should it have?
    - Any required elements (tables, charts, summaries)?
 
-### Step 1.7: Create the DTD File (if needed)
+### Step 1.7: Create the doc spec File (if needed)
 
-Create the DTD file at `.deepwork/dtds/[dtd_name].md`:
+Create the doc spec file at `.deepwork/doc_specs/[doc_spec_name].md`:
 
-**Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/dtd.md.template` for the standard structure.
+**Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/doc_spec.md.template` for the standard structure.
 
-**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/dtd.md.example` for a fully worked example.
+**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/doc_spec.md.example` for a fully worked example.
 
-After creating the DTD, proceed to Step 2 with the DTD reference for the final step's output.
+After creating the doc spec, proceed to Step 2 with the doc spec reference for the final step's output.
 
 ### Step 2: Define Each Step
 
@@ -150,7 +150,7 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Where should each output be saved? (filename/path)
    - Should outputs be organized in subdirectories? (e.g., `reports/`, `data/`, `drafts/`)
    - Will other steps need this output?
-   - **Does this output have a DTD?** If a DTD was created in Step 1.6/1.7, reference it for the appropriate output
+   - **Does this output have a doc spec?** If a doc spec was created in Step 1.6/1.7, reference it for the appropriate output
 
 4. **Step Dependencies**
    - Which previous steps must complete before this one?
@@ -163,17 +163,17 @@ For each major phase they mentioned, ask structured questions to gather details:
 
 **Note**: You're gathering this information to understand what instructions will be needed, but you won't create the instruction files yet - that happens in the `implement` step.
 
-#### DTD-Aware Output Format
+#### Doc Spec-Aware Output Format
 
-When a step produces a document with a DTD reference, use this format in job.yml:
+When a step produces a document with a doc spec reference, use this format in job.yml:
 
 ```yaml
 outputs:
   - file: reports/monthly_spending.md
-    dtd: monthly_aws_report  # References .deepwork/dtds/monthly_aws_report.md
+    document_type: .deepwork/doc_specs/monthly_aws_report.md
 ```
 
-The DTD's quality criteria will automatically be included in the generated skill, ensuring consistent document quality.
+The doc spec's quality criteria will automatically be included in the generated skill, ensuring consistent document quality.
 
 ### Capability Considerations
 
@@ -269,7 +269,7 @@ This creates:
 
 (Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`)
 
-**Document Type Definition**: See `.deepwork/dtds/job_spec.md` for the complete specification with quality criteria.
+**Document Type Definition**: See `.deepwork/doc_specs/job_spec.md` for the complete specification with quality criteria.
 
 **Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.template` for the standard structure.
 
@@ -477,18 +477,19 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 - `job.yml`
   **Document Type**: DeepWork Job Specification
   > YAML specification file that defines a multi-step workflow job for AI agents
-  **Definition**: `.deepwork/dtds/job_spec.md`
+  **Definition**: `.deepwork/doc_specs/job_spec.md`
   **Target Audience**: AI agents executing jobs and developers defining workflows
   **Quality Criteria**:
   1. **Valid Identifier**: Job name must be lowercase with underscores, no spaces or special characters (e.g., `competitive_research`, `monthly_report`)
   2. **Semantic Version**: Version must follow semantic versioning format X.Y.Z (e.g., `1.0.0`, `2.1.3`)
   3. **Concise Summary**: Summary must be under 200 characters and clearly describe what the job accomplishes
   4. **Rich Description**: Description must be multi-line and explain: the problem solved, the process, expected outcomes, and target users
-  5. **Changelog Present**: Must include a changelog array with at least the initial version entry
+  5. **Changelog Present**: Must include a changelog array with at least the initial version entry. Changelog should only include one entry per branch at most
   6. **Complete Steps**: Each step must have: id (lowercase_underscores), name, description, instructions_file, outputs (at least one), and dependencies array
   7. **Valid Dependencies**: Dependencies must reference existing step IDs with no circular references
   8. **Input Consistency**: File inputs with `from_step` must reference a step that is in the dependencies array
   9. **Output Paths**: Outputs must be valid filenames or paths (e.g., `report.md` or `reports/analysis.md`)
+  10. **Concise Instructions**: The content of the file, particularly the description, must not have excessively redundant information. It should be concise and to the point given that extra tokens will confuse the AI.
 
   <details>
   <summary>Example Document Structure</summary>
@@ -541,7 +542,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
         - reports/analysis.md       # path with directory
         # With document type reference:
         - file: report.md
-          document_type: .deepwork/dtds/report_type.md
+          document_type: .deepwork/doc_specs/report_type.md
       dependencies:
         - previous_step_id          # steps that must complete first
   ```
@@ -650,7 +651,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
           from_step: research_competitors
       outputs:
         - file: positioning_report.md
-          document_type: .deepwork/dtds/positioning_report.md
+          document_type: .deepwork/doc_specs/positioning_report.md
       dependencies:
         - research_competitors
   ```
@@ -665,10 +666,10 @@ Stop hooks will automatically validate your work. The loop continues until all c
 **Criteria (all must be satisfied)**:
 1. **User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?
 2. **Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?
-3. **Document Detection**: For document-oriented workflows, did the agent detect patterns and offer DTD creation?
-4. **DTD Created (if applicable)**: If a DTD was needed, was it created in `.deepwork/dtds/[dtd_name].md` with proper quality criteria?
-5. **DTD References**: Are document outputs properly linked to their DTDs using `{file, document_type}` format?
-6. **Valid Against DTD**: Does the job.yml conform to the job.yml DTD quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?
+3. **Document Detection**: For document-oriented workflows, did the agent detect patterns and offer doc spec creation?
+4. **doc spec Created (if applicable)**: If a doc spec was needed, was it created in `.deepwork/doc_specs/[doc_spec_name].md` with proper quality criteria?
+5. **doc spec References**: Are document outputs properly linked to their doc specs using `{file, document_type}` format?
+6. **Valid Against doc spec**: Does the job.yml conform to the job.yml doc spec quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?
 7. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
 8. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
 9. **Concise Summary**: Is the summary under 200 characters and descriptive?

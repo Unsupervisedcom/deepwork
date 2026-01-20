@@ -1,17 +1,17 @@
-"""Document Type Definition (DTD) parser."""
+"""Doc spec parser for document type definitions."""
 
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from deepwork.schemas.dtd_schema import DTD_FRONTMATTER_SCHEMA
+from deepwork.schemas.doc_spec_schema import DOC_SPEC_FRONTMATTER_SCHEMA
 from deepwork.utils.validation import ValidationError, validate_against_schema
 from deepwork.utils.yaml_utils import YAMLError, load_yaml_from_string
 
 
-class DTDParseError(Exception):
-    """Exception raised for DTD parsing errors."""
+class DocSpecParseError(Exception):
+    """Exception raised for doc spec parsing errors."""
 
     pass
 
@@ -34,7 +34,7 @@ class QualityCriterion:
 
 @dataclass
 class DocumentTypeDefinition:
-    """Represents a complete Document Type Definition."""
+    """Represents a complete document type definition (doc spec)."""
 
     # Required fields
     name: str
@@ -62,7 +62,7 @@ class DocumentTypeDefinition:
         Args:
             data: Parsed YAML frontmatter data
             example_document: The markdown body content (example document)
-            source_file: Path to the source DTD file
+            source_file: Path to the source doc spec file
 
         Returns:
             DocumentTypeDefinition instance
@@ -96,7 +96,7 @@ def _parse_frontmatter_markdown(content: str) -> tuple[dict[str, Any], str]:
         Tuple of (frontmatter dict, body content)
 
     Raises:
-        DTDParseError: If frontmatter is missing or invalid
+        DocSpecParseError: If frontmatter is missing or invalid
     """
     # Match frontmatter pattern: starts with ---, ends with ---
     # The (.*?) captures frontmatter content, which may be empty
@@ -104,7 +104,9 @@ def _parse_frontmatter_markdown(content: str) -> tuple[dict[str, Any], str]:
     match = re.match(pattern, content.strip(), re.DOTALL | re.MULTILINE)
 
     if not match:
-        raise DTDParseError("DTD file must have YAML frontmatter (content between --- markers)")
+        raise DocSpecParseError(
+            "Doc spec file must have YAML frontmatter (content between --- markers)"
+        )
 
     frontmatter_yaml = match.group(1)
     body = match.group(2).strip() if match.group(2) else ""
@@ -112,86 +114,88 @@ def _parse_frontmatter_markdown(content: str) -> tuple[dict[str, Any], str]:
     try:
         frontmatter = load_yaml_from_string(frontmatter_yaml)
     except YAMLError as e:
-        raise DTDParseError(f"Failed to parse DTD frontmatter: {e}") from e
+        raise DocSpecParseError(f"Failed to parse doc spec frontmatter: {e}") from e
 
     if frontmatter is None:
-        raise DTDParseError("DTD frontmatter is empty")
+        raise DocSpecParseError("Doc spec frontmatter is empty")
 
     return frontmatter, body
 
 
-def parse_dtd_file(filepath: Path | str) -> DocumentTypeDefinition:
+def parse_doc_spec_file(filepath: Path | str) -> DocumentTypeDefinition:
     """
-    Parse a DTD file.
+    Parse a doc spec file.
 
     Args:
-        filepath: Path to the DTD file (markdown with YAML frontmatter)
+        filepath: Path to the doc spec file (markdown with YAML frontmatter)
 
     Returns:
         Parsed DocumentTypeDefinition
 
     Raises:
-        DTDParseError: If parsing fails or validation errors occur
+        DocSpecParseError: If parsing fails or validation errors occur
     """
     filepath = Path(filepath)
 
     if not filepath.exists():
-        raise DTDParseError(f"DTD file does not exist: {filepath}")
+        raise DocSpecParseError(f"Doc spec file does not exist: {filepath}")
 
     if not filepath.is_file():
-        raise DTDParseError(f"DTD path is not a file: {filepath}")
+        raise DocSpecParseError(f"Doc spec path is not a file: {filepath}")
 
     # Read content
     try:
         content = filepath.read_text(encoding="utf-8")
     except Exception as e:
-        raise DTDParseError(f"Failed to read DTD file: {e}") from e
+        raise DocSpecParseError(f"Failed to read doc spec file: {e}") from e
 
     # Parse frontmatter and body
     frontmatter, body = _parse_frontmatter_markdown(content)
 
     # Validate against schema
     try:
-        validate_against_schema(frontmatter, DTD_FRONTMATTER_SCHEMA)
+        validate_against_schema(frontmatter, DOC_SPEC_FRONTMATTER_SCHEMA)
     except ValidationError as e:
-        raise DTDParseError(f"DTD validation failed: {e}") from e
+        raise DocSpecParseError(f"Doc spec validation failed: {e}") from e
 
-    # Create DTD instance
+    # Create doc spec instance
     return DocumentTypeDefinition.from_dict(frontmatter, body, filepath)
 
 
-def load_dtds_from_directory(dtds_dir: Path | str) -> dict[str, DocumentTypeDefinition]:
+def load_doc_specs_from_directory(
+    doc_specs_dir: Path | str,
+) -> dict[str, DocumentTypeDefinition]:
     """
-    Load all DTD files from a directory.
+    Load all doc spec files from a directory.
 
     Args:
-        dtds_dir: Path to the DTDs directory
+        doc_specs_dir: Path to the doc_specs directory
 
     Returns:
-        Dictionary mapping DTD filename (without extension) to DocumentTypeDefinition
+        Dictionary mapping doc spec filename (without extension) to DocumentTypeDefinition
 
     Raises:
-        DTDParseError: If any DTD file fails to parse
+        DocSpecParseError: If any doc spec file fails to parse
     """
-    dtds_dir = Path(dtds_dir)
+    doc_specs_dir = Path(doc_specs_dir)
 
-    if not dtds_dir.exists():
+    if not doc_specs_dir.exists():
         return {}
 
-    if not dtds_dir.is_dir():
-        raise DTDParseError(f"DTDs path is not a directory: {dtds_dir}")
+    if not doc_specs_dir.is_dir():
+        raise DocSpecParseError(f"Doc specs path is not a directory: {doc_specs_dir}")
 
-    dtds: dict[str, DocumentTypeDefinition] = {}
+    doc_specs: dict[str, DocumentTypeDefinition] = {}
 
-    for dtd_file in dtds_dir.glob("*.md"):
+    for doc_spec_file in doc_specs_dir.glob("*.md"):
         # Use stem (filename without extension) as key
-        dtd_key = dtd_file.stem
+        doc_spec_key = doc_spec_file.stem
 
         try:
-            dtd = parse_dtd_file(dtd_file)
-            dtds[dtd_key] = dtd
-        except DTDParseError:
+            doc_spec = parse_doc_spec_file(doc_spec_file)
+            doc_specs[doc_spec_key] = doc_spec
+        except DocSpecParseError:
             # Re-raise with context about which file failed
             raise
 
-    return dtds
+    return doc_specs
