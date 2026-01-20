@@ -304,7 +304,14 @@ def get_created_files_default_tip() -> list[str]:
         committed_added = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
 
         result = subprocess.run(
-            ["git", "diff", "--name-only", "--diff-filter=A", "--cached", f"origin/{default_branch}"],
+            [
+                "git",
+                "diff",
+                "--name-only",
+                "--diff-filter=A",
+                "--cached",
+                f"origin/{default_branch}",
+            ],
             capture_output=True,
             text=True,
             check=False,

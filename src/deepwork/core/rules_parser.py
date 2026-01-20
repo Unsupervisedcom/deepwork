@@ -119,9 +119,7 @@ class Rule:
 
         mode_count = sum([has_trigger, has_set, has_pair, has_created])
         if mode_count == 0:
-            raise RulesParseError(
-                f"Rule '{name}' must have 'trigger', 'set', 'pair', or 'created'"
-            )
+            raise RulesParseError(f"Rule '{name}' must have 'trigger', 'set', 'pair', or 'created'")
         if mode_count > 1:
             raise RulesParseError(f"Rule '{name}' has multiple detection modes - use only one")
 

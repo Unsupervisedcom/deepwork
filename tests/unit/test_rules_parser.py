@@ -781,6 +781,7 @@ class TestCreatedMode:
             detection_mode=DetectionMode.CREATED,
             created_patterns=["src/**/*.py"],
             instructions="Document the new module",
+            compare_to="base",
         )
         created_files = ["src/new_module.py"]
 
@@ -796,6 +797,7 @@ class TestCreatedMode:
             detection_mode=DetectionMode.CREATED,
             created_patterns=["src/**/*.py"],
             instructions="Document the new module",
+            compare_to="base",
         )
         created_files = ["tests/test_new.py"]
 
@@ -810,6 +812,7 @@ class TestCreatedMode:
             detection_mode=DetectionMode.CREATED,
             created_patterns=["src/**/*.py"],
             instructions="Document the new module",
+            compare_to="base",
         )
         # File is in changed_files but NOT in created_files
         changed_files = ["src/existing_module.py"]
@@ -826,6 +829,7 @@ class TestCreatedMode:
             detection_mode=DetectionMode.CREATED,
             created_patterns=["src/**/*.py", "lib/**/*.py"],
             instructions="Follow code standards",
+            compare_to="base",
         )
 
         # Matches first pattern
@@ -848,6 +852,7 @@ class TestCreatedMode:
             detection_mode=DetectionMode.CREATED,
             created_patterns=["src/components/**/*.tsx"],
             instructions="Document the component",
+            compare_to="base",
         )
         created_files = ["src/components/ui/Button.tsx"]
 
@@ -863,6 +868,7 @@ class TestCreatedMode:
             detection_mode=DetectionMode.CREATED,
             created_patterns=["src/**/*.py"],
             instructions="Document the new module",
+            compare_to="base",
         )
         # src/existing.py is modified (in changed_files)
         # src/new.py is created (in created_files)
@@ -884,6 +890,7 @@ class TestCreatedMode:
                 triggers=["src/**/*.py"],
                 safety=[],
                 instructions="Check source",
+                compare_to="base",
             ),
             Rule(
                 name="Created Rule",
@@ -891,6 +898,7 @@ class TestCreatedMode:
                 detection_mode=DetectionMode.CREATED,
                 created_patterns=["src/**/*.py"],
                 instructions="Document new files",
+                compare_to="base",
             ),
         ]
         # src/existing.py is modified, src/new.py is created
@@ -919,6 +927,7 @@ class TestLoadCreatedModeRule:
             """---
 name: New Module Documentation
 created: src/**/*.py
+compare_to: base
 ---
 A new Python module was created. Please add documentation.
 """
@@ -943,6 +952,7 @@ name: New Code Standards
 created:
   - src/**/*.py
   - lib/**/*.py
+compare_to: base
 ---
 New code must follow standards.
 """
@@ -965,6 +975,7 @@ New code must follow standards.
             """---
 name: New File Lint
 created: "**/*.py"
+compare_to: base
 action:
   command: "ruff check {file}"
   run_for: each_match
