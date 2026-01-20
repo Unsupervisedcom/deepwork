@@ -41,7 +41,6 @@ class ActionType(Enum):
 
 # Valid compare_to values
 COMPARE_TO_VALUES = frozenset({"base", "default_tip", "prompt"})
-DEFAULT_COMPARE_TO = "base"
 
 
 @dataclass
@@ -70,6 +69,11 @@ class Rule:
 
     # Detection mode (exactly one must be set)
     detection_mode: DetectionMode
+
+    # Common options (required)
+    compare_to: str  # Required: "base", "default_tip", or "prompt"
+
+    # Detection mode details (optional, depends on mode)
     triggers: list[str] = field(default_factory=list)  # For TRIGGER_SAFETY mode
     safety: list[str] = field(default_factory=list)  # For TRIGGER_SAFETY mode
     set_patterns: list[str] = field(default_factory=list)  # For SET mode
@@ -80,9 +84,6 @@ class Rule:
     action_type: ActionType = ActionType.PROMPT
     instructions: str = ""  # For PROMPT action (markdown body)
     command_action: CommandAction | None = None  # For COMMAND action
-
-    # Common options
-    compare_to: str = DEFAULT_COMPARE_TO
 
     @classmethod
     def from_frontmatter(
@@ -177,8 +178,8 @@ class Rule:
             if not markdown_body.strip():
                 raise RulesParseError(f"Rule '{name}' with prompt action requires markdown body")
 
-        # Get compare_to
-        compare_to = frontmatter.get("compare_to", DEFAULT_COMPARE_TO)
+        # Get compare_to (required field)
+        compare_to = frontmatter["compare_to"]
 
         return cls(
             name=name,

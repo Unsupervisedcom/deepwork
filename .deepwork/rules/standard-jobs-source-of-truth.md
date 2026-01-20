@@ -6,6 +6,7 @@ trigger:
 safety:
   - src/deepwork/standard_jobs/deepwork_jobs/**/*
   - src/deepwork/standard_jobs/deepwork_rules/**/*
+compare_to: base
 ---
 You modified files in `.deepwork/jobs/deepwork_jobs/` or `.deepwork/jobs/deepwork_rules/`.
 

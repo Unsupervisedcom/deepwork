@@ -15,7 +15,7 @@ STRING_OR_ARRAY: dict[str, Any] = {
 RULES_FRONTMATTER_SCHEMA: dict[str, Any] = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "required": ["name"],
+    "required": ["name", "compare_to"],
     "properties": {
         "name": {
             "type": "string",
@@ -85,7 +85,6 @@ RULES_FRONTMATTER_SCHEMA: dict[str, Any] = {
         "compare_to": {
             "type": "string",
             "enum": ["base", "default_tip", "prompt"],
-            "default": "base",
             "description": "Baseline for detecting file changes",
         },
     },

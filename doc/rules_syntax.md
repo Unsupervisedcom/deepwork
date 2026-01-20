@@ -36,6 +36,7 @@ class AuthService:
 name: README Accuracy
 trigger: src/**/*
 safety: README.md
+compare_to: base
 ---
 Source code changed. Please verify README.md is accurate.
 
@@ -54,6 +55,7 @@ name: Source/Test Pairing
 set:
   - src/{path}.py
   - tests/{path}_test.py
+compare_to: base
 ---
 Source and test files should change together.
 
@@ -70,6 +72,7 @@ name: API Documentation
 pair:
   trigger: api/{path}.py
   expects: docs/api/{path}.md
+compare_to: base
 ---
 API changes require documentation updates.
 
@@ -88,6 +91,7 @@ name: Python Formatting
 trigger: "**/*.py"
 action:
   command: ruff format {file}
+compare_to: prompt
 ---
 Automatically formats Python files using ruff.
 
@@ -161,6 +165,7 @@ name: Source/Test Pairing
 set:
   - src/{path}.py
   - tests/{path}_test.py
+compare_to: base
 ---
 ```
 
@@ -192,6 +197,7 @@ name: API Documentation
 pair:
   trigger: api/{module}/{name}.py
   expects: docs/api/{module}/{name}.md
+compare_to: base
 ---
 ```
 
@@ -199,11 +205,13 @@ Can specify multiple expected patterns:
 
 ```yaml
 ---
+name: API Documentation
 pair:
   trigger: api/{path}.py
   expects:
     - docs/api/{path}.md
     - schemas/{path}.json
+compare_to: base
 ---
 ```
 
@@ -281,6 +289,7 @@ safety: "*.pyi"
 action:
   command: ruff format {file}
   run_for: each_match
+compare_to: prompt
 ---
 ```
 
@@ -458,19 +467,19 @@ action:
 ---
 ```
 
-### compare_to (optional)
+### compare_to (required)
 
 Determines the baseline for detecting file changes.
 
 | Value | Description |
 |-------|-------------|
-| `base` (default) | Compare to merge-base with default branch |
+| `base` | Compare to merge-base with default branch |
 | `default_tip` | Compare to current tip of default branch |
 | `prompt` | Compare to state at last prompt submission |
 
 ```yaml
 ---
-compare_to: prompt
+compare_to: base
 ---
 ```
 
@@ -485,6 +494,7 @@ name: Test Coverage
 set:
   - src/{path}.py
   - tests/{path}_test.py
+compare_to: base
 ---
 Source code was modified without corresponding test updates.
 
@@ -507,6 +517,7 @@ pair:
   expects:
     - docs/api/{module}/{endpoint}.md
     - openapi/{module}.yaml
+compare_to: base
 ---
 API endpoint changed. Please update:
 - Documentation: {expected_files}
@@ -526,6 +537,7 @@ safety:
 action:
   command: black {file}
   run_for: each_match
+compare_to: prompt
 ---
 Formats Python files using Black.
 
@@ -545,6 +557,7 @@ set:
   - backend/api/{feature}/models.py
   - frontend/src/api/{feature}.ts
   - frontend/src/components/{feature}/**/*
+compare_to: base
 ---
 Feature files should be updated together across the stack.
 
@@ -567,6 +580,7 @@ trigger:
 safety:
   - pyproject.toml
   - CHANGELOG.md
+compare_to: base
 ---
 Code changes detected. Before merging, ensure:
 - Version is bumped in pyproject.toml (if needed)
