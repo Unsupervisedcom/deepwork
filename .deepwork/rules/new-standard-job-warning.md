@@ -3,11 +3,11 @@ name: New Standard Job Warning
 created: src/deepwork/standard_jobs/*/job.yml
 compare_to: prompt
 ---
-A new standard job is being created. Standard jobs are bundled with DeepWork and available to all users.
+A new standard job is being created. Standard jobs are bundled with DeepWork and will be installed in any project that uses DeepWork.
 
 **Before proceeding, verify this is intentional:**
 
-- **Standard jobs** (`src/deepwork/standard_jobs/`) - Ship with DeepWork, available globally
+- **Standard jobs** (`src/deepwork/standard_jobs/`) - Ship with DeepWork, auto-installed in all projects that use DeepWork
 - **Repository jobs** (`.deepwork/jobs/`) - Specific to a single repository
 - **Library jobs** - Installed from external packages
 
