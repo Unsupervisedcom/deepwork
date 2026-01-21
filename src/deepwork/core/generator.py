@@ -215,6 +215,12 @@ class SkillGenerator:
                     if hook_contexts:
                         hooks[platform_event_name] = hook_contexts
 
+        # Claude Code has separate Stop and SubagentStop events. When a Stop hook
+        # is defined, also register it for SubagentStop so it triggers for both
+        # the main agent and subagents.
+        if "Stop" in hooks:
+            hooks["SubagentStop"] = hooks["Stop"]
+
         # Backward compatibility: stop_hooks is after_agent hooks
         stop_hooks = hooks.get(
             adapter.get_platform_hook_name(SkillLifecycleHook.AFTER_AGENT) or "Stop", []
