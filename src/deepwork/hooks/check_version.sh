@@ -3,8 +3,9 @@
 #
 # Warns users if their Claude Code version is below the minimum required
 # version, as older versions may have bugs that affect DeepWork functionality.
-
-set -e
+#
+# Uses hookSpecificOutput.additionalContext to pass the warning to Claude's
+# context so it can inform the user appropriately.
 
 # ============================================================================
 # MINIMUM VERSION CONFIGURATION
@@ -66,8 +67,17 @@ version_gte() {
     fi
 }
 
-# Print warning message to stderr
-print_version_warning() {
+# Generate warning message
+get_warning_message() {
+    local current_version="$1"
+
+    cat << EOF
+CLAUDE CODE VERSION WARNING: Your version (${current_version}) is below the minimum recommended (${MINIMUM_VERSION}). Older versions have known bugs that may cause issues with DeepWork. RECOMMENDED: Run /update to update Claude Code.
+EOF
+}
+
+# Print visual warning to stderr for immediate user visibility
+print_stderr_warning() {
     local current_version="$1"
 
     cat >&2 << EOF
@@ -94,27 +104,48 @@ print_version_warning() {
 EOF
 }
 
+# Output JSON with additional context for Claude
+output_json_with_context() {
+    local context="$1"
+    # Escape special characters for JSON
+    local escaped_context
+    escaped_context=$(echo "$context" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g' | tr '\n' ' ')
+
+    cat << EOF
+{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"${escaped_context}"}}
+EOF
+}
+
 # ============================================================================
 # MAIN
 # ============================================================================
 
 main() {
     local current_version
+    local warning_message
 
-    # Get current version
-    current_version=$(get_current_version)
+    # Get current version (don't exit on failure)
+    current_version=$(get_current_version) || current_version=""
 
     if [ -z "$current_version" ]; then
-        # Could not determine version, skip check silently
+        # Could not determine version, output empty JSON and exit
+        echo '{}'
         exit 0
     fi
 
     # Check if current version is below minimum
     if ! version_gte "$current_version" "$MINIMUM_VERSION"; then
-        print_version_warning "$current_version"
+        # Print visual warning to stderr
+        print_stderr_warning "$current_version"
+
+        # Output JSON with context for Claude
+        warning_message=$(get_warning_message "$current_version")
+        output_json_with_context "$warning_message"
+    else
+        # Version is OK, output empty JSON
+        echo '{}'
     fi
 
-    # Always exit successfully - this is informational only
     exit 0
 }
 
