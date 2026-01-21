@@ -209,9 +209,7 @@ class TestClaudeAdapter:
         claude_dir = temp_dir / ".claude"
         claude_dir.mkdir()
         settings_file = claude_dir / "settings.json"
-        settings_file.write_text(
-            json.dumps({"permissions": {"allow": ["Bash(ls:*)"]}})
-        )
+        settings_file.write_text(json.dumps({"permissions": {"allow": ["Bash(ls:*)"]}}))
 
         adapter = ClaudeAdapter(temp_dir)
         adapter.sync_permissions(temp_dir)

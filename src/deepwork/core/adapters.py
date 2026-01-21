@@ -481,9 +481,7 @@ class ClaudeAdapter(AgentAdapter):
 
         return added_count
 
-    def add_skill_permissions(
-        self, project_path: Path, skill_paths: list[Path]
-    ) -> int:
+    def add_skill_permissions(self, project_path: Path, skill_paths: list[Path]) -> int:
         """
         Add Skill permissions for generated skills to settings.json.
 

@@ -177,7 +177,9 @@ def sync_skills(project_path: Path) -> None:
             try:
                 skill_perms_count = adapter.add_skill_permissions(project_path, all_skill_paths)
                 if skill_perms_count > 0:
-                    console.print(f"    [green]✓[/green] Added {skill_perms_count} skill permission(s)")
+                    console.print(
+                        f"    [green]✓[/green] Added {skill_perms_count} skill permission(s)"
+                    )
             except Exception as e:
                 console.print(f"    [red]✗[/red] Failed to sync skill permissions: {e}")
 
