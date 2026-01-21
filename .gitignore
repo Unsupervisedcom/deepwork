@@ -88,3 +88,7 @@ tmp/
 .deepwork/.last_work_tree
 .deepwork/.last_head_ref
 .deepwork/tmp/
+
+# DeepWork generated files from install
+.deepwork/rules/README.md
+.deepwork/rules/*.example
