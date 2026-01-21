@@ -21,6 +21,8 @@ Requirements tested:
 """
 
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
@@ -74,6 +76,33 @@ def assert_install_added_hooks(settings_before: dict, settings_after: dict) -> N
     )
 
 
+@contextmanager
+def mock_local_claude_settings(
+    tmp_path: Path, content: str | dict = '{"local": "unchanged"}'
+) -> Iterator[Path]:
+    """Create mock local Claude settings and patch HOME to use them.
+
+    Args:
+        tmp_path: Temporary directory to create mock home in
+        content: Settings content (string or dict to be JSON-serialized)
+
+    Yields:
+        Path to the local settings file (for verification after install)
+    """
+    mock_home = tmp_path / "mock_home"
+    mock_local_claude_dir = mock_home / ".claude"
+    mock_local_claude_dir.mkdir(parents=True)
+
+    local_settings_file = mock_local_claude_dir / "settings.json"
+    if isinstance(content, dict):
+        local_settings_file.write_text(json.dumps(content, indent=2))
+    else:
+        local_settings_file.write_text(content)
+
+    with patch.dict("os.environ", {"HOME": str(mock_home)}):
+        yield local_settings_file
+
+
 # =============================================================================
 # REQ-001: Install MUST NOT modify local (user home) Claude settings
 # =============================================================================
@@ -114,44 +143,30 @@ class TestLocalSettingsProtection:
 
         DO NOT MODIFY THIS TEST.
         """
-        # Create a mock local Claude settings directory in tmp_path
-        mock_home = tmp_path / "mock_home"
-        mock_local_claude_dir = mock_home / ".claude"
-        mock_local_claude_dir.mkdir(parents=True)
-
-        # Create local settings with known content
-        local_settings_file = mock_local_claude_dir / "settings.json"
         original_local_settings = {
             "user_preference": "do_not_change",
             "api_key_encrypted": "sensitive_data_here",
             "custom_config": {"setting1": True, "setting2": "value"},
         }
-        local_settings_file.write_text(json.dumps(original_local_settings, indent=2))
 
-        # Record the original file modification time
-        original_mtime = local_settings_file.stat().st_mtime
-
-        # Run install with mocked home directory
-        with patch.dict("os.environ", {"HOME": str(mock_home)}):
+        with mock_local_claude_settings(tmp_path, original_local_settings) as local_file:
+            original_mtime = local_file.stat().st_mtime
             run_install(mock_claude_project)
 
-        # CRITICAL: Verify local settings were NOT modified
-        assert local_settings_file.exists(), "Local settings file should still exist"
+            # CRITICAL: Verify local settings were NOT modified
+            assert local_file.exists(), "Local settings file should still exist"
 
-        # Check content is unchanged
-        current_local_settings = json.loads(local_settings_file.read_text())
-        assert current_local_settings == original_local_settings, (
-            "LOCAL SETTINGS WERE MODIFIED! "
-            "Install MUST NOT touch user's home directory Claude settings. "
-            f"Expected: {original_local_settings}, Got: {current_local_settings}"
-        )
+            current_local_settings = json.loads(local_file.read_text())
+            assert current_local_settings == original_local_settings, (
+                "LOCAL SETTINGS WERE MODIFIED! "
+                "Install MUST NOT touch user's home directory Claude settings. "
+                f"Expected: {original_local_settings}, Got: {current_local_settings}"
+            )
 
-        # Check modification time is unchanged
-        current_mtime = local_settings_file.stat().st_mtime
-        assert current_mtime == original_mtime, (
-            "LOCAL SETTINGS FILE WAS TOUCHED! "
-            "Install MUST NOT access user's home directory Claude settings."
-        )
+            assert local_file.stat().st_mtime == original_mtime, (
+                "LOCAL SETTINGS FILE WAS TOUCHED! "
+                "Install MUST NOT access user's home directory Claude settings."
+            )
 
     def test_install_only_modifies_project_settings(
         self, mock_claude_project: Path, tmp_path: Path
@@ -164,27 +179,19 @@ class TestLocalSettingsProtection:
 
         DO NOT MODIFY THIS TEST.
         """
-        # Create mock local Claude settings
-        mock_home = tmp_path / "mock_home"
-        mock_local_claude_dir = mock_home / ".claude"
-        mock_local_claude_dir.mkdir(parents=True)
-
-        local_settings_file = mock_local_claude_dir / "settings.json"
         original_local_content = '{"local": "unchanged"}'
-        local_settings_file.write_text(original_local_content)
 
-        # Run install
-        with patch.dict("os.environ", {"HOME": str(mock_home)}):
+        with mock_local_claude_settings(tmp_path, original_local_content) as local_file:
             run_install(mock_claude_project)
 
-        # Verify LOCAL settings unchanged
-        assert local_settings_file.read_text() == original_local_content, (
-            "Local settings were modified! Install must only modify project settings."
-        )
+            # Verify LOCAL settings unchanged
+            assert local_file.read_text() == original_local_content, (
+                "Local settings were modified! Install must only modify project settings."
+            )
 
-        # Verify PROJECT settings were modified (hooks should be added)
-        project_settings = get_project_settings(mock_claude_project)
-        assert "hooks" in project_settings, "Project settings should have hooks after install"
+            # Verify PROJECT settings were modified (hooks should be added)
+            project_settings = get_project_settings(mock_claude_project)
+            assert "hooks" in project_settings, "Project settings should have hooks after install"
 
 
 # =============================================================================
