@@ -1,70 +1,70 @@
-# DeepWork Fit Analysis: Loyal
+# DeepWork Fit Analysis: Stand Insurance
 
 ## Summary
-- **Fit Score**: Medium-Strong
-- **Best Positioning**: "Systematize the research and reporting workflows that come with pioneering a new FDA category"
-- **Primary Hook**: "You're making regulatory history—your internal processes should be as rigorous as your science"
+- **Fit Score**: Strong
+- **Best Positioning**: "You're 13 people building physics-based AI for climate risk—systematize the research and monitoring that feeds your models"
+- **Primary Hook**: "You're tracking wildfires, hurricanes, and regulatory changes across two states. That's a lot to re-explain to Claude every week."
 
-## Why DeepWork Resonates for Loyal
+## Why DeepWork Resonates for Stand
 
-Loyal is pioneering an entirely new FDA drug category (longevity), which means Celine and team are constantly navigating uncharted territory—monitoring regulatory precedents, tracking a fast-evolving longevity research landscape, and communicating complex science to 38+ investors. These are exactly the kind of multi-step, repeatable workflows where consistency matters.
+Stand is the ideal DeepWork customer: 13-person team, technical founder, AI-native product, and operating in a domain (climate/catastrophe insurance) where staying current on research and regulations is existential. Dan Preston has CS degrees from Stanford, published research in astrophysics and computer vision—he'll appreciate the architecture.
 
-Celine's background (Chief of Staff at Longevity Fund, technical founder) suggests she'd appreciate DeepWork's architecture. She's already using AI—the question is whether she's doing it systematically. With a growing team of neuroscientists, regulatory experts, and operators, there are likely workflows that get explained ad-hoc rather than defined once and executed consistently.
+The company is tracking an enormous amount of signal: wildfire patterns, climate research, regulatory changes in California and Florida, competitor moves in insurtech, and broker landscape shifts. With 13 people wearing many hats, these research and monitoring workflows are likely done ad-hoc rather than systematically.
 
-The biotech angle is interesting: content and communications need accuracy checks (FDA-regulated claims), investor updates need to be consistent and thorough, and competitive intelligence in the longevity space is a constant need. DeepWork's "define once, execute with built-in validation" model fits well.
+The timing is perfect: LA wildfires just put Stand in the spotlight (CNBC feature), they're expanding to Florida, and the climate insurance space is evolving weekly. DeepWork's "define once, run consistently" model fits a team that needs rigorous monitoring but doesn't have bandwidth for manual process.
 
 ## Likely Workflows
 
 ### High-Value Workflows (Lead with these)
 | Workflow | Frequency | Current Owner | Pain Level | DeepWork Value |
 |----------|-----------|---------------|------------|----------------|
-| **Longevity landscape research** | Weekly/Monthly | Celine or research team | High | Stay current on papers, competitors, FDA news automatically |
-| **Investor updates** | Monthly | Celine/ops | Medium | Consistent format, pull metrics, draft updates systematically |
-| **Regulatory intelligence** | Ongoing | Regulatory team | High | Track FDA guidance, precedent decisions, competitor submissions |
-| **Content with accuracy checks** | Ongoing | Marketing/Celine | Medium | Generate content → validate claims against FDA guidelines |
-| **Board deck preparation** | Quarterly | Celine/ops | Medium | Structured process: pull data → create narrative → review |
+| **Climate/catastrophe monitoring** | Daily/Weekly | Dan or ops | High | Track wildfires, hurricanes, climate news, NOAA data automatically |
+| **Regulatory intelligence** | Weekly | Ops/legal | High | Monitor CA and FL insurance regulations, DOI announcements |
+| **Insurtech competitive research** | Monthly | Dan or BD | Medium | Track competitors (Hippo, Kin, Lemonade), funding, product launches |
+| **Investor updates** | Monthly | Dan | Medium | Pull metrics, summarize milestones, draft consistent updates for 13 investors |
+| **Broker outreach/research** | Ongoing | Sales | Medium | Research E&S brokers, track relationships, systematize outreach |
 
 ### Secondary Workflows
-- **Clinical trial status reporting**: Summarize STAY study progress for various audiences
-- **Partnership/BD research**: Research potential vet clinic partners, industry landscape
-- **New hire onboarding**: Standardize ramp-up for new scientists, operators
-- **Press/media preparation**: Prep talking points, fact-check claims before interviews
+- **Florida market expansion research**: Deep dives on hurricane patterns, Florida regulatory landscape, local broker ecosystem
+- **Board deck preparation**: Quarterly structured process for board materials
+- **Property risk documentation**: Summarize risk analyses for underwriting (may be automated already)
+- **Press/media preparation**: With CNBC spotlight, likely getting more press inquiries
 
 ## Positioning Strategy
 
 ### Primary Angle
-"You're building the SpaceX of aging—your internal processes should match that ambition. DeepWork lets you define research, reporting, and content workflows once, then execute them consistently with built-in validation."
+"You're 13 people tracking wildfires, hurricane patterns, two states' worth of regulations, and a fast-moving insurtech landscape. DeepWork lets you define those monitoring workflows once and run them with a slash command. Same rigor, no re-explaining."
 
 ### Secondary Angles
-- **Regulatory rigor angle**: "When you're making FDA history, consistency in your processes matters. Define your regulatory monitoring workflow once, run it every week."
-- **Founder bandwidth angle**: "You're the face of longevity—let DeepWork handle the repetitive research and reporting so you can focus on the science and storytelling."
-- **Team scaling angle**: "As you grow past 50 people, workflows that lived in your head need to become repeatable. DeepWork captures them."
+- **Climate intelligence angle**: "Your product is physics-based AI for climate risk. Your internal research should be just as systematic. Define your climate monitoring workflow once, run it every Monday."
+- **Founder bandwidth angle**: "You just got featured on CNBC, you're expanding to Florida, and you're still 13 people. Let DeepWork handle the recurring research so you can focus on the fires (literally)."
+- **Regulatory rigor angle**: "Insurance is heavily regulated. Your regulatory monitoring should be consistent and documented. DeepWork creates an audit trail of what you tracked and when."
 
 ### What NOT to Lead With
-- Don't emphasize "small team" positioning—Loyal is past that stage
-- Don't focus on software development workflows—they're a biotech, not a software company
-- Don't undersell the complexity—Celine appreciates sophisticated tools
+- Don't focus on software dev workflows—Stand is insurtech, not pure software
+- Don't undersell the complexity—Dan has Stanford CS, astrophysics research, he appreciates sophisticated tools
+- Don't ignore the timing—LA wildfires just happened, this is extremely relevant right now
 
 ## Potential Objections & Responses
 | Objection | Response |
 |-----------|----------|
-| "We're a biotech, not a software company" | "DeepWork works for any complex workflow—research, reporting, content. You don't need to be building software to benefit from systematized AI workflows." |
-| "We already have processes" | "The question isn't whether you have processes—it's whether your AI assistant knows them. DeepWork makes Claude Code follow your exact process every time." |
-| "I can just explain to Claude each time" | "You can, but you're pioneering a new FDA category. Do you want your regulatory monitoring to depend on whether you remembered all the steps this week?" |
-| "We're too busy with the clinical trial" | "That's exactly why—you don't have bandwidth for ad-hoc processes. Define once, run consistently. The workflow does the heavy lifting." |
+| "We're a 13-person startup, we don't have time for process" | "That's exactly the point—you don't have time to re-explain your research process every week. Define it once, run it forever." |
+| "Our models are proprietary, we can't share data with AI" | "DeepWork runs on your local Claude Code—nothing leaves your machine. And it's for research/monitoring workflows, not your core IP." |
+| "We're too busy with the LA wildfire response" | "Which is why you need systematic monitoring instead of ad-hoc. Define your climate intel workflow now, run it every week without thinking." |
+| "We already track this stuff" | "The question is whether you track it the same way every time. DeepWork ensures consistency—same sources, same analysis, same format." |
 
 ## Recommended Demo Workflow
 
-**Workflow name**: `/longevity_monitor`
+**Workflow name**: `/climate_intel`
 
-**Why this demo**: The longevity/aging space is evolving rapidly—new papers, competitor moves, FDA guidance changes. Celine needs to stay current but doesn't have time to manually track everything. This workflow is universally relatable for any founder in a fast-moving space, produces immediately useful output, and shows the "define once, run forever" value.
+**Why this demo**: Stand's entire business is predicting climate risk. Staying current on wildfires, hurricanes, climate research, and regulatory changes is existential. This workflow is immediately useful, tied directly to their core business, and shows how DeepWork systematizes exactly what they need.
 
 **Proposed steps**:
-1. `/longevity_monitor.scan` → Research latest papers, funding news, FDA updates → `weekly_scan.md`
-2. `/longevity_monitor.analyze` → Analyze implications for Loyal → `implications.md`
-3. `/longevity_monitor.competitive` → Update competitive landscape → `competitive_update.md`
-4. `/longevity_monitor.briefing` → Generate executive briefing for leadership → `briefing.md`
+1. `/climate_intel.scan` → Scan for wildfire/hurricane news, NOAA updates, climate research → `weekly_scan.md`
+2. `/climate_intel.regulatory` → Check CA and FL DOI announcements, regulatory changes → `regulatory_update.md`
+3. `/climate_intel.analyze` → Analyze implications for Stand's risk models and markets → `implications.md`
+4. `/climate_intel.briefing` → Generate executive briefing for leadership team → `briefing.md`
 
 **Alternative demo options**:
-1. **`/investor_update`**: Pull metrics → summarize milestones → draft update → review checklist. Appeals to the "38+ investors" reality.
-2. **`/content_review`**: Generate content → fact-check against FDA guidelines → flag claims → produce compliant draft. Appeals to the regulatory-conscious biotech.
+1. **`/insurtech_monitor`**: Track competitors (Hippo, Kin, Lemonade), funding news, product launches. Appeals to competitive positioning.
+2. **`/investor_update`**: Pull metrics → summarize → draft update. With 13 investors, consistent updates matter.

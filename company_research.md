@@ -1,97 +1,93 @@
-# Company Research: Loyal
+# Company Research: Stand Insurance
 
 ## Quick Summary
-- **What they do**: Biotech developing drugs to extend dog lifespan (first-ever FDA path for longevity drugs)
-- **Team size**: 20-50+ (estimated, growing)
-- **Funding**: $150M+ total
+- **What they do**: Climate insurance using physics-driven AI to underwrite wildfire & hurricane risk
+- **Team size**: 13 employees
+- **Funding**: $64.2M total ($35M Series B, Oct 2024)
 - **Location**: San Francisco
-- **Stage**: Series B, clinical stage
+- **Stage**: Series B, early commercial (launched 2024)
 
 ## Company Overview
 
-Loyal is a clinical-stage biotech company developing the first FDA-approved drugs to extend the lifespan and healthspan of dogs. Founded in 2019 by Celine Halioua at age 25, the company is pioneering longevity medicine—starting with dogs, with eventual plans to apply learnings to humans.
+Stand Insurance is a startup property insurer providing homeowners insurance for climate-exposed properties—specifically homes in California wildfire zones and Florida hurricane areas that traditional insurers won't cover or charge unaffordable rates.
 
-The company's thesis: dogs are the ideal model for longevity research because they share our environment, get similar age-related diseases, and have much shorter lifespans (making clinical trials feasible). If they succeed, Loyal will have the first drug approved for longevity in any species, including humans.
+Founded in 2024 by a team of Silicon Valley veterans, Stand uses physics-based AI models to build "digital twins" of properties and simulate how extreme weather would impact them. This approach has never been used before in the insurance industry and allows them to accurately price risk that others can't.
 
-Loyal is backed by $150M+ from investors including Valor Equity Partners, Collaborative Fund, First Round Capital, and others. They're running the largest veterinary clinical trial in history.
+The company emerged from stealth with $30M in funding, backing from top-tier reinsurers, and an AM Best A- rating. They've since raised a $35M Series B to expand into Florida. They currently insure properties valued at over $1 billion total in wildfire-prone California.
 
-## Product & Drug Pipeline
+## Product & Technology
 
-**LOY-001** (Large Dogs)
-- For dogs over 100 lbs
-- First drug to receive FDA "Reasonable Expectation of Effectiveness" for longevity
-- Targets metabolic pathways associated with aging in large breeds
+**Core Innovation**: Physics-driven AI risk modeling
+- Creates digital twins of properties using remote sensing data
+- Simulates how wind, heat, embers, and other factors contribute to damage
+- Collects homeowner details (window materials, tree species, etc.)
+- Produces customized fire resilience plans for each property
 
-**LOY-002** (Senior Dogs)
-- For senior dogs 10+ years old, weighing 14+ lbs (all breeds)
-- Daily pill prescribed by vets
-- Improves metabolic health to address age-related disease
-- STAY Study: 1,300 dogs enrolled, 70 veterinary clinics—largest veterinary trial ever
-- Second drug to receive FDA RXE acknowledgement for longevity
-- Anticipates conditional approval by end of 2025
+**Target Market**:
+- Higher-end homes in California ($1B+ total insured value)
+- Properties that can't get affordable coverage elsewhere due to wildfire/hurricane risk
+- Expanding to Florida for hurricane coverage
+
+**Go-to-Market**: E&S (Excess and Surplus) broker model—working with brokers who specialize in hard-to-place risks
 
 ## Team & Leadership
 
-**Founder & CEO**: Celine Halioua
-- Founded Loyal in 2019 at age 25
-- Background: Oxford University, then Chief of Staff at Laura Deming's Longevity Fund
-- Vision: Build "the SpaceX of aging"
-- High-profile founder, active on Twitter/X (@celinehalioua)
+**Founder & CEO**: Dan Preston
+- Former CEO of Metromile (public via SPAC 2020, acquired by Lemonade 2022)
+- CS degrees from Brandeis and Stanford
+- Published research in astrophysics and computer vision
+- Personal experience: house damaged in 2020 CZU Lightning Complex fire
+- Active on Twitter/X (@danpres)
 
-**Leadership Team**:
-- Hubert Chen – Chief R&D Officer
-- Jill Isenstadt – Chief Commercial Officer
-- Ellen Ratcliff, DVM – VP, Clinical and Veterinary Medicine
-- Matt Peloquin – VP, Research
-- Phelps Peeler – VP, Product and Engineering
-- Stan Berkow – Head of Product
-- Stefan Leape – Head of Business Development
+**Co-Founders** (Silicon Valley all-stars):
+- **Jason Mueller**, CPO – Former CPO at Policygenius
+- **Sam Shank** – Former CEO at HotelTonight (acquired by Airbnb)
+- **Bill Clerico** – Former CEO at WePay (acquired by JP Morgan), Managing Partner at Convective Capital
 
-**Team composition**: Neuroscientists, veterinarians, biologists, chemists, regulatory experts, creatives, operators. 61% women.
-
-**Hiring stats** (from recent round): 13,389 candidates → 532 first interviews → 30 offers → 29 accepted (0.22% acceptance rate)
+**Team composition**: 13 employees, interdisciplinary across insurance, wildfire science, AI, and consumer distribution
 
 ## Funding & Investors
 
-- **Total raised**: $150M+
-- **Series B**: $45M (2024)
-- **B-2 Extension**: $22M (Valor Equity Partners, Collaborative Fund)
-- **Key investors**: First Round Capital, Valor Equity Partners, Collaborative Fund, Khosla Ventures, Age1, and 38+ others
+- **Total raised**: $64.2M
+- **Series A**: $30M (Inspired Capital, Lowercarbon, Equal Ventures, Convective Capital)
+- **Series B**: $35M (Eclipse Ventures, Oct 2024)
+- **Other investors**: Augur Energy AI Fund, Fjor, and 13 total investors
 
 ## Market & Competition
 
-**Longevity/aging space competitors**:
-- Unity Biotechnology (senolytic drugs)
-- Rejuvenate Bio (gene therapy for dogs)
-- Embark (dog DNA testing)
-- Animal Bioscience
+**Traditional Competitors**:
+- State Farm, Allstate, Farmers (pulling out of California)
+- California FAIR Plan (insurer of last resort)
+
+**Insurtech Competitors**:
+- Hippo (home insurance tech)
+- Lemonade (digital insurance)
+- Kin (catastrophe-focused)
 
 **Differentiation**:
-- First (and only) company with FDA RXE for longevity drugs
-- Dogs-first approach creates faster path to validation
-- Running largest veterinary clinical trial in history
-- Strong regulatory expertise
+- Physics-based AI simulation (not just historical data)
+- Willing to write policies others won't
+- Customized fire resilience plans per property
+- Experienced founding team with exits
 
 ## Recent News
 
-- **Feb 2025**: LOY-002 receives FDA "Reasonable Expectation of Effectiveness" acknowledgement
-- **2024**: Raised $45M Series B + $22M extension
-- **Dec 2023**: STAY study (LOY-002 pivotal trial) dosed first dog
-- **Historical**: First company ever to receive FDA RXE for longevity (LOY-001)
-- **Expected**: Conditional FDA approval by end of 2025
+- **Jan 2025**: LA wildfires put Stand in spotlight—featured on CNBC as homeowners seek coverage
+- **Oct 2024**: Closed $35M Series B led by Eclipse, announced Florida expansion
+- **2024**: Launched from stealth with $30M, AM Best A- rating
+- **Currently**: ~$1B in total insured value in California, in talks with hundreds of potential customers
 
 ## Notable
 
-- Celine Halioua is a prominent voice in longevity/biotech Twitter
-- The company has made multiple "first ever" regulatory achievements
-- Vision extends beyond dogs to humans ("first in dogs, then humans")
-- Strong media presence and storytelling
+- Dan Preston has a successful exit (Metromile → Lemonade)
+- Personal motivation: Dan's own home was damaged by wildfire
+- Extremely timely: California wildfire crisis + insurers fleeing the state
+- Interdisciplinary approach: physics, AI, insurance, consumer tech
 
 ## Sources
-- [Loyal Homepage](https://loyal.com/)
-- [Loyal About Us](https://loyal.com/about)
-- [PitchBook Profile](https://pitchbook.com/profiles/company/432831-70)
-- [First Round Portfolio](https://www.firstround.com/companies/loyal)
-- [Celine Halioua LinkedIn](https://www.linkedin.com/in/celinehh)
-- [LOY-002 RXE Announcement](https://loyal.com/posts/loy-002-receives-rxe-from-the-fda)
-- [The Split Podcast Interview](https://www.thespl.it/p/how-to-build-a-biotech-with-celine)
+- [Stand Insurance Homepage](https://www.standinsurance.com)
+- [Launch Press Release](https://www.prnewswire.com/news-releases/team-of-silicon-valley-veterans-launch-stand-insurance-using-physics-driven-ai-to-insure-the-worlds-climate-impacted-properties-302333108.html)
+- [CNBC: LA Wildfires Coverage](https://www.cnbc.com/2025/01/19/la-wildfires-put-stand-in-spotlight-as-homeowners-seek-insurance.html)
+- [PitchBook Profile](https://pitchbook.com/profiles/company/615671-47)
+- [Dan Preston LinkedIn](https://www.linkedin.com/in/danrpreston/)
+- [MCJ Inevitable Podcast](https://mcj.vc/inevitable-podcast/stand)

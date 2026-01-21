@@ -1,7 +1,7 @@
-# Outreach Assets: Loyal
+# Outreach Assets: Stand Insurance
 
-**Target**: Celine Halioua, Founder & CEO
-**Company**: Loyal (loyal.com)
+**Target**: Dan Preston, Co-Founder & CEO
+**Company**: Stand Insurance (standinsurance.com)
 **Relationship**: Friend
 **Generated**: 2025-01-13
 
@@ -9,19 +9,19 @@
 
 ## Email
 
-**Subject**: Something for your longevity research firehose
+**Subject**: Something for tracking the wildfire/climate firehose
 
-Hey Celine,
+Hey Dan,
 
-You came to mind when we finished building this thing—mostly because I know you're drinking from a firehose trying to track papers, FDA moves, and competitors in a space that didn't exist five years ago.
+Saw the CNBC piece after the LA fires—congrats on being in exactly the right place at exactly the right time. Also, I imagine you're drowning in signal right now: wildfire updates, regulatory changes, insurtech moves, Florida expansion research.
 
-We built DeepWork, which lets you define multi-step workflows once and then execute them via slash commands in Claude Code. Think: `/longevity_monitor.scan` runs your weekly research process, `/investor_update.draft` pulls metrics and drafts your monthly update—same quality every time, no re-explaining.
+We built something that I think would click for you. It's called DeepWork—lets you define multi-step research workflows once, then execute them via slash commands in Claude Code. Think: `/climate_intel.scan` runs your weekly wildfire/hurricane monitoring, `/regulatory.check` tracks CA and FL DOI announcements—same rigor every time, no re-explaining.
 
-The thing that made me think of Loyal specifically: you're pioneering a new FDA category, which means every regulatory precedent matters. Seems like the kind of thing where "I'll just ask Claude" isn't rigorous enough—you need your AI following the exact same process every week.
+The thing that made me think of Stand: you're 13 people building physics-based AI for climate risk. Your product is systematic and rigorous. Seems like your internal research should be too—but who has time to build that when you're also responding to the biggest wildfire season in years?
 
-We're using it for marketing content with accuracy checks, DevOps automation, and founder outreach (literally used it to write this email). Would love to show you how it works—20 min, I'll set up a longevity research workflow and run it live.
+We're using it for marketing content with accuracy checks, competitive research, and founder outreach (used it to write this email). Would love to show you how it works—20 min, I'll set up a climate intel workflow and run it live.
 
-Down to take a look?
+Interested?
 
 [Your name]
 
@@ -30,53 +30,54 @@ Down to take a look?
 ## SMS Options
 
 **Option 1 (Direct)**:
-"Hey—built something that turns multi-step workflows into slash commands for Claude Code. Thought of you bc tracking the longevity space seems like a perfect use case. 20 min demo?"
+"Hey—built something that turns research workflows into slash commands for Claude Code. Thought of you bc tracking wildfires + FL expansion + regulatory seems like a lot to re-explain every week. 20 min demo?"
 
 **Option 2 (Hook first)**:
-"Random q: how much time do you spend re-explaining your research process to Claude? Built a thing that fixes that. Would love to show you"
+"Saw the CNBC piece—congrats. Random q: how are you keeping up with wildfire/hurricane intel across two states with 13 people? Built something that might help. Can I show you?"
 
 **Option 3 (Ultra casual)**:
-"Ok I need to show you this thing. It's workflow templates for Claude Code. Feels very relevant to drinking from the longevity research firehose"
+"Dude congrats on the CNBC thing. I need to show you this tool we built—it's workflow templates for Claude Code. Feels extremely relevant to your situation rn"
 
 ---
 
-## Demo Idea: Longevity Research Monitor
+## Demo Idea: Climate Intelligence Monitor
 
 ### The Hook
-"You're tracking a space that's evolving weekly—new papers, competitor moves, FDA guidance. Let me show you how to systematize that into a workflow you run with one command."
+"Your entire business is predicting climate risk. Let me show you how to systematize the research that feeds those predictions—wildfires, hurricanes, regulatory changes, all in one workflow you run with a single command."
 
-### Workflow: `/longevity_monitor` (4 steps)
+### Workflow: `/climate_intel` (4 steps)
 
 | Step | Command | What it does | Output |
 |------|---------|--------------|--------|
-| 1 | `/longevity_monitor.scan` | Research latest longevity papers, funding news, FDA updates | `weekly_scan.md` |
-| 2 | `/longevity_monitor.analyze` | Analyze implications for Loyal's programs | `implications.md` |
-| 3 | `/longevity_monitor.competitive` | Update competitive landscape (Unity, Rejuvenate, etc.) | `competitive_update.md` |
-| 4 | `/longevity_monitor.briefing` | Generate executive briefing for leadership/board | `briefing.md` |
+| 1 | `/climate_intel.scan` | Scan for wildfire/hurricane news, NOAA updates, climate research | `weekly_scan.md` |
+| 2 | `/climate_intel.regulatory` | Check CA and FL DOI announcements, regulatory changes | `regulatory_update.md` |
+| 3 | `/climate_intel.analyze` | Analyze implications for Stand's risk models and markets | `implications.md` |
+| 4 | `/climate_intel.briefing` | Generate executive briefing for leadership team | `briefing.md` |
 
 ### Demo Flow (20 min)
 
-1. **(2 min)** Show the `job.yml` definition—"this is how you define a workflow, 4 steps with inputs and outputs"
-2. **(5 min)** Run `/longevity_monitor.scan` live—watch Claude search for recent longevity news, papers, FDA updates
-3. **(3 min)** Show the output on the Git branch—"everything's versioned, you can see exactly what was found"
-4. **(5 min)** Run `/longevity_monitor.analyze`—show it reading the previous output and analyzing implications
-5. **(5 min)** Show the final briefing output—"this is what you'd get every week, same format, same rigor"
+1. **(2 min)** Show the `job.yml` definition—"this is how you define a 4-step climate monitoring workflow"
+2. **(5 min)** Run `/climate_intel.scan` live—watch Claude search for recent wildfire news, NOAA data, climate research
+3. **(3 min)** Show output on the Git branch—"everything's versioned, you can see exactly what was found and when"
+4. **(5 min)** Run `/climate_intel.regulatory`—show it tracking CA and FL regulatory sources
+5. **(5 min)** Show the final briefing output—"this is what you'd get every Monday, same format, same rigor"
 
-### Why This Demo Works for Celine
-- **Immediately relatable**: She's literally tracking a fast-moving space with new papers and competitors constantly
-- **Shows the "aha"**: Define the research process once → run `/longevity_monitor.scan` every Monday
-- **Appropriate complexity**: Biotech founder will appreciate the structure, not see it as overkill
-- **Ties to her identity**: "SpaceX of aging" means rigorous processes—this delivers that
-- **Produces real output**: She walks away with an actual longevity briefing she could use
+### Why This Demo Works for Dan
+- **Directly relevant**: His entire business is climate risk prediction
+- **Immediately useful**: He's literally tracking this stuff right now with the LA fires
+- **Shows the "aha"**: Define once → run `/climate_intel.scan` every Monday
+- **Respects his technical depth**: Dan has Stanford CS, astrophysics research—he'll appreciate the architecture
+- **Timely**: LA wildfires just happened, Florida expansion is underway, this is extremely relevant
 
 ### Alternative Demo Options
-1. **`/investor_update`**: Pull metrics → summarize milestones → draft update → review checklist. With 38+ investors, she's probably writing a lot of updates. Shows how to systematize recurring communications.
-2. **`/regulatory_intel`**: Track FDA guidance changes → analyze precedent → summarize implications. Appeals to "pioneering a new FDA category" angle—consistency in regulatory monitoring matters.
+1. **`/insurtech_monitor`**: Track competitors (Hippo, Kin, Lemonade), funding news, product launches. Appeals to competitive positioning in a crowded space.
+2. **`/florida_expansion`**: Deep dive on Florida market—hurricane patterns, regulatory landscape, broker ecosystem. Relevant to their announced expansion.
 
 ---
 
 ## Follow-up Notes
-- Celine is active on Twitter/X—she might appreciate this as content fodder too ("how I systematize research with AI")
-- The "SpaceX of aging" framing is her language—use it
-- She's a technical founder (Longevity Fund background)—don't dumb down the explanation
-- If she's skeptical about "another AI tool," emphasize it's NOT a new tool—it's a way to make Claude Code follow her exact processes
+- Dan just got major press (CNBC)—he's probably slammed. Keep it short and punchy.
+- Timing is perfect: LA wildfires literally just happened, everyone's talking about climate insurance
+- His house was damaged in the 2020 CZU fire—this is personal for him
+- Technical founder (Stanford CS, astrophysics)—don't dumb it down
+- 13-person team is ideal size for "lightweight process without scaling headcount" pitch
