@@ -3,6 +3,10 @@ name: Copilot Setup Steps
 on:
   workflow_call:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'AGENTS.md'
+      - '.github/workflows/copilot-setup-steps.yml'
 
 jobs:
   setup:
