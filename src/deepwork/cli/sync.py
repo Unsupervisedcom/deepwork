@@ -116,7 +116,7 @@ def sync_skills(project_path: Path) -> None:
 
     # Sync each platform
     generator = SkillGenerator()
-    stats = {"platforms": 0, "skills": 0, "hooks": 0}
+    stats = {"platforms": 0, "skills": 0, "hooks": 0, "permissions": 0}
     synced_adapters: list[AgentAdapter] = []
 
     for platform_name in platforms:
@@ -135,6 +135,9 @@ def sync_skills(project_path: Path) -> None:
         # Create skills directory
         ensure_dir(skills_dir)
 
+        # Collect skill names for permission syncing
+        skill_names: list[str] = []
+
         # Generate skills for all jobs
         if jobs:
             console.print("  [dim]•[/dim] Generating skills...")
@@ -145,6 +148,13 @@ def sync_skills(project_path: Path) -> None:
                     )
                     stats["skills"] += len(job_paths)
                     console.print(f"    [green]✓[/green] {job.name} ({len(job_paths)} skills)")
+                    
+                    # Collect skill names from generated paths
+                    # Meta-skill: job_name
+                    skill_names.append(job.name)
+                    # Step skills: job_name.step_id
+                    for step in job.steps:
+                        skill_names.append(f"{job.name}.{step.id}")
                 except Exception as e:
                     console.print(f"    [red]✗[/red] Failed for {job.name}: {e}")
 
@@ -158,6 +168,17 @@ def sync_skills(project_path: Path) -> None:
                     console.print(f"    [green]✓[/green] Synced {hooks_count} hook(s)")
             except Exception as e:
                 console.print(f"    [red]✗[/red] Failed to sync hooks: {e}")
+
+        # Sync skill permissions to platform settings
+        if skill_names:
+            console.print("  [dim]•[/dim] Syncing skill permissions...")
+            try:
+                permissions_count = adapter.sync_skill_permissions(project_path, skill_names)
+                stats["permissions"] += permissions_count
+                if permissions_count > 0:
+                    console.print(f"    [green]✓[/green] Added {permissions_count} permission(s)")
+            except Exception as e:
+                console.print(f"    [red]✗[/red] Failed to sync permissions: {e}")
 
         stats["platforms"] += 1
         synced_adapters.append(adapter)
@@ -175,6 +196,8 @@ def sync_skills(project_path: Path) -> None:
     table.add_row("Total skills", str(stats["skills"]))
     if stats["hooks"] > 0:
         table.add_row("Hooks synced", str(stats["hooks"]))
+    if stats["permissions"] > 0:
+        table.add_row("Permissions added", str(stats["permissions"]))
 
     console.print(table)
     console.print()

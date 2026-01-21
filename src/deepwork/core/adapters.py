@@ -241,6 +241,23 @@ class AgentAdapter(ABC):
         """
         pass
 
+    def sync_skill_permissions(self, project_path: Path, skill_names: list[str]) -> int:
+        """
+        Sync skill permissions to platform settings.
+
+        This is an optional method that platforms can override to auto-approve
+        generated skills. Default implementation does nothing (no-op).
+
+        Args:
+            project_path: Path to project root
+            skill_names: List of skill names to add permissions for
+
+        Returns:
+            Number of permissions added (0 for platforms that don't support this)
+        """
+        # Default: no-op for platforms that don't support skill permissions
+        return 0
+
 
 def _hook_already_present(hooks: list[dict[str, Any]], script_path: str) -> bool:
     """Check if a hook with the given script path is already in the list."""
@@ -343,6 +360,65 @@ class ClaudeAdapter(AgentAdapter):
         # Count total hooks
         total = sum(len(hooks_list) for hooks_list in hooks.values())
         return total
+
+    def sync_skill_permissions(self, project_path: Path, skill_names: list[str]) -> int:
+        """
+        Sync skill permissions to Claude Code settings.json.
+
+        Adds Skill() permissions to the allow list for all generated skills,
+        enabling auto-approval of skill invocations.
+
+        Args:
+            project_path: Path to project root
+            skill_names: List of skill names to add permissions for
+
+        Returns:
+            Number of permissions added
+
+        Raises:
+            AdapterError: If sync fails
+        """
+        if not skill_names:
+            return 0
+
+        settings_file = project_path / self.config_dir / "settings.json"
+
+        # Load existing settings or create new
+        existing_settings: dict[str, Any] = {}
+        if settings_file.exists():
+            try:
+                with open(settings_file, encoding="utf-8") as f:
+                    existing_settings = json.load(f)
+            except (json.JSONDecodeError, OSError) as e:
+                raise AdapterError(f"Failed to read settings.json: {e}") from e
+
+        # Ensure permissions structure exists
+        if "permissions" not in existing_settings:
+            existing_settings["permissions"] = {}
+        if "allow" not in existing_settings["permissions"]:
+            existing_settings["permissions"]["allow"] = []
+
+        # Add skill permissions if not already present
+        added_count = 0
+        allow_list = existing_settings["permissions"]["allow"]
+        
+        for skill_name in skill_names:
+            # Use wildcard pattern to approve all variants of the skill
+            permission = f"Skill({skill_name}:*)"
+            if permission not in allow_list:
+                allow_list.append(permission)
+                added_count += 1
+
+        # Write back to settings.json if any permissions were added
+        if added_count > 0:
+            try:
+                settings_file.parent.mkdir(parents=True, exist_ok=True)
+                with open(settings_file, "w", encoding="utf-8") as f:
+                    json.dump(existing_settings, f, indent=2)
+            except OSError as e:
+                raise AdapterError(f"Failed to write settings.json: {e}") from e
+
+        return added_count
 
 
 class GeminiAdapter(AgentAdapter):
