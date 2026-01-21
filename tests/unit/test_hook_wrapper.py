@@ -569,7 +569,6 @@ class TestHookErrorHandling:
 
     def test_format_hook_error_basic(self) -> None:
         """Test that format_hook_error produces blocking JSON with error details."""
-        from deepwork.hooks.wrapper import format_hook_error
 
         error = ValueError("Something went wrong")
         result = format_hook_error(error)
@@ -581,7 +580,6 @@ class TestHookErrorHandling:
 
     def test_format_hook_error_with_context(self) -> None:
         """Test that format_hook_error includes context when provided."""
-        from deepwork.hooks.wrapper import format_hook_error
 
         error = RuntimeError("Test error")
         result = format_hook_error(error, context="Loading rules")
@@ -593,7 +591,6 @@ class TestHookErrorHandling:
 
     def test_format_hook_error_includes_traceback(self) -> None:
         """Test that format_hook_error includes the full traceback."""
-        from deepwork.hooks.wrapper import format_hook_error
 
         try:
             raise KeyError("missing_key")
@@ -606,7 +603,6 @@ class TestHookErrorHandling:
 
     def test_output_hook_error_produces_json(self, capsys: object) -> None:
         """Test that output_hook_error writes valid JSON to stdout."""
-        from deepwork.hooks.wrapper import output_hook_error
 
         error = TypeError("Type mismatch")
         output_hook_error(error, context="test context")
@@ -620,7 +616,7 @@ class TestHookErrorHandling:
 
     def test_run_hook_catches_hook_function_errors(self, capsys: object) -> None:
         """Test that run_hook outputs JSON when hook function raises an exception."""
-        from deepwork.hooks.wrapper import HookInput, HookOutput, Platform, run_hook
+        from deepwork.hooks.wrapper import HookInput, HookOutput, Platform
 
         def failing_hook(hook_input: HookInput) -> HookOutput:
             raise RuntimeError("Hook crashed!")
