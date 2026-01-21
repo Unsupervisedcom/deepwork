@@ -217,41 +217,62 @@ For projects that need to support multiple systems (Linux, macOS, etc.):
 }
 ```
 
-### Complete Example with direnv
+### Recommended Project Configuration
 
-Create a complete development environment with DeepWork and direnv:
+For a complete development environment with DeepWork and your preferred AI assistants, use this `flake.nix` structure. Note that `config.allowUnfree = true` is required to use DeepWork (BSL 1.1) and Claude Code.
 
 **flake.nix:**
 ```nix
 {
-  description = "My project using DeepWork";
+  description = "AI-powered development environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # Reference DeepWork from GitHub
-    deepwork.url = "github:Unsupervisedcom/deepwork";
+    flake-utils.url = "github:numtide/flake-utils";
+    deepwork = {
+      url = "github:Unsupervisedcom/deepwork";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, deepwork }:
-    let
-      system = "x86_64-linux";
-      pkgs = import nixpkgs { inherit system; };
-    in {
-      devShells.${system}.default = pkgs.mkShell {
-        buildInputs = [
-          # Include DeepWork in the development environment
-          deepwork.packages.${system}.default
-          # Add other dependencies
-          pkgs.python311
-          pkgs.git
-        ];
+  outputs = { self, nixpkgs, flake-utils, deepwork }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          # Required for DeepWork and Claude Code
+          config.allowUnfree = true;
+        };
+      in
+      {
+        devShells.default = pkgs.mkShell {
+          buildInputs = [
+            # DeepWork CLI
+            deepwork.packages.${system}.default
+            
+            # AI Agents
+            pkgs.claude-code
+            pkgs.gemini-cli
+            
+            # Additional tools
+            pkgs.python3
+            pkgs.nodejs
+            pkgs.git
+          ];
 
-        shellHook = ''
-          echo "DeepWork is available!"
-          deepwork --version
-        '';
-      };
-    };
+          shellHook = ''
+             echo "------------------------------------------------------------------"
+             echo "DeepWork Development Shell"
+             echo "------------------------------------------------------------------"
+             echo "Tools: deepwork, claude, gemini-cli"
+             echo "------------------------------------------------------------------"
+             
+             # Verify installation
+             deepwork --version
+          '';
+        };
+      }
+    );
 }
 ```
 
@@ -263,7 +284,7 @@ use flake
 Then run:
 ```bash
 direnv allow
-# Environment with DeepWork loads automatically
+# Environment with DeepWork and AI agents loads automatically
 ```
 
 ## Flake Outputs
