@@ -23,7 +23,7 @@ quality_criteria:
   - name: Input Consistency
     description: "File inputs with `from_step` must reference a step that is in the dependencies array"
   - name: Output Paths
-    description: "Outputs must be valid filenames or paths (e.g., `report.md` or `reports/analysis.md`)"
+    description: "Outputs must be valid filenames or paths within the main repo (not in dot-directories). Use specific, descriptive paths that lend themselves to glob patterns, e.g., `competitive_research/competitors_list.md` or `competitive_research/[competitor_name]/research.md`. Avoid generic names like `output.md`."
   - name: Concise Instructions
     description: "The content of the file, particularly the description, must not have excessively redundant information. It should be concise and to the point given that extra tokens will confuse the AI."
 ---
@@ -71,10 +71,10 @@ steps:
       - file: output.md
         from_step: previous_step_id
     outputs:
-      - filename.md               # simple filename
-      - reports/analysis.md       # path with directory
+      - competitive_research/competitors_list.md           # descriptive path
+      - competitive_research/[competitor_name]/research.md # parameterized path
       # With doc spec reference:
-      - file: report.md
+      - file: competitive_research/final_report.md
         doc_spec: .deepwork/doc_specs/report_type.md
     dependencies:
       - previous_step_id          # steps that must complete first
@@ -125,7 +125,7 @@ steps:
 1. **No circular dependencies**: Step A cannot depend on Step B if Step B depends on Step A
 2. **File inputs require dependencies**: If a step uses `from_step: X`, then X must be in its dependencies
 3. **Unique step IDs**: No two steps can have the same id
-4. **Valid file paths**: Output paths must not contain invalid characters
+4. **Valid file paths**: Output paths must not contain invalid characters and should be in the main repo (not dot-directories)
 5. **Instructions files exist**: Each `instructions_file` path should have a corresponding file created
 
 ## Example: Complete Job Specification
@@ -160,7 +160,7 @@ steps:
       - name: product_category
         description: "The product category"
     outputs:
-      - competitors_list.md
+      - competitive_research/competitors_list.md
     dependencies: []
 
   - id: research_competitors
@@ -168,10 +168,10 @@ steps:
     description: "Deep dive research on each identified competitor"
     instructions_file: steps/research_competitors.md
     inputs:
-      - file: competitors_list.md
+      - file: competitive_research/competitors_list.md
         from_step: identify_competitors
     outputs:
-      - research_notes.md
+      - competitive_research/[competitor_name]/research.md
     dependencies:
       - identify_competitors
 
@@ -180,10 +180,10 @@ steps:
     description: "Strategic positioning recommendations"
     instructions_file: steps/positioning_report.md
     inputs:
-      - file: research_notes.md
+      - file: competitive_research/[competitor_name]/research.md
         from_step: research_competitors
     outputs:
-      - file: positioning_report.md
+      - file: competitive_research/positioning_report.md
         doc_spec: .deepwork/doc_specs/positioning_report.md
     dependencies:
       - research_competitors
