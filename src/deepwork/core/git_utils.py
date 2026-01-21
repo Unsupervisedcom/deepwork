@@ -235,7 +235,8 @@ class CompareToPrompt(GitComparator):
                     # Use simplified approach: after staging, index vs ref captures all changes
                     return sorted(_get_all_changes_vs_ref(baseline_ref))
 
-            # No baseline ref - return all staged and untracked files
+            # No baseline ref - return files that differ from HEAD plus any untracked.
+            # The _get_untracked_files() call is defensive in case staging failed.
             return sorted(_get_all_changes_vs_ref("HEAD") | _get_untracked_files())
 
         except (subprocess.CalledProcessError, OSError):
@@ -253,7 +254,8 @@ class CompareToPrompt(GitComparator):
         try:
             _stage_all_changes()
 
-            # Get all current files (staged after git add -A, plus any remaining untracked)
+            # Get files that differ from HEAD (modified/added/deleted) plus any untracked.
+            # The _get_untracked_files() call is defensive in case staging failed.
             current_files = _get_all_changes_vs_ref("HEAD") | _get_untracked_files()
 
             if self.BASELINE_WORK_TREE_PATH.exists():

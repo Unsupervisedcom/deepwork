@@ -39,7 +39,6 @@ from deepwork.core.git_utils import (
     get_default_branch,
 )
 
-
 # =============================================================================
 # REQ-001: All comparators MUST implement GitComparator interface
 # =============================================================================
@@ -373,11 +372,15 @@ class TestParseFileList:
         result = _parse_file_list(output)
         assert result == {"file1.py", "file2.py"}
 
-    def test_strips_whitespace(self) -> None:
+    def test_strips_outer_whitespace_only(self) -> None:
+        """Document that _parse_file_list strips outer whitespace but not per-line.
+
+        This is fine because git commands don't output whitespace-padded filenames.
+        """
         output = "  file1.py  \n  file2.py  "
         result = _parse_file_list(output)
-        # Note: the function strips the whole output, not individual lines
-        assert "file1.py" in result or "file1.py  " in result
+        # After strip(): "file1.py  \n  file2.py" -> split -> ["file1.py  ", "  file2.py"]
+        assert result == {"file1.py  ", "  file2.py"}
 
 
 class TestGetAllChangesVsRef:
@@ -550,22 +553,7 @@ class TestCompareToPromptImplementation:
 
 
 class TestRefBasedComparatorIntegration:
-    """Integration tests for RefBasedComparator with real git repos."""
-
-    def test_get_changed_files_in_real_repo(self, mock_git_repo: Path) -> None:
-        """Test get_changed_files with actual git operations."""
-        # Create a new file
-        new_file = mock_git_repo / "new_file.py"
-        new_file.write_text("print('hello')")
-
-        # We need to mock get_default_branch since there's no origin
-        with patch("deepwork.core.git_utils.get_default_branch", return_value="master"):
-            # Create a mock comparator that uses a known ref
-            comparator = CompareToBase()
-            # The ref lookup will fail since there's no origin, so we mock it
-            with patch.object(comparator, "_resolve_ref", return_value="HEAD~0"):
-                # This would work if we had proper git setup
-                pass
+    """Integration tests for RefBasedComparator."""
 
     def test_comparator_caches_ref(self) -> None:
         """Test that ref is cached after first resolution."""
