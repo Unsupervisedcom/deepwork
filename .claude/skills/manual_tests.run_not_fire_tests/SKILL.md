@@ -68,10 +68,6 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
 
    Use the Task tool to spawn **ALL of the following sub-agents in a SINGLE message** (parallel execution). Each sub-agent should use a fast model like haiku.
 
-   For each test, the sub-agent must:
-   - Edit BOTH the trigger file AND the safety file
-   - This satisfies the rule's safety condition, so the rule should NOT fire
-
    **Sub-agent prompts (launch all 8 in parallel):**
 
    a. **Trigger/Safety test** - "Edit `manual_tests/test_trigger_safety_mode/feature.py` to add a comment, AND edit `manual_tests/test_trigger_safety_mode/feature_doc.md` to add a note. Both files must be edited so the rule does NOT fire."
