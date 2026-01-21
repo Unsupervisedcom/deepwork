@@ -159,6 +159,17 @@ def sync_skills(project_path: Path) -> None:
             except Exception as e:
                 console.print(f"    [red]✗[/red] Failed to sync hooks: {e}")
 
+        # Sync required permissions to platform settings
+        console.print("  [dim]•[/dim] Syncing permissions...")
+        try:
+            perms_count = adapter.sync_permissions(project_path)
+            if perms_count > 0:
+                console.print(f"    [green]✓[/green] Added {perms_count} permission(s)")
+            else:
+                console.print("    [dim]•[/dim] Permissions already configured")
+        except Exception as e:
+            console.print(f"    [red]✗[/red] Failed to sync permissions: {e}")
+
         stats["platforms"] += 1
         synced_adapters.append(adapter)
 

@@ -241,6 +241,25 @@ class AgentAdapter(ABC):
         """
         pass
 
+    def sync_permissions(self, project_path: Path) -> int:
+        """
+        Sync required permissions to platform settings.
+
+        This method adds any permissions that DeepWork requires to function
+        properly (e.g., access to .deepwork/tmp/ directory).
+
+        Args:
+            project_path: Path to project root
+
+        Returns:
+            Number of permissions added
+
+        Raises:
+            AdapterError: If sync fails
+        """
+        # Default implementation does nothing - subclasses can override
+        return 0
+
 
 def _hook_already_present(hooks: list[dict[str, Any]], script_path: str) -> bool:
     """Check if a hook with the given script path is already in the list."""
@@ -343,6 +362,65 @@ class ClaudeAdapter(AgentAdapter):
         # Count total hooks
         total = sum(len(hooks_list) for hooks_list in hooks.values())
         return total
+
+    def sync_permissions(self, project_path: Path) -> int:
+        """
+        Sync required permissions to Claude Code settings.json.
+
+        Adds permissions for unrestricted access to .deepwork/tmp/** directory,
+        which is used for temporary files during DeepWork operations.
+
+        Args:
+            project_path: Path to project root
+
+        Returns:
+            Number of permissions added
+
+        Raises:
+            AdapterError: If sync fails
+        """
+        settings_file = project_path / self.config_dir / "settings.json"
+
+        # Load existing settings or create new
+        existing_settings: dict[str, Any] = {}
+        if settings_file.exists():
+            try:
+                with open(settings_file, encoding="utf-8") as f:
+                    existing_settings = json.load(f)
+            except (json.JSONDecodeError, OSError) as e:
+                raise AdapterError(f"Failed to read settings.json: {e}") from e
+
+        # Ensure permissions structure exists
+        if "permissions" not in existing_settings:
+            existing_settings["permissions"] = {}
+        if "allow" not in existing_settings["permissions"]:
+            existing_settings["permissions"]["allow"] = []
+
+        # Define required permissions for .deepwork/tmp/**
+        required_permissions = [
+            "Read(.deepwork/tmp/**)",
+            "Edit(.deepwork/tmp/**)",
+            "Write(.deepwork/tmp/**)",
+        ]
+
+        # Add permissions that are not already present
+        allow_list = existing_settings["permissions"]["allow"]
+        added_count = 0
+        for perm in required_permissions:
+            if perm not in allow_list:
+                allow_list.append(perm)
+                added_count += 1
+
+        # Only write back if we added new permissions
+        if added_count > 0:
+            try:
+                settings_file.parent.mkdir(parents=True, exist_ok=True)
+                with open(settings_file, "w", encoding="utf-8") as f:
+                    json.dump(existing_settings, f, indent=2)
+            except OSError as e:
+                raise AdapterError(f"Failed to write settings.json: {e}") from e
+
+        return added_count
 
 
 class GeminiAdapter(AgentAdapter):

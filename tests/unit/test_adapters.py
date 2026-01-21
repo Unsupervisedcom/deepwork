@@ -186,6 +186,60 @@ class TestClaudeAdapter:
 
         assert count == 0
 
+    def test_sync_permissions_creates_settings_file(self, temp_dir: Path) -> None:
+        """Test sync_permissions creates settings.json when it doesn't exist."""
+        (temp_dir / ".claude").mkdir()
+        adapter = ClaudeAdapter(temp_dir)
+
+        count = adapter.sync_permissions(temp_dir)
+
+        assert count == 3  # Read, Edit, Write for .deepwork/tmp/**
+        settings_file = temp_dir / ".claude" / "settings.json"
+        assert settings_file.exists()
+        settings = json.loads(settings_file.read_text())
+        assert "permissions" in settings
+        assert "allow" in settings["permissions"]
+        assert "Read(.deepwork/tmp/**)" in settings["permissions"]["allow"]
+        assert "Edit(.deepwork/tmp/**)" in settings["permissions"]["allow"]
+        assert "Write(.deepwork/tmp/**)" in settings["permissions"]["allow"]
+
+    def test_sync_permissions_merges_with_existing(self, temp_dir: Path) -> None:
+        """Test sync_permissions merges with existing settings."""
+        claude_dir = temp_dir / ".claude"
+        claude_dir.mkdir()
+        settings_file = claude_dir / "settings.json"
+        settings_file.write_text(
+            json.dumps({"permissions": {"allow": ["Bash(ls:*)"]}})
+        )
+
+        adapter = ClaudeAdapter(temp_dir)
+        adapter.sync_permissions(temp_dir)
+
+        settings = json.loads(settings_file.read_text())
+        assert "Bash(ls:*)" in settings["permissions"]["allow"]
+        assert "Read(.deepwork/tmp/**)" in settings["permissions"]["allow"]
+
+    def test_sync_permissions_idempotent(self, temp_dir: Path) -> None:
+        """Test sync_permissions is idempotent (doesn't duplicate permissions)."""
+        (temp_dir / ".claude").mkdir()
+        adapter = ClaudeAdapter(temp_dir)
+
+        # First call adds permissions
+        count1 = adapter.sync_permissions(temp_dir)
+        assert count1 == 3
+
+        # Second call should add nothing
+        count2 = adapter.sync_permissions(temp_dir)
+        assert count2 == 0
+
+        # Verify no duplicates
+        settings_file = temp_dir / ".claude" / "settings.json"
+        settings = json.loads(settings_file.read_text())
+        allow_list = settings["permissions"]["allow"]
+        assert allow_list.count("Read(.deepwork/tmp/**)") == 1
+        assert allow_list.count("Edit(.deepwork/tmp/**)") == 1
+        assert allow_list.count("Write(.deepwork/tmp/**)") == 1
+
 
 class TestGeminiAdapter:
     """Tests for GeminiAdapter."""
@@ -349,3 +403,12 @@ class TestGeminiAdapter:
 
         settings_file = gemini_dir / "settings.json"
         assert not settings_file.exists()
+
+    def test_sync_permissions_returns_zero(self, temp_dir: Path) -> None:
+        """Test sync_permissions returns 0 (base class default, no permission support)."""
+        (temp_dir / ".gemini").mkdir()
+        adapter = GeminiAdapter(temp_dir)
+
+        count = adapter.sync_permissions(temp_dir)
+
+        assert count == 0
