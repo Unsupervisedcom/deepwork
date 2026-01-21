@@ -102,26 +102,25 @@ def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
     """
     Create .gitignore file in .deepwork/ directory.
 
-    This ensures that temporary files like .last_work_tree are not committed.
+    This ensures that runtime artifacts are not committed while keeping
+    the tmp directory structure in version control.
 
     Args:
         deepwork_dir: Path to .deepwork directory
     """
     gitignore_path = deepwork_dir / ".gitignore"
-    gitignore_content = """# DeepWork temporary files
-# These files are used for rules evaluation during sessions
+    gitignore_content = """# DeepWork runtime artifacts
+# These files are generated during sessions and should not be committed
 .last_work_tree
 .last_head_ref
+
+# Temporary files (but keep the directory via .gitkeep)
+tmp/*
+!tmp/.gitkeep
 """
 
-    # Only write if it doesn't exist or doesn't contain all entries
-    if gitignore_path.exists():
-        existing_content = gitignore_path.read_text()
-        if ".last_work_tree" not in existing_content or ".last_head_ref" not in existing_content:
-            # Overwrite with complete content
-            gitignore_path.write_text(gitignore_content)
-    else:
-        gitignore_path.write_text(gitignore_content)
+    # Always overwrite to ensure correct content
+    gitignore_path.write_text(gitignore_content)
 
 
 def _create_tmp_directory(deepwork_dir: Path) -> None:
