@@ -119,6 +119,17 @@
           }
         ]
       }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m deepwork.hooks.rules_check"
+          }
+        ]
+      }
     ]
   }
 }

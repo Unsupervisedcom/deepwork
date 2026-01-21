@@ -27,6 +27,30 @@ hooks:
 
             If criteria are NOT met OR the promise tag is missing, respond with:
             {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            You must evaluate whether Claude has met all the below quality criteria for the request.
+
+            ## Quality Criteria
+
+            1. **Sub-Agents Used**: Did the main agent spawn sub-agents (using the Task tool) to make the file edits? The main agent must NOT edit the test files directly.
+            2. **Parallel Execution**: Were multiple sub-agents launched in parallel (in a single message with multiple Task tool calls)?
+            3. **Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command.
+            4. **All Tests Run**: Were all 8 'should NOT fire' tests executed (trigger/safety, set, pair forward, pair reverse, multi safety, infinite block prompt, infinite block command, created)?
+            5. **Git Reverted**: Were changes reverted after tests completed using `git checkout -- manual_tests/`?
+
+            ## Instructions
+
+            Review the conversation and determine if ALL quality criteria above have been satisfied.
+            Look for evidence that each criterion has been addressed.
+
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
+            all criteria appear to be met, respond with: {"ok": true}
+
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
 ---
 
 # manual_tests.run_not_fire_tests
@@ -67,10 +91,6 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
 1. **Launch parallel sub-agents for all "should NOT fire" tests**
 
    Use the Task tool to spawn **ALL of the following sub-agents in a SINGLE message** (parallel execution). Each sub-agent should use a fast model like haiku.
-
-   For each test, the sub-agent must:
-   - Edit BOTH the trigger file AND the safety file
-   - This satisfies the rule's safety condition, so the rule should NOT fire
 
    **Sub-agent prompts (launch all 8 in parallel):**
 
