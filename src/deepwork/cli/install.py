@@ -124,6 +124,28 @@ def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
         gitignore_path.write_text(gitignore_content)
 
 
+def _create_tmp_directory(deepwork_dir: Path) -> None:
+    """
+    Create the .deepwork/tmp directory with a .keep file.
+
+    This ensures the tmp directory exists in version control, which is required
+    for file permissions to work correctly when Claude Code starts fresh.
+
+    Args:
+        deepwork_dir: Path to .deepwork directory
+    """
+    tmp_dir = deepwork_dir / "tmp"
+    ensure_dir(tmp_dir)
+
+    keep_file = tmp_dir / ".keep"
+    if not keep_file.exists():
+        keep_file.write_text(
+            "# This file ensures the .deepwork/tmp directory exists in version control.\n"
+            "# The tmp directory is used for temporary files during DeepWork operations.\n"
+            "# Do not delete this file.\n"
+        )
+
+
 def _create_rules_directory(project_path: Path) -> bool:
     """
     Create the v2 rules directory structure with example templates.
@@ -333,7 +355,11 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     _create_deepwork_gitignore(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/.gitignore")
 
-    # Step 3d: Create rules directory with v2 templates
+    # Step 3d: Create tmp directory with .keep file for version control
+    _create_tmp_directory(deepwork_dir)
+    console.print("  [green]✓[/green] Created .deepwork/tmp/.keep")
+
+    # Step 3e: Create rules directory with v2 templates
     if _create_rules_directory(project_path):
         console.print("  [green]✓[/green] Created .deepwork/rules/ with example templates")
     else:
