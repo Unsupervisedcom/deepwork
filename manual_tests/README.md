@@ -21,6 +21,7 @@ This approach works because:
 - Even though `git status` shows changes from all sub-agents, each rule only matches its own scoped file patterns
 - Since the safety file is edited, the rule won't fire regardless of other changes
 - No cross-contamination possible
+- **Revert all changes after these tests complete** before running "should fire" tests
 
 **"Should fire" tests MUST run serially with git reverts between each:**
 - These tests deliberately edit only the trigger file (not the safety)
