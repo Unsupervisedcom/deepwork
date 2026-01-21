@@ -104,7 +104,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run deepwork install"
+            "command": "uv run deepwork install",
+            "timeout": 5000
           }
         ]
       }
