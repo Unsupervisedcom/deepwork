@@ -1043,7 +1043,7 @@ Please create or update tests for the modified source files.
 
 ### Detection Modes
 
-Rules support three detection modes:
+Rules support four detection modes:
 
 **1. Trigger/Safety (default)** - Fire when trigger matches but safety doesn't:
 ```yaml
@@ -1078,6 +1078,16 @@ compare_to: base
 ---
 ```
 
+**4. Created** - Fire when newly created files match patterns:
+```yaml
+---
+name: New Component Checklist
+created: "src/components/**/*.tsx"
+compare_to: base
+---
+```
+This mode triggers only for files that are newly created (not modified), useful for enforcing standards on new files.
+
 ### Action Types
 
 **1. Prompt (default)** - Show instructions to the agent:
@@ -1101,6 +1111,42 @@ action:
 compare_to: prompt
 ---
 ```
+
+### Prompt Runtime
+
+For prompt-type actions, you can specify how the prompt is delivered using the `prompt_runtime` setting:
+
+**1. send_to_stopping_agent (default)** - Return the prompt to the agent that triggered the rule:
+```yaml
+---
+name: Security Review
+trigger: "src/auth/**/*"
+compare_to: base
+prompt_runtime: send_to_stopping_agent
+---
+Please check for hardcoded credentials and validate input.
+```
+
+**2. claude** - Invoke Claude Code in headless mode to handle the rule:
+```yaml
+---
+name: Architecture Documentation Accuracy
+trigger: "src/deepwork/core/**/*.py"
+safety: "doc/architecture.md"
+compare_to: base
+prompt_runtime: claude
+---
+Review doc/architecture.md for accuracy against the current implementation.
+```
+
+When `prompt_runtime: claude` is set, the rule evaluation:
+1. Spawns a separate Claude Code process in headless mode
+2. Passes the rule instructions as a prompt
+3. Claude performs the required actions (e.g., updating documentation)
+4. Returns a structured `block` or `allow` decision
+5. If `allow`, the rule is marked as passed without blocking the original agent
+
+This is useful for automated remediation tasks that don't require user interaction.
 
 ### Rule Evaluation Flow
 
@@ -1289,15 +1335,21 @@ See `doc/doc-specs.md` for complete documentation.
 
 ### Rule Schema
 
-Rules are validated against a JSON Schema:
+Rules are validated against a JSON Schema. The frontmatter supports these fields:
 
-```yaml
-- name: string          # Required: Friendly name for the rule
-  trigger: string|array # Required: Glob pattern(s) for triggering files
-  safety: string|array  # Optional: Glob pattern(s) for safety files
-  instructions: string  # Required (unless instructions_file): What to do
-  instructions_file: string  # Alternative: Path to instructions file
-```
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Human-friendly name for the rule (displayed in promise tags) |
+| `compare_to` | Yes | Baseline for detecting file changes: `base`, `default_tip`, or `prompt` |
+| `trigger` | One mode required | Glob pattern(s) for triggering files (trigger/safety mode) |
+| `safety` | No | Glob pattern(s) that suppress the rule if changed |
+| `set` | One mode required | Array of patterns for bidirectional correspondence |
+| `pair` | One mode required | Object with `trigger` and `expects` for directional correspondence |
+| `created` | One mode required | Glob pattern(s) for newly created files |
+| `action` | No | Object with `command` and optional `run_for` for command actions |
+| `prompt_runtime` | No | `send_to_stopping_agent` (default) or `claude` for headless execution |
+
+The markdown body after the frontmatter contains the instructions for prompt-type rules.
 
 ### Defining Rules
 

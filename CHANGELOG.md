@@ -5,6 +5,17 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-01-20
+
+### Added
+- `prompt_runtime` setting for rules to control how prompt-type actions are executed
+  - `send_to_stopping_agent` (default): Returns prompt to the agent that triggered the rule
+  - `claude`: Invokes Claude Code in headless mode to handle the rule independently
+- Claude headless mode execution for automated rule remediation
+  - Rules with `prompt_runtime: claude` spawn a separate Claude process
+  - Claude performs required actions and returns structured `block`/`allow` decision
+  - Useful for automated tasks like documentation updates without blocking the main agent
+
 ## [0.4.0] - 2026-01-20
 
 ### Added

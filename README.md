@@ -282,6 +282,21 @@ compare_to: prompt
 ---
 ```
 
+**Example Rule with Claude Runtime** (`.deepwork/rules/readme-accuracy.md`):
+```markdown
+---
+name: README Accuracy
+trigger: "src/**/*.py"
+compare_to: prompt
+prompt_runtime: claude
+---
+Source code has been modified. Review README.md for accuracy and update if needed.
+```
+
+The `prompt_runtime` setting controls how prompt-based rules are executed:
+- `send_to_stopping_agent` (default): Returns the rule prompt to the agent that triggered it
+- `claude`: Invokes Claude Code in headless mode to evaluate the rule independently
+
 ### Multi-Platform Support
 Generate native commands and skills tailored for your AI coding assistant.
 - **Native Integration**: Works directly with the skill/command formats of supported agents.
