@@ -87,7 +87,7 @@ get_warning_message() {
     local current_version="$1"
 
     cat << EOF
-CLAUDE CODE VERSION WARNING: Your version (${current_version}) is below the minimum recommended (${MINIMUM_VERSION}). Older versions have known bugs that may cause issues with DeepWork. RECOMMENDED: Run /update to update Claude Code.
+CLAUDE CODE VERSION WARNING: Your version (${current_version}) is below the minimum recommended (${MINIMUM_VERSION}). Older versions have known bugs that may cause issues with DeepWork. RECOMMENDED: Update your version of Claude Code. TELL THE USER ABOUT THIS ISSUE LOUDLY!!!
 EOF
 }
 
@@ -110,7 +110,7 @@ print_stderr_warning() {
 
   ------------------------------------------------------------------------
   |                                                                      |
-  |   RECOMMENDED ACTION: Run /update to update Claude Code              |
+  |   RECOMMENDED ACTION: Update your version of Claude Code             |
   |                                                                      |
   ------------------------------------------------------------------------
 
