@@ -19,6 +19,22 @@ hooks:
 
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            Verify the research output meets ALL criteria:
+            1. Both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md
+            2. Each file has a comment at the top with:
+               - Last updated date
+               - Source URL where the documentation was obtained
+            3. cli_configuration.md covers how the platform's CLI is configured
+            4. hooks_system.md covers hooks available for slash command definitions ONLY
+            5. No extraneous documentation (only these two specific topics)
+            6. Documentation is comprehensive enough to implement the platform
+
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
 ---
 
 # add_platform.research

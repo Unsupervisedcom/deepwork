@@ -14,6 +14,17 @@ hooks:
             4. Command files in .claude/commands/ were regenerated
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            Verify the update process completed successfully:
+            1. Changes were made in src/deepwork/standard_jobs/[job_name]/ (NOT in .deepwork/jobs/)
+            2. `deepwork install --platform claude` was run
+            3. Files in .deepwork/jobs/ match the source files
+            4. Command files in .claude/commands/ were regenerated
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
 ---
 
 # update.job

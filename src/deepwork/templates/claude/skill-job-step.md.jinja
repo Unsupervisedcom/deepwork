@@ -46,7 +46,8 @@ user-invocable: false
 {% if quality_criteria or hooks %}
 hooks:
 {% if quality_criteria %}
-  Stop:
+{% for event_name in ["Stop", "SubagentStop"] %}
+  {{ event_name }}:
     - hooks:
         - type: prompt
           prompt: |
@@ -68,9 +69,27 @@ hooks:
 
             If criteria are NOT met OR the promise tag is missing, respond with:
             {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
+{% endfor %}
 {% endif %}
 {% for event_name, event_hooks in hooks.items() %}
-{% if not (event_name == "Stop" and quality_criteria) %}
+{% if not (event_name == "Stop" and quality_criteria) and not (event_name == "SubagentStop" and "Stop" in hooks) %}
+{# For Stop events, generate both Stop and SubagentStop blocks #}
+{% if event_name == "Stop" %}
+{% for stop_event in ["Stop", "SubagentStop"] %}
+  {{ stop_event }}:
+    - hooks:
+{% for hook in event_hooks %}
+{% if hook.type == "script" %}
+        - type: command
+          command: ".deepwork/jobs/{{ job_name }}/{{ hook.path }}"
+{% else %}
+        - type: prompt
+          prompt: |
+            {{ hook.content | indent(12) }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% else %}
   {{ event_name }}:
     - hooks:
 {% for hook in event_hooks %}
@@ -83,6 +102,7 @@ hooks:
             {{ hook.content | indent(12) }}
 {% endif %}
 {% endfor %}
+{% endif %}
 {% endif %}
 {% endfor %}
 {% endif %}
