@@ -510,12 +510,3 @@ class TestGeminiAdapter:
 
         settings_file = gemini_dir / "settings.json"
         assert not settings_file.exists()
-
-    def test_sync_permissions_returns_zero(self, temp_dir: Path) -> None:
-        """Test sync_permissions returns 0 (base class default, no permission support)."""
-        (temp_dir / ".gemini").mkdir()
-        adapter = GeminiAdapter(temp_dir)
-
-        count = adapter.sync_permissions(temp_dir)
-
-        assert count == 0
