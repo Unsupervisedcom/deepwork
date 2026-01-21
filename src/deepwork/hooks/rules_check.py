@@ -764,6 +764,16 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
             ):
                 continue
 
+            # For PROMPT rules, also skip if already QUEUED (already shown to agent).
+            # This prevents infinite loops when transcript is unavailable or promise
+            # tags haven't been written yet. The agent has already seen this rule.
+            if (
+                existing
+                and existing.status == QueueEntryStatus.QUEUED
+                and rule.action_type == ActionType.PROMPT
+            ):
+                continue
+
             # Create queue entry if new
             if not existing:
                 queue.create_entry(
