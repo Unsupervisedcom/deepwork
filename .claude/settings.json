@@ -94,10 +94,46 @@
       "Bash(node:*)",
       "Bash(npm:*)",
       "Bash(npx:*)",
-      "Edit(./**)"
+      "Edit(./**)",
+      "Read(./.deepwork/tmp/**)",
+      "Edit(./.deepwork/tmp/**)",
+      "Write(./.deepwork/tmp/**)",
+      "Skill(commit)",
+      "Skill(commit.review)",
+      "Skill(commit.test)",
+      "Skill(commit.lint)",
+      "Skill(commit.commit_and_push)",
+      "Skill(deepwork_jobs)",
+      "Skill(deepwork_jobs.define)",
+      "Skill(deepwork_jobs.review_job_spec)",
+      "Skill(deepwork_jobs.implement)",
+      "Skill(deepwork_jobs.learn)",
+      "Skill(add_platform)",
+      "Skill(add_platform.research)",
+      "Skill(add_platform.add_capabilities)",
+      "Skill(add_platform.implement)",
+      "Skill(add_platform.verify)",
+      "Skill(update)",
+      "Skill(update.job)",
+      "Skill(manual_tests)",
+      "Skill(manual_tests.run_not_fire_tests)",
+      "Skill(manual_tests.run_fire_tests)",
+      "Skill(deepwork_rules)",
+      "Skill(deepwork_rules.define)"
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "src/deepwork/hooks/check_version.sh"
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "matcher": "",
@@ -110,6 +146,17 @@
       }
     ],
     "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m deepwork.hooks.rules_check"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
       {
         "matcher": "",
         "hooks": [

@@ -31,6 +31,34 @@ hooks:
 
             If criteria are NOT met OR the promise tag is missing, respond with:
             {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            You must evaluate whether Claude has met all the below quality criteria for the request.
+
+            ## Quality Criteria
+
+            1. **Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?
+            2. **Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?
+            3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
+            4. **Output Examples**: Does each instruction file show what good output looks like?
+            5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
+            6. **Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase "ask structured questions"?
+            7. **Sync Complete**: Has `deepwork sync` been run successfully?
+            8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+            9. **Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to run `/deepwork_rules.define`? Not every job needs rules - only suggest when genuinely helpful.
+
+            ## Instructions
+
+            Review the conversation and determine if ALL quality criteria above have been satisfied.
+            Look for evidence that each criterion has been addressed.
+
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
+            all criteria appear to be met, respond with: {"ok": true}
+
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
 ---
 
 # deepwork_jobs.implement
