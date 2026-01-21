@@ -88,4 +88,4 @@ dmypy.json
 .deepwork/.last_work_tree
 .deepwork/.last_head_ref
 .deepwork/tmp/*
-!.deepwork/tmp/.keep
+!.deepwork/tmp/.gitkeep
