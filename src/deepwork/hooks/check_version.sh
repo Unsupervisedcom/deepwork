@@ -8,6 +8,21 @@
 # context so it can inform the user appropriately.
 
 # ============================================================================
+# RE-ENTRY GUARD
+# ============================================================================
+# SessionStart hooks can be triggered multiple times in a session (on resume,
+# clear, etc.). We only want to show the version warning once per session to
+# avoid spamming the user. We use an environment variable to track whether
+# we've already run. Note: This relies on the parent process preserving env
+# vars across hook invocations within the same session.
+if [ -n "$DEEPWORK_VERSION_CHECK_DONE" ]; then
+    # Already checked version this session, exit silently with empty JSON
+    echo '{}'
+    exit 0
+fi
+export DEEPWORK_VERSION_CHECK_DONE=1
+
+# ============================================================================
 # MINIMUM VERSION CONFIGURATION
 # ============================================================================
 MINIMUM_VERSION="2.1.14"
