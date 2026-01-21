@@ -43,7 +43,13 @@ def hook(hook_name: str) -> None:
     """
     try:
         # Import the hook module
-        module_name = f"deepwork.hooks.{hook_name}"
+        # If the hook_name contains a dot, treat it as a full module path
+        # Otherwise, assume it's a hook in the deepwork.hooks package
+        if "." in hook_name:
+            module_name = hook_name
+        else:
+            module_name = f"deepwork.hooks.{hook_name}"
+        
         try:
             module = importlib.import_module(module_name)
         except ModuleNotFoundError:
@@ -58,8 +64,8 @@ def hook(hook_name: str) -> None:
             raise HookError(f"Hook module '{module_name}' does not have a main() function")
 
     except HookError as e:
-        console.print(f"[red]Error:[/red] {e}", file=sys.stderr)
+        console.print(f"[red]Error:[/red] {e}", style="bold red")
         sys.exit(1)
     except Exception as e:
-        console.print(f"[red]Unexpected error running hook:[/red] {e}", file=sys.stderr)
+        console.print(f"[red]Unexpected error running hook:[/red] {e}", style="bold red")
         sys.exit(1)
