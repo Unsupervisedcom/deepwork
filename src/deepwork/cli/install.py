@@ -111,15 +111,15 @@ def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
     gitignore_content = """# DeepWork temporary files
 # These files are used for rules evaluation during sessions
 .last_work_tree
+.last_head_ref
 """
 
-    # Only write if it doesn't exist or doesn't contain the entry
+    # Only write if it doesn't exist or doesn't contain all entries
     if gitignore_path.exists():
         existing_content = gitignore_path.read_text()
-        if ".last_work_tree" not in existing_content:
-            # Append to existing
-            with open(gitignore_path, "a") as f:
-                f.write("\n" + gitignore_content)
+        if ".last_work_tree" not in existing_content or ".last_head_ref" not in existing_content:
+            # Overwrite with complete content
+            gitignore_path.write_text(gitignore_content)
     else:
         gitignore_path.write_text(gitignore_content)
 
