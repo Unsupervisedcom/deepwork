@@ -44,6 +44,17 @@ class TestAgentAdapterRegistry:
         assert "gemini" in names
         assert len(names) >= 2  # At least claude and gemini
 
+    def test_default_sync_skill_permissions_returns_zero(self, temp_dir: Path) -> None:
+        """Test that default sync_skill_permissions implementation returns 0."""
+        # Use GeminiAdapter which doesn't override sync_skill_permissions
+        adapter = GeminiAdapter(temp_dir)
+        skill_names = ["test_skill", "test_skill.step"]
+
+        count = adapter.sync_skill_permissions(temp_dir, skill_names)
+
+        # Default implementation should return 0 (no-op)
+        assert count == 0
+
 
 class TestClaudeAdapter:
     """Tests for ClaudeAdapter."""
@@ -183,6 +194,80 @@ class TestClaudeAdapter:
         adapter = ClaudeAdapter(temp_dir)
 
         count = adapter.sync_hooks(temp_dir, {})
+
+        assert count == 0
+
+    def test_sync_skill_permissions_creates_settings_file(self, temp_dir: Path) -> None:
+        """Test sync_skill_permissions creates settings.json when it doesn't exist."""
+        (temp_dir / ".claude").mkdir()
+        adapter = ClaudeAdapter(temp_dir)
+        skill_names = ["my_job", "my_job.step_one", "my_job.step_two"]
+
+        count = adapter.sync_skill_permissions(temp_dir, skill_names)
+
+        assert count == 3
+        settings_file = temp_dir / ".claude" / "settings.json"
+        assert settings_file.exists()
+        settings = json.loads(settings_file.read_text())
+        assert "permissions" in settings
+        assert "allow" in settings["permissions"]
+        assert "Skill(my_job:*)" in settings["permissions"]["allow"]
+        assert "Skill(my_job.step_one:*)" in settings["permissions"]["allow"]
+        assert "Skill(my_job.step_two:*)" in settings["permissions"]["allow"]
+
+    def test_sync_skill_permissions_merges_with_existing(self, temp_dir: Path) -> None:
+        """Test sync_skill_permissions merges with existing settings."""
+        claude_dir = temp_dir / ".claude"
+        claude_dir.mkdir()
+        settings_file = claude_dir / "settings.json"
+        settings_file.write_text(
+            json.dumps(
+                {
+                    "existing_key": "value",
+                    "permissions": {"allow": ["Bash(ls:*)", "Edit(./**)"]},
+                }
+            )
+        )
+
+        adapter = ClaudeAdapter(temp_dir)
+        skill_names = ["my_job", "my_job.step_one"]
+
+        count = adapter.sync_skill_permissions(temp_dir, skill_names)
+
+        assert count == 2
+        settings = json.loads(settings_file.read_text())
+        assert settings["existing_key"] == "value"
+        assert "Bash(ls:*)" in settings["permissions"]["allow"]
+        assert "Edit(./**)" in settings["permissions"]["allow"]
+        assert "Skill(my_job:*)" in settings["permissions"]["allow"]
+        assert "Skill(my_job.step_one:*)" in settings["permissions"]["allow"]
+
+    def test_sync_skill_permissions_avoids_duplicates(self, temp_dir: Path) -> None:
+        """Test sync_skill_permissions doesn't add duplicate permissions."""
+        claude_dir = temp_dir / ".claude"
+        claude_dir.mkdir()
+        settings_file = claude_dir / "settings.json"
+        settings_file.write_text(
+            json.dumps({"permissions": {"allow": ["Skill(my_job:*)"]}}))
+
+        adapter = ClaudeAdapter(temp_dir)
+        skill_names = ["my_job", "my_job.step_one"]
+
+        count = adapter.sync_skill_permissions(temp_dir, skill_names)
+
+        # Only step_one should be added, my_job already exists
+        assert count == 1
+        settings = json.loads(settings_file.read_text())
+        # Count occurrences of my_job permission
+        my_job_count = settings["permissions"]["allow"].count("Skill(my_job:*)")
+        assert my_job_count == 1  # Should only appear once
+        assert "Skill(my_job.step_one:*)" in settings["permissions"]["allow"]
+
+    def test_sync_skill_permissions_empty_list_returns_zero(self, temp_dir: Path) -> None:
+        """Test sync_skill_permissions returns 0 for empty skill list."""
+        adapter = ClaudeAdapter(temp_dir)
+
+        count = adapter.sync_skill_permissions(temp_dir, [])
 
         assert count == 0
 
