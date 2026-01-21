@@ -11,9 +11,8 @@ Usage:
 This is meant to be called from hook wrapper scripts (claude_hook.sh, gemini_hook.sh).
 """
 
-import sys
 import importlib
-from pathlib import Path
+import sys
 
 import click
 from rich.console import Console
@@ -50,7 +49,7 @@ def hook(hook_name: str) -> None:
         except ModuleNotFoundError:
             raise HookError(
                 f"Hook '{hook_name}' not found. Available hooks are in the deepwork.hooks package."
-            )
+            ) from None
 
         # Run the hook's main function if it exists
         if hasattr(module, "main"):
