@@ -618,3 +618,60 @@ hooks:
         assert context["stop_hooks"][0]["type"] == "prompt"
         assert context["stop_hooks"][1]["type"] == "script"
         assert context["stop_hooks"][2]["type"] == "prompt"
+
+    def test_build_context_duplicates_stop_to_subagent_stop(
+        self, generator: SkillGenerator, job_with_hooks: JobDefinition
+    ) -> None:
+        """Test that Stop hooks are also registered for SubagentStop event.
+
+        Claude Code has separate Stop and SubagentStop events. When a Stop hook
+        is defined, it should also be registered for SubagentStop so the hook
+        triggers for both the main agent and subagents.
+        """
+        adapter = ClaudeAdapter()
+        context = generator._build_step_context(job_with_hooks, job_with_hooks.steps[0], 0, adapter)
+
+        # Should have both Stop and SubagentStop in hooks dict
+        assert "hooks" in context
+        assert "Stop" in context["hooks"]
+        assert "SubagentStop" in context["hooks"]
+
+        # Both should have the same hooks
+        assert context["hooks"]["Stop"] == context["hooks"]["SubagentStop"]
+        assert len(context["hooks"]["Stop"]) == 1
+        assert context["hooks"]["Stop"][0]["type"] == "prompt"
+
+    def test_build_context_no_subagent_stop_without_stop(
+        self, generator: SkillGenerator, tmp_path: Path
+    ) -> None:
+        """Test that SubagentStop is not created if there are no Stop hooks."""
+        job_dir = tmp_path / "test_job"
+        job_dir.mkdir()
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step1.md").write_text("# Step 1")
+
+        job = JobDefinition(
+            name="test_job",
+            version="1.0.0",
+            summary="Test",
+            description="Test",
+            steps=[
+                Step(
+                    id="step1",
+                    name="Step 1",
+                    description="Step",
+                    instructions_file="steps/step1.md",
+                    outputs=[OutputSpec(file="out.md")],
+                )
+            ],
+            job_dir=job_dir,
+        )
+
+        adapter = ClaudeAdapter()
+        context = generator._build_step_context(job, job.steps[0], 0, adapter)
+
+        # Should not have Stop or SubagentStop without any hooks
+        assert "hooks" in context
+        assert "Stop" not in context["hooks"]
+        assert "SubagentStop" not in context["hooks"]

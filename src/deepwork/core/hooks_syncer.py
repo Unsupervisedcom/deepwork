@@ -187,6 +187,17 @@ def merge_hooks_for_platform(
                 if not _hook_already_present(merged[event], command):
                     merged[event].append(hook_config)
 
+    # Claude Code has separate Stop and SubagentStop events. When a Stop hook
+    # is defined, also register it for SubagentStop so it triggers for both
+    # the main agent and subagents.
+    if "Stop" in merged:
+        if "SubagentStop" not in merged:
+            merged["SubagentStop"] = []
+        for hook_config in merged["Stop"]:
+            command = hook_config.get("hooks", [{}])[0].get("command", "")
+            if not _hook_already_present(merged["SubagentStop"], command):
+                merged["SubagentStop"].append(hook_config)
+
     return merged
 
 

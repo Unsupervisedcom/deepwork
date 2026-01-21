@@ -1,11 +1,11 @@
 ---
 name: deepwork_jobs
-description: "DeepWork job management commands"
+description: "Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs."
 ---
 
 # deepwork_jobs
 
-**Multi-step workflow**: DeepWork job management commands
+**Multi-step workflow**: Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs.
 
 > **CRITICAL**: Always invoke steps using the Skill tool. Never copy/paste step instructions directly.
 
@@ -23,10 +23,10 @@ learnings specific to the current run into AGENTS.md files in the working folder
 
 ## Available Steps
 
-1. **define** - Create the job.yml specification file by understanding workflow requirements
-2. **review_job_spec** - Use sub-agent to review job.yml against doc spec quality criteria (requires: define)
-3. **implement** - Generate instruction files for each step based on the job.yml specification (requires: review_job_spec)
-4. **learn** - Reflect on conversation to improve job instructions and capture learnings
+1. **define** - Creates a job.yml specification by gathering workflow requirements through structured questions. Use when starting a new multi-step workflow.
+2. **review_job_spec** - Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification. (requires: define)
+3. **implement** - Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes. (requires: review_job_spec)
+4. **learn** - Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
 
 ## Execution Instructions
 
@@ -57,6 +57,13 @@ After each step completes:
 If user intent is unclear, use AskUserQuestion to clarify:
 - Present available steps as numbered options
 - Let user select the starting point
+
+## Guardrails
+
+- Do NOT copy/paste step instructions directly; always use the Skill tool to invoke steps
+- Do NOT skip steps in the workflow unless the user explicitly requests it
+- Do NOT proceed to the next step if the current step's outputs are incomplete
+- Do NOT make assumptions about user intent; ask for clarification when ambiguous
 
 ## Context Files
 

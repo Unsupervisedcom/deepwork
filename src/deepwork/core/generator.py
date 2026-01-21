@@ -7,8 +7,8 @@ from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
 from deepwork.core.adapters import AgentAdapter, SkillLifecycleHook
 from deepwork.core.doc_spec_parser import (
+    DocSpec,
     DocSpecParseError,
-    DocumentTypeDefinition,
     parse_doc_spec_file,
 )
 from deepwork.core.parser import JobDefinition, Step
@@ -42,36 +42,34 @@ class SkillGenerator:
         if not self.templates_dir.exists():
             raise GeneratorError(f"Templates directory not found: {self.templates_dir}")
 
-        # Cache for loaded document types (keyed by absolute file path)
-        self._doc_type_cache: dict[Path, DocumentTypeDefinition] = {}
+        # Cache for loaded doc specs (keyed by absolute file path)
+        self._doc_spec_cache: dict[Path, DocSpec] = {}
 
-    def _load_document_type(
-        self, project_root: Path, document_type_path: str
-    ) -> DocumentTypeDefinition | None:
+    def _load_doc_spec(self, project_root: Path, doc_spec_path: str) -> DocSpec | None:
         """
-        Load a document type definition by file path with caching.
+        Load a doc spec by file path with caching.
 
         Args:
             project_root: Path to project root
-            document_type_path: Relative path to doc spec file (e.g., ".deepwork/doc_specs/report.md")
+            doc_spec_path: Relative path to doc spec file (e.g., ".deepwork/doc_specs/report.md")
 
         Returns:
-            DocumentTypeDefinition if file exists and parses, None otherwise
+            DocSpec if file exists and parses, None otherwise
         """
-        full_path = project_root / document_type_path
-        if full_path in self._doc_type_cache:
-            return self._doc_type_cache[full_path]
+        full_path = project_root / doc_spec_path
+        if full_path in self._doc_spec_cache:
+            return self._doc_spec_cache[full_path]
 
         if not full_path.exists():
             return None
 
         try:
-            doc_type = parse_doc_spec_file(full_path)
+            doc_spec = parse_doc_spec_file(full_path)
         except DocSpecParseError:
             return None
 
-        self._doc_type_cache[full_path] = doc_type
-        return doc_type
+        self._doc_spec_cache[full_path] = doc_spec
+        return doc_spec
 
     def _get_jinja_env(self, adapter: AgentAdapter) -> Environment:
         """
@@ -164,7 +162,7 @@ class SkillGenerator:
             step: Step to generate context for
             step_index: Index of step in job (0-based)
             adapter: Agent adapter for platform-specific hook name mapping
-            project_root: Optional project root for loading document types
+            project_root: Optional project root for loading doc specs
 
         Returns:
             Template context dictionary
@@ -215,31 +213,37 @@ class SkillGenerator:
                     if hook_contexts:
                         hooks[platform_event_name] = hook_contexts
 
+        # Claude Code has separate Stop and SubagentStop events. When a Stop hook
+        # is defined, also register it for SubagentStop so it triggers for both
+        # the main agent and subagents.
+        if "Stop" in hooks:
+            hooks["SubagentStop"] = hooks["Stop"]
+
         # Backward compatibility: stop_hooks is after_agent hooks
         stop_hooks = hooks.get(
             adapter.get_platform_hook_name(SkillLifecycleHook.AFTER_AGENT) or "Stop", []
         )
 
-        # Build rich outputs context with document type information
+        # Build rich outputs context with doc spec information
         outputs_context = []
         for output in step.outputs:
             output_ctx: dict[str, Any] = {
                 "file": output.file,
-                "has_document_type": output.has_document_type(),
+                "has_doc_spec": output.has_doc_spec(),
             }
-            if output.has_document_type() and output.document_type and project_root:
-                doc_type = self._load_document_type(project_root, output.document_type)
-                if doc_type:
-                    output_ctx["document_type"] = {
-                        "path": output.document_type,
-                        "name": doc_type.name,
-                        "description": doc_type.description,
-                        "target_audience": doc_type.target_audience,
+            if output.has_doc_spec() and output.doc_spec and project_root:
+                doc_spec = self._load_doc_spec(project_root, output.doc_spec)
+                if doc_spec:
+                    output_ctx["doc_spec"] = {
+                        "path": output.doc_spec,
+                        "name": doc_spec.name,
+                        "description": doc_spec.description,
+                        "target_audience": doc_spec.target_audience,
                         "quality_criteria": [
                             {"name": c.name, "description": c.description}
-                            for c in doc_type.quality_criteria
+                            for c in doc_spec.quality_criteria
                         ],
-                        "example_document": doc_type.example_document,
+                        "example_document": doc_spec.example_document,
                     }
             outputs_context.append(output_ctx)
 

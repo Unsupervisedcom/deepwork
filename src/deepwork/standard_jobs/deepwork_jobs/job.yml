@@ -1,6 +1,6 @@
 name: deepwork_jobs
-version: "0.8.0"
-summary: "DeepWork job management commands"
+version: "0.9.0"
+summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs."
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
   workflows and learn from running them.
@@ -25,30 +25,32 @@ changelog:
   - version: "0.5.0"
     changes: "Standardized on 'ask structured questions' phrasing for user input; Updated quality criteria hooks to verify phrase usage; Added guidance in implement.md to use phrase in generated instructions"
   - version: "0.6.0"
-    changes: "Added Document Type Definition (doc spec) support; define.md now detects document-oriented workflows and guides doc spec creation; learn.md now identifies and applies doc spec-related improvements"
+    changes: "Added doc spec support; define.md now detects document-oriented workflows and guides doc spec creation; learn.md now identifies and applies doc spec-related improvements"
   - version: "0.7.0"
-    changes: "Added job.yml doc spec; define step now outputs job.yml with document_type reference for quality validation"
+    changes: "Added job.yml doc spec; define step now outputs job.yml with doc_spec reference for quality validation"
   - version: "0.8.0"
     changes: "Added review_job_spec step between define and implement for doc spec-based quality validation using sub-agent review"
+  - version: "0.9.0"
+    changes: "Improved skill descriptions with third-person voice and 'Use when...' triggers for better discoverability"
 
 steps:
   - id: define
     name: "Define Job Specification"
-    description: "Create the job.yml specification file by understanding workflow requirements"
+    description: "Creates a job.yml specification by gathering workflow requirements through structured questions. Use when starting a new multi-step workflow."
     instructions_file: steps/define.md
     inputs:
       - name: job_purpose
         description: "What complex task or workflow are you trying to accomplish?"
     outputs:
       - file: job.yml
-        document_type: .deepwork/doc_specs/job_spec.md
+        doc_spec: .deepwork/doc_specs/job_spec.md
     dependencies: []
     quality_criteria:
       - "**User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?"
       - "**Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?"
       - "**Document Detection**: For document-oriented workflows, did the agent detect patterns and offer doc spec creation?"
       - "**doc spec Created (if applicable)**: If a doc spec was needed, was it created in `.deepwork/doc_specs/[doc_spec_name].md` with proper quality criteria?"
-      - "**doc spec References**: Are document outputs properly linked to their doc specs using `{file, document_type}` format?"
+      - "**doc spec References**: Are document outputs properly linked to their doc specs using `{file, doc_spec}` format?"
       - "**Valid Against doc spec**: Does the job.yml conform to the job.yml doc spec quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?"
       - "**Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?"
       - "**Logical Dependencies**: Do step dependencies make sense and avoid circular references?"
@@ -59,14 +61,14 @@ steps:
 
   - id: review_job_spec
     name: "Review Job Specification"
-    description: "Use sub-agent to review job.yml against doc spec quality criteria"
+    description: "Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification."
     instructions_file: steps/review_job_spec.md
     inputs:
       - file: job.yml
         from_step: define
     outputs:
       - file: job.yml
-        document_type: .deepwork/doc_specs/job_spec.md
+        doc_spec: .deepwork/doc_specs/job_spec.md
     dependencies:
       - define
     quality_criteria:
@@ -77,7 +79,7 @@ steps:
 
   - id: implement
     name: "Implement Job Steps"
-    description: "Generate instruction files for each step based on the job.yml specification"
+    description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes."
     instructions_file: steps/implement.md
     inputs:
       - file: job.yml
@@ -99,7 +101,7 @@ steps:
 
   - id: learn
     name: "Learn from Job Execution"
-    description: "Reflect on conversation to improve job instructions and capture learnings"
+    description: "Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it."
     instructions_file: steps/learn.md
     exposed: true
     inputs:

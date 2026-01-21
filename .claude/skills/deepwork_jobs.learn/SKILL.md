@@ -1,6 +1,6 @@
 ---
 name: deepwork_jobs.learn
-description: "Reflect on conversation to improve job instructions and capture learnings"
+description: "Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it."
 hooks:
   Stop:
     - hooks:
@@ -39,12 +39,12 @@ hooks:
 
 **Standalone skill** - can be run anytime
 
-> DeepWork job management commands
+> Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs.
 
 
 ## Instructions
 
-**Goal**: Reflect on conversation to improve job instructions and capture learnings
+**Goal**: Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
 
 # Learn from Job Execution
 
@@ -113,7 +113,7 @@ For each learning identified, determine if it is:
   - "Quality criteria should include checking for Y"
   - "Add example of correct output format"
 
-**doc spec-Related** (should improve document type definitions):
+**doc spec-Related** (should improve doc spec files):
 - Improvements to document quality criteria
 - Changes to document structure or format
 - Updated audience or frequency information
@@ -214,7 +214,7 @@ Review all instruction files for the job and identify content that:
 If doc spec-related learnings were identified:
 
 1. **Locate the doc spec file**
-   - Find doc spec references in job.yml outputs (look for `document_type: .deepwork/doc_specs/[doc_spec_name].md`)
+   - Find doc spec references in job.yml outputs (look for `doc_spec: .deepwork/doc_specs/[doc_spec_name].md`)
    - doc spec files are at `.deepwork/doc_specs/[doc_spec_name].md`
 
 2. **Update quality_criteria array**
@@ -435,6 +435,13 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `AGENTS.md`
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## Quality Validation
 

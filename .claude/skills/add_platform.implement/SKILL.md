@@ -1,6 +1,6 @@
 ---
 name: add_platform.implement
-description: "Add platform adapter, templates, tests with 100% coverage, and README documentation"
+description: "Creates platform adapter, templates, tests with 100% coverage, and README documentation. Use after adding hook capabilities."
 user-invocable: false
 hooks:
   Stop:
@@ -28,7 +28,7 @@ hooks:
 
 **Step 3/4** in **add_platform** workflow
 
-> Add a new AI platform to DeepWork with adapter, templates, and tests
+> Adds a new AI platform to DeepWork with adapter, templates, and tests. Use when integrating Cursor, Windsurf, or other AI coding tools.
 
 ## Prerequisites (Verify First)
 
@@ -38,7 +38,7 @@ Before proceeding, confirm these steps are complete:
 
 ## Instructions
 
-**Goal**: Add platform adapter, templates, tests with 100% coverage, and README documentation
+**Goal**: Creates platform adapter, templates, tests with 100% coverage, and README documentation. Use after adding hook capabilities.
 
 # Implement Platform Support
 
@@ -309,6 +309,13 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 - `templates/` (directory)
 - `tests/` (directory)
 - `README.md`
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## Quality Validation
 

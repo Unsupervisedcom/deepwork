@@ -1,4 +1,4 @@
-"""Doc spec parser for document type definitions."""
+"""Doc spec parser."""
 
 import re
 from dataclasses import dataclass, field
@@ -18,7 +18,7 @@ class DocSpecParseError(Exception):
 
 @dataclass
 class QualityCriterion:
-    """Represents a single quality criterion for a document type."""
+    """Represents a single quality criterion for a doc spec."""
 
     name: str
     description: str
@@ -33,8 +33,8 @@ class QualityCriterion:
 
 
 @dataclass
-class DocumentTypeDefinition:
-    """Represents a complete document type definition (doc spec)."""
+class DocSpec:
+    """Represents a complete doc spec (document specification)."""
 
     # Required fields
     name: str
@@ -55,9 +55,9 @@ class DocumentTypeDefinition:
     @classmethod
     def from_dict(
         cls, data: dict[str, Any], example_document: str = "", source_file: Path | None = None
-    ) -> "DocumentTypeDefinition":
+    ) -> "DocSpec":
         """
-        Create DocumentTypeDefinition from dictionary.
+        Create DocSpec from dictionary.
 
         Args:
             data: Parsed YAML frontmatter data
@@ -65,7 +65,7 @@ class DocumentTypeDefinition:
             source_file: Path to the source doc spec file
 
         Returns:
-            DocumentTypeDefinition instance
+            DocSpec instance
         """
         return cls(
             name=data["name"],
@@ -77,6 +77,10 @@ class DocumentTypeDefinition:
             example_document=example_document,
             source_file=source_file,
         )
+
+
+# Backward compatibility alias
+DocumentTypeDefinition = DocSpec
 
 
 def _parse_frontmatter_markdown(content: str) -> tuple[dict[str, Any], str]:
@@ -122,7 +126,7 @@ def _parse_frontmatter_markdown(content: str) -> tuple[dict[str, Any], str]:
     return frontmatter, body
 
 
-def parse_doc_spec_file(filepath: Path | str) -> DocumentTypeDefinition:
+def parse_doc_spec_file(filepath: Path | str) -> DocSpec:
     """
     Parse a doc spec file.
 
@@ -130,7 +134,7 @@ def parse_doc_spec_file(filepath: Path | str) -> DocumentTypeDefinition:
         filepath: Path to the doc spec file (markdown with YAML frontmatter)
 
     Returns:
-        Parsed DocumentTypeDefinition
+        Parsed DocSpec
 
     Raises:
         DocSpecParseError: If parsing fails or validation errors occur
@@ -159,12 +163,12 @@ def parse_doc_spec_file(filepath: Path | str) -> DocumentTypeDefinition:
         raise DocSpecParseError(f"Doc spec validation failed: {e}") from e
 
     # Create doc spec instance
-    return DocumentTypeDefinition.from_dict(frontmatter, body, filepath)
+    return DocSpec.from_dict(frontmatter, body, filepath)
 
 
 def load_doc_specs_from_directory(
     doc_specs_dir: Path | str,
-) -> dict[str, DocumentTypeDefinition]:
+) -> dict[str, DocSpec]:
     """
     Load all doc spec files from a directory.
 
@@ -172,7 +176,7 @@ def load_doc_specs_from_directory(
         doc_specs_dir: Path to the doc_specs directory
 
     Returns:
-        Dictionary mapping doc spec filename (without extension) to DocumentTypeDefinition
+        Dictionary mapping doc spec filename (without extension) to DocSpec
 
     Raises:
         DocSpecParseError: If any doc spec file fails to parse
@@ -185,7 +189,7 @@ def load_doc_specs_from_directory(
     if not doc_specs_dir.is_dir():
         raise DocSpecParseError(f"Doc specs path is not a directory: {doc_specs_dir}")
 
-    doc_specs: dict[str, DocumentTypeDefinition] = {}
+    doc_specs: dict[str, DocSpec] = {}
 
     for doc_spec_file in doc_specs_dir.glob("*.md"):
         # Use stem (filename without extension) as key

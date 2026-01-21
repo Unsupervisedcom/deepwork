@@ -1,11 +1,11 @@
 ---
 name: deepwork_rules
-description: "Rules enforcement for AI agent sessions"
+description: "Creates file-change rules that enforce guidelines during AI sessions. Use when automating documentation sync or code review triggers."
 ---
 
 # deepwork_rules
 
-**Multi-step workflow**: Rules enforcement for AI agent sessions
+**Multi-step workflow**: Creates file-change rules that enforce guidelines during AI sessions. Use when automating documentation sync or code review triggers.
 
 > **CRITICAL**: Always invoke steps using the Skill tool. Never copy/paste step instructions directly.
 
@@ -36,7 +36,7 @@ Example use cases:
 
 ## Available Steps
 
-1. **define** - Create a new rule file in .deepwork/rules/
+1. **define** - Creates a rule file that triggers when specified files change. Use when setting up documentation sync, code review requirements, or automated commands.
 
 ## Execution Instructions
 
@@ -64,6 +64,13 @@ After each step completes:
 If user intent is unclear, use AskUserQuestion to clarify:
 - Present available steps as numbered options
 - Let user select the starting point
+
+## Guardrails
+
+- Do NOT copy/paste step instructions directly; always use the Skill tool to invoke steps
+- Do NOT skip steps in the workflow unless the user explicitly requests it
+- Do NOT proceed to the next step if the current step's outputs are incomplete
+- Do NOT make assumptions about user intent; ask for clarification when ambiguous
 
 ## Context Files
 

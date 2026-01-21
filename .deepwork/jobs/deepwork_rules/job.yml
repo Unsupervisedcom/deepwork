@@ -1,6 +1,6 @@
 name: deepwork_rules
-version: "0.3.0"
-summary: "Rules enforcement for AI agent sessions"
+version: "0.4.0"
+summary: "Creates file-change rules that enforce guidelines during AI sessions. Use when automating documentation sync or code review triggers."
 description: |
   Manages rules that automatically trigger when certain files change during an AI agent session.
   Rules help ensure that code changes follow team guidelines, documentation is updated,
@@ -33,11 +33,13 @@ changelog:
     changes: "Standardized on 'ask structured questions' phrasing for user input"
   - version: "0.3.0"
     changes: "Migrated to v2 format - individual markdown files in .deepwork/rules/"
+  - version: "0.4.0"
+    changes: "Improved skill descriptions with third-person voice and 'Use when...' triggers for better discoverability"
 
 steps:
   - id: define
     name: "Define Rule"
-    description: "Create a new rule file in .deepwork/rules/"
+    description: "Creates a rule file that triggers when specified files change. Use when setting up documentation sync, code review requirements, or automated commands."
     instructions_file: steps/define.md
     inputs:
       - name: rule_purpose

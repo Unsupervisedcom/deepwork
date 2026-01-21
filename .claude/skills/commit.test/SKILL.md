@@ -1,6 +1,6 @@
 ---
 name: commit.test
-description: "Pull latest code and run the test suite until all tests pass"
+description: "Pulls latest code and runs tests until all pass. Use when starting the commit workflow or re-running tests."
 user-invocable: false
 hooks:
   Stop:
@@ -20,12 +20,12 @@ hooks:
 
 **Step 1/3** in **commit** workflow
 
-> Run tests, lint, and commit code changes
+> Runs tests, lints code, and commits changes. Use when ready to commit work with quality checks.
 
 
 ## Instructions
 
-**Goal**: Pull latest code and run the test suite until all tests pass
+**Goal**: Pulls latest code and runs tests until all pass. Use when starting the commit workflow or re-running tests.
 
 # Run Tests
 
@@ -113,6 +113,13 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `tests_passing`
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## Quality Validation
 
