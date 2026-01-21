@@ -85,7 +85,7 @@ For each learning identified, determine if it is:
   - "Quality criteria should include checking for Y"
   - "Add example of correct output format"
 
-**doc spec-Related** (should improve document type definitions):
+**doc spec-Related** (should improve doc spec files):
 - Improvements to document quality criteria
 - Changes to document structure or format
 - Updated audience or frequency information
@@ -186,7 +186,7 @@ Review all instruction files for the job and identify content that:
 If doc spec-related learnings were identified:
 
 1. **Locate the doc spec file**
-   - Find doc spec references in job.yml outputs (look for `document_type: .deepwork/doc_specs/[doc_spec_name].md`)
+   - Find doc spec references in job.yml outputs (look for `doc_spec: .deepwork/doc_specs/[doc_spec_name].md`)
    - doc spec files are at `.deepwork/doc_specs/[doc_spec_name].md`
 
 2. **Update quality_criteria array**

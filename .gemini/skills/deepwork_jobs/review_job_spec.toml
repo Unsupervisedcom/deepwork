@@ -263,7 +263,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `job.yml`
-  **Document Type**: DeepWork Job Specification
+  **Doc Spec**: DeepWork Job Specification
   > YAML specification file that defines a multi-step workflow job for AI agents
   **Definition**: `.deepwork/doc_specs/job_spec.md`
   **Target Audience**: AI agents executing jobs and developers defining workflows

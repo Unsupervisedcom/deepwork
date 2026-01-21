@@ -96,16 +96,16 @@ steps:
     instructions_file: steps/generate_report.md
     outputs:
       - file: reports/aws_spending.md
-        document_type: .deepwork/doc_specs/monthly_aws_report.md
+        doc_spec: .deepwork/doc_specs/monthly_aws_report.md
 ```
 
-The `document_type` field uses the full path to the doc spec file (starting with `.deepwork`). This makes references self-documenting and allows agents to understand them without additional context.
+The `doc_spec` field uses the full path to the doc spec file (starting with `.deepwork`). This makes references self-documenting and allows agents to understand them without additional context.
 
 ### What Happens During Sync
 
 When you run `deepwork sync`:
 
-1. For outputs with `document_type` references, the doc spec file is loaded from the specified path
+1. For outputs with `doc_spec` references, the doc spec file is loaded from the specified path
 2. The doc spec information is included in the generated skill
 3. The skill includes:
    - Document name and description
@@ -123,7 +123,7 @@ The skill will include a section like:
 **Required outputs**:
 - `reports/aws_spending.md`
 
-  **Document Type**: Monthly AWS Spending Report
+  **Doc Spec**: Monthly AWS Spending Report
   > A Markdown summary of AWS spend across accounts
   **Definition**: `.deepwork/doc_specs/monthly_aws_report.md`
 
@@ -225,7 +225,7 @@ When updating a doc spec:
    ```yaml
    outputs:
      - file: reports/aws_$(date +%Y_%m).md
-       document_type: .deepwork/doc_specs/monthly_aws_report.md
+       doc_spec: .deepwork/doc_specs/monthly_aws_report.md
    ```
 
 4. **Sync generates skill** with quality criteria included

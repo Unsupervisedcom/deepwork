@@ -73,9 +73,9 @@ steps:
     outputs:
       - filename.md               # simple filename
       - reports/analysis.md       # path with directory
-      # With document type reference:
+      # With doc spec reference:
       - file: report.md
-        document_type: .deepwork/doc_specs/report_type.md
+        doc_spec: .deepwork/doc_specs/report_type.md
     dependencies:
       - previous_step_id          # steps that must complete first
 ```
@@ -184,7 +184,7 @@ steps:
         from_step: research_competitors
     outputs:
       - file: positioning_report.md
-        document_type: .deepwork/doc_specs/positioning_report.md
+        doc_spec: .deepwork/doc_specs/positioning_report.md
     dependencies:
       - research_competitors
 ```

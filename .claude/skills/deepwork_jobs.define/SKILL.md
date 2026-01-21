@@ -15,7 +15,7 @@ hooks:
             2. **Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?
             3. **Document Detection**: For document-oriented workflows, did the agent detect patterns and offer doc spec creation?
             4. **doc spec Created (if applicable)**: If a doc spec was needed, was it created in `.deepwork/doc_specs/[doc_spec_name].md` with proper quality criteria?
-            5. **doc spec References**: Are document outputs properly linked to their doc specs using `{file, document_type}` format?
+            5. **doc spec References**: Are document outputs properly linked to their doc specs using `{file, doc_spec}` format?
             6. **Valid Against doc spec**: Does the job.yml conform to the job.yml doc spec quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?
             7. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
             8. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
@@ -84,19 +84,19 @@ Start by asking structured questions to understand what the user wants to accomp
 
 **Check for document-focused patterns** in the user's description:
 - Keywords: "report", "summary", "document", "create", "monthly", "quarterly", "for stakeholders", "for leadership"
-- Final deliverable is a specific document type (e.g., "AWS spending report", "competitive analysis", "sprint summary")
+- Final deliverable is a specific document (e.g., "AWS spending report", "competitive analysis", "sprint summary")
 - Recurring documents with consistent structure
 
 **If a document-oriented workflow is detected:**
 
-1. Inform the user: "This workflow produces a specific document type. I recommend defining a Document Type Definition (doc spec) first to ensure consistent quality."
+1. Inform the user: "This workflow produces a specific document type. I recommend defining a doc spec first to ensure consistent quality."
 
 2. Ask structured questions to understand if they want to:
-   - Create a doc spec for the document type
+   - Create a doc spec for this document
    - Use an existing doc spec (if any exist in `.deepwork/doc_specs/`)
    - Skip doc spec and proceed with simple outputs
 
-### Step 1.6: Define the Document Type Definition (if needed)
+### Step 1.6: Define the Doc Spec (if needed)
 
 When creating a doc spec, gather the following information:
 
@@ -170,7 +170,7 @@ When a step produces a document with a doc spec reference, use this format in jo
 ```yaml
 outputs:
   - file: reports/monthly_spending.md
-    document_type: .deepwork/doc_specs/monthly_aws_report.md
+    doc_spec: .deepwork/doc_specs/monthly_aws_report.md
 ```
 
 The doc spec's quality criteria will automatically be included in the generated skill, ensuring consistent document quality.
@@ -269,7 +269,7 @@ This creates:
 
 (Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`)
 
-**Document Type Definition**: See `.deepwork/doc_specs/job_spec.md` for the complete specification with quality criteria.
+**Doc Spec**: See `.deepwork/doc_specs/job_spec.md` for the complete specification with quality criteria.
 
 **Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.template` for the standard structure.
 
@@ -475,7 +475,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `job.yml`
-  **Document Type**: DeepWork Job Specification
+  **Doc Spec**: DeepWork Job Specification
   > YAML specification file that defines a multi-step workflow job for AI agents
   **Definition**: `.deepwork/doc_specs/job_spec.md`
   **Target Audience**: AI agents executing jobs and developers defining workflows
@@ -540,9 +540,9 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
       outputs:
         - filename.md               # simple filename
         - reports/analysis.md       # path with directory
-        # With document type reference:
+        # With doc spec reference:
         - file: report.md
-          document_type: .deepwork/doc_specs/report_type.md
+          doc_spec: .deepwork/doc_specs/report_type.md
       dependencies:
         - previous_step_id          # steps that must complete first
   ```
@@ -651,7 +651,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
           from_step: research_competitors
       outputs:
         - file: positioning_report.md
-          document_type: .deepwork/doc_specs/positioning_report.md
+          doc_spec: .deepwork/doc_specs/positioning_report.md
       dependencies:
         - research_competitors
   ```
@@ -675,7 +675,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 2. **Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?
 3. **Document Detection**: For document-oriented workflows, did the agent detect patterns and offer doc spec creation?
 4. **doc spec Created (if applicable)**: If a doc spec was needed, was it created in `.deepwork/doc_specs/[doc_spec_name].md` with proper quality criteria?
-5. **doc spec References**: Are document outputs properly linked to their doc specs using `{file, document_type}` format?
+5. **doc spec References**: Are document outputs properly linked to their doc specs using `{file, doc_spec}` format?
 6. **Valid Against doc spec**: Does the job.yml conform to the job.yml doc spec quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?
 7. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
 8. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
