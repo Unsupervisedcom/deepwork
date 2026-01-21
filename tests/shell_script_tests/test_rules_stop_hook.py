@@ -297,3 +297,113 @@ class TestRulesStopHookJsonFormat:
         assert "DeepWork Rules Triggered" in reason
         assert "Test Rule" in reason
         assert "test rule that fires" in reason
+
+
+class TestRulesStopHookInfiniteLoopPrevention:
+    """Tests for preventing infinite loops in rules stop hook."""
+
+    def test_queued_prompt_rule_does_not_refire(
+        self, src_dir: Path, git_repo_with_src_rule: Path
+    ) -> None:
+        """Test that a prompt rule with QUEUED status doesn't fire again.
+
+        This prevents infinite loops when the transcript is unavailable or
+        promise tags haven't been written yet.
+        """
+        # Create a file that triggers the rule
+        test_src_dir = git_repo_with_src_rule / "src"
+        test_src_dir.mkdir(exist_ok=True)
+        (test_src_dir / "main.py").write_text("# New file\n")
+
+        # Stage the change
+        repo = Repo(git_repo_with_src_rule)
+        repo.index.add(["src/main.py"])
+
+        # First run: rule should fire and create queue entry
+        stdout1, stderr1, code1 = run_stop_hook(git_repo_with_src_rule, src_dir=src_dir)
+        result1 = json.loads(stdout1.strip())
+        assert result1.get("decision") == "block", f"First run should block: {result1}"
+        assert "Test Rule" in result1.get("reason", "")
+
+        # Second run: rule should NOT fire again (already QUEUED)
+        # Note: No transcript with promise tag, but the queue entry prevents re-firing
+        stdout2, stderr2, code2 = run_stop_hook(git_repo_with_src_rule, src_dir=src_dir)
+        result2 = json.loads(stdout2.strip())
+        assert result2 == {}, f"Second run should not block (rule already queued): {result2}"
+
+    def test_rule_fires_again_after_queue_cleared(
+        self, src_dir: Path, git_repo_with_src_rule: Path
+    ) -> None:
+        """Test that a rule fires again after the queue is cleared."""
+        # Create a file that triggers the rule
+        test_src_dir = git_repo_with_src_rule / "src"
+        test_src_dir.mkdir(exist_ok=True)
+        (test_src_dir / "main.py").write_text("# New file\n")
+
+        # Stage the change
+        repo = Repo(git_repo_with_src_rule)
+        repo.index.add(["src/main.py"])
+
+        # First run: rule should fire
+        stdout1, stderr1, code1 = run_stop_hook(git_repo_with_src_rule, src_dir=src_dir)
+        result1 = json.loads(stdout1.strip())
+        assert result1.get("decision") == "block"
+
+        # Clear the queue
+        queue_dir = git_repo_with_src_rule / ".deepwork" / "tmp" / "rules" / "queue"
+        if queue_dir.exists():
+            for f in queue_dir.glob("*.json"):
+                f.unlink()
+
+        # Third run: rule should fire again (queue cleared)
+        stdout3, stderr3, code3 = run_stop_hook(git_repo_with_src_rule, src_dir=src_dir)
+        result3 = json.loads(stdout3.strip())
+        assert result3.get("decision") == "block", f"Rule should fire again: {result3}"
+
+    def test_promise_tag_still_prevents_firing(
+        self, src_dir: Path, git_repo_with_src_rule: Path
+    ) -> None:
+        """Test that promise tags still prevent rules from firing.
+
+        Even with the queue-based fix, promise tags should work when
+        the transcript is available.
+        """
+        # Create a file that triggers the rule
+        test_src_dir = git_repo_with_src_rule / "src"
+        test_src_dir.mkdir(exist_ok=True)
+        (test_src_dir / "main.py").write_text("# New file\n")
+
+        # Stage the change
+        repo = Repo(git_repo_with_src_rule)
+        repo.index.add(["src/main.py"])
+
+        # Create a transcript with promise tag (simulating agent response)
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
+            transcript_path = f.name
+            f.write(
+                json.dumps(
+                    {
+                        "role": "assistant",
+                        "message": {
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": "<promise>Test Rule</promise>",
+                                }
+                            ]
+                        },
+                    }
+                )
+            )
+            f.write("\n")
+
+        try:
+            # Run with transcript: rule should NOT fire (promise tag found)
+            hook_input = {"transcript_path": transcript_path, "hook_event_name": "Stop"}
+            stdout, stderr, code = run_stop_hook(
+                git_repo_with_src_rule, hook_input, src_dir=src_dir
+            )
+            result = json.loads(stdout.strip())
+            assert result == {}, f"Rule should not fire with promise tag: {result}"
+        finally:
+            os.unlink(transcript_path)
