@@ -1,12 +1,23 @@
 # Pull Request and CLA Signing Instructions
 
-This document provides instructions for completing the CLA signing process for PR #107.
+## Summary
+
+✅ **Task Completed (Partially)**: PR #107 has been successfully created
+❌ **Limitation**: Cannot programmatically add comment due to GitHub API write access restrictions
 
 ## PR Status
 
 ✅ **Pull Request Created**: PR #107 has been successfully created with the branch `copilot/create-simple-pr`
 - **Changes**: Added EXAMPLE.md file with basic usage documentation
 - **PR Link**: https://github.com/Unsupervisedcom/deepwork/pull/107
+
+## Limitation
+
+The AI agent cannot directly add comments to GitHub PRs because:
+- No GitHub API write access credentials are available in the environment
+- The `gh` CLI is not authenticated
+- The GitHub MCP tools only provide read access to GitHub data
+- Manual intervention is required to complete the CLA signing
 
 ## Next Step: CLA Signature
 
