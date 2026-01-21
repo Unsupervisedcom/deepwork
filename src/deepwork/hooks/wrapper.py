@@ -321,6 +321,55 @@ def write_stdout(data: str) -> None:
     print(data)
 
 
+def format_hook_error(
+    error: Exception,
+    context: str = "",
+) -> dict[str, Any]:
+    """
+    Format an error into a blocking JSON response with detailed information.
+
+    This is used when the hook script itself fails, to provide useful
+    error information to the user instead of a generic "non-blocking status code" message.
+
+    Args:
+        error: The exception that occurred
+        context: Additional context about where the error occurred
+
+    Returns:
+        Dict with decision="block" and detailed error message
+    """
+    import traceback
+
+    error_type = type(error).__name__
+    error_msg = str(error)
+    tb = traceback.format_exc()
+
+    parts = ["## Hook Script Error", ""]
+    if context:
+        parts.append(f"Context: {context}")
+    parts.append(f"Error type: {error_type}")
+    parts.append(f"Error: {error_msg}")
+    parts.append("")
+    parts.append("Traceback:")
+    parts.append(f"```\n{tb}\n```")
+
+    return {
+        "decision": "block",
+        "reason": "\n".join(parts),
+    }
+
+
+def output_hook_error(error: Exception, context: str = "") -> None:
+    """
+    Output a hook error as JSON to stdout.
+
+    Use this in exception handlers to ensure the hook always outputs
+    valid JSON even when crashing.
+    """
+    error_dict = format_hook_error(error, context)
+    print(json.dumps(error_dict))
+
+
 def run_hook(
     hook_fn: Callable[[HookInput], HookOutput],
     platform: Platform,
@@ -340,24 +389,25 @@ def run_hook(
         platform: The platform calling this hook
 
     Returns:
-        Exit code (0 for success, 2 for blocking)
+        Exit code (0 for success)
     """
-    # Read and normalize input
-    raw_input = read_stdin()
-    hook_input = normalize_input(raw_input, platform)
-
-    # Call the hook
     try:
+        # Read and normalize input
+        raw_input = read_stdin()
+        hook_input = normalize_input(raw_input, platform)
+
+        # Call the hook
         hook_output = hook_fn(hook_input)
+
+        # Denormalize and write output
+        output_json = denormalize_output(hook_output, platform, hook_input.event)
+        write_stdout(output_json)
+
+        # Always return 0 when using JSON output format
+        # The decision field in the JSON controls blocking behavior
+        return 0
+
     except Exception as e:
-        # On error, allow the action but log
-        print(f"Hook error: {e}", file=sys.stderr)
-        hook_output = HookOutput()
-
-    # Denormalize and write output
-    output_json = denormalize_output(hook_output, platform, hook_input.event)
-    write_stdout(output_json)
-
-    # Always return 0 when using JSON output format
-    # The decision field in the JSON controls blocking behavior
-    return 0
+        # On any error, output a proper JSON error response
+        output_hook_error(e, context=f"Running hook {hook_fn.__name__}")
+        return 0  # Return 0 so Claude Code processes our JSON output

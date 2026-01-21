@@ -684,17 +684,43 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
 
 def main() -> None:
     """Entry point for the rules check hook."""
-    # Determine platform from environment
-    platform_str = os.environ.get("DEEPWORK_HOOK_PLATFORM", "claude")
-    try:
-        platform = Platform(platform_str)
-    except ValueError:
-        platform = Platform.CLAUDE
+    from deepwork.hooks.wrapper import output_hook_error
 
-    # Run the hook with the wrapper
-    exit_code = run_hook(rules_check_hook, platform)
-    sys.exit(exit_code)
+    try:
+        # Determine platform from environment
+        platform_str = os.environ.get("DEEPWORK_HOOK_PLATFORM", "claude")
+        try:
+            platform = Platform(platform_str)
+        except ValueError:
+            platform = Platform.CLAUDE
+
+        # Run the hook with the wrapper
+        exit_code = run_hook(rules_check_hook, platform)
+        sys.exit(exit_code)
+
+    except Exception as e:
+        # Catch any unexpected errors and output proper JSON
+        output_hook_error(e, context="rules_check_hook initialization")
+        sys.exit(0)  # Exit 0 so Claude Code processes our JSON
 
 
 if __name__ == "__main__":
-    main()
+    # Wrap entire entry point to catch import errors and other early failures
+    try:
+        main()
+    except Exception as e:
+        # Last resort error handling - output JSON manually
+        import json
+        import traceback
+
+        error_output = {
+            "decision": "block",
+            "reason": (
+                "## Hook Script Error\n\n"
+                f"Error type: {type(e).__name__}\n"
+                f"Error: {e}\n\n"
+                f"Traceback:\n```\n{traceback.format_exc()}\n```"
+            ),
+        }
+        print(json.dumps(error_output))
+        sys.exit(0)
