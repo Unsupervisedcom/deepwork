@@ -532,12 +532,19 @@ def format_rules_message(results: list[RuleEvaluationResult]) -> str:
     return "\n".join(lines)
 
 
-def format_claude_prompt(result: RuleEvaluationResult) -> str:
+def format_claude_prompt(result: RuleEvaluationResult, transcript_path: str | None = None) -> str:
     """
     Format a rule evaluation result as a prompt for Claude Code headless mode.
 
     The prompt includes the rule instructions and expects Claude to return
     a structured response indicating whether to block or allow.
+
+    Args:
+        result: The rule evaluation result
+        transcript_path: Optional path to the conversation transcript file
+
+    Returns:
+        Formatted prompt string for Claude
     """
     rule = result.rule
     lines = [
@@ -546,6 +553,14 @@ def format_claude_prompt(result: RuleEvaluationResult) -> str:
         f"Rule: {rule.name}",
         "",
     ]
+
+    # Add transcript location for conversation context
+    if transcript_path:
+        lines.append("## Conversation Context")
+        lines.append("")
+        lines.append(f"The conversation transcript is located at: {transcript_path}")
+        lines.append("You can read this file to understand the context of the changes being made.")
+        lines.append("")
 
     # Add trigger file context
     if result.trigger_files:
@@ -802,7 +817,7 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
         )
 
         # Invoke Claude in headless mode
-        prompt = format_claude_prompt(result)
+        prompt = format_claude_prompt(result, hook_input.transcript_path)
         decision, reason = invoke_claude_headless(prompt, rule.name)
 
         if decision == "allow":

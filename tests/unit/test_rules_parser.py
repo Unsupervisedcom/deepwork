@@ -2,11 +2,16 @@
 
 from pathlib import Path
 
+import pytest
+
 from deepwork.core.pattern_matcher import matches_any_pattern as matches_pattern
 from deepwork.core.rules_parser import (
+    ActionType,
     DetectionMode,
     PairConfig,
+    PromptRuntime,
     Rule,
+    RulesParseError,
     evaluate_rule,
     evaluate_rules,
     load_rules_from_directory,
@@ -993,3 +998,243 @@ action:
         assert rules[0].action_type == ActionType.COMMAND
         assert rules[0].command_action is not None
         assert rules[0].command_action.command == "ruff check {file}"
+
+
+class TestPromptRuntime:
+    """Tests for prompt_runtime field parsing and behavior."""
+
+    def test_default_prompt_runtime_is_send_to_stopping_agent(self) -> None:
+        """Test that default prompt_runtime is send_to_stopping_agent."""
+        rule = Rule(
+            name="Test Rule",
+            filename="test-rule",
+            detection_mode=DetectionMode.TRIGGER_SAFETY,
+            triggers=["src/**/*"],
+            safety=[],
+            instructions="Check it",
+            compare_to="base",
+        )
+        assert rule.prompt_runtime == PromptRuntime.SEND_TO_STOPPING_AGENT
+
+    def test_explicit_send_to_stopping_agent_runtime(self) -> None:
+        """Test explicit send_to_stopping_agent runtime."""
+        rule = Rule(
+            name="Test Rule",
+            filename="test-rule",
+            detection_mode=DetectionMode.TRIGGER_SAFETY,
+            triggers=["src/**/*"],
+            safety=[],
+            instructions="Check it",
+            compare_to="base",
+            prompt_runtime=PromptRuntime.SEND_TO_STOPPING_AGENT,
+        )
+        assert rule.prompt_runtime == PromptRuntime.SEND_TO_STOPPING_AGENT
+
+    def test_claude_runtime(self) -> None:
+        """Test claude runtime."""
+        rule = Rule(
+            name="Test Rule",
+            filename="test-rule",
+            detection_mode=DetectionMode.TRIGGER_SAFETY,
+            triggers=["src/**/*"],
+            safety=[],
+            instructions="Check it",
+            compare_to="base",
+            prompt_runtime=PromptRuntime.CLAUDE,
+        )
+        assert rule.prompt_runtime == PromptRuntime.CLAUDE
+
+
+class TestLoadPromptRuntimeFromFile:
+    """Tests for loading rules with prompt_runtime from files."""
+
+    def test_loads_rule_without_prompt_runtime_defaults(self, temp_dir: Path) -> None:
+        """Test loading a rule without prompt_runtime defaults to send_to_stopping_agent."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "test-rule.md"
+        rule_file.write_text(
+            """---
+name: Test Rule
+trigger: "src/**/*"
+compare_to: base
+---
+Please check the source files.
+"""
+        )
+
+        rules = load_rules_from_directory(rules_dir)
+
+        assert len(rules) == 1
+        assert rules[0].prompt_runtime == PromptRuntime.SEND_TO_STOPPING_AGENT
+
+    def test_loads_rule_with_send_to_stopping_agent_runtime(self, temp_dir: Path) -> None:
+        """Test loading a rule with explicit send_to_stopping_agent runtime."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "test-rule.md"
+        rule_file.write_text(
+            """---
+name: Test Rule
+trigger: "src/**/*"
+compare_to: base
+prompt_runtime: send_to_stopping_agent
+---
+Please check the source files.
+"""
+        )
+
+        rules = load_rules_from_directory(rules_dir)
+
+        assert len(rules) == 1
+        assert rules[0].prompt_runtime == PromptRuntime.SEND_TO_STOPPING_AGENT
+
+    def test_loads_rule_with_claude_runtime(self, temp_dir: Path) -> None:
+        """Test loading a rule with claude runtime."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "test-rule.md"
+        rule_file.write_text(
+            """---
+name: Security Review
+trigger: "src/auth/**/*"
+compare_to: prompt
+prompt_runtime: claude
+---
+Review the security-sensitive code for vulnerabilities.
+"""
+        )
+
+        rules = load_rules_from_directory(rules_dir)
+
+        assert len(rules) == 1
+        assert rules[0].name == "Security Review"
+        assert rules[0].prompt_runtime == PromptRuntime.CLAUDE
+        assert rules[0].action_type == ActionType.PROMPT
+
+    def test_loads_command_action_rule_with_prompt_runtime(self, temp_dir: Path) -> None:
+        """Test loading a command action rule with prompt_runtime (ignored for command actions)."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "format-python.md"
+        rule_file.write_text(
+            """---
+name: Format Python
+trigger: "**/*.py"
+action:
+  command: "ruff format {file}"
+  run_for: each_match
+compare_to: prompt
+prompt_runtime: send_to_stopping_agent
+---
+"""
+        )
+
+        rules = load_rules_from_directory(rules_dir)
+
+        assert len(rules) == 1
+        assert rules[0].action_type == ActionType.COMMAND
+        # prompt_runtime is still parsed even for command actions
+        assert rules[0].prompt_runtime == PromptRuntime.SEND_TO_STOPPING_AGENT
+
+    def test_invalid_prompt_runtime_raises_error(self, temp_dir: Path) -> None:
+        """Test that invalid prompt_runtime value raises an error."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "test-rule.md"
+        rule_file.write_text(
+            """---
+name: Test Rule
+trigger: "src/**/*"
+compare_to: base
+prompt_runtime: invalid_value
+---
+Please check the source files.
+"""
+        )
+
+        with pytest.raises(RulesParseError) as exc_info:
+            load_rules_from_directory(rules_dir)
+
+        # Schema validation catches invalid enum values
+        error_message = str(exc_info.value)
+        assert "invalid_value" in error_message
+        assert "send_to_stopping_agent" in error_message or "prompt_runtime" in error_message
+
+    def test_loads_set_mode_rule_with_claude_runtime(self, temp_dir: Path) -> None:
+        """Test loading a set mode rule with claude runtime."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "source-test-pairing.md"
+        rule_file.write_text(
+            """---
+name: Source/Test Pairing
+set:
+  - src/{path}.py
+  - tests/{path}_test.py
+compare_to: base
+prompt_runtime: claude
+---
+Source and test files should change together.
+"""
+        )
+
+        rules = load_rules_from_directory(rules_dir)
+
+        assert len(rules) == 1
+        assert rules[0].detection_mode == DetectionMode.SET
+        assert rules[0].prompt_runtime == PromptRuntime.CLAUDE
+
+    def test_loads_pair_mode_rule_with_claude_runtime(self, temp_dir: Path) -> None:
+        """Test loading a pair mode rule with claude runtime."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "api-docs.md"
+        rule_file.write_text(
+            """---
+name: API Documentation
+pair:
+  trigger: src/api/{name}.py
+  expects: docs/api/{name}.md
+compare_to: base
+prompt_runtime: claude
+---
+API code requires documentation.
+"""
+        )
+
+        rules = load_rules_from_directory(rules_dir)
+
+        assert len(rules) == 1
+        assert rules[0].detection_mode == DetectionMode.PAIR
+        assert rules[0].prompt_runtime == PromptRuntime.CLAUDE
+
+    def test_loads_created_mode_rule_with_claude_runtime(self, temp_dir: Path) -> None:
+        """Test loading a created mode rule with claude runtime."""
+        rules_dir = temp_dir / "rules"
+        rules_dir.mkdir()
+
+        rule_file = rules_dir / "new-module-review.md"
+        rule_file.write_text(
+            """---
+name: New Module Review
+created: src/**/*.py
+compare_to: prompt
+prompt_runtime: claude
+---
+Review the new module for best practices.
+"""
+        )
+
+        rules = load_rules_from_directory(rules_dir)
+
+        assert len(rules) == 1
+        assert rules[0].detection_mode == DetectionMode.CREATED
+        assert rules[0].prompt_runtime == PromptRuntime.CLAUDE

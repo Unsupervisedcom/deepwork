@@ -1,6 +1,17 @@
 """Tests for rules_check hook module."""
 
-from deepwork.hooks.rules_check import extract_promise_tags
+from deepwork.core.rules_parser import (
+    DetectionMode,
+    PairConfig,
+    PromptRuntime,
+    Rule,
+    RuleEvaluationResult,
+)
+from deepwork.hooks.rules_check import (
+    extract_promise_tags,
+    format_claude_prompt,
+    parse_claude_response,
+)
 
 
 class TestExtractPromiseTags:
@@ -103,3 +114,301 @@ class TestExtractPromiseTags:
         """
         result = extract_promise_tags(text)
         assert result == {"Architecture Documentation Accuracy", "README Accuracy"}
+
+
+class TestFormatClaudePrompt:
+    """Tests for format_claude_prompt function."""
+
+    def test_formats_basic_trigger_safety_rule(self) -> None:
+        """Test formatting a basic trigger/safety rule for Claude."""
+        rule = Rule(
+            name="Security Review",
+            filename="security-review",
+            detection_mode=DetectionMode.TRIGGER_SAFETY,
+            triggers=["src/auth/**/*"],
+            safety=[],
+            instructions="Review the code for security issues.",
+            compare_to="prompt",
+            prompt_runtime=PromptRuntime.CLAUDE,
+        )
+        result = RuleEvaluationResult(
+            rule=rule,
+            should_fire=True,
+            trigger_files=["src/auth/login.py"],
+        )
+
+        prompt = format_claude_prompt(result)
+
+        assert "Security Review" in prompt
+        assert "src/auth/login.py" in prompt
+        assert "Review the code for security issues" in prompt
+        assert "---RULE_RESULT---" in prompt
+        assert 'decision: <"block" or "allow">' in prompt
+
+    def test_formats_set_mode_rule_with_missing_files(self) -> None:
+        """Test formatting a set mode rule showing missing files."""
+        rule = Rule(
+            name="Source/Test Pairing",
+            filename="source-test-pairing",
+            detection_mode=DetectionMode.SET,
+            set_patterns=["src/{path}.py", "tests/{path}_test.py"],
+            instructions="Update the corresponding test file.",
+            compare_to="base",
+            prompt_runtime=PromptRuntime.CLAUDE,
+        )
+        result = RuleEvaluationResult(
+            rule=rule,
+            should_fire=True,
+            trigger_files=["src/auth/login.py"],
+            missing_files=["tests/auth/login_test.py"],
+        )
+
+        prompt = format_claude_prompt(result)
+
+        assert "Source/Test Pairing" in prompt
+        assert "src/auth/login.py" in prompt
+        assert "tests/auth/login_test.py" in prompt
+        assert "Expected files (not changed)" in prompt
+        assert "Update the corresponding test file" in prompt
+
+    def test_formats_pair_mode_rule(self) -> None:
+        """Test formatting a pair mode rule."""
+        rule = Rule(
+            name="API Documentation",
+            filename="api-documentation",
+            detection_mode=DetectionMode.PAIR,
+            pair_config=PairConfig(
+                trigger="api/{path}.py",
+                expects=["docs/api/{path}.md"],
+            ),
+            instructions="Update the API documentation.",
+            compare_to="base",
+            prompt_runtime=PromptRuntime.CLAUDE,
+        )
+        result = RuleEvaluationResult(
+            rule=rule,
+            should_fire=True,
+            trigger_files=["api/users.py"],
+            missing_files=["docs/api/users.md"],
+        )
+
+        prompt = format_claude_prompt(result)
+
+        assert "API Documentation" in prompt
+        assert "api/users.py" in prompt
+        assert "docs/api/users.md" in prompt
+        assert "Update the API documentation" in prompt
+
+    def test_includes_response_format_instructions(self) -> None:
+        """Test that prompt includes response format instructions."""
+        rule = Rule(
+            name="Test Rule",
+            filename="test-rule",
+            detection_mode=DetectionMode.TRIGGER_SAFETY,
+            triggers=["src/**/*"],
+            safety=[],
+            instructions="Check the code.",
+            compare_to="base",
+            prompt_runtime=PromptRuntime.CLAUDE,
+        )
+        result = RuleEvaluationResult(
+            rule=rule,
+            should_fire=True,
+            trigger_files=["src/main.py"],
+        )
+
+        prompt = format_claude_prompt(result)
+
+        assert "Response Format" in prompt
+        assert "---RULE_RESULT---" in prompt
+        assert "---END_RULE_RESULT---" in prompt
+        assert "block" in prompt
+        assert "allow" in prompt
+
+    def test_includes_transcript_path_when_provided(self) -> None:
+        """Test that prompt includes transcript path when provided."""
+        rule = Rule(
+            name="Test Rule",
+            filename="test-rule",
+            detection_mode=DetectionMode.TRIGGER_SAFETY,
+            triggers=["src/**/*"],
+            safety=[],
+            instructions="Check the code.",
+            compare_to="base",
+            prompt_runtime=PromptRuntime.CLAUDE,
+        )
+        result = RuleEvaluationResult(
+            rule=rule,
+            should_fire=True,
+            trigger_files=["src/main.py"],
+        )
+
+        prompt = format_claude_prompt(result, transcript_path="/tmp/conversation.jsonl")
+
+        assert "Conversation Context" in prompt
+        assert "/tmp/conversation.jsonl" in prompt
+        assert "transcript" in prompt.lower()
+
+    def test_omits_transcript_section_when_not_provided(self) -> None:
+        """Test that prompt omits transcript section when path is None."""
+        rule = Rule(
+            name="Test Rule",
+            filename="test-rule",
+            detection_mode=DetectionMode.TRIGGER_SAFETY,
+            triggers=["src/**/*"],
+            safety=[],
+            instructions="Check the code.",
+            compare_to="base",
+            prompt_runtime=PromptRuntime.CLAUDE,
+        )
+        result = RuleEvaluationResult(
+            rule=rule,
+            should_fire=True,
+            trigger_files=["src/main.py"],
+        )
+
+        prompt = format_claude_prompt(result, transcript_path=None)
+
+        assert "Conversation Context" not in prompt
+        # But instructions and other parts should still be present
+        assert "Check the code" in prompt
+        assert "---RULE_RESULT---" in prompt
+
+
+class TestParseClaudeResponse:
+    """Tests for parse_claude_response function."""
+
+    def test_parses_allow_decision(self) -> None:
+        """Test parsing an allow decision."""
+        output = """
+I've reviewed the code and it looks good.
+
+---RULE_RESULT---
+decision: allow
+reason: Code follows security best practices
+---END_RULE_RESULT---
+"""
+        decision, reason = parse_claude_response(output)
+
+        assert decision == "allow"
+        assert reason == "Code follows security best practices"
+
+    def test_parses_block_decision(self) -> None:
+        """Test parsing a block decision."""
+        output = """
+There are security issues in the code.
+
+---RULE_RESULT---
+decision: block
+reason: Found hardcoded credentials on line 42
+---END_RULE_RESULT---
+"""
+        decision, reason = parse_claude_response(output)
+
+        assert decision == "block"
+        assert reason == "Found hardcoded credentials on line 42"
+
+    def test_parses_quoted_decision(self) -> None:
+        """Test parsing decision with quotes."""
+        output = """
+---RULE_RESULT---
+decision: "allow"
+reason: All tests pass
+---END_RULE_RESULT---
+"""
+        decision, reason = parse_claude_response(output)
+
+        assert decision == "allow"
+        assert reason == "All tests pass"
+
+    def test_parses_single_quoted_decision(self) -> None:
+        """Test parsing decision with single quotes."""
+        output = """
+---RULE_RESULT---
+decision: 'block'
+reason: Missing test coverage
+---END_RULE_RESULT---
+"""
+        decision, reason = parse_claude_response(output)
+
+        assert decision == "block"
+        assert reason == "Missing test coverage"
+
+    def test_defaults_to_block_when_no_result_block(self) -> None:
+        """Test defaults to block when no result block found."""
+        output = "I reviewed the code but forgot to include the result block."
+
+        decision, reason = parse_claude_response(output)
+
+        assert decision == "block"
+        assert "did not return a structured response" in reason
+
+    def test_defaults_to_block_for_empty_output(self) -> None:
+        """Test defaults to block for empty output."""
+        decision, reason = parse_claude_response("")
+
+        assert decision == "block"
+        assert "did not return a structured response" in reason
+
+    def test_handles_invalid_decision_value(self) -> None:
+        """Test handles invalid decision value by defaulting to block."""
+        output = """
+---RULE_RESULT---
+decision: maybe
+reason: Not sure about this
+---END_RULE_RESULT---
+"""
+        decision, reason = parse_claude_response(output)
+
+        # Invalid decision should default to block
+        assert decision == "block"
+
+    def test_case_insensitive_decision(self) -> None:
+        """Test that decision parsing is case-insensitive."""
+        output = """
+---RULE_RESULT---
+decision: ALLOW
+reason: Everything looks good
+---END_RULE_RESULT---
+"""
+        decision, reason = parse_claude_response(output)
+
+        assert decision == "allow"
+        assert reason == "Everything looks good"
+
+    def test_handles_multiline_reason(self) -> None:
+        """Test handling of reason that spans context before end marker."""
+        output = """
+---RULE_RESULT---
+decision: block
+reason: Multiple issues found including security vulnerabilities
+---END_RULE_RESULT---
+"""
+        decision, reason = parse_claude_response(output)
+
+        assert decision == "block"
+        assert "Multiple issues found" in reason
+
+    def test_parses_result_embedded_in_longer_output(self) -> None:
+        """Test parsing result block embedded in longer output."""
+        output = """
+I've completed the security review of the authentication code.
+
+Here are my findings:
+1. The password hashing uses bcrypt which is good
+2. Input validation is properly implemented
+3. No SQL injection vulnerabilities found
+
+Overall, the code follows security best practices.
+
+---RULE_RESULT---
+decision: allow
+reason: Code passes security review - no vulnerabilities found
+---END_RULE_RESULT---
+
+Let me know if you need any clarification.
+"""
+        decision, reason = parse_claude_response(output)
+
+        assert decision == "allow"
+        assert "passes security review" in reason
