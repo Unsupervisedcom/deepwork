@@ -1,6 +1,6 @@
 ---
 name: deepwork_jobs.implement
-description: "Generate instruction files for each step based on the job.yml specification"
+description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes."
 user-invocable: false
 hooks:
   Stop:
@@ -37,7 +37,7 @@ hooks:
 
 **Step 3/4** in **deepwork_jobs** workflow
 
-> DeepWork job management commands
+> Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs.
 
 ## Prerequisites (Verify First)
 
@@ -46,7 +46,7 @@ Before proceeding, confirm these steps are complete:
 
 ## Instructions
 
-**Goal**: Generate instruction files for each step based on the job.yml specification
+**Goal**: Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes.
 
 # Implement Job Steps
 
@@ -319,6 +319,13 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `steps/` (directory)
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## Quality Validation
 

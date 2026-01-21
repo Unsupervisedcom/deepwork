@@ -1,11 +1,11 @@
 ---
 name: commit
-description: "Run tests, lint, and commit code changes"
+description: "Runs tests, lints code, and commits changes. Use when ready to commit work with quality checks."
 ---
 
 # commit
 
-**Multi-step workflow**: Run tests, lint, and commit code changes
+**Multi-step workflow**: Runs tests, lints code, and commits changes. Use when ready to commit work with quality checks.
 
 > **CRITICAL**: Always invoke steps using the Skill tool. Never copy/paste step instructions directly.
 
@@ -23,9 +23,9 @@ Steps:
 
 ## Available Steps
 
-1. **test** - Pull latest code and run the test suite until all tests pass
-2. **lint** - Format and lint code with ruff using a sub-agent (requires: test)
-3. **commit_and_push** - Verify changed files, commit, and push to remote (requires: lint)
+1. **test** - Pulls latest code and runs tests until all pass. Use when starting the commit workflow or re-running tests.
+2. **lint** - Formats and lints code with ruff using a sub-agent. Use after tests pass to ensure code style compliance. (requires: test)
+3. **commit_and_push** - Verifies changed files, creates commit, and pushes to remote. Use after linting passes to finalize changes. (requires: lint)
 
 ## Execution Instructions
 
@@ -55,6 +55,13 @@ After each step completes:
 If user intent is unclear, use AskUserQuestion to clarify:
 - Present available steps as numbered options
 - Let user select the starting point
+
+## Guardrails
+
+- Do NOT copy/paste step instructions directly; always use the Skill tool to invoke steps
+- Do NOT skip steps in the workflow unless the user explicitly requests it
+- Do NOT proceed to the next step if the current step's outputs are incomplete
+- Do NOT make assumptions about user intent; ask for clarification when ambiguous
 
 ## Context Files
 

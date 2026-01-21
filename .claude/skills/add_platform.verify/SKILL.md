@@ -1,6 +1,6 @@
 ---
 name: add_platform.verify
-description: "Set up platform directories and verify deepwork install works correctly"
+description: "Sets up platform directories and verifies deepwork install works correctly. Use after implementation to confirm integration."
 user-invocable: false
 hooks:
   Stop:
@@ -23,7 +23,7 @@ hooks:
 
 **Step 4/4** in **add_platform** workflow
 
-> Add a new AI platform to DeepWork with adapter, templates, and tests
+> Adds a new AI platform to DeepWork with adapter, templates, and tests. Use when integrating Cursor, Windsurf, or other AI coding tools.
 
 ## Prerequisites (Verify First)
 
@@ -32,7 +32,7 @@ Before proceeding, confirm these steps are complete:
 
 ## Instructions
 
-**Goal**: Set up platform directories and verify deepwork install works correctly
+**Goal**: Sets up platform directories and verifies deepwork install works correctly. Use after implementation to confirm integration.
 
 # Verify Installation
 
@@ -184,6 +184,13 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `verification_checklist.md`
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## Quality Validation
 

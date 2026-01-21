@@ -1,6 +1,6 @@
 ---
 name: commit.lint
-description: "Format and lint code with ruff using a sub-agent"
+description: "Formats and lints code with ruff using a sub-agent. Use after tests pass to ensure code style compliance."
 user-invocable: false
 hooks:
   Stop:
@@ -19,7 +19,7 @@ hooks:
 
 **Step 2/3** in **commit** workflow
 
-> Run tests, lint, and commit code changes
+> Runs tests, lints code, and commits changes. Use when ready to commit work with quality checks.
 
 ## Prerequisites (Verify First)
 
@@ -28,7 +28,7 @@ Before proceeding, confirm these steps are complete:
 
 ## Instructions
 
-**Goal**: Format and lint code with ruff using a sub-agent
+**Goal**: Formats and lints code with ruff using a sub-agent. Use after tests pass to ensure code style compliance.
 
 # Lint Code
 
@@ -130,6 +130,13 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `code_formatted`
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## Quality Validation
 

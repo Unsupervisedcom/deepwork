@@ -1,6 +1,6 @@
 ---
 name: deepwork_jobs.review_job_spec
-description: "Use sub-agent to review job.yml against doc spec quality criteria"
+description: "Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification."
 user-invocable: false
 hooks:
   Stop:
@@ -32,7 +32,7 @@ hooks:
 
 **Step 2/4** in **deepwork_jobs** workflow
 
-> DeepWork job management commands
+> Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs.
 
 ## Prerequisites (Verify First)
 
@@ -41,7 +41,7 @@ Before proceeding, confirm these steps are complete:
 
 ## Instructions
 
-**Goal**: Use sub-agent to review job.yml against doc spec quality criteria
+**Goal**: Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification.
 
 # Review Job Specification
 
@@ -467,6 +467,13 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
   ```
 
   </details>
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## Quality Validation
 

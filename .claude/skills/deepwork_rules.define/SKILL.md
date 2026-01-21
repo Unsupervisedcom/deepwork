@@ -1,6 +1,6 @@
 ---
 name: deepwork_rules.define
-description: "Create a new rule file in .deepwork/rules/"
+description: "Creates a rule file that triggers when specified files change. Use when setting up documentation sync, code review requirements, or automated commands."
 user-invocable: false
 ---
 
@@ -8,12 +8,12 @@ user-invocable: false
 
 **Standalone skill** - can be run anytime
 
-> Rules enforcement for AI agent sessions
+> Creates file-change rules that enforce guidelines during AI sessions. Use when automating documentation sync or code review triggers.
 
 
 ## Instructions
 
-**Goal**: Create a new rule file in .deepwork/rules/
+**Goal**: Creates a rule file that triggers when specified files change. Use when setting up documentation sync, code review requirements, or automated commands.
 
 # Define Rule
 
@@ -310,6 +310,13 @@ Use branch format: `deepwork/deepwork_rules-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `.deepwork/rules/{rule-name}.md`
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## On Completion
 
