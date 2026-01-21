@@ -35,19 +35,19 @@ Start by asking structured questions to understand what the user wants to accomp
 
 **Check for document-focused patterns** in the user's description:
 - Keywords: "report", "summary", "document", "create", "monthly", "quarterly", "for stakeholders", "for leadership"
-- Final deliverable is a specific document type (e.g., "AWS spending report", "competitive analysis", "sprint summary")
+- Final deliverable is a specific document (e.g., "AWS spending report", "competitive analysis", "sprint summary")
 - Recurring documents with consistent structure
 
 **If a document-oriented workflow is detected:**
 
-1. Inform the user: "This workflow produces a specific document type. I recommend defining a Document Type Definition (doc spec) first to ensure consistent quality."
+1. Inform the user: "This workflow produces a specific document type. I recommend defining a doc spec first to ensure consistent quality."
 
 2. Ask structured questions to understand if they want to:
-   - Create a doc spec for the document type
+   - Create a doc spec for this document
    - Use an existing doc spec (if any exist in `.deepwork/doc_specs/`)
    - Skip doc spec and proceed with simple outputs
 
-### Step 1.6: Define the Document Type Definition (if needed)
+### Step 1.6: Define the Doc Spec (if needed)
 
 When creating a doc spec, gather the following information:
 
@@ -121,7 +121,7 @@ When a step produces a document with a doc spec reference, use this format in jo
 ```yaml
 outputs:
   - file: reports/monthly_spending.md
-    document_type: .deepwork/doc_specs/monthly_aws_report.md
+    doc_spec: .deepwork/doc_specs/monthly_aws_report.md
 ```
 
 The doc spec's quality criteria will automatically be included in the generated skill, ensuring consistent document quality.
@@ -220,7 +220,7 @@ This creates:
 
 (Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`)
 
-**Document Type Definition**: See `.deepwork/doc_specs/job_spec.md` for the complete specification with quality criteria.
+**Doc Spec**: See `.deepwork/doc_specs/job_spec.md` for the complete specification with quality criteria.
 
 **Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.template` for the standard structure.
 

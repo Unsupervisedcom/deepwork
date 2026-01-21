@@ -178,7 +178,7 @@ JOB_SCHEMA: dict[str, Any] = {
                                             "minLength": 1,
                                             "description": "Output file path",
                                         },
-                                        "document_type": {
+                                        "doc_spec": {
                                             "type": "string",
                                             "pattern": r"^\.deepwork/doc_specs/[a-z][a-z0-9_-]*\.md$",
                                             "description": "Path to doc spec file",
