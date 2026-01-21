@@ -66,16 +66,9 @@ def _run_git(*args: str, check: bool = False) -> subprocess.CompletedProcess[str
     )
 
 
-def _get_staged_files() -> set[str]:
-    """Get currently staged files."""
-    return _parse_file_list(_run_git("diff", "--name-only", "--cached").stdout)
-
-
 def _get_untracked_files() -> set[str]:
     """Get untracked files (excluding ignored)."""
-    return _parse_file_list(
-        _run_git("ls-files", "--others", "--exclude-standard").stdout
-    )
+    return _parse_file_list(_run_git("ls-files", "--others", "--exclude-standard").stdout)
 
 
 def _stage_all_changes() -> None:
@@ -83,10 +76,26 @@ def _stage_all_changes() -> None:
     _run_git("add", "-A")
 
 
-def _collect_all_files(*file_sets: set[str]) -> list[str]:
-    """Combine file sets and return sorted list of non-empty paths."""
-    combined = set().union(*file_sets)
-    return sorted(f for f in combined if f)
+def _get_all_changes_vs_ref(ref: str, diff_filter: str | None = None) -> set[str]:
+    """Get all files that differ between the index and a ref.
+
+    After staging all changes (git add -A), the index contains the complete
+    current state. Comparing the index to a ref captures:
+    - Files changed in commits since ref
+    - Files staged but not yet committed
+    - Files that were untracked (now staged)
+
+    Args:
+        ref: The git ref to compare against
+        diff_filter: Optional diff filter (e.g., "A" for added files only)
+
+    Returns:
+        Set of file paths that differ from the ref
+    """
+    args = ["diff", "--name-only", "--cached", ref]
+    if diff_filter:
+        args.insert(2, f"--diff-filter={diff_filter}")
+    return _parse_file_list(_run_git(*args).stdout)
 
 
 class GitComparator(ABC):
@@ -145,10 +154,9 @@ class RefBasedComparator(GitComparator):
 
         try:
             _stage_all_changes()
-            committed = _parse_file_list(
-                _run_git("diff", "--name-only", ref, "HEAD", check=True).stdout
-            )
-            return _collect_all_files(committed, _get_staged_files(), _get_untracked_files())
+            # After staging, comparing index to ref captures all changes
+            changed = _get_all_changes_vs_ref(ref)
+            return sorted(changed)
         except subprocess.CalledProcessError:
             return []
 
@@ -159,17 +167,9 @@ class RefBasedComparator(GitComparator):
 
         try:
             _stage_all_changes()
-            committed_added = _parse_file_list(
-                _run_git(
-                    "diff", "--name-only", "--diff-filter=A", ref, "HEAD", check=True
-                ).stdout
-            )
-            staged_added = _parse_file_list(
-                _run_git(
-                    "diff", "--name-only", "--diff-filter=A", "--cached", ref
-                ).stdout
-            )
-            return _collect_all_files(committed_added, staged_added, _get_untracked_files())
+            # After staging, comparing index to ref with --diff-filter=A captures all new files
+            created = _get_all_changes_vs_ref(ref, diff_filter="A")
+            return sorted(created)
         except subprocess.CalledProcessError:
             return []
 
@@ -183,9 +183,7 @@ class CompareToBase(RefBasedComparator):
 
     def _get_ref(self) -> str | None:
         try:
-            result = _run_git(
-                "merge-base", "HEAD", f"origin/{self._default_branch}", check=True
-            )
+            result = _run_git("merge-base", "HEAD", f"origin/{self._default_branch}", check=True)
             return result.stdout.strip() or None
         except subprocess.CalledProcessError:
             return None
@@ -228,21 +226,17 @@ class CompareToPrompt(GitComparator):
         return "prompt"
 
     def get_changed_files(self) -> list[str]:
-        changed_files: set[str] = set()
-
         try:
             _stage_all_changes()
 
             if self.BASELINE_REF_PATH.exists():
                 baseline_ref = self.BASELINE_REF_PATH.read_text().strip()
                 if baseline_ref:
-                    result = _run_git("diff", "--name-only", baseline_ref, "HEAD")
-                    if result.returncode == 0:
-                        changed_files.update(_parse_file_list(result.stdout))
+                    # Use simplified approach: after staging, index vs ref captures all changes
+                    return sorted(_get_all_changes_vs_ref(baseline_ref))
 
-            changed_files.update(_get_staged_files())
-            changed_files.update(_get_untracked_files())
-            return sorted(changed_files)
+            # No baseline ref - return all staged and untracked files
+            return sorted(_get_all_changes_vs_ref("HEAD") | _get_untracked_files())
 
         except (subprocess.CalledProcessError, OSError):
             return []
@@ -250,12 +244,18 @@ class CompareToPrompt(GitComparator):
     def get_created_files(self) -> list[str]:
         try:
             _stage_all_changes()
-            current_files = _get_staged_files() | _get_untracked_files()
+
+            if self.BASELINE_REF_PATH.exists():
+                baseline_ref = self.BASELINE_REF_PATH.read_text().strip()
+                if baseline_ref:
+                    # Use simplified approach: after staging, index vs ref with filter captures all new files
+                    return sorted(_get_all_changes_vs_ref(baseline_ref, diff_filter="A"))
+
+            # No baseline ref - check against work tree file or return all current files
+            current_files = _get_all_changes_vs_ref("HEAD") | _get_untracked_files()
 
             if self.BASELINE_WORK_TREE_PATH.exists():
-                baseline_files = _parse_file_list(
-                    self.BASELINE_WORK_TREE_PATH.read_text()
-                )
+                baseline_files = _parse_file_list(self.BASELINE_WORK_TREE_PATH.read_text())
                 return sorted(current_files - baseline_files)
             else:
                 return sorted(current_files)
