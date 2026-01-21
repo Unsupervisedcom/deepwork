@@ -198,6 +198,71 @@ class TestInstallCommand:
         assert result.exit_code == 0
         assert ".deepwork/rules/ with example templates" in result.output
 
+    def test_install_adds_skill_permissions(self, mock_claude_project: Path) -> None:
+        """Test that install adds skill permissions to Claude settings.json."""
+        import json
+
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+        assert "permission(s)" in result.output
+
+        # Verify settings.json was created with permissions
+        settings_file = mock_claude_project / ".claude" / "settings.json"
+        assert settings_file.exists()
+
+        settings = json.loads(settings_file.read_text())
+        assert "permissions" in settings
+        assert "allow" in settings["permissions"]
+
+        # Verify skill permissions were added for standard jobs
+        allow_list = settings["permissions"]["allow"]
+        assert any("Skill(deepwork_jobs:" in p for p in allow_list)
+        assert any("Skill(deepwork_jobs.define:" in p for p in allow_list)
+        assert any("Skill(deepwork_rules:" in p for p in allow_list)
+
+    def test_install_preserves_existing_permissions(self, mock_claude_project: Path) -> None:
+        """Test that install preserves existing permissions in settings.json."""
+        import json
+
+        # Create existing settings.json with custom permissions
+        settings_file = mock_claude_project / ".claude" / "settings.json"
+        settings_file.write_text(
+            json.dumps(
+                {
+                    "permissions": {
+                        "allow": ["Bash(ls:*)", "Edit(./**)"]
+                    }
+                }
+            )
+        )
+
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+
+        # Verify existing permissions are preserved
+        settings = json.loads(settings_file.read_text())
+        allow_list = settings["permissions"]["allow"]
+        assert "Bash(ls:*)" in allow_list
+        assert "Edit(./**)" in allow_list
+
+        # Verify skill permissions were added
+        assert any("Skill(deepwork_jobs:" in p for p in allow_list)
+
+
         # Verify rules directory was created
         rules_dir = mock_claude_project / ".deepwork" / "rules"
         assert rules_dir.exists()
