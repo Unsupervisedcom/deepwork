@@ -284,7 +284,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `job.yml`
-  **Document Type**: DeepWork Job Specification
+  **Doc Spec**: DeepWork Job Specification
   > YAML specification file that defines a multi-step workflow job for AI agents
   **Definition**: `.deepwork/doc_specs/job_spec.md`
   **Target Audience**: AI agents executing jobs and developers defining workflows
@@ -349,9 +349,9 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
       outputs:
         - filename.md               # simple filename
         - reports/analysis.md       # path with directory
-        # With document type reference:
+        # With doc spec reference:
         - file: report.md
-          document_type: .deepwork/doc_specs/report_type.md
+          doc_spec: .deepwork/doc_specs/report_type.md
       dependencies:
         - previous_step_id          # steps that must complete first
   ```
@@ -460,7 +460,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
           from_step: research_competitors
       outputs:
         - file: positioning_report.md
-          document_type: .deepwork/doc_specs/positioning_report.md
+          doc_spec: .deepwork/doc_specs/positioning_report.md
       dependencies:
         - research_competitors
   ```

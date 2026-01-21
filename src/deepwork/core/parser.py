@@ -48,14 +48,14 @@ class StepInput:
 
 @dataclass
 class OutputSpec:
-    """Represents a step output specification, optionally with document type reference."""
+    """Represents a step output specification, optionally with doc spec reference."""
 
     file: str
-    document_type: str | None = None
+    doc_spec: str | None = None
 
-    def has_document_type(self) -> bool:
-        """Check if this output has a document type reference."""
-        return self.document_type is not None
+    def has_doc_spec(self) -> bool:
+        """Check if this output has a doc spec reference."""
+        return self.doc_spec is not None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | str) -> "OutputSpec":
@@ -64,13 +64,13 @@ class OutputSpec:
 
         Supports both formats:
         - String: "output.md" -> OutputSpec(file="output.md")
-        - Dict: {"file": "output.md", "document_type": ".deepwork/doc_specs/report.md"}
+        - Dict: {"file": "output.md", "doc_spec": ".deepwork/doc_specs/report.md"}
         """
         if isinstance(data, str):
             return cls(file=data)
         return cls(
             file=data["file"],
-            document_type=data.get("document_type"),
+            doc_spec=data.get("doc_spec"),
         )
 
 
@@ -274,39 +274,39 @@ class JobDefinition:
                             f"but '{inp.from_step}' is not in dependencies"
                         )
 
-    def validate_document_type_references(self, project_root: Path) -> None:
+    def validate_doc_spec_references(self, project_root: Path) -> None:
         """
-        Validate that document type references in outputs point to existing files.
+        Validate that doc spec references in outputs point to existing files.
 
         Args:
             project_root: Path to the project root directory
 
         Raises:
-            ParseError: If document type references are invalid
+            ParseError: If doc spec references are invalid
         """
         for step in self.steps:
             for output in step.outputs:
-                if output.has_document_type():
-                    doc_type_file = project_root / output.document_type
-                    if not doc_type_file.exists():
+                if output.has_doc_spec():
+                    doc_spec_file = project_root / output.doc_spec
+                    if not doc_spec_file.exists():
                         raise ParseError(
-                            f"Step '{step.id}' references non-existent document type "
-                            f"'{output.document_type}'. Expected file at {doc_type_file}"
+                            f"Step '{step.id}' references non-existent doc spec "
+                            f"'{output.doc_spec}'. Expected file at {doc_spec_file}"
                         )
 
-    def get_document_type_references(self) -> list[str]:
+    def get_doc_spec_references(self) -> list[str]:
         """
-        Get all unique document type file paths referenced in this job's outputs.
+        Get all unique doc spec file paths referenced in this job's outputs.
 
         Returns:
             List of doc spec file paths (e.g., ".deepwork/doc_specs/report.md")
         """
-        doc_type_refs = set()
+        doc_spec_refs = set()
         for step in self.steps:
             for output in step.outputs:
-                if output.has_document_type() and output.document_type:
-                    doc_type_refs.add(output.document_type)
-        return list(doc_type_refs)
+                if output.has_doc_spec() and output.doc_spec:
+                    doc_spec_refs.add(output.doc_spec)
+        return list(doc_spec_refs)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], job_dir: Path) -> "JobDefinition":

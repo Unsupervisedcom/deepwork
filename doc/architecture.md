@@ -46,7 +46,7 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── detector.py     # AI platform detection
 │       │   ├── generator.py    # Command file generation
 │       │   ├── parser.py       # Job definition parsing
-│       │   ├── doc_spec_parser.py   # Document Type Definition parsing
+│       │   ├── doc_spec_parser.py   # Doc spec parsing
 │       │   ├── rules_parser.py     # Rule definition parsing
 │       │   ├── pattern_matcher.py  # Variable pattern matching for rules
 │       │   ├── rules_queue.py      # Rule state queue system
@@ -295,7 +295,7 @@ my-project/                     # User's project (target)
 ├── .deepwork/                  # DeepWork configuration
 │   ├── config.yml              # Platform config
 │   ├── .gitignore              # Ignores tmp/ directory
-│   ├── doc_specs/                   # Document Type Definitions
+│   ├── doc_specs/                   # Doc specs (document specifications)
 │   │   └── monthly_aws_report.md
 │   ├── rules/                  # Rule definitions (v2 format)
 │   │   ├── source-test-pairing.md
@@ -1250,7 +1250,7 @@ Reference doc specs in job.yml outputs:
 ```yaml
 outputs:
   - file: reports/monthly_spending.md
-    document_type: .deepwork/doc_specs/monthly_aws_report.md
+    doc_spec: .deepwork/doc_specs/monthly_aws_report.md
 ```
 
 ### Generated Skills
