@@ -684,32 +684,22 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
 
 def main() -> None:
     """Entry point for the rules check hook."""
-    from deepwork.hooks.wrapper import output_hook_error
-
+    platform_str = os.environ.get("DEEPWORK_HOOK_PLATFORM", "claude")
     try:
-        # Determine platform from environment
-        platform_str = os.environ.get("DEEPWORK_HOOK_PLATFORM", "claude")
-        try:
-            platform = Platform(platform_str)
-        except ValueError:
-            platform = Platform.CLAUDE
+        platform = Platform(platform_str)
+    except ValueError:
+        platform = Platform.CLAUDE
 
-        # Run the hook with the wrapper
-        exit_code = run_hook(rules_check_hook, platform)
-        sys.exit(exit_code)
-
-    except Exception as e:
-        # Catch any unexpected errors and output proper JSON
-        output_hook_error(e, context="rules_check_hook initialization")
-        sys.exit(0)  # Exit 0 so Claude Code processes our JSON
+    exit_code = run_hook(rules_check_hook, platform)
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
-    # Wrap entire entry point to catch import errors and other early failures
+    # Wrap entry point to catch early failures (e.g., import errors in wrapper.py)
     try:
         main()
     except Exception as e:
-        # Last resort error handling - output JSON manually
+        # Last resort error handling - output JSON manually since wrapper may be broken
         import json
         import traceback
 
