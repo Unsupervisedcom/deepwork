@@ -3,6 +3,7 @@ name: Architecture Documentation Accuracy
 trigger: src/**/*
 safety: doc/architecture.md
 compare_to: base
+prompt_runtime: send_to_stopping_agent
 ---
 Source code in src/ has been modified. Please review doc/architecture.md for accuracy:
 1. Verify the documented architecture matches the current implementation

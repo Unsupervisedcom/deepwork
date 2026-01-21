@@ -31,6 +31,7 @@ from deepwork.core.command_executor import (
 from deepwork.core.rules_parser import (
     ActionType,
     DetectionMode,
+    PromptRuntime,
     Rule,
     RuleEvaluationResult,
     RulesParseError,
@@ -531,6 +532,121 @@ def format_rules_message(results: list[RuleEvaluationResult]) -> str:
     return "\n".join(lines)
 
 
+def format_claude_prompt(result: RuleEvaluationResult) -> str:
+    """
+    Format a rule evaluation result as a prompt for Claude Code headless mode.
+
+    The prompt includes the rule instructions and expects Claude to return
+    a structured response indicating whether to block or allow.
+    """
+    rule = result.rule
+    lines = [
+        "# DeepWork Rule Evaluation",
+        "",
+        f"Rule: {rule.name}",
+        "",
+    ]
+
+    # Add trigger file context
+    if result.trigger_files:
+        lines.append("Trigger files:")
+        for f in result.trigger_files:
+            lines.append(f"  - {f}")
+        lines.append("")
+
+    # For set/pair modes, show missing files
+    if result.missing_files:
+        lines.append("Expected files (not changed):")
+        for f in result.missing_files:
+            lines.append(f"  - {f}")
+        lines.append("")
+
+    # Add the rule instructions
+    lines.append("## Instructions")
+    lines.append("")
+    if rule.instructions:
+        lines.append(rule.instructions.strip())
+    lines.append("")
+
+    # Add response format instructions
+    lines.extend(
+        [
+            "## Response Format",
+            "",
+            "After completing the task above, you MUST end your response with a structured block:",
+            "",
+            "```",
+            "---RULE_RESULT---",
+            'decision: <"block" or "allow">',
+            "reason: <brief explanation>",
+            "---END_RULE_RESULT---",
+            "```",
+            "",
+            "Use 'block' if the rule violation was not resolved, 'allow' if it was resolved.",
+        ]
+    )
+
+    return "\n".join(lines)
+
+
+def parse_claude_response(output: str) -> tuple[str, str]:
+    """
+    Parse the structured response from Claude Code headless mode.
+
+    Returns (decision, reason) tuple. Defaults to ("block", "No response") if parsing fails.
+    """
+    # Look for the structured result block
+    pattern = r"---RULE_RESULT---\s*\n\s*decision:\s*[\"']?(\w+)[\"']?\s*\n\s*reason:\s*(.+?)\s*\n\s*---END_RULE_RESULT---"
+    match = re.search(pattern, output, re.IGNORECASE | re.DOTALL)
+
+    if match:
+        decision = match.group(1).lower().strip()
+        reason = match.group(2).strip()
+        # Normalize decision
+        if decision not in ("block", "allow"):
+            decision = "block"
+        return decision, reason
+
+    # If no structured block found, default to block
+    return "block", "Claude did not return a structured response"
+
+
+def invoke_claude_headless(prompt: str, rule_name: str) -> tuple[str, str]:
+    """
+    Invoke Claude Code in headless mode with the given prompt.
+
+    Args:
+        prompt: The prompt to send to Claude
+        rule_name: Name of the rule being evaluated (for error messages)
+
+    Returns:
+        Tuple of (decision, reason) where decision is "block" or "allow"
+    """
+    try:
+        # Run claude in headless mode with --print flag to get output
+        result = subprocess.run(
+            ["claude", "--print", "--dangerously-skip-permissions", "-p", prompt],
+            capture_output=True,
+            text=True,
+            timeout=300,  # 5 minute timeout
+            cwd=Path.cwd(),
+        )
+
+        if result.returncode != 0:
+            error_msg = result.stderr.strip() or "Unknown error"
+            return "block", f"Claude execution failed: {error_msg}"
+
+        output = result.stdout.strip()
+        return parse_claude_response(output)
+
+    except subprocess.TimeoutExpired:
+        return "block", f"Claude timed out while processing rule '{rule_name}'"
+    except FileNotFoundError:
+        return "block", "Claude CLI not found. Please ensure 'claude' is installed and in PATH"
+    except Exception as e:
+        return "block", f"Error invoking Claude: {str(e)}"
+
+
 def rules_check_hook(hook_input: HookInput) -> HookOutput:
     """
     Main hook logic for rules evaluation (v2).
@@ -662,6 +778,57 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
                 # Collect for prompt output
                 prompt_results.append(result)
 
+    # Separate prompt results by runtime
+    agent_prompt_results: list[RuleEvaluationResult] = []
+    claude_prompt_results: list[RuleEvaluationResult] = []
+
+    for result in prompt_results:
+        if result.rule.prompt_runtime == PromptRuntime.CLAUDE:
+            claude_prompt_results.append(result)
+        else:
+            agent_prompt_results.append(result)
+
+    # Process Claude runtime rules
+    claude_errors: list[str] = []
+    for result in claude_prompt_results:
+        rule = result.rule
+
+        # Compute trigger hash for queue
+        baseline_ref = get_baseline_ref(rule.compare_to)
+        trigger_hash = compute_trigger_hash(
+            rule.name,
+            result.trigger_files,
+            baseline_ref,
+        )
+
+        # Invoke Claude in headless mode
+        prompt = format_claude_prompt(result)
+        decision, reason = invoke_claude_headless(prompt, rule.name)
+
+        if decision == "allow":
+            # Claude resolved the issue
+            queue.update_status(
+                trigger_hash,
+                QueueEntryStatus.PASSED,
+                ActionResult(
+                    type="claude",
+                    output=reason,
+                    exit_code=0,
+                ),
+            )
+        else:
+            # Claude could not resolve or blocked
+            claude_errors.append(f"## {rule.name}\n{reason}\n")
+            queue.update_status(
+                trigger_hash,
+                QueueEntryStatus.FAILED,
+                ActionResult(
+                    type="claude",
+                    output=reason,
+                    exit_code=1,
+                ),
+            )
+
     # Build response
     messages: list[str] = []
 
@@ -672,9 +839,16 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
         messages.extend(command_errors)
         messages.append("")
 
-    # Add prompt rules if any
-    if prompt_results:
-        messages.append(format_rules_message(prompt_results))
+    # Add Claude errors if any
+    if claude_errors:
+        messages.append("## Claude Rule Errors\n")
+        messages.append("The following rules were processed by Claude but require attention.\n")
+        messages.extend(claude_errors)
+        messages.append("")
+
+    # Add prompt rules if any (send_to_stopping_agent runtime)
+    if agent_prompt_results:
+        messages.append(format_rules_message(agent_prompt_results))
 
     if messages:
         return HookOutput(decision="block", reason="\n".join(messages))

@@ -5,6 +5,7 @@ safety:
   - pyproject.toml
   - CHANGELOG.md
 compare_to: base
+prompt_runtime: send_to_stopping_agent
 ---
 Source code in src/ has been modified. **You MUST evaluate whether version and changelog updates are needed.**
 

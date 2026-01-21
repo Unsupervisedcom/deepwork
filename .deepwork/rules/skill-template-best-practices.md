@@ -2,6 +2,7 @@
 name: Skill Template Best Practices
 trigger: src/deepwork/templates/**/skill-job*.jinja
 compare_to: prompt
+prompt_runtime: send_to_stopping_agent
 ---
 Skill template files are being modified. Ensure the generated skills follow these best practices:
 

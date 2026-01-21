@@ -3,6 +3,7 @@ name: README Accuracy
 trigger: src/**/*
 safety: README.md
 compare_to: base
+prompt_runtime: send_to_stopping_agent
 ---
 Source code in src/ has been modified. Please review README.md for accuracy:
 1. Verify project overview still reflects current functionality

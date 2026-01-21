@@ -2,6 +2,7 @@
 name: "Manual Test: Infinite Block Prompt"
 trigger: manual_tests/test_infinite_block_prompt/test_infinite_block_prompt.py
 compare_to: prompt
+prompt_runtime: send_to_stopping_agent
 ---
 
 # Manual Test: Infinite Block Prompt (Promise Required)

@@ -3,6 +3,7 @@ name: "Manual Test: Trigger Safety"
 trigger: manual_tests/test_trigger_safety_mode/test_trigger_safety_mode.py
 safety: manual_tests/test_trigger_safety_mode/test_trigger_safety_mode_doc.md
 compare_to: prompt
+prompt_runtime: send_to_stopping_agent
 ---
 
 # Manual Test: Trigger/Safety Mode
