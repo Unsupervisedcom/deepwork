@@ -159,15 +159,32 @@ def all_commands_succeeded(results: list[CommandResult]) -> bool:
     return all(r.success for r in results)
 
 
-def format_command_errors(results: list[CommandResult]) -> str:
-    """Format error messages from failed commands."""
+def format_command_errors(
+    results: list[CommandResult],
+    rule_name: str | None = None,
+) -> str:
+    """Format detailed error messages from failed commands.
+
+    Args:
+        results: List of command execution results
+        rule_name: Optional rule name to include in error message
+
+    Returns:
+        Formatted error message with command, exit code, stdout, and stderr
+    """
     errors: list[str] = []
     for result in results:
         if not result.success:
-            msg = f"Command failed: {result.command}\n"
-            if result.stderr:
-                msg += f"Error: {result.stderr}\n"
-            if result.exit_code != 0:
-                msg += f"Exit code: {result.exit_code}\n"
-            errors.append(msg)
-    return "\n".join(errors)
+            parts: list[str] = []
+            if rule_name:
+                parts.append(f"Rule: {rule_name}")
+            parts.append(f"Command: {result.command}")
+            parts.append(f"Exit code: {result.exit_code}")
+            if result.stdout and result.stdout.strip():
+                parts.append(f"Stdout:\n{result.stdout.strip()}")
+            if result.stderr and result.stderr.strip():
+                parts.append(f"Stderr:\n{result.stderr.strip()}")
+            if not result.stdout.strip() and not result.stderr.strip():
+                parts.append("(no output)")
+            errors.append("\n".join(parts))
+    return "\n\n".join(errors)

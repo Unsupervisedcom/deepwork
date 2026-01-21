@@ -644,10 +644,10 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
                             ),
                         )
                     else:
-                        # Command failed
-                        error_msg = format_command_errors(cmd_results)
-                        skip_hint = f"To skip, include `<promise>✓ {rule.name}</promise>` in your response.\n"
-                        command_errors.append(f"## {rule.name}\n{error_msg}{skip_hint}")
+                        # Command failed - format detailed error message
+                        error_msg = format_command_errors(cmd_results, rule_name=rule.name)
+                        skip_hint = f"\nTo skip, include `<promise>✓ {rule.name}</promise>` in your response."
+                        command_errors.append(f"{error_msg}{skip_hint}")
                         queue.update_status(
                             trigger_hash,
                             QueueEntryStatus.FAILED,
