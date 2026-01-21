@@ -128,10 +128,10 @@ class TestWarningOutput:
         assert "2.1.14" in stderr
 
     def test_warning_suggests_update(self, check_version_script: Path) -> None:
-        """Test that warning suggests running /update."""
+        """Test that warning suggests updating Claude Code."""
         stdout, stderr, code = run_check_version_with_mock_claude(check_version_script, "2.0.0")
 
-        assert "/update" in stderr
+        assert "Update your version of Claude Code" in stderr
 
     def test_warning_mentions_bugs(self, check_version_script: Path) -> None:
         """Test that warning mentions bugs in older versions."""
