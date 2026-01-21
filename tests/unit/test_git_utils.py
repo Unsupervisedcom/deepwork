@@ -1,4 +1,28 @@
-"""Tests for Git comparison utilities in core/git_utils.py."""
+"""
+================================================================================
+                    REQUIREMENTS TESTS - DO NOT MODIFY
+================================================================================
+
+These tests verify CRITICAL REQUIREMENTS for the Git comparison utilities.
+They ensure the git_utils module behaves correctly with respect to:
+
+1. INTERFACE: All comparators implement a common interface
+2. FACTORY: get_comparator() returns the correct comparator type
+3. CREATED FILES: CompareToPrompt.get_created_files() uses file-based comparison
+4. CHANGED FILES: get_changed_files() captures all changes since baseline
+
+WARNING: These tests represent contractual requirements for the rules_check hook.
+Modifying these tests may violate expected behavior and could cause rules to
+not trigger correctly. If a test fails, fix the IMPLEMENTATION, not the test.
+
+Requirements tested:
+  - REQ-001: All comparators MUST implement GitComparator interface
+  - REQ-002: get_comparator() MUST return correct comparator for each mode
+  - REQ-003: CompareToPrompt.get_created_files() MUST use .last_work_tree
+  - REQ-004: Created files are those NOT present in baseline
+
+================================================================================
+"""
 
 import subprocess
 from pathlib import Path
@@ -14,6 +38,320 @@ from deepwork.core.git_utils import (
     get_comparator,
     get_default_branch,
 )
+
+
+# =============================================================================
+# REQ-001: All comparators MUST implement GitComparator interface
+# =============================================================================
+#
+# The git_utils module provides multiple comparator classes for different
+# comparison modes (base, default_tip, prompt). All comparators MUST implement
+# the same interface to allow rules_check.py to use them interchangeably.
+#
+# Required methods:
+#   - get_changed_files() -> list[str]
+#   - get_created_files() -> list[str]
+#   - get_baseline_ref() -> str
+#
+# DO NOT MODIFY THESE TESTS - They ensure interface compatibility.
+# =============================================================================
+
+
+class TestGitComparatorInterface:
+    """
+    REQUIREMENTS TEST: Verify all comparators implement GitComparator interface.
+
+    ============================================================================
+    WARNING: DO NOT MODIFY THESE TESTS
+    ============================================================================
+
+    These tests verify that all comparator classes implement the required
+    interface methods. Modifying these tests could result in rules not
+    being triggered correctly due to missing or incorrect method signatures.
+    """
+
+    def test_compare_to_base_implements_interface(self) -> None:
+        """
+        REQ-001: CompareToBase MUST implement GitComparator interface.
+
+        DO NOT MODIFY THIS TEST.
+        """
+        comparator = CompareToBase()
+        assert isinstance(comparator, GitComparator)
+        assert hasattr(comparator, "get_changed_files")
+        assert hasattr(comparator, "get_created_files")
+        assert hasattr(comparator, "get_baseline_ref")
+        assert callable(comparator.get_changed_files)
+        assert callable(comparator.get_created_files)
+        assert callable(comparator.get_baseline_ref)
+
+    def test_compare_to_default_tip_implements_interface(self) -> None:
+        """
+        REQ-001: CompareToDefaultTip MUST implement GitComparator interface.
+
+        DO NOT MODIFY THIS TEST.
+        """
+        comparator = CompareToDefaultTip()
+        assert isinstance(comparator, GitComparator)
+        assert hasattr(comparator, "get_changed_files")
+        assert hasattr(comparator, "get_created_files")
+        assert hasattr(comparator, "get_baseline_ref")
+        assert callable(comparator.get_changed_files)
+        assert callable(comparator.get_created_files)
+        assert callable(comparator.get_baseline_ref)
+
+    def test_compare_to_prompt_implements_interface(self) -> None:
+        """
+        REQ-001: CompareToPrompt MUST implement GitComparator interface.
+
+        DO NOT MODIFY THIS TEST.
+        """
+        comparator = CompareToPrompt()
+        assert isinstance(comparator, GitComparator)
+        assert hasattr(comparator, "get_changed_files")
+        assert hasattr(comparator, "get_created_files")
+        assert hasattr(comparator, "get_baseline_ref")
+        assert callable(comparator.get_changed_files)
+        assert callable(comparator.get_created_files)
+        assert callable(comparator.get_baseline_ref)
+
+
+# =============================================================================
+# REQ-002: get_comparator() MUST return correct comparator for each mode
+# =============================================================================
+#
+# The get_comparator() factory function is the primary entry point for
+# rules_check.py. It MUST return the correct comparator type based on the
+# mode parameter to ensure rules are checked against the correct baseline.
+#
+# DO NOT MODIFY THESE TESTS - They ensure correct factory behavior.
+# =============================================================================
+
+
+class TestGetComparatorFactory:
+    """
+    REQUIREMENTS TEST: Verify get_comparator() returns correct comparator types.
+
+    ============================================================================
+    WARNING: DO NOT MODIFY THESE TESTS
+    ============================================================================
+
+    These tests verify that the factory function returns the correct comparator
+    for each mode. Modifying these tests could result in rules being checked
+    against the wrong baseline.
+    """
+
+    def test_returns_compare_to_base_for_base_mode(self) -> None:
+        """
+        REQ-002: get_comparator("base") MUST return CompareToBase.
+
+        DO NOT MODIFY THIS TEST.
+        """
+        comparator = get_comparator("base")
+        assert isinstance(comparator, CompareToBase)
+
+    def test_returns_compare_to_default_tip_for_default_tip_mode(self) -> None:
+        """
+        REQ-002: get_comparator("default_tip") MUST return CompareToDefaultTip.
+
+        DO NOT MODIFY THIS TEST.
+        """
+        comparator = get_comparator("default_tip")
+        assert isinstance(comparator, CompareToDefaultTip)
+
+    def test_returns_compare_to_prompt_for_prompt_mode(self) -> None:
+        """
+        REQ-002: get_comparator("prompt") MUST return CompareToPrompt.
+
+        DO NOT MODIFY THIS TEST.
+        """
+        comparator = get_comparator("prompt")
+        assert isinstance(comparator, CompareToPrompt)
+
+    def test_defaults_to_compare_to_base_for_unknown_mode(self) -> None:
+        """
+        REQ-002: get_comparator() MUST default to CompareToBase for unknown modes.
+
+        DO NOT MODIFY THIS TEST.
+        """
+        comparator = get_comparator("unknown_mode")
+        assert isinstance(comparator, CompareToBase)
+
+
+# =============================================================================
+# REQ-003: CompareToPrompt.get_created_files() MUST use .last_work_tree
+# =============================================================================
+#
+# CRITICAL REQUIREMENT: The get_created_files() method for CompareToPrompt
+# MUST always use file-based comparison (.last_work_tree), NOT git-based
+# comparison (.last_head_ref).
+#
+# Rationale:
+#   .last_work_tree contains the actual list of files that existed at prompt
+#   time, INCLUDING uncommitted files. Using git-based detection (via
+#   .last_head_ref) would incorrectly flag uncommitted files from before the
+#   prompt as "created" because they wouldn't exist in the git commit.
+#
+# This is essential for:
+#   - Rules that trigger on newly created files only
+#   - Avoiding false positives for pre-existing uncommitted files
+#
+# DO NOT MODIFY THESE TESTS - They prevent critical bugs in file detection.
+# =============================================================================
+
+
+class TestCreatedFilesDetection:
+    """
+    REQUIREMENTS TEST: Verify created files detection uses correct comparison.
+
+    ============================================================================
+    WARNING: DO NOT MODIFY THESE TESTS
+    ============================================================================
+
+    These tests verify that get_created_files() uses file-based comparison
+    (.last_work_tree) instead of git-based comparison. This is critical for
+    correctly identifying files created during the current session.
+
+    A bug was previously introduced where .last_head_ref was preferred over
+    .last_work_tree for created file detection, causing pre-existing uncommitted
+    files to be incorrectly flagged as "created".
+    """
+
+    def test_get_created_files_uses_work_tree_not_head_ref(self, temp_dir: Path) -> None:
+        """
+        REQ-003: get_created_files() MUST use .last_work_tree, NOT .last_head_ref.
+
+        This test simulates a scenario where:
+        - .last_head_ref exists (pointing to a git commit)
+        - .last_work_tree exists (with a list of files including uncommitted ones)
+        - An uncommitted file (existing_uncommitted.py) was present at prompt time
+
+        The method MUST use .last_work_tree, so existing_uncommitted.py should
+        NOT be flagged as "created" (it was in the baseline).
+
+        DO NOT MODIFY THIS TEST.
+        """
+        ref_file = temp_dir / ".last_head_ref"
+        ref_file.write_text("abc123")
+        work_tree_file = temp_dir / ".last_work_tree"
+        work_tree_file.write_text("existing_uncommitted.py\n")
+
+        with (
+            patch("deepwork.core.git_utils._stage_all_changes"),
+            patch(
+                "deepwork.core.git_utils._get_all_changes_vs_ref",
+                return_value={"existing_uncommitted.py", "new_file.py"},
+            ),
+            patch("deepwork.core.git_utils._get_untracked_files", return_value=set()),
+            patch.object(CompareToPrompt, "BASELINE_REF_PATH", ref_file),
+            patch.object(CompareToPrompt, "BASELINE_WORK_TREE_PATH", work_tree_file),
+        ):
+            comparator = CompareToPrompt()
+            created = comparator.get_created_files()
+
+            # CRITICAL: existing_uncommitted.py was in .last_work_tree baseline
+            # so it MUST NOT be flagged as created
+            assert "existing_uncommitted.py" not in created, (
+                "CRITICAL BUG: File from .last_work_tree flagged as created! "
+                "get_created_files() must use .last_work_tree for comparison, "
+                "not .last_head_ref. Pre-existing uncommitted files should not "
+                "be flagged as 'created'."
+            )
+
+            # new_file.py was NOT in .last_work_tree, so it IS created
+            assert "new_file.py" in created
+
+
+# =============================================================================
+# REQ-004: Created files are those NOT present in baseline
+# =============================================================================
+#
+# The definition of "created file" is: a file that exists now but was NOT
+# present in the baseline at prompt time. This requirement ensures consistent
+# behavior across different scenarios.
+#
+# DO NOT MODIFY THESE TESTS - They define the contract for created file logic.
+# =============================================================================
+
+
+class TestCreatedFilesDefinition:
+    """
+    REQUIREMENTS TEST: Verify correct definition of "created files".
+
+    ============================================================================
+    WARNING: DO NOT MODIFY THESE TESTS
+    ============================================================================
+
+    These tests verify the fundamental definition of what constitutes a
+    "created file" - a file that exists now but was NOT present at baseline.
+    """
+
+    def test_files_in_baseline_are_not_created(self, temp_dir: Path) -> None:
+        """
+        REQ-004: Files present in baseline MUST NOT be flagged as created.
+
+        DO NOT MODIFY THIS TEST.
+        """
+        work_tree_file = temp_dir / ".last_work_tree"
+        work_tree_file.write_text("existing.py\n")
+
+        with (
+            patch("deepwork.core.git_utils._stage_all_changes"),
+            patch(
+                "deepwork.core.git_utils._get_all_changes_vs_ref",
+                return_value={"existing.py", "new.py"},
+            ),
+            patch("deepwork.core.git_utils._get_untracked_files", return_value=set()),
+            patch.object(CompareToPrompt, "BASELINE_REF_PATH", temp_dir / "nonexistent"),
+            patch.object(CompareToPrompt, "BASELINE_WORK_TREE_PATH", work_tree_file),
+        ):
+            comparator = CompareToPrompt()
+            created = comparator.get_created_files()
+
+            assert "existing.py" not in created, (
+                "File in baseline was incorrectly flagged as created"
+            )
+            assert "new.py" in created
+
+    def test_all_current_files_created_when_no_baseline(self, temp_dir: Path) -> None:
+        """
+        REQ-004: When no baseline exists, ALL current files are considered created.
+
+        DO NOT MODIFY THIS TEST.
+        """
+        with (
+            patch("deepwork.core.git_utils._stage_all_changes"),
+            patch(
+                "deepwork.core.git_utils._get_all_changes_vs_ref",
+                return_value={"file1.py"},
+            ),
+            patch(
+                "deepwork.core.git_utils._get_untracked_files",
+                return_value={"file2.py"},
+            ),
+            patch.object(CompareToPrompt, "BASELINE_REF_PATH", temp_dir / "nonexistent"),
+            patch.object(
+                CompareToPrompt,
+                "BASELINE_WORK_TREE_PATH",
+                temp_dir / "nonexistent2",
+            ),
+        ):
+            comparator = CompareToPrompt()
+            created = comparator.get_created_files()
+
+            assert "file1.py" in created, "Staged file should be created when no baseline"
+            assert "file2.py" in created, "Untracked file should be created when no baseline"
+
+
+# =============================================================================
+#                    IMPLEMENTATION TESTS
+# =============================================================================
+#
+# The tests below verify implementation details and helper functions.
+# These may be modified if the implementation changes, as long as the
+# REQUIREMENTS tests above continue to pass.
+#
+# =============================================================================
 
 
 class TestParseFileList:
@@ -106,36 +444,8 @@ class TestGetDefaultBranch:
             assert get_default_branch() == "main"
 
 
-class TestGetComparator:
-    """Tests for get_comparator factory function."""
-
-    def test_returns_compare_to_base_for_base_mode(self) -> None:
-        comparator = get_comparator("base")
-        assert isinstance(comparator, CompareToBase)
-
-    def test_returns_compare_to_default_tip_for_default_tip_mode(self) -> None:
-        comparator = get_comparator("default_tip")
-        assert isinstance(comparator, CompareToDefaultTip)
-
-    def test_returns_compare_to_prompt_for_prompt_mode(self) -> None:
-        comparator = get_comparator("prompt")
-        assert isinstance(comparator, CompareToPrompt)
-
-    def test_defaults_to_compare_to_base_for_unknown_mode(self) -> None:
-        comparator = get_comparator("unknown_mode")
-        assert isinstance(comparator, CompareToBase)
-
-    def test_all_comparators_implement_interface(self) -> None:
-        for mode in ["base", "default_tip", "prompt"]:
-            comparator = get_comparator(mode)
-            assert isinstance(comparator, GitComparator)
-            assert hasattr(comparator, "get_changed_files")
-            assert hasattr(comparator, "get_created_files")
-            assert hasattr(comparator, "get_baseline_ref")
-
-
-class TestCompareToBase:
-    """Tests for CompareToBase comparator."""
+class TestCompareToBaseImplementation:
+    """Implementation tests for CompareToBase comparator."""
 
     def test_get_fallback_name_returns_base(self) -> None:
         comparator = CompareToBase()
@@ -162,8 +472,8 @@ class TestCompareToBase:
             assert comparator.get_created_files() == []
 
 
-class TestCompareToDefaultTip:
-    """Tests for CompareToDefaultTip comparator."""
+class TestCompareToDefaultTipImplementation:
+    """Implementation tests for CompareToDefaultTip comparator."""
 
     def test_get_fallback_name_returns_default_tip(self) -> None:
         comparator = CompareToDefaultTip()
@@ -175,8 +485,8 @@ class TestCompareToDefaultTip:
             assert comparator.get_baseline_ref() == "default_tip"
 
 
-class TestCompareToPrompt:
-    """Tests for CompareToPrompt comparator."""
+class TestCompareToPromptImplementation:
+    """Implementation tests for CompareToPrompt comparator."""
 
     def test_get_baseline_ref_returns_prompt_when_no_baseline_file(self, temp_dir: Path) -> None:
         with patch.object(
@@ -237,80 +547,6 @@ class TestCompareToPrompt:
             changed = comparator.get_changed_files()
             assert "committed.py" in changed
             assert "staged.py" in changed
-
-    def test_get_created_files_excludes_baseline_files(self, temp_dir: Path) -> None:
-        """Files in baseline work tree should not be considered created."""
-        work_tree_file = temp_dir / ".last_work_tree"
-        work_tree_file.write_text("existing.py\n")
-
-        with (
-            patch("deepwork.core.git_utils._stage_all_changes"),
-            patch(
-                "deepwork.core.git_utils._get_all_changes_vs_ref",
-                return_value={"existing.py", "new.py"},
-            ),
-            patch("deepwork.core.git_utils._get_untracked_files", return_value=set()),
-            patch.object(CompareToPrompt, "BASELINE_REF_PATH", temp_dir / "nonexistent"),
-            patch.object(CompareToPrompt, "BASELINE_WORK_TREE_PATH", work_tree_file),
-        ):
-            comparator = CompareToPrompt()
-            created = comparator.get_created_files()
-            assert "new.py" in created
-            assert "existing.py" not in created
-
-    def test_get_created_files_uses_work_tree_not_head_ref(self, temp_dir: Path) -> None:
-        """Created files detection always uses .last_work_tree, not .last_head_ref.
-
-        This is important because .last_work_tree contains actual files that existed
-        at prompt time (including uncommitted ones), while .last_head_ref only points
-        to a git commit. Using git-based detection would incorrectly flag uncommitted
-        files from before the prompt as "created".
-        """
-        ref_file = temp_dir / ".last_head_ref"
-        ref_file.write_text("abc123")
-        work_tree_file = temp_dir / ".last_work_tree"
-        work_tree_file.write_text("existing_uncommitted.py\n")
-
-        with (
-            patch("deepwork.core.git_utils._stage_all_changes"),
-            patch(
-                "deepwork.core.git_utils._get_all_changes_vs_ref",
-                return_value={"existing_uncommitted.py", "new_file.py"},
-            ),
-            patch("deepwork.core.git_utils._get_untracked_files", return_value=set()),
-            patch.object(CompareToPrompt, "BASELINE_REF_PATH", ref_file),
-            patch.object(CompareToPrompt, "BASELINE_WORK_TREE_PATH", work_tree_file),
-        ):
-            comparator = CompareToPrompt()
-            created = comparator.get_created_files()
-            # existing_uncommitted.py was in .last_work_tree, so NOT created
-            assert "existing_uncommitted.py" not in created
-            # new_file.py was NOT in .last_work_tree, so it IS created
-            assert "new_file.py" in created
-
-    def test_get_created_files_returns_all_current_when_no_baseline(self, temp_dir: Path) -> None:
-        """When no baseline files exist, all current files are considered new."""
-        with (
-            patch("deepwork.core.git_utils._stage_all_changes"),
-            patch(
-                "deepwork.core.git_utils._get_all_changes_vs_ref",
-                return_value={"file1.py"},
-            ),
-            patch(
-                "deepwork.core.git_utils._get_untracked_files",
-                return_value={"file2.py"},
-            ),
-            patch.object(CompareToPrompt, "BASELINE_REF_PATH", temp_dir / "nonexistent"),
-            patch.object(
-                CompareToPrompt,
-                "BASELINE_WORK_TREE_PATH",
-                temp_dir / "nonexistent2",
-            ),
-        ):
-            comparator = CompareToPrompt()
-            created = comparator.get_created_files()
-            assert "file1.py" in created
-            assert "file2.py" in created
 
 
 class TestRefBasedComparatorIntegration:
