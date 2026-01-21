@@ -10,6 +10,14 @@ DeepWork provides a Nix flake for reproducible development environments and easy
   experimental-features = nix-command flakes
   ```
 
+## License Configuration
+
+DeepWork is licensed under the Business Source License 1.1 (BSL 1.1), which is not an OSI-approved open source license (though the source is available). 
+
+The flake is configured to automatically allow unfree packages when importing `nixpkgs`, so you don't need to manually set `NIXPKGS_ALLOW_UNFREE=1` when building or using this flake directly.
+
+However, if you consume this flake in your own project, you may still need to configure your `nixpkgs` to allow unfree packages or specifically allow `deepwork` if your configuration overrides our default settings.
+
 ## Development Environment
 
 ### Quick Start with direnv (Recommended)

@@ -98,9 +98,9 @@ Once direnv is set up, the environment will activate automatically when you ente
 
 The easiest way to get started is using Nix flakes, which provides a fully reproducible development environment with all dependencies pre-configured.
 
-#### Quick Start with direnv (Automatic)
+#### Quick Start with direnv (Recommended)
 
-If you have direnv installed, the environment will activate automatically:
+If you have direnv installed, the entire development environment activates automatically when you `cd` into the project:
 
 ```bash
 # Clone the repository
@@ -110,11 +110,20 @@ cd deepwork
 # Allow direnv (first time only)
 direnv allow
 
-# Environment activates automatically!
-# You'll see the DeepWork welcome message
+# That's it! Everything is ready:
+deepwork --help    # CLI works
+pytest             # Tests work
+ruff check src/    # Linting works
 ```
 
-The `.envrc` file configures direnv to use the Nix flake, so you'll automatically enter the development environment whenever you `cd` into the directory.
+The `.envrc` file contains `use flake`, which tells direnv to load the Nix flake's development shell. This automatically:
+
+1. Creates `.venv/` if it doesn't exist
+2. Installs all dependencies via `uv sync --all-extras`
+3. Adds `.venv/bin` to your PATH
+4. Sets `PYTHONPATH` and `DEEPWORK_DEV=1`
+
+Every time you `cd` into the directory, the environment is ready instantly (venv is reused, deps are cached).
 
 #### Manual Flake Usage
 
@@ -131,13 +140,26 @@ nix develop
 
 #### What's Included
 
-When you enter the Nix environment (via `nix develop` or direnv), you'll see a welcome message with available tools. The environment includes:
-- Python 3.11
-- uv (package manager)
-- pytest, ruff, mypy
-- All Python dependencies
-- Environment variables (`PYTHONPATH`, `DEEPWORK_DEV=1`)
-- Automatic virtual environment activation
+The Nix environment provides:
+
+| Tool | Description |
+|------|-------------|
+| `deepwork` | CLI using your local source code (editable install) |
+| `pytest` | Test runner with all plugins |
+| `ruff` | Fast Python linter and formatter |
+| `mypy` | Static type checker |
+| `uv` | Python package manager |
+| `python` | Python 3.11 interpreter |
+
+#### CI Usage
+
+For CI pipelines or scripts, use `nix develop --command`:
+
+```bash
+nix develop --command pytest
+nix develop --command ruff check src/
+nix develop --command mypy src/
+```
 
 ### Option 2: Manual Setup (Without Nix)
 
@@ -148,39 +170,38 @@ If you prefer not to use Nix:
 git clone https://github.com/deepwork/deepwork.git
 cd deepwork
 
-# Create a virtual environment (optional but recommended)
-python3.11 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Install uv if you don't have it (see https://docs.astral.sh/uv/getting-started/installation/)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install uv if you don't have it
-pip install uv
+# Create virtual environment and install all dependencies (including dev tools)
+uv venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv sync --all-extras
 
-# Install dependencies
-uv sync
-
-# Set PYTHONPATH for development
+# Set environment variables for development
 export PYTHONPATH="$PWD/src:$PYTHONPATH"
 export DEEPWORK_DEV=1
 ```
 
 ## Installing DeepWork Locally
 
-To use your local development version of DeepWork, install it in **editable mode**. This allows you to make changes to the code and have them immediately reflected without reinstalling.
+The development version of DeepWork is installed automatically in **editable mode**, meaning changes to source code are reflected immediately without reinstalling.
 
-### Using uv (Recommended)
+### With Nix (Automatic)
+
+If you're using the Nix development environment, DeepWork is already installed in editable mode. No additional steps needed.
+
+### Without Nix (Manual)
+
+If you set up manually, the `uv sync --all-extras` command installs DeepWork in editable mode automatically.
+
+Alternatively, you can install explicitly:
 
 ```bash
-# Install in editable mode with development dependencies
+# Using uv
 uv pip install -e ".[dev]"
 
-# Inside the Nix development environment
-uv sync  # Automatically installs in editable mode
-```
-
-### Using pip
-
-```bash
-# Install in editable mode with development dependencies
+# Or using pip
 pip install -e ".[dev]"
 ```
 
@@ -190,11 +211,11 @@ pip install -e ".[dev]"
 # Check that the deepwork command is available
 deepwork --help
 
-# Verify you're using the local version
-which deepwork  # Should point to your local environment
+# Verify you're using the local development version
+which deepwork  # Should point to .venv/bin/deepwork
 
-# Check version (should show 0.1.0 or current dev version)
-python -c "import deepwork; print(deepwork.__version__)"
+# Check version
+deepwork --version
 ```
 
 ## Testing Your Local Installation
@@ -250,35 +271,35 @@ claude  # Start Claude Code
 
 ## Running Tests
 
-DeepWork has a comprehensive test suite with unit and integration tests.
+DeepWork has a comprehensive test suite with 568+ tests.
 
 ### Run All Tests
 
 ```bash
-# Using uv (recommended)
-uv run pytest
-
-# Or with explicit paths
-uv run pytest tests/ -v
-
-# Using pytest directly (in Nix environment or venv)
+# In Nix environment (interactive or CI)
 pytest
+
+# Or using nix develop --command (CI-friendly, no interactive shell)
+nix develop --command pytest
+
+# Using uv run (without Nix)
+uv run pytest
 ```
 
 ### Run Specific Test Types
 
 ```bash
-# Unit tests only (147 tests)
-uv run pytest tests/unit/ -v
+# Unit tests only
+pytest tests/unit/ -v
 
-# Integration tests only (19 tests)
-uv run pytest tests/integration/ -v
+# Integration tests only
+pytest tests/integration/ -v
 
 # Run a specific test file
-uv run pytest tests/unit/core/test_parser.py -v
+pytest tests/unit/core/test_parser.py -v
 
 # Run a specific test function
-uv run pytest tests/unit/core/test_parser.py::test_parse_valid_job -v
+pytest tests/unit/core/test_parser.py::test_parse_valid_job -v
 ```
 
 ### Test with Coverage
@@ -553,30 +574,45 @@ uv run pytest --profile
 ## Common Issues
 
 ### Issue: `deepwork` command not found
-**Solution**: Make sure you've installed in editable mode:
+**With Nix**: Re-enter the development environment:
 ```bash
-uv pip install -e .
+nix develop
+# or if using direnv
+direnv reload
+```
+
+**Without Nix**: Ensure venv is activated and dependencies synced:
+```bash
+source .venv/bin/activate
+uv sync --all-extras
 ```
 
 ### Issue: Tests failing with import errors
-**Solution**: Set PYTHONPATH:
+**Solution**: This usually means dependencies aren't installed. Re-sync:
 ```bash
-export PYTHONPATH="$PWD/src:$PYTHONPATH"
+uv sync --all-extras
 ```
 
-### Issue: Changes not reflected in test project
-**Solution**: Verify editable install:
+### Issue: Changes not reflected
+**Solution**: Verify editable install with uv:
 ```bash
-pip list | grep deepwork
-# Should show: deepwork 0.1.0 /path/to/your/local/deepwork/src
+uv pip list | grep deepwork
+# Should show: deepwork (editable) with path to your local directory
 ```
 
 ### Issue: Nix environment not loading
-**Solution**: Make sure Nix is installed with flakes enabled:
+**Solution**: Ensure Nix is installed with flakes enabled:
 ```bash
 nix --version
 # Add to ~/.config/nix/nix.conf if not already there:
 # experimental-features = nix-command flakes
+```
+
+### Issue: Old venv causing conflicts
+**Solution**: Remove and let Nix recreate it:
+```bash
+rm -rf .venv
+nix develop  # Will recreate .venv automatically
 ```
 
 ## License

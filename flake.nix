@@ -14,109 +14,82 @@
           # Allow unfree packages to support the Business Source License 1.1
           config.allowUnfree = true;
         };
+        # Read version from pyproject.toml to avoid duplication
+        pyproject = builtins.fromTOML (builtins.readFile ./pyproject.toml);
         deepwork = pkgs.python311Packages.buildPythonPackage {
           pname = "deepwork";
-          version = "0.3.0";
+          version = pyproject.project.version;
           src = ./.;
           format = "pyproject";
-          
-          nativeBuildInputs = with pkgs.python311Packages; [
-            hatchling
-          ];
-          
+          nativeBuildInputs = [ pkgs.python311Packages.hatchling ];
+          # Required for `nix build` - must match pyproject.toml dependencies
           propagatedBuildInputs = with pkgs.python311Packages; [
-            jinja2
-            pyyaml
-            gitpython
-            click
-            rich
-            jsonschema
-            rpds-py  # Required by jsonschema's referencing dependency
+            click gitpython jinja2 jsonschema pyyaml rich rpds-py
           ];
-
-          # Skip tests during build (they can be run in devShell)
           doCheck = false;
-
-          meta = with pkgs.lib; {
-            description = "Framework for enabling AI agents to perform complex, multi-step work tasks";
-            homepage = "https://github.com/Unsupervisedcom/deepwork";
-            # Business Source License 1.1 - not OSI approved
-            license = {
-              fullName = "Business Source License 1.1";
-              url = "https://github.com/Unsupervisedcom/deepwork/blob/main/LICENSE.md";
-              free = false;
-            };
-          };
         };
       in
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            # Python 3.11 or later
+            # Python 3.11 - base interpreter for uv
             python311
-            python311Packages.pip
-            python311Packages.virtualenv
 
-            # Modern Python tooling
+            # uv manages all Python packages (deps, dev tools, etc.)
             uv
 
             # Git for version control
             git
 
-            # Additional tools
+            # System tools
             jq  # For JSON processing
-
-            # Python development dependencies
-            python311Packages.jinja2
-            python311Packages.pyyaml
-            python311Packages.gitpython
-            python311Packages.pytest
-            python311Packages.pytest-mock
-            python311Packages.pytest-cov
-            python311Packages.click
-            python311Packages.rich
-            python311Packages.jsonschema
-
-            # Linting and type checking
-            ruff
-            mypy
           ];
 
+          # Environment variables for uv integration with Nix
+          env = {
+            # Tell uv to use the Nix-provided Python interpreter
+            UV_PYTHON = "${pkgs.python311}/bin/python";
+            # Prevent uv from downloading Python binaries
+            UV_PYTHON_DOWNLOADS = "never";
+            # Development mode flag
+            DEEPWORK_DEV = "1";
+          };
+
           shellHook = ''
-            # Set up environment variables
+            # Create venv if it doesn't exist
+            if [ ! -d .venv ]; then
+              echo "Creating virtual environment..."
+              uv venv .venv --quiet
+            fi
+
+            # Sync dependencies (including dev extras like pytest, ruff, mypy)
+            # Run quietly - uv only outputs when changes are needed
+            uv sync --all-extras --quiet 2>/dev/null || uv sync --all-extras
+
+            # Activate venv by setting environment variables directly
+            # This works reliably for both interactive shells and `nix develop --command`
+            export VIRTUAL_ENV="$PWD/.venv"
+            export PATH="$VIRTUAL_ENV/bin:$PATH"
+            unset PYTHONHOME
+
+            # Set PYTHONPATH for editable install access to src/
             export PYTHONPATH="$PWD/src:$PYTHONPATH"
-            export DEEPWORK_DEV=1
 
-            # Auto-sync dependencies and activate venv for direct deepwork access
-            echo "Setting up DeepWork development environment..."
-            if ! uv sync --quiet 2>/dev/null; then
-              echo "Running uv sync..."
-              uv sync
+            # Only show welcome message in interactive shells
+            if [[ $- == *i* ]]; then
+              echo ""
+              echo "DeepWork Development Environment"
+              echo "================================"
+              echo ""
+              echo "Python: $(python --version) | uv: $(uv --version)"
+              echo ""
+              echo "Commands:"
+              echo "  deepwork --help    CLI (development version)"
+              echo "  pytest             Run tests"
+              echo "  ruff check src/    Lint code"
+              echo "  mypy src/          Type check"
+              echo ""
             fi
-
-            # Activate the virtual environment so 'deepwork' command is directly available
-            if [ -f .venv/bin/activate ]; then
-              source .venv/bin/activate
-            fi
-
-            echo ""
-            echo "DeepWork Development Environment"
-            echo "================================"
-            echo ""
-            echo "Python version: $(python --version)"
-            echo "uv version: $(uv --version)"
-            echo ""
-            echo "Available tools:"
-            echo "  - deepwork: CLI is ready (try 'deepwork --help')"
-            echo "  - pytest: Testing framework"
-            echo "  - ruff: Python linter and formatter"
-            echo "  - mypy: Static type checker"
-            echo ""
-            echo "Quick start:"
-            echo "  - 'deepwork --help' to see available commands"
-            echo "  - 'pytest' to run tests"
-            echo "  - Read doc/architecture.md for design details"
-            echo ""
           '';
         };
 
