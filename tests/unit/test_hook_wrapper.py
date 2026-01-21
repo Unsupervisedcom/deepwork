@@ -32,7 +32,10 @@ from deepwork.hooks.wrapper import (
     NormalizedEvent,
     Platform,
     denormalize_output,
+    format_hook_error,
     normalize_input,
+    output_hook_error,
+    run_hook,
 )
 
 
@@ -555,3 +558,76 @@ class TestIntegration:
         assert claude_result["decision"] == "block"
         assert gemini_result["decision"] == "deny"
         assert claude_result["reason"] == gemini_result["reason"]
+
+
+class TestHookErrorHandling:
+    """Tests for hook script error handling.
+
+    When a hook script crashes, it should output valid JSON with detailed
+    error information rather than causing a generic "non-blocking status code" error.
+    """
+
+    def test_format_hook_error_basic(self) -> None:
+        """Test that format_hook_error produces blocking JSON with error details."""
+
+        error = ValueError("Something went wrong")
+        result = format_hook_error(error)
+
+        assert result["decision"] == "block"
+        assert "ValueError" in result["reason"]
+        assert "Something went wrong" in result["reason"]
+        assert "Traceback" in result["reason"]
+
+    def test_format_hook_error_with_context(self) -> None:
+        """Test that format_hook_error includes context when provided."""
+
+        error = RuntimeError("Test error")
+        result = format_hook_error(error, context="Loading rules")
+
+        assert result["decision"] == "block"
+        assert "Loading rules" in result["reason"]
+        assert "RuntimeError" in result["reason"]
+        assert "Test error" in result["reason"]
+
+    def test_format_hook_error_includes_traceback(self) -> None:
+        """Test that format_hook_error includes the full traceback."""
+
+        try:
+            raise KeyError("missing_key")
+        except KeyError as e:
+            result = format_hook_error(e)
+
+        assert "Traceback" in result["reason"]
+        assert "KeyError" in result["reason"]
+        assert "missing_key" in result["reason"]
+
+    def test_output_hook_error_produces_json(self, capsys: object) -> None:
+        """Test that output_hook_error writes valid JSON to stdout."""
+
+        error = TypeError("Type mismatch")
+        output_hook_error(error, context="test context")
+
+        captured = capsys.readouterr()  # type: ignore[attr-defined]
+        result = json.loads(captured.out.strip())
+
+        assert result["decision"] == "block"
+        assert "TypeError" in result["reason"]
+        assert "test context" in result["reason"]
+
+    def test_run_hook_catches_hook_function_errors(self, capsys: object) -> None:
+        """Test that run_hook outputs JSON when hook function raises an exception."""
+        from deepwork.hooks.wrapper import HookInput, HookOutput, Platform
+
+        def failing_hook(hook_input: HookInput) -> HookOutput:
+            raise RuntimeError("Hook crashed!")
+
+        exit_code = run_hook(failing_hook, Platform.CLAUDE)
+
+        captured = capsys.readouterr()  # type: ignore[attr-defined]
+        result = json.loads(captured.out.strip())
+
+        assert exit_code == 0  # Should return 0 so JSON is processed
+        assert result["decision"] == "block"
+        assert "RuntimeError" in result["reason"]
+        assert "Hook crashed!" in result["reason"]
+        assert "failing_hook" in result["reason"]  # Context includes function name
