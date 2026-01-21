@@ -36,12 +36,15 @@ For EACH test below, follow this cycle:
 
 1. **Launch a sub-agent** using the Task tool (use a fast model like haiku)
 2. **Wait for the sub-agent to complete**
-3. **Observe whether the hook fired automatically** - you should see a blocking prompt or command output
-4. **Record the result** - pass if hook fired, fail if it didn't
-5. **Revert changes**: `git checkout -- manual_tests/`
-6. **Proceed to the next test**
+3. **Check the queue** - Run `cat .deepwork/queue.json` to verify a queue entry was added for the rule
+4. **Observe whether the hook fired automatically** - you should see a blocking prompt or command output
+5. **Record the result** - pass if hook fired AND queue entry exists, fail otherwise
+6. **Revert changes**: `git checkout -- manual_tests/`
+7. **Proceed to the next test**
 
 **IMPORTANT**: Only launch ONE sub-agent at a time. Wait for it to complete and revert before launching the next.
+
+**IMPORTANT**: Always check the queue file before reverting to verify the rule was queued.
 
 ### Test Cases (run serially)
 
@@ -81,16 +84,16 @@ For EACH test below, follow this cycle:
 
 Record the result after each test:
 
-| Test Case | Should Fire | Hook Fired? | Result |
-|-----------|-------------|:-----------:|:------:|
-| Trigger/Safety | Edit .py only | | |
-| Set Mode | Edit _source.py only | | |
-| Pair Mode | Edit _trigger.py only | | |
-| Command Action | Edit .txt | | |
-| Multi Safety | Edit .py only | | |
-| Infinite Block Prompt | Edit .py (no promise) | | |
-| Infinite Block Command | Edit .py (no promise) | | |
-| Created Mode | Create NEW .yml | | |
+| Test Case | Should Fire | Queue Entry? | Hook Fired? | Result |
+|-----------|-------------|:------------:|:-----------:|:------:|
+| Trigger/Safety | Edit .py only | | | |
+| Set Mode | Edit _source.py only | | | |
+| Pair Mode | Edit _trigger.py only | | | |
+| Command Action | Edit .txt | | | |
+| Multi Safety | Edit .py only | | | |
+| Infinite Block Prompt | Edit .py (no promise) | | | |
+| Infinite Block Command | Edit .py (no promise) | | | |
+| Created Mode | Create NEW .yml | | | |
 
 ## Quality Criteria
 
