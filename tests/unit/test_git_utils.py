@@ -258,22 +258,35 @@ class TestCompareToPrompt:
             assert "new.py" in created
             assert "existing.py" not in created
 
-    def test_get_created_files_with_baseline_ref(self, temp_dir: Path) -> None:
-        """When baseline ref exists, uses diff-filter=A to find new files."""
+    def test_get_created_files_uses_work_tree_not_head_ref(self, temp_dir: Path) -> None:
+        """Created files detection always uses .last_work_tree, not .last_head_ref.
+
+        This is important because .last_work_tree contains actual files that existed
+        at prompt time (including uncommitted ones), while .last_head_ref only points
+        to a git commit. Using git-based detection would incorrectly flag uncommitted
+        files from before the prompt as "created".
+        """
         ref_file = temp_dir / ".last_head_ref"
         ref_file.write_text("abc123")
+        work_tree_file = temp_dir / ".last_work_tree"
+        work_tree_file.write_text("existing_uncommitted.py\n")
 
         with (
             patch("deepwork.core.git_utils._stage_all_changes"),
             patch(
                 "deepwork.core.git_utils._get_all_changes_vs_ref",
-                return_value={"committed_new.py"},
+                return_value={"existing_uncommitted.py", "new_file.py"},
             ),
+            patch("deepwork.core.git_utils._get_untracked_files", return_value=set()),
             patch.object(CompareToPrompt, "BASELINE_REF_PATH", ref_file),
+            patch.object(CompareToPrompt, "BASELINE_WORK_TREE_PATH", work_tree_file),
         ):
             comparator = CompareToPrompt()
             created = comparator.get_created_files()
-            assert "committed_new.py" in created
+            # existing_uncommitted.py was in .last_work_tree, so NOT created
+            assert "existing_uncommitted.py" not in created
+            # new_file.py was NOT in .last_work_tree, so it IS created
+            assert "new_file.py" in created
 
     def test_get_created_files_returns_all_current_when_no_baseline(self, temp_dir: Path) -> None:
         """When no baseline files exist, all current files are considered new."""

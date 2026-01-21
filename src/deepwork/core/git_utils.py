@@ -242,22 +242,26 @@ class CompareToPrompt(GitComparator):
             return []
 
     def get_created_files(self) -> list[str]:
+        """Get files created since the prompt was submitted.
+
+        Unlike get_changed_files(), this method always uses .last_work_tree
+        for comparison (not .last_head_ref) because .last_work_tree contains
+        the actual list of files that existed at prompt time, including
+        uncommitted files. Using git-based detection would incorrectly flag
+        uncommitted files from before the prompt as "created".
+        """
         try:
             _stage_all_changes()
 
-            if self.BASELINE_REF_PATH.exists():
-                baseline_ref = self.BASELINE_REF_PATH.read_text().strip()
-                if baseline_ref:
-                    # Use simplified approach: after staging, index vs ref with filter captures all new files
-                    return sorted(_get_all_changes_vs_ref(baseline_ref, diff_filter="A"))
-
-            # No baseline ref - check against work tree file or return all current files
+            # Get all current files (staged after git add -A, plus any remaining untracked)
             current_files = _get_all_changes_vs_ref("HEAD") | _get_untracked_files()
 
             if self.BASELINE_WORK_TREE_PATH.exists():
+                # Compare against the file list captured at prompt time
                 baseline_files = _parse_file_list(self.BASELINE_WORK_TREE_PATH.read_text())
                 return sorted(current_files - baseline_files)
             else:
+                # No baseline means all current files are "new" to this prompt
                 return sorted(current_files)
 
         except (subprocess.CalledProcessError, OSError):
