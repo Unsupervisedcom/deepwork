@@ -30,6 +30,51 @@ from click.testing import CliRunner
 from deepwork.cli.main import cli
 
 # =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+# These helpers reduce repetition while keeping individual tests readable.
+# The helpers themselves are simple and should not mask test intent.
+
+
+def run_install(project_path: Path) -> None:
+    """Run deepwork install for Claude on the given project path.
+
+    Raises AssertionError if install fails.
+    """
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["install", "--platform", "claude", "--path", str(project_path)],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0, f"Install failed: {result.output}"
+
+
+def get_project_settings(project_path: Path) -> dict:
+    """Read and parse the project's Claude settings.json."""
+    settings_file = project_path / ".claude" / "settings.json"
+    return json.loads(settings_file.read_text())
+
+
+def assert_install_added_hooks(settings_before: dict, settings_after: dict) -> None:
+    """Assert that install actually modified settings by adding hooks.
+
+    This ensures idempotency tests are meaningful - if install does nothing,
+    idempotency would trivially pass but the test would be useless.
+    """
+    assert "hooks" in settings_after, (
+        "FIRST INSTALL DID NOT ADD HOOKS! "
+        "Install must add hooks to project settings. "
+        "This test requires install to actually modify settings to verify idempotency."
+    )
+    assert settings_after != settings_before, (
+        "FIRST INSTALL DID NOT MODIFY SETTINGS! "
+        "Install must modify project settings on first run. "
+        "This test requires install to actually do something to verify idempotency."
+    )
+
+
+# =============================================================================
 # REQ-001: Install MUST NOT modify local (user home) Claude settings
 # =============================================================================
 #
@@ -87,16 +132,8 @@ class TestLocalSettingsProtection:
         original_mtime = local_settings_file.stat().st_mtime
 
         # Run install with mocked home directory
-        runner = CliRunner()
         with patch.dict("os.environ", {"HOME": str(mock_home)}):
-            result = runner.invoke(
-                cli,
-                ["install", "--platform", "claude", "--path", str(mock_claude_project)],
-                catch_exceptions=False,
-            )
-
-        # Verify install succeeded
-        assert result.exit_code == 0, f"Install failed: {result.output}"
+            run_install(mock_claude_project)
 
         # CRITICAL: Verify local settings were NOT modified
         assert local_settings_file.exists(), "Local settings file should still exist"
@@ -136,19 +173,9 @@ class TestLocalSettingsProtection:
         original_local_content = '{"local": "unchanged"}'
         local_settings_file.write_text(original_local_content)
 
-        # Record project settings path for later verification
-        project_settings_file = mock_claude_project / ".claude" / "settings.json"
-
         # Run install
-        runner = CliRunner()
         with patch.dict("os.environ", {"HOME": str(mock_home)}):
-            result = runner.invoke(
-                cli,
-                ["install", "--platform", "claude", "--path", str(mock_claude_project)],
-                catch_exceptions=False,
-            )
-
-        assert result.exit_code == 0
+            run_install(mock_claude_project)
 
         # Verify LOCAL settings unchanged
         assert local_settings_file.read_text() == original_local_content, (
@@ -156,10 +183,7 @@ class TestLocalSettingsProtection:
         )
 
         # Verify PROJECT settings were modified (hooks should be added)
-        current_project_content = project_settings_file.read_text()
-        project_settings = json.loads(current_project_content)
-
-        # The install should have added hooks to project settings
+        project_settings = get_project_settings(mock_claude_project)
         assert "hooks" in project_settings, "Project settings should have hooks after install"
 
 
@@ -206,56 +230,26 @@ class TestProjectSettingsIdempotency:
 
         DO NOT MODIFY THIS TEST.
         """
-        runner = CliRunner()
-
         # Capture settings BEFORE first install
-        settings_file = mock_claude_project / ".claude" / "settings.json"
-        settings_before_install = json.loads(settings_file.read_text())
+        settings_before = get_project_settings(mock_claude_project)
 
         # First install
-        result1 = runner.invoke(
-            cli,
-            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
-            catch_exceptions=False,
-        )
-        assert result1.exit_code == 0, f"First install failed: {result1.output}"
+        run_install(mock_claude_project)
+        settings_after_first = get_project_settings(mock_claude_project)
 
-        # Capture settings after first install
-        settings_after_first_install = settings_file.read_text()
-        settings_json_first = json.loads(settings_after_first_install)
-
-        # CRITICAL: First install MUST actually modify settings (add hooks)
-        # This ensures the test is meaningful - if install does nothing,
-        # idempotency would trivially pass but the test would be useless.
-        assert "hooks" in settings_json_first, (
-            "FIRST INSTALL DID NOT ADD HOOKS! "
-            "Install must add hooks to project settings. "
-            "This test requires install to actually modify settings to verify idempotency."
-        )
-        assert settings_json_first != settings_before_install, (
-            "FIRST INSTALL DID NOT MODIFY SETTINGS! "
-            "Install must modify project settings on first run. "
-            "This test requires install to actually do something to verify idempotency."
-        )
+        # CRITICAL: First install MUST actually modify settings
+        assert_install_added_hooks(settings_before, settings_after_first)
 
         # Second install
-        result2 = runner.invoke(
-            cli,
-            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
-            catch_exceptions=False,
-        )
-        assert result2.exit_code == 0, f"Second install failed: {result2.output}"
-
-        # Capture settings after second install
-        settings_after_second_install = settings_file.read_text()
-        settings_json_second = json.loads(settings_after_second_install)
+        run_install(mock_claude_project)
+        settings_after_second = get_project_settings(mock_claude_project)
 
         # CRITICAL: Settings must be identical after second install
-        assert settings_json_first == settings_json_second, (
+        assert settings_after_first == settings_after_second, (
             "PROJECT SETTINGS CHANGED ON SECOND INSTALL! "
             "Install MUST be idempotent. "
-            f"After first: {json.dumps(settings_json_first, indent=2)}\n"
-            f"After second: {json.dumps(settings_json_second, indent=2)}"
+            f"After first: {json.dumps(settings_after_first, indent=2)}\n"
+            f"After second: {json.dumps(settings_after_second, indent=2)}"
         )
 
     def test_no_duplicate_hooks_on_multiple_installs(self, mock_claude_project: Path) -> None:
@@ -267,20 +261,12 @@ class TestProjectSettingsIdempotency:
 
         DO NOT MODIFY THIS TEST.
         """
-        runner = CliRunner()
-
         # Run install three times
-        for i in range(3):
-            result = runner.invoke(
-                cli,
-                ["install", "--platform", "claude", "--path", str(mock_claude_project)],
-                catch_exceptions=False,
-            )
-            assert result.exit_code == 0, f"Install #{i + 1} failed: {result.output}"
+        for _ in range(3):
+            run_install(mock_claude_project)
 
         # Load final settings
-        settings_file = mock_claude_project / ".claude" / "settings.json"
-        settings = json.loads(settings_file.read_text())
+        settings = get_project_settings(mock_claude_project)
 
         # CRITICAL: Hooks must exist for this test to be meaningful
         assert "hooks" in settings, (
@@ -292,18 +278,17 @@ class TestProjectSettingsIdempotency:
         # Verify no duplicate hooks
         for event_name, hooks_list in settings["hooks"].items():
             # Extract all hook commands for duplicate detection
-            commands = []
-            for hook_entry in hooks_list:
-                for hook in hook_entry.get("hooks", []):
-                    if "command" in hook:
-                        commands.append(hook["command"])
+            commands = [
+                hook["command"]
+                for hook_entry in hooks_list
+                for hook in hook_entry.get("hooks", [])
+                if "command" in hook
+            ]
 
             # Check for duplicates
-            unique_commands = set(commands)
-            assert len(commands) == len(unique_commands), (
+            assert len(commands) == len(set(commands)), (
                 f"DUPLICATE HOOKS DETECTED for event '{event_name}'! "
-                f"Install MUST be idempotent. "
-                f"Commands: {commands}"
+                f"Install MUST be idempotent. Commands: {commands}"
             )
 
     def test_third_install_identical_to_first(self, mock_claude_project: Path) -> None:
@@ -316,43 +301,22 @@ class TestProjectSettingsIdempotency:
 
         DO NOT MODIFY THIS TEST.
         """
-        runner = CliRunner()
-
         # Capture settings BEFORE any install
-        settings_file = mock_claude_project / ".claude" / "settings.json"
-        settings_before = json.loads(settings_file.read_text())
+        settings_before = get_project_settings(mock_claude_project)
 
         # First install
-        result = runner.invoke(
-            cli,
-            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
-            catch_exceptions=False,
-        )
-        assert result.exit_code == 0, f"First install failed: {result.output}"
-
-        settings_after_first = json.loads(settings_file.read_text())
+        run_install(mock_claude_project)
+        settings_after_first = get_project_settings(mock_claude_project)
 
         # CRITICAL: First install MUST actually modify settings
-        assert "hooks" in settings_after_first, (
-            "FIRST INSTALL DID NOT ADD HOOKS! "
-            "Install must add hooks to verify idempotency is meaningful."
-        )
-        assert settings_after_first != settings_before, (
-            "FIRST INSTALL DID NOT MODIFY SETTINGS! "
-            "Install must modify settings on first run to verify idempotency."
-        )
+        assert_install_added_hooks(settings_before, settings_after_first)
 
         # Run multiple more installs
-        for i in range(5):
-            result = runner.invoke(
-                cli,
-                ["install", "--platform", "claude", "--path", str(mock_claude_project)],
-                catch_exceptions=False,
-            )
-            assert result.exit_code == 0, f"Install #{i + 2} failed: {result.output}"
+        for _ in range(5):
+            run_install(mock_claude_project)
 
         # Final state should match first install
-        settings_after_many = json.loads(settings_file.read_text())
+        settings_after_many = get_project_settings(mock_claude_project)
 
         assert settings_after_first == settings_after_many, (
             "SETTINGS DIVERGED AFTER MULTIPLE INSTALLS! "
