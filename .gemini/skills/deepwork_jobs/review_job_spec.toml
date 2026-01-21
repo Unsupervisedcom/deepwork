@@ -276,7 +276,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
   6. **Complete Steps**: Each step must have: id (lowercase_underscores), name, description, instructions_file, outputs (at least one), and dependencies array
   7. **Valid Dependencies**: Dependencies must reference existing step IDs with no circular references
   8. **Input Consistency**: File inputs with `from_step` must reference a step that is in the dependencies array
-  9. **Output Paths**: Outputs must be valid filenames or paths (e.g., `report.md` or `reports/analysis.md`)
+  9. **Output Paths**: Outputs must be valid filenames or paths within the main repo (not in dot-directories). Use specific, descriptive paths that lend themselves to glob patterns, e.g., `competitive_research/competitors_list.md` or `competitive_research/[competitor_name]/research.md`. Avoid generic names like `output.md`.
   10. **Concise Instructions**: The content of the file, particularly the description, must not have excessively redundant information. It should be concise and to the point given that extra tokens will confuse the AI.
 
 ## Quality Validation (Manual)

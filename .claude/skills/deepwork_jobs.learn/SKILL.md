@@ -50,13 +50,13 @@ hooks:
 
 ## Objective
 
-Think deeply about this task. Reflect on the current conversation to identify learnings from DeepWork job executions, improve job instructions with generalizable insights, and capture bespoke (run-specific) learnings in AGENTS.md files in the appropriate working folder.
+Think deeply about this task. Reflect on the current conversation to identify learnings from DeepWork job executions, improve job instructions with generalizable insights, and capture bespoke (run-specific) learnings in AGENTS.md files in the deepest common folder that would contain all work on the topic in the future.
 
 ## Task
 
 Analyze the conversation history to extract learnings and improvements, then apply them appropriately:
 - **Generalizable learnings** → Update job instruction files
-- **Bespoke learnings** (specific to this run) → Add to AGENTS.md in working folder
+- **Bespoke learnings** (specific to this run) → Add to AGENTS.md in the deepest common folder for the topic
 
 ### Step 1: Analyze Conversation for Job Executions
 
@@ -65,7 +65,8 @@ Analyze the conversation history to extract learnings and improvements, then app
    - Identify which jobs and steps were executed
    - Note the order of execution
 
-2. **Identify the working folder**
+2. **Identify the target folder**
+   - This should be the deepest common folder that would contain all work on the topic in the future
    - Should be clear from conversation history where work was done
    - If unclear, run `git diff` to see where changes were made on the branch
 
@@ -249,7 +250,7 @@ quality_criteria:
 The AGENTS.md file captures project-specific knowledge that helps future agent runs.
 
 1. **Determine the correct location**
-   - Place AGENTS.md in the working folder where job outputs live
+   - Place AGENTS.md in the deepest common folder that would contain all work on the topic in the future
    - This ensures the knowledge is available when working in that context
    - If uncertain, place at the project root
 
@@ -317,7 +318,7 @@ When adding entries to AGENTS.md, prefer these patterns:
 - Shared/lengthy content extracted into referenced files where appropriate
 - AGENTS.md created/updated with bespoke learnings
 - File references used instead of duplicating content
-- AGENTS.md is in the correct working folder
+- AGENTS.md is in the correct folder (the deepest common folder for the topic)
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
 
 ## Example Dialog
