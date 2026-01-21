@@ -480,3 +480,132 @@ class TestInvokeClaudeHeadlessFallback:
                 assert decision == "block"
                 assert "not found" in reason
                 assert fallback is None  # No fallback, actual error
+
+
+class TestInvokeClaudeHeadlessExecution:
+    """Tests for invoke_claude_headless subprocess execution."""
+
+    def test_successful_allow_decision(self) -> None:
+        """Test successful execution with allow decision."""
+        mock_output = """
+I've reviewed the code.
+
+---RULE_RESULT---
+decision: allow
+reason: Code looks good
+---END_RULE_RESULT---
+"""
+        with patch.dict(os.environ, {"CLAUDE_CODE_REMOTE": "false"}):
+            with patch("deepwork.hooks.rules_check.subprocess.run") as mock_run:
+                mock_run.return_value.returncode = 0
+                mock_run.return_value.stdout = mock_output
+                mock_run.return_value.stderr = ""
+
+                decision, reason, fallback = invoke_claude_headless(
+                    "Test prompt", "Test Rule"
+                )
+
+                assert decision == "allow"
+                assert reason == "Code looks good"
+                assert fallback is None
+
+    def test_successful_block_decision(self) -> None:
+        """Test successful execution with block decision."""
+        mock_output = """
+Found issues in the code.
+
+---RULE_RESULT---
+decision: block
+reason: Security vulnerability detected
+---END_RULE_RESULT---
+"""
+        with patch.dict(os.environ, {"CLAUDE_CODE_REMOTE": "false"}):
+            with patch("deepwork.hooks.rules_check.subprocess.run") as mock_run:
+                mock_run.return_value.returncode = 0
+                mock_run.return_value.stdout = mock_output
+                mock_run.return_value.stderr = ""
+
+                decision, reason, fallback = invoke_claude_headless(
+                    "Test prompt", "Test Rule"
+                )
+
+                assert decision == "block"
+                assert reason == "Security vulnerability detected"
+                assert fallback is None
+
+    def test_nonzero_exit_code(self) -> None:
+        """Test handling of non-zero exit code from Claude."""
+        with patch.dict(os.environ, {"CLAUDE_CODE_REMOTE": "false"}):
+            with patch("deepwork.hooks.rules_check.subprocess.run") as mock_run:
+                mock_run.return_value.returncode = 1
+                mock_run.return_value.stdout = ""
+                mock_run.return_value.stderr = "API rate limit exceeded"
+
+                decision, reason, fallback = invoke_claude_headless(
+                    "Test prompt", "Test Rule"
+                )
+
+                assert decision == "block"
+                assert "execution failed" in reason
+                assert "rate limit" in reason
+                assert fallback is None
+
+    def test_timeout_handling(self) -> None:
+        """Test handling of subprocess timeout."""
+        import subprocess
+
+        with patch.dict(os.environ, {"CLAUDE_CODE_REMOTE": "false"}):
+            with patch("deepwork.hooks.rules_check.subprocess.run") as mock_run:
+                mock_run.side_effect = subprocess.TimeoutExpired(
+                    cmd=["claude"], timeout=300
+                )
+
+                decision, reason, fallback = invoke_claude_headless(
+                    "Test prompt", "Test Rule"
+                )
+
+                assert decision == "block"
+                assert "timed out" in reason
+                assert "Test Rule" in reason
+                assert fallback is None
+
+    def test_generic_exception_handling(self) -> None:
+        """Test handling of generic exceptions."""
+        with patch.dict(os.environ, {"CLAUDE_CODE_REMOTE": "false"}):
+            with patch("deepwork.hooks.rules_check.subprocess.run") as mock_run:
+                mock_run.side_effect = OSError("Permission denied")
+
+                decision, reason, fallback = invoke_claude_headless(
+                    "Test prompt", "Test Rule"
+                )
+
+                assert decision == "block"
+                assert "Error invoking Claude" in reason
+                assert "Permission denied" in reason
+                assert fallback is None
+
+    def test_calls_claude_with_correct_arguments(self) -> None:
+        """Test that Claude is called with the correct command-line arguments."""
+        mock_output = """
+---RULE_RESULT---
+decision: allow
+reason: OK
+---END_RULE_RESULT---
+"""
+        with patch.dict(os.environ, {"CLAUDE_CODE_REMOTE": "false"}):
+            with patch("deepwork.hooks.rules_check.subprocess.run") as mock_run:
+                mock_run.return_value.returncode = 0
+                mock_run.return_value.stdout = mock_output
+                mock_run.return_value.stderr = ""
+
+                invoke_claude_headless("My test prompt", "Test Rule")
+
+                mock_run.assert_called_once()
+                call_args = mock_run.call_args
+                cmd = call_args[0][0]
+
+                assert cmd[0] == "claude"
+                assert "--print" in cmd
+                assert "--dangerously-skip-permissions" in cmd
+                assert "-p" in cmd
+                assert "My test prompt" in cmd
