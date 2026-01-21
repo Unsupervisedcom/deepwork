@@ -26,7 +26,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 from click.testing import CliRunner
 
 from deepwork.cli.main import cli
@@ -78,18 +77,18 @@ def assert_install_added_hooks(settings_before: dict, settings_after: dict) -> N
 
 @contextmanager
 def mock_local_claude_settings(
-    tmp_path: Path, content: str | dict = '{"local": "unchanged"}'
+    temp_dir: Path, content: str | dict = '{"local": "unchanged"}'
 ) -> Iterator[Path]:
     """Create mock local Claude settings and patch HOME to use them.
 
     Args:
-        tmp_path: Temporary directory to create mock home in
+        temp_dir: Temporary directory to create mock home in
         content: Settings content (string or dict to be JSON-serialized)
 
     Yields:
         Path to the local settings file (for verification after install)
     """
-    mock_home = tmp_path / "mock_home"
+    mock_home = temp_dir / "mock_home"
     mock_local_claude_dir = mock_home / ".claude"
     mock_local_claude_dir.mkdir(parents=True)
 
@@ -132,14 +131,15 @@ class TestLocalSettingsProtection:
     in DeepWork overwriting user's personal Claude configurations.
     """
 
-    def test_install_does_not_modify_local_claude_settings(
-        self, mock_claude_project: Path, tmp_path: Path
+    def test_install_modifies_only_project_settings_not_local(
+        self, mock_claude_project: Path, temp_dir: Path
     ) -> None:
         """
-        REQ-001: Install MUST NOT modify local (home directory) Claude settings.
+        REQ-001: Install MUST modify project settings and NOT touch local settings.
 
-        This test creates a mock local settings file and verifies that the
-        DeepWork install process does not modify it in any way.
+        Verifies that:
+        1. Local (home directory) settings are completely untouched (content AND mtime)
+        2. Project settings are correctly modified (hooks added)
 
         DO NOT MODIFY THIS TEST.
         """
@@ -149,7 +149,7 @@ class TestLocalSettingsProtection:
             "custom_config": {"setting1": True, "setting2": "value"},
         }
 
-        with mock_local_claude_settings(tmp_path, original_local_settings) as local_file:
+        with mock_local_claude_settings(temp_dir, original_local_settings) as local_file:
             original_mtime = local_file.stat().st_mtime
             run_install(mock_claude_project)
 
@@ -168,30 +168,12 @@ class TestLocalSettingsProtection:
                 "Install MUST NOT access user's home directory Claude settings."
             )
 
-    def test_install_only_modifies_project_settings(
-        self, mock_claude_project: Path, tmp_path: Path
-    ) -> None:
-        """
-        REQ-001 (corollary): Install MUST modify only project-level settings.
-
-        Verifies that the install process correctly modifies project settings
-        while leaving local settings untouched.
-
-        DO NOT MODIFY THIS TEST.
-        """
-        original_local_content = '{"local": "unchanged"}'
-
-        with mock_local_claude_settings(tmp_path, original_local_content) as local_file:
-            run_install(mock_claude_project)
-
-            # Verify LOCAL settings unchanged
-            assert local_file.read_text() == original_local_content, (
-                "Local settings were modified! Install must only modify project settings."
-            )
-
             # Verify PROJECT settings were modified (hooks should be added)
             project_settings = get_project_settings(mock_claude_project)
-            assert "hooks" in project_settings, "Project settings should have hooks after install"
+            assert "hooks" in project_settings, (
+                "PROJECT SETTINGS NOT MODIFIED! "
+                "Install must add hooks to project settings while leaving local untouched."
+            )
 
 
 # =============================================================================
@@ -292,6 +274,12 @@ class TestProjectSettingsIdempotency:
                 if "command" in hook
             ]
 
+            # Guard: ensure we found commands to check (prevents false positive)
+            assert commands, (
+                f"NO HOOK COMMANDS FOUND for event '{event_name}'! "
+                "Cannot verify duplicate detection with empty command list."
+            )
+
             # Check for duplicates
             assert len(commands) == len(set(commands)), (
                 f"DUPLICATE HOOKS DETECTED for event '{event_name}'! "
@@ -329,15 +317,3 @@ class TestProjectSettingsIdempotency:
             "SETTINGS DIVERGED AFTER MULTIPLE INSTALLS! "
             "Install must be idempotent regardless of how many times it runs."
         )
-
-
-# =============================================================================
-# FIXTURE EXTENSIONS
-# =============================================================================
-# Additional fixtures needed for these requirement tests
-
-
-@pytest.fixture
-def tmp_path(temp_dir: Path) -> Path:
-    """Alias for temp_dir to match pytest naming convention."""
-    return temp_dir
