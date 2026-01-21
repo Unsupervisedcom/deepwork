@@ -32,12 +32,12 @@ class HookError(Exception):
 def hook(hook_name: str) -> None:
     """
     Run a DeepWork hook by name.
-    
+
     HOOK_NAME: Name of the hook to run (e.g., 'rules_check')
-    
+
     This command imports and runs the hook module from deepwork.hooks.{hook_name}.
     The hook receives stdin input and outputs to stdout, following the hook protocol.
-    
+
     Examples:
         deepwork hook rules_check
         echo '{}' | deepwork hook rules_check
@@ -49,18 +49,15 @@ def hook(hook_name: str) -> None:
             module = importlib.import_module(module_name)
         except ModuleNotFoundError:
             raise HookError(
-                f"Hook '{hook_name}' not found. "
-                f"Available hooks are in the deepwork.hooks package."
+                f"Hook '{hook_name}' not found. Available hooks are in the deepwork.hooks package."
             )
-        
+
         # Run the hook's main function if it exists
         if hasattr(module, "main"):
             sys.exit(module.main())
         else:
-            raise HookError(
-                f"Hook module '{module_name}' does not have a main() function"
-            )
-            
+            raise HookError(f"Hook module '{module_name}' does not have a main() function")
+
     except HookError as e:
         console.print(f"[red]Error:[/red] {e}", file=sys.stderr)
         sys.exit(1)

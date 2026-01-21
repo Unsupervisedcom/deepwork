@@ -52,7 +52,7 @@ Writing custom hooks:
             if should_block():
                 return HookOutput(decision="block", reason="Complete X first")
         return HookOutput()
-    
+
     def main():
         import os, sys
         platform = Platform(os.environ.get("DEEPWORK_HOOK_PLATFORM", "claude"))
