@@ -49,7 +49,6 @@ def hook(hook_name: str) -> None:
             module_name = hook_name
         else:
             module_name = f"deepwork.hooks.{hook_name}"
-        
         try:
             module = importlib.import_module(module_name)
         except ModuleNotFoundError:
