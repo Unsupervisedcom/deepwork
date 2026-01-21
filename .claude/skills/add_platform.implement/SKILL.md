@@ -22,6 +22,25 @@ hooks:
 
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
+  SubagentStop:
+    - hooks:
+        - type: command
+          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"
+        - type: prompt
+          prompt: |
+            Verify the implementation meets ALL criteria:
+            1. Platform adapter class is added to src/deepwork/adapters.py
+            2. Templates exist in src/deepwork/templates/<platform>/ with appropriate command structure
+            3. Tests exist for all new functionality
+            4. Test coverage is 100% for new code (run: uv run pytest --cov)
+            5. All tests pass
+            6. README.md is updated with:
+               - New platform listed in supported platforms
+               - Installation instructions for the platform
+               - Any platform-specific notes
+
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
 ---
 
 # add_platform.implement

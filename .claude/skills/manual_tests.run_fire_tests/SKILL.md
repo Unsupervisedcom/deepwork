@@ -14,7 +14,32 @@ hooks:
             1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
             2. **Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?
             3. **Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command.
-            4. **Git Reverted Between Tests**: Was `git checkout -- manual_tests/` run between each test to prevent cross-contamination?
+            4. **Git Reverted Between Tests**: Was `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` run between each test to prevent cross-contamination?
+            5. **All Tests Run**: Were all 8 'should fire' tests executed (trigger/safety, set, pair, command action, multi safety, infinite block prompt, infinite block command, created)?
+            6. **Results Recorded**: Did the main agent track pass/fail status for each test case?
+
+            ## Instructions
+
+            Review the conversation and determine if ALL quality criteria above have been satisfied.
+            Look for evidence that each criterion has been addressed.
+
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
+            all criteria appear to be met, respond with: {"ok": true}
+
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            You must evaluate whether Claude has met all the below quality criteria for the request.
+
+            ## Quality Criteria
+
+            1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
+            2. **Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?
+            3. **Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command.
+            4. **Git Reverted Between Tests**: Was `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` run between each test to prevent cross-contamination?
             5. **All Tests Run**: Were all 8 'should fire' tests executed (trigger/safety, set, pair, command action, multi safety, infinite block prompt, infinite block command, created)?
             6. **Results Recorded**: Did the main agent track pass/fail status for each test case?
 
@@ -84,9 +109,22 @@ For EACH test below, follow this cycle:
 1. **Launch a sub-agent** using the Task tool (use a fast model like haiku)
 2. **Wait for the sub-agent to complete**
 3. **Observe whether the hook fired automatically** - you should see a blocking prompt or command output
-4. **Record the result** - pass if hook fired, fail if it didn't
-5. **Revert changes**: `git checkout -- manual_tests/`
-6. **Proceed to the next test**
+4. **If no visible blocking occurred, check the queue**:
+   ```bash
+   ls -la .deepwork/tmp/rules/queue/
+   cat .deepwork/tmp/rules/queue/*.json 2>/dev/null
+   ```
+   - If queue entries exist with status "queued", the hook DID fire but blocking wasn't visible
+   - If queue is empty, the hook did NOT fire at all
+   - Record the queue status along with the result
+5. **Record the result** - pass if hook fired (visible block OR queue entry), fail if neither
+6. **Revert changes and clear queue**:
+   ```bash
+   git checkout -- manual_tests/
+   rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null || true
+   ```
+   The queue must be cleared because rules that have been shown (status=QUEUED) won't fire again until cleared.
+7. **Proceed to the next test**
 
 **IMPORTANT**: Only launch ONE sub-agent at a time. Wait for it to complete and revert before launching the next.
 
@@ -128,22 +166,27 @@ For EACH test below, follow this cycle:
 
 Record the result after each test:
 
-| Test Case | Should Fire | Hook Fired? | Result |
-|-----------|-------------|:-----------:|:------:|
-| Trigger/Safety | Edit .py only | | |
-| Set Mode | Edit _source.py only | | |
-| Pair Mode | Edit _trigger.py only | | |
-| Command Action | Edit .txt | | |
-| Multi Safety | Edit .py only | | |
-| Infinite Block Prompt | Edit .py (no promise) | | |
-| Infinite Block Command | Edit .py (no promise) | | |
-| Created Mode | Create NEW .yml | | |
+| Test Case | Should Fire | Visible Block? | Queue Entry? | Result |
+|-----------|-------------|:--------------:|:------------:|:------:|
+| Trigger/Safety | Edit .py only | | | |
+| Set Mode | Edit _source.py only | | | |
+| Pair Mode | Edit _trigger.py only | | | |
+| Command Action | Edit .txt | | | |
+| Multi Safety | Edit .py only | | | |
+| Infinite Block Prompt | Edit .py (no promise) | | | |
+| Infinite Block Command | Edit .py (no promise) | | | |
+| Created Mode | Create NEW .yml | | | |
+
+**Queue Entry Status Guide:**
+- If queue has entry with status "queued" → Hook fired, rule was shown to agent
+- If queue has entry with status "passed" → Hook fired, rule was satisfied
+- If queue is empty → Hook did NOT fire
 
 ## Quality Criteria
 
 - **Sub-agents spawned**: All 8 tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
 - **Serial execution**: Sub-agents were launched ONE AT A TIME, not in parallel
-- **Git reverted between tests**: `git checkout -- manual_tests/` was run after each test
+- **Git reverted and queue cleared between tests**: `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after each test
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check - hooks fired AUTOMATICALLY
 - **Blocking behavior verified**: For each test, the appropriate blocking hook fired automatically when the sub-agent returned
 - **Results recorded**: Pass/fail status was recorded for each test
@@ -219,7 +262,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
 2. **Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?
 3. **Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command.
-4. **Git Reverted Between Tests**: Was `git checkout -- manual_tests/` run between each test to prevent cross-contamination?
+4. **Git Reverted Between Tests**: Was `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` run between each test to prevent cross-contamination?
 5. **All Tests Run**: Were all 8 'should fire' tests executed (trigger/safety, set, pair, command action, multi safety, infinite block prompt, infinite block command, created)?
 6. **Results Recorded**: Did the main agent track pass/fail status for each test case?
 

@@ -15,7 +15,31 @@ hooks:
             2. **Parallel Execution**: Were multiple sub-agents launched in parallel (in a single message with multiple Task tool calls)?
             3. **Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command.
             4. **All Tests Run**: Were all 8 'should NOT fire' tests executed (trigger/safety, set, pair forward, pair reverse, multi safety, infinite block prompt, infinite block command, created)?
-            5. **Git Reverted**: Were changes reverted after tests completed using `git checkout -- manual_tests/`?
+            5. **Git Reverted**: Were changes reverted and queue cleared after tests completed using `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json`?
+
+            ## Instructions
+
+            Review the conversation and determine if ALL quality criteria above have been satisfied.
+            Look for evidence that each criterion has been addressed.
+
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
+            all criteria appear to be met, respond with: {"ok": true}
+
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            You must evaluate whether Claude has met all the below quality criteria for the request.
+
+            ## Quality Criteria
+
+            1. **Sub-Agents Used**: Did the main agent spawn sub-agents (using the Task tool) to make the file edits? The main agent must NOT edit the test files directly.
+            2. **Parallel Execution**: Were multiple sub-agents launched in parallel (in a single message with multiple Task tool calls)?
+            3. **Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command.
+            4. **All Tests Run**: Were all 8 'should NOT fire' tests executed (trigger/safety, set, pair forward, pair reverse, multi safety, infinite block prompt, infinite block command, created)?
+            5. **Git Reverted**: Were changes reverted and queue cleared after tests completed using `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json`?
 
             ## Instructions
 
@@ -109,14 +133,15 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
    | Infinite Block Command | Promise tag | |
    | Created Mode | Modify existing | |
 
-4. **Revert all changes**
+4. **Revert all changes and clear queue**
 
    After all tests complete, run:
    ```bash
    git checkout -- manual_tests/
+   rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null || true
    ```
 
-   This cleans up the test files before the "should fire" tests run.
+   This cleans up the test files AND clears the rules queue before the "should fire" tests run. The queue must be cleared because rules that have already been shown to the agent (status=QUEUED) won't fire again until the queue is cleared.
 
 ## Quality Criteria
 
@@ -124,7 +149,7 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
 - **Parallel execution**: All 8 sub-agents were launched in a single message (parallel)
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check
 - **No unexpected blocks**: All tests passed - no blocking hooks fired
-- **Changes reverted**: `git checkout -- manual_tests/` was run after tests completed
+- **Changes reverted and queue cleared**: `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after tests completed
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Reference
@@ -193,7 +218,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 2. **Parallel Execution**: Were multiple sub-agents launched in parallel (in a single message with multiple Task tool calls)?
 3. **Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command.
 4. **All Tests Run**: Were all 8 'should NOT fire' tests executed (trigger/safety, set, pair forward, pair reverse, multi safety, infinite block prompt, infinite block command, created)?
-5. **Git Reverted**: Were changes reverted after tests completed using `git checkout -- manual_tests/`?
+5. **Git Reverted**: Were changes reverted and queue cleared after tests completed using `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json`?
 
 
 **To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.

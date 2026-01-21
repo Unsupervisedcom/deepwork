@@ -17,6 +17,20 @@ hooks:
 
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            Verify the installation meets ALL criteria:
+            1. Platform-specific directories/files are added to the deepwork repo as needed
+            2. Running `deepwork install --platform <platform>` completes without errors
+            3. Expected command files are created in the platform's command directory
+            4. Command file content matches the templates and job definitions
+            5. Established DeepWork jobs (deepwork_jobs, deepwork_rules) are installed correctly
+            6. The platform can be used alongside existing platforms without conflicts
+
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
 ---
 
 # add_platform.verify
