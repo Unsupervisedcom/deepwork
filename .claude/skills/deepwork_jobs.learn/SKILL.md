@@ -33,6 +33,37 @@ hooks:
 
             If criteria are NOT met OR the promise tag is missing, respond with:
             {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            You must evaluate whether Claude has met all the below quality criteria for the request.
+
+            ## Quality Criteria
+
+            1. **Conversation Analyzed**: Did the agent review the conversation for DeepWork job executions?
+            2. **Confusion Identified**: Did the agent identify points of confusion, errors, or inefficiencies?
+            3. **Instructions Improved**: Were job instructions updated to address identified issues?
+            4. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
+            5. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
+            6. **doc spec Reviewed (if applicable)**: For jobs with doc spec outputs, were doc spec-related learnings identified?
+            7. **doc spec Updated (if applicable)**: Were doc spec files updated with improved quality criteria or structure?
+            8. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
+            9. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
+            10. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
+            11. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
+            12. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
+
+            ## Instructions
+
+            Review the conversation and determine if ALL quality criteria above have been satisfied.
+            Look for evidence that each criterion has been addressed.
+
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
+            all criteria appear to be met, respond with: {"ok": true}
+
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
 ---
 
 # deepwork_jobs.learn

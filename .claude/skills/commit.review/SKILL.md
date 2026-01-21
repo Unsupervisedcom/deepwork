@@ -13,6 +13,16 @@ hooks:
             3. All identified issues were addressed or documented as intentional
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            Verify the code review is complete:
+            1. Changed files were identified
+            2. Sub-agent reviewed the code for general issues, DRY opportunities, naming clarity, and test coverage
+            3. All identified issues were addressed or documented as intentional
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
 ---
 
 # commit.review
