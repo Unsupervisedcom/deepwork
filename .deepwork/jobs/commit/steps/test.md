@@ -50,4 +50,4 @@ Execute the test suite for the project and iteratively fix any failures until al
 
 ## Context
 
-This is the first step of the commit workflow. Tests must pass before proceeding to lint and commit. This ensures code quality and prevents broken code from being committed.
+This step runs after code review. Tests must pass before proceeding to lint and commit. This ensures code quality and prevents broken code from being committed. If tests fail due to issues introduced by the code review fixes, iterate on the fixes until tests pass.
