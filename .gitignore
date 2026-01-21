@@ -66,6 +66,9 @@ dmypy.json
 *~
 .DS_Store
 
+# direnv
+.direnv/
+
 # Jupyter Notebook
 .ipynb_checkpoints
 

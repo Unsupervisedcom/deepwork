@@ -202,6 +202,37 @@ your-project/
 - **[Architecture](doc/architecture.md)**: Complete design specification
 - **[Doc Specs](doc/doc-specs.md)**: Document specification format for output quality criteria
 - **[Contributing](CONTRIBUTING.md)**: Setup development environment and contribute
+- **[Nix Flakes Guide](doc/nix-flake.md)**: Comprehensive guide for using DeepWork with Nix flakes
+
+## Development with Nix
+
+DeepWork is available as a Nix flake for reproducible development environments:
+
+```bash
+# Using Nix flakes
+nix develop
+
+# Or with direnv (automatic activation - recommended)
+echo "use flake" > .envrc
+direnv allow
+```
+
+The Nix environment provides all dependencies including Python 3.11, uv, pytest, ruff, and mypy.
+
+### Installing DeepWork from Flake
+
+You can also install deepwork directly from the flake:
+
+```bash
+# Install deepwork from this flake
+nix profile install github:Unsupervisedcom/deepwork
+
+# Or run it without installing
+nix run github:Unsupervisedcom/deepwork -- --help
+
+# Or build the package
+nix build github:Unsupervisedcom/deepwork
+```
 
 ## Project Structure
 
