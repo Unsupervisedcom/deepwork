@@ -37,6 +37,7 @@ Each test has two cases: one where the rule SHOULD fire, and one where it should
 | **Infinite Block Prompt** | Edit `.py` (always blocks) | Provide `<promise>` tag | Manual Test: Infinite Block Prompt |
 | **Infinite Block Command** | Edit `.py` (command fails) | Provide `<promise>` tag | Manual Test: Infinite Block Command |
 | **Created Mode** | Create NEW `.yml` file | Modify EXISTING `.yml` file | Manual Test: Created Mode |
+| **Claude Runtime** | Edit `.py` → Claude invoked | Claude returns `allow` | Manual Test: Claude Runtime |
 
 ## Test Results Tracking
 
@@ -51,6 +52,7 @@ Each test has two cases: one where the rule SHOULD fire, and one where it should
 | Infinite Block Prompt | ☐ | ☐ |
 | Infinite Block Command | ☐ | ☐ |
 | Created Mode | ☐ | ☐ |
+| Claude Runtime | ☐ | ☐ |
 
 ## Test Folders
 
@@ -64,6 +66,7 @@ Each test has two cases: one where the rule SHOULD fire, and one where it should
 | `test_infinite_block_prompt/` | Infinite Block (Prompt) | Always blocks with prompt; only promise can bypass |
 | `test_infinite_block_command/` | Infinite Block (Command) | Command always fails; tests if promise skips command |
 | `test_created_mode/` | Created (New Files Only) | Fires ONLY when NEW files are created, not when existing modified |
+| `test_claude_runtime/` | Claude Runtime | Invokes Claude Code in headless mode instead of returning prompt |
 
 ## Corresponding Rules
 
@@ -76,3 +79,4 @@ Rules are defined in `.deepwork/rules/`:
 - `manual-test-infinite-block-prompt.md`
 - `manual-test-infinite-block-command.md`
 - `manual-test-created-mode.md`
+- `manual-test-claude-runtime.md`
