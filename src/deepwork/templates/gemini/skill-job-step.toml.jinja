@@ -106,7 +106,22 @@ Use branch format: `deepwork/{{ job_name }}-[instance]-YYYYMMDD`
 {% if outputs %}
 **Required outputs**:
 {% for output in outputs %}
-- `{{ output }}`{% if output.endswith('/') %} (directory){% endif %}
+- `{{ output.file }}`{% if output.file.endswith('/') %} (directory){% endif %}
+
+{% if output.has_doc_spec and output.doc_spec %}
+  **Doc Spec**: {{ output.doc_spec.name }}
+  > {{ output.doc_spec.description }}
+  **Definition**: `{{ output.doc_spec.path }}`
+{% if output.doc_spec.target_audience %}
+  **Target Audience**: {{ output.doc_spec.target_audience }}
+{% endif %}
+{% if output.doc_spec.quality_criteria %}
+  **Quality Criteria**:
+{% for criterion in output.doc_spec.quality_criteria %}
+  {{ loop.index }}. **{{ criterion.name }}**: {{ criterion.description }}
+{% endfor %}
+{% endif %}
+{% endif %}
 {% endfor %}
 {% else %}
 No specific file outputs required.
@@ -128,12 +143,12 @@ No specific file outputs required.
 
 {% if is_standalone %}
 1. Verify outputs are created
-2. Inform user: "{{ step_id }} complete{% if outputs %}, outputs: {{ outputs | join(', ') }}{% endif %}"
+2. Inform user: "{{ step_id }} complete{% if outputs %}, outputs: {{ outputs | map(attribute='file') | join(', ') }}{% endif %}"
 
 This standalone command can be re-run anytime.
 {% else %}
 1. Verify outputs are created
-2. Inform user: "Step {{ step_number }}/{{ total_steps }} complete{% if outputs %}, outputs: {{ outputs | join(', ') }}{% endif %}"
+2. Inform user: "Step {{ step_number }}/{{ total_steps }} complete{% if outputs %}, outputs: {{ outputs | map(attribute='file') | join(', ') }}{% endif %}"
 {% if next_step %}
 3. **Tell user next command**: `/{{ job_name }}:{{ next_step }}`
 {% else %}

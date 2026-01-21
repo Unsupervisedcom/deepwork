@@ -55,6 +55,17 @@ def _inject_standard_job(job_name: str, jobs_dir: Path, project_path: Path) -> N
         console.print(
             f"  [green]✓[/green] Installed {job_name} ({target_dir.relative_to(project_path)})"
         )
+
+        # Copy any doc specs from the standard job to .deepwork/doc_specs/
+        doc_specs_source = standard_jobs_dir / "doc_specs"
+        doc_specs_target = project_path / ".deepwork" / "doc_specs"
+        if doc_specs_source.exists():
+            for doc_spec_file in doc_specs_source.glob("*.md"):
+                target_doc_spec = doc_specs_target / doc_spec_file.name
+                shutil.copy(doc_spec_file, target_doc_spec)
+                console.print(
+                    f"  [green]✓[/green] Installed doc spec {doc_spec_file.name} ({target_doc_spec.relative_to(project_path)})"
+                )
     except Exception as e:
         raise InstallError(f"Failed to install {job_name}: {e}") from e
 
@@ -283,28 +294,34 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
         available_adapters = detector.detect_all_platforms()
 
         if not available_adapters:
-            supported = ", ".join(
-                f"{AgentAdapter.get(name).display_name} ({AgentAdapter.get(name).config_dir}/)"
-                for name in AgentAdapter.list_names()
-            )
-            raise InstallError(
-                f"No AI platform detected.\n"
-                f"DeepWork supports: {supported}.\n"
-                "Please set up one of these platforms first, or use --platform to specify."
-            )
+            # No platforms detected - default to Claude Code
+            console.print("  [dim]•[/dim] No AI platform detected, defaulting to Claude Code")
 
-        # Add all detected platforms
-        for adapter in available_adapters:
-            console.print(f"  [green]✓[/green] {adapter.display_name} detected")
-            platforms_to_add.append(adapter.name)
-        detected_adapters = available_adapters
+            # Create .claude directory
+            claude_dir = project_path / ".claude"
+            ensure_dir(claude_dir)
+            console.print(f"  [green]✓[/green] Created {claude_dir.relative_to(project_path)}/")
+
+            # Get Claude adapter
+            claude_adapter_class = AgentAdapter.get("claude")
+            claude_adapter = claude_adapter_class(project_root=project_path)
+            platforms_to_add = [claude_adapter.name]
+            detected_adapters = [claude_adapter]
+        else:
+            # Add all detected platforms
+            for adapter in available_adapters:
+                console.print(f"  [green]✓[/green] {adapter.display_name} detected")
+                platforms_to_add.append(adapter.name)
+            detected_adapters = available_adapters
 
     # Step 3: Create .deepwork/ directory structure
     console.print("[yellow]→[/yellow] Creating DeepWork directory structure...")
     deepwork_dir = project_path / ".deepwork"
     jobs_dir = deepwork_dir / "jobs"
+    doc_specs_dir = deepwork_dir / "doc_specs"
     ensure_dir(deepwork_dir)
     ensure_dir(jobs_dir)
+    ensure_dir(doc_specs_dir)
     console.print(f"  [green]✓[/green] Created {deepwork_dir.relative_to(project_path)}/")
 
     # Step 3b: Inject standard jobs (core job definitions)

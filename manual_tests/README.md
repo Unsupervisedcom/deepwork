@@ -12,6 +12,25 @@ This approach works because:
 2. The Stop hook evaluates rules when the sub-agent completes
 3. Using a fast model keeps test iterations quick and cheap
 
+### Parallel vs Serial Execution
+
+**Important:** All sub-agents share the same git working directory. This affects which tests can run in parallel.
+
+**"Should NOT fire" tests CAN run in parallel:**
+- These tests edit both trigger AND safety files (completing the rule requirements)
+- Even though `git status` shows changes from all sub-agents, each rule only matches its own scoped file patterns
+- Since the safety file is edited, the rule won't fire regardless of other changes
+- No cross-contamination possible
+- **Revert all changes after these tests complete** before running "should fire" tests
+
+**"Should fire" tests MUST run serially with git reverts between each:**
+- These tests deliberately edit only the trigger file (not the safety)
+- If multiple run in parallel, sub-agent A's hook will see changes from sub-agent B
+- This causes cross-contamination: A gets blocked by rules triggered by B's changes
+- Run one at a time, reverting between each test
+
+### Verification Commands
+
 After each sub-agent returns, run the hook to verify:
 ```bash
 echo '{}' | python -m deepwork.hooks.rules_check
@@ -36,6 +55,7 @@ Each test has two cases: one where the rule SHOULD fire, and one where it should
 | **Multi Safety** | Edit `.py` only | Edit `.py` AND any safety file | Manual Test: Multi Safety |
 | **Infinite Block Prompt** | Edit `.py` (always blocks) | Provide `<promise>` tag | Manual Test: Infinite Block Prompt |
 | **Infinite Block Command** | Edit `.py` (command fails) | Provide `<promise>` tag | Manual Test: Infinite Block Command |
+| **Created Mode** | Create NEW `.yml` file | Modify EXISTING `.yml` file | Manual Test: Created Mode |
 
 ## Test Results Tracking
 
@@ -49,6 +69,7 @@ Each test has two cases: one where the rule SHOULD fire, and one where it should
 | Multi Safety | ☐ | ☐ |
 | Infinite Block Prompt | ☐ | ☐ |
 | Infinite Block Command | ☐ | ☐ |
+| Created Mode | ☐ | ☐ |
 
 ## Test Folders
 
@@ -61,6 +82,7 @@ Each test has two cases: one where the rule SHOULD fire, and one where it should
 | `test_multi_safety/` | Multiple Safety | Fires unless ANY of the safety files also edited |
 | `test_infinite_block_prompt/` | Infinite Block (Prompt) | Always blocks with prompt; only promise can bypass |
 | `test_infinite_block_command/` | Infinite Block (Command) | Command always fails; tests if promise skips command |
+| `test_created_mode/` | Created (New Files Only) | Fires ONLY when NEW files are created, not when existing modified |
 
 ## Corresponding Rules
 
@@ -72,3 +94,4 @@ Rules are defined in `.deepwork/rules/`:
 - `manual-test-multi-safety.md`
 - `manual-test-infinite-block-prompt.md`
 - `manual-test-infinite-block-command.md`
+- `manual-test-created-mode.md`

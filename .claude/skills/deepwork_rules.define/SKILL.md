@@ -1,6 +1,6 @@
 ---
 name: deepwork_rules.define
-description: "Create a new rule file in .deepwork/rules/"
+description: "Creates a rule file that triggers when specified files change. Use when setting up documentation sync, code review requirements, or automated commands."
 user-invocable: false
 ---
 
@@ -8,12 +8,12 @@ user-invocable: false
 
 **Standalone skill** - can be run anytime
 
-> Rules enforcement for AI agent sessions
+> Creates file-change rules that enforce guidelines during AI sessions. Use when automating documentation sync or code review triggers.
 
 
 ## Instructions
 
-**Goal**: Create a new rule file in .deepwork/rules/
+**Goal**: Creates a rule file that triggers when specified files change. Use when setting up documentation sync, code review requirements, or automated commands.
 
 # Define Rule
 
@@ -272,10 +272,17 @@ Manages rules that automatically trigger when certain files change during an AI 
 Rules help ensure that code changes follow team guidelines, documentation is updated,
 and architectural decisions are respected.
 
+IMPORTANT: Rules are evaluated at the "Stop" hook, which fires when an agent finishes its turn.
+This includes when sub-agents complete their work. Rules are NOT evaluated immediately after
+each file edit - they batch up and run once at the end of the agent's response cycle.
+- Command action rules: Execute their command (e.g., `uv sync`) when the agent stops
+- Prompt action rules: Display instructions to the agent, blocking until addressed
+
 Rules are stored as individual markdown files with YAML frontmatter in the `.deepwork/rules/`
 directory. Each rule file specifies:
 - Detection mode: trigger/safety, set (bidirectional), or pair (directional)
 - Patterns: Glob patterns for matching files, with optional variable capture
+- Action type: prompt (default) to show instructions, or command to run a shell command
 - Instructions: Markdown content describing what the agent should do
 
 Example use cases:
@@ -283,6 +290,7 @@ Example use cases:
 - Require security review when authentication code is modified
 - Ensure API documentation stays in sync with API code
 - Enforce source/test file pairing
+- Auto-run `uv sync` when pyproject.toml changes (command action)
 
 
 ## Required Inputs
@@ -302,6 +310,14 @@ Use branch format: `deepwork/deepwork_rules-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `.deepwork/rules/{rule-name}.md`
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
+
 ## On Completion
 
 1. Verify outputs are created

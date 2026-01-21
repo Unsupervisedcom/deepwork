@@ -47,6 +47,34 @@ class StepInput:
 
 
 @dataclass
+class OutputSpec:
+    """Represents a step output specification, optionally with doc spec reference."""
+
+    file: str
+    doc_spec: str | None = None
+
+    def has_doc_spec(self) -> bool:
+        """Check if this output has a doc spec reference."""
+        return self.doc_spec is not None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any] | str) -> "OutputSpec":
+        """
+        Create OutputSpec from dictionary or string.
+
+        Supports both formats:
+        - String: "output.md" -> OutputSpec(file="output.md")
+        - Dict: {"file": "output.md", "doc_spec": ".deepwork/doc_specs/report.md"}
+        """
+        if isinstance(data, str):
+            return cls(file=data)
+        return cls(
+            file=data["file"],
+            doc_spec=data.get("doc_spec"),
+        )
+
+
+@dataclass
 class HookAction:
     """Represents a hook action configuration.
 
@@ -101,7 +129,7 @@ class Step:
     description: str
     instructions_file: str
     inputs: list[StepInput] = field(default_factory=list)
-    outputs: list[str] = field(default_factory=list)
+    outputs: list[OutputSpec] = field(default_factory=list)
     dependencies: list[str] = field(default_factory=list)
 
     # New: hooks dict mapping lifecycle event names to HookAction lists
@@ -147,7 +175,7 @@ class Step:
             description=data["description"],
             instructions_file=data["instructions_file"],
             inputs=[StepInput.from_dict(inp) for inp in data.get("inputs", [])],
-            outputs=data["outputs"],
+            outputs=[OutputSpec.from_dict(out) for out in data["outputs"]],
             dependencies=data.get("dependencies", []),
             hooks=hooks,
             exposed=data.get("exposed", False),
@@ -245,6 +273,40 @@ class JobDefinition:
                             f"Step '{step.id}' has file input from '{inp.from_step}' "
                             f"but '{inp.from_step}' is not in dependencies"
                         )
+
+    def validate_doc_spec_references(self, project_root: Path) -> None:
+        """
+        Validate that doc spec references in outputs point to existing files.
+
+        Args:
+            project_root: Path to the project root directory
+
+        Raises:
+            ParseError: If doc spec references are invalid
+        """
+        for step in self.steps:
+            for output in step.outputs:
+                if output.has_doc_spec():
+                    doc_spec_file = project_root / output.doc_spec
+                    if not doc_spec_file.exists():
+                        raise ParseError(
+                            f"Step '{step.id}' references non-existent doc spec "
+                            f"'{output.doc_spec}'. Expected file at {doc_spec_file}"
+                        )
+
+    def get_doc_spec_references(self) -> list[str]:
+        """
+        Get all unique doc spec file paths referenced in this job's outputs.
+
+        Returns:
+            List of doc spec file paths (e.g., ".deepwork/doc_specs/report.md")
+        """
+        doc_spec_refs = set()
+        for step in self.steps:
+            for output in step.outputs:
+                if output.has_doc_spec() and output.doc_spec:
+                    doc_spec_refs.add(output.doc_spec)
+        return list(doc_spec_refs)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], job_dir: Path) -> "JobDefinition":

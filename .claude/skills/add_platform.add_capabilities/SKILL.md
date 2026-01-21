@@ -1,6 +1,6 @@
 ---
 name: add_platform.add_capabilities
-description: "Update job schema and adapters with any new hook events the platform supports"
+description: "Updates job schema and adapters with any new hook events the platform supports. Use after research to extend DeepWork's hook system."
 user-invocable: false
 hooks:
   Stop:
@@ -24,7 +24,7 @@ hooks:
 
 **Step 2/4** in **add_platform** workflow
 
-> Add a new AI platform to DeepWork with adapter, templates, and tests
+> Adds a new AI platform to DeepWork with adapter, templates, and tests. Use when integrating Cursor, Windsurf, or other AI coding tools.
 
 ## Prerequisites (Verify First)
 
@@ -33,7 +33,7 @@ Before proceeding, confirm these steps are complete:
 
 ## Instructions
 
-**Goal**: Update job schema and adapters with any new hook events the platform supports
+**Goal**: Updates job schema and adapters with any new hook events the platform supports. Use after research to extend DeepWork's hook system.
 
 # Add Hook Capabilities
 
@@ -208,7 +208,16 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 ## Outputs
 
 **Required outputs**:
-- `job_schema.py`- `adapters.py`
+- `job_schema.py`
+- `adapters.py`
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
+
 ## Quality Validation
 
 Stop hooks will automatically validate your work. The loop continues until all criteria pass.

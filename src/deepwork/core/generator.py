@@ -6,6 +6,11 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
 from deepwork.core.adapters import AgentAdapter, SkillLifecycleHook
+from deepwork.core.doc_spec_parser import (
+    DocSpec,
+    DocSpecParseError,
+    parse_doc_spec_file,
+)
 from deepwork.core.parser import JobDefinition, Step
 from deepwork.schemas.job_schema import LIFECYCLE_HOOK_EVENTS
 from deepwork.utils.fs import safe_read, safe_write
@@ -36,6 +41,35 @@ class SkillGenerator:
 
         if not self.templates_dir.exists():
             raise GeneratorError(f"Templates directory not found: {self.templates_dir}")
+
+        # Cache for loaded doc specs (keyed by absolute file path)
+        self._doc_spec_cache: dict[Path, DocSpec] = {}
+
+    def _load_doc_spec(self, project_root: Path, doc_spec_path: str) -> DocSpec | None:
+        """
+        Load a doc spec by file path with caching.
+
+        Args:
+            project_root: Path to project root
+            doc_spec_path: Relative path to doc spec file (e.g., ".deepwork/doc_specs/report.md")
+
+        Returns:
+            DocSpec if file exists and parses, None otherwise
+        """
+        full_path = project_root / doc_spec_path
+        if full_path in self._doc_spec_cache:
+            return self._doc_spec_cache[full_path]
+
+        if not full_path.exists():
+            return None
+
+        try:
+            doc_spec = parse_doc_spec_file(full_path)
+        except DocSpecParseError:
+            return None
+
+        self._doc_spec_cache[full_path] = doc_spec
+        return doc_spec
 
     def _get_jinja_env(self, adapter: AgentAdapter) -> Environment:
         """
@@ -113,7 +147,12 @@ class SkillGenerator:
         return hook_ctx
 
     def _build_step_context(
-        self, job: JobDefinition, step: Step, step_index: int, adapter: AgentAdapter
+        self,
+        job: JobDefinition,
+        step: Step,
+        step_index: int,
+        adapter: AgentAdapter,
+        project_root: Path | None = None,
     ) -> dict[str, Any]:
         """
         Build template context for a step.
@@ -123,6 +162,7 @@ class SkillGenerator:
             step: Step to generate context for
             step_index: Index of step in job (0-based)
             adapter: Agent adapter for platform-specific hook name mapping
+            project_root: Optional project root for loading doc specs
 
         Returns:
             Template context dictionary
@@ -178,6 +218,29 @@ class SkillGenerator:
             adapter.get_platform_hook_name(SkillLifecycleHook.AFTER_AGENT) or "Stop", []
         )
 
+        # Build rich outputs context with doc spec information
+        outputs_context = []
+        for output in step.outputs:
+            output_ctx: dict[str, Any] = {
+                "file": output.file,
+                "has_doc_spec": output.has_doc_spec(),
+            }
+            if output.has_doc_spec() and output.doc_spec and project_root:
+                doc_spec = self._load_doc_spec(project_root, output.doc_spec)
+                if doc_spec:
+                    output_ctx["doc_spec"] = {
+                        "path": output.doc_spec,
+                        "name": doc_spec.name,
+                        "description": doc_spec.description,
+                        "target_audience": doc_spec.target_audience,
+                        "quality_criteria": [
+                            {"name": c.name, "description": c.description}
+                            for c in doc_spec.quality_criteria
+                        ],
+                        "example_document": doc_spec.example_document,
+                    }
+            outputs_context.append(output_ctx)
+
         return {
             "job_name": job.name,
             "job_version": job.version,
@@ -192,7 +255,7 @@ class SkillGenerator:
             "instructions_content": instructions_content,
             "user_inputs": user_inputs,
             "file_inputs": file_inputs,
-            "outputs": step.outputs,
+            "outputs": outputs_context,
             "dependencies": step.dependencies,
             "next_step": next_step,
             "prev_step": prev_step,
@@ -315,6 +378,7 @@ class SkillGenerator:
         step: Step,
         adapter: AgentAdapter,
         output_dir: Path | str,
+        project_root: Path | str | None = None,
     ) -> Path:
         """
         Generate skill file for a single step.
@@ -324,6 +388,7 @@ class SkillGenerator:
             step: Step to generate skill for
             adapter: Agent adapter for the target platform
             output_dir: Directory to write skill file to
+            project_root: Optional project root for loading doc specs (defaults to output_dir)
 
         Returns:
             Path to generated skill file
@@ -332,6 +397,7 @@ class SkillGenerator:
             GeneratorError: If generation fails
         """
         output_dir = Path(output_dir)
+        project_root_path = Path(project_root) if project_root else output_dir
 
         # Create skills subdirectory if needed
         skills_dir = output_dir / adapter.skills_dir
@@ -344,7 +410,7 @@ class SkillGenerator:
             raise GeneratorError(f"Step '{step.id}' not found in job '{job.name}'") from e
 
         # Build context (include exposed for template user-invocable setting)
-        context = self._build_step_context(job, step, step_index, adapter)
+        context = self._build_step_context(job, step, step_index, adapter, project_root_path)
         context["exposed"] = step.exposed
 
         # Load and render template
@@ -378,6 +444,7 @@ class SkillGenerator:
         job: JobDefinition,
         adapter: AgentAdapter,
         output_dir: Path | str,
+        project_root: Path | str | None = None,
     ) -> list[Path]:
         """
         Generate all skill files for a job: meta-skill and step skills.
@@ -386,6 +453,7 @@ class SkillGenerator:
             job: Job definition
             adapter: Agent adapter for the target platform
             output_dir: Directory to write skill files to
+            project_root: Optional project root for loading doc specs (defaults to output_dir)
 
         Returns:
             List of paths to generated skill files (meta-skill first, then steps)
@@ -394,6 +462,7 @@ class SkillGenerator:
             GeneratorError: If generation fails
         """
         skill_paths = []
+        project_root_path = Path(project_root) if project_root else Path(output_dir)
 
         # Generate meta-skill first (job-level entry point)
         meta_skill_path = self.generate_meta_skill(job, adapter, output_dir)
@@ -401,7 +470,7 @@ class SkillGenerator:
 
         # Generate step skills
         for step in job.steps:
-            skill_path = self.generate_step_skill(job, step, adapter, output_dir)
+            skill_path = self.generate_step_skill(job, step, adapter, output_dir, project_root_path)
             skill_paths.append(skill_path)
 
         return skill_paths

@@ -149,11 +149,44 @@ Use branch format: `deepwork/{{ job_name }}-[instance]-YYYYMMDD`
 {% if outputs %}
 **Required outputs**:
 {% for output in outputs %}
-- `{{ output }}`{% if output.endswith('/') %} (directory){% endif %}
+- `{{ output.file }}`{% if output.file.endswith('/') %} (directory){% endif %}
+
+{% if output.has_doc_spec and output.doc_spec %}
+  **Doc Spec**: {{ output.doc_spec.name }}
+  > {{ output.doc_spec.description }}
+  **Definition**: `{{ output.doc_spec.path }}`
+{% if output.doc_spec.target_audience %}
+  **Target Audience**: {{ output.doc_spec.target_audience }}
+{% endif %}
+{% if output.doc_spec.quality_criteria %}
+  **Quality Criteria**:
+{% for criterion in output.doc_spec.quality_criteria %}
+  {{ loop.index }}. **{{ criterion.name }}**: {{ criterion.description }}
+{% endfor %}
+{% endif %}
+{% if output.doc_spec.example_document %}
+
+  <details>
+  <summary>Example Document Structure</summary>
+
+  ```markdown
+  {{ output.doc_spec.example_document | indent(2) }}
+  ```
+
+  </details>
+{% endif %}
+{% endif %}
 {% endfor %}
 {% else %}
 No specific file outputs required.
 {% endif %}
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 {% if quality_criteria or stop_hooks %}
 ## Quality Validation
@@ -180,12 +213,12 @@ Stop hooks will automatically validate your work. The loop continues until all c
 
 {% if is_standalone %}
 1. Verify outputs are created
-2. Inform user: "{{ step_id }} complete{% if outputs %}, outputs: {{ outputs | join(', ') }}{% endif %}"
+2. Inform user: "{{ step_id }} complete{% if outputs %}, outputs: {{ outputs | map(attribute='file') | join(', ') }}{% endif %}"
 
 This standalone skill can be re-run anytime.
 {% else %}
 1. Verify outputs are created
-2. Inform user: "Step {{ step_number }}/{{ total_steps }} complete{% if outputs %}, outputs: {{ outputs | join(', ') }}{% endif %}"
+2. Inform user: "Step {{ step_number }}/{{ total_steps }} complete{% if outputs %}, outputs: {{ outputs | map(attribute='file') | join(', ') }}{% endif %}"
 {% if next_step %}
 3. **Continue workflow**: Use Skill tool to invoke `/{{ job_name }}.{{ next_step }}`
 {% else %}

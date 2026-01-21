@@ -79,14 +79,32 @@ class TestInstallCommand:
         assert result.exit_code != 0
         assert "Not a Git repository" in result.output
 
-    def test_install_fails_without_platform(self, mock_git_repo: Path) -> None:
-        """Test that install fails when no platform is detected."""
+    def test_install_defaults_to_claude_when_no_platform(self, mock_git_repo: Path) -> None:
+        """Test that install defaults to Claude Code when no platform is detected."""
         runner = CliRunner()
 
-        result = runner.invoke(cli, ["install", "--path", str(mock_git_repo)])
+        result = runner.invoke(
+            cli, ["install", "--path", str(mock_git_repo)], catch_exceptions=False
+        )
 
-        assert result.exit_code != 0
-        assert "No AI platform detected" in result.output
+        assert result.exit_code == 0
+        assert "No AI platform detected, defaulting to Claude Code" in result.output
+        assert "Created .claude/" in result.output
+        assert "DeepWork installed successfully for Claude Code" in result.output
+
+        # Verify .claude directory was created
+        claude_dir = mock_git_repo / ".claude"
+        assert claude_dir.exists()
+
+        # Verify config.yml has Claude
+        config_file = mock_git_repo / ".deepwork" / "config.yml"
+        config = load_yaml(config_file)
+        assert config is not None
+        assert "claude" in config["platforms"]
+
+        # Verify skills were created for Claude
+        skills_dir = claude_dir / "skills"
+        assert (skills_dir / "deepwork_jobs" / "SKILL.md").exists()
 
     def test_install_with_multiple_platforms_auto_detect(
         self, mock_multi_platform_project: Path
