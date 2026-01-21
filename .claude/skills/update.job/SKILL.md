@@ -1,6 +1,6 @@
 ---
 name: update.job
-description: "Edit standard job source files and sync to installed locations"
+description: "Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions."
 user-invocable: false
 hooks:
   Stop:
@@ -20,12 +20,12 @@ hooks:
 
 **Standalone skill** - can be run anytime
 
-> Update standard jobs in src/ and sync to installed locations
+> Updates DeepWork standard jobs in src/ and syncs to installed locations. Use when modifying deepwork_jobs or deepwork_rules.
 
 
 ## Instructions
 
-**Goal**: Edit standard job source files and sync to installed locations
+**Goal**: Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions.
 
 # Update Standard Job
 
@@ -136,6 +136,13 @@ Use branch format: `deepwork/update-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `files_synced`
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## Quality Validation
 

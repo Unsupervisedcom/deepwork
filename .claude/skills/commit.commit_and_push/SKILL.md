@@ -1,6 +1,6 @@
 ---
 name: commit.commit_and_push
-description: "Verify changed files, commit, and push to remote"
+description: "Verifies changed files, creates commit, and pushes to remote. Use after linting passes to finalize changes."
 user-invocable: false
 hooks:
   Stop:
@@ -20,7 +20,7 @@ hooks:
 
 **Step 3/3** in **commit** workflow
 
-> Run tests, lint, and commit code changes
+> Runs tests, lints code, and commits changes. Use when ready to commit work with quality checks.
 
 ## Prerequisites (Verify First)
 
@@ -29,7 +29,7 @@ Before proceeding, confirm these steps are complete:
 
 ## Instructions
 
-**Goal**: Verify changed files, commit, and push to remote
+**Goal**: Verifies changed files, creates commit, and pushes to remote. Use after linting passes to finalize changes.
 
 # Commit and Push
 
@@ -135,6 +135,13 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `changes_committed`
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## Quality Validation
 

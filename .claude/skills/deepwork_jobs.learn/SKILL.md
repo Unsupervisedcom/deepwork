@@ -1,6 +1,6 @@
 ---
 name: deepwork_jobs.learn
-description: "Reflect on conversation to improve job instructions and capture learnings"
+description: "Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it."
 hooks:
   Stop:
     - hooks:
@@ -39,12 +39,12 @@ hooks:
 
 **Standalone skill** - can be run anytime
 
-> DeepWork job management commands
+> Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs.
 
 
 ## Instructions
 
-**Goal**: Reflect on conversation to improve job instructions and capture learnings
+**Goal**: Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
 
 # Learn from Job Execution
 
@@ -435,6 +435,13 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `AGENTS.md`
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## Quality Validation
 

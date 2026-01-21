@@ -1,6 +1,6 @@
 ---
 name: deepwork_jobs.define
-description: "Create the job.yml specification file by understanding workflow requirements"
+description: "Creates a job.yml specification by gathering workflow requirements through structured questions. Use when starting a new multi-step workflow."
 user-invocable: false
 hooks:
   Stop:
@@ -40,12 +40,12 @@ hooks:
 
 **Step 1/4** in **deepwork_jobs** workflow
 
-> DeepWork job management commands
+> Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs.
 
 
 ## Instructions
 
-**Goal**: Create the job.yml specification file by understanding workflow requirements
+**Goal**: Creates a job.yml specification by gathering workflow requirements through structured questions. Use when starting a new multi-step workflow.
 
 # Define Job Specification
 
@@ -658,6 +658,13 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
   ```
 
   </details>
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## Quality Validation
 
