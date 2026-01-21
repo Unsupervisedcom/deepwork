@@ -4,7 +4,6 @@ trigger: pyproject.toml
 action:
   command: uv sync
 compare_to: prompt
-prompt_runtime: send_to_stopping_agent
 ---
 
 # UV Lock Sync

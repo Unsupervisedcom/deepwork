@@ -5,7 +5,6 @@ action:
   command: "false"
   run_for: each_match
 compare_to: prompt
-prompt_runtime: send_to_stopping_agent
 ---
 
 # Manual Test: Infinite Block Command (Promise Required)

@@ -5,7 +5,6 @@ action:
   command: echo "$(date '+%Y-%m-%d %H:%M:%S') - Command triggered by edit to {file}" >> manual_tests/test_command_action/test_command_action_log.txt
   run_for: each_match
 compare_to: prompt
-prompt_runtime: send_to_stopping_agent
 ---
 
 # Manual Test: Command Action
