@@ -626,7 +626,12 @@ def parse_claude_response(output: str) -> tuple[str, str]:
     return "block", "Claude did not return a structured response"
 
 
-def invoke_claude_headless(prompt: str, rule_name: str) -> tuple[str, str]:
+def is_claude_code_remote() -> bool:
+    """Check if running in Claude Code Web/Remote environment."""
+    return os.environ.get("CLAUDE_CODE_REMOTE", "").lower() == "true"
+
+
+def invoke_claude_headless(prompt: str, rule_name: str) -> tuple[str, str, str | None]:
     """
     Invoke Claude Code in headless mode with the given prompt.
 
@@ -635,8 +640,20 @@ def invoke_claude_headless(prompt: str, rule_name: str) -> tuple[str, str]:
         rule_name: Name of the rule being evaluated (for error messages)
 
     Returns:
-        Tuple of (decision, reason) where decision is "block" or "allow"
+        Tuple of (decision, reason, fallback_prompt) where:
+        - decision is "block" or "allow"
+        - reason is the explanation
+        - fallback_prompt is the prompt to show to agent if Claude can't run (or None)
     """
+    # Check if we're in Claude Code Web/Remote environment
+    if is_claude_code_remote():
+        fallback_msg = (
+            "**Cannot run `claude` command in Claude Code Web environment.**\n\n"
+            "Please evaluate the following rule in a sub-agent:\n\n"
+            f"---\n{prompt}\n---"
+        )
+        return "block", f"Rule '{rule_name}' requires manual evaluation", fallback_msg
+
     try:
         # Run claude in headless mode with --print flag to get output
         result = subprocess.run(
@@ -649,17 +666,22 @@ def invoke_claude_headless(prompt: str, rule_name: str) -> tuple[str, str]:
 
         if result.returncode != 0:
             error_msg = result.stderr.strip() or "Unknown error"
-            return "block", f"Claude execution failed: {error_msg}"
+            return "block", f"Claude execution failed: {error_msg}", None
 
         output = result.stdout.strip()
-        return parse_claude_response(output)
+        decision, reason = parse_claude_response(output)
+        return decision, reason, None
 
     except subprocess.TimeoutExpired:
-        return "block", f"Claude timed out while processing rule '{rule_name}'"
+        return "block", f"Claude timed out while processing rule '{rule_name}'", None
     except FileNotFoundError:
-        return "block", "Claude CLI not found. Please ensure 'claude' is installed and in PATH"
+        return (
+            "block",
+            "Claude CLI not found. Please ensure 'claude' is installed and in PATH",
+            None,
+        )
     except Exception as e:
-        return "block", f"Error invoking Claude: {str(e)}"
+        return "block", f"Error invoking Claude: {str(e)}", None
 
 
 def rules_check_hook(hook_input: HookInput) -> HookOutput:
@@ -805,6 +827,7 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
 
     # Process Claude runtime rules
     claude_errors: list[str] = []
+    claude_fallback_prompts: list[str] = []
     for result in claude_prompt_results:
         rule = result.rule
 
@@ -818,9 +841,13 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
 
         # Invoke Claude in headless mode
         prompt = format_claude_prompt(result, hook_input.transcript_path)
-        decision, reason = invoke_claude_headless(prompt, rule.name)
+        decision, reason, fallback_prompt = invoke_claude_headless(prompt, rule.name)
 
-        if decision == "allow":
+        if fallback_prompt:
+            # Claude can't run in this environment, return prompt to agent
+            claude_fallback_prompts.append(f"## {rule.name}\n\n{fallback_prompt}\n")
+            # Don't update queue status - let agent handle it
+        elif decision == "allow":
             # Claude resolved the issue
             queue.update_status(
                 trigger_hash,
@@ -859,6 +886,12 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
         messages.append("## Claude Rule Errors\n")
         messages.append("The following rules were processed by Claude but require attention.\n")
         messages.extend(claude_errors)
+        messages.append("")
+
+    # Add Claude fallback prompts (when Claude can't run in this environment)
+    if claude_fallback_prompts:
+        messages.append("## Rules Requiring Sub-Agent Evaluation\n")
+        messages.extend(claude_fallback_prompts)
         messages.append("")
 
     # Add prompt rules if any (send_to_stopping_agent runtime)

@@ -1,5 +1,8 @@
 """Tests for rules_check hook module."""
 
+import os
+from unittest.mock import patch
+
 from deepwork.core.rules_parser import (
     DetectionMode,
     PairConfig,
@@ -10,6 +13,8 @@ from deepwork.core.rules_parser import (
 from deepwork.hooks.rules_check import (
     extract_promise_tags,
     format_claude_prompt,
+    invoke_claude_headless,
+    is_claude_code_remote,
     parse_claude_response,
 )
 
@@ -412,3 +417,66 @@ Let me know if you need any clarification.
 
         assert decision == "allow"
         assert "passes security review" in reason
+
+
+class TestIsClaudeCodeRemote:
+    """Tests for is_claude_code_remote function."""
+
+    def test_returns_true_when_env_var_is_true(self) -> None:
+        """Test returns True when CLAUDE_CODE_REMOTE=true."""
+        with patch.dict(os.environ, {"CLAUDE_CODE_REMOTE": "true"}):
+            assert is_claude_code_remote() is True
+
+    def test_returns_true_when_env_var_is_TRUE(self) -> None:
+        """Test returns True when CLAUDE_CODE_REMOTE=TRUE (case insensitive)."""
+        with patch.dict(os.environ, {"CLAUDE_CODE_REMOTE": "TRUE"}):
+            assert is_claude_code_remote() is True
+
+    def test_returns_false_when_env_var_is_false(self) -> None:
+        """Test returns False when CLAUDE_CODE_REMOTE=false."""
+        with patch.dict(os.environ, {"CLAUDE_CODE_REMOTE": "false"}):
+            assert is_claude_code_remote() is False
+
+    def test_returns_false_when_env_var_not_set(self) -> None:
+        """Test returns False when CLAUDE_CODE_REMOTE is not set."""
+        env = os.environ.copy()
+        env.pop("CLAUDE_CODE_REMOTE", None)
+        with patch.dict(os.environ, env, clear=True):
+            assert is_claude_code_remote() is False
+
+    def test_returns_false_when_env_var_is_empty(self) -> None:
+        """Test returns False when CLAUDE_CODE_REMOTE is empty."""
+        with patch.dict(os.environ, {"CLAUDE_CODE_REMOTE": ""}):
+            assert is_claude_code_remote() is False
+
+
+class TestInvokeClaudeHeadlessFallback:
+    """Tests for invoke_claude_headless fallback behavior in remote environments."""
+
+    def test_returns_fallback_prompt_in_remote_environment(self) -> None:
+        """Test returns fallback prompt when in Claude Code Remote environment."""
+        with patch.dict(os.environ, {"CLAUDE_CODE_REMOTE": "true"}):
+            decision, reason, fallback = invoke_claude_headless(
+                "Test prompt content", "Test Rule"
+            )
+
+            assert decision == "block"
+            assert "manual evaluation" in reason
+            assert fallback is not None
+            assert "Cannot run `claude` command" in fallback
+            assert "Claude Code Web" in fallback
+            assert "Test prompt content" in fallback
+
+    def test_no_fallback_in_local_environment(self) -> None:
+        """Test no fallback when not in remote environment (but may fail if claude not installed)."""
+        with patch.dict(os.environ, {"CLAUDE_CODE_REMOTE": "false"}):
+            # Mock subprocess to simulate claude not found
+            with patch("deepwork.hooks.rules_check.subprocess.run") as mock_run:
+                mock_run.side_effect = FileNotFoundError()
+                decision, reason, fallback = invoke_claude_headless(
+                    "Test prompt", "Test Rule"
+                )
+
+                assert decision == "block"
+                assert "not found" in reason
+                assert fallback is None  # No fallback, actual error
