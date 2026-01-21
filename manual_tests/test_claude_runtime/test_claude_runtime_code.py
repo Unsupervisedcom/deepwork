@@ -7,9 +7,11 @@
 # 3. The hook parses Claude's response (block/allow)
 #
 # To test:
-# 1. Edit this file (e.g., add a comment or change the function)
-# 2. Run the rules_check hook
-# 3. Verify Claude is invoked and returns a structured response
+# 1. Introduce a BLATANT ERROR in the code below (e.g., undefined variable,
+#    obvious bug like dividing by zero, or completely wrong logic)
+# 2. The Claude runtime will invoke Claude Code in headless mode
+# 3. Claude should detect the error and return a "block" response
+# 4. In Claude Code Web environment, you'll see the fallback prompt instead
 
 
 def calculate_sum(numbers: list[int]) -> int:
