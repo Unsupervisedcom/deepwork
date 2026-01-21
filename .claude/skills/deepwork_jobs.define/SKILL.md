@@ -34,6 +34,37 @@ hooks:
 
             If criteria are NOT met OR the promise tag is missing, respond with:
             {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            You must evaluate whether Claude has met all the below quality criteria for the request.
+
+            ## Quality Criteria
+
+            1. **User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?
+            2. **Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?
+            3. **Document Detection**: For document-oriented workflows, did the agent detect patterns and offer doc spec creation?
+            4. **doc spec Created (if applicable)**: If a doc spec was needed, was it created in `.deepwork/doc_specs/[doc_spec_name].md` with proper quality criteria?
+            5. **doc spec References**: Are document outputs properly linked to their doc specs using `{file, doc_spec}` format?
+            6. **Valid Against doc spec**: Does the job.yml conform to the job.yml doc spec quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?
+            7. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
+            8. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
+            9. **Concise Summary**: Is the summary under 200 characters and descriptive?
+            10. **Rich Description**: Does the description provide enough context for future refinement?
+            11. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
+            12. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
+
+            ## Instructions
+
+            Review the conversation and determine if ALL quality criteria above have been satisfied.
+            Look for evidence that each criterion has been addressed.
+
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
+            all criteria appear to be met, respond with: {"ok": true}
+
+            If criteria are NOT met OR the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
 ---
 
 # deepwork_jobs.define

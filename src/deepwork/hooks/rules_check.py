@@ -645,6 +645,8 @@ def invoke_claude_headless(prompt: str, rule_name: str) -> tuple[str, str, str |
         - reason is the explanation
         - fallback_prompt is the prompt to show to agent if Claude can't run (or None)
     """
+    import tempfile
+
     # Check if we're in Claude Code Web/Remote environment
     if is_claude_code_remote():
         fallback_msg = (
@@ -654,26 +656,52 @@ def invoke_claude_headless(prompt: str, rule_name: str) -> tuple[str, str, str |
         )
         return "block", f"Rule '{rule_name}' requires manual evaluation", fallback_msg
 
+    output_path = None
     try:
-        # Run claude in headless mode with --print flag to get output
-        result = subprocess.run(
-            ["claude", "--print", "--dangerously-skip-permissions", "-p", prompt],
-            capture_output=True,
-            text=True,
-            timeout=300,  # 5 minute timeout
-            cwd=Path.cwd(),
-        )
+        # Create a temporary file for capturing output
+        # IMPORTANT: We redirect stdout/stderr to a file instead of using pipes
+        # (capture_output=True). This is critical because when Claude runs as a
+        # subprocess of another Claude instance, using pipes holds the parent's
+        # stdout file descriptor open. This blocks the snapshotter in the parent
+        # Claude, causing a 60-second timeout delay when the subprocess runs.
+        # By writing to a file and reading it after, we avoid this blocking issue.
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix="_claude_output.log",
+            delete=False,
+            prefix="deepwork_",
+        ) as tmp:
+            output_path = tmp.name
 
-        if result.returncode != 0:
-            error_msg = result.stderr.strip() or "Unknown error"
+        # Run claude in headless mode with output redirected to file
+        with open(output_path, "w") as outfile:
+            process = subprocess.Popen(
+                ["claude", "--print", "--dangerously-skip-permissions", "-p", prompt],
+                stdout=outfile,
+                stderr=subprocess.STDOUT,  # Merge stderr into the same file
+                close_fds=True,  # Close inherited file descriptors to prevent blocking
+                cwd=Path.cwd(),
+            )
+
+            try:
+                # Wait for completion with timeout
+                process.wait(timeout=300)  # 5 minute timeout
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+                return "block", f"Claude timed out while processing rule '{rule_name}'", None
+
+        # Read the output from the file
+        with open(output_path, "r") as f:
+            output = f.read().strip()
+
+        if process.returncode != 0:
+            error_msg = output or "Unknown error"
             return "block", f"Claude execution failed: {error_msg}", None
 
-        output = result.stdout.strip()
         decision, reason = parse_claude_response(output)
         return decision, reason, None
 
-    except subprocess.TimeoutExpired:
-        return "block", f"Claude timed out while processing rule '{rule_name}'", None
     except FileNotFoundError:
         return (
             "block",
@@ -682,6 +710,13 @@ def invoke_claude_headless(prompt: str, rule_name: str) -> tuple[str, str, str |
         )
     except Exception as e:
         return "block", f"Error invoking Claude: {str(e)}", None
+    finally:
+        # Clean up the temporary file
+        if output_path:
+            try:
+                Path(output_path).unlink(missing_ok=True)
+            except Exception:
+                pass  # Ignore cleanup errors
 
 
 def rules_check_hook(hook_input: HookInput) -> HookOutput:
@@ -764,13 +799,17 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
             ):
                 continue
 
-            # For PROMPT rules, also skip if already QUEUED (already shown to agent).
-            # This prevents infinite loops when transcript is unavailable or promise
-            # tags haven't been written yet. The agent has already seen this rule.
+            # For PROMPT rules with send_to_stopping_agent runtime, also skip if
+            # already QUEUED (already shown to agent). This prevents infinite loops
+            # when transcript is unavailable or promise tags haven't been written yet.
+            # The agent has already seen this rule.
+            # Note: Claude runtime rules should NOT be skipped here because they're
+            # executed by a separate Claude process, not shown to the stopping agent.
             if (
                 existing
                 and existing.status == QueueEntryStatus.QUEUED
                 and rule.action_type == ActionType.PROMPT
+                and rule.prompt_runtime == PromptRuntime.SEND_TO_STOPPING_AGENT
             ):
                 continue
 

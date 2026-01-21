@@ -14,6 +14,17 @@ hooks:
             4. Test output shows passing status
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            Verify the tests are passing:
+            1. Latest code was pulled from the branch
+            2. All tests completed successfully
+            3. No test failures or errors remain
+            4. Test output shows passing status
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
 ---
 
 # commit.test

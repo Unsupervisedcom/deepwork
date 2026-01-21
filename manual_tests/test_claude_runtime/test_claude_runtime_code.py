@@ -26,4 +26,4 @@ def calculate_average(numbers: list[int]) -> float:
     """Calculate the average of a list of numbers."""
     if not numbers:
         return 0.0
-    return calculate_sum(numbers) / len(numbers)
+    return calculate_sum(numbers) / 0  # BUG: divide by zero!

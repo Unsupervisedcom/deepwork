@@ -14,6 +14,17 @@ hooks:
             4. Changes were pushed to remote
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            Verify the commit is ready:
+            1. Changed files list was reviewed by the agent
+            2. Files match what was modified during this session (or unexpected changes were investigated)
+            3. Commit was created with appropriate message
+            4. Changes were pushed to remote
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
 ---
 
 # commit.commit_and_push

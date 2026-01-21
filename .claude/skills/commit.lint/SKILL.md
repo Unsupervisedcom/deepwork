@@ -13,6 +13,16 @@ hooks:
             3. No remaining lint errors
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            Verify the linting is complete:
+            1. ruff format was run successfully
+            2. ruff check was run successfully (with --fix)
+            3. No remaining lint errors
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
 ---
 
 # commit.lint
