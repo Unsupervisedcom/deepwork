@@ -12,6 +12,24 @@ This approach works because:
 2. The Stop hook evaluates rules when the sub-agent completes
 3. Using a fast model keeps test iterations quick and cheap
 
+### Parallel vs Serial Execution
+
+**Important:** All sub-agents share the same git working directory. This affects which tests can run in parallel.
+
+**"Should NOT fire" tests CAN run in parallel:**
+- These tests edit both trigger AND safety files (completing the rule requirements)
+- Even though `git status` shows changes from all sub-agents, each rule only matches its own scoped file patterns
+- Since the safety file is edited, the rule won't fire regardless of other changes
+- No cross-contamination possible
+
+**"Should fire" tests MUST run serially with git reverts between each:**
+- These tests deliberately edit only the trigger file (not the safety)
+- If multiple run in parallel, sub-agent A's hook will see changes from sub-agent B
+- This causes cross-contamination: A gets blocked by rules triggered by B's changes
+- Run one at a time, reverting between each test
+
+### Verification Commands
+
 After each sub-agent returns, run the hook to verify:
 ```bash
 echo '{}' | python -m deepwork.hooks.rules_check
