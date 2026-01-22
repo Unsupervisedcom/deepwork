@@ -57,12 +57,13 @@ Command rules with FAILED status were not skipped, causing them to re-run on eve
 
 ### The Fix
 
-Added a check for COMMAND rules with FAILED status, similar to the existing PROMPT/QUEUED check:
+Two-part fix in `rules_check.py`:
+
+1. **Prevent re-running**: Skip COMMAND rules with FAILED status to prevent infinite loops:
 
 ```python
-# For COMMAND rules, also skip if already FAILED (already shown error).
-# This prevents infinite loops when a command always fails.
-# The agent needs to either fix the underlying issue or provide a promise.
+# For COMMAND rules with FAILED status, don't re-run the command.
+# The agent has already seen the error.
 if (
     existing
     and existing.status == QueueEntryStatus.FAILED
@@ -71,10 +72,32 @@ if (
     continue
 ```
 
+2. **Honor promises**: After processing results, check all FAILED queue entries and update to SKIPPED if the agent provided a promise:
+
+```python
+# Handle FAILED queue entries that have been promised
+if promised_rules:
+    promised_lower = {name.lower() for name in promised_rules}
+    for entry in queue.get_all_entries():
+        if (
+            entry.status == QueueEntryStatus.FAILED
+            and entry.rule_name.lower() in promised_lower
+        ):
+            queue.update_status(
+                entry.trigger_hash,
+                QueueEntryStatus.SKIPPED,
+                ActionResult(
+                    type="command",
+                    output="Acknowledged via promise tag",
+                    exit_code=None,
+                ),
+            )
+```
+
 This ensures that:
 - A failing command only runs once per trigger
 - The agent sees the error message once
-- The agent must provide a `<promise>Rule Name</promise>` tag to proceed
+- When the agent provides a `<promise>Rule Name</promise>` tag, the queue entry is properly updated to SKIPPED
 - No infinite loop occurs
 
 ### Test Cases Affected
@@ -99,31 +122,4 @@ This ensures that:
 
 ---
 
-## Template for Future Entries
-
-When debugging hooks issues, document findings using this structure:
-
-```markdown
-## YYYY-MM-DD: Brief Issue Title
-
-### Symptoms
-What was observed? What tests were failing?
-
-### Investigation
-What was examined? What code paths were traced?
-
-### Root Cause
-What was the actual bug?
-
-### The Fix
-What changes were made?
-
-### Test Cases Affected
-Which tests verify this fix?
-
-### Key Learnings
-What general lessons apply to future development?
-
-### Related Files
-Which files are involved?
-```
+*For the template and guidelines on documenting debugging sessions, see [AGENTS.md](./AGENTS.md).*
