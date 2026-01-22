@@ -59,12 +59,10 @@ steps:
     instructions_file: steps/reset.md
     inputs: []
     outputs:
-      - clean_environment  # implicit state: environment is clean and ready for testing
+      - clean_environment
     dependencies: []
     quality_criteria:
-      - "**Changes Reverted**: Did `git reset HEAD manual_tests/ && git checkout -- manual_tests/` run successfully?"
-      - "**Created Files Removed**: Was `rm -f manual_tests/test_created_mode/new_config.yml` run to remove any created test files?"
-      - "**Queue Cleared**: Was `deepwork rules clear_queue` run to clear the rules queue?"
+      - "**Environment Clean**: Git changes reverted, created files removed, and rules queue cleared"
 
   - id: run_not_fire_tests
     name: "Run Should-NOT-Fire Tests"
@@ -74,7 +72,7 @@ steps:
       - file: clean_environment
         from_step: reset
     outputs:
-      - not_fire_results  # implicit state: all "should NOT fire" tests passed
+      - not_fire_results
     dependencies:
       - reset
     quality_criteria:
@@ -94,7 +92,7 @@ steps:
       - file: not_fire_results
         from_step: run_not_fire_tests
     outputs:
-      - fire_results  # implicit state: all "should fire" tests passed
+      - fire_results
     dependencies:
       - run_not_fire_tests
     quality_criteria:
@@ -114,15 +112,11 @@ steps:
       - file: fire_results
         from_step: run_fire_tests
     outputs:
-      - infinite_block_results  # implicit state: all infinite block tests passed
+      - infinite_block_results
     dependencies:
       - run_fire_tests
     quality_criteria:
-      - "**Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly."
-      - "**Sub-Agent Config**: Did all sub-agents use `model: \"haiku\"` and `max_turns: 5`?"
-      - "**Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel)?"
-      - "**Promise Tests Passed**: Did tests with promise tags complete WITHOUT blocking?"
-      - "**Non-Promise Tests Blocked**: Did tests without promise tags correctly trigger blocking behavior?"
-      - "**Reset Between Tests**: Was the reset step called internally after each test?"
-      - "**Early Termination**: If 2 tests failed, did testing halt immediately with results reported?"
-      - "**Results Recorded**: Did the main agent track pass/fail status for each test case?"
+      - "**Sub-Agents Used**: Each test run via Task tool with `model: \"haiku\"` and `max_turns: 5`"
+      - "**Serial Execution**: Sub-agents launched ONE AT A TIME with reset between each"
+      - "**Promise Tests**: Completed WITHOUT blocking (promise bypassed the rule)"
+      - "**No-Promise Tests**: Hook fired AND sub-agent returned in reasonable time (not hung)"

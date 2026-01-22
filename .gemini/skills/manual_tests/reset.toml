@@ -115,9 +115,7 @@ Use branch format: `deepwork/manual_tests-[instance]-YYYYMMDD`
 **NOTE**: Gemini CLI does not support automated validation. Manually verify criteria before completing.
 
 **Criteria (all must be satisfied)**:
-1. **Changes Reverted**: Did `git reset HEAD manual_tests/ && git checkout -- manual_tests/` run successfully?
-2. **Created Files Removed**: Was `rm -f manual_tests/test_created_mode/new_config.yml` run to remove any created test files?
-3. **Queue Cleared**: Was `deepwork rules clear_queue` run to clear the rules queue?
+1. **Environment Clean**: Git changes reverted, created files removed, and rules queue cleared
 ## On Completion
 
 1. Verify outputs are created

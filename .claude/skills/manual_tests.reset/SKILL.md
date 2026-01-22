@@ -11,9 +11,7 @@ hooks:
 
             ## Quality Criteria
 
-            1. **Changes Reverted**: Did `git reset HEAD manual_tests/ && git checkout -- manual_tests/` run successfully?
-            2. **Created Files Removed**: Was `rm -f manual_tests/test_created_mode/new_config.yml` run to remove any created test files?
-            3. **Queue Cleared**: Was `deepwork rules clear_queue` run to clear the rules queue?
+            1. **Environment Clean**: Git changes reverted, created files removed, and rules queue cleared
 
             ## Instructions
 
@@ -33,9 +31,7 @@ hooks:
 
             ## Quality Criteria
 
-            1. **Changes Reverted**: Did `git reset HEAD manual_tests/ && git checkout -- manual_tests/` run successfully?
-            2. **Created Files Removed**: Was `rm -f manual_tests/test_created_mode/new_config.yml` run to remove any created test files?
-            3. **Queue Cleared**: Was `deepwork rules clear_queue` run to clear the rules queue?
+            1. **Environment Clean**: Git changes reverted, created files removed, and rules queue cleared
 
             ## Instructions
 
@@ -164,9 +160,7 @@ Use branch format: `deepwork/manual_tests-[instance]-YYYYMMDD`
 Stop hooks will automatically validate your work. The loop continues until all criteria pass.
 
 **Criteria (all must be satisfied)**:
-1. **Changes Reverted**: Did `git reset HEAD manual_tests/ && git checkout -- manual_tests/` run successfully?
-2. **Created Files Removed**: Was `rm -f manual_tests/test_created_mode/new_config.yml` run to remove any created test files?
-3. **Queue Cleared**: Was `deepwork rules clear_queue` run to clear the rules queue?
+1. **Environment Clean**: Git changes reverted, created files removed, and rules queue cleared
 
 
 **To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.

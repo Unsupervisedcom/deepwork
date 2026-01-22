@@ -222,14 +222,10 @@ Use branch format: `deepwork/manual_tests-[instance]-YYYYMMDD`
 **NOTE**: Gemini CLI does not support automated validation. Manually verify criteria before completing.
 
 **Criteria (all must be satisfied)**:
-1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
-2. **Sub-Agent Config**: Did all sub-agents use `model: "haiku"` and `max_turns: 5`?
-3. **Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel)?
-4. **Promise Tests Passed**: Did tests with promise tags complete WITHOUT blocking?
-5. **Non-Promise Tests Blocked**: Did tests without promise tags correctly trigger blocking behavior?
-6. **Reset Between Tests**: Was the reset step called internally after each test?
-7. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
-8. **Results Recorded**: Did the main agent track pass/fail status for each test case?
+1. **Sub-Agents Used**: Each test run via Task tool with `model: "haiku"` and `max_turns: 5`
+2. **Serial Execution**: Sub-agents launched ONE AT A TIME with reset between each
+3. **Promise Tests**: Completed WITHOUT blocking (promise bypassed the rule)
+4. **No-Promise Tests**: Hook fired AND sub-agent returned in reasonable time (not hung)
 ## On Completion
 
 1. Verify outputs are created
