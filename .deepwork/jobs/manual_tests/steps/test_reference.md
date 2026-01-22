@@ -9,15 +9,38 @@ This document contains the test matrix and reference information for all manual 
 This approach works because:
 1. Sub-agents run in isolated contexts where file changes can be detected
 2. The Stop hook **automatically** evaluates rules when the sub-agent completes
-3. The main agent can **observe** whether hooks fired - it must NOT manually run the rules_check command
+3. Sub-agents report via **magic strings** that the main agent checks to determine pass/fail
 4. Using a fast model (e.g., haiku) keeps test iterations quick and cheap
+
+## Magic String Detection
+
+Sub-agents are instructed to output specific strings:
+- `TASK_START: <task name>` - ALWAYS output at the beginning of the response
+- `HOOK_FIRED: <rule name>` - Output if a DeepWork hook blocks them
+
+**How detection works:**
+- Sub-agent ALWAYS outputs `TASK_START:` at the beginning of their response
+- If a hook fires and blocks them, they get another turn and can output `HOOK_FIRED:`
+- Main agent checks:
+  - `TASK_START:` present + no `HOOK_FIRED:` → hook did NOT fire
+  - `HOOK_FIRED:` present → hook fired
+  - Neither → timeout (hook is blocking infinitely)
+
+## Timeout Prevention
+
+All sub-agent Task calls MUST include `max_turns: 5` to prevent infinite hangs. This limits sub-agents to ~5 API round-trips.
+
+**Timeout handling:**
+- If a sub-agent hits the max_turns limit in a "should NOT fire" test → Test FAILED (timeout indicates unexpected blocking)
+- If a sub-agent hits the max_turns limit in a "should fire" test → Test PASSED (timeout confirms hook is blocking)
 
 ## Critical Rules
 
 1. **NEVER edit test files from the main agent** - always spawn a sub-agent to make edits
 2. **NEVER manually run the rules_check command** - hooks fire automatically when sub-agents return
-3. **OBSERVE the hook behavior** - when a sub-agent returns, watch for blocking prompts or command outputs
-4. **REVERT between tests** - use `git checkout -- manual_tests/` to reset the test files
+3. **SET max_turns: 5** - on every Task call to prevent infinite hangs
+4. **CHECK the magic strings** - look for `TASK_START:` (always present) and `HOOK_FIRED:` (present if hook fired)
+5. **REVERT between tests** - use `git reset HEAD manual_tests/ && git checkout -- manual_tests/` to reset files
 
 ## Parallel vs Serial Execution
 
@@ -26,6 +49,7 @@ This approach works because:
 - Even though `git status` shows changes from all sub-agents, each rule only matches its own scoped file patterns
 - Since the safety file is edited, the rule won't fire regardless of other changes
 - No cross-contamination possible
+- Check each sub-agent's response: `TASK_START:` present + no `HOOK_FIRED:` = PASS
 - **Revert all changes after these tests complete** before running "should fire" tests
 
 **"Should fire" tests MUST run serially with git reverts between each:**
@@ -33,6 +57,7 @@ This approach works because:
 - If multiple run in parallel, sub-agent A's hook will see changes from sub-agent B
 - This causes cross-contamination: A gets blocked by rules triggered by B's changes
 - Run one at a time, reverting between each test
+- Check each sub-agent's response: `HOOK_FIRED:` present OR timeout = PASS
 
 ## Test Matrix
 
