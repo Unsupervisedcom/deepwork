@@ -34,6 +34,17 @@ The description appears in skill search results and helps users find the right s
 2. **Focus on outcomes** - What the output should achieve, not process steps
 3. **Keep actionable** - Agent should be able to self-evaluate against criteria
 
+## Stop Hook Response Format (Claude Code)
+
+When generating stop hooks with prompt validation, use the correct JSON format:
+
+- **Allow stop (criteria met)**: `{}`
+- **Block and continue (criteria not met)**: `{"decision": "block", "reason": "[explanation]"}`
+
+**Incorrect formats to avoid**:
+- `{"ok": true}` - Not recognized by Claude Code
+- `{"ok": false, "reason": "..."}` - Not recognized as blocking
+
 ## Platform Considerations
 
 - **Claude**: Supports hooks for automated validation; use Skill tool for step invocation

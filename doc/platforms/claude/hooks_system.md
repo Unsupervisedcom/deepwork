@@ -67,8 +67,8 @@ hooks:
         - type: prompt
           prompt: |
             Verify all acceptance criteria are met.
-            If met, respond: {"ok": true}
-            If not met, respond: {"ok": false, "reason": "..."}
+            If met, respond: {}
+            If not met, respond: {"decision": "block", "reason": "..."}
 ```
 
 **Blocking behavior**: Return JSON with `{"decision": "block", "reason": "..."}` or exit code 2 with stderr message.
@@ -133,9 +133,7 @@ All hooks receive JSON via stdin:
 Hooks return JSON via stdout:
 
 ```json
-{
-  "ok": true
-}
+{}
 ```
 
 Or to block:
@@ -191,7 +189,7 @@ hooks:
         - type: prompt
           prompt: |
             Evaluate whether the response meets all criteria.
-            Respond with {"ok": true} or {"ok": false, "reason": "..."}
+            Respond with {} or {"decision": "block", "reason": "..."}
 ```
 
 ## Quality Validation Loop Pattern
@@ -219,9 +217,9 @@ hooks:
             3. Documentation updated
 
             Review the conversation. If ALL criteria met and
-            <promise> tag present, respond: {"ok": true}
+            <promise> tag present, respond: {}
 
-            Otherwise respond: {"ok": false, "reason": "..."}
+            Otherwise respond: {"decision": "block", "reason": "..."}
 ```
 
 ## Comparison with Other Platforms

@@ -5,6 +5,17 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-01-21
+
+### Fixed
+- Stop hook prompt validation now uses correct JSON format recognized by Claude Code
+  - Changed from `{"ok": true}` / `{"ok": false, "reason": "..."}` to `{}` / `{"decision": "block", "reason": "..."}`
+  - This fixes quality criteria validation not properly blocking agent completion
+
+### Changed
+- Updated skill template best practices rule with stop hook response format guidance
+- Updated Claude Code hooks documentation with correct JSON format examples
+
 ## [0.5.0] - 2026-01-20
 
 ### Changed
@@ -164,6 +175,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
+[0.5.1]: https://github.com/anthropics/deepwork/releases/tag/0.5.1
 [0.5.0]: https://github.com/anthropics/deepwork/releases/tag/0.5.0
 [0.4.0]: https://github.com/anthropics/deepwork/releases/tag/0.4.0
 [0.3.1]: https://github.com/anthropics/deepwork/releases/tag/0.3.1
