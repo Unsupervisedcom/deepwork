@@ -120,7 +120,10 @@
       "Skill(manual_tests.run_fire_tests)",
       "Skill(deepwork_rules)",
       "Skill(deepwork_rules.define)",
-      "Bash(deepwork rules clear_queue)"
+      "Bash(deepwork rules clear_queue)",
+      "Bash(rm -rf .deepwork/tmp/rules/queue/*.json)",
+      "Skill(manual_tests.reset)",
+      "Skill(manual_tests.infinite_block_tests)"
     ]
   },
   "hooks": {
