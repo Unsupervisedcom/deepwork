@@ -14,6 +14,8 @@
           # Allow unfree packages to support the Business Source License 1.1
           config.allowUnfree = true;
         };
+        # Local claude-code package for version control (update via nix/claude-code/update.sh)
+        claude-code = pkgs.callPackage ./nix/claude-code/package.nix { };
         # Read version from pyproject.toml to avoid duplication
         pyproject = builtins.fromTOML (builtins.readFile ./pyproject.toml);
         deepwork = pkgs.python311Packages.buildPythonPackage {
@@ -44,8 +46,8 @@
             # System tools
             jq  # For JSON processing
 
-            # CLI tools
-            claude-code  # Claude Code CLI
+            # CLI tools (claude-code is locally built, see nix/claude-code/)
+            claude-code
             gh           # GitHub CLI
           ];
 
@@ -79,6 +81,9 @@
             # Set PYTHONPATH for editable install access to src/
             export PYTHONPATH="$PWD/src:$PYTHONPATH"
 
+            # Add nix/ scripts to PATH (for 'update' command)
+            export PATH="$PWD/nix:$PATH"
+
             # Only show welcome message in interactive shells
             if [[ $- == *i* ]]; then
               echo ""
@@ -94,6 +99,7 @@
               echo "  mypy src/          Type check"
               echo "  claude-code        Claude Code CLI"
               echo "  gh                 GitHub CLI"
+              echo "  update             Update claude-code and flake inputs"
               echo ""
             fi
           '';
