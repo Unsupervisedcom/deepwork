@@ -145,11 +145,13 @@ The Nix environment provides:
 | Tool | Description |
 |------|-------------|
 | `deepwork` | CLI using your local source code (editable install) |
+| `claude` | Claude Code CLI (built from source for version control) |
 | `pytest` | Test runner with all plugins |
 | `ruff` | Fast Python linter and formatter |
 | `mypy` | Static type checker |
 | `uv` | Python package manager |
 | `python` | Python 3.11 interpreter |
+| `update` | Updates claude-code and flake inputs |
 
 #### CI Usage
 
@@ -160,6 +162,25 @@ nix develop --command pytest
 nix develop --command ruff check src/
 nix develop --command mypy src/
 ```
+
+#### Updating Development Dependencies
+
+The Nix environment includes Claude Code built from source to ensure version control (the nixpkgs version can lag behind npm releases). Use the `update` command to keep dependencies current:
+
+```bash
+# In the dev shell - updates claude-code and flake inputs
+update
+```
+
+To manually update Claude Code:
+
+```bash
+./nix/claude-code/update.sh
+```
+
+This fetches the latest version from npm, computes the necessary hashes using `prefetch-npm-deps`, and updates `package.nix` automatically.
+
+A GitHub Action automatically checks for new Claude Code versions daily and creates PRs when updates are available.
 
 ### Option 2: Manual Setup (Without Nix)
 
