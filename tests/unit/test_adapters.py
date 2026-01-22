@@ -203,7 +203,7 @@ class TestClaudeAdapter:
         assert "Read(./.deepwork/tmp/**)" in settings["permissions"]["allow"]
         assert "Edit(./.deepwork/tmp/**)" in settings["permissions"]["allow"]
         assert "Write(./.deepwork/tmp/**)" in settings["permissions"]["allow"]
-        assert "Bash(rm -rf .deepwork/tmp/rules/queue/**)" in settings["permissions"]["allow"]
+        assert "Bash(rm -rf .deepwork/tmp/rules/queue/*.json)" in settings["permissions"]["allow"]
 
     def test_sync_permissions_merges_with_existing(self, temp_dir: Path) -> None:
         """Test sync_permissions merges with existing settings."""
@@ -239,7 +239,7 @@ class TestClaudeAdapter:
         assert allow_list.count("Read(./.deepwork/tmp/**)") == 1
         assert allow_list.count("Edit(./.deepwork/tmp/**)") == 1
         assert allow_list.count("Write(./.deepwork/tmp/**)") == 1
-        assert allow_list.count("Bash(rm -rf .deepwork/tmp/rules/queue/**)") == 1
+        assert allow_list.count("Bash(rm -rf .deepwork/tmp/rules/queue/*.json)") == 1
 
     def test_add_permission_single(self, temp_dir: Path) -> None:
         """Test add_permission adds a single permission."""

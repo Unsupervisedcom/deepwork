@@ -49,11 +49,9 @@ For EACH test below, follow this cycle:
 6. **Revert changes and clear queue**:
    ```bash
    git checkout -- manual_tests/
-   rm -rf .deepwork/tmp/rules/queue/**
+   rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null || true
    ```
    The queue must be cleared because rules that have been shown (status=QUEUED) won't fire again until cleared.
-
-   > **Note**: To reset the rules queue at any time, use: `rm -rf .deepwork/tmp/rules/queue/**`
 7. **Proceed to the next test**
 
 **IMPORTANT**: Only launch ONE sub-agent at a time. Wait for it to complete and revert before launching the next.
@@ -116,7 +114,7 @@ Record the result after each test:
 
 - **Sub-agents spawned**: All 8 tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
 - **Serial execution**: Sub-agents were launched ONE AT A TIME, not in parallel
-- **Git reverted and queue cleared between tests**: `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/**` was run after each test
+- **Git reverted and queue cleared between tests**: `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after each test
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check - hooks fired AUTOMATICALLY
 - **Blocking behavior verified**: For each test, the appropriate blocking hook fired automatically when the sub-agent returned
 - **Results recorded**: Pass/fail status was recorded for each test

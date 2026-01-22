@@ -465,7 +465,7 @@ class ClaudeAdapter(AgentAdapter):
             "Read(./.deepwork/tmp/**)",
             "Edit(./.deepwork/tmp/**)",
             "Write(./.deepwork/tmp/**)",
-            "Bash(rm -rf .deepwork/tmp/rules/queue/**)",
+            "Bash(rm -rf .deepwork/tmp/rules/queue/*.json)",
         ]
 
         # Load settings once, add all permissions, then save once

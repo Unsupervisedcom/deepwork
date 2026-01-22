@@ -72,12 +72,10 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
    After all tests complete, run:
    ```bash
    git checkout -- manual_tests/
-   rm -rf .deepwork/tmp/rules/queue/**
+   rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null || true
    ```
 
    This cleans up the test files AND clears the rules queue before the "should fire" tests run. The queue must be cleared because rules that have already been shown to the agent (status=QUEUED) won't fire again until the queue is cleared.
-
-   > **Note**: To reset the rules queue at any time, use: `rm -rf .deepwork/tmp/rules/queue/**`
 
 ## Quality Criteria
 
@@ -85,7 +83,7 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
 - **Parallel execution**: All 8 sub-agents were launched in a single message (parallel)
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check
 - **No unexpected blocks**: All tests passed - no blocking hooks fired
-- **Changes reverted and queue cleared**: `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/**` was run after tests completed
+- **Changes reverted and queue cleared**: `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after tests completed
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Reference
