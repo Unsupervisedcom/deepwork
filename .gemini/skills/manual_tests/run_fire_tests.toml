@@ -33,9 +33,9 @@ Run all "should fire" tests in **serial** sub-agents to verify that rules fire c
 **You MUST spawn sub-agents to make all file edits. DO NOT edit the test files yourself.**
 
 Why sub-agents are required:
-1. Sub-agents run in isolated contexts where file changes are detected
+1. Sub-agents run in isolated contexts where file changes can be detected
 2. When a sub-agent completes, the Stop hook **automatically** evaluates rules
-3. You (the main agent) observe whether hooks fired - you do NOT manually trigger them
+3. You (the main agent) check the sub-agent's returned text for **magic strings** to determine if a hook fired
 4. If you edit files directly, the hooks won't fire because you're not a completing sub-agent
 
 **NEVER manually run `echo '{}' | python -m deepwork.hooks.rules_check`** - this defeats the purpose of the test. Hooks must fire AUTOMATICALLY when sub-agents return.
@@ -52,34 +52,57 @@ Why serial execution is required:
 
 ## Task
 
-Run all 8 "should fire" tests in **serial** sub-agents, reverting between each, and verify that blocking hooks fire automatically.
+Run all 8 "should fire" tests in **serial** sub-agents, reverting between each, and verify that blocking hooks fire automatically by checking for magic strings.
 
 ### Process
 
+**CRITICAL: Task Tool Parameters**
+
+Each Task tool call MUST include:
+- `model: "haiku"` - Use the fast model to minimize cost and latency
+- `max_turns: 5` - Prevent sub-agents from hanging indefinitely
+
+This limits each sub-agent to ~5 API round-trips. If a sub-agent hits the limit (e.g., stuck in infinite block without providing a promise), this confirms the hook IS firing and blocking them - treat it as test PASSED.
+
+**CRITICAL: Magic String Instructions for Sub-Agents**
+
+Every sub-agent prompt MUST include this instruction:
+> "IMPORTANT: Start your response with exactly `TASK_START: <brief task description>`. Keep your response brief - just make the edit and confirm. If a DeepWork hook fires and blocks you with a rules message, also include `HOOK_FIRED: <rule name>` in your response."
+
+**How detection works:**
+- Sub-agent ALWAYS outputs `TASK_START:` at the beginning of their response
+- If a hook fires and blocks them, they get another turn and can output `HOOK_FIRED:`
+- Main agent checks:
+  - `HOOK_FIRED:` present → hook fired (test PASSED)
+  - `TASK_START:` present + no `HOOK_FIRED:` → hook did NOT fire (test FAILED)
+  - Neither `TASK_START:` nor `HOOK_FIRED:` → timeout (test PASSED - confirms hook is blocking infinitely)
+
 For EACH test below, follow this cycle:
 
-1. **Launch a sub-agent** using the Task tool (use a fast model like haiku)
-2. **Wait for the sub-agent to complete**
-3. **Observe whether the hook fired automatically** - you should see a blocking prompt or command output
-4. **If no visible blocking occurred, check the queue**:
+1. **Launch a sub-agent** using the Task tool (set `model: "haiku"` and `max_turns: 5`)
+2. **Wait for the sub-agent to complete (or hit max_turns limit)**
+3. **Check the sub-agent's response for magic strings**:
+   - `HOOK_FIRED:` present = Hook fired successfully (test PASSED)
+   - `TASK_START:` present + no `HOOK_FIRED:` = Hook did NOT fire (test FAILED)
+   - Neither = Timeout/infinite block (test PASSED - confirms hook is blocking)
+4. **If inconclusive, check the queue as a fallback**:
    ```bash
    ls -la .deepwork/tmp/rules/queue/
    cat .deepwork/tmp/rules/queue/*.json 2>/dev/null
    ```
-   - If queue entries exist with status "queued", the hook DID fire but blocking wasn't visible
+   - If queue entries exist with status "queued", the hook DID fire
    - If queue is empty, the hook did NOT fire at all
-   - Record the queue status along with the result
-5. **Record the result** - pass if hook fired (visible block OR queue entry), fail if neither
+5. **Record the result** - pass if hook fired (magic string OR queue entry OR timeout), fail if `TASK_START` present without `HOOK_FIRED`
 6. **Revert changes and clear queue** (MANDATORY after each test):
    ```bash
    git reset HEAD manual_tests/ && git checkout -- manual_tests/ && rm -f manual_tests/test_created_mode/new_config.yml
-   rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null || true
+   deepwork rules clear_queue
    ```
    **Why this command sequence**:
    - `git reset HEAD manual_tests/` - Unstages files from the index (rules_check uses `git add -A` which stages changes)
    - `git checkout -- manual_tests/` - Reverts working tree to match HEAD
    - `rm -f ...` - Removes any new files created during tests
-   - The queue clear removes rules that have been shown (status=QUEUED) so they can fire again
+   - `deepwork rules clear_queue` - Clears the rules queue so rules can fire again
 7. **Check for early termination**: If **2 tests have now failed**, immediately:
    - Stop running any remaining tests
    - Report the results summary showing which tests passed/failed
@@ -91,43 +114,43 @@ For EACH test below, follow this cycle:
 ### Test Cases (run serially)
 
 **Test 1: Trigger/Safety**
-- Sub-agent prompt: "Edit ONLY `manual_tests/test_trigger_safety_mode/feature.py` to add a comment. Do NOT edit the `_doc.md` file."
-- Expected: Hook fires with prompt about updating documentation
+- Sub-agent prompt: "IMPORTANT: Start your response with exactly `TASK_START: Trigger/Safety test`. Edit ONLY `manual_tests/test_trigger_safety_mode/test_trigger_safety_mode.py` to add a comment. Do NOT edit the `_doc.md` file. If a DeepWork hook fires and blocks you, also include `HOOK_FIRED: <rule name>` in your response."
+- Expected: Hook fires with prompt about updating documentation → sub-agent returns `HOOK_FIRED:`
 
 **Test 2: Set Mode**
-- Sub-agent prompt: "Edit ONLY `manual_tests/test_set_mode/module_source.py` to add a comment. Do NOT edit the `_test.py` file."
-- Expected: Hook fires with prompt about updating tests
+- Sub-agent prompt: "IMPORTANT: Start your response with exactly `TASK_START: Set Mode test`. Edit ONLY `manual_tests/test_set_mode/test_set_mode_source.py` to add a comment. Do NOT edit the `_test.py` file. If a DeepWork hook fires and blocks you, also include `HOOK_FIRED: <rule name>` in your response."
+- Expected: Hook fires with prompt about updating tests → sub-agent returns `HOOK_FIRED:`
 
 **Test 3: Pair Mode**
-- Sub-agent prompt: "Edit ONLY `manual_tests/test_pair_mode/handler_trigger.py` to add a comment. Do NOT edit the `_expected.md` file."
-- Expected: Hook fires with prompt about updating expected output
+- Sub-agent prompt: "IMPORTANT: Start your response with exactly `TASK_START: Pair Mode test`. Edit ONLY `manual_tests/test_pair_mode/test_pair_mode_trigger.py` to add a comment. Do NOT edit the `_expected.md` file. If a DeepWork hook fires and blocks you, also include `HOOK_FIRED: <rule name>` in your response."
+- Expected: Hook fires with prompt about updating expected output → sub-agent returns `HOOK_FIRED:`
 
 **Test 4: Command Action**
-- Sub-agent prompt: "Edit `manual_tests/test_command_action/input.txt` to add some text."
-- Expected: Command runs automatically, appending to the log file (this rule always runs, no safety condition)
+- Sub-agent prompt: "IMPORTANT: Start your response with exactly `TASK_START: Command Action test`. Edit `manual_tests/test_command_action/test_command_action.txt` to add some text. If a DeepWork hook fires and blocks you, also include `HOOK_FIRED: <rule name>` in your response."
+- Expected: Command runs automatically, appending to the log file. NOTE: Command actions don't block, so sub-agent returns only `TASK_START:` - verify by checking the log file was appended to.
 
 **Test 5: Multi Safety**
-- Sub-agent prompt: "Edit ONLY `manual_tests/test_multi_safety/core.py` to add a comment. Do NOT edit any of the safety files (`_safety_a.md`, `_safety_b.md`, or `_safety_c.md`)."
-- Expected: Hook fires with prompt about updating safety documentation
+- Sub-agent prompt: "IMPORTANT: Start your response with exactly `TASK_START: Multi Safety test`. Edit ONLY `manual_tests/test_multi_safety/test_multi_safety.py` to add a comment. Do NOT edit any of the safety files (`_changelog.md` or `_version.txt`). If a DeepWork hook fires and blocks you, also include `HOOK_FIRED: <rule name>` in your response."
+- Expected: Hook fires with prompt about updating safety documentation → sub-agent returns `HOOK_FIRED:`
 
 **Test 6: Infinite Block Prompt**
-- Sub-agent prompt: "Edit `manual_tests/test_infinite_block_prompt/dangerous.py` to add a comment. Do NOT include any promise tags."
-- Expected: Hook fires and BLOCKS with infinite prompt - sub-agent cannot complete until promise is provided
+- Sub-agent prompt: "IMPORTANT: Start your response with exactly `TASK_START: Infinite Block Prompt test`. Edit `manual_tests/test_infinite_block_prompt/test_infinite_block_prompt.py` to add a comment. Do NOT include any promise tags. If a DeepWork hook fires and blocks you, also include `HOOK_FIRED: <rule name>` in your response."
+- Expected: Hook fires and BLOCKS with infinite prompt → sub-agent returns `HOOK_FIRED:` or hits timeout
 
 **Test 7: Infinite Block Command**
-- Sub-agent prompt: "Edit `manual_tests/test_infinite_block_command/risky.py` to add a comment. Do NOT include any promise tags."
-- Expected: Hook fires and command fails - sub-agent cannot complete until promise is provided
+- Sub-agent prompt: "IMPORTANT: Start your response with exactly `TASK_START: Infinite Block Command test`. Edit `manual_tests/test_infinite_block_command/test_infinite_block_command.py` to add a comment. Do NOT include any promise tags. If a DeepWork hook fires and blocks you, also include `HOOK_FIRED: <rule name>` in your response."
+- Expected: Hook fires and command fails → sub-agent returns `HOOK_FIRED:` or hits timeout
 
 **Test 8: Created Mode**
-- Sub-agent prompt: "Create a NEW file `manual_tests/test_created_mode/new_config.yml` with some YAML content. This must be a NEW file, not a modification."
-- Expected: Hook fires with prompt about new configuration files
+- Sub-agent prompt: "IMPORTANT: Start your response with exactly `TASK_START: Created Mode test`. Create a NEW file `manual_tests/test_created_mode/new_config.yml` with some YAML content. This must be a NEW file, not a modification. If a DeepWork hook fires and blocks you, also include `HOOK_FIRED: <rule name>` in your response."
+- Expected: Hook fires with prompt about new configuration files → sub-agent returns `HOOK_FIRED:`
 
 ### Results Tracking
 
 Record the result after each test:
 
-| Test Case | Should Fire | Visible Block? | Queue Entry? | Result |
-|-----------|-------------|:--------------:|:------------:|:------:|
+| Test Case | Should Fire | Magic String | Queue Entry? | Result |
+|-----------|-------------|:------------:|:------------:|:------:|
 | Trigger/Safety | Edit .py only | | | |
 | Set Mode | Edit _source.py only | | | |
 | Pair Mode | Edit _trigger.py only | | | |
@@ -137,7 +160,12 @@ Record the result after each test:
 | Infinite Block Command | Edit .py (no promise) | | | |
 | Created Mode | Create NEW .yml | | | |
 
-**Queue Entry Status Guide:**
+**Magic String Guide:**
+- `HOOK_FIRED:` in response → Hook fired successfully (test PASSED)
+- `TASK_START:` present + no `HOOK_FIRED:` → Hook did NOT fire (test FAILED, except for Command Action)
+- Neither present (timeout) → Hook is blocking infinitely (test PASSED - confirms hook fired)
+
+**Queue Entry Status Guide (fallback):**
 - If queue has entry with status "queued" → Hook fired, rule was shown to agent
 - If queue has entry with status "passed" → Hook fired, rule was satisfied
 - If queue is empty → Hook did NOT fire
@@ -146,9 +174,9 @@ Record the result after each test:
 
 - **Sub-agents spawned**: Tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
 - **Serial execution**: Sub-agents were launched ONE AT A TIME, not in parallel
-- **Git reverted and queue cleared between tests**: `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after each test
-- **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check - hooks fired AUTOMATICALLY
-- **Blocking behavior verified**: For each test run, the appropriate blocking hook fired automatically when the sub-agent returned
+- **Git reverted and queue cleared between tests**: `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `deepwork rules clear_queue` was run after each test
+- **Magic string detection**: The main agent checked each sub-agent's response for `TASK_START:` and `HOOK_FIRED:` - did NOT manually run rules_check
+- **Hooks fired correctly**: For each test, sub-agent returned `HOOK_FIRED:` or timed out (indicating the rule was triggered)
 - **Early termination on 2 failures**: If 2 tests failed, testing halted immediately and results were reported
 - **Results recorded**: Pass/fail status was recorded for each test run
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
@@ -170,11 +198,27 @@ This job tests that rules fire when they should AND do not fire when they should
 Each test is run in a SUB-AGENT (not the main agent) because:
 1. Sub-agents run in isolated contexts where file changes can be detected
 2. The Stop hook automatically evaluates rules when each sub-agent completes
-3. The main agent can observe whether hooks fired without triggering them manually
+3. Sub-agents report results via MAGIC STRINGS that the main agent checks
+
+MAGIC STRING DETECTION: Sub-agents output:
+- "TASK_START: <task name>" - ALWAYS at the start of their response
+- "HOOK_FIRED: <rule name>" - If a DeepWork hook blocks them
+Detection logic:
+- TASK_START present + no HOOK_FIRED = hook did NOT fire
+- HOOK_FIRED present = hook fired
+- Neither present = timeout (hook blocking infinitely)
+
+TIMEOUT PREVENTION: All sub-agent Task calls use max_turns: 5 to prevent
+infinite hangs. If a sub-agent hits the limit (e.g., stuck in infinite block),
+treat as timeout - PASSED for "should fire" tests, FAILED for "should NOT fire".
+
+TOKEN OVERHEAD: Each sub-agent uses ~16k input tokens (system prompt + tool
+definitions). This is unavoidable baseline overhead for agents with Edit access.
+Sub-agent prompts include efficiency instructions to minimize additional usage.
 
 CRITICAL: All tests MUST run in sub-agents. The main agent MUST NOT make the file
-edits itself - it spawns sub-agents to make edits, then observes whether the hooks
-fired automatically when those sub-agents returned.
+edits itself - it spawns sub-agents to make edits, then checks the returned magic
+strings to determine whether hooks fired.
 
 Steps:
 1. run_not_fire_tests - Run all "should NOT fire" tests in PARALLEL sub-agents
@@ -215,10 +259,11 @@ Use branch format: `deepwork/manual_tests-[instance]-YYYYMMDD`
 **Criteria (all must be satisfied)**:
 1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
 2. **Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?
-3. **Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command.
-4. **Git Reverted Between Tests**: Was `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` run after each test to revert files and prevent cross-contamination?
-5. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
-6. **Results Recorded**: Did the main agent track pass/fail status for each test case?
+3. **Task Parameters**: Did each Task call include `model: "haiku"` and `max_turns: 5`?
+4. **Magic String Detection**: Did the main agent check each sub-agent's response for `HOOK_FIRED:` (present) or timeout (neither TASK_START nor HOOK_FIRED)? The agent must NOT manually run rules_check.
+5. **Git Reverted Between Tests**: Was `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `deepwork rules clear_queue` run after each test to revert files and prevent cross-contamination?
+6. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
+7. **Results Recorded**: Did the main agent track pass/fail status for each test case?
 ## On Completion
 
 1. Verify outputs are created

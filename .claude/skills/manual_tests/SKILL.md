@@ -15,11 +15,27 @@ This job tests that rules fire when they should AND do not fire when they should
 Each test is run in a SUB-AGENT (not the main agent) because:
 1. Sub-agents run in isolated contexts where file changes can be detected
 2. The Stop hook automatically evaluates rules when each sub-agent completes
-3. The main agent can observe whether hooks fired without triggering them manually
+3. Sub-agents report results via MAGIC STRINGS that the main agent checks
+
+MAGIC STRING DETECTION: Sub-agents output:
+- "TASK_START: <task name>" - ALWAYS at the start of their response
+- "HOOK_FIRED: <rule name>" - If a DeepWork hook blocks them
+Detection logic:
+- TASK_START present + no HOOK_FIRED = hook did NOT fire
+- HOOK_FIRED present = hook fired
+- Neither present = timeout (hook blocking infinitely)
+
+TIMEOUT PREVENTION: All sub-agent Task calls use max_turns: 5 to prevent
+infinite hangs. If a sub-agent hits the limit (e.g., stuck in infinite block),
+treat as timeout - PASSED for "should fire" tests, FAILED for "should NOT fire".
+
+TOKEN OVERHEAD: Each sub-agent uses ~16k input tokens (system prompt + tool
+definitions). This is unavoidable baseline overhead for agents with Edit access.
+Sub-agent prompts include efficiency instructions to minimize additional usage.
 
 CRITICAL: All tests MUST run in sub-agents. The main agent MUST NOT make the file
-edits itself - it spawns sub-agents to make edits, then observes whether the hooks
-fired automatically when those sub-agents returned.
+edits itself - it spawns sub-agents to make edits, then checks the returned magic
+strings to determine whether hooks fired.
 
 Steps:
 1. run_not_fire_tests - Run all "should NOT fire" tests in PARALLEL sub-agents
