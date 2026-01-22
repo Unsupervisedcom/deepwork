@@ -47,6 +47,9 @@ jobs:
           uv --version
           echo ""
           echo "Pytest available:"
-          uv run pytest --version
+          python -m pytest --version
+          echo ""
+          echo "Ruff available:"
+          python -m ruff --version
           echo ""
           echo "Environment setup complete!"
