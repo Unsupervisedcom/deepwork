@@ -59,7 +59,7 @@ For EACH test below, follow this cycle:
 
 1. **Launch a sub-agent** using the Task tool with:
    - `model: "haiku"` - Use the fast model to minimize cost and latency
-   - `max_turns: 5` - Prevent sub-agents from hanging indefinitely
+   - `max_turns: 5` - **Critical safeguard**: Limits API round-trips to prevent infinite hanging. The Task tool does not support a direct timeout, so max_turns is our only protection against runaway sub-agents.
 2. **Wait for the sub-agent to complete**
 3. **Observe whether the hook fired automatically** - you should see a blocking prompt or command output
 4. **If no visible blocking occurred, check the queue**:
@@ -101,25 +101,37 @@ For EACH test below, follow this cycle:
 **Test 3: Infinite Block Prompt - Should Fire (no promise)**
 - Sub-agent prompt: "Edit `manual_tests/test_infinite_block_prompt/dangerous.py` to add a comment. Do NOT include any promise tags."
 - Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Hook fires and BLOCKS with infinite prompt - sub-agent cannot complete until promise is provided (or max_turns reached)
-- Result: PASS if hook fired (visible block OR queue entry), FAIL if neither
+- Expected behavior:
+  1. **Should fire**: Hook fires and shows blocking prompt
+  2. **Should return in reasonable time**: Sub-agent hits max_turns limit and returns (not stuck forever)
+- Result criteria:
+  - PASS if: Hook fired (visible block OR queue entry) AND sub-agent returned within reasonable time
+  - FAIL if: Hook did not fire, OR sub-agent hung indefinitely
 
 **Test 4: Infinite Block Command - Should Fire (no promise)**
 - Sub-agent prompt: "Edit `manual_tests/test_infinite_block_command/risky.py` to add a comment. Do NOT include any promise tags."
 - Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Hook fires and command fails - sub-agent cannot complete until promise is provided (or max_turns reached)
-- Result: PASS if hook fired (visible block OR queue entry), FAIL if neither
+- Expected behavior:
+  1. **Should fire**: Hook fires and command fails (exit code 1)
+  2. **Should return in reasonable time**: Sub-agent hits max_turns limit and returns (not stuck forever)
+- Result criteria:
+  - PASS if: Hook fired (visible block OR queue entry) AND sub-agent returned within reasonable time
+  - FAIL if: Hook did not fire, OR sub-agent hung indefinitely
 
 ### Results Tracking
 
 Record the result after each test:
 
-| Test Case | Scenario | Expected | Visible Block? | Queue Entry? | Result |
-|-----------|----------|----------|:--------------:|:------------:|:------:|
-| Infinite Block Prompt | With promise | No block | | | |
-| Infinite Block Command | With promise | No block | | | |
-| Infinite Block Prompt | No promise | Blocks | | | |
-| Infinite Block Command | No promise | Blocks | | | |
+| Test Case | Scenario | Should Fire? | Returned in Time? | Visible Block? | Queue Entry? | Result |
+|-----------|----------|:------------:|:-----------------:|:--------------:|:------------:|:------:|
+| Infinite Block Prompt | With promise | No | Yes | | | |
+| Infinite Block Command | With promise | No | Yes | | | |
+| Infinite Block Prompt | No promise | Yes | Yes | | | |
+| Infinite Block Command | No promise | Yes | Yes | | | |
+
+**Result criteria:**
+- **"Should NOT fire" tests (with promise)**: PASS if no blocking AND no queue entry AND returned quickly
+- **"Should fire" tests (no promise)**: PASS if hook fired (visible block OR queue entry) AND returned in reasonable time (max_turns limit)
 
 **Queue Entry Status Guide:**
 - If queue has entry with status "queued" -> Hook fired, rule was shown to agent
@@ -133,7 +145,8 @@ Record the result after each test:
 - **Serial execution**: Sub-agents were launched ONE AT A TIME, not in parallel
 - **Reset between tests**: Reset step was followed after each test
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check - hooks fired AUTOMATICALLY
-- **Blocking behavior verified**: Promise tests completed without blocking; non-promise tests were blocked
+- **"Should NOT fire" tests verified**: Promise tests completed without blocking and no queue entries
+- **"Should fire" tests verified**: Non-promise tests fired (visible block OR queue entry) AND returned in reasonable time (not hung indefinitely)
 - **Early termination on 2 failures**: If 2 tests failed, testing halted immediately and results were reported
 - **Results recorded**: Pass/fail status was recorded for each test run
 - When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
