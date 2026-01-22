@@ -40,9 +40,7 @@ description: |
 
 changelog:
   - version: "1.4.0"
-    changes: "Reset step now runs first before all tests; 'should NOT fire' tests now verify queue is empty to confirm rules didn't fire"
-  - version: "1.3.0"
-    changes: "Added model/max_turns config for sub-agents; moved infinite block tests to dedicated serial step; extracted reset instructions to reusable step"
+    changes: "Add model/max_turns config for sub-agents; move infinite block tests to dedicated serial step; add reset step that runs first; verify queue empty for 'should NOT fire' tests"
   - version: "1.2.1"
     changes: "Fixed incomplete revert - now uses git reset HEAD to unstage files (rules_check stages with git add -A)"
   - version: "1.2.0"
