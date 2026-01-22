@@ -624,6 +624,16 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
             ):
                 continue
 
+            # For COMMAND rules with FAILED status, don't re-run the command.
+            # The agent has already seen the error. If they provide a promise,
+            # the after-loop logic will update the status to SKIPPED.
+            if (
+                existing
+                and existing.status == QueueEntryStatus.FAILED
+                and rule.action_type == ActionType.COMMAND
+            ):
+                continue
+
             # Create queue entry if new
             if not existing:
                 queue.create_entry(
@@ -674,6 +684,26 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
             elif rule.action_type == ActionType.PROMPT:
                 # Collect for prompt output
                 prompt_results.append(result)
+
+    # Handle FAILED queue entries that have been promised
+    # (These rules weren't in results because evaluate_rules skips promised rules,
+    # but we need to update their queue status to SKIPPED)
+    if promised_rules:
+        promised_lower = {name.lower() for name in promised_rules}
+        for entry in queue.get_all_entries():
+            if (
+                entry.status == QueueEntryStatus.FAILED
+                and entry.rule_name.lower() in promised_lower
+            ):
+                queue.update_status(
+                    entry.trigger_hash,
+                    QueueEntryStatus.SKIPPED,
+                    ActionResult(
+                        type="command",
+                        output="Acknowledged via promise tag",
+                        exit_code=None,
+                    ),
+                )
 
     # Build response
     messages: list[str] = []
