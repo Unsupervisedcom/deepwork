@@ -119,7 +119,11 @@
       "Skill(manual_tests.run_not_fire_tests)",
       "Skill(manual_tests.run_fire_tests)",
       "Skill(deepwork_rules)",
-      "Skill(deepwork_rules.define)"
+      "Skill(deepwork_rules.define)",
+      "Skill(make_release)",
+      "Skill(make_release.gather_changes)",
+      "Skill(make_release.prepare_release)",
+      "Skill(make_release.create_pr)"
     ]
   },
   "hooks": {

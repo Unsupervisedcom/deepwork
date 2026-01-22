@@ -1,0 +1,167 @@
+---
+name: make_release.create_pr
+description: "Create a pull request with the release changes targeting main"
+user-invocable: false
+---
+
+# make_release.create_pr
+
+**Step 3/3** in **make_release** workflow
+
+> Automate release preparation with changelog, version bump, and PR creation
+
+## Prerequisites (Verify First)
+
+Before proceeding, confirm these steps are complete:
+- `/make_release.prepare_release`
+
+## Instructions
+
+**Goal**: Create a pull request with the release changes targeting main
+
+# Create Release PR
+
+## Objective
+
+Create a pull request with the release changes targeting the main branch.
+
+## Task
+
+Commit the updated release files and create a pull request using the GitHub CLI.
+
+### Process
+
+1. **Create a release branch**
+   ```bash
+   git checkout -b release/vX.Y.Z
+   ```
+   Where X.Y.Z is the new version from the previous step.
+
+2. **Stage the release files**
+   ```bash
+   git add CHANGELOG.md pyproject.toml uv.lock
+   ```
+
+3. **Commit the changes**
+   ```bash
+   git commit -m "chore: Release vX.Y.Z"
+   ```
+
+4. **Push the branch**
+   ```bash
+   git push -u origin release/vX.Y.Z
+   ```
+
+5. **Create the pull request**
+   ```bash
+   gh pr create --title "Release vX.Y.Z" --body "$(cat <<'EOF'
+   ## Summary
+
+   Release version X.Y.Z
+
+   ## Changes
+
+   [Copy the changelog entry for this version here]
+
+   ## Checklist
+
+   - [ ] CHANGELOG.md updated
+   - [ ] pyproject.toml version bumped
+   - [ ] uv.lock synced
+   EOF
+   )" --base main
+   ```
+
+6. **Record the PR URL**
+   Save the PR URL to `release/pr_url.md` for reference.
+
+## Output Format
+
+### release/pr_url.md
+
+A simple file containing the PR URL for easy reference.
+
+**Structure**:
+```markdown
+# Release PR
+
+**Version**: X.Y.Z
+**PR URL**: https://github.com/owner/repo/pull/123
+**Created**: YYYY-MM-DD
+
+## Next Steps
+
+1. Review the PR
+2. Ensure CI passes
+3. Merge to main
+4. Create GitHub release with tag vX.Y.Z
+```
+
+## Quality Criteria
+
+- Release branch is created with correct naming (`release/vX.Y.Z`)
+- All three files are committed (CHANGELOG.md, pyproject.toml, uv.lock)
+- Commit message follows conventional format
+- PR is created targeting main branch
+- PR body includes the changelog entry
+- PR URL is saved to `release/pr_url.md`
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+
+## Context
+
+This is the final step of the release workflow. After this step completes, the user should:
+1. Review the PR
+2. Wait for CI to pass
+3. Merge the PR
+4. Create a GitHub release with a tag matching the version
+
+The PR provides a review checkpoint before the release is finalized.
+
+
+### Job Context
+
+A streamlined workflow for preparing releases of the DeepWork project. This job
+automates the tedious parts of releasing: finding the latest version tag, gathering
+commits since that tag, updating the changelog, bumping the version in pyproject.toml,
+syncing uv.lock, and creating a pull request.
+
+The workflow analyzes commit history to recommend an appropriate version bump
+(patch, minor, or major) based on the changes, then asks for confirmation before
+proceeding.
+
+Outputs:
+- Updated CHANGELOG.md with a new version entry
+- Updated pyproject.toml with the new version
+- Updated uv.lock
+- A pull request targeting main
+
+
+
+## Work Branch
+
+Use branch format: `deepwork/make_release-[instance]-YYYYMMDD`
+
+- If on a matching work branch: continue using it
+- If on main/master: create new branch with `git checkout -b deepwork/make_release-[instance]-$(date +%Y%m%d)`
+
+## Outputs
+
+**Required outputs**:
+- `release/pr_url.md`
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
+
+## On Completion
+
+1. Verify outputs are created
+2. Inform user: "Step 3/3 complete, outputs: release/pr_url.md"
+3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
+
+---
+
+**Reference files**: `.deepwork/jobs/make_release/job.yml`, `.deepwork/jobs/make_release/steps/create_pr.md`

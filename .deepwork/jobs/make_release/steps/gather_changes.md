@@ -1,0 +1,97 @@
+# Gather Changes Since Last Release
+
+## Objective
+
+Find the latest version tag and collect all commits since then, analyzing them to recommend an appropriate version bump.
+
+## Task
+
+Query git to find the most recent release tag, gather all commits since that tag, and create a summary document with change categorization and a recommended version bump.
+
+### Process
+
+1. **Find the latest version tag**
+   ```bash
+   git describe --tags --abbrev=0
+   ```
+   This returns the most recent tag (e.g., `0.5.1`)
+
+2. **Get all commits since that tag**
+   ```bash
+   git log <tag>..HEAD --oneline --no-merges
+   ```
+
+3. **Categorize the changes**
+   Review each commit and categorize:
+   - **Breaking Changes**: API changes, renamed fields, removed features
+   - **Added**: New features, new files, new capabilities
+   - **Changed**: Modified behavior, refactoring
+   - **Fixed**: Bug fixes
+   - **Removed**: Deprecated features removed
+
+4. **Recommend a version bump**
+   Based on semantic versioning:
+   - **Major (X.0.0)**: Breaking changes that require migration
+   - **Minor (0.X.0)**: New features that are backward compatible
+   - **Patch (0.0.X)**: Bug fixes and small improvements
+
+5. **Ask structured questions to confirm**
+   Present the recommended version to the user and ask them to confirm or choose a different bump level.
+
+## Output Format
+
+### release/changes_summary.md
+
+A markdown document summarizing all changes and the version recommendation.
+
+**Structure**:
+```markdown
+# Release Changes Summary
+
+## Current Version
+- **Latest Tag**: [tag name, e.g., 0.5.1]
+- **Commits Since Tag**: [number]
+
+## Recommended Version
+- **New Version**: [e.g., 0.6.0]
+- **Bump Type**: [major/minor/patch]
+- **Rationale**: [why this bump level]
+
+## Changes by Category
+
+### Breaking Changes
+- [List any breaking changes, or "None"]
+
+### Added
+- [List new features]
+
+### Changed
+- [List modifications]
+
+### Fixed
+- [List bug fixes]
+
+### Removed
+- [List removed features, or "None"]
+
+## Commit Log
+| Hash | Message |
+|------|---------|
+| abc1234 | feat: Add new feature |
+| def5678 | fix: Fix bug in parser |
+[... all commits since last tag]
+```
+
+## Quality Criteria
+
+- Latest version tag is correctly identified
+- All commits since the tag are captured
+- Changes are properly categorized (Added/Changed/Fixed/etc.)
+- Version recommendation follows semantic versioning principles
+- User is asked structured questions to confirm the version bump
+- Output file is created at `release/changes_summary.md`
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+
+## Context
+
+This is the first step in the release workflow. The changes summary produced here will be used by the `prepare_release` step to update the CHANGELOG and bump the version. Accurate categorization is important because it determines the changelog entry format and helps the user understand what's in the release.
