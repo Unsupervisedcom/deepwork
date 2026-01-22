@@ -49,13 +49,13 @@ For EACH test below, follow this cycle:
 6. **Revert changes and clear queue** (MANDATORY after each test):
    ```bash
    git reset HEAD manual_tests/ && git checkout -- manual_tests/ && rm -f manual_tests/test_created_mode/new_config.yml
-   rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null || true
+   deepwork rules clear_queue
    ```
    **Why this command sequence**:
    - `git reset HEAD manual_tests/` - Unstages files from the index (rules_check uses `git add -A` which stages changes)
    - `git checkout -- manual_tests/` - Reverts working tree to match HEAD
    - `rm -f ...` - Removes any new files created during tests
-   - The queue clear removes rules that have been shown (status=QUEUED) so they can fire again
+   - `deepwork rules clear_queue` - Clears the rules queue so rules can fire again
 7. **Check for early termination**: If **2 tests have now failed**, immediately:
    - Stop running any remaining tests
    - Report the results summary showing which tests passed/failed
@@ -122,7 +122,7 @@ Record the result after each test:
 
 - **Sub-agents spawned**: Tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
 - **Serial execution**: Sub-agents were launched ONE AT A TIME, not in parallel
-- **Git reverted and queue cleared between tests**: `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after each test
+- **Git reverted and queue cleared between tests**: `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `deepwork rules clear_queue` was run after each test
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check - hooks fired AUTOMATICALLY
 - **Blocking behavior verified**: For each test run, the appropriate blocking hook fired automatically when the sub-agent returned
 - **Early termination on 2 failures**: If 2 tests failed, testing halted immediately and results were reported

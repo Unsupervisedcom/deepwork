@@ -80,14 +80,14 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
    Run these commands to clean up:
    ```bash
    git reset HEAD manual_tests/ && git checkout -- manual_tests/ && rm -f manual_tests/test_created_mode/new_config.yml
-   rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null || true
+   deepwork rules clear_queue
    ```
 
    **Why this command sequence**:
    - `git reset HEAD manual_tests/` - Unstages files from the index (rules_check uses `git add -A` which stages changes)
    - `git checkout -- manual_tests/` - Reverts working tree to match HEAD
    - `rm -f manual_tests/test_created_mode/new_config.yml` - Removes any new files created during tests
-   - The queue clear removes rules that have been shown (status=QUEUED) so they can fire again
+   - `deepwork rules clear_queue` - Clears the rules queue so rules can fire again
 
 ## Quality Criteria
 
@@ -95,7 +95,7 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
 - **Parallel execution**: All 8 sub-agents were launched in a single message (parallel)
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check
 - **Early termination on 2 failures**: If 2 tests failed, testing halted immediately and results were reported
-- **Changes reverted and queue cleared**: `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after tests completed (regardless of pass/fail)
+- **Changes reverted and queue cleared**: `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `deepwork rules clear_queue` was run after tests completed (regardless of pass/fail)
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Reference
