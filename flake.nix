@@ -43,6 +43,10 @@
 
             # System tools
             jq  # For JSON processing
+
+            # CLI tools
+            claude-code  # Claude Code CLI
+            gh           # GitHub CLI
           ];
 
           # Environment variables for uv integration with Nix
@@ -88,6 +92,8 @@
               echo "  pytest             Run tests"
               echo "  ruff check src/    Lint code"
               echo "  mypy src/          Type check"
+              echo "  claude-code        Claude Code CLI"
+              echo "  gh                 GitHub CLI"
               echo ""
             fi
           '';
