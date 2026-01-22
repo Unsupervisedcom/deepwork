@@ -497,6 +497,7 @@ Please check the code.
         assert "Claude Runtime Rule" in output2.get("reason", "")
 
 
+
 class TestSubagentStopEvent:
     """Tests for SubagentStop event triggering agentFinished rules."""
 
@@ -519,9 +520,7 @@ class TestSubagentStopEvent:
 
         # Run with SubagentStop event
         hook_input = {"hook_event_name": "SubagentStop"}
-        stdout, stderr, code = run_stop_hook(
-            git_repo_with_src_rule, hook_input, src_dir=src_dir
-        )
+        stdout, stderr, code = run_stop_hook(git_repo_with_src_rule, hook_input, src_dir=src_dir)
 
         # Parse the output
         output = stdout.strip()
@@ -549,9 +548,7 @@ class TestSubagentStopEvent:
 
         # Test Stop event
         hook_input_stop = {"hook_event_name": "Stop"}
-        stdout_stop, _, _ = run_stop_hook(
-            git_repo_with_src_rule, hook_input_stop, src_dir=src_dir
-        )
+        stdout_stop, _, _ = run_stop_hook(git_repo_with_src_rule, hook_input_stop, src_dir=src_dir)
         result_stop = json.loads(stdout_stop.strip())
 
         # Clear the queue to allow the rule to fire again

@@ -83,4 +83,22 @@ deepwork/
     ├── deepwork_jobs/              # ← Installed copy, NOT source of truth
     ├── deepwork_rules/             # ← Installed copy, NOT source of truth
     └── [bespoke_job]/              # ← Source of truth for bespoke only
+
+## Development Environment
+
+This project uses **Nix Flakes** to provide a reproducible development environment.
+
+### Using the Environment
+
+- **With direnv (Recommended)**: Just `cd` into the directory. The `.envrc` will automatically load the flake environment.
+- **Without direnv**: Run `nix develop` to enter the shell.
+- **Building**: Run `nix build` to build the package.
+
+**Note**: The flake is configured to automatically allow unfree packages (required for the BSL 1.1 license), so you do not need to set `NIXPKGS_ALLOW_UNFREE=1`.
+
+The environment includes:
+- Python 3.11
+- uv (package manager)
+- All dev dependencies (pytest, ruff, mypy, etc.)
+
 ```

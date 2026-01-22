@@ -29,9 +29,9 @@ hooks:
 
 # commit.commit_and_push
 
-**Step 3/3** in **commit** workflow
+**Step 4/4** in **commit** workflow
 
-> Runs tests, lints code, and commits changes. Use when ready to commit work with quality checks.
+> Reviews code, runs tests, lints, and commits changes. Use when ready to commit work with quality checks.
 
 ## Prerequisites (Verify First)
 
@@ -124,14 +124,16 @@ This is the final step of the commit workflow. The agent verifies that the chang
 
 A workflow for preparing and committing code changes with quality checks.
 
-This job runs tests until they pass, formats and lints code with ruff,
-then reviews changed files before committing and pushing. The lint step
-uses a sub-agent to reduce context usage.
+This job starts with a code review to catch issues early, runs tests until
+they pass, formats and lints code with ruff, then reviews changed files
+before committing and pushing. The review and lint steps use sub-agents
+to reduce context usage.
 
 Steps:
-1. test - Pull latest code and run tests until they pass
-2. lint - Format and lint code with ruff (runs in sub-agent)
-3. commit_and_push - Review changes and commit/push
+1. review - Code review for issues, DRY opportunities, naming, and test coverage (runs in sub-agent)
+2. test - Pull latest code and run tests until they pass
+3. lint - Format and lint code with ruff (runs in sub-agent)
+4. commit_and_push - Review changes and commit/push
 
 
 
@@ -165,7 +167,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 3/3 complete, outputs: changes_committed"
+2. Inform user: "Step 4/4 complete, outputs: changes_committed"
 3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
 
 ---

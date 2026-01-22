@@ -6,12 +6,15 @@ It uses the wrapper system for cross-platform compatibility.
 
 Rule files are loaded from .deepwork/rules/ directory as frontmatter markdown files.
 
-Usage (via shell wrapper):
-    claude_hook.sh deepwork.hooks.rules_check
-    gemini_hook.sh deepwork.hooks.rules_check
+Usage (via shell wrapper - recommended):
+    claude_hook.sh rules_check
+    gemini_hook.sh rules_check
 
-Or directly with platform environment variable:
-    DEEPWORK_HOOK_PLATFORM=claude python -m deepwork.hooks.rules_check
+Or directly via deepwork CLI:
+    deepwork hook rules_check
+
+Or with platform environment variable:
+    DEEPWORK_HOOK_PLATFORM=claude deepwork hook rules_check
 """
 
 from __future__ import annotations
@@ -846,10 +849,10 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
                             ),
                         )
                     else:
-                        # Command failed
-                        error_msg = format_command_errors(cmd_results)
-                        skip_hint = f"To skip, include `<promise>✓ {rule.name}</promise>` in your response.\n"
-                        command_errors.append(f"## {rule.name}\n{error_msg}{skip_hint}")
+                        # Command failed - format detailed error message
+                        error_msg = format_command_errors(cmd_results, rule_name=rule.name)
+                        skip_hint = f"\nTo skip, include `<promise>✓ {rule.name}</promise>` in your response."
+                        command_errors.append(f"{error_msg}{skip_hint}")
                         queue.update_status(
                             trigger_hash,
                             QueueEntryStatus.FAILED,
@@ -955,17 +958,33 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
 
 def main() -> None:
     """Entry point for the rules check hook."""
-    # Determine platform from environment
     platform_str = os.environ.get("DEEPWORK_HOOK_PLATFORM", "claude")
     try:
         platform = Platform(platform_str)
     except ValueError:
         platform = Platform.CLAUDE
 
-    # Run the hook with the wrapper
     exit_code = run_hook(rules_check_hook, platform)
     sys.exit(exit_code)
 
 
 if __name__ == "__main__":
-    main()
+    # Wrap entry point to catch early failures (e.g., import errors in wrapper.py)
+    try:
+        main()
+    except Exception as e:
+        # Last resort error handling - output JSON manually since wrapper may be broken
+        import json
+        import traceback
+
+        error_output = {
+            "decision": "block",
+            "reason": (
+                "## Hook Script Error\n\n"
+                f"Error type: {type(e).__name__}\n"
+                f"Error: {e}\n\n"
+                f"Traceback:\n```\n{traceback.format_exc()}\n```"
+            ),
+        }
+        print(json.dumps(error_output))
+        sys.exit(0)

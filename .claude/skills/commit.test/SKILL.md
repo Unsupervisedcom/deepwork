@@ -1,6 +1,6 @@
 ---
 name: commit.test
-description: "Pulls latest code and runs tests until all pass. Use when starting the commit workflow or re-running tests."
+description: "Pulls latest code and runs tests until all pass. Use after code review passes to verify changes work correctly."
 user-invocable: false
 hooks:
   Stop:
@@ -29,14 +29,18 @@ hooks:
 
 # commit.test
 
-**Step 1/3** in **commit** workflow
+**Step 2/4** in **commit** workflow
 
-> Runs tests, lints code, and commits changes. Use when ready to commit work with quality checks.
+> Reviews code, runs tests, lints, and commits changes. Use when ready to commit work with quality checks.
 
+## Prerequisites (Verify First)
+
+Before proceeding, confirm these steps are complete:
+- `/commit.review`
 
 ## Instructions
 
-**Goal**: Pulls latest code and runs tests until all pass. Use when starting the commit workflow or re-running tests.
+**Goal**: Pulls latest code and runs tests until all pass. Use after code review passes to verify changes work correctly.
 
 # Run Tests
 
@@ -90,21 +94,23 @@ Execute the test suite for the project and iteratively fix any failures until al
 
 ## Context
 
-This is the first step of the commit workflow. Tests must pass before proceeding to lint and commit. This ensures code quality and prevents broken code from being committed.
+This step runs after code review. Tests must pass before proceeding to lint and commit. This ensures code quality and prevents broken code from being committed. If tests fail due to issues introduced by the code review fixes, iterate on the fixes until tests pass.
 
 
 ### Job Context
 
 A workflow for preparing and committing code changes with quality checks.
 
-This job runs tests until they pass, formats and lints code with ruff,
-then reviews changed files before committing and pushing. The lint step
-uses a sub-agent to reduce context usage.
+This job starts with a code review to catch issues early, runs tests until
+they pass, formats and lints code with ruff, then reviews changed files
+before committing and pushing. The review and lint steps use sub-agents
+to reduce context usage.
 
 Steps:
-1. test - Pull latest code and run tests until they pass
-2. lint - Format and lint code with ruff (runs in sub-agent)
-3. commit_and_push - Review changes and commit/push
+1. review - Code review for issues, DRY opportunities, naming, and test coverage (runs in sub-agent)
+2. test - Pull latest code and run tests until they pass
+3. lint - Format and lint code with ruff (runs in sub-agent)
+4. commit_and_push - Review changes and commit/push
 
 
 ## Required Inputs
@@ -143,7 +149,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 1/3 complete, outputs: tests_passing"
+2. Inform user: "Step 2/4 complete, outputs: tests_passing"
 3. **Continue workflow**: Use Skill tool to invoke `/commit.lint`
 
 ---

@@ -744,7 +744,10 @@ class TestGeneratorTemplateOutput:
         )
 
     def test_template_generates_both_stop_and_subagent_stop_for_quality_criteria(
-        self, full_generator: SkillGenerator, job_with_quality_criteria: JobDefinition, tmp_path: Path
+        self,
+        full_generator: SkillGenerator,
+        job_with_quality_criteria: JobDefinition,
+        tmp_path: Path,
     ) -> None:
         """Test that template generates both Stop and SubagentStop hooks for quality_criteria."""
         adapter = ClaudeAdapter()
@@ -765,7 +768,7 @@ class TestGeneratorTemplateOutput:
         lines = content.split("\n")
         stop_found = False
         subagent_stop_found = False
-        for i, line in enumerate(lines):
+        for _i, line in enumerate(lines):
             if line.strip().startswith("Stop:"):
                 stop_found = True
             if line.strip().startswith("SubagentStop:"):

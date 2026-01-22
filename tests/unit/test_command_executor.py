@@ -170,7 +170,7 @@ class TestFormatCommandErrors:
             ),
         ]
         output = format_command_errors(results)
-        assert "failing_cmd" in output
+        assert "Command: failing_cmd" in output
         assert "Something went wrong" in output
         assert "Exit code: 1" in output
 
@@ -195,3 +195,70 @@ class TestFormatCommandErrors:
         output = format_command_errors(results)
         assert "good_cmd" not in output
         assert "bad_cmd" in output
+
+    def test_includes_rule_name(self) -> None:
+        """Include rule name when provided."""
+        results = [
+            CommandResult(
+                success=False,
+                exit_code=1,
+                stdout="",
+                stderr="Error output",
+                command="test_cmd",
+            ),
+        ]
+        output = format_command_errors(results, rule_name="My Test Rule")
+        assert "Rule: My Test Rule" in output
+        assert "Command: test_cmd" in output
+        assert "Exit code: 1" in output
+        assert "Stderr:\nError output" in output
+
+    def test_includes_stdout(self) -> None:
+        """Include stdout when present."""
+        results = [
+            CommandResult(
+                success=False,
+                exit_code=1,
+                stdout="Standard output here",
+                stderr="Standard error here",
+                command="test_cmd",
+            ),
+        ]
+        output = format_command_errors(results)
+        assert "Stdout:\nStandard output here" in output
+        assert "Stderr:\nStandard error here" in output
+
+    def test_shows_no_output_message(self) -> None:
+        """Show '(no output)' when no stdout or stderr."""
+        results = [
+            CommandResult(
+                success=False,
+                exit_code=42,
+                stdout="",
+                stderr="",
+                command="silent_cmd",
+            ),
+        ]
+        output = format_command_errors(results)
+        assert "Command: silent_cmd" in output
+        assert "Exit code: 42" in output
+        assert "(no output)" in output
+
+    def test_full_error_format(self) -> None:
+        """Test complete error format with all fields."""
+        results = [
+            CommandResult(
+                success=False,
+                exit_code=42,
+                stdout="stdout output",
+                stderr="stderr output",
+                command="echo test && exit 42",
+            ),
+        ]
+        output = format_command_errors(results, rule_name="Command Failure Rule")
+        # Verify all parts are present in the correct format
+        assert "Rule: Command Failure Rule" in output
+        assert "Command: echo test && exit 42" in output
+        assert "Exit code: 42" in output
+        assert "Stdout:\nstdout output" in output
+        assert "Stderr:\nstderr output" in output
