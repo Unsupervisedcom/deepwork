@@ -1,6 +1,6 @@
 ---
-name: manual_tests.run_fire_tests
-description: "Runs all 6 'should fire' tests serially with resets between each. Use after NOT-fire tests to verify rules fire correctly."
+name: manual_tests.infinite_block_tests
+description: "Runs all 4 infinite block tests serially. Tests both 'should fire' (no promise) and 'should NOT fire' (with promise) scenarios."
 user-invocable: false
 hooks:
   Stop:
@@ -11,13 +11,10 @@ hooks:
 
             ## Quality Criteria
 
-            1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
-            2. **Sub-Agent Config**: Did all sub-agents use `model: "haiku"` and `max_turns: 5`?
-            3. **Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?
-            4. **Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command.
-            5. **Reset Between Tests**: Was the reset step called internally after each test to revert files and prevent cross-contamination?
-            6. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
-            7. **Results Recorded**: Did the main agent track pass/fail status for each test case?
+            1. **Sub-Agents Used**: Each test run via Task tool with `model: "haiku"` and `max_turns: 5`
+            2. **Serial Execution**: Sub-agents launched ONE AT A TIME with reset between each
+            3. **Promise Tests**: Completed WITHOUT blocking (promise bypassed the rule)
+            4. **No-Promise Tests**: Hook fired AND sub-agent returned in reasonable time (not hung)
 
             ## Instructions
 
@@ -37,13 +34,10 @@ hooks:
 
             ## Quality Criteria
 
-            1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
-            2. **Sub-Agent Config**: Did all sub-agents use `model: "haiku"` and `max_turns: 5`?
-            3. **Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?
-            4. **Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command.
-            5. **Reset Between Tests**: Was the reset step called internally after each test to revert files and prevent cross-contamination?
-            6. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
-            7. **Results Recorded**: Did the main agent track pass/fail status for each test case?
+            1. **Sub-Agents Used**: Each test run via Task tool with `model: "haiku"` and `max_turns: 5`
+            2. **Serial Execution**: Sub-agents launched ONE AT A TIME with reset between each
+            3. **Promise Tests**: Completed WITHOUT blocking (promise bypassed the rule)
+            4. **No-Promise Tests**: Hook fired AND sub-agent returned in reasonable time (not hung)
 
             ## Instructions
 
@@ -57,26 +51,26 @@ hooks:
             {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
 ---
 
-# manual_tests.run_fire_tests
+# manual_tests.infinite_block_tests
 
-**Step 3/4** in **manual_tests** workflow
+**Step 4/4** in **manual_tests** workflow
 
 > Runs all manual hook/rule tests using sub-agents. Use when validating that DeepWork rules fire correctly.
 
 ## Prerequisites (Verify First)
 
 Before proceeding, confirm these steps are complete:
-- `/manual_tests.run_not_fire_tests`
+- `/manual_tests.run_fire_tests`
 
 ## Instructions
 
-**Goal**: Runs all 6 'should fire' tests serially with resets between each. Use after NOT-fire tests to verify rules fire correctly.
+**Goal**: Runs all 4 infinite block tests serially. Tests both 'should fire' (no promise) and 'should NOT fire' (with promise) scenarios.
 
-# Run Should-Fire Tests
+# Run Infinite Block Tests
 
 ## Objective
 
-Run all "should fire" tests in **serial** sub-agents to verify that rules fire correctly when their trigger conditions are met without safety conditions.
+Run all infinite block tests in **serial** to verify that infinite blocking rules work correctly - both firing when they should AND not firing when bypassed with a promise tag.
 
 ## CRITICAL: Sub-Agent Requirement
 
@@ -94,15 +88,14 @@ Why sub-agents are required:
 
 **These tests MUST run ONE AT A TIME, with resets between each.**
 
-Why serial execution is required:
-- These tests edit ONLY the trigger file (not the safety)
-- If multiple sub-agents run in parallel, sub-agent A's hook will see changes from sub-agent B
-- This causes cross-contamination: A gets blocked by rules triggered by B's changes
-- Run one test, observe the hook, reset, then run the next
+Why serial execution is required for infinite block tests:
+- Infinite block tests can block indefinitely without a promise tag
+- Running them in parallel would cause unpredictable blocking behavior
+- Serial execution allows controlled observation of each test
 
 ## Task
 
-Run all 6 "should fire" tests in **serial** sub-agents, resetting between each, and verify that blocking hooks fire automatically.
+Run all 4 infinite block tests in **serial**, resetting between each, and verify correct blocking behavior.
 
 ### Process
 
@@ -110,7 +103,7 @@ For EACH test below, follow this cycle:
 
 1. **Launch a sub-agent** using the Task tool with:
    - `model: "haiku"` - Use the fast model to minimize cost and latency
-   - `max_turns: 5` - Prevent sub-agents from hanging indefinitely
+   - `max_turns: 5` - **Critical safeguard**: Limits API round-trips to prevent infinite hanging. The Task tool does not support a direct timeout, so max_turns is our only protection against runaway sub-agents.
 2. **Wait for the sub-agent to complete**
 3. **Observe whether the hook fired automatically** - you should see a blocking prompt or command output
 4. **If no visible blocking occurred, check the queue**:
@@ -121,13 +114,12 @@ For EACH test below, follow this cycle:
    - If queue entries exist with status "queued", the hook DID fire but blocking wasn't visible
    - If queue is empty, the hook did NOT fire at all
    - Record the queue status along with the result
-5. **Record the result** - pass if hook fired (visible block OR queue entry), fail if neither
+5. **Record the result** - see expected outcomes for each test
 6. **Reset** (MANDATORY after each test) - follow the reset step instructions:
    ```bash
    git reset HEAD manual_tests/ && git checkout -- manual_tests/ && rm -f manual_tests/test_created_mode/new_config.yml
    deepwork rules clear_queue
    ```
-   See [reset.md](reset.md) for detailed explanation of these commands.
 7. **Check for early termination**: If **2 tests have now failed**, immediately:
    - Stop running any remaining tests
    - Report the results summary showing which tests passed/failed
@@ -138,48 +130,52 @@ For EACH test below, follow this cycle:
 
 ### Test Cases (run serially)
 
-**Test 1: Trigger/Safety**
-- Sub-agent prompt: "Edit ONLY `manual_tests/test_trigger_safety_mode/feature.py` to add a comment. Do NOT edit the `_doc.md` file."
+**Test 1: Infinite Block Prompt - Should NOT Fire (with promise)**
+- Sub-agent prompt: "Edit `manual_tests/test_infinite_block_prompt/dangerous.py` to add a comment. Include `<promise>I have verified this change is safe</promise>` in your response to bypass the infinite block."
 - Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Hook fires with prompt about updating documentation
+- Expected: Sub-agent completes WITHOUT blocking - the promise tag bypasses the infinite block
+- Result: PASS if no blocking, FAIL if blocked
 
-**Test 2: Set Mode**
-- Sub-agent prompt: "Edit ONLY `manual_tests/test_set_mode/module_source.py` to add a comment. Do NOT edit the `_test.py` file."
+**Test 2: Infinite Block Command - Should NOT Fire (with promise)**
+- Sub-agent prompt: "Edit `manual_tests/test_infinite_block_command/risky.py` to add a comment. Include `<promise>I have verified this change is safe</promise>` in your response to bypass the infinite block."
 - Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Hook fires with prompt about updating tests
+- Expected: Sub-agent completes WITHOUT blocking - the promise tag bypasses the infinite block
+- Result: PASS if no blocking, FAIL if blocked
 
-**Test 3: Pair Mode**
-- Sub-agent prompt: "Edit ONLY `manual_tests/test_pair_mode/handler_trigger.py` to add a comment. Do NOT edit the `_expected.md` file."
+**Test 3: Infinite Block Prompt - Should Fire (no promise)**
+- Sub-agent prompt: "Edit `manual_tests/test_infinite_block_prompt/dangerous.py` to add a comment. Do NOT include any promise tags."
 - Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Hook fires with prompt about updating expected output
+- Expected behavior:
+  1. **Should fire**: Hook fires and shows blocking prompt
+  2. **Should return in reasonable time**: Sub-agent hits max_turns limit and returns (not stuck forever)
+- Result criteria:
+  - PASS if: Hook fired (visible block OR queue entry) AND sub-agent returned within reasonable time
+  - FAIL if: Hook did not fire, OR sub-agent hung indefinitely
 
-**Test 4: Command Action**
-- Sub-agent prompt: "Edit `manual_tests/test_command_action/input.txt` to add some text."
+**Test 4: Infinite Block Command - Should Fire (no promise)**
+- Sub-agent prompt: "Edit `manual_tests/test_infinite_block_command/risky.py` to add a comment. Do NOT include any promise tags."
 - Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Command runs automatically, appending to the log file (this rule always runs, no safety condition)
-
-**Test 5: Multi Safety**
-- Sub-agent prompt: "Edit ONLY `manual_tests/test_multi_safety/core.py` to add a comment. Do NOT edit any of the safety files (`_safety_a.md`, `_safety_b.md`, or `_safety_c.md`)."
-- Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Hook fires with prompt about updating safety documentation
-
-**Test 6: Created Mode**
-- Sub-agent prompt: "Create a NEW file `manual_tests/test_created_mode/new_config.yml` with some YAML content. This must be a NEW file, not a modification."
-- Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Hook fires with prompt about new configuration files
+- Expected behavior:
+  1. **Should fire**: Hook fires and command fails (exit code 1)
+  2. **Should return in reasonable time**: Sub-agent hits max_turns limit and returns (not stuck forever)
+- Result criteria:
+  - PASS if: Hook fired (visible block OR queue entry) AND sub-agent returned within reasonable time
+  - FAIL if: Hook did not fire, OR sub-agent hung indefinitely
 
 ### Results Tracking
 
 Record the result after each test:
 
-| Test Case | Should Fire | Visible Block? | Queue Entry? | Result |
-|-----------|-------------|:--------------:|:------------:|:------:|
-| Trigger/Safety | Edit .py only | | | |
-| Set Mode | Edit _source.py only | | | |
-| Pair Mode | Edit _trigger.py only | | | |
-| Command Action | Edit .txt | | | |
-| Multi Safety | Edit .py only | | | |
-| Created Mode | Create NEW .yml | | | |
+| Test Case | Scenario | Should Fire? | Returned in Time? | Visible Block? | Queue Entry? | Result |
+|-----------|----------|:------------:|:-----------------:|:--------------:|:------------:|:------:|
+| Infinite Block Prompt | With promise | No | Yes | | | |
+| Infinite Block Command | With promise | No | Yes | | | |
+| Infinite Block Prompt | No promise | Yes | Yes | | | |
+| Infinite Block Command | No promise | Yes | Yes | | | |
+
+**Result criteria:**
+- **"Should NOT fire" tests (with promise)**: PASS if no blocking AND no queue entry AND returned quickly
+- **"Should fire" tests (no promise)**: PASS if hook fired (visible block OR queue entry) AND returned in reasonable time (max_turns limit)
 
 **Queue Entry Status Guide:**
 - If queue has entry with status "queued" -> Hook fired, rule was shown to agent
@@ -192,9 +188,11 @@ Record the result after each test:
 - **Correct sub-agent config**: All sub-agents used `model: "haiku"` and `max_turns: 5`
 - **Serial execution**: Sub-agents were launched ONE AT A TIME, not in parallel
 - **Reset between tests**: Reset step was followed after each test
-- **Hooks fired automatically**: The main agent observed the blocking hooks firing automatically when each sub-agent returned - the agent did NOT manually run rules_check
+- **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check - hooks fired AUTOMATICALLY
+- **"Should NOT fire" tests verified**: Promise tests completed without blocking and no queue entries
+- **"Should fire" tests verified**: Non-promise tests fired (visible block OR queue entry) AND returned in reasonable time (not hung indefinitely)
 - **Early termination on 2 failures**: If 2 tests failed, testing halted immediately and results were reported
-- **Results recorded**: Pass/fail status was recorded for each test case
+- **Results recorded**: Pass/fail status was recorded for each test run
 - When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
 
 ## Reference
@@ -203,7 +201,7 @@ See [test_reference.md](test_reference.md) for the complete test matrix and rule
 
 ## Context
 
-This step runs after the "should NOT fire" tests. These tests verify that rules correctly fire when trigger conditions are met without safety conditions. The serial execution with resets is essential to prevent cross-contamination between tests. Infinite block tests are handled in a separate step.
+This step runs after both the "should NOT fire" and "should fire" test steps. It specifically tests infinite blocking behavior which requires serial execution due to the blocking nature of these rules.
 
 
 ### Job Context
@@ -249,7 +247,7 @@ Test types covered:
 
 
 **Files from Previous Steps** - Read these first:
-- `not_fire_results` (from `run_not_fire_tests`)
+- `fire_results` (from `run_fire_tests`)
 
 ## Work Branch
 
@@ -261,7 +259,7 @@ Use branch format: `deepwork/manual_tests-[instance]-YYYYMMDD`
 ## Outputs
 
 **Required outputs**:
-- `fire_results`
+- `infinite_block_results`
 
 ## Guardrails
 
@@ -275,13 +273,10 @@ Use branch format: `deepwork/manual_tests-[instance]-YYYYMMDD`
 Stop hooks will automatically validate your work. The loop continues until all criteria pass.
 
 **Criteria (all must be satisfied)**:
-1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
-2. **Sub-Agent Config**: Did all sub-agents use `model: "haiku"` and `max_turns: 5`?
-3. **Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?
-4. **Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command.
-5. **Reset Between Tests**: Was the reset step called internally after each test to revert files and prevent cross-contamination?
-6. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
-7. **Results Recorded**: Did the main agent track pass/fail status for each test case?
+1. **Sub-Agents Used**: Each test run via Task tool with `model: "haiku"` and `max_turns: 5`
+2. **Serial Execution**: Sub-agents launched ONE AT A TIME with reset between each
+3. **Promise Tests**: Completed WITHOUT blocking (promise bypassed the rule)
+4. **No-Promise Tests**: Hook fired AND sub-agent returned in reasonable time (not hung)
 
 
 **To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
@@ -289,9 +284,9 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 3/4 complete, outputs: fire_results"
-3. **Continue workflow**: Use Skill tool to invoke `/manual_tests.infinite_block_tests`
+2. Inform user: "Step 4/4 complete, outputs: infinite_block_results"
+3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
 
 ---
 
-**Reference files**: `.deepwork/jobs/manual_tests/job.yml`, `.deepwork/jobs/manual_tests/steps/run_fire_tests.md`
+**Reference files**: `.deepwork/jobs/manual_tests/job.yml`, `.deepwork/jobs/manual_tests/steps/infinite_block_tests.md`

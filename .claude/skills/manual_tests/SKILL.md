@@ -21,9 +21,20 @@ CRITICAL: All tests MUST run in sub-agents. The main agent MUST NOT make the fil
 edits itself - it spawns sub-agents to make edits, then observes whether the hooks
 fired automatically when those sub-agents returned.
 
+Sub-agent configuration:
+- All sub-agents should use `model: "haiku"` to minimize cost and latency
+- All sub-agents should use `max_turns: 5` to prevent hanging indefinitely
+
 Steps:
-1. run_not_fire_tests - Run all "should NOT fire" tests in PARALLEL sub-agents
-2. run_fire_tests - Run all "should fire" tests in SERIAL sub-agents with reverts between
+1. reset - Ensure clean environment before testing (clears queue, reverts files)
+2. run_not_fire_tests - Run all "should NOT fire" tests in PARALLEL sub-agents (6 tests)
+3. run_fire_tests - Run all "should fire" tests in SERIAL sub-agents with resets between (6 tests)
+4. infinite_block_tests - Run infinite block tests in SERIAL (4 tests - both fire and not-fire)
+
+Reset procedure (see steps/reset.md):
+- Reset runs FIRST to ensure a clean environment before any tests
+- Each step also calls reset internally when needed (between tests, after completion)
+- Reset reverts git changes, removes created files, and clears the rules queue
 
 Test types covered:
 - Trigger/Safety mode
@@ -31,28 +42,32 @@ Test types covered:
 - Pair mode (directional)
 - Command action
 - Multi safety
-- Infinite block (prompt and command)
+- Infinite block (prompt and command) - in dedicated step
 - Created mode (new files only)
 
 
 ## Available Steps
 
-1. **run_not_fire_tests** - Runs all 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met.
-2. **run_fire_tests** - Runs all 'should fire' tests serially with git reverts between each. Use after NOT-fire tests to verify rules fire correctly. (requires: run_not_fire_tests)
+1. **reset** - Runs FIRST to ensure clean environment. Also called internally by other steps when they need to revert changes and clear the queue.
+2. **run_not_fire_tests** - Runs all 6 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met. (requires: reset)
+3. **run_fire_tests** - Runs all 6 'should fire' tests serially with resets between each. Use after NOT-fire tests to verify rules fire correctly. (requires: run_not_fire_tests)
+4. **infinite_block_tests** - Runs all 4 infinite block tests serially. Tests both 'should fire' (no promise) and 'should NOT fire' (with promise) scenarios. (requires: run_fire_tests)
 
 ## Execution Instructions
 
 ### Step 1: Analyze Intent
 
 Parse any text following `/manual_tests` to determine user intent:
+- "reset" or related terms → start at `manual_tests.reset`
 - "run_not_fire_tests" or related terms → start at `manual_tests.run_not_fire_tests`
 - "run_fire_tests" or related terms → start at `manual_tests.run_fire_tests`
+- "infinite_block_tests" or related terms → start at `manual_tests.infinite_block_tests`
 
 ### Step 2: Invoke Starting Step
 
 Use the Skill tool to invoke the identified starting step:
 ```
-Skill tool: manual_tests.run_not_fire_tests
+Skill tool: manual_tests.reset
 ```
 
 ### Step 3: Continue Workflow Automatically

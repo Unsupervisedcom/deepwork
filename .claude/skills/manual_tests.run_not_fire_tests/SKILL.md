@@ -1,6 +1,6 @@
 ---
 name: manual_tests.run_not_fire_tests
-description: "Runs all 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met."
+description: "Runs all 6 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met."
 user-invocable: false
 hooks:
   Stop:
@@ -12,10 +12,12 @@ hooks:
             ## Quality Criteria
 
             1. **Sub-Agents Used**: Did the main agent spawn sub-agents (using the Task tool) to make the file edits? The main agent must NOT edit the test files directly.
-            2. **Parallel Execution**: Were multiple sub-agents launched in parallel (in a single message with multiple Task tool calls)?
-            3. **Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command.
-            4. **All Tests Run**: Were all 8 'should NOT fire' tests executed (trigger/safety, set, pair forward, pair reverse, multi safety, infinite block prompt, infinite block command, created)?
-            5. **Git Reverted**: Were changes reverted and queue cleared after tests completed using `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json`?
+            2. **Sub-Agent Config**: Did all sub-agents use `model: "haiku"` and `max_turns: 5`?
+            3. **Parallel Execution**: Were all 6 sub-agents launched in parallel (in a single message with multiple Task tool calls)?
+            4. **Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command.
+            5. **Queue Verified Empty**: After all sub-agents completed, was the rules queue checked and confirmed empty (no entries = rules did not fire)?
+            6. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
+            7. **Reset Performed**: Was the reset step called internally after tests completed (or after early termination)?
 
             ## Instructions
 
@@ -36,10 +38,12 @@ hooks:
             ## Quality Criteria
 
             1. **Sub-Agents Used**: Did the main agent spawn sub-agents (using the Task tool) to make the file edits? The main agent must NOT edit the test files directly.
-            2. **Parallel Execution**: Were multiple sub-agents launched in parallel (in a single message with multiple Task tool calls)?
-            3. **Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command.
-            4. **All Tests Run**: Were all 8 'should NOT fire' tests executed (trigger/safety, set, pair forward, pair reverse, multi safety, infinite block prompt, infinite block command, created)?
-            5. **Git Reverted**: Were changes reverted and queue cleared after tests completed using `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json`?
+            2. **Sub-Agent Config**: Did all sub-agents use `model: "haiku"` and `max_turns: 5`?
+            3. **Parallel Execution**: Were all 6 sub-agents launched in parallel (in a single message with multiple Task tool calls)?
+            4. **Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command.
+            5. **Queue Verified Empty**: After all sub-agents completed, was the rules queue checked and confirmed empty (no entries = rules did not fire)?
+            6. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
+            7. **Reset Performed**: Was the reset step called internally after tests completed (or after early termination)?
 
             ## Instructions
 
@@ -55,14 +59,18 @@ hooks:
 
 # manual_tests.run_not_fire_tests
 
-**Step 1/2** in **manual_tests** workflow
+**Step 2/4** in **manual_tests** workflow
 
 > Runs all manual hook/rule tests using sub-agents. Use when validating that DeepWork rules fire correctly.
 
+## Prerequisites (Verify First)
+
+Before proceeding, confirm these steps are complete:
+- `/manual_tests.reset`
 
 ## Instructions
 
-**Goal**: Runs all 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met.
+**Goal**: Runs all 6 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met.
 
 # Run Should-NOT-Fire Tests
 
@@ -84,15 +92,19 @@ Why sub-agents are required:
 
 ## Task
 
-Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blocking hooks fired.
+Run all 6 "should NOT fire" tests in **parallel** sub-agents, then verify no blocking hooks fired.
 
 ### Process
 
 1. **Launch parallel sub-agents for all "should NOT fire" tests**
 
-   Use the Task tool to spawn **ALL of the following sub-agents in a SINGLE message** (parallel execution). Each sub-agent should use a fast model like haiku.
+   Use the Task tool to spawn **ALL of the following sub-agents in a SINGLE message** (parallel execution).
 
-   **Sub-agent prompts (launch all 8 in parallel):**
+   **Sub-agent configuration for ALL sub-agents:**
+   - `model: "haiku"` - Use the fast model to minimize cost and latency
+   - `max_turns: 5` - Prevent sub-agents from hanging indefinitely
+
+   **Sub-agent prompts (launch all 6 in parallel):**
 
    a. **Trigger/Safety test** - "Edit `manual_tests/test_trigger_safety_mode/feature.py` to add a comment, AND edit `manual_tests/test_trigger_safety_mode/feature_doc.md` to add a note. Both files must be edited so the rule does NOT fire."
 
@@ -104,53 +116,72 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
 
    e. **Multi Safety test** - "Edit `manual_tests/test_multi_safety/core.py` to add a comment, AND edit `manual_tests/test_multi_safety/core_safety_a.md` to add a note. Both files must be edited so the rule does NOT fire."
 
-   f. **Infinite Block Prompt test** - "Edit `manual_tests/test_infinite_block_prompt/dangerous.py` to add a comment. Include `<promise>I have verified this change is safe</promise>` in your response to bypass the infinite block."
-
-   g. **Infinite Block Command test** - "Edit `manual_tests/test_infinite_block_command/risky.py` to add a comment. Include `<promise>I have verified this change is safe</promise>` in your response to bypass the infinite block."
-
-   h. **Created Mode test** - "Modify the EXISTING file `manual_tests/test_created_mode/existing.yml` by adding a comment. Do NOT create a new file - only modify the existing one. The created mode rule should NOT fire for modifications."
+   f. **Created Mode test** - "Modify the EXISTING file `manual_tests/test_created_mode/existing.yml` by adding a comment. Do NOT create a new file - only modify the existing one. The created mode rule should NOT fire for modifications."
 
 2. **Observe the results**
 
    When each sub-agent returns:
-   - **If no blocking hook fired**: The test PASSED - the rule correctly did NOT fire
+   - **If no blocking hook fired**: Preliminary pass - proceed to queue verification
    - **If a blocking hook fired**: The test FAILED - investigate why the rule fired when it shouldn't have
 
-   **Remember**: You are OBSERVING whether hooks fired automatically. Do NOT run any verification commands manually.
+   **Remember**: You are OBSERVING whether hooks fired automatically. Do NOT run any verification commands manually during sub-agent execution.
 
-3. **Record the results**
+3. **Verify no queue entries** (CRITICAL for "should NOT fire" tests)
+
+   After ALL sub-agents have completed, verify the rules queue is empty:
+   ```bash
+   ls -la .deepwork/tmp/rules/queue/
+   cat .deepwork/tmp/rules/queue/*.json 2>/dev/null
+   ```
+
+   - **If queue is empty**: All tests PASSED - rules correctly did not fire
+   - **If queue has entries**: Tests FAILED - rules fired when they shouldn't have. Check which rule fired and investigate.
+
+   This verification is essential because some rules may fire without visible blocking but still create queue entries.
+
+4. **Record the results and check for early termination**
 
    Track which tests passed and which failed:
 
-   | Test Case | Should NOT Fire | Result |
-   |-----------|:---------------:|:------:|
-   | Trigger/Safety | Edit both files | |
-   | Set Mode | Edit both files | |
-   | Pair Mode (forward) | Edit both files | |
-   | Pair Mode (reverse) | Edit expected only | |
-   | Multi Safety | Edit both files | |
-   | Infinite Block Prompt | Promise tag | |
-   | Infinite Block Command | Promise tag | |
-   | Created Mode | Modify existing | |
+   | Test Case | Should NOT Fire | Visible Block? | Queue Entry? | Result |
+   |-----------|:---------------:|:--------------:|:------------:|:------:|
+   | Trigger/Safety | Edit both files | | | |
+   | Set Mode | Edit both files | | | |
+   | Pair Mode (forward) | Edit both files | | | |
+   | Pair Mode (reverse) | Edit expected only | | | |
+   | Multi Safety | Edit both files | | | |
+   | Created Mode | Modify existing | | | |
 
-4. **Revert all changes and clear queue**
+   **Result criteria**: PASS only if NO visible block AND NO queue entry. FAIL if either occurred.
 
-   After all tests complete, run:
+   **EARLY TERMINATION**: If **2 tests have failed**, immediately:
+   1. Stop running any remaining tests
+   2. Reset (see step 5)
+   3. Report the results summary showing which tests passed/failed
+   4. Do NOT proceed to the next step - the job halts here
+
+5. **Reset** (MANDATORY - call the reset step internally)
+
+   **IMPORTANT**: This step is MANDATORY and must run regardless of whether tests passed or failed.
+
+   Follow the reset step instructions. Run these commands to clean up:
    ```bash
-   git checkout -- manual_tests/
-   rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null || true
+   git reset HEAD manual_tests/ && git checkout -- manual_tests/ && rm -f manual_tests/test_created_mode/new_config.yml
+   deepwork rules clear_queue
    ```
 
-   This cleans up the test files AND clears the rules queue before the "should fire" tests run. The queue must be cleared because rules that have already been shown to the agent (status=QUEUED) won't fire again until the queue is cleared.
+   See [reset.md](reset.md) for detailed explanation of these commands.
 
 ## Quality Criteria
 
-- **Sub-agents spawned**: All 8 tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
-- **Parallel execution**: All 8 sub-agents were launched in a single message (parallel)
+- **Sub-agents spawned**: All 6 tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
+- **Correct sub-agent config**: All sub-agents used `model: "haiku"` and `max_turns: 5`
+- **Parallel execution**: All 6 sub-agents were launched in a single message (parallel)
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check
-- **No unexpected blocks**: All tests passed - no blocking hooks fired
-- **Changes reverted and queue cleared**: `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after tests completed
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+- **Queue verified empty**: After all sub-agents completed, the rules queue was checked and confirmed empty (no queue entries = rules did not fire)
+- **Early termination on 2 failures**: If 2 tests failed, testing halted immediately and results were reported
+- **Reset performed**: Reset step was followed after tests completed (regardless of pass/fail)
+- When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
 
 ## Reference
 
@@ -158,7 +189,7 @@ See [test_reference.md](test_reference.md) for the complete test matrix and rule
 
 ## Context
 
-This step runs first and tests that rules correctly do NOT fire when safety conditions are met. The "should fire" tests run after these complete and the working directory is reverted.
+This step runs after the reset step (which ensures a clean environment) and tests that rules correctly do NOT fire when safety conditions are met. The "should fire" tests run after these complete. Infinite block tests are handled in a separate step.
 
 
 ### Job Context
@@ -175,9 +206,20 @@ CRITICAL: All tests MUST run in sub-agents. The main agent MUST NOT make the fil
 edits itself - it spawns sub-agents to make edits, then observes whether the hooks
 fired automatically when those sub-agents returned.
 
+Sub-agent configuration:
+- All sub-agents should use `model: "haiku"` to minimize cost and latency
+- All sub-agents should use `max_turns: 5` to prevent hanging indefinitely
+
 Steps:
-1. run_not_fire_tests - Run all "should NOT fire" tests in PARALLEL sub-agents
-2. run_fire_tests - Run all "should fire" tests in SERIAL sub-agents with reverts between
+1. reset - Ensure clean environment before testing (clears queue, reverts files)
+2. run_not_fire_tests - Run all "should NOT fire" tests in PARALLEL sub-agents (6 tests)
+3. run_fire_tests - Run all "should fire" tests in SERIAL sub-agents with resets between (6 tests)
+4. infinite_block_tests - Run infinite block tests in SERIAL (4 tests - both fire and not-fire)
+
+Reset procedure (see steps/reset.md):
+- Reset runs FIRST to ensure a clean environment before any tests
+- Each step also calls reset internally when needed (between tests, after completion)
+- Reset reverts git changes, removes created files, and clears the rules queue
 
 Test types covered:
 - Trigger/Safety mode
@@ -185,10 +227,15 @@ Test types covered:
 - Pair mode (directional)
 - Command action
 - Multi safety
-- Infinite block (prompt and command)
+- Infinite block (prompt and command) - in dedicated step
 - Created mode (new files only)
 
 
+## Required Inputs
+
+
+**Files from Previous Steps** - Read these first:
+- `clean_environment` (from `reset`)
 
 ## Work Branch
 
@@ -215,10 +262,12 @@ Stop hooks will automatically validate your work. The loop continues until all c
 
 **Criteria (all must be satisfied)**:
 1. **Sub-Agents Used**: Did the main agent spawn sub-agents (using the Task tool) to make the file edits? The main agent must NOT edit the test files directly.
-2. **Parallel Execution**: Were multiple sub-agents launched in parallel (in a single message with multiple Task tool calls)?
-3. **Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command.
-4. **All Tests Run**: Were all 8 'should NOT fire' tests executed (trigger/safety, set, pair forward, pair reverse, multi safety, infinite block prompt, infinite block command, created)?
-5. **Git Reverted**: Were changes reverted and queue cleared after tests completed using `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json`?
+2. **Sub-Agent Config**: Did all sub-agents use `model: "haiku"` and `max_turns: 5`?
+3. **Parallel Execution**: Were all 6 sub-agents launched in parallel (in a single message with multiple Task tool calls)?
+4. **Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command.
+5. **Queue Verified Empty**: After all sub-agents completed, was the rules queue checked and confirmed empty (no entries = rules did not fire)?
+6. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
+7. **Reset Performed**: Was the reset step called internally after tests completed (or after early termination)?
 
 
 **To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
@@ -226,7 +275,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 1/2 complete, outputs: not_fire_results"
+2. Inform user: "Step 2/4 complete, outputs: not_fire_results"
 3. **Continue workflow**: Use Skill tool to invoke `/manual_tests.run_fire_tests`
 
 ---
