@@ -14,8 +14,8 @@ hooks:
             1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
             2. **Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?
             3. **Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command.
-            4. **Git Reverted Between Tests**: Was `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` run between each test to prevent cross-contamination?
-            5. **All Tests Run**: Were all 8 'should fire' tests executed (trigger/safety, set, pair, command action, multi safety, infinite block prompt, infinite block command, created)?
+            4. **Git Reverted Between Tests**: Was `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` run after each test to revert files and prevent cross-contamination?
+            5. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
             6. **Results Recorded**: Did the main agent track pass/fail status for each test case?
 
             ## Instructions
@@ -39,8 +39,8 @@ hooks:
             1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
             2. **Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?
             3. **Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command.
-            4. **Git Reverted Between Tests**: Was `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` run between each test to prevent cross-contamination?
-            5. **All Tests Run**: Were all 8 'should fire' tests executed (trigger/safety, set, pair, command action, multi safety, infinite block prompt, infinite block command, created)?
+            4. **Git Reverted Between Tests**: Was `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` run after each test to revert files and prevent cross-contamination?
+            5. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
             6. **Results Recorded**: Did the main agent track pass/fail status for each test case?
 
             ## Instructions
@@ -118,13 +118,21 @@ For EACH test below, follow this cycle:
    - If queue is empty, the hook did NOT fire at all
    - Record the queue status along with the result
 5. **Record the result** - pass if hook fired (visible block OR queue entry), fail if neither
-6. **Revert changes and clear queue**:
+6. **Revert changes and clear queue** (MANDATORY after each test):
    ```bash
-   git checkout -- manual_tests/
+   git reset HEAD manual_tests/ && git checkout -- manual_tests/ && rm -f manual_tests/test_created_mode/new_config.yml
    rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null || true
    ```
-   The queue must be cleared because rules that have been shown (status=QUEUED) won't fire again until cleared.
-7. **Proceed to the next test**
+   **Why this command sequence**:
+   - `git reset HEAD manual_tests/` - Unstages files from the index (rules_check uses `git add -A` which stages changes)
+   - `git checkout -- manual_tests/` - Reverts working tree to match HEAD
+   - `rm -f ...` - Removes any new files created during tests
+   - The queue clear removes rules that have been shown (status=QUEUED) so they can fire again
+7. **Check for early termination**: If **2 tests have now failed**, immediately:
+   - Stop running any remaining tests
+   - Report the results summary showing which tests passed/failed
+   - The job halts here - do NOT proceed with remaining tests
+8. **Proceed to the next test** (only if fewer than 2 failures)
 
 **IMPORTANT**: Only launch ONE sub-agent at a time. Wait for it to complete and revert before launching the next.
 
@@ -184,12 +192,13 @@ Record the result after each test:
 
 ## Quality Criteria
 
-- **Sub-agents spawned**: All 8 tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
+- **Sub-agents spawned**: Tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
 - **Serial execution**: Sub-agents were launched ONE AT A TIME, not in parallel
-- **Git reverted and queue cleared between tests**: `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after each test
+- **Git reverted and queue cleared between tests**: `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after each test
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check - hooks fired AUTOMATICALLY
-- **Blocking behavior verified**: For each test, the appropriate blocking hook fired automatically when the sub-agent returned
-- **Results recorded**: Pass/fail status was recorded for each test
+- **Blocking behavior verified**: For each test run, the appropriate blocking hook fired automatically when the sub-agent returned
+- **Early termination on 2 failures**: If 2 tests failed, testing halted immediately and results were reported
+- **Results recorded**: Pass/fail status was recorded for each test run
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Reference
@@ -262,8 +271,8 @@ Stop hooks will automatically validate your work. The loop continues until all c
 1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
 2. **Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?
 3. **Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command.
-4. **Git Reverted Between Tests**: Was `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` run between each test to prevent cross-contamination?
-5. **All Tests Run**: Were all 8 'should fire' tests executed (trigger/safety, set, pair, command action, multi safety, infinite block prompt, infinite block command, created)?
+4. **Git Reverted Between Tests**: Was `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` run after each test to revert files and prevent cross-contamination?
+5. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
 6. **Results Recorded**: Did the main agent track pass/fail status for each test case?
 
 
