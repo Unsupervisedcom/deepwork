@@ -61,6 +61,3 @@ jobs:
             *This PR was automatically created by the update-claude-code workflow.*
           branch: update-claude-code
           delete-branch: true
-          labels: |
-            dependencies
-            automated
