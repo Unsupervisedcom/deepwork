@@ -52,7 +52,7 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
 
    **Remember**: You are OBSERVING whether hooks fired automatically. Do NOT run any verification commands manually.
 
-3. **Record the results**
+3. **Record the results and check for early termination**
 
    Track which tests passed and which failed:
 
@@ -67,23 +67,35 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
    | Infinite Block Command | Promise tag | |
    | Created Mode | Modify existing | |
 
+   **EARLY TERMINATION**: If **2 tests have failed**, immediately:
+   1. Stop running any remaining tests
+   2. Revert all changes and clear queue (see step 4)
+   3. Report the results summary showing which tests passed/failed
+   4. Do NOT proceed to the next step - the job halts here
+
 4. **Revert all changes and clear queue**
 
-   After all tests complete, run:
+   **IMPORTANT**: This step is MANDATORY and must run regardless of whether tests passed or failed.
+
+   Run these commands to clean up:
    ```bash
-   git checkout -- manual_tests/
+   git reset HEAD manual_tests/ && git checkout -- manual_tests/ && rm -f manual_tests/test_created_mode/new_config.yml
    rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null || true
    ```
 
-   This cleans up the test files AND clears the rules queue before the "should fire" tests run. The queue must be cleared because rules that have already been shown to the agent (status=QUEUED) won't fire again until the queue is cleared.
+   **Why this command sequence**:
+   - `git reset HEAD manual_tests/` - Unstages files from the index (rules_check uses `git add -A` which stages changes)
+   - `git checkout -- manual_tests/` - Reverts working tree to match HEAD
+   - `rm -f manual_tests/test_created_mode/new_config.yml` - Removes any new files created during tests
+   - The queue clear removes rules that have been shown (status=QUEUED) so they can fire again
 
 ## Quality Criteria
 
 - **Sub-agents spawned**: All 8 tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
 - **Parallel execution**: All 8 sub-agents were launched in a single message (parallel)
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check
-- **No unexpected blocks**: All tests passed - no blocking hooks fired
-- **Changes reverted and queue cleared**: `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after tests completed
+- **Early termination on 2 failures**: If 2 tests failed, testing halted immediately and results were reported
+- **Changes reverted and queue cleared**: `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after tests completed (regardless of pass/fail)
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Reference
