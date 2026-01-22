@@ -624,6 +624,16 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
             ):
                 continue
 
+            # For COMMAND rules, also skip if already FAILED (already shown error).
+            # This prevents infinite loops when a command always fails.
+            # The agent needs to either fix the underlying issue or provide a promise.
+            if (
+                existing
+                and existing.status == QueueEntryStatus.FAILED
+                and rule.action_type == ActionType.COMMAND
+            ):
+                continue
+
             # Create queue entry if new
             if not existing:
                 queue.create_entry(

@@ -84,6 +84,19 @@ deepwork/
     ├── deepwork_rules/             # ← Installed copy, NOT source of truth
     └── [bespoke_job]/              # ← Source of truth for bespoke only
 
+## Debugging Issues
+
+When debugging issues in this codebase, **always consult `doc/debugging_history/`** first. This directory contains documentation of past debugging sessions, including:
+
+- Root causes of tricky bugs
+- Key learnings and patterns to avoid
+- Related files and test cases
+
+**After resolving an issue**, append your findings to the appropriate file in `doc/debugging_history/` (or create a new file if none exists for that subsystem). This helps future agents avoid the same pitfalls.
+
+Current debugging history files:
+- `doc/debugging_history/hooks.md` - Hooks system debugging (rules_check, blocking, queue management)
+
 ## Development Environment
 
 This project uses **Nix Flakes** to provide a reproducible development environment.
