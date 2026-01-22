@@ -52,7 +52,7 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
 
    **Remember**: You are OBSERVING whether hooks fired automatically. Do NOT run any verification commands manually.
 
-3. **Record the results**
+3. **Record the results and check for early termination**
 
    Track which tests passed and which failed:
 
@@ -67,9 +67,17 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
    | Infinite Block Command | Promise tag | |
    | Created Mode | Modify existing | |
 
+   **EARLY TERMINATION**: If **2 tests have failed**, immediately:
+   1. Stop running any remaining tests
+   2. Revert all changes and clear queue (see step 4)
+   3. Report the results summary showing which tests passed/failed
+   4. Do NOT proceed to the next step - the job halts here
+
 4. **Revert all changes and clear queue**
 
-   After all tests complete, run:
+   **IMPORTANT**: This step is MANDATORY and must run regardless of whether tests passed or failed.
+
+   Run these commands to clean up:
    ```bash
    git checkout -- manual_tests/
    rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null || true
@@ -82,8 +90,8 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
 - **Sub-agents spawned**: All 8 tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
 - **Parallel execution**: All 8 sub-agents were launched in a single message (parallel)
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check
-- **No unexpected blocks**: All tests passed - no blocking hooks fired
-- **Changes reverted and queue cleared**: `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after tests completed
+- **Early termination on 2 failures**: If 2 tests failed, testing halted immediately and results were reported
+- **Changes reverted and queue cleared**: `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after tests completed (regardless of pass/fail)
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Reference

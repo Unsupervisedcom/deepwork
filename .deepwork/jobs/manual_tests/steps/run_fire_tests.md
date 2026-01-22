@@ -46,13 +46,17 @@ For EACH test below, follow this cycle:
    - If queue is empty, the hook did NOT fire at all
    - Record the queue status along with the result
 5. **Record the result** - pass if hook fired (visible block OR queue entry), fail if neither
-6. **Revert changes and clear queue**:
+6. **Revert changes and clear queue** (MANDATORY after each test):
    ```bash
    git checkout -- manual_tests/
    rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null || true
    ```
    The queue must be cleared because rules that have been shown (status=QUEUED) won't fire again until cleared.
-7. **Proceed to the next test**
+7. **Check for early termination**: If **2 tests have now failed**, immediately:
+   - Stop running any remaining tests
+   - Report the results summary showing which tests passed/failed
+   - The job halts here - do NOT proceed with remaining tests
+8. **Proceed to the next test** (only if fewer than 2 failures)
 
 **IMPORTANT**: Only launch ONE sub-agent at a time. Wait for it to complete and revert before launching the next.
 
@@ -112,12 +116,13 @@ Record the result after each test:
 
 ## Quality Criteria
 
-- **Sub-agents spawned**: All 8 tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
+- **Sub-agents spawned**: Tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
 - **Serial execution**: Sub-agents were launched ONE AT A TIME, not in parallel
 - **Git reverted and queue cleared between tests**: `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` was run after each test
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check - hooks fired AUTOMATICALLY
-- **Blocking behavior verified**: For each test, the appropriate blocking hook fired automatically when the sub-agent returned
-- **Results recorded**: Pass/fail status was recorded for each test
+- **Blocking behavior verified**: For each test run, the appropriate blocking hook fired automatically when the sub-agent returned
+- **Early termination on 2 failures**: If 2 tests failed, testing halted immediately and results were reported
+- **Results recorded**: Pass/fail status was recorded for each test run
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Reference
