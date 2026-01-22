@@ -18,15 +18,19 @@ Why sub-agents are required:
 
 ## Task
 
-Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blocking hooks fired.
+Run all 6 "should NOT fire" tests in **parallel** sub-agents, then verify no blocking hooks fired.
 
 ### Process
 
 1. **Launch parallel sub-agents for all "should NOT fire" tests**
 
-   Use the Task tool to spawn **ALL of the following sub-agents in a SINGLE message** (parallel execution). Each sub-agent should use a fast model like haiku.
+   Use the Task tool to spawn **ALL of the following sub-agents in a SINGLE message** (parallel execution).
 
-   **Sub-agent prompts (launch all 8 in parallel):**
+   **Sub-agent configuration for ALL sub-agents:**
+   - `model: "haiku"` - Use the fast model to minimize cost and latency
+   - `max_turns: 5` - Prevent sub-agents from hanging indefinitely
+
+   **Sub-agent prompts (launch all 6 in parallel):**
 
    a. **Trigger/Safety test** - "Edit `manual_tests/test_trigger_safety_mode/feature.py` to add a comment, AND edit `manual_tests/test_trigger_safety_mode/feature_doc.md` to add a note. Both files must be edited so the rule does NOT fire."
 
@@ -38,11 +42,7 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
 
    e. **Multi Safety test** - "Edit `manual_tests/test_multi_safety/core.py` to add a comment, AND edit `manual_tests/test_multi_safety/core_safety_a.md` to add a note. Both files must be edited so the rule does NOT fire."
 
-   f. **Infinite Block Prompt test** - "Edit `manual_tests/test_infinite_block_prompt/dangerous.py` to add a comment. Include `<promise>I have verified this change is safe</promise>` in your response to bypass the infinite block."
-
-   g. **Infinite Block Command test** - "Edit `manual_tests/test_infinite_block_command/risky.py` to add a comment. Include `<promise>I have verified this change is safe</promise>` in your response to bypass the infinite block."
-
-   h. **Created Mode test** - "Modify the EXISTING file `manual_tests/test_created_mode/existing.yml` by adding a comment. Do NOT create a new file - only modify the existing one. The created mode rule should NOT fire for modifications."
+   f. **Created Mode test** - "Modify the EXISTING file `manual_tests/test_created_mode/existing.yml` by adding a comment. Do NOT create a new file - only modify the existing one. The created mode rule should NOT fire for modifications."
 
 2. **Observe the results**
 
@@ -63,40 +63,35 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
    | Pair Mode (forward) | Edit both files | |
    | Pair Mode (reverse) | Edit expected only | |
    | Multi Safety | Edit both files | |
-   | Infinite Block Prompt | Promise tag | |
-   | Infinite Block Command | Promise tag | |
    | Created Mode | Modify existing | |
 
    **EARLY TERMINATION**: If **2 tests have failed**, immediately:
    1. Stop running any remaining tests
-   2. Revert all changes and clear queue (see step 4)
+   2. Reset (see step 4)
    3. Report the results summary showing which tests passed/failed
    4. Do NOT proceed to the next step - the job halts here
 
-4. **Revert all changes and clear queue**
+4. **Reset** (MANDATORY - call the reset step internally)
 
    **IMPORTANT**: This step is MANDATORY and must run regardless of whether tests passed or failed.
 
-   Run these commands to clean up:
+   Follow the reset step instructions. Run these commands to clean up:
    ```bash
    git reset HEAD manual_tests/ && git checkout -- manual_tests/ && rm -f manual_tests/test_created_mode/new_config.yml
    deepwork rules clear_queue
    ```
 
-   **Why this command sequence**:
-   - `git reset HEAD manual_tests/` - Unstages files from the index (rules_check uses `git add -A` which stages changes)
-   - `git checkout -- manual_tests/` - Reverts working tree to match HEAD
-   - `rm -f manual_tests/test_created_mode/new_config.yml` - Removes any new files created during tests
-   - `deepwork rules clear_queue` - Clears the rules queue so rules can fire again
+   See [reset.md](reset.md) for detailed explanation of these commands.
 
 ## Quality Criteria
 
-- **Sub-agents spawned**: All 8 tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
-- **Parallel execution**: All 8 sub-agents were launched in a single message (parallel)
+- **Sub-agents spawned**: All 6 tests were run using the Task tool to spawn sub-agents - the main agent did NOT edit files directly
+- **Correct sub-agent config**: All sub-agents used `model: "haiku"` and `max_turns: 5`
+- **Parallel execution**: All 6 sub-agents were launched in a single message (parallel)
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check
 - **Early termination on 2 failures**: If 2 tests failed, testing halted immediately and results were reported
-- **Changes reverted and queue cleared**: `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `deepwork rules clear_queue` was run after tests completed (regardless of pass/fail)
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+- **Reset performed**: Reset step was followed after tests completed (regardless of pass/fail)
+- When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
 
 ## Reference
 
@@ -104,4 +99,4 @@ See [test_reference.md](test_reference.md) for the complete test matrix and rule
 
 ## Context
 
-This step runs first and tests that rules correctly do NOT fire when safety conditions are met. The "should fire" tests run after these complete and the working directory is reverted.
+This step runs first and tests that rules correctly do NOT fire when safety conditions are met. The "should fire" tests run after these complete. Infinite block tests are handled in a separate step.

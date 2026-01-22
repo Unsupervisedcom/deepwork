@@ -1,8 +1,8 @@
-# Run Should-Fire Tests
+# Run Infinite Block Tests
 
 ## Objective
 
-Run all "should fire" tests in **serial** sub-agents to verify that rules fire correctly when their trigger conditions are met without safety conditions.
+Run all infinite block tests in **serial** to verify that infinite blocking rules work correctly - both firing when they should AND not firing when bypassed with a promise tag.
 
 ## CRITICAL: Sub-Agent Requirement
 
@@ -20,15 +20,14 @@ Why sub-agents are required:
 
 **These tests MUST run ONE AT A TIME, with resets between each.**
 
-Why serial execution is required:
-- These tests edit ONLY the trigger file (not the safety)
-- If multiple sub-agents run in parallel, sub-agent A's hook will see changes from sub-agent B
-- This causes cross-contamination: A gets blocked by rules triggered by B's changes
-- Run one test, observe the hook, reset, then run the next
+Why serial execution is required for infinite block tests:
+- Infinite block tests can block indefinitely without a promise tag
+- Running them in parallel would cause unpredictable blocking behavior
+- Serial execution allows controlled observation of each test
 
 ## Task
 
-Run all 6 "should fire" tests in **serial** sub-agents, resetting between each, and verify that blocking hooks fire automatically.
+Run all 4 infinite block tests in **serial**, resetting between each, and verify correct blocking behavior.
 
 ### Process
 
@@ -47,13 +46,12 @@ For EACH test below, follow this cycle:
    - If queue entries exist with status "queued", the hook DID fire but blocking wasn't visible
    - If queue is empty, the hook did NOT fire at all
    - Record the queue status along with the result
-5. **Record the result** - pass if hook fired (visible block OR queue entry), fail if neither
+5. **Record the result** - see expected outcomes for each test
 6. **Reset** (MANDATORY after each test) - follow the reset step instructions:
    ```bash
    git reset HEAD manual_tests/ && git checkout -- manual_tests/ && rm -f manual_tests/test_created_mode/new_config.yml
    deepwork rules clear_queue
    ```
-   See [reset.md](reset.md) for detailed explanation of these commands.
 7. **Check for early termination**: If **2 tests have now failed**, immediately:
    - Stop running any remaining tests
    - Report the results summary showing which tests passed/failed
@@ -64,48 +62,40 @@ For EACH test below, follow this cycle:
 
 ### Test Cases (run serially)
 
-**Test 1: Trigger/Safety**
-- Sub-agent prompt: "Edit ONLY `manual_tests/test_trigger_safety_mode/feature.py` to add a comment. Do NOT edit the `_doc.md` file."
+**Test 1: Infinite Block Prompt - Should NOT Fire (with promise)**
+- Sub-agent prompt: "Edit `manual_tests/test_infinite_block_prompt/dangerous.py` to add a comment. Include `<promise>I have verified this change is safe</promise>` in your response to bypass the infinite block."
 - Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Hook fires with prompt about updating documentation
+- Expected: Sub-agent completes WITHOUT blocking - the promise tag bypasses the infinite block
+- Result: PASS if no blocking, FAIL if blocked
 
-**Test 2: Set Mode**
-- Sub-agent prompt: "Edit ONLY `manual_tests/test_set_mode/module_source.py` to add a comment. Do NOT edit the `_test.py` file."
+**Test 2: Infinite Block Command - Should NOT Fire (with promise)**
+- Sub-agent prompt: "Edit `manual_tests/test_infinite_block_command/risky.py` to add a comment. Include `<promise>I have verified this change is safe</promise>` in your response to bypass the infinite block."
 - Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Hook fires with prompt about updating tests
+- Expected: Sub-agent completes WITHOUT blocking - the promise tag bypasses the infinite block
+- Result: PASS if no blocking, FAIL if blocked
 
-**Test 3: Pair Mode**
-- Sub-agent prompt: "Edit ONLY `manual_tests/test_pair_mode/handler_trigger.py` to add a comment. Do NOT edit the `_expected.md` file."
+**Test 3: Infinite Block Prompt - Should Fire (no promise)**
+- Sub-agent prompt: "Edit `manual_tests/test_infinite_block_prompt/dangerous.py` to add a comment. Do NOT include any promise tags."
 - Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Hook fires with prompt about updating expected output
+- Expected: Hook fires and BLOCKS with infinite prompt - sub-agent cannot complete until promise is provided (or max_turns reached)
+- Result: PASS if hook fired (visible block OR queue entry), FAIL if neither
 
-**Test 4: Command Action**
-- Sub-agent prompt: "Edit `manual_tests/test_command_action/input.txt` to add some text."
+**Test 4: Infinite Block Command - Should Fire (no promise)**
+- Sub-agent prompt: "Edit `manual_tests/test_infinite_block_command/risky.py` to add a comment. Do NOT include any promise tags."
 - Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Command runs automatically, appending to the log file (this rule always runs, no safety condition)
-
-**Test 5: Multi Safety**
-- Sub-agent prompt: "Edit ONLY `manual_tests/test_multi_safety/core.py` to add a comment. Do NOT edit any of the safety files (`_safety_a.md`, `_safety_b.md`, or `_safety_c.md`)."
-- Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Hook fires with prompt about updating safety documentation
-
-**Test 6: Created Mode**
-- Sub-agent prompt: "Create a NEW file `manual_tests/test_created_mode/new_config.yml` with some YAML content. This must be a NEW file, not a modification."
-- Sub-agent config: `model: "haiku"`, `max_turns: 5`
-- Expected: Hook fires with prompt about new configuration files
+- Expected: Hook fires and command fails - sub-agent cannot complete until promise is provided (or max_turns reached)
+- Result: PASS if hook fired (visible block OR queue entry), FAIL if neither
 
 ### Results Tracking
 
 Record the result after each test:
 
-| Test Case | Should Fire | Visible Block? | Queue Entry? | Result |
-|-----------|-------------|:--------------:|:------------:|:------:|
-| Trigger/Safety | Edit .py only | | | |
-| Set Mode | Edit _source.py only | | | |
-| Pair Mode | Edit _trigger.py only | | | |
-| Command Action | Edit .txt | | | |
-| Multi Safety | Edit .py only | | | |
-| Created Mode | Create NEW .yml | | | |
+| Test Case | Scenario | Expected | Visible Block? | Queue Entry? | Result |
+|-----------|----------|----------|:--------------:|:------------:|:------:|
+| Infinite Block Prompt | With promise | No block | | | |
+| Infinite Block Command | With promise | No block | | | |
+| Infinite Block Prompt | No promise | Blocks | | | |
+| Infinite Block Command | No promise | Blocks | | | |
 
 **Queue Entry Status Guide:**
 - If queue has entry with status "queued" -> Hook fired, rule was shown to agent
@@ -118,9 +108,10 @@ Record the result after each test:
 - **Correct sub-agent config**: All sub-agents used `model: "haiku"` and `max_turns: 5`
 - **Serial execution**: Sub-agents were launched ONE AT A TIME, not in parallel
 - **Reset between tests**: Reset step was followed after each test
-- **Hooks fired automatically**: The main agent observed the blocking hooks firing automatically when each sub-agent returned - the agent did NOT manually run rules_check
+- **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check - hooks fired AUTOMATICALLY
+- **Blocking behavior verified**: Promise tests completed without blocking; non-promise tests were blocked
 - **Early termination on 2 failures**: If 2 tests failed, testing halted immediately and results were reported
-- **Results recorded**: Pass/fail status was recorded for each test case
+- **Results recorded**: Pass/fail status was recorded for each test run
 - When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
 
 ## Reference
@@ -129,4 +120,4 @@ See [test_reference.md](test_reference.md) for the complete test matrix and rule
 
 ## Context
 
-This step runs after the "should NOT fire" tests. These tests verify that rules correctly fire when trigger conditions are met without safety conditions. The serial execution with resets is essential to prevent cross-contamination between tests. Infinite block tests are handled in a separate step.
+This step runs after both the "should NOT fire" and "should fire" test steps. It specifically tests infinite blocking behavior which requires serial execution due to the blocking nature of these rules.
