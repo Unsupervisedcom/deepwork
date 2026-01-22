@@ -38,7 +38,11 @@ Please fully install https://pypi.org/project/deepwork/ and make sure you see th
 ### Install DeepWork
 
 ```bash
-# Using pipx (recommended - isolated environment)
+# Using Homebrew (macOS/Linux)
+brew tap unsupervisedcom/deepwork
+brew install deepwork
+
+# Using pipx (isolated environment)
 pipx install deepwork
 
 # Or using uv
