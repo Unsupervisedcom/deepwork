@@ -1,5 +1,5 @@
 name: manual_tests
-version: "1.2.0"
+version: "1.2.1"
 summary: "Runs all manual hook/rule tests using sub-agents. Use when validating that DeepWork rules fire correctly."
 description: |
   A workflow for running manual tests that validate DeepWork rules/hooks fire correctly.
@@ -28,6 +28,8 @@ description: |
   - Created mode (new files only)
 
 changelog:
+  - version: "1.2.1"
+    changes: "Fixed incomplete revert - now uses git reset HEAD to unstage files (rules_check stages with git add -A)"
   - version: "1.2.0"
     changes: "Added early termination on 2 test failures; emphasized mandatory file revert and queue clear after each step"
   - version: "1.1.0"
@@ -49,7 +51,7 @@ steps:
       - "**Parallel Execution**: Were multiple sub-agents launched in parallel (in a single message with multiple Task tool calls)?"
       - "**Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command."
       - "**Early Termination**: If 2 tests failed, did testing halt immediately with results reported?"
-      - "**Git Reverted**: Were changes reverted and queue cleared after tests completed (or after early termination) using `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json`?"
+      - "**Git Reverted**: Were changes reverted and queue cleared after tests completed (or after early termination) using `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json`?"
 
   - id: run_fire_tests
     name: "Run Should-Fire Tests"
@@ -66,6 +68,6 @@ steps:
       - "**Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly."
       - "**Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?"
       - "**Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command."
-      - "**Git Reverted Between Tests**: Was `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` run after each test to revert files and prevent cross-contamination?"
+      - "**Git Reverted Between Tests**: Was `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` run after each test to revert files and prevent cross-contamination?"
       - "**Early Termination**: If 2 tests failed, did testing halt immediately with results reported?"
       - "**Results Recorded**: Did the main agent track pass/fail status for each test case?"
