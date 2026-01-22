@@ -102,26 +102,47 @@ def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
     """
     Create .gitignore file in .deepwork/ directory.
 
-    This ensures that temporary files like .last_work_tree are not committed.
+    This ensures that runtime artifacts are not committed while keeping
+    the tmp directory structure in version control.
 
     Args:
         deepwork_dir: Path to .deepwork directory
     """
     gitignore_path = deepwork_dir / ".gitignore"
-    gitignore_content = """# DeepWork temporary files
-# These files are used for rules evaluation during sessions
+    gitignore_content = """# DeepWork runtime artifacts
+# These files are generated during sessions and should not be committed
 .last_work_tree
+.last_head_ref
+
+# Temporary files (but keep the directory via .gitkeep)
+tmp/*
+!tmp/.gitkeep
 """
 
-    # Only write if it doesn't exist or doesn't contain the entry
-    if gitignore_path.exists():
-        existing_content = gitignore_path.read_text()
-        if ".last_work_tree" not in existing_content:
-            # Append to existing
-            with open(gitignore_path, "a") as f:
-                f.write("\n" + gitignore_content)
-    else:
-        gitignore_path.write_text(gitignore_content)
+    # Always overwrite to ensure correct content
+    gitignore_path.write_text(gitignore_content)
+
+
+def _create_tmp_directory(deepwork_dir: Path) -> None:
+    """
+    Create the .deepwork/tmp directory with a .gitkeep file.
+
+    This ensures the tmp directory exists in version control, which is required
+    for file permissions to work correctly when Claude Code starts fresh.
+
+    Args:
+        deepwork_dir: Path to .deepwork directory
+    """
+    tmp_dir = deepwork_dir / "tmp"
+    ensure_dir(tmp_dir)
+
+    gitkeep_file = tmp_dir / ".gitkeep"
+    if not gitkeep_file.exists():
+        gitkeep_file.write_text(
+            "# This file ensures the .deepwork/tmp directory exists in version control.\n"
+            "# The tmp directory is used for temporary files during DeepWork operations.\n"
+            "# Do not delete this file.\n"
+        )
 
 
 def _create_rules_directory(project_path: Path) -> bool:
@@ -333,7 +354,11 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     _create_deepwork_gitignore(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/.gitignore")
 
-    # Step 3d: Create rules directory with v2 templates
+    # Step 3d: Create tmp directory with .gitkeep file for version control
+    _create_tmp_directory(deepwork_dir)
+    console.print("  [green]✓[/green] Created .deepwork/tmp/.gitkeep")
+
+    # Step 3e: Create rules directory with v2 templates
     if _create_rules_directory(project_path):
         console.print("  [green]✓[/green] Created .deepwork/rules/ with example templates")
     else:
