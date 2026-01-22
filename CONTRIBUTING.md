@@ -172,15 +172,13 @@ The Nix environment includes Claude Code built from source to ensure version con
 update
 ```
 
-For manual control over Claude Code updates:
+To manually update Claude Code:
 
 ```bash
-# Sync from nixpkgs (default)
 ./nix/claude-code/update.sh
-
-# Update directly from npm (when nixpkgs lags behind)
-./nix/claude-code/update.sh --manual
 ```
+
+This fetches the latest version from npm, computes the necessary hashes using `prefetch-npm-deps`, and updates `package.nix` automatically.
 
 A GitHub Action automatically checks for new Claude Code versions daily and creates PRs when updates are available.
 
