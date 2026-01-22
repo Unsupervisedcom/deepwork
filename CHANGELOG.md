@@ -5,6 +5,14 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-01-22
+
+### Fixed
+- Fixed quality criteria validation logic in skill template (#111)
+  - Changed promise condition from AND to OR: promise OR all criteria met now passes
+  - Changed failure condition from OR to AND: requires both criteria NOT met AND promise missing to fail
+  - This corrects the logic so the promise mechanism properly serves as a bypass for quality criteria
+
 ## [0.5.0] - 2026-01-20
 
 ### Changed
