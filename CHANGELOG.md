@@ -5,6 +5,14 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2026-01-22
+
+### Fixed
+- Fixed COMMAND rules promise handling to properly update queue status
+  - When an agent provides a promise tag for a FAILED command rule, the queue entry is now correctly updated to SKIPPED status
+  - Previously, FAILED queue entries remained in FAILED state even after being acknowledged via promise
+  - This ensures the rules queue accurately reflects rule state throughout the workflow
+
 ## [0.5.1] - 2026-01-22
 
 ### Fixed
