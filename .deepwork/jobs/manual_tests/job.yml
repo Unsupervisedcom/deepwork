@@ -1,5 +1,5 @@
 name: manual_tests
-version: "1.3.0"
+version: "1.3.1"
 summary: "Runs all manual hook/rule tests using sub-agents. Use when validating that DeepWork rules fire correctly."
 description: |
   A workflow for running manual tests that validate DeepWork rules/hooks fire correctly.
@@ -22,6 +22,10 @@ description: |
   infinite hangs. If a sub-agent hits the limit (e.g., stuck in infinite block),
   treat as timeout - PASSED for "should fire" tests, FAILED for "should NOT fire".
 
+  TOKEN OVERHEAD: Each sub-agent uses ~16k input tokens (system prompt + tool
+  definitions). This is unavoidable baseline overhead for agents with Edit access.
+  Sub-agent prompts include efficiency instructions to minimize additional usage.
+
   CRITICAL: All tests MUST run in sub-agents. The main agent MUST NOT make the file
   edits itself - it spawns sub-agents to make edits, then checks the returned magic
   strings to determine whether hooks fired.
@@ -40,6 +44,8 @@ description: |
   - Created mode (new files only)
 
 changelog:
+  - version: "1.3.1"
+    changes: "Added TOKEN OVERHEAD note explaining ~16k baseline cost; added 'Keep your response brief' efficiency instruction to sub-agent prompts"
   - version: "1.3.0"
     changes: "Major overhaul: Added TASK_START/HOOK_FIRED magic string detection; fixed all file names in prompts; added max_turns: 5 timeout; use deepwork rules clear_queue CLI"
   - version: "1.2.1"

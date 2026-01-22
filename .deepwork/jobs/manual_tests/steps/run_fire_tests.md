@@ -43,7 +43,7 @@ This limits each sub-agent to ~5 API round-trips. If a sub-agent hits the limit 
 **CRITICAL: Magic String Instructions for Sub-Agents**
 
 Every sub-agent prompt MUST include this instruction:
-> "IMPORTANT: Start your response with exactly `TASK_START: <brief task description>`. Then complete your task. If a DeepWork hook fires and blocks you with a rules message, also include `HOOK_FIRED: <rule name>` in your response."
+> "IMPORTANT: Start your response with exactly `TASK_START: <brief task description>`. Keep your response brief - just make the edit and confirm. If a DeepWork hook fires and blocks you with a rules message, also include `HOOK_FIRED: <rule name>` in your response."
 
 **How detection works:**
 - Sub-agent ALWAYS outputs `TASK_START:` at the beginning of their response
