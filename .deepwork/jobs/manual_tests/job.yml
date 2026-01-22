@@ -63,7 +63,7 @@ steps:
     quality_criteria:
       - "**Sub-Agents Used**: Did the main agent spawn sub-agents (using the Task tool) to make the file edits? The main agent must NOT edit the test files directly."
       - "**Parallel Execution**: Were multiple sub-agents launched in parallel (in a single message with multiple Task tool calls)?"
-      - "**Timeout Limit**: Did each Task call include `max_turns: 5` to prevent infinite hangs?"
+      - "**Task Parameters**: Did each Task call include `model: \"haiku\"` and `max_turns: 5`?"
       - "**Magic String Detection**: Did the main agent check each sub-agent's response for `TASK_START:` (present) and absence of `HOOK_FIRED:`? The agent must NOT manually run rules_check."
       - "**Early Termination**: If 2 tests failed, did testing halt immediately with results reported?"
       - "**Git Reverted**: Were changes reverted and queue cleared after tests completed (or after early termination) using `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `deepwork rules clear_queue`?"
@@ -82,7 +82,7 @@ steps:
     quality_criteria:
       - "**Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly."
       - "**Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?"
-      - "**Timeout Limit**: Did each Task call include `max_turns: 5` to prevent infinite hangs?"
+      - "**Task Parameters**: Did each Task call include `model: \"haiku\"` and `max_turns: 5`?"
       - "**Magic String Detection**: Did the main agent check each sub-agent's response for `HOOK_FIRED:` (present) or timeout (neither TASK_START nor HOOK_FIRED)? The agent must NOT manually run rules_check."
       - "**Git Reverted Between Tests**: Was `git reset HEAD manual_tests/ && git checkout -- manual_tests/` and `deepwork rules clear_queue` run after each test to revert files and prevent cross-contamination?"
       - "**Early Termination**: If 2 tests failed, did testing halt immediately with results reported?"

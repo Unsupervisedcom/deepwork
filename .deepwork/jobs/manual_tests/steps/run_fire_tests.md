@@ -32,9 +32,13 @@ Run all 8 "should fire" tests in **serial** sub-agents, reverting between each, 
 
 ### Process
 
-**CRITICAL: Timeout Prevention**
+**CRITICAL: Task Tool Parameters**
 
-Set `max_turns: 5` on each Task tool call to prevent sub-agents from hanging indefinitely. This limits each sub-agent to ~5 API round-trips. If a sub-agent hits the limit (e.g., stuck in infinite block without providing a promise), this confirms the hook IS firing and blocking them - treat it as test PASSED.
+Each Task tool call MUST include:
+- `model: "haiku"` - Use the fast model to minimize cost and latency
+- `max_turns: 5` - Prevent sub-agents from hanging indefinitely
+
+This limits each sub-agent to ~5 API round-trips. If a sub-agent hits the limit (e.g., stuck in infinite block without providing a promise), this confirms the hook IS firing and blocking them - treat it as test PASSED.
 
 **CRITICAL: Magic String Instructions for Sub-Agents**
 
@@ -51,7 +55,7 @@ Every sub-agent prompt MUST include this instruction:
 
 For EACH test below, follow this cycle:
 
-1. **Launch a sub-agent** using the Task tool (use a fast model like haiku, set `max_turns: 5`)
+1. **Launch a sub-agent** using the Task tool (set `model: "haiku"` and `max_turns: 5`)
 2. **Wait for the sub-agent to complete (or hit max_turns limit)**
 3. **Check the sub-agent's response for magic strings**:
    - `HOOK_FIRED:` present = Hook fired successfully (test PASSED)

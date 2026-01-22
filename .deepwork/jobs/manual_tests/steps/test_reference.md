@@ -26,9 +26,11 @@ Sub-agents are instructed to output specific strings:
   - `HOOK_FIRED:` present → hook fired
   - Neither → timeout (hook is blocking infinitely)
 
-## Timeout Prevention
+## Task Tool Parameters
 
-All sub-agent Task calls MUST include `max_turns: 5` to prevent infinite hangs. This limits sub-agents to ~5 API round-trips.
+All sub-agent Task calls MUST include:
+- `model: "haiku"` - Use the fast model to minimize cost and latency
+- `max_turns: 5` - Prevent infinite hangs (limits to ~5 API round-trips)
 
 **Timeout handling:**
 - If a sub-agent hits the max_turns limit in a "should NOT fire" test → Test FAILED (timeout indicates unexpected blocking)
@@ -38,7 +40,7 @@ All sub-agent Task calls MUST include `max_turns: 5` to prevent infinite hangs. 
 
 1. **NEVER edit test files from the main agent** - always spawn a sub-agent to make edits
 2. **NEVER manually run the rules_check command** - hooks fire automatically when sub-agents return
-3. **SET max_turns: 5** - on every Task call to prevent infinite hangs
+3. **SET Task parameters** - use `model: "haiku"` and `max_turns: 5` on every Task call
 4. **CHECK the magic strings** - look for `TASK_START:` (always present) and `HOOK_FIRED:` (present if hook fired)
 5. **REVERT between tests** - use `git reset HEAD manual_tests/ && git checkout -- manual_tests/` to reset files
 

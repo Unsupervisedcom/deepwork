@@ -24,11 +24,15 @@ Run all 8 "should NOT fire" tests in **parallel** sub-agents, then check each su
 
 1. **Launch parallel sub-agents for all "should NOT fire" tests**
 
-   Use the Task tool to spawn **ALL of the following sub-agents in a SINGLE message** (parallel execution). Each sub-agent should use a fast model like haiku.
+   Use the Task tool to spawn **ALL of the following sub-agents in a SINGLE message** (parallel execution).
 
-   **CRITICAL: Timeout Prevention**
+   **CRITICAL: Task Tool Parameters**
 
-   Set `max_turns: 5` on each Task tool call to prevent sub-agents from hanging indefinitely. This limits each sub-agent to ~5 API round-trips, which is plenty for these simple edit tasks. If a sub-agent hits the limit, treat it as a timeout/failure.
+   Each Task tool call MUST include:
+   - `model: "haiku"` - Use the fast model to minimize cost and latency
+   - `max_turns: 5` - Prevent sub-agents from hanging indefinitely
+
+   This limits each sub-agent to ~5 API round-trips, which is plenty for these simple edit tasks. If a sub-agent hits the limit, treat it as a timeout/failure.
 
    **CRITICAL: Magic String Instructions for Sub-Agents**
 
