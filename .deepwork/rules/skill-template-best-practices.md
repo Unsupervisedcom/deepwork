@@ -24,7 +24,7 @@ The description appears in skill search results and helps users find the right s
 ## Prompt Structure
 
 1. **Specificity first** - Detailed directions upfront prevent course corrections later
-2. **Plan before action** - Ask claude prompt runtime to analyze/plan before implementing
+2. **Plan before action** - Ask agent to analyze/plan before implementing
 3. **Reference concrete files** - Use specific paths, not general descriptions
 4. **Include context** - Mention edge cases, preferred patterns, and expected outcomes
 
@@ -32,7 +32,7 @@ The description appears in skill search results and helps users find the right s
 
 1. **Make measurable** - Criteria should be verifiable, not subjective
 2. **Focus on outcomes** - What the output should achieve, not process steps
-3. **Keep actionable** - Claude prompt runtime should be able to self-evaluate against criteria
+3. **Keep actionable** - Agent should be able to self-evaluate against criteria
 
 ## Platform Considerations
 
