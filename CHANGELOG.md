@@ -5,56 +5,10 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.2] - 2026-01-22
-
-### Fixed
-- Fixed COMMAND rules promise handling to properly update queue status
-  - When an agent provides a promise tag for a FAILED command rule, the queue entry is now correctly updated to SKIPPED status
-  - Previously, FAILED queue entries remained in FAILED state even after being acknowledged via promise
-  - This ensures the rules queue accurately reflects rule state throughout the workflow
-
-## [0.5.1] - 2026-01-22
-
-### Fixed
-- Fixed quality criteria validation logic in skill template (#111)
-  - Changed promise condition from AND to OR: promise OR all criteria met now passes
-  - Changed failure condition from OR to AND: requires both criteria NOT met AND promise missing to fail
-  - This corrects the logic so the promise mechanism properly serves as a bypass for quality criteria
-
-## [0.5.0] - 2026-01-20
-
-### Changed
-- **BREAKING**: Renamed `document_type` to `doc_spec` throughout the codebase
-  - Job.yml field: `document_type` → `doc_spec` (e.g., `outputs: [{file: "report.md", doc_spec: ".deepwork/doc_specs/report.md"}]`)
-  - Class: `DocumentTypeDefinition` → `DocSpec` (backward compat alias provided)
-  - Methods: `has_document_type()` → `has_doc_spec()`, `validate_document_type_references()` → `validate_doc_spec_references()`
-  - Template variables: `has_document_type` → `has_doc_spec`, `document_type` → `doc_spec`
-  - Internal: `_load_document_type()` → `_load_doc_spec()`, `_doc_type_cache` → `_doc_spec_cache`
+## [0.4.0] - 2026-01-22
 
 ### Added
-- `prompt_runtime` setting for rules to control how prompt-type actions are executed
-  - `send_to_stopping_agent` (default): Returns prompt to the agent that triggered the rule
-  - `claude`: Invokes Claude Code in headless mode to handle the rule independently
-- Claude headless mode execution for automated rule remediation
-  - Rules with `prompt_runtime: claude` spawn a separate Claude process
-  - Claude performs required actions and returns structured `block`/`allow` decision
-  - Useful for automated tasks like documentation updates without blocking the main agent
-- Comprehensive tests for generator doc spec integration (9 new tests)
-  - `test_load_doc_spec_returns_parsed_spec` - Verifies doc spec loading
-  - `test_load_doc_spec_caches_result` - Verifies caching behavior
-  - `test_load_doc_spec_returns_none_for_missing_file` - Graceful handling of missing files
-  - `test_generate_step_skill_with_doc_spec` - End-to-end skill generation with doc spec
-  - `test_build_step_context_includes_doc_spec_info` - Context building verification
-
-### Migration Guide
-- Update job.yml files: Change `document_type:` to `doc_spec:` in output definitions
-- Update any code importing `DocumentTypeDefinition`: Use `DocSpec` instead (alias still works)
-- Run `deepwork install` to regenerate skills with updated terminology
-
-## [0.4.0] - 2026-01-20
-
-### Added
-- Doc specs (document specifications) as a first-class feature for formalizing document quality criteria
+- **Doc specs** (document specifications) as a first-class feature for formalizing document quality criteria
   - New `src/deepwork/schemas/doc_spec_schema.py` with JSON schema validation
   - New `src/deepwork/core/doc_spec_parser.py` with parser for frontmatter markdown doc spec files
   - Doc spec files stored in `.deepwork/doc_specs/` directory with quality criteria and example documents
@@ -62,23 +16,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extended job.yml output schema to support doc spec references
   - Outputs can now be strings (backward compatible) or objects with `file` and optional `doc_spec` fields
   - Example: `outputs: [{file: "report.md", doc_spec: ".deepwork/doc_specs/monthly_report.md"}]`
-  - The `doc_spec` uses the full path to the doc spec file, making references self-documenting
-- Doc spec-aware skill generation
-  - Step skills now include doc spec quality criteria, target audience, and example documents
-  - Both Claude and Gemini templates updated for doc spec rendering
-- Document detection workflow in `deepwork_jobs.define`
-  - Steps 1.5, 1.6, 1.7 guide users through creating doc specs for document-oriented jobs
-  - Pattern indicators: "report", "summary", "create", "monthly", "for stakeholders"
-- Doc spec improvement workflow in `deepwork_jobs.learn`
-  - Steps 3.5, 4.5 capture doc spec-related learnings and update doc spec files
-- New `OutputSpec` dataclass in parser for structured output handling
-- Comprehensive doc spec documentation in `doc/doc-specs.md`
-- New test fixtures for doc spec validation and parsing
+- Doc spec-aware skill generation with quality criteria, target audience, and example documents
+- **`prompt_runtime` setting** for rules to control how prompt-type actions are executed
+  - `send_to_stopping_agent` (default): Returns prompt to the agent that triggered the rule
+  - `claude`: Invokes Claude Code in headless mode to handle the rule independently
+- Claude headless mode execution for automated rule remediation
+  - Rules with `prompt_runtime: claude` spawn a separate Claude process
+  - Claude performs required actions and returns structured `block`/`allow` decision
+  - Useful for automated tasks like documentation updates without blocking the main agent
+- **`deepwork rules clear_queue` CLI command** for managing the rules queue (#117)
+  - Clears all entries from the rules queue to reset state
+- Code review stage added to the `commit` standard job (#99)
+  - New `commit.review` step runs before testing to catch issues early
+- Session start hook for version checking (#106)
+- Manual tests job for validating hook/rule behavior (#102)
 
 ### Changed
+- **BREAKING**: Renamed `document_type` to `doc_spec` throughout the codebase
+  - Job.yml field: `document_type` → `doc_spec`
+  - Class: `DocumentTypeDefinition` → `DocSpec` (backward compat alias provided)
+  - Methods: `has_document_type()` → `has_doc_spec()`, `validate_document_type_references()` → `validate_doc_spec_references()`
 - `Step.outputs` changed from `list[str]` to `list[OutputSpec]` for richer output metadata
 - `SkillGenerator.generate_all_skills()` now accepts `project_root` parameter for doc spec loading
 - Updated `deepwork_jobs` to v0.6.0 with doc spec-related quality criteria
+- Skill template documentation now uses generic "agent" terminology (#115)
+
+### Fixed
+- Fixed infinite loop bug in rules system when promise tags weren't recognized (#96)
+  - Rules now properly detect and honor promise acknowledgments
+- Fixed COMMAND rules promise handling to properly update queue status (#120)
+  - FAILED queue entries now correctly update to SKIPPED when acknowledged via promise
+- Fixed quality criteria validation logic in skill template (#113)
+  - Promise OR all criteria met now passes (was incorrectly AND)
+  - Requires both criteria NOT met AND promise missing to fail
+- Fixed `compare_to: prompt` mode not detecting committed files during agent response (#95)
+  - Rules now search prompts for directory references
+- Added timeout to deepwork install hook (#101)
+
+### Migration Guide
+- Update job.yml files: Change `document_type:` to `doc_spec:` in output definitions
+- Update any code importing `DocumentTypeDefinition`: Use `DocSpec` instead (alias still works)
+- Run `deepwork install` to regenerate skills with updated terminology
 
 ## [0.3.1] - 2026-01-20
 
@@ -187,7 +165,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[0.5.0]: https://github.com/anthropics/deepwork/releases/tag/0.5.0
 [0.4.0]: https://github.com/anthropics/deepwork/releases/tag/0.4.0
 [0.3.1]: https://github.com/anthropics/deepwork/releases/tag/0.3.1
 [0.3.0]: https://github.com/anthropics/deepwork/releases/tag/0.3.0
