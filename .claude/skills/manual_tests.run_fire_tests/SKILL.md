@@ -225,12 +225,14 @@ Sub-agent configuration:
 - All sub-agents should use `max_turns: 5` to prevent hanging indefinitely
 
 Steps:
-1. run_not_fire_tests - Run all "should NOT fire" tests in PARALLEL sub-agents (6 tests)
-2. run_fire_tests - Run all "should fire" tests in SERIAL sub-agents with resets between (6 tests)
-3. infinite_block_tests - Run infinite block tests in SERIAL (4 tests - both fire and not-fire)
+1. reset - Ensure clean environment before testing (clears queue, reverts files)
+2. run_not_fire_tests - Run all "should NOT fire" tests in PARALLEL sub-agents (6 tests)
+3. run_fire_tests - Run all "should fire" tests in SERIAL sub-agents with resets between (6 tests)
+4. infinite_block_tests - Run infinite block tests in SERIAL (4 tests - both fire and not-fire)
 
 Reset procedure (see steps/reset.md):
-- Each step calls the reset procedure internally when needed
+- Reset runs FIRST to ensure a clean environment before any tests
+- Each step also calls reset internally when needed (between tests, after completion)
 - Reset reverts git changes, removes created files, and clears the rules queue
 
 Test types covered:

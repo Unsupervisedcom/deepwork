@@ -26,12 +26,14 @@ Sub-agent configuration:
 - All sub-agents should use `max_turns: 5` to prevent hanging indefinitely
 
 Steps:
-1. run_not_fire_tests - Run all "should NOT fire" tests in PARALLEL sub-agents (6 tests)
-2. run_fire_tests - Run all "should fire" tests in SERIAL sub-agents with resets between (6 tests)
-3. infinite_block_tests - Run infinite block tests in SERIAL (4 tests - both fire and not-fire)
+1. reset - Ensure clean environment before testing (clears queue, reverts files)
+2. run_not_fire_tests - Run all "should NOT fire" tests in PARALLEL sub-agents (6 tests)
+3. run_fire_tests - Run all "should fire" tests in SERIAL sub-agents with resets between (6 tests)
+4. infinite_block_tests - Run infinite block tests in SERIAL (4 tests - both fire and not-fire)
 
 Reset procedure (see steps/reset.md):
-- Each step calls the reset procedure internally when needed
+- Reset runs FIRST to ensure a clean environment before any tests
+- Each step also calls reset internally when needed (between tests, after completion)
 - Reset reverts git changes, removes created files, and clears the rules queue
 
 Test types covered:
@@ -46,8 +48,8 @@ Test types covered:
 
 ## Available Steps
 
-1. **reset** - Utility step containing reset instructions. Called internally by other steps when they need to revert changes and clear the queue.
-2. **run_not_fire_tests** - Runs all 6 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met.
+1. **reset** - Runs FIRST to ensure clean environment. Also called internally by other steps when they need to revert changes and clear the queue.
+2. **run_not_fire_tests** - Runs all 6 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met. (requires: reset)
 3. **run_fire_tests** - Runs all 6 'should fire' tests serially with resets between each. Use after NOT-fire tests to verify rules fire correctly. (requires: run_not_fire_tests)
 4. **infinite_block_tests** - Runs all 4 infinite block tests serially. Tests both 'should fire' (no promise) and 'should NOT fire' (with promise) scenarios. (requires: run_fire_tests)
 

@@ -1,6 +1,6 @@
 ---
 name: manual_tests.reset
-description: "Utility step containing reset instructions. Called internally by other steps when they need to revert changes and clear the queue."
+description: "Runs FIRST to ensure clean environment. Also called internally by other steps when they need to revert changes and clear the queue."
 user-invocable: false
 hooks:
   Stop:
@@ -51,14 +51,14 @@ hooks:
 
 # manual_tests.reset
 
-**Standalone skill** - can be run anytime
+**Step 1/4** in **manual_tests** workflow
 
 > Runs all manual hook/rule tests using sub-agents. Use when validating that DeepWork rules fire correctly.
 
 
 ## Instructions
 
-**Goal**: Utility step containing reset instructions. Called internally by other steps when they need to revert changes and clear the queue.
+**Goal**: Runs FIRST to ensure clean environment. Also called internally by other steps when they need to revert changes and clear the queue.
 
 # Reset Manual Tests Environment
 
@@ -119,12 +119,14 @@ Sub-agent configuration:
 - All sub-agents should use `max_turns: 5` to prevent hanging indefinitely
 
 Steps:
-1. run_not_fire_tests - Run all "should NOT fire" tests in PARALLEL sub-agents (6 tests)
-2. run_fire_tests - Run all "should fire" tests in SERIAL sub-agents with resets between (6 tests)
-3. infinite_block_tests - Run infinite block tests in SERIAL (4 tests - both fire and not-fire)
+1. reset - Ensure clean environment before testing (clears queue, reverts files)
+2. run_not_fire_tests - Run all "should NOT fire" tests in PARALLEL sub-agents (6 tests)
+3. run_fire_tests - Run all "should fire" tests in SERIAL sub-agents with resets between (6 tests)
+4. infinite_block_tests - Run infinite block tests in SERIAL (4 tests - both fire and not-fire)
 
 Reset procedure (see steps/reset.md):
-- Each step calls the reset procedure internally when needed
+- Reset runs FIRST to ensure a clean environment before any tests
+- Each step also calls reset internally when needed (between tests, after completion)
 - Reset reverts git changes, removes created files, and clears the rules queue
 
 Test types covered:
@@ -147,7 +149,8 @@ Use branch format: `deepwork/manual_tests-[instance]-YYYYMMDD`
 
 ## Outputs
 
-No specific file outputs required.
+**Required outputs**:
+- `clean_environment`
 
 ## Guardrails
 
@@ -171,9 +174,8 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "reset complete"
-
-This standalone skill can be re-run anytime.
+2. Inform user: "Step 1/4 complete, outputs: clean_environment"
+3. **Continue workflow**: Use Skill tool to invoke `/manual_tests.run_not_fire_tests`
 
 ---
 

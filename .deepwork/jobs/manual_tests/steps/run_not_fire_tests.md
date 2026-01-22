@@ -47,31 +47,46 @@ Run all 6 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
 2. **Observe the results**
 
    When each sub-agent returns:
-   - **If no blocking hook fired**: The test PASSED - the rule correctly did NOT fire
+   - **If no blocking hook fired**: Preliminary pass - proceed to queue verification
    - **If a blocking hook fired**: The test FAILED - investigate why the rule fired when it shouldn't have
 
-   **Remember**: You are OBSERVING whether hooks fired automatically. Do NOT run any verification commands manually.
+   **Remember**: You are OBSERVING whether hooks fired automatically. Do NOT run any verification commands manually during sub-agent execution.
 
-3. **Record the results and check for early termination**
+3. **Verify no queue entries** (CRITICAL for "should NOT fire" tests)
+
+   After ALL sub-agents have completed, verify the rules queue is empty:
+   ```bash
+   ls -la .deepwork/tmp/rules/queue/
+   cat .deepwork/tmp/rules/queue/*.json 2>/dev/null
+   ```
+
+   - **If queue is empty**: All tests PASSED - rules correctly did not fire
+   - **If queue has entries**: Tests FAILED - rules fired when they shouldn't have. Check which rule fired and investigate.
+
+   This verification is essential because some rules may fire without visible blocking but still create queue entries.
+
+4. **Record the results and check for early termination**
 
    Track which tests passed and which failed:
 
-   | Test Case | Should NOT Fire | Result |
-   |-----------|:---------------:|:------:|
-   | Trigger/Safety | Edit both files | |
-   | Set Mode | Edit both files | |
-   | Pair Mode (forward) | Edit both files | |
-   | Pair Mode (reverse) | Edit expected only | |
-   | Multi Safety | Edit both files | |
-   | Created Mode | Modify existing | |
+   | Test Case | Should NOT Fire | Visible Block? | Queue Entry? | Result |
+   |-----------|:---------------:|:--------------:|:------------:|:------:|
+   | Trigger/Safety | Edit both files | | | |
+   | Set Mode | Edit both files | | | |
+   | Pair Mode (forward) | Edit both files | | | |
+   | Pair Mode (reverse) | Edit expected only | | | |
+   | Multi Safety | Edit both files | | | |
+   | Created Mode | Modify existing | | | |
+
+   **Result criteria**: PASS only if NO visible block AND NO queue entry. FAIL if either occurred.
 
    **EARLY TERMINATION**: If **2 tests have failed**, immediately:
    1. Stop running any remaining tests
-   2. Reset (see step 4)
+   2. Reset (see step 5)
    3. Report the results summary showing which tests passed/failed
    4. Do NOT proceed to the next step - the job halts here
 
-4. **Reset** (MANDATORY - call the reset step internally)
+5. **Reset** (MANDATORY - call the reset step internally)
 
    **IMPORTANT**: This step is MANDATORY and must run regardless of whether tests passed or failed.
 
@@ -89,6 +104,7 @@ Run all 6 "should NOT fire" tests in **parallel** sub-agents, then verify no blo
 - **Correct sub-agent config**: All sub-agents used `model: "haiku"` and `max_turns: 5`
 - **Parallel execution**: All 6 sub-agents were launched in a single message (parallel)
 - **Hooks observed (not triggered)**: The main agent observed hook behavior without manually running rules_check
+- **Queue verified empty**: After all sub-agents completed, the rules queue was checked and confirmed empty (no queue entries = rules did not fire)
 - **Early termination on 2 failures**: If 2 tests failed, testing halted immediately and results were reported
 - **Reset performed**: Reset step was followed after tests completed (regardless of pass/fail)
 - When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
@@ -99,4 +115,4 @@ See [test_reference.md](test_reference.md) for the complete test matrix and rule
 
 ## Context
 
-This step runs first and tests that rules correctly do NOT fire when safety conditions are met. The "should fire" tests run after these complete. Infinite block tests are handled in a separate step.
+This step runs after the reset step (which ensures a clean environment) and tests that rules correctly do NOT fire when safety conditions are met. The "should fire" tests run after these complete. Infinite block tests are handled in a separate step.
