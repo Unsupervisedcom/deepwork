@@ -47,7 +47,7 @@ steps:
       - "**Parallel Execution**: Were multiple sub-agents launched in parallel (in a single message with multiple Task tool calls)?"
       - "**Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command."
       - "**All Tests Run**: Were all 8 'should NOT fire' tests executed (trigger/safety, set, pair forward, pair reverse, multi safety, infinite block prompt, infinite block command, created)?"
-      - "**Git Reverted**: Were changes reverted and queue cleared after tests completed using `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json`?"
+      - "**Git Reverted**: Were changes reverted and queue cleared after tests completed using `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/**`?"
 
   - id: run_fire_tests
     name: "Run Should-Fire Tests"
@@ -64,6 +64,6 @@ steps:
       - "**Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly."
       - "**Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?"
       - "**Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command."
-      - "**Git Reverted Between Tests**: Was `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/*.json` run between each test to prevent cross-contamination?"
+      - "**Git Reverted Between Tests**: Was `git checkout -- manual_tests/` and `rm -rf .deepwork/tmp/rules/queue/**` run between each test to prevent cross-contamination?"
       - "**All Tests Run**: Were all 8 'should fire' tests executed (trigger/safety, set, pair, command action, multi safety, infinite block prompt, infinite block command, created)?"
       - "**Results Recorded**: Did the main agent track pass/fail status for each test case?"
