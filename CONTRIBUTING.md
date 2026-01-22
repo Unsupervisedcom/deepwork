@@ -24,6 +24,8 @@ Thank you for your interest in contributing to DeepWork! This guide will help yo
 - **uv** - Modern Python package installer (included in Nix environment)
 - **Signed CLA** - All contributors must sign the Contributor License Agreement (see below)
 
+> **Note**: See [TOOLS_REPORT.md](TOOLS_REPORT.md) for a comprehensive validation of all development tools and their availability in the environment.
+
 ## Contributor License Agreement (CLA)
 
 Before we can accept your contributions, you must sign our Contributor License Agreement (CLA). This is a one-time requirement for all contributors.

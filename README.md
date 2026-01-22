@@ -203,6 +203,7 @@ your-project/
 - **[Doc Specs](doc/doc-specs.md)**: Document specification format for output quality criteria
 - **[Contributing](CONTRIBUTING.md)**: Setup development environment and contribute
 - **[Nix Flakes Guide](doc/nix-flake.md)**: Comprehensive guide for using DeepWork with Nix flakes
+- **[Development Tools Report](TOOLS_REPORT.md)**: Validation of all development tools availability and functionality
 
 ## Development with Nix
 
