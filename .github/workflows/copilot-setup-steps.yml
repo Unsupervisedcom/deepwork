@@ -20,7 +20,8 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
-      - uses: nicknovitski/nix-develop@v1
+      # TODO this will cause all of copilot agents Bash tool calls to silently hang (which it won't complain about)
+      # - uses: nicknovitski/nix-develop@v1
 
       - name: Cache UV dependencies
         uses: actions/cache@v4
