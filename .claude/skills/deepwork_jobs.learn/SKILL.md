@@ -28,10 +28,10 @@ hooks:
             Review the conversation and determine if ALL quality criteria above have been satisfied.
             Look for evidence that each criterion has been addressed.
 
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
             all criteria appear to be met, respond with: {"ok": true}
 
-            If criteria are NOT met OR the promise tag is missing, respond with:
+            If criteria are NOT met AND the promise tag is missing, respond with:
             {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
   SubagentStop:
     - hooks:
@@ -59,10 +59,10 @@ hooks:
             Review the conversation and determine if ALL quality criteria above have been satisfied.
             Look for evidence that each criterion has been addressed.
 
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
             all criteria appear to be met, respond with: {"ok": true}
 
-            If criteria are NOT met OR the promise tag is missing, respond with:
+            If criteria are NOT met AND the promise tag is missing, respond with:
             {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
 ---
 
