@@ -1,0 +1,46 @@
+{
+  "SessionStart": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "src/deepwork/hooks/check_version.sh"
+        }
+      ]
+    }
+  ],
+  "UserPromptSubmit": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": ".deepwork/jobs/deepwork_rules/hooks/user_prompt_submit.sh"
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python -m deepwork.hooks.rules_check"
+        }
+      ]
+    }
+  ],
+  "SubagentStop": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python -m deepwork.hooks.rules_check"
+        }
+      ]
+    }
+  ]
+}
