@@ -67,8 +67,8 @@ hooks:
         - type: prompt
           prompt: |
             Verify all acceptance criteria are met.
-            If met, respond: {"ok": true}
-            If not met, respond: {"ok": false, "reason": "..."}
+            If met, let the agent finish.
+            If not met, have the agent keep working until all criteria are satisfied.
 ```
 
 **Blocking behavior**: Return JSON with `{"decision": "block", "reason": "..."}` or exit code 2 with stderr message.
@@ -191,7 +191,8 @@ hooks:
         - type: prompt
           prompt: |
             Evaluate whether the response meets all criteria.
-            Respond with {"ok": true} or {"ok": false, "reason": "..."}
+            If all criteria are met, let the agent finish.
+            If criteria are not met, have the agent keep working.
 ```
 
 ## Quality Validation Loop Pattern
@@ -219,9 +220,9 @@ hooks:
             3. Documentation updated
 
             Review the conversation. If ALL criteria met and
-            <promise> tag present, respond: {"ok": true}
+            <promise> tag present, let the agent finish.
 
-            Otherwise respond: {"ok": false, "reason": "..."}
+            Otherwise, have the agent keep working until all criteria are satisfied.
 ```
 
 ## Comparison with Other Platforms
