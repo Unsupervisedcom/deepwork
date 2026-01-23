@@ -22,6 +22,7 @@ Thank you for your interest in contributing to DeepWork! This guide will help yo
   - Nix flakes enabled (add `experimental-features = nix-command flakes` to `~/.config/nix/nix.conf`)
 - **direnv** (optional) - For automatic environment activation when using Nix flakes
 - **uv** - Modern Python package installer (included in Nix environment)
+- **Homebrew** (optional) - For easy installation on macOS/Linux via `brew install`
 - **Signed CLA** - All contributors must sign the Contributor License Agreement (see below)
 
 ## Contributor License Agreement (CLA)
