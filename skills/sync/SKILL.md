@@ -3,15 +3,37 @@ name: sync
 description: Sync DeepWork job definitions to platform-specific skills. Use after modifying job definitions, adding new jobs, or changing platform configurations.
 ---
 
-# DeepWork Sync
+# DeepWork Sync (Agent Skill)
 
-Synchronize job definitions from `.deepwork/jobs/` to platform-specific skills and commands.
+This agent skill automatically detects when job definitions need to be synced to platform skills.
 
-## Usage
+## Automatic Invocation
 
-This skill wraps the `deepwork sync` CLI command and regenerates all skills for configured platforms.
+Claude will invoke this skill automatically when:
+- Job definitions are modified in `.deepwork/jobs/`
+- New jobs are created with `/deepwork_jobs.implement`
+- Platform configuration changes are detected
+- Step instructions or hooks are updated
 
-### Basic Sync
+## What This Skill Does
+
+When invoked, this skill:
+1. Detects changes to job definitions
+2. Identifies which platforms need skill regeneration
+3. Provides guidance on running `deepwork sync` or `/deepwork:sync`
+4. Explains what will be updated (skills, hooks, platform settings)
+
+## Manual Command
+
+Users can also explicitly run the sync command:
+```
+/deepwork:sync
+```
+
+## Related
+
+- **Command**: `/deepwork:sync` - User-invocable command for syncing
+- **CLI**: `deepwork sync` - Direct CLI tool invocation
 
 To sync all jobs for all configured platforms:
 

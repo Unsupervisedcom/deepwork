@@ -4,7 +4,7 @@ Install DeepWork in a project with support for AI platforms like Claude Code or 
 
 ## Usage
 
-This skill wraps the `deepwork install` CLI command and provides an interactive installation experience.
+This command provides an interactive installation experience for setting up DeepWork in your project.
 
 ### Basic Installation
 

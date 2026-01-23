@@ -4,7 +4,7 @@ Synchronize job definitions from `.deepwork/jobs/` to platform-specific skills a
 
 ## Usage
 
-This skill wraps the `deepwork sync` CLI command and regenerates all skills for configured platforms.
+This command regenerates all skills for configured platforms after job modifications.
 
 ### Basic Sync
 

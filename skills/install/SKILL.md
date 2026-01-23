@@ -3,15 +3,36 @@ name: install
 description: Install DeepWork in a project. Adds AI platform support and syncs commands for configured platforms. Use when setting up DeepWork in a new or existing project.
 ---
 
-# DeepWork Install
+# DeepWork Install (Agent Skill)
 
-Install DeepWork in a project with support for AI platforms like Claude Code or Gemini CLI.
+This agent skill automatically detects when a project needs DeepWork installation and provides guidance.
 
-## Usage
+## Automatic Invocation
 
-This skill wraps the `deepwork install` CLI command and provides an interactive installation experience.
+Claude will invoke this skill automatically when:
+- You mention setting up DeepWork in a new project
+- The conversation indicates a need for workflow automation
+- You ask about defining multi-step AI workflows
 
-### Basic Installation
+## What This Skill Does
+
+When invoked, this skill:
+1. Checks if DeepWork is already installed in the project
+2. Provides guidance on running `deepwork install` or `/deepwork:install`
+3. Explains what will be set up (directory structure, jobs, hooks)
+4. Suggests next steps after installation
+
+## Manual Command
+
+Users can also explicitly run the installation command:
+```
+/deepwork:install
+```
+
+## Related
+
+- **Command**: `/deepwork:install` - User-invocable command for installation
+- **CLI**: `deepwork install` - Direct CLI tool invocation
 
 To install DeepWork with auto-detection:
 
