@@ -287,8 +287,10 @@ my-project/                     # User's project (target)
 │   ├── settings.json           # Includes installed hooks
 │   └── skills/                 # Skill files
 │       ├── deepwork_jobs.define.md         # Core DeepWork skills
+│       ├── deepwork_jobs.review_job_spec.md
+│       ├── deepwork_jobs.tools.md
 │       ├── deepwork_jobs.implement.md
-│       ├── deepwork_jobs.refine.md
+│       ├── deepwork_jobs.learn.md
 │       ├── deepwork_rules.define.md        # Rule management
 │       ├── competitive_research.identify_competitors.md
 │       └── ...
@@ -752,11 +754,13 @@ When all steps are done, remind the user they should:
 
 ### Standard Job: `deepwork_jobs`
 
-DeepWork includes a built-in job called `deepwork_jobs` with three commands for managing jobs:
+DeepWork includes a built-in job called `deepwork_jobs` with commands for managing jobs:
 
 1. **`/deepwork_jobs.define`** - Interactive job definition wizard
-2. **`/deepwork_jobs.implement`** - Generates step instruction files from job.yml
-3. **`/deepwork_jobs.refine`** - Modifies existing job definitions
+2. **`/deepwork_jobs.review_job_spec`** - Reviews job.yml against quality criteria using a sub-agent
+3. **`/deepwork_jobs.tools`** - Verifies required external tools and creates process documentation
+4. **`/deepwork_jobs.implement`** - Generates step instruction files from job.yml
+5. **`/deepwork_jobs.learn`** - Analyzes conversation history to improve job instructions
 
 These commands are installed automatically when you run `deepwork install`.
 
@@ -784,8 +788,10 @@ When a user runs `/deepwork_jobs.define` in Claude Code:
 
 4. The workflow is now:
    ```
-   /deepwork_jobs.define     → Creates job.yml
-   /deepwork_jobs.implement  → Creates steps/*.md and syncs commands
+   /deepwork_jobs.define          → Creates job.yml
+   /deepwork_jobs.review_job_spec → Validates job.yml against quality criteria
+   /deepwork_jobs.tools           → Verifies external tools and documents processes
+   /deepwork_jobs.implement       → Creates steps/*.md and syncs skills
    ```
 
 5. The `/deepwork_jobs.define` command contains:
@@ -842,34 +848,30 @@ Claude: Reading job definition from .deepwork/jobs/competitive_research/job.yml.
         - /competitive_research.positioning
 ```
 
-### The `/deepwork_jobs.refine` Command
+### The `/deepwork_jobs.learn` Command
 
-Allows updating existing job definitions:
+Analyzes conversation history to improve job instructions and capture learnings:
 
 ```
-User: /deepwork_jobs.refine
+User: /deepwork_jobs.learn
 
-Claude: Which job would you like to refine?
-        Available jobs:
-        - competitive_research
-        - deepwork_jobs
+Claude: I'll analyze our conversation to identify improvements for the job.
+        Scanning conversation for job executions...
 
-User: competitive_research
+        Found execution of competitive_research job.
+        Identifying learnings...
 
-Claude: Loading competitive_research job definition...
-        What would you like to update?
-        1. Add a new step
-        2. Modify existing step
-        3. Remove a step
-        4. Update metadata
+        **Generalizable learnings** (→ improve instructions):
+        - Step 2 instructions were ambiguous about data sources
+        - Quality criteria needed clarification
 
-User: Add a new step between primary_research and secondary_research
+        **Bespoke learnings** (→ AGENTS.md):
+        - This project prefers bullet points over tables
+        - Competitor profiles should include pricing when available
 
-Claude: [Interactive dialog...]
-        ✓ Added step 'social_media_analysis'
-        ✓ Updated dependencies in job.yml
-        ✓ Updated changelog with version 1.1.0
-        ✓ Please run /deepwork_jobs.implement to generate the new step file
+        ✓ Updated steps/primary_research.md with clearer instructions
+        ✓ Added learnings to AGENTS.md
+        ✓ Running deepwork sync...
 ```
 
 ### Template System

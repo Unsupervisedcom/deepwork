@@ -8,8 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- New `tools` step in `deepwork_jobs` workflow for verifying and documenting external tools
+  - Analyzes job steps to identify required external tools (PDF generation, data processing, etc.)
+  - Tests each tool and finds alternatives if missing or broken
+  - Creates process-focused documentation (e.g., `making_pdfs.md` not `pandoc.md`)
+  - Documents installation methods and invocation examples
 
 ### Changed
+- `deepwork_jobs.implement` step no longer creates directory structure (already done by `define` step)
+- `deepwork_jobs.implement` now references tool documentation when generating step instructions
+- Updated `deepwork_jobs` to v0.10.0
 
 ### Fixed
 

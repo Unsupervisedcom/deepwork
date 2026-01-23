@@ -103,10 +103,10 @@ The AI will:
 
 ### 3. Manage Workflows
 
-Use the refine skill to update existing jobs:
+Use the learn skill to improve jobs based on execution experience:
 
 ```
-/deepwork_jobs.refine
+/deepwork_jobs.learn
 ```
 
 ## Example: Competitive Research Workflow
