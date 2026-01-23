@@ -773,8 +773,8 @@ When all steps are done, remind the user they should:
 DeepWork includes a built-in job called `deepwork_jobs` for managing jobs. It provides:
 
 **Workflows** (multi-step sequences):
-- **`new_job`** workflow: `define` → `review_job_spec` → `implement`
-  - Creates complete job definitions through interactive Q&A, validation, and file generation
+- **`new_job`** workflow: `define` → `review_job_spec` → `tools` → `implement`
+  - Creates complete job definitions through interactive Q&A, validation, technique verification, and file generation
 
 **Standalone Skills** (can be run anytime):
 - **`/deepwork_jobs.learn`** - Analyzes conversations to improve job instructions and capture learnings
