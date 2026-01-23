@@ -12,7 +12,7 @@ hooks:
             ## Quality Criteria
 
             1. **Tasks Analyzed**: Were all job steps reviewed to identify required tools and capabilities (CLI tools, MCP servers, browser extensions, etc.)?
-            2. **Tools Tested**: Was each identified tool or capability tested to verify it works?
+            2. **Parallel Sub-Agents**: Were parallel sub-agents spawned for each process requiring tooling?
             3. **Had Working Process**: Does each required process have a working solution (original tool or alternative)?
             4. **Process Documentation**: Was a markdown document created for each process (e.g., making_pdfs.md, not pandoc.md)?
             5. **Installation Documented**: Is there a separate install_[tool].md file for each tool that requires installation?
@@ -37,7 +37,7 @@ hooks:
             ## Quality Criteria
 
             1. **Tasks Analyzed**: Were all job steps reviewed to identify required tools and capabilities (CLI tools, MCP servers, browser extensions, etc.)?
-            2. **Tools Tested**: Was each identified tool or capability tested to verify it works?
+            2. **Parallel Sub-Agents**: Were parallel sub-agents spawned for each process requiring tooling?
             3. **Had Working Process**: Does each required process have a working solution (original tool or alternative)?
             4. **Process Documentation**: Was a markdown document created for each process (e.g., making_pdfs.md, not pandoc.md)?
             5. **Installation Documented**: Is there a separate install_[tool].md file for each tool that requires installation?
@@ -78,7 +78,7 @@ Verify that all external tools and capabilities required by the job are availabl
 
 ## Task
 
-Review the job specification to identify what external tools or capabilities are needed, test them, and document how each process works.
+Analyze the job specification to determine what tools are needed, then spawn parallel sub-agents to test, configure, and document each process.
 
 ### Step 1: Analyze the Job for Required Tools and Capabilities
 
@@ -102,165 +102,83 @@ Read the `job.yml` file and examine each step to identify tasks that require ext
 - **Language runtimes**: Python, Node.js, Ruby, etc. with specific packages
 - **External services**: APIs that require authentication or setup
 
-**For each step, note:**
+**For each step, create a requirements list:**
 - What the step needs to accomplish
 - What external tools or capabilities might be required
 - What the expected input/output formats are
 
-### Step 2: Test Each Required Tool or Capability
+### Step 2: Spawn Parallel Sub-Agents for Each Process
 
-For each tool or capability you've identified, verify it's available and working:
+For each process you identified, spawn a sub-agent **in parallel** to handle testing and documentation. This allows all processes to be verified concurrently.
 
-1. **Check availability** - Confirm the tool is installed or the capability is accessible
-2. **Verify functionality** - Run a simple test to confirm it works as expected
-3. **Note the version** - Record what version is installed for reproducibility
+**Sub-agent prompt template (customize for each process):**
 
-**Document what you find:**
-- Tool/capability name and version
-- Whether it works or not
-- Any errors encountered
+```
+You are verifying and documenting a tool for the "[PROCESS_NAME]" process in a DeepWork job.
 
-### Step 3: Ensure Working Processes
+## Process Requirement
 
-If a tool is missing or doesn't work:
+[Describe what this specific process needs to accomplish]
 
-1. **Research alternatives:**
-   - Search for equivalent tools that accomplish the same task
-   - Consider multiple options (CLI tools, MCP servers, browser extensions, libraries, online services)
+## Your Tasks
 
-2. **Test the alternatives:**
-   - Install and try each alternative
-   - Verify it can accomplish the required task
-   - Compare quality, speed, and ease of use
+1. **Test if a tool exists** - Check if a tool is available that can accomplish this process
+2. **Verify it works** - Run a simple test to confirm functionality
+3. **Find alternatives if needed** - If the tool is missing or broken, research and test alternatives until you have a working solution
+4. **Create installation documentation** - Write `install_[tool_name].md` with:
+   - How it was installed on this machine
+   - Alternative installation methods (macOS, Ubuntu, Windows, pip/npm)
+   - Verification steps
+   - Troubleshooting tips
+5. **Create process documentation** - Write `[process_name].md` (e.g., `making_pdfs.md`, NOT `pandoc.md`) with:
+   - Purpose of this process
+   - Selected tool, type, and version
+   - Reference to installation doc
+   - Usage examples
+   - Alternatives considered
 
-3. **Select the best option:**
-   - Choose the tool that works best for this job's needs
-   - Consider factors like: availability, ease of installation, reliability
+## Output Location
 
-The goal is to have a **working process** for each required capability, not necessarily the originally planned tool.
+Create documentation in: `.deepwork/jobs/[job_name]/tools/`
 
-### Step 4: Create Installation Documentation
+## Success Criteria
 
-For each tool that requires installation, create a separate installation document at `.deepwork/jobs/[job_name]/tools/install_[tool_name].md`.
-
-**Installation document template:**
-
-```markdown
-# Installing [Tool Name]
-
-## Overview
-Brief description of what this tool does.
-
-## How it was installed on this machine
-[Document the actual installation method used]
-
-## Alternative installation methods
-
-### macOS
-[instructions]
-
-### Ubuntu/Debian
-[instructions]
-
-### Windows
-[instructions]
-
-### Via package manager (pip/npm/etc.)
-[instructions]
-
-## Verification
-How to verify the installation worked.
-
-## Troubleshooting
-Common installation issues and solutions.
+- The process has a working tool
+- Created `[process_name].md` document
+- Created `install_[tool_name].md` document
 ```
 
-### Step 5: Create Process Documentation
+**Example:** If you identified 3 processes (making PDFs, accessing websites, creating charts), spawn 3 sub-agents in parallel:
+- Sub-agent 1: "making_pdfs" process
+- Sub-agent 2: "accessing_websites" process
+- Sub-agent 3: "creating_charts" process
 
-**IMPORTANT:** Create documentation organized by **process** (what you're trying to accomplish), NOT by tool name.
+### Step 3: Review Sub-Agent Outputs
 
-**Correct naming:**
-- `making_pdfs.md` - How to create PDF documents
-- `resizing_images.md` - How to resize/optimize images
-- `accessing_websites.md` - How to browse and extract data from websites
-- `converting_data_formats.md` - How to transform data between formats
+After all sub-agents complete:
 
-**Incorrect naming:**
-- `pandoc.md` - This is tool-centric, not process-centric
-- `imagemagick.md` - Same issue
+1. **Verify all processes are covered** - Check that each identified need has documentation
+2. **Spot-check the documentation** - Ensure the docs are complete and accurate
+3. **Verify tools work together** - If processes depend on each other, confirm compatibility
 
-Create documentation files in `.deepwork/jobs/[job_name]/tools/`:
-
-**Each process document should include:**
-
-```markdown
-# [Process Name]
-
-## Purpose
-What this process accomplishes and when you would use it.
-
-## Selected Tool
-- **Tool**: [tool name]
-- **Type**: [CLI tool / MCP server / Browser extension / etc.]
-- **Version**: [version tested]
-- **Why chosen**: [brief rationale]
-
-## Installation
-See [install_[tool_name].md](./install_[tool_name].md) for installation instructions.
-
-## Usage
-
-### Basic invocation
-[Show basic usage example]
-
-### Common options
-| Option | Description |
-|--------|-------------|
-| ... | ... |
-
-### Examples
-
-**Example 1: [Basic use case]**
-[example]
-
-**Example 2: [More complex use case]**
-[example]
-
-## Alternatives Considered
-- **[Alternative tool]**: [Why not chosen / when it might be preferred]
-```
-
-### Step 6: Verify All Tools Work Together
-
-After documenting all tools:
-
-1. **Run a dry-run test:**
-   - Simulate the workflow with test inputs
-   - Verify each tool can read the previous tool's output
-
-2. **Check for compatibility:**
-   - Ensure tools work with the same file formats
-   - Verify version compatibility if tools interact
-
-3. **Document any integration notes:**
-   - Add notes about tool ordering or dependencies
-   - Document any format conversion requirements between steps
-
-## Example Workflow
+## Example
 
 For a job that creates research reports from web sources:
 
-1. **Analyze job**: Steps need to browse websites, gather data, create visualizations, and generate PDF reports
-2. **Identify tools needed**: Web browsing (Chrome MCP or browser extension), chart generation (matplotlib), PDF creation (pandoc)
-3. **Test tools**: Found Chrome MCP working, pandoc installed, matplotlib not installed
-4. **Ensure working processes**: Installed matplotlib via pip, tested successfully
-5. **Document installation**:
-   - `tools/install_matplotlib.md` - Python package installation
-   - `tools/install_pandoc.md` - System package installation
-6. **Document processes**:
-   - `tools/accessing_websites.md` - Using Chrome MCP for web browsing
-   - `tools/creating_charts.md` - Using matplotlib for visualizations
-   - `tools/making_pdfs.md` - Using pandoc with custom templates
+**Step 1 output (your analysis):**
+```
+Required processes:
+1. Accessing websites - Need to browse and extract data from web pages
+2. Creating charts - Need to generate visualizations from data
+3. Making PDFs - Need to convert markdown reports to PDF format
+```
+
+**Step 2:** Spawn 3 parallel sub-agents, one for each process
+
+**Step 3:** Verify all sub-agents created their docs:
+- `tools/accessing_websites.md` + `tools/install_chrome_mcp.md`
+- `tools/creating_charts.md` + `tools/install_matplotlib.md`
+- `tools/making_pdfs.md` + `tools/install_pandoc.md`
 
 ## Output
 
@@ -281,6 +199,7 @@ After completing this step, you should have:
 ## Quality Criteria
 
 - All job steps have been analyzed for tool/capability requirements
+- Parallel sub-agents were spawned for each process requiring tooling
 - Every required tool has been tested and verified working
 - Each required process has a working solution (original tool or alternative)
 - Documentation is organized by PROCESS, not by tool name
@@ -335,7 +254,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 
 **Criteria (all must be satisfied)**:
 1. **Tasks Analyzed**: Were all job steps reviewed to identify required tools and capabilities (CLI tools, MCP servers, browser extensions, etc.)?
-2. **Tools Tested**: Was each identified tool or capability tested to verify it works?
+2. **Parallel Sub-Agents**: Were parallel sub-agents spawned for each process requiring tooling?
 3. **Had Working Process**: Does each required process have a working solution (original tool or alternative)?
 4. **Process Documentation**: Was a markdown document created for each process (e.g., making_pdfs.md, not pandoc.md)?
 5. **Installation Documented**: Is there a separate install_[tool].md file for each tool that requires installation?
