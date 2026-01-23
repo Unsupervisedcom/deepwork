@@ -95,7 +95,7 @@ See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for det
 
 The `tools` step (which runs before `implement`) creates reusable techniques in `.deepwork/techniques/`. When generating step instructions, **reference these techniques** for any step that requires external tools.
 
-Techniques are synced to platform skill directories with a `dw_` prefix (e.g., `making_pdfs` becomes `/dwt_making_pdfs`), so agents can invoke them directly.
+Techniques are synced to platform skill directories with a `dwt_` prefix (e.g., `making_pdfs` becomes `/dwt_making_pdfs`), so agents can invoke them directly.
 
 **How to incorporate techniques:**
 

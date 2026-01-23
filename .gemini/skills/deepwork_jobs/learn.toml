@@ -275,7 +275,7 @@ If technique-related learnings were identified, update or create techniques in `
      ```
    - Include any helper scripts or assets in the technique folder
 
-3. **After updating/creating techniques**, run `deepwork sync` to sync them to platform skill directories with the `dw_` prefix.
+3. **After updating/creating techniques**, run `deepwork sync` to sync them to platform skill directories with the `dwt_` prefix.
 
 **Example technique update:**
 ```markdown

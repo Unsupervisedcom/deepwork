@@ -35,7 +35,7 @@ changelog:
   - version: "0.10.0"
     changes: "Added tools step for verifying and documenting external tools; implement step no longer creates directory structure (define does this)"
   - version: "0.11.0"
-    changes: "Renamed tools step to create reusable techniques in .deepwork/techniques/; techniques follow Claude Skills format and are synced to platform skill directories with dw_ prefix"
+    changes: "Renamed tools step to create reusable techniques in .deepwork/techniques/; techniques follow Claude Skills format and are synced to platform skill directories with dwt_ prefix"
 
 steps:
   - id: define
