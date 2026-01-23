@@ -11,12 +11,12 @@ hooks:
 
             ## Quality Criteria
 
-            1. **Tasks Analyzed**: Were all job steps reviewed to identify required external tools?
-            2. **Tools Tested**: Was each identified tool tested to verify it works?
-            3. **Alternatives Found**: If a tool was missing or broken, were alternatives discovered and tested?
+            1. **Tasks Analyzed**: Were all job steps reviewed to identify required tools and capabilities (CLI tools, MCP servers, browser extensions, etc.)?
+            2. **Tools Tested**: Was each identified tool or capability tested to verify it works?
+            3. **Had Working Process**: Does each required process have a working solution (original tool or alternative)?
             4. **Process Documentation**: Was a markdown document created for each process (e.g., making_pdfs.md, not pandoc.md)?
-            5. **Installation Documented**: Does each process document explain how the tool was/can be installed?
-            6. **Invocation Documented**: Does each process document show how to invoke the tool with examples?
+            5. **Installation Documented**: Is there a separate install_[tool].md file for each tool that requires installation?
+            6. **Invocation Documented**: Does each process document show how to use the tool with examples?
 
             ## Instructions
 
@@ -36,12 +36,12 @@ hooks:
 
             ## Quality Criteria
 
-            1. **Tasks Analyzed**: Were all job steps reviewed to identify required external tools?
-            2. **Tools Tested**: Was each identified tool tested to verify it works?
-            3. **Alternatives Found**: If a tool was missing or broken, were alternatives discovered and tested?
+            1. **Tasks Analyzed**: Were all job steps reviewed to identify required tools and capabilities (CLI tools, MCP servers, browser extensions, etc.)?
+            2. **Tools Tested**: Was each identified tool or capability tested to verify it works?
+            3. **Had Working Process**: Does each required process have a working solution (original tool or alternative)?
             4. **Process Documentation**: Was a markdown document created for each process (e.g., making_pdfs.md, not pandoc.md)?
-            5. **Installation Documented**: Does each process document explain how the tool was/can be installed?
-            6. **Invocation Documented**: Does each process document show how to invoke the tool with examples?
+            5. **Installation Documented**: Is there a separate install_[tool].md file for each tool that requires installation?
+            6. **Invocation Documented**: Does each process document show how to use the tool with examples?
 
             ## Instructions
 
@@ -74,63 +74,59 @@ Before proceeding, confirm these steps are complete:
 
 ## Objective
 
-Verify that all external tools required by the job are available and working, find alternatives if needed, and create process-focused documentation for future reference.
+Verify that all external tools and capabilities required by the job are available and working, find alternatives if needed, and create process-focused documentation for future reference.
 
 ## Task
 
-Review the job specification to identify what external tools are needed, test them, and document how each process works.
+Review the job specification to identify what external tools or capabilities are needed, test them, and document how each process works.
 
-### Step 1: Analyze the Job for Required Tools
+### Step 1: Analyze the Job for Required Tools and Capabilities
 
-Read the `job.yml` file and examine each step to identify tasks that require external tools.
+Read the `job.yml` file and examine each step to identify tasks that require external tools or capabilities beyond the agent's built-in abilities.
 
 **Look for steps that involve:**
 - File format conversion (PDF, DOCX, HTML, etc.)
 - Data processing (CSV, JSON, XML transformations)
 - Media manipulation (images, audio, video)
+- Web browsing or site access (via browser extensions like Chrome MCP)
 - External API calls or web requests
 - Build processes (compilers, bundlers)
 - Testing frameworks
-- Documentation generation
 - Database operations
 - Container or virtualization tools
 
+**Types of tools and capabilities to consider:**
+- **CLI tools**: Command-line programs (pandoc, ffmpeg, imagemagick, etc.)
+- **MCP servers**: Model Context Protocol servers that extend agent capabilities (browser control, database access, etc.)
+- **Browser extensions**: Chrome extensions or similar for web interaction
+- **Language runtimes**: Python, Node.js, Ruby, etc. with specific packages
+- **External services**: APIs that require authentication or setup
+
 **For each step, note:**
 - What the step needs to accomplish
-- What external tools might be required
+- What external tools or capabilities might be required
 - What the expected input/output formats are
 
-### Step 2: Test Each Required Tool
+### Step 2: Test Each Required Tool or Capability
 
-For each tool you've identified:
+For each tool or capability you've identified, verify it's available and working:
 
-1. **Check if the tool is installed:**
-   ```bash
-   which [tool_name] || echo "Not found"
-   ```
-
-2. **Verify the version:**
-   ```bash
-   [tool_name] --version
-   ```
-
-3. **Test basic functionality:**
-   - Run a simple test command to confirm it works
-   - Create a minimal test case if needed
-   - Verify the output is as expected
+1. **Check availability** - Confirm the tool is installed or the capability is accessible
+2. **Verify functionality** - Run a simple test to confirm it works as expected
+3. **Note the version** - Record what version is installed for reproducibility
 
 **Document what you find:**
-- Tool name and version
+- Tool/capability name and version
 - Whether it works or not
 - Any errors encountered
 
-### Step 3: Find Alternatives for Missing/Broken Tools
+### Step 3: Ensure Working Processes
 
 If a tool is missing or doesn't work:
 
 1. **Research alternatives:**
    - Search for equivalent tools that accomplish the same task
-   - Consider multiple options (CLI tools, libraries, online services)
+   - Consider multiple options (CLI tools, MCP servers, browser extensions, libraries, online services)
 
 2. **Test the alternatives:**
    - Install and try each alternative
@@ -141,13 +137,52 @@ If a tool is missing or doesn't work:
    - Choose the tool that works best for this job's needs
    - Consider factors like: availability, ease of installation, reliability
 
-### Step 4: Create Process Documentation
+The goal is to have a **working process** for each required capability, not necessarily the originally planned tool.
+
+### Step 4: Create Installation Documentation
+
+For each tool that requires installation, create a separate installation document at `.deepwork/jobs/[job_name]/tools/install_[tool_name].md`.
+
+**Installation document template:**
+
+```markdown
+# Installing [Tool Name]
+
+## Overview
+Brief description of what this tool does.
+
+## How it was installed on this machine
+[Document the actual installation method used]
+
+## Alternative installation methods
+
+### macOS
+[instructions]
+
+### Ubuntu/Debian
+[instructions]
+
+### Windows
+[instructions]
+
+### Via package manager (pip/npm/etc.)
+[instructions]
+
+## Verification
+How to verify the installation worked.
+
+## Troubleshooting
+Common installation issues and solutions.
+```
+
+### Step 5: Create Process Documentation
 
 **IMPORTANT:** Create documentation organized by **process** (what you're trying to accomplish), NOT by tool name.
 
 **Correct naming:**
 - `making_pdfs.md` - How to create PDF documents
 - `resizing_images.md` - How to resize/optimize images
+- `accessing_websites.md` - How to browse and extract data from websites
 - `converting_data_formats.md` - How to transform data between formats
 
 **Incorrect naming:**
@@ -155,10 +190,6 @@ If a tool is missing or doesn't work:
 - `imagemagick.md` - Same issue
 
 Create documentation files in `.deepwork/jobs/[job_name]/tools/`:
-
-```bash
-mkdir -p .deepwork/jobs/[job_name]/tools
-```
 
 **Each process document should include:**
 
@@ -170,55 +201,36 @@ What this process accomplishes and when you would use it.
 
 ## Selected Tool
 - **Tool**: [tool name]
+- **Type**: [CLI tool / MCP server / Browser extension / etc.]
 - **Version**: [version tested]
 - **Why chosen**: [brief rationale]
 
 ## Installation
-
-### How it was installed on this machine
-[Document the actual installation method used]
-
-### Alternative installation methods
-- **macOS**: `brew install [package]`
-- **Ubuntu/Debian**: `apt install [package]`
-- **Windows**: [instructions]
-- **Using pip/npm/etc.**: [instructions]
+See [install_[tool_name].md](./install_[tool_name].md) for installation instructions.
 
 ## Usage
 
 ### Basic invocation
-```bash
-[basic command example]
-```
+[Show basic usage example]
 
 ### Common options
 | Option | Description |
 |--------|-------------|
-| `-o` | Output file |
 | ... | ... |
 
 ### Examples
 
 **Example 1: [Basic use case]**
-```bash
-[command]
-```
+[example]
 
 **Example 2: [More complex use case]**
-```bash
-[command]
-```
-
-## Troubleshooting
-
-### Common issues
-- **[Issue]**: [Solution]
+[example]
 
 ## Alternatives Considered
 - **[Alternative tool]**: [Why not chosen / when it might be preferred]
 ```
 
-### Step 5: Verify All Tools Work Together
+### Step 6: Verify All Tools Work Together
 
 After documenting all tools:
 
@@ -236,14 +248,17 @@ After documenting all tools:
 
 ## Example Workflow
 
-For a job that creates research reports with charts:
+For a job that creates research reports from web sources:
 
-1. **Analyze job**: Steps need to gather data, create visualizations, and generate PDF reports
-2. **Identify tools needed**: Data fetching (curl/wget), chart generation (gnuplot/matplotlib), PDF creation (pandoc/weasyprint)
-3. **Test tools**: Found pandoc v3.1 and gnuplot v5.4 installed, matplotlib not installed
-4. **Find alternatives**: Installed matplotlib via pip, tested successfully
-5. **Document processes**:
-   - `tools/fetching_web_data.md` - Using curl for API requests
+1. **Analyze job**: Steps need to browse websites, gather data, create visualizations, and generate PDF reports
+2. **Identify tools needed**: Web browsing (Chrome MCP or browser extension), chart generation (matplotlib), PDF creation (pandoc)
+3. **Test tools**: Found Chrome MCP working, pandoc installed, matplotlib not installed
+4. **Ensure working processes**: Installed matplotlib via pip, tested successfully
+5. **Document installation**:
+   - `tools/install_matplotlib.md` - Python package installation
+   - `tools/install_pandoc.md` - System package installation
+6. **Document processes**:
+   - `tools/accessing_websites.md` - Using Chrome MCP for web browsing
    - `tools/creating_charts.md` - Using matplotlib for visualizations
    - `tools/making_pdfs.md` - Using pandoc with custom templates
 
@@ -251,23 +266,26 @@ For a job that creates research reports with charts:
 
 After completing this step, you should have:
 
-1. **tools/ directory** with process documentation:
+1. **tools/ directory** with process and installation documentation:
    ```
    .deepwork/jobs/[job_name]/tools/
    ├── [process_1].md
    ├── [process_2].md
+   ├── install_[tool_1].md
+   ├── install_[tool_2].md
    └── ...
    ```
 
-2. **Confidence that all tools work** and the job can be implemented successfully
+2. **Confidence that all processes work** and the job can be implemented successfully
 
 ## Quality Criteria
 
-- All job steps have been analyzed for tool requirements
+- All job steps have been analyzed for tool/capability requirements
 - Every required tool has been tested and verified working
-- Missing or broken tools have been replaced with working alternatives
+- Each required process has a working solution (original tool or alternative)
 - Documentation is organized by PROCESS, not by tool name
-- Each process document includes installation and invocation instructions
+- Installation instructions are in separate `install_[tool].md` files
+- Each process document references its installation doc
 - All tools have been verified to work together
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
@@ -316,12 +334,12 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 Stop hooks will automatically validate your work. The loop continues until all criteria pass.
 
 **Criteria (all must be satisfied)**:
-1. **Tasks Analyzed**: Were all job steps reviewed to identify required external tools?
-2. **Tools Tested**: Was each identified tool tested to verify it works?
-3. **Alternatives Found**: If a tool was missing or broken, were alternatives discovered and tested?
+1. **Tasks Analyzed**: Were all job steps reviewed to identify required tools and capabilities (CLI tools, MCP servers, browser extensions, etc.)?
+2. **Tools Tested**: Was each identified tool or capability tested to verify it works?
+3. **Had Working Process**: Does each required process have a working solution (original tool or alternative)?
 4. **Process Documentation**: Was a markdown document created for each process (e.g., making_pdfs.md, not pandoc.md)?
-5. **Installation Documented**: Does each process document explain how the tool was/can be installed?
-6. **Invocation Documented**: Does each process document show how to invoke the tool with examples?
+5. **Installation Documented**: Is there a separate install_[tool].md file for each tool that requires installation?
+6. **Invocation Documented**: Does each process document show how to use the tool with examples?
 
 
 **To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
