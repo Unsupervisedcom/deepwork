@@ -15,6 +15,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # NOTE: Nix would be the preferred environment, but it causes Copilot agent
+      # Bash tool calls to silently hang. Using uv/Python setup as a workaround.
+      # - name: Install Nix
+      #   uses: cachix/install-nix-action@v31
+      #   with:
+      #     nix_path: nixpkgs=channel:nixos-unstable
+      # - uses: nicknovitski/nix-develop@v1
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
