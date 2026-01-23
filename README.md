@@ -219,7 +219,8 @@ DeepWork is available as a Claude Code plugin for seamless integration:
 
 **Plugin Structure**:
 - `.claude-plugin/plugin.json` - Plugin manifest with metadata
-- `skills/` - Plugin skills (/deepwork:install, /deepwork:sync)
+- `commands/` - User-invocable commands (/deepwork:install, /deepwork:sync)
+- `skills/` - Agent Skills for automatic invocation
 - `hooks/` - Event hooks configuration
 
 **Installation**: See [PLUGIN.md](PLUGIN.md) for plugin-specific documentation.

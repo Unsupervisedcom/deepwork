@@ -38,14 +38,17 @@ claude plugin install .
 deepwork/
 ├── .claude-plugin/
 │   └── plugin.json         # Plugin manifest
+├── commands/
+│   ├── install/COMMAND.md  # /deepwork:install command
+│   └── sync/COMMAND.md     # /deepwork:sync command
 ├── skills/
-│   ├── install/SKILL.md    # /deepwork:install command
-│   └── sync/SKILL.md       # /deepwork:sync command
+│   ├── install/SKILL.md    # Agent skill for auto-detection
+│   └── sync/SKILL.md       # Agent skill for auto-sync
 └── hooks/
     └── hooks.json          # Event hooks configuration
 ```
 
-## Available Skills
+## Available Commands
 
 After installation, the following skills are available:
 
