@@ -32,7 +32,7 @@ def sync_techniques_to_platform(
     """
     Sync techniques from .deepwork/techniques/ to platform skill directory.
 
-    Copies technique folders with a 'dw_' prefix and removes stale dw_ folders
+    Copies technique folders with a 'dwt_' prefix and removes stale dwt_ folders
     that no longer have corresponding techniques.
 
     Args:
@@ -58,17 +58,17 @@ def sync_techniques_to_platform(
                 if has_skill:
                     current_techniques.add(technique_dir.name)
 
-    # Find existing dw_ prefixed folders in skills directory
-    existing_dw_folders: set[str] = set()
+    # Find existing dwt_ prefixed folders in skills directory
+    existing_dwt_folders: set[str] = set()
     if skills_dir.exists():
         for item in skills_dir.iterdir():
             if item.is_dir() and item.name.startswith(TECHNIQUE_PREFIX):
                 # Extract the technique name without prefix
                 technique_name = item.name[len(TECHNIQUE_PREFIX) :]
-                existing_dw_folders.add(technique_name)
+                existing_dwt_folders.add(technique_name)
 
-    # Remove stale dw_ folders (no longer in techniques)
-    stale_techniques = existing_dw_folders - current_techniques
+    # Remove stale dwt_ folders (no longer in techniques)
+    stale_techniques = existing_dwt_folders - current_techniques
     for stale_name in stale_techniques:
         stale_dir = skills_dir / f"{TECHNIQUE_PREFIX}{stale_name}"
         if stale_dir.exists():

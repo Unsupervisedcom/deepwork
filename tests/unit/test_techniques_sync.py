@@ -102,7 +102,7 @@ This technique uses pandoc to convert markdown to PDF.
             assert (skills_dir / f"{TECHNIQUE_PREFIX}{name}").exists()
 
     def test_removes_stale_techniques(self, temp_dir: Path) -> None:
-        """Test that stale dw_ folders are removed."""
+        """Test that stale dwt_ folders are removed."""
         techniques_dir = temp_dir / ".deepwork" / "techniques"
         skills_dir = temp_dir / ".claude" / "skills"
         techniques_dir.mkdir(parents=True)
@@ -113,7 +113,7 @@ This technique uses pandoc to convert markdown to PDF.
         technique_dir.mkdir()
         (technique_dir / "SKILL.md").write_text("---\nname: making_pdfs\n---\n# PDF")
 
-        # Create stale dw_ folders (no longer in techniques)
+        # Create stale dwt_ folders (no longer in techniques)
         stale_dir1 = skills_dir / f"{TECHNIQUE_PREFIX}old_technique"
         stale_dir1.mkdir()
         (stale_dir1 / "SKILL.md").write_text("stale")
@@ -141,7 +141,7 @@ This technique uses pandoc to convert markdown to PDF.
         techniques_dir.mkdir(parents=True)
         skills_dir.mkdir(parents=True)
 
-        # Create existing dw_ folder with old content
+        # Create existing dwt_ folder with old content
         existing_dir = skills_dir / f"{TECHNIQUE_PREFIX}making_pdfs"
         existing_dir.mkdir()
         (existing_dir / "SKILL.md").write_text("old content")
@@ -162,8 +162,8 @@ This technique uses pandoc to convert markdown to PDF.
         assert removed == 0
         assert (skills_dir / f"{TECHNIQUE_PREFIX}making_pdfs" / "SKILL.md").read_text() == new_content
 
-    def test_ignores_non_dw_folders(self, temp_dir: Path) -> None:
-        """Test that non-dw_ prefixed folders are not touched."""
+    def test_ignores_non_dwt_folders(self, temp_dir: Path) -> None:
+        """Test that non-dwt_ prefixed folders are not touched."""
         techniques_dir = temp_dir / ".deepwork" / "techniques"
         skills_dir = temp_dir / ".claude" / "skills"
         techniques_dir.mkdir(parents=True)
@@ -174,7 +174,7 @@ This technique uses pandoc to convert markdown to PDF.
         technique_dir.mkdir()
         (technique_dir / "SKILL.md").write_text("---\nname: making_pdfs\n---\n# PDF")
 
-        # Create non-dw_ folder (should not be touched)
+        # Create non-dwt_ folder (should not be touched)
         other_dir = skills_dir / "my_custom_skill"
         other_dir.mkdir()
         (other_dir / "SKILL.md").write_text("custom skill")
@@ -224,7 +224,7 @@ This technique uses pandoc to convert markdown to PDF.
         techniques_dir.mkdir(parents=True)
         skills_dir.mkdir(parents=True)
 
-        # Create a stale dw_ folder
+        # Create a stale dwt_ folder
         stale_dir = skills_dir / f"{TECHNIQUE_PREFIX}old"
         stale_dir.mkdir()
         (stale_dir / "SKILL.md").write_text("stale")
@@ -245,7 +245,7 @@ This technique uses pandoc to convert markdown to PDF.
         skills_dir = temp_dir / ".claude" / "skills"
         skills_dir.mkdir(parents=True)
 
-        # Create a stale dw_ folder
+        # Create a stale dwt_ folder
         stale_dir = skills_dir / f"{TECHNIQUE_PREFIX}old"
         stale_dir.mkdir()
 
