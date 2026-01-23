@@ -92,7 +92,7 @@ steps:
       - review_job_spec
     quality_criteria:
       - "**Tasks Analyzed**: Were all job steps reviewed to identify required tools and capabilities (CLI tools, MCP servers, browser extensions, etc.)?"
-      - "**Tools Tested**: Was each identified tool or capability tested to verify it works?"
+      - "**Parallel Sub-Agents**: Were parallel sub-agents spawned for each process requiring tooling?"
       - "**Had Working Process**: Does each required process have a working solution (original tool or alternative)?"
       - "**Process Documentation**: Was a markdown document created for each process (e.g., making_pdfs.md, not pandoc.md)?"
       - "**Installation Documented**: Is there a separate install_[tool].md file for each tool that requires installation?"
