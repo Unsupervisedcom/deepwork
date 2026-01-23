@@ -305,10 +305,13 @@ class TestRulesStopHookInfiniteLoopPrevention:
     def test_queued_prompt_rule_does_not_refire(
         self, src_dir: Path, git_repo_with_src_rule: Path
     ) -> None:
-        """Test that a prompt rule with QUEUED status doesn't fire again.
+        """Test that a send_to_stopping_agent prompt rule with QUEUED status doesn't fire again.
 
         This prevents infinite loops when the transcript is unavailable or
-        promise tags haven't been written yet.
+        promise tags haven't been written yet. The agent has already seen this rule.
+
+        Note: This only applies to rules with prompt_runtime: send_to_stopping_agent (default).
+        Claude runtime rules should refire - see test_claude_runtime_rule_refires_when_queued.
         """
         # Create a file that triggers the rule
         test_src_dir = git_repo_with_src_rule / "src"
@@ -407,6 +410,92 @@ class TestRulesStopHookInfiniteLoopPrevention:
             assert result == {}, f"Rule should not fire with promise tag: {result}"
         finally:
             os.unlink(transcript_path)
+
+    def test_claude_runtime_rule_refires_when_queued(
+        self, src_dir: Path, tmp_path: Path
+    ) -> None:
+        """Test that a claude runtime prompt rule DOES refire when QUEUED.
+
+        Claude runtime rules execute in a separate subprocess, not shown to the
+        stopping agent. Therefore they should NOT be subject to the infinite loop
+        prevention that skips QUEUED rules.
+
+        This test uses CLAUDE_CODE_REMOTE=true to simulate claude unavailability,
+        which causes the rule to remain QUEUED (fallback path) rather than
+        getting PASSED/FAILED status.
+        """
+        # Create a git repo with a claude runtime rule
+        repo = Repo.init(tmp_path)
+        readme = tmp_path / "README.md"
+        readme.write_text("# Test Project\n")
+        repo.index.add(["README.md"])
+        repo.index.commit("Initial commit")
+
+        # Create rule with prompt_runtime: claude
+        rules_dir = tmp_path / ".deepwork" / "rules"
+        rules_dir.mkdir(parents=True, exist_ok=True)
+
+        rule_file = rules_dir / "claude-runtime-rule.md"
+        rule_file.write_text(
+            """---
+name: Claude Runtime Rule
+trigger: "src/**/*"
+compare_to: prompt
+prompt_runtime: claude
+---
+This is a rule that runs in claude runtime.
+Please check the code.
+"""
+        )
+
+        # Set up baseline
+        deepwork_dir = tmp_path / ".deepwork"
+        (deepwork_dir / ".last_work_tree").write_text("")
+
+        # Create a file that triggers the rule
+        test_src_dir = tmp_path / "src"
+        test_src_dir.mkdir(exist_ok=True)
+        (test_src_dir / "main.py").write_text("# New file\n")
+        repo.index.add(["src/main.py"])
+
+        # Run with CLAUDE_CODE_REMOTE=true so claude returns fallback (stays QUEUED)
+        env = os.environ.copy()
+        env["DEEPWORK_HOOK_PLATFORM"] = "claude"
+        env["CLAUDE_CODE_REMOTE"] = "true"
+        if src_dir:
+            env["PYTHONPATH"] = str(src_dir)
+
+        import subprocess
+
+        # First run: rule should fire and create queue entry
+        result1 = subprocess.run(
+            ["python", "-m", "deepwork.hooks.rules_check"],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            input="",
+            env=env,
+        )
+        output1 = json.loads(result1.stdout.strip())
+        assert output1.get("decision") == "block", f"First run should block: {output1}"
+        assert "Claude Runtime Rule" in output1.get("reason", "")
+
+        # Second run: rule SHOULD fire again (claude runtime rules are NOT skipped)
+        result2 = subprocess.run(
+            ["python", "-m", "deepwork.hooks.rules_check"],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            input="",
+            env=env,
+        )
+        output2 = json.loads(result2.stdout.strip())
+        # Claude runtime rules should refire even when QUEUED
+        assert output2.get("decision") == "block", (
+            f"Second run should also block (claude runtime rule should refire): {output2}"
+        )
+        assert "Claude Runtime Rule" in output2.get("reason", "")
+
 
 
 class TestSubagentStopEvent:

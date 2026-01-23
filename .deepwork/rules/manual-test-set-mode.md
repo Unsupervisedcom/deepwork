@@ -4,6 +4,7 @@ set:
   - manual_tests/test_set_mode/test_set_mode_source.py
   - manual_tests/test_set_mode/test_set_mode_test.py
 compare_to: prompt
+prompt_runtime: send_to_stopping_agent
 ---
 
 # Manual Test: Set Mode (Bidirectional Correspondence)

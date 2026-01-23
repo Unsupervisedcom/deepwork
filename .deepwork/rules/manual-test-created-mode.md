@@ -2,6 +2,7 @@
 name: "Manual Test: Created Mode"
 created: manual_tests/test_created_mode/*.yml
 compare_to: prompt
+prompt_runtime: send_to_stopping_agent
 ---
 
 # Manual Test: Created Mode (File Creation Trigger)

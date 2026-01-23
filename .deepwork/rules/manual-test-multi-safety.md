@@ -5,6 +5,7 @@ safety:
   - manual_tests/test_multi_safety/test_multi_safety_changelog.md
   - manual_tests/test_multi_safety/test_multi_safety_version.txt
 compare_to: prompt
+prompt_runtime: send_to_stopping_agent
 ---
 
 # Manual Test: Multiple Safety Patterns

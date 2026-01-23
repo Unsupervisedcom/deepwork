@@ -7,6 +7,7 @@ safety:
   - src/deepwork/standard_jobs/deepwork_jobs/**/*
   - src/deepwork/standard_jobs/deepwork_rules/**/*
 compare_to: base
+prompt_runtime: send_to_stopping_agent
 ---
 You modified files in `.deepwork/jobs/deepwork_jobs/` or `.deepwork/jobs/deepwork_rules/`.
 

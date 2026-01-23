@@ -269,6 +269,19 @@ If an existing file `src/api/users.py` is modified:
 
 The markdown body after frontmatter serves as instructions shown to the agent. This is the default when no `action` field is specified.
 
+**Prompt Runtime:**
+
+Prompt actions can be executed in two ways, controlled by the `prompt_runtime` field:
+
+| Runtime | Description |
+|---------|-------------|
+| `send_to_stopping_agent` | Return prompt to the triggering agent (default) |
+| `claude` | Invoke Claude Code in headless mode |
+
+The default (`send_to_stopping_agent`) returns the rule's markdown instructions to whatever agent triggered the hook. The agent sees the instructions and responds accordingly.
+
+With `claude` runtime, the system invokes Claude Code in headless mode to process the rule autonomously. Claude receives the instructions, performs the requested task, and returns a structured result indicating success or failure.
+
 **Template Variables in Instructions:**
 
 | Variable | Description |
@@ -483,6 +496,50 @@ compare_to: base
 ---
 ```
 
+### prompt_runtime (optional)
+
+Determines how prompt actions are executed. Only applies to rules with prompt actions (no `action` field).
+
+| Value | Description |
+|-------|-------------|
+| `send_to_stopping_agent` | Return the prompt to the agent that triggered the rule (default) |
+| `claude` | Invoke Claude Code in headless mode to process the prompt |
+
+```yaml
+---
+prompt_runtime: send_to_stopping_agent
+---
+```
+
+**Default behavior (`send_to_stopping_agent`):**
+
+The rule's markdown body is returned to the agent that triggered the hook. The agent sees the instructions and can respond accordingly, using promise tags to acknowledge the rule.
+
+**Claude runtime (`claude`):**
+
+Instead of returning instructions to the triggering agent, Claude Code is invoked in headless mode with the rule's instructions. Claude processes the prompt autonomously and returns a structured response indicating whether the rule was satisfied.
+
+This is useful when:
+- You want rules to be handled by a dedicated Claude instance
+- The triggering agent is not Claude (e.g., Gemini)
+- You want consistent rule processing regardless of which agent triggered it
+
+Example with Claude runtime:
+```yaml
+---
+name: Auto Code Review
+trigger: src/**/*.py
+compare_to: prompt
+prompt_runtime: claude
+---
+Review the following Python code changes for:
+1. Type safety issues
+2. Missing error handling
+3. Code style violations
+
+If issues found, fix them directly.
+```
+
 ## Complete Examples
 
 ### Example 1: Test Coverage Rule
@@ -622,6 +679,32 @@ action:
 ---
 Automatically lints newly created React components.
 ```
+
+### Example 8: Claude-Powered Code Review
+
+`.deepwork/rules/security-review.md`:
+```markdown
+---
+name: Security Review
+trigger:
+  - src/auth/**/*
+  - src/api/**/*
+compare_to: prompt
+prompt_runtime: claude
+---
+Security-sensitive code has been modified. Review for:
+
+1. **Input validation**: All user inputs are validated and sanitized
+2. **Authentication**: Auth checks are properly implemented
+3. **Authorization**: Access controls are correctly applied
+4. **Secrets**: No hardcoded credentials or API keys
+5. **SQL/Injection**: Parameterized queries used, no string concatenation
+
+If you find any issues, fix them directly in the code.
+If the code passes review, confirm it meets security standards.
+```
+
+This rule invokes Claude Code in headless mode to perform an autonomous security review when auth or API code changes. Claude will analyze the changes and either fix issues directly or confirm the code is secure.
 
 ## Promise Tags
 

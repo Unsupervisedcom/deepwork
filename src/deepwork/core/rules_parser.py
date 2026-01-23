@@ -39,8 +39,18 @@ class ActionType(Enum):
     COMMAND = "command"  # Run an idempotent command
 
 
+class PromptRuntime(Enum):
+    """Runtime for executing prompt actions."""
+
+    SEND_TO_STOPPING_AGENT = "send_to_stopping_agent"  # Return prompt to agent (default)
+    CLAUDE = "claude"  # Invoke Claude Code in headless mode
+
+
 # Valid compare_to values
 COMPARE_TO_VALUES = frozenset({"base", "default_tip", "prompt"})
+
+# Valid prompt_runtime values
+PROMPT_RUNTIME_VALUES = frozenset({"send_to_stopping_agent", "claude"})
 
 
 @dataclass
@@ -84,6 +94,9 @@ class Rule:
     action_type: ActionType = ActionType.PROMPT
     instructions: str = ""  # For PROMPT action (markdown body)
     command_action: CommandAction | None = None  # For COMMAND action
+
+    # Prompt runtime (only relevant for PROMPT action type)
+    prompt_runtime: PromptRuntime = PromptRuntime.SEND_TO_STOPPING_AGENT
 
     @classmethod
     def from_frontmatter(
@@ -179,6 +192,16 @@ class Rule:
         # Get compare_to (required field)
         compare_to = frontmatter["compare_to"]
 
+        # Get prompt_runtime (optional, defaults to send_to_stopping_agent)
+        prompt_runtime_str = frontmatter.get("prompt_runtime", "send_to_stopping_agent")
+        try:
+            prompt_runtime = PromptRuntime(prompt_runtime_str)
+        except ValueError:
+            raise RulesParseError(
+                f"Rule '{name}' has invalid prompt_runtime '{prompt_runtime_str}'. "
+                f"Valid values: {', '.join(PROMPT_RUNTIME_VALUES)}"
+            ) from None
+
         return cls(
             name=name,
             filename=filename,
@@ -192,6 +215,7 @@ class Rule:
             instructions=markdown_body.strip(),
             command_action=command_action,
             compare_to=compare_to,
+            prompt_runtime=prompt_runtime,
         )
 
 

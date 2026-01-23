@@ -87,6 +87,12 @@ RULES_FRONTMATTER_SCHEMA: dict[str, Any] = {
             "enum": ["base", "default_tip", "prompt"],
             "description": "Baseline for detecting file changes",
         },
+        "prompt_runtime": {
+            "type": "string",
+            "enum": ["send_to_stopping_agent", "claude"],
+            "default": "send_to_stopping_agent",
+            "description": "Runtime for prompt action: 'send_to_stopping_agent' returns prompt to the agent that triggered the rule, 'claude' invokes Claude Code in headless mode",
+        },
     },
     "additionalProperties": False,
     # Detection mode must be exactly one of: trigger, set, pair, or created
