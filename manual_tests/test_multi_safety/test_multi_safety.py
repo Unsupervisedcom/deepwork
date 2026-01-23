@@ -11,19 +11,19 @@ Tests trigger/safety mode with MULTIPLE safety patterns:
 === TEST CASE 1: Rule SHOULD fire ===
 1. Edit this file (add a comment below the marker)
 2. Do NOT edit any safety files
-3. Run: echo '{}' | python -m deepwork.hooks.rules_check
+3. Run: echo '{}' | deepwork hook deepwork.hooks.rules_check
 4. Expected: "Manual Test: Multi Safety" appears in output
 
 === TEST CASE 2: Rule should NOT fire (changelog edited) ===
 1. Edit this file (add a comment below the marker)
 2. ALSO edit test_multi_safety_changelog.md
-3. Run: echo '{}' | python -m deepwork.hooks.rules_check
+3. Run: echo '{}' | deepwork hook deepwork.hooks.rules_check
 4. Expected: "Manual Test: Multi Safety" does NOT appear
 
 === TEST CASE 3: Rule should NOT fire (version edited) ===
 1. Edit this file (add a comment below the marker)
 2. ALSO edit test_multi_safety_version.txt
-3. Run: echo '{}' | python -m deepwork.hooks.rules_check
+3. Run: echo '{}' | deepwork hook deepwork.hooks.rules_check
 4. Expected: "Manual Test: Multi Safety" does NOT appear
 
 === RULE LOCATION ===

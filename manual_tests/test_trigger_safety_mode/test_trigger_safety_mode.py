@@ -9,13 +9,13 @@ Tests the basic trigger/safety detection mode where:
 === TEST CASE 1: Rule SHOULD fire ===
 1. Edit this file (add a comment below the marker)
 2. Do NOT edit test_trigger_safety_mode_doc.md
-3. Run: echo '{}' | python -m deepwork.hooks.rules_check
+3. Run: echo '{}' | deepwork hook deepwork.hooks.rules_check
 4. Expected: "Manual Test: Trigger Safety" appears in output
 
 === TEST CASE 2: Rule should NOT fire ===
 1. Edit this file (add a comment below the marker)
 2. ALSO edit test_trigger_safety_mode_doc.md
-3. Run: echo '{}' | python -m deepwork.hooks.rules_check
+3. Run: echo '{}' | deepwork hook deepwork.hooks.rules_check
 4. Expected: "Manual Test: Trigger Safety" does NOT appear
 
 === RULE LOCATION ===

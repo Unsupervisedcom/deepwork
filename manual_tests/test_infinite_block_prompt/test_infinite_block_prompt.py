@@ -13,7 +13,7 @@ This verifies:
 
 === TEST CASE 1: Rule SHOULD fire (infinite block) ===
 1. Edit this file (add a comment below the marker)
-2. Run: echo '{}' | python -m deepwork.hooks.rules_check
+2. Run: echo '{}' | deepwork hook deepwork.hooks.rules_check
 3. Expected: "Manual Test: Infinite Block Prompt" appears in output with decision="block"
 4. The block message should explain that a promise is required
 
@@ -30,7 +30,7 @@ The promise must be in the conversation transcript. To test:
    echo '{"role":"assistant","message":{"content":[{"type":"text","text":"<promise>Manual Test: Infinite Block Prompt</promise>"}]}}' > /tmp/transcript.jsonl
 
 2. Run with transcript:
-   echo '{"transcript_path":"/tmp/transcript.jsonl"}' | python -m deepwork.hooks.rules_check
+   echo '{"transcript_path":"/tmp/transcript.jsonl"}' | deepwork hook deepwork.hooks.rules_check
 
 3. Expected: {} (empty JSON = allow)
 

@@ -12,7 +12,7 @@ This verifies:
 
 === TEST CASE 1: Rule SHOULD fire (command fails, infinite block) ===
 1. Edit this file (add a comment below the marker)
-2. Run: echo '{}' | python -m deepwork.hooks.rules_check
+2. Run: echo '{}' | deepwork hook deepwork.hooks.rules_check
 3. Expected: Block with command error AND promise skip instructions
 
 === TEST CASE 2: Rule should NOT fire (promise provided) ===
