@@ -46,7 +46,7 @@ def run_install(project_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(
         cli,
-        ["install", "--platform", "claude", "--path", str(project_path)],
+        ["install", "--platform", "claude", "--path", str(project_path), "--python-manager", "skip"],
         catch_exceptions=False,
     )
     assert result.exit_code == 0, f"Install failed: {result.output}"
