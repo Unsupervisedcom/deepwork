@@ -75,6 +75,16 @@ For each learning identified, determine if it is:
   - "Quality criterion 'Visualization' needs clearer requirements"
   - "Documents need a section for action items"
 
+**Technique-Related** (should improve or create techniques):
+- Improvements to how external tools are used
+- Better installation or usage instructions
+- New tools discovered during execution
+- Workarounds or troubleshooting tips
+- Examples:
+  - "The PDF generation command needs an extra flag for better formatting"
+  - "Found a better tool for web scraping that handles dynamic content"
+  - "Installation steps needed adjustment for macOS"
+
 **Bespoke** (should go in AGENTS.md):
 - Specific to THIS project/codebase/run
 - Depends on local conventions or structure
@@ -197,6 +207,73 @@ quality_criteria:
     description: Include Mermaid.js charts showing spend breakdown by service and month-over-month trend
 ```
 
+### Step 4.6: Create/Update Techniques (Technique-Related Learnings)
+
+If technique-related learnings were identified, update or create techniques in `.deepwork/techniques/`:
+
+1. **For existing techniques** (update):
+   - Locate the technique folder: `.deepwork/techniques/[technique_name]/`
+   - Update the `SKILL.md` file with improvements:
+     - Better usage examples
+     - Additional command-line options
+     - Troubleshooting tips discovered during execution
+     - Workarounds for edge cases
+
+2. **For new techniques** (create):
+   - Create a new folder: `.deepwork/techniques/[technique_name]/`
+   - Create a `SKILL.md` file following the Claude Skills format:
+     ```markdown
+     ---
+     name: technique_name
+     description: "Brief description of what this technique accomplishes"
+     ---
+
+     # Technique Name
+
+     ## Purpose
+     What this technique accomplishes and when to use it.
+
+     ## Tool
+     - **Name**: Tool name
+     - **Type**: CLI tool / MCP server / Browser extension / API
+     - **Version**: Known working version
+
+     ## Installation
+     [Installation instructions for different platforms]
+
+     ## Verification
+     [How to verify the tool is working]
+
+     ## Usage
+     [Usage examples and common options]
+
+     ## Troubleshooting
+     [Common issues and solutions]
+
+     ## Alternatives Considered
+     [Other tools that were considered]
+     ```
+   - Include any helper scripts or assets in the technique folder
+
+3. **After updating/creating techniques**, run `deepwork sync` to sync them to platform skill directories with the `dw_` prefix.
+
+**Example technique update:**
+```markdown
+# Before (in SKILL.md)
+## Usage
+```bash
+pandoc input.md -o output.pdf
+```
+
+# After (improved based on learnings)
+## Usage
+```bash
+pandoc input.md -o output.pdf --pdf-engine=xelatex -V geometry:margin=1in
+```
+
+**Note**: The `--pdf-engine=xelatex` flag is required for Unicode support. The margin setting prevents text from running off the page.
+```
+
 ### Step 5: Create/Update AGENTS.md (Bespoke Learnings)
 
 The AGENTS.md file captures project-specific knowledge that helps future agent runs.
@@ -264,13 +341,15 @@ When adding entries to AGENTS.md, prefer these patterns:
 
 - Conversation has been analyzed for job executions
 - Points of confusion and inefficiency are identified
-- Learnings are correctly classified (generalizable vs bespoke)
+- Learnings are correctly classified (generalizable vs technique-related vs bespoke)
 - Job instructions updated for generalizable improvements
 - Instructions are concise - no redundancy or unnecessary verbosity
 - Shared/lengthy content extracted into referenced files where appropriate
+- Techniques created/updated for technique-related improvements
 - AGENTS.md created/updated with bespoke learnings
 - File references used instead of duplicating content
 - AGENTS.md is in the correct folder (the deepest common folder for the topic)
+- `deepwork sync` run if instructions or techniques were modified
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
 
 ## Example Dialog

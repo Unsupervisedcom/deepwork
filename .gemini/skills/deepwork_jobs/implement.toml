@@ -76,7 +76,7 @@ For each step in the job.yml, create a comprehensive instruction file at `.deepw
 5. **Quality over quantity** - Detailed, actionable instructions are better than vague ones
 6. **Align with stop hooks** - If the step has `stop_hooks` defined, ensure the quality criteria in the instruction file match the validation criteria in the hooks
 7. **Ask structured questions** - When a step has user inputs, the instructions MUST explicitly tell the agent to "ask structured questions" using the AskUserQuestion tool to gather that information. Never use generic phrasing like "ask the user" - always use "ask structured questions"
-8. **Reference tool documentation** - When a step requires external tools, include a reference to the relevant tool documentation created in the `tools` step. See the section below on "Incorporating Tool Documentation"
+8. **Reference techniques** - When a step requires external tools, include a reference to the relevant technique created in the `tools` step. See the section below on "Incorporating Techniques"
 
 ### Handling Stop Hooks
 
@@ -116,44 +116,49 @@ Step instructions can include additional `.md` files in the `steps/` directory f
 
 See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for detailed documentation and examples.
 
-### Incorporating Tool Documentation
+### Incorporating Techniques
 
-The `tools` step (which runs before `implement`) creates process-focused documentation in `.deepwork/jobs/[job_name]/tools/`. When generating step instructions, **reference these tool documents** for any step that requires external tools.
+The `tools` step (which runs before `implement`) creates reusable techniques in `.deepwork/techniques/`. When generating step instructions, **reference these techniques** for any step that requires external tools.
 
-**How to incorporate tool documentation:**
+Techniques are synced to platform skill directories with a `dw_` prefix (e.g., `making_pdfs` becomes `/dw_making_pdfs`), so agents can invoke them directly.
 
-1. **Check what tools/ documents exist:**
+**How to incorporate techniques:**
+
+1. **Check what techniques exist:**
    ```bash
-   ls .deepwork/jobs/[job_name]/tools/
+   ls .deepwork/techniques/
    ```
 
-2. **Reference relevant documents in step instructions:**
+2. **Reference relevant techniques in step instructions:**
    When a step uses an external tool (e.g., PDF generation, image processing), add a reference like:
 
    ```markdown
-   ## Required Tools
+   ## Required Techniques
 
-   This step requires external tools. See the following documentation for usage:
-   - [Creating PDFs](../tools/making_pdfs.md) - How to generate PDF output
-   - [Processing Images](../tools/resizing_images.md) - How to resize and optimize images
+   This step requires external tools. Use the following techniques:
+   - `/dw_making_pdfs` - How to generate PDF output
+   - `/dw_resizing_images` - How to resize and optimize images
+
+   See `.deepwork/techniques/[technique_name]/SKILL.md` for detailed usage instructions.
    ```
 
 3. **Include key commands inline when helpful:**
-   For frequently-used commands, you can quote the essential invocation from the tool docs:
+   For frequently-used commands, you can quote the essential invocation from the technique:
 
    ```markdown
    To convert markdown to PDF, use:
    ```bash
    pandoc input.md -o output.pdf --pdf-engine=xelatex
    ```
-   See [Making PDFs](../tools/making_pdfs.md) for full documentation and troubleshooting.
+   See `/dw_making_pdfs` (or `.deepwork/techniques/making_pdfs/SKILL.md`) for full documentation and troubleshooting.
    ```
 
 **Why this matters:**
 - Step instructions stay focused on workflow logic
-- Tool details are documented once and referenced everywhere
-- If tools change, only the tools/ docs need updating
-- New users can refer to tool docs for installation help
+- Techniques are documented once and synced to all platforms
+- Agents can invoke techniques directly as skills (e.g., `/dw_making_pdfs`)
+- If techniques change, only the `.deepwork/techniques/` folder needs updating
+- New users can refer to technique SKILL.md files for installation help
 
 ### Step 3: Verify job.yml Location
 
@@ -265,7 +270,7 @@ Before marking this step complete, ensure:
 - [ ] job.yml validated and copied to job directory
 - [ ] All step instruction files created
 - [ ] Each instruction file is complete and actionable
-- [ ] Steps requiring external tools reference tools/ documentation
+- [ ] Steps requiring external tools reference techniques from `.deepwork/techniques/`
 - [ ] `deepwork sync` executed successfully
 - [ ] Skills generated in platform directory
 - [ ] User informed to follow reload instructions from `deepwork sync`
@@ -280,7 +285,7 @@ Before marking this step complete, ensure:
 - Output examples are provided in each instruction file
 - Quality criteria defined for each step
 - Steps with user inputs explicitly use "ask structured questions" phrasing
-- Steps requiring external tools reference the appropriate tools/ documentation
+- Steps requiring external tools reference the appropriate techniques from `.deepwork/techniques/`
 - Sync completed successfully
 - Skills available for use
 - Thoughtfully considered relevant rules for the job domain
@@ -329,7 +334,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 4. **Output Examples**: Does each instruction file show what good output looks like?
 5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
 6. **Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase "ask structured questions"?
-7. **Tool Documentation Referenced**: Do steps requiring external tools reference the appropriate tools/ documentation files?
+7. **Techniques Referenced**: Do steps requiring external tools reference the appropriate techniques from `.deepwork/techniques/`?
 8. **Sync Complete**: Has `deepwork sync` been run successfully?
 9. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
 10. **Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to run `/deepwork_rules.define`? Not every job needs rules - only suggest when genuinely helpful.

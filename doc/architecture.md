@@ -63,6 +63,8 @@ deepwork/                       # DeepWork tool repository
 │       │   │   └── skill-job-step.md.jinja
 │       │   ├── gemini/
 │       │   └── copilot/
+│       ├── techniques/         # Bundled technique AGENTS.md template
+│       │   └── AGENTS.md        # Explains the techniques system
 │       ├── standard_jobs/      # Built-in job definitions
 │       │   ├── deepwork_jobs/
 │       │   │   ├── job.yml
@@ -286,19 +288,31 @@ my-project/                     # User's project (target)
 ├── .claude/                    # Claude Code directory
 │   ├── settings.json           # Includes installed hooks
 │   └── skills/                 # Skill files
-│       ├── deepwork_jobs.define.md         # Core DeepWork skills
-│       ├── deepwork_jobs.review_job_spec.md
-│       ├── deepwork_jobs.tools.md
-│       ├── deepwork_jobs.implement.md
-│       ├── deepwork_jobs.learn.md
-│       ├── deepwork_rules.define.md        # Rule management
-│       ├── competitive_research.identify_competitors.md
+│       ├── deepwork_jobs/               # Core DeepWork meta-skill
+│       ├── deepwork_jobs.define/        # Core DeepWork step skills
+│       ├── deepwork_jobs.tools/
+│       ├── deepwork_jobs.implement/
+│       ├── deepwork_jobs.learn/
+│       ├── deepwork_rules/              # Rule management
+│       ├── deepwork_rules.define/
+│       ├── dw_making_pdfs/              # Technique skills (dw_ prefix)
+│       │   └── SKILL.md
+│       ├── dw_web_scraping/
+│       │   ├── SKILL.md
+│       │   └── scraper.py
 │       └── ...
 ├── .deepwork/                  # DeepWork configuration
 │   ├── config.yml              # Platform config
 │   ├── .gitignore              # Ignores tmp/ directory
-│   ├── doc_specs/                   # Doc specs (document specifications)
+│   ├── doc_specs/              # Doc specs (document specifications)
 │   │   └── monthly_aws_report.md
+│   ├── techniques/             # Reusable technique skills (synced to platforms)
+│   │   ├── AGENTS.md           # Explains the techniques system
+│   │   ├── making_pdfs/
+│   │   │   └── SKILL.md        # Claude Skills format
+│   │   └── web_scraping/
+│   │       ├── SKILL.md
+│   │       └── scraper.py      # Helper script (asset)
 │   ├── rules/                  # Rule definitions (v2 format)
 │   │   ├── source-test-pairing.md
 │   │   ├── format-python.md
@@ -1286,6 +1300,126 @@ The `/deepwork_jobs.learn` command:
 2. Updates doc spec files with improvements
 
 See `doc/doc-specs.md` for complete documentation.
+
+---
+
+## Techniques
+
+Techniques are reusable, documented processes for accomplishing specific tasks using external tools. They follow the Claude Skills format and are automatically synced to AI platform skill directories.
+
+### Purpose
+
+Techniques capture knowledge about how to use external tools, MCP servers, or specific workflows. They are:
+
+- **Reusable**: Once created, a technique can be used across multiple jobs
+- **Documented**: Each technique includes installation, usage, and troubleshooting instructions
+- **Portable**: Techniques are synced to all configured AI platforms with a `dw_` prefix
+
+### Technique File Format
+
+Techniques are stored in `.deepwork/techniques/[technique_name]/` folders, each containing:
+
+- `SKILL.md` - Main technique skill file (Claude Skills format)
+- Optional asset files (helper scripts, templates, etc.)
+
+**Example SKILL.md:**
+
+```markdown
+---
+name: making_pdfs
+description: "Convert markdown documents to PDF format"
+---
+
+# Making PDFs
+
+## Purpose
+Convert markdown documents to professionally formatted PDF files.
+
+## Tool
+- **Name**: pandoc
+- **Type**: CLI tool
+- **Version**: 3.0+
+
+## Installation
+
+### macOS
+```bash
+brew install pandoc
+brew install basictex  # For PDF output
+```
+
+### Ubuntu/Debian
+```bash
+apt-get install pandoc texlive-latex-base
+```
+
+## Verification
+```bash
+pandoc --version
+```
+
+## Usage
+
+### Basic Example
+```bash
+pandoc input.md -o output.pdf
+```
+
+### With Better Formatting
+```bash
+pandoc input.md -o output.pdf --pdf-engine=xelatex -V geometry:margin=1in
+```
+
+## Troubleshooting
+
+### "xelatex not found"
+Install a LaTeX distribution (basictex on macOS, texlive on Linux).
+
+## Alternatives Considered
+- **wkhtmltopdf**: Good for HTML, but requires HTML conversion first
+- **weasyprint**: Python-based, but fewer formatting options
+```
+
+### Syncing Techniques
+
+When `deepwork sync` runs:
+
+1. Techniques from `.deepwork/techniques/` are copied to platform skill directories
+2. Folder names are prefixed with `dw_` (e.g., `making_pdfs` → `dw_making_pdfs`)
+3. Stale `dw_` folders (no longer in techniques) are removed
+4. For Gemini, `SKILL.md` is converted to `index.toml`
+
+**Result:**
+```
+.claude/skills/
+├── dw_making_pdfs/
+│   └── SKILL.md
+├── dw_web_scraping/
+│   ├── SKILL.md
+│   └── scraper.py
+└── ...
+```
+
+### Workflow Integration
+
+**Creation**: The `/deepwork_jobs.tools` step creates techniques when verifying tools for a job:
+1. Analyzes job steps for required tools
+2. Spawns parallel sub-agents to test and document each technique
+3. Creates technique folders in `.deepwork/techniques/`
+4. Runs `deepwork sync` to sync to platforms
+
+**Refinement**: The `/deepwork_jobs.learn` step can refine techniques:
+1. Identifies technique-related learnings during job execution
+2. Updates existing technique SKILL.md files
+3. Creates new techniques for tools discovered during execution
+
+### Invocation
+
+Once synced, techniques can be invoked as skills:
+- **Claude Code**: `/dw_making_pdfs`
+- **Gemini CLI**: `:dw_making_pdfs`
+
+The `dw_` prefix indicates these are DeepWork-managed techniques.
 
 ---
 

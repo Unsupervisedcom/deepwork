@@ -185,6 +185,61 @@ class TestInstallCommand:
         assert (claude_dir / "deepwork_jobs.define" / "SKILL.md").exists()
         assert (claude_dir / "deepwork_jobs.learn" / "SKILL.md").exists()
 
+    def test_install_creates_techniques_directory(self, mock_claude_project: Path) -> None:
+        """Test that install creates the techniques directory with AGENTS.md."""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+        assert ".deepwork/techniques/ with AGENTS.md" in result.output
+
+        # Verify techniques directory was created
+        techniques_dir = mock_claude_project / ".deepwork" / "techniques"
+        assert techniques_dir.exists()
+
+        # Verify AGENTS.md was created
+        agents_file = techniques_dir / "AGENTS.md"
+        assert agents_file.exists()
+        content = agents_file.read_text()
+        assert "DeepWork Techniques" in content
+        assert "Claude Skills format" in content
+
+    def test_install_preserves_existing_techniques_directory(
+        self, mock_claude_project: Path
+    ) -> None:
+        """Test that install doesn't overwrite existing techniques directory."""
+        runner = CliRunner()
+
+        # Create a custom techniques directory before install
+        techniques_dir = mock_claude_project / ".deepwork" / "techniques"
+        techniques_dir.mkdir(parents=True)
+        custom_technique_dir = techniques_dir / "my_custom_technique"
+        custom_technique_dir.mkdir()
+        custom_skill = custom_technique_dir / "SKILL.md"
+        custom_content = """---
+name: my_custom_technique
+---
+Custom technique content.
+"""
+        custom_skill.write_text(custom_content)
+
+        result = runner.invoke(
+            cli,
+            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+        assert ".deepwork/techniques/ already exists" in result.output
+
+        # Verify original content is preserved
+        assert custom_skill.read_text() == custom_content
+
     def test_install_creates_rules_directory(self, mock_claude_project: Path) -> None:
         """Test that install creates the v2 rules directory with example templates."""
         runner = CliRunner()

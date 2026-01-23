@@ -149,6 +149,37 @@ def _create_tmp_directory(deepwork_dir: Path) -> None:
         )
 
 
+def _create_techniques_directory(deepwork_dir: Path) -> bool:
+    """
+    Create the techniques directory with AGENTS.md explaining the format.
+
+    Techniques are reusable documented processes that use external tools.
+    They follow the Claude Skills format and are synced to AI platform directories.
+
+    Args:
+        deepwork_dir: Path to .deepwork directory
+
+    Returns:
+        True if the directory was created, False if it already existed
+    """
+    techniques_dir = deepwork_dir / "techniques"
+
+    if techniques_dir.exists():
+        return False
+
+    # Create the techniques directory
+    ensure_dir(techniques_dir)
+
+    # Copy AGENTS.md from the source techniques directory
+    source_agents_md = Path(__file__).parent.parent / "techniques" / "AGENTS.md"
+    if source_agents_md.exists():
+        dest_agents_md = techniques_dir / "AGENTS.md"
+        shutil.copy(source_agents_md, dest_agents_md)
+        fix_permissions(dest_agents_md)
+
+    return True
+
+
 def _create_rules_directory(project_path: Path) -> bool:
     """
     Create the v2 rules directory structure with example templates.
@@ -364,7 +395,13 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     _create_tmp_directory(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/tmp/.gitkeep")
 
-    # Step 3e: Create rules directory with v2 templates
+    # Step 3e: Create techniques directory for reusable tool documentation
+    if _create_techniques_directory(deepwork_dir):
+        console.print("  [green]✓[/green] Created .deepwork/techniques/ with AGENTS.md")
+    else:
+        console.print("  [dim]•[/dim] .deepwork/techniques/ already exists")
+
+    # Step 3f: Create rules directory with v2 templates
     if _create_rules_directory(project_path):
         console.print("  [green]✓[/green] Created .deepwork/rules/ with example templates")
     else:

@@ -31,11 +31,11 @@ learnings specific to the current run into AGENTS.md files in the working folder
    Command: `/deepwork_jobs:define`
 2. **review_job_spec** - Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification. (requires: define)
    Command: `/deepwork_jobs:review_job_spec`
-3. **tools** - Verifies required external tools are available and documents how to use them. Use after job spec review to ensure implementation can succeed. (requires: review_job_spec)
+3. **tools** - Verifies required techniques are available and documents how to use them. Use after job spec review to ensure implementation can succeed. (requires: review_job_spec)
    Command: `/deepwork_jobs:tools`
 4. **implement** - Generates step instruction files and syncs slash commands from the job.yml specification. Use after tools verification passes. (requires: review_job_spec, tools)
    Command: `/deepwork_jobs:implement`
-5. **learn** - Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
+5. **learn** - Analyzes conversation history to improve job instructions, techniques, and capture learnings. Use after running a job to refine it.
    Command: `/deepwork_jobs:learn`
 
 ## Execution Instructions
