@@ -447,8 +447,9 @@ class ClaudeAdapter(AgentAdapter):
         """
         Sync required permissions to Claude Code settings.json.
 
-        Adds permissions for unrestricted access to .deepwork/tmp/** directory,
-        which is used for temporary files during DeepWork operations.
+        Adds permissions for:
+        - .deepwork/** - full access to deepwork directory
+        - All deepwork CLI commands (deepwork:*)
 
         Args:
             project_path: Path to project root
@@ -459,13 +460,15 @@ class ClaudeAdapter(AgentAdapter):
         Raises:
             AdapterError: If sync fails
         """
-        # Define required permissions for .deepwork/tmp/**
+        # Define required permissions for DeepWork functionality
         # Uses ./ prefix for paths relative to project root (per Claude Code docs)
         required_permissions = [
-            "Read(./.deepwork/tmp/**)",
-            "Edit(./.deepwork/tmp/**)",
-            "Write(./.deepwork/tmp/**)",
-            "Bash(rm -rf .deepwork/tmp/rules/queue/*.json)",
+            # Full access to .deepwork directory
+            "Read(./.deepwork/**)",
+            "Edit(./.deepwork/**)",
+            "Write(./.deepwork/**)",
+            # All deepwork CLI commands
+            "Bash(deepwork:*)",
         ]
 
         # Load settings once, add all permissions, then save once
