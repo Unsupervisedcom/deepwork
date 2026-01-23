@@ -1,0 +1,168 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 0.6.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate version format
+        run: |
+          if ! echo "${{ inputs.version }}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Error: Version must be in format X.Y.Z (e.g., 0.6.0)"
+            exit 1
+          fi
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update CHANGELOG.md
+        id: changelog
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          DATE=$(date +%Y-%m-%d)
+
+          # Create the new Unreleased section template
+          UNRELEASED_TEMPLATE="## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
+"
+
+          # Read the current changelog
+          CHANGELOG=$(cat CHANGELOG.md)
+
+          # Check if there's an existing Unreleased section
+          if grep -q "^## \[Unreleased\]" CHANGELOG.md; then
+            # Replace [Unreleased] with the new version and date
+            # First, extract everything after the Unreleased header until the next ## section
+            # Then insert the new Unreleased section at the top
+
+            # Use awk to do the replacement
+            awk -v version="$VERSION" -v date="$DATE" -v template="$UNRELEASED_TEMPLATE" '
+              /^## \[Unreleased\]/ {
+                print template
+                print "## [" version "] - " date
+                next
+              }
+              { print }
+            ' CHANGELOG.md > CHANGELOG.md.tmp
+            mv CHANGELOG.md.tmp CHANGELOG.md
+          else
+            # No Unreleased section exists - insert new version after the header
+            # Find the first ## line and insert before it
+            awk -v version="$VERSION" -v date="$DATE" -v template="$UNRELEASED_TEMPLATE" '
+              BEGIN { inserted = 0 }
+              /^## \[/ && !inserted {
+                print template
+                print "## [" version "] - " date
+                print ""
+                inserted = 1
+              }
+              { print }
+            ' CHANGELOG.md > CHANGELOG.md.tmp
+            mv CHANGELOG.md.tmp CHANGELOG.md
+          fi
+
+          # Update the version links at the bottom of the CHANGELOG
+          # Update the Unreleased link to compare from the new version
+          sed -i "s|\[Unreleased\]: https://github.com/.*/compare/.*\.\.\.HEAD|[Unreleased]: https://github.com/${GITHUB_REPOSITORY}/compare/${VERSION}...HEAD|" CHANGELOG.md
+
+          # Add the new version link if it doesn't exist (insert after Unreleased link)
+          if ! grep -q "^\[${VERSION}\]:" CHANGELOG.md; then
+            # Find the previous version from the changelog (first version after Unreleased)
+            PREV_VERSION=$(grep -oP '^\[[\d.]+\]:' CHANGELOG.md | head -1 | tr -d '[]:'  || echo "")
+            if [ -n "$PREV_VERSION" ]; then
+              VERSION_LINK="[${VERSION}]: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${VERSION}"
+              sed -i "/^\[Unreleased\]:/a ${VERSION_LINK}" CHANGELOG.md
+            fi
+          fi
+
+          # Extract the changelog content for this version (for the release notes)
+          # Get everything between the version header and the next version header
+          RELEASE_NOTES=$(awk -v version="$VERSION" '
+            BEGIN { capture = 0; found = 0 }
+            /^## \[/ {
+              if (capture) exit
+              if ($0 ~ "\\[" version "\\]") {
+                capture = 1
+                found = 1
+                next
+              }
+            }
+            capture { print }
+          ' CHANGELOG.md)
+
+          # Save release notes to a file for the release step
+          echo "$RELEASE_NOTES" > release_notes.md
+
+          # Output for debugging
+          echo "Release notes extracted:"
+          cat release_notes.md
+
+      - name: Update pyproject.toml version
+        run: |
+          VERSION="${{ inputs.version }}"
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+
+          # Verify the change
+          grep "^version = " pyproject.toml
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Update lock file
+        run: uv sync
+
+      - name: Commit changes
+        run: |
+          VERSION="${{ inputs.version }}"
+          git add CHANGELOG.md pyproject.toml uv.lock
+          git commit -m "Release v${VERSION}"
+          git push origin main
+
+      - name: Create and push tag
+        run: |
+          VERSION="${{ inputs.version }}"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: ${{ inputs.version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
