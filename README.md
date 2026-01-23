@@ -18,6 +18,19 @@ DeepWork is a tool for defining and executing multi-step workflows with AI codin
 > **Tip:** New to DeepWork? Claude Code has the most complete feature support, including quality validation hooks and automated rules. For browser automation, Claude in Chrome (Anthropic's browser extension) works well with DeepWork workflows.
 
 ## Easy Installation
+
+### Option 1: Claude Code Plugin (Recommended)
+
+For Claude Code users, install DeepWork as a plugin:
+
+```bash
+claude plugin install https://github.com/Unsupervisedcom/deepwork
+```
+
+Then use `/deepwork:install` to set up your project.
+
+### Option 2: CLI Tool Installation
+
 In your Agent CLI (ex. `claude`), ask:
 
 ```
@@ -25,7 +38,6 @@ Please fully install https://pypi.org/project/deepwork/ and make sure you see th
 ```
 
 ## Installation Details
-
 
 **Agents**: - be sure to perform all the steps, not just the package install.
 
@@ -200,6 +212,17 @@ your-project/
 ```
 
 **Note**: Work outputs are created on dedicated Git branches (e.g., `deepwork/job_name-instance-date`), not in a separate directory.
+
+## Plugin Distribution
+
+DeepWork is available as a Claude Code plugin for seamless integration:
+
+**Plugin Structure**:
+- `.claude-plugin/plugin.json` - Plugin manifest with metadata
+- `skills/` - Plugin skills (/deepwork:install, /deepwork:sync)
+- `hooks/` - Event hooks configuration
+
+**Installation**: See [PLUGIN.md](PLUGIN.md) for plugin-specific documentation.
 
 ## Documentation
 

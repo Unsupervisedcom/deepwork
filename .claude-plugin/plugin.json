@@ -1,0 +1,19 @@
+{
+  "name": "deepwork",
+  "version": "0.5.2",
+  "description": "Framework for enabling AI agents to perform complex, multi-step work tasks",
+  "author": "DeepWork Contributors",
+  "homepage": "https://github.com/Unsupervisedcom/deepwork",
+  "license": "Business Source License 1.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Unsupervisedcom/deepwork"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "workflow",
+    "automation",
+    "multi-step"
+  ]
+}
