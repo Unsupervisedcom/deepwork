@@ -135,3 +135,54 @@ uv tool install deepwork
 Business Source License 1.1 (BSL 1.1)
 
 See [LICENSE.md](../LICENSE.md) for details.
+
+## Testing the Plugin Locally
+
+To test the plugin structure before distribution:
+
+```bash
+# From the DeepWork repository root
+claude --plugin-dir /path/to/deepwork
+
+# In Claude Code, test the commands:
+/deepwork:install --help
+/deepwork:sync --help
+```
+
+You should see the commands available with the `deepwork:` namespace prefix.
+
+## Plugin Development Notes
+
+### Directory Structure Requirements
+
+Claude Code plugins must follow this structure:
+- `.claude-plugin/plugin.json` (required) - Plugin manifest
+- `commands/` (optional) - User-invocable slash commands
+- `skills/` (optional) - Agent Skills invoked automatically
+- `hooks/` (optional) - Event hooks configuration
+- `.mcp.json` (optional) - MCP server configurations
+- `.lsp.json` (optional) - LSP server configurations
+
+### Command Files
+
+Command files in `commands/[name]/COMMAND.md`:
+- Are user-invocable as `/plugin-name:command-name`
+- Should NOT have YAML frontmatter
+- Should be descriptive markdown with usage examples
+
+### Skill Files
+
+Skill files in `skills/[name]/SKILL.md`:
+- Have YAML frontmatter with `name` and `description`
+- Are invoked automatically by Claude based on context
+- Should include clear usage guidelines
+
+### Hooks Configuration
+
+The `hooks/hooks.json` file configures event handlers:
+- **SessionStart**: Run when Claude Code session begins
+- **UserPromptSubmit**: Run when user submits a prompt
+- **Stop/SubagentStop**: Run when agent completes a task
+- **PreToolUse**: Run before tool invocation
+- **PostToolUse**: Run after tool invocation
+
