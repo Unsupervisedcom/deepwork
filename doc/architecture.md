@@ -295,9 +295,9 @@ my-project/                     # User's project (target)
 │       ├── deepwork_jobs.learn/
 │       ├── deepwork_rules/              # Rule management
 │       ├── deepwork_rules.define/
-│       ├── dw_making_pdfs/              # Technique skills (dw_ prefix)
+│       ├── dwt_making_pdfs/              # Technique skills (dwt_ prefix)
 │       │   └── SKILL.md
-│       ├── dw_web_scraping/
+│       ├── dwt_web_scraping/
 │       │   ├── SKILL.md
 │       │   └── scraper.py
 │       └── ...
@@ -1313,7 +1313,7 @@ Techniques capture knowledge about how to use external tools, MCP servers, or sp
 
 - **Reusable**: Once created, a technique can be used across multiple jobs
 - **Documented**: Each technique includes installation, usage, and troubleshooting instructions
-- **Portable**: Techniques are synced to all configured AI platforms with a `dw_` prefix
+- **Portable**: Techniques are synced to all configured AI platforms with a `dwt_` prefix
 
 ### Technique File Format
 
@@ -1385,16 +1385,16 @@ Install a LaTeX distribution (basictex on macOS, texlive on Linux).
 When `deepwork sync` runs:
 
 1. Techniques from `.deepwork/techniques/` are copied to platform skill directories
-2. Folder names are prefixed with `dw_` (e.g., `making_pdfs` → `dw_making_pdfs`)
-3. Stale `dw_` folders (no longer in techniques) are removed
+2. Folder names are prefixed with `dwt_` (e.g., `making_pdfs` → `dwt_making_pdfs`)
+3. Stale `dwt_` folders (no longer in techniques) are removed
 4. For Gemini, `SKILL.md` is converted to `index.toml`
 
 **Result:**
 ```
 .claude/skills/
-├── dw_making_pdfs/
+├── dwt_making_pdfs/
 │   └── SKILL.md
-├── dw_web_scraping/
+├── dwt_web_scraping/
 │   ├── SKILL.md
 │   └── scraper.py
 └── ...
@@ -1416,10 +1416,10 @@ When `deepwork sync` runs:
 ### Invocation
 
 Once synced, techniques can be invoked as skills:
-- **Claude Code**: `/dw_making_pdfs`
-- **Gemini CLI**: `:dw_making_pdfs`
+- **Claude Code**: `/dwt_making_pdfs`
+- **Gemini CLI**: `:dwt_making_pdfs`
 
-The `dw_` prefix indicates these are DeepWork-managed techniques.
+The `dwt_` prefix indicates these are DeepWork-managed techniques.
 
 ---
 

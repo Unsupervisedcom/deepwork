@@ -1,6 +1,6 @@
 # DeepWork Techniques
 
-This folder contains reusable **techniques** - documented processes for accomplishing specific tasks using external tools. Techniques follow the Claude Skills format and are automatically synced to AI agent configuration directories (`.claude/skills/`, `.gemini/skills/`) with a `dw_` prefix.
+This folder contains reusable **techniques** - documented processes for accomplishing specific tasks using external tools. Techniques follow the Claude Skills format and are automatically synced to AI agent configuration directories (`.claude/skills/`, `.gemini/skills/`) with a `dwt_` prefix.
 
 ## Purpose
 
@@ -127,8 +127,8 @@ Other tools that could accomplish this process:
 Techniques are automatically synced by `deepwork sync`:
 
 1. Techniques from `.deepwork/techniques/` are copied to platform skill directories
-2. Folder names are prefixed with `dw_` (e.g., `making_pdfs` becomes `dw_making_pdfs`)
-3. Stale `dw_` prefixed folders (no longer in techniques) are removed
+2. Folder names are prefixed with `dwt_` (e.g., `making_pdfs` becomes `dwt_making_pdfs`)
+3. Stale `dwt_` prefixed folders (no longer in techniques) are removed
 4. This ensures platform skills stay in sync with the techniques folder
 
 ## Creating Techniques
@@ -144,7 +144,7 @@ You can also create techniques manually by adding a new folder with a `SKILL.md`
 
 Once synced, techniques can be invoked as skills:
 
-- **Claude Code**: `/dw_making_pdfs`
-- **Gemini CLI**: `:dw_making_pdfs`
+- **Claude Code**: `/dwt_making_pdfs`
+- **Gemini CLI**: `:dwt_making_pdfs`
 
-The `dw_` prefix indicates these are DeepWork-managed techniques.
+The `dwt_` prefix indicates these are DeepWork-managed techniques.

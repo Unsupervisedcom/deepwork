@@ -215,7 +215,7 @@ After all sub-agents complete:
 
 ### Step 4: Run Sync
 
-After all techniques are created, run `deepwork sync` to copy them to the platform skill directories (`.claude/skills/`, `.gemini/skills/`) with the `dw_` prefix.
+After all techniques are created, run `deepwork sync` to copy them to the platform skill directories (`.claude/skills/`, `.gemini/skills/`) with the `dwt_` prefix.
 
 ## Example
 
@@ -264,9 +264,9 @@ After completing this step, you should have:
 2. **Synced skills** in platform directories (after running `deepwork sync`):
    ```
    .claude/skills/
-   ├── dw_[technique_1]/
+   ├── dwt_[technique_1]/
    │   └── SKILL.md
-   └── dw_[technique_2]/
+   └── dwt_[technique_2]/
        └── SKILL.md
    ```
 

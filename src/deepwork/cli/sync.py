@@ -15,7 +15,7 @@ from deepwork.utils.fs import ensure_dir, fix_permissions
 from deepwork.utils.yaml_utils import load_yaml
 
 # Prefix for DeepWork-managed technique folders in platform skill directories
-TECHNIQUE_PREFIX = "dw_"
+TECHNIQUE_PREFIX = "dwt_"
 
 console = Console()
 

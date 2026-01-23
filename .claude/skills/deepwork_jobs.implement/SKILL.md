@@ -176,7 +176,7 @@ See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for det
 
 The `tools` step (which runs before `implement`) creates reusable techniques in `.deepwork/techniques/`. When generating step instructions, **reference these techniques** for any step that requires external tools.
 
-Techniques are synced to platform skill directories with a `dw_` prefix (e.g., `making_pdfs` becomes `/dw_making_pdfs`), so agents can invoke them directly.
+Techniques are synced to platform skill directories with a `dw_` prefix (e.g., `making_pdfs` becomes `/dwt_making_pdfs`), so agents can invoke them directly.
 
 **How to incorporate techniques:**
 
@@ -192,8 +192,8 @@ Techniques are synced to platform skill directories with a `dw_` prefix (e.g., `
    ## Required Techniques
 
    This step requires external tools. Use the following techniques:
-   - `/dw_making_pdfs` - How to generate PDF output
-   - `/dw_resizing_images` - How to resize and optimize images
+   - `/dwt_making_pdfs` - How to generate PDF output
+   - `/dwt_resizing_images` - How to resize and optimize images
 
    See `.deepwork/techniques/[technique_name]/SKILL.md` for detailed usage instructions.
    ```
@@ -206,13 +206,13 @@ Techniques are synced to platform skill directories with a `dw_` prefix (e.g., `
    ```bash
    pandoc input.md -o output.pdf --pdf-engine=xelatex
    ```
-   See `/dw_making_pdfs` (or `.deepwork/techniques/making_pdfs/SKILL.md`) for full documentation and troubleshooting.
+   See `/dwt_making_pdfs` (or `.deepwork/techniques/making_pdfs/SKILL.md`) for full documentation and troubleshooting.
    ```
 
 **Why this matters:**
 - Step instructions stay focused on workflow logic
 - Techniques are documented once and synced to all platforms
-- Agents can invoke techniques directly as skills (e.g., `/dw_making_pdfs`)
+- Agents can invoke techniques directly as skills (e.g., `/dwt_making_pdfs`)
 - If techniques change, only the `.deepwork/techniques/` folder needs updating
 - New users can refer to technique SKILL.md files for installation help
 
