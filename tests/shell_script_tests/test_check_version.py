@@ -277,9 +277,7 @@ class TestDeepworkInstallationCheck:
         assert "additionalContext" in output["hookSpecificOutput"]
         assert "DEEPWORK" in output["hookSpecificOutput"]["additionalContext"]
 
-    def test_deepwork_check_happens_before_version_check(
-        self, check_version_script: Path
-    ) -> None:
+    def test_deepwork_check_happens_before_version_check(self, check_version_script: Path) -> None:
         """Test that deepwork check runs before version check."""
         # Even with a low version that would trigger warning,
         # missing deepwork should block first
