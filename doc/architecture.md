@@ -70,14 +70,6 @@ deepwork/                       # DeepWork tool repository
 │       │   │   └── templates/
 │       │   │       ├── doc_spec.md.template
 │       │   │       └── doc_spec.md.example
-│       │   └── deepwork_rules/   # Rule management job
-│       │       ├── job.yml
-│       │       ├── steps/
-│       │       │   └── define.md
-│       │       └── hooks/         # Hook scripts
-│       │           ├── global_hooks.yml
-│       │           ├── user_prompt_submit.sh
-│       │           └── capture_prompt_work_tree.sh
 │       ├── schemas/            # Definition schemas
 │       │   ├── job_schema.py
 │       │   ├── doc_spec_schema.py   # Doc spec schema definition
@@ -289,7 +281,6 @@ my-project/                     # User's project (target)
 │       ├── deepwork_jobs.define.md         # Core DeepWork skills
 │       ├── deepwork_jobs.implement.md
 │       ├── deepwork_jobs.refine.md
-│       ├── deepwork_rules.define.md        # Rule management
 │       ├── competitive_research.identify_competitors.md
 │       └── ...
 ├── .deepwork/                  # DeepWork configuration
@@ -307,14 +298,6 @@ my-project/                     # User's project (target)
 │       ├── deepwork_jobs/      # Core job for managing jobs
 │       │   ├── job.yml
 │       │   └── steps/
-│       ├── deepwork_rules/     # Rule management job
-│       │   ├── job.yml
-│       │   ├── steps/
-│       │   │   └── define.md
-│       │   └── hooks/          # Hook scripts (installed from standard_jobs)
-│       │       ├── global_hooks.yml
-│       │       ├── user_prompt_submit.sh
-│       │       └── capture_prompt_work_tree.sh
 │       ├── competitive_research/
 │       │   ├── job.yml         # Job metadata
 │       │   └── steps/
@@ -1301,20 +1284,17 @@ Rules are validated against a JSON Schema:
 
 ### Defining Rules
 
-Use the `/deepwork_rules.define` command to interactively create rules:
+Rules are created as markdown files in `.deepwork/rules/` with YAML frontmatter:
 
-```
-User: /deepwork_rules.define
+```markdown
+---
+name: API documentation update
+trigger: "src/api/**/*.py"
+safety: "docs/api/**/*.md"
+---
 
-Claude: I'll help you define a new rule. What guideline or constraint
-        should this rule enforce?
-
-User: When API code changes, the API documentation should be updated
-
-Claude: Got it. Let me ask a few questions...
-        [Interactive dialog to define trigger, safety, and instructions]
-
-Claude: Created rule "API documentation update" in .deepwork/rules/api-documentation.md
+When API code changes, ensure the API documentation is updated to reflect the changes.
+Check that all new endpoints, parameters, and response types are documented.
 ```
 
 ---

@@ -12,7 +12,7 @@ hooks:
             2. Running `deepwork install --platform <platform>` completes without errors
             3. Expected command files are created in the platform's command directory
             4. Command file content matches the templates and job definitions
-            5. Established DeepWork jobs (deepwork_jobs, deepwork_rules) are installed correctly
+            5. Established DeepWork jobs (deepwork_jobs) are installed correctly
             6. The platform can be used alongside existing platforms without conflicts
 
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
@@ -26,7 +26,7 @@ hooks:
             2. Running `deepwork install --platform <platform>` completes without errors
             3. Expected command files are created in the platform's command directory
             4. Command file content matches the templates and job definitions
-            5. Established DeepWork jobs (deepwork_jobs, deepwork_rules) are installed correctly
+            5. Established DeepWork jobs (deepwork_jobs) are installed correctly
             6. The platform can be used alongside existing platforms without conflicts
 
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
@@ -102,7 +102,6 @@ Ensure the implementation step is complete:
    - `deepwork_jobs.define.md` exists (or equivalent for the platform)
    - `deepwork_jobs.implement.md` exists
    - `deepwork_jobs.refine.md` exists
-   - `deepwork_rules.define.md` exists
    - All expected step commands exist
 
 4. **Validate command file content**
@@ -132,7 +131,6 @@ Ensure the implementation step is complete:
 - `deepwork install --platform <platform_name>` completes without errors
 - All expected command files are created:
   - deepwork_jobs.define, implement, refine
-  - deepwork_rules.define
   - Any other standard job commands
 - Command file content is correct:
   - Matches platform's expected format

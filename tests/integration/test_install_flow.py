@@ -186,7 +186,7 @@ class TestInstallCommand:
         assert (claude_dir / "deepwork_jobs.learn" / "SKILL.md").exists()
 
     def test_install_creates_rules_directory(self, mock_claude_project: Path) -> None:
-        """Test that install creates the v2 rules directory with example templates."""
+        """Test that install creates the rules directory."""
         runner = CliRunner()
 
         result = runner.invoke(
@@ -196,7 +196,7 @@ class TestInstallCommand:
         )
 
         assert result.exit_code == 0
-        assert ".deepwork/rules/ with example templates" in result.output
+        assert ".deepwork/rules/" in result.output
 
         # Verify rules directory was created
         rules_dir = mock_claude_project / ".deepwork" / "rules"
@@ -208,10 +208,6 @@ class TestInstallCommand:
         content = readme_file.read_text()
         assert "DeepWork Rules" in content
         assert "YAML frontmatter" in content
-
-        # Verify example templates were copied
-        example_files = list(rules_dir.glob("*.md.example"))
-        assert len(example_files) >= 1  # At least one example template
 
     def test_install_preserves_existing_rules_directory(self, mock_claude_project: Path) -> None:
         """Test that install doesn't overwrite existing rules directory."""

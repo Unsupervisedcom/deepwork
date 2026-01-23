@@ -65,7 +65,6 @@ This will:
 - Create `.deepwork/` directory structure
 - Generate core DeepWork jobs
 - Install DeepWork jobs for your AI assistant
-- Configure hooks for your AI assistant to enable rules
 
 ## Quick Start
 

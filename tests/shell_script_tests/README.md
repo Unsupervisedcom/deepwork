@@ -64,7 +64,6 @@ Available in `conftest.py`:
 |---------|-------------|
 | `git_repo` | Basic git repo with initial commit |
 | `git_repo_with_rule` | Git repo with a Python file rule |
-| `rules_hooks_dir` | Path to rules hooks scripts |
 | `jobs_scripts_dir` | Path to job management scripts |
 
 ## Adding New Tests

@@ -76,7 +76,6 @@ Ensure the implementation step is complete:
    - `deepwork_jobs.define.md` exists (or equivalent for the platform)
    - `deepwork_jobs.implement.md` exists
    - `deepwork_jobs.refine.md` exists
-   - `deepwork_rules.define.md` exists
    - All expected step commands exist
 
 4. **Validate command file content**
@@ -106,7 +105,6 @@ Ensure the implementation step is complete:
 - `deepwork install --platform <platform_name>` completes without errors
 - All expected command files are created:
   - deepwork_jobs.define, implement, refine
-  - deepwork_rules.define
   - Any other standard job commands
 - Command file content is correct:
   - Matches platform's expected format

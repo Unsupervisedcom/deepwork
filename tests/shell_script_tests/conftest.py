@@ -56,19 +56,6 @@ Review Python files for quality.
 
 
 @pytest.fixture
-def rules_hooks_dir() -> Path:
-    """Return the path to the rules hooks scripts directory."""
-    return (
-        Path(__file__).parent.parent.parent
-        / "src"
-        / "deepwork"
-        / "standard_jobs"
-        / "deepwork_rules"
-        / "hooks"
-    )
-
-
-@pytest.fixture
 def hooks_dir() -> Path:
     """Return the path to the main hooks directory (platform wrappers)."""
     return Path(__file__).parent.parent.parent / "src" / "deepwork" / "hooks"

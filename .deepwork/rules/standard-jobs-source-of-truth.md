@@ -2,17 +2,15 @@
 name: Standard Jobs Source of Truth
 trigger:
   - .deepwork/jobs/deepwork_jobs/**/*
-  - .deepwork/jobs/deepwork_rules/**/*
 safety:
   - src/deepwork/standard_jobs/deepwork_jobs/**/*
-  - src/deepwork/standard_jobs/deepwork_rules/**/*
 compare_to: base
 ---
-You modified files in `.deepwork/jobs/deepwork_jobs/` or `.deepwork/jobs/deepwork_rules/`.
+You modified files in `.deepwork/jobs/deepwork_jobs/`.
 
 **These are installed copies, NOT the source of truth!**
 
-Standard jobs (deepwork_jobs, deepwork_rules) must be edited in their source location:
+Standard jobs (deepwork_jobs) must be edited in their source location:
 - Source: `src/deepwork/standard_jobs/[job_name]/`
 - Installed copy: `.deepwork/jobs/[job_name]/` (DO NOT edit directly)
 

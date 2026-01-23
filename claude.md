@@ -43,8 +43,7 @@ deepwork/
 │   │   ├── gemini/
 │   │   └── copilot/
 │   ├── standard_jobs/    # Built-in job definitions (auto-installed)
-│   │   ├── deepwork_jobs/
-│   │   └── deepwork_rules/
+│   │   └── deepwork_jobs/
 │   ├── schemas/          # Job definition schemas
 │   └── utils/            # Utilities (fs, git, yaml, validation)
 ├── library_jobs/         # Reusable example jobs (not auto-installed)
@@ -196,7 +195,7 @@ my-project/
 
 ### Editing Standard Jobs
 
-**Standard jobs** (like `deepwork_jobs` and `deepwork_rules`) are bundled with DeepWork and installed to user projects. They exist in THREE locations:
+**Standard jobs** (like `deepwork_jobs`) are bundled with DeepWork and installed to user projects. They exist in THREE locations:
 
 1. **Source of truth**: `src/deepwork/standard_jobs/[job_name]/` - The canonical source files
 2. **Installed copy**: `.deepwork/jobs/[job_name]/` - Installed by `deepwork install`
@@ -217,7 +216,7 @@ Instead, follow this workflow:
 
 ### How to Identify Job Types
 
-- **Standard jobs**: Exist in `src/deepwork/standard_jobs/` (currently: `deepwork_jobs`, `deepwork_rules`)
+- **Standard jobs**: Exist in `src/deepwork/standard_jobs/` (currently: `deepwork_jobs`)
 - **Library jobs**: Exist in `library_jobs/`
 - **Bespoke jobs**: Exist ONLY in `.deepwork/jobs/` with no corresponding standard_jobs entry
 

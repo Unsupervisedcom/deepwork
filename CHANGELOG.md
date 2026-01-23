@@ -15,6 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.5.0] - 2026-01-23
+
+### Removed
+- **deepwork_rules standard job**: The `deepwork_rules` job is no longer installed by default. Rules in this repository are bespoke to this project.
+  - The `/deepwork_rules.define` command is no longer available in new installs
+  - Example rule templates (`.md.example` files) are no longer copied to `.deepwork/rules/` during install
+  - The `UserPromptSubmit` hook that captured work tree state is no longer installed
+  - The rules system (`.deepwork/rules/`) still works - users create rules manually as markdown files with YAML frontmatter
+
+### Changed
+- Simplified `_create_rules_directory` in install.py - now only creates the directory and README without example templates
+- Updated tests to verify permissions instead of hooks since no hooks are installed by default
+- Updated documentation to reflect that `deepwork_jobs` is the only standard job
+
 ## [0.4.0] - 2026-01-23
 
 ### Added

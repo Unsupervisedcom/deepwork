@@ -19,7 +19,7 @@ hooks:
             6. **Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase "ask structured questions"?
             7. **Sync Complete**: Has `deepwork sync` been run successfully?
             8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-            9. **Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to run `/deepwork_rules.define`? Not every job needs rules - only suggest when genuinely helpful.
+            9. **Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to help create rules in `.deepwork/rules/`? Not every job needs rules - only suggest when genuinely helpful.
 
             ## Instructions
 
@@ -47,7 +47,7 @@ hooks:
             6. **Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase "ask structured questions"?
             7. **Sync Complete**: Has `deepwork sync` been run successfully?
             8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-            9. **Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to run `/deepwork_rules.define`? Not every job needs rules - only suggest when genuinely helpful.
+            9. **Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to help create rules in `.deepwork/rules/`? Not every job needs rules - only suggest when genuinely helpful.
 
             ## Instructions
 
@@ -247,9 +247,9 @@ If you identify one or more rules that would benefit the user, explain:
 
 Then ask the user:
 
-> "Would you like me to create this rule for you? I can run `/deepwork_rules.define` to set it up."
+> "Would you like me to create this rule for you? I can add it to `.deepwork/rules/`."
 
-If the user agrees, invoke the `/deepwork_rules.define` command to guide them through creating the rule.
+If the user agrees, create a rule file in `.deepwork/rules/` with the appropriate YAML frontmatter.
 
 **Example dialogue:**
 
@@ -263,7 +263,7 @@ I'd suggest a rule like:
 - **Trigger**: `**/positioning_report.md`
 - **Action**: Prompt to review and update `docs/strategy.md`
 
-Would you like me to create this rule? I can run `/deepwork_rules.define` to set it up.
+Would you like me to create this rule for you? I can add it to `.deepwork/rules/`.
 ```
 
 **Note:** Not every job needs rules. Only suggest them when they would genuinely help maintain consistency or quality. Don't force rules where they don't make sense.
@@ -301,7 +301,7 @@ Before marking this step complete, ensure:
 - [ ] Skills generated in platform directory
 - [ ] User informed to follow reload instructions from `deepwork sync`
 - [ ] Considered whether rules would benefit this job (Step 7)
-- [ ] If rules suggested, offered to run `/deepwork_rules.define`
+- [ ] If rules suggested, offered to create rules in `.deepwork/rules/`
 
 ## Quality Criteria
 
@@ -368,7 +368,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 6. **Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase "ask structured questions"?
 7. **Sync Complete**: Has `deepwork sync` been run successfully?
 8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-9. **Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to run `/deepwork_rules.define`? Not every job needs rules - only suggest when genuinely helpful.
+9. **Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to help create rules in `.deepwork/rules/`? Not every job needs rules - only suggest when genuinely helpful.
 
 
 **To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.

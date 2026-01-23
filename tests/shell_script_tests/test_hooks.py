@@ -370,31 +370,6 @@ class TestRulesStopHook:
             json.loads(json_line)
 
 
-class TestUserPromptSubmitHook:
-    """Tests for user_prompt_submit.sh JSON format compliance."""
-
-    def test_output_is_valid_json_or_empty(self, rules_hooks_dir: Path, git_repo: Path) -> None:
-        """Test that output is valid JSON or empty."""
-        script_path = rules_hooks_dir / "user_prompt_submit.sh"
-        stdout, stderr, code = run_rules_hook_script(script_path, git_repo)
-
-        response = validate_json_output(stdout)
-        validate_prompt_hook_response(response)
-
-    def test_does_not_block_prompt_submission(self, rules_hooks_dir: Path, git_repo: Path) -> None:
-        """Test that hook does not block prompt submission."""
-        script_path = rules_hooks_dir / "user_prompt_submit.sh"
-        stdout, stderr, code = run_rules_hook_script(script_path, git_repo)
-
-        response = validate_json_output(stdout)
-
-        # UserPromptSubmit hooks should not block
-        if response:
-            assert response.get("decision") != "block", (
-                "UserPromptSubmit hook should not return block decision"
-            )
-
-
 class TestHooksWithTranscript:
     """Tests for hook JSON format when using transcript input."""
 
@@ -531,26 +506,6 @@ class TestHookExitCodes:
 
         # Hooks should exit 0 and communicate via JSON
         assert code == 0, f"Block should still exit 0. stderr: {stderr}"
-
-    def test_user_prompt_hook_exits_zero(self, rules_hooks_dir: Path, git_repo: Path) -> None:
-        """Test that user prompt hook always exits 0.
-
-        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
-        """
-        script_path = rules_hooks_dir / "user_prompt_submit.sh"
-        stdout, stderr, code = run_rules_hook_script(script_path, git_repo)
-
-        assert code == 0, f"User prompt hook should exit 0. stderr: {stderr}"
-
-    def test_capture_script_exits_zero(self, rules_hooks_dir: Path, git_repo: Path) -> None:
-        """Test that capture script exits 0.
-
-        DO NOT CHANGE THIS TEST - it verifies the documented hook contract.
-        """
-        script_path = rules_hooks_dir / "capture_prompt_work_tree.sh"
-        stdout, stderr, code = run_rules_hook_script(script_path, git_repo)
-
-        assert code == 0, f"Capture script should exit 0. stderr: {stderr}"
 
 
 # =============================================================================

@@ -58,15 +58,15 @@ def get_project_settings(project_path: Path) -> dict:
     return json.loads(settings_file.read_text())
 
 
-def assert_install_added_hooks(settings_before: dict, settings_after: dict) -> None:
-    """Assert that install actually modified settings by adding hooks.
+def assert_install_modified_settings(settings_before: dict, settings_after: dict) -> None:
+    """Assert that install actually modified settings.
 
     This ensures idempotency tests are meaningful - if install does nothing,
     idempotency would trivially pass but the test would be useless.
     """
-    assert "hooks" in settings_after, (
-        "FIRST INSTALL DID NOT ADD HOOKS! "
-        "Install must add hooks to project settings. "
+    assert "permissions" in settings_after, (
+        "FIRST INSTALL DID NOT ADD PERMISSIONS! "
+        "Install must add permissions to project settings. "
         "This test requires install to actually modify settings to verify idempotency."
     )
     assert settings_after != settings_before, (
@@ -189,9 +189,9 @@ class TestLocalSettingsProtection:
                 "Local settings were modified! Install must only modify project settings."
             )
 
-            # Verify PROJECT settings were modified (hooks should be added)
+            # Verify PROJECT settings were modified (permissions should be added)
             project_settings = get_project_settings(mock_claude_project)
-            assert "hooks" in project_settings, "Project settings should have hooks after install"
+            assert "permissions" in project_settings, "Project settings should have permissions after install"
 
 
 # =============================================================================
@@ -245,7 +245,7 @@ class TestProjectSettingsIdempotency:
         settings_after_first = get_project_settings(mock_claude_project)
 
         # CRITICAL: First install MUST actually modify settings
-        assert_install_added_hooks(settings_before, settings_after_first)
+        assert_install_modified_settings(settings_before, settings_after_first)
 
         # Second install
         run_install(mock_claude_project)
@@ -259,12 +259,12 @@ class TestProjectSettingsIdempotency:
             f"After second: {json.dumps(settings_after_second, indent=2)}"
         )
 
-    def test_no_duplicate_hooks_on_multiple_installs(self, mock_claude_project: Path) -> None:
+    def test_no_duplicate_permissions_on_multiple_installs(self, mock_claude_project: Path) -> None:
         """
-        REQ-002 (corollary): Multiple installs MUST NOT create duplicate hooks.
+        REQ-002 (corollary): Multiple installs MUST NOT create duplicate permissions.
 
-        This specifically tests that hooks are not duplicated, which would
-        cause performance issues and unexpected behavior.
+        This specifically tests that permissions are not duplicated, which would
+        cause issues and unexpected behavior.
 
         DO NOT MODIFY THIS TEST.
         """
@@ -275,28 +275,19 @@ class TestProjectSettingsIdempotency:
         # Load final settings
         settings = get_project_settings(mock_claude_project)
 
-        # CRITICAL: Hooks must exist for this test to be meaningful
-        assert "hooks" in settings, (
-            "NO HOOKS FOUND AFTER INSTALL! "
-            "Install must add hooks to project settings. "
-            "This test requires hooks to exist to verify no duplicates are created."
+        # CRITICAL: Permissions must exist for this test to be meaningful
+        assert "permissions" in settings, (
+            "NO PERMISSIONS FOUND AFTER INSTALL! "
+            "Install must add permissions to project settings. "
+            "This test requires permissions to exist to verify no duplicates are created."
         )
 
-        # Verify no duplicate hooks
-        for event_name, hooks_list in settings["hooks"].items():
-            # Extract all hook commands for duplicate detection
-            commands = [
-                hook["command"]
-                for hook_entry in hooks_list
-                for hook in hook_entry.get("hooks", [])
-                if "command" in hook
-            ]
-
-            # Check for duplicates
-            assert len(commands) == len(set(commands)), (
-                f"DUPLICATE HOOKS DETECTED for event '{event_name}'! "
-                f"Install MUST be idempotent. Commands: {commands}"
-            )
+        # Verify no duplicate permissions
+        allow_list = settings["permissions"].get("allow", [])
+        assert len(allow_list) == len(set(allow_list)), (
+            f"DUPLICATE PERMISSIONS DETECTED! "
+            f"Install MUST be idempotent. Permissions: {allow_list}"
+        )
 
     def test_third_install_identical_to_first(self, mock_claude_project: Path) -> None:
         """
@@ -316,7 +307,7 @@ class TestProjectSettingsIdempotency:
         settings_after_first = get_project_settings(mock_claude_project)
 
         # CRITICAL: First install MUST actually modify settings
-        assert_install_added_hooks(settings_before, settings_after_first)
+        assert_install_modified_settings(settings_before, settings_after_first)
 
         # Run multiple more installs
         for _ in range(5):
