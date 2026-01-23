@@ -1147,7 +1147,7 @@ The hooks are installed to `.claude/settings.json` during `deepwork sync`:
 {
   "hooks": {
     "Stop": [
-      {"matcher": "", "hooks": [{"type": "command", "command": "python -m deepwork.hooks.rules_check"}]}
+      {"matcher": "", "hooks": [{"type": "command", "command": "deepwork hook rules_check"}]}
     ]
   }
 }
