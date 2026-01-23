@@ -25,8 +25,9 @@ learnings specific to the current run into AGENTS.md files in the working folder
 
 1. **define** - Creates a job.yml specification by gathering workflow requirements through structured questions. Use when starting a new multi-step workflow.
 2. **review_job_spec** - Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification. (requires: define)
-3. **implement** - Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes. (requires: review_job_spec)
-4. **learn** - Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
+3. **tools** - Verifies required external tools are available and documents how to use them. Use after job spec review to ensure implementation can succeed. (requires: review_job_spec)
+4. **implement** - Generates step instruction files and syncs slash commands from the job.yml specification. Use after tools verification passes. (requires: review_job_spec, tools)
+5. **learn** - Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
 
 ## Execution Instructions
 
@@ -35,6 +36,7 @@ learnings specific to the current run into AGENTS.md files in the working folder
 Parse any text following `/deepwork_jobs` to determine user intent:
 - "define" or related terms → start at `deepwork_jobs.define`
 - "review_job_spec" or related terms → start at `deepwork_jobs.review_job_spec`
+- "tools" or related terms → start at `deepwork_jobs.tools`
 - "implement" or related terms → start at `deepwork_jobs.implement`
 - "learn" or related terms → start at `deepwork_jobs.learn`
 

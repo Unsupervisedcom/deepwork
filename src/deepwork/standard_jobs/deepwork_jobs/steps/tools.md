@@ -1,0 +1,200 @@
+# Verify and Document Tools
+
+## Objective
+
+Verify that all external tools required by the job are available and working, find alternatives if needed, and create process-focused documentation for future reference.
+
+## Task
+
+Review the job specification to identify what external tools are needed, test them, and document how each process works.
+
+### Step 1: Analyze the Job for Required Tools
+
+Read the `job.yml` file and examine each step to identify tasks that require external tools.
+
+**Look for steps that involve:**
+- File format conversion (PDF, DOCX, HTML, etc.)
+- Data processing (CSV, JSON, XML transformations)
+- Media manipulation (images, audio, video)
+- External API calls or web requests
+- Build processes (compilers, bundlers)
+- Testing frameworks
+- Documentation generation
+- Database operations
+- Container or virtualization tools
+
+**For each step, note:**
+- What the step needs to accomplish
+- What external tools might be required
+- What the expected input/output formats are
+
+### Step 2: Test Each Required Tool
+
+For each tool you've identified:
+
+1. **Check if the tool is installed:**
+   ```bash
+   which [tool_name] || echo "Not found"
+   ```
+
+2. **Verify the version:**
+   ```bash
+   [tool_name] --version
+   ```
+
+3. **Test basic functionality:**
+   - Run a simple test command to confirm it works
+   - Create a minimal test case if needed
+   - Verify the output is as expected
+
+**Document what you find:**
+- Tool name and version
+- Whether it works or not
+- Any errors encountered
+
+### Step 3: Find Alternatives for Missing/Broken Tools
+
+If a tool is missing or doesn't work:
+
+1. **Research alternatives:**
+   - Search for equivalent tools that accomplish the same task
+   - Consider multiple options (CLI tools, libraries, online services)
+
+2. **Test the alternatives:**
+   - Install and try each alternative
+   - Verify it can accomplish the required task
+   - Compare quality, speed, and ease of use
+
+3. **Select the best option:**
+   - Choose the tool that works best for this job's needs
+   - Consider factors like: availability, ease of installation, reliability
+
+### Step 4: Create Process Documentation
+
+**IMPORTANT:** Create documentation organized by **process** (what you're trying to accomplish), NOT by tool name.
+
+**Correct naming:**
+- `making_pdfs.md` - How to create PDF documents
+- `resizing_images.md` - How to resize/optimize images
+- `converting_data_formats.md` - How to transform data between formats
+
+**Incorrect naming:**
+- `pandoc.md` - This is tool-centric, not process-centric
+- `imagemagick.md` - Same issue
+
+Create documentation files in `.deepwork/jobs/[job_name]/tools/`:
+
+```bash
+mkdir -p .deepwork/jobs/[job_name]/tools
+```
+
+**Each process document should include:**
+
+```markdown
+# [Process Name]
+
+## Purpose
+What this process accomplishes and when you would use it.
+
+## Selected Tool
+- **Tool**: [tool name]
+- **Version**: [version tested]
+- **Why chosen**: [brief rationale]
+
+## Installation
+
+### How it was installed on this machine
+[Document the actual installation method used]
+
+### Alternative installation methods
+- **macOS**: `brew install [package]`
+- **Ubuntu/Debian**: `apt install [package]`
+- **Windows**: [instructions]
+- **Using pip/npm/etc.**: [instructions]
+
+## Usage
+
+### Basic invocation
+```bash
+[basic command example]
+```
+
+### Common options
+| Option | Description |
+|--------|-------------|
+| `-o` | Output file |
+| ... | ... |
+
+### Examples
+
+**Example 1: [Basic use case]**
+```bash
+[command]
+```
+
+**Example 2: [More complex use case]**
+```bash
+[command]
+```
+
+## Troubleshooting
+
+### Common issues
+- **[Issue]**: [Solution]
+
+## Alternatives Considered
+- **[Alternative tool]**: [Why not chosen / when it might be preferred]
+```
+
+### Step 5: Verify All Tools Work Together
+
+After documenting all tools:
+
+1. **Run a dry-run test:**
+   - Simulate the workflow with test inputs
+   - Verify each tool can read the previous tool's output
+
+2. **Check for compatibility:**
+   - Ensure tools work with the same file formats
+   - Verify version compatibility if tools interact
+
+3. **Document any integration notes:**
+   - Add notes about tool ordering or dependencies
+   - Document any format conversion requirements between steps
+
+## Example Workflow
+
+For a job that creates research reports with charts:
+
+1. **Analyze job**: Steps need to gather data, create visualizations, and generate PDF reports
+2. **Identify tools needed**: Data fetching (curl/wget), chart generation (gnuplot/matplotlib), PDF creation (pandoc/weasyprint)
+3. **Test tools**: Found pandoc v3.1 and gnuplot v5.4 installed, matplotlib not installed
+4. **Find alternatives**: Installed matplotlib via pip, tested successfully
+5. **Document processes**:
+   - `tools/fetching_web_data.md` - Using curl for API requests
+   - `tools/creating_charts.md` - Using matplotlib for visualizations
+   - `tools/making_pdfs.md` - Using pandoc with custom templates
+
+## Output
+
+After completing this step, you should have:
+
+1. **tools/ directory** with process documentation:
+   ```
+   .deepwork/jobs/[job_name]/tools/
+   ├── [process_1].md
+   ├── [process_2].md
+   └── ...
+   ```
+
+2. **Confidence that all tools work** and the job can be implemented successfully
+
+## Quality Criteria
+
+- All job steps have been analyzed for tool requirements
+- Every required tool has been tested and verified working
+- Missing or broken tools have been replaced with working alternatives
+- Documentation is organized by PROCESS, not by tool name
+- Each process document includes installation and invocation instructions
+- All tools have been verified to work together
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response

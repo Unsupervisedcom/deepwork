@@ -69,7 +69,7 @@ hooks:
 
 # deepwork_jobs.define
 
-**Step 1/4** in **deepwork_jobs** workflow
+**Step 1/5** in **deepwork_jobs** workflow
 
 > Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs.
 
@@ -723,7 +723,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 1/4 complete, outputs: job.yml"
+2. Inform user: "Step 1/5 complete, outputs: job.yml"
 3. **Continue workflow**: Use Skill tool to invoke `/deepwork_jobs.review_job_spec`
 
 ---
