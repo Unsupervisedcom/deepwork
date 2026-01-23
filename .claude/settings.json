@@ -155,7 +155,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -m deepwork.hooks.rules_check"
+            "command": "deepwork hook rules_check"
           }
         ]
       }
@@ -166,7 +166,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -m deepwork.hooks.rules_check"
+            "command": "deepwork hook rules_check"
           }
         ]
       }
