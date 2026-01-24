@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- New `export-job` command to transfer jobs to global Claude settings
+  - Copies job definitions from project `.deepwork/jobs/` to `~/.deepwork/jobs/`
+  - Generates skills in global `~/.claude/skills/` directory
+  - Updates `~/.claude/settings.json` with hooks and permissions
+  - Automatically handles doc specs referenced by the job
+  - Supports `--force` flag to overwrite without confirmation
+  - Makes jobs available across all Claude projects without per-project installation
+  - Command: `deepwork export-job <job_name> [--path <project>] [--force]`
 
 ### Changed
 
