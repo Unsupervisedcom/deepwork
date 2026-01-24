@@ -105,6 +105,8 @@ def _create_launchd_plist(
 
     # Split command into program and arguments
     command_parts = command.split()
+    if not command_parts:
+        raise ValueError("Command cannot be empty")
     program = command_parts[0]
     args = command_parts[1:] if len(command_parts) > 1 else []
 
@@ -275,7 +277,6 @@ def _uninstall_systemd_timer(task_name: str, user_mode: bool = True) -> None:
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e:
         # Timer may not exist or systemctl may not be available - continue cleanup
         console.print(f"  [dim]•[/dim] Could not stop timer: {e}")
-        pass
 
     # Remove files
     service_file = systemd_dir / f"{service_name}.service"
@@ -317,7 +318,6 @@ def _uninstall_launchd_agent(task_name: str) -> None:
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e:
         # Agent may not be loaded or launchctl may not be available - continue cleanup
         console.print(f"  [dim]•[/dim] Could not unload agent: {e}")
-        pass
 
     # Remove plist file
     if plist_file.exists():

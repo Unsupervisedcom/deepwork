@@ -126,6 +126,11 @@ class TestCreateLaunchdPlist:
         assert "<key>StandardErrorPath</key>" in plist_content
         assert f"<string>{temp_dir}/.deepwork/logs/test-task.err</string>" in plist_content
 
+    def test_create_launchd_plist_empty_command(self, temp_dir: Path) -> None:
+        """Test that empty command raises ValueError."""
+        with pytest.raises(ValueError, match="Command cannot be empty"):
+            _create_launchd_plist("test-task", "", temp_dir, 3600)
+
 
 class TestScheduleAdd:
     """Tests for schedule add command."""
