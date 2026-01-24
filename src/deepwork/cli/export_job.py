@@ -123,7 +123,7 @@ def _export_job(job_name: str, project_path: Path, force: bool) -> None:
             raise ExportError("Export cancelled by user")
 
     # Step 3: Copy job to global deepwork directory
-    console.print(f"[yellow]→[/yellow] Copying job to global DeepWork directory...")
+    console.print("[yellow]→[/yellow] Copying job to global DeepWork directory...")
     ensure_dir(global_deepwork_dir / "jobs")
 
     # Remove existing if present
@@ -154,7 +154,7 @@ def _export_job(job_name: str, project_path: Path, force: bool) -> None:
                         doc_specs_to_copy.append(doc_spec_file)
 
         if doc_specs_to_copy:
-            console.print(f"[yellow]→[/yellow] Copying doc specs...")
+            console.print("[yellow]→[/yellow] Copying doc specs...")
             for doc_spec_file in doc_specs_to_copy:
                 dest_file = global_doc_specs_dir / doc_spec_file.name
                 shutil.copy(doc_spec_file, dest_file)
@@ -162,7 +162,7 @@ def _export_job(job_name: str, project_path: Path, force: bool) -> None:
                 console.print(f"  [green]✓[/green] Copied {doc_spec_file.name}")
 
     # Step 5: Generate skills in global Claude directory
-    console.print(f"[yellow]→[/yellow] Generating skills for Claude Code...")
+    console.print("[yellow]→[/yellow] Generating skills for Claude Code...")
     global_claude_dir = _get_global_claude_dir()
 
     # Create global Claude directory if it doesn't exist
@@ -188,7 +188,7 @@ def _export_job(job_name: str, project_path: Path, force: bool) -> None:
     # Step 6: Sync hooks to global Claude settings
     job_hooks = JobHooks.from_job_dir(global_job_dir)
     if job_hooks:
-        console.print(f"[yellow]→[/yellow] Syncing hooks to global Claude settings...")
+        console.print("[yellow]→[/yellow] Syncing hooks to global Claude settings...")
         try:
             hooks_count = sync_hooks_to_platform(Path.home(), claude_adapter, [job_hooks])
             if hooks_count > 0:
@@ -197,7 +197,7 @@ def _export_job(job_name: str, project_path: Path, force: bool) -> None:
             raise ExportError(f"Failed to sync hooks: {e}") from e
 
     # Step 7: Sync permissions to global Claude settings
-    console.print(f"[yellow]→[/yellow] Syncing permissions to global Claude settings...")
+    console.print("[yellow]→[/yellow] Syncing permissions to global Claude settings...")
     try:
         # Add global deepwork directory permissions
         perms_count = claude_adapter.sync_permissions(Path.home())

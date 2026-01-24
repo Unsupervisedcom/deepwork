@@ -1,14 +1,12 @@
 """Integration tests for the export-job command."""
 
 import json
-import shutil
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
 from deepwork.cli.main import cli
-from deepwork.utils.yaml_utils import load_yaml
 
 
 @pytest.fixture
