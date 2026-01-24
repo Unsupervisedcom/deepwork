@@ -323,6 +323,33 @@ Generate native commands and skills tailored for your AI coding assistant.
 - **Context-Aware**: Skills include all necessary context (instructions, inputs, and dependencies) for the AI.
 - **Expanding Ecosystem**: Currently supports **Claude Code** and **Gemini CLI**, with more platforms planned.
 
+### Task Scheduling
+Schedule periodic execution of maintenance tasks or commands using native system schedulers.
+- **Cross-Platform**: Automatically uses systemd timers on Linux or launchd agents on macOS.
+- **Flexible Intervals**: Support for common intervals (hourly, daily, weekly) or custom intervals.
+- **Integrated Logging**: Automatically logs task output to `.deepwork/logs/`.
+
+**Schedule a task**:
+```bash
+# Schedule a daily sync
+deepwork schedule add sync-daily "deepwork sync" --interval daily
+
+# Schedule a custom command hourly
+deepwork schedule add cleanup "git fetch --prune" --interval hourly
+
+# List all scheduled tasks
+deepwork schedule list
+
+# Remove a scheduled task
+deepwork schedule remove sync-daily
+```
+
+**Examples**:
+- Periodic skill synchronization: `deepwork sync`
+- Branch cleanup: `git fetch --prune`
+- Repository maintenance: `git gc --auto`
+- Custom maintenance scripts: `./scripts/cleanup.sh`
+
 ## Contributing
 
 DeepWork is currently in MVP phase. Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development guide.

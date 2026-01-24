@@ -17,12 +17,14 @@ def cli() -> None:
 from deepwork.cli.hook import hook  # noqa: E402
 from deepwork.cli.install import install  # noqa: E402
 from deepwork.cli.rules import rules  # noqa: E402
+from deepwork.cli.schedule import schedule  # noqa: E402
 from deepwork.cli.sync import sync  # noqa: E402
 
 cli.add_command(install)
 cli.add_command(sync)
 cli.add_command(hook)
 cli.add_command(rules)
+cli.add_command(schedule)
 
 
 if __name__ == "__main__":
