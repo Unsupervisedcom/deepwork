@@ -42,27 +42,27 @@ name: {{ job_name }}.{{ step_id }}
 description: "{{ step_description }}"
 {%- if not exposed %}
 user-invocable: false
-{%- endif %}
+{%- endif %}{#- if not exposed #}
 {#-
   NOTE: Prompt-based stop hooks do not currently work in Claude Code.
   See: https://github.com/anthropics/claude-code/issues/20221
   Only command/script hooks are generated here. Prompt hooks are filtered out.
   Quality validation is handled via sub-agent review in the instructions section.
 #}
-{%- if hooks %}
-{%- set has_command_hooks = namespace(value=false) %}
-{%- for event_name, event_hooks in hooks.items() %}
-{%- for hook in event_hooks %}
-{%- if hook.type == "script" %}
-{%- set has_command_hooks.value = true %}
-{%- endif %}
-{%- endfor %}
-{%- endfor %}
+{%- if hooks -%}
+{%- set has_command_hooks = namespace(value=false) -%}
+{%- for event_name, event_hooks in hooks.items() -%}
+{%- for hook in event_hooks -%}
+{%- if hook.type == "script" -%}
+{%- set has_command_hooks.value = true -%}
+{%- endif -%}{#- if hook.type == "script" #}
+{%- endfor -%}{#- for hook in event_hooks #}
+{%- endfor -%}{#- for event_name, event_hooks in hooks.items() #}
 {%- if has_command_hooks.value %}
 hooks:
 {%- for event_name, event_hooks in hooks.items() %}
 {%- set script_hooks = event_hooks | selectattr("type", "equalto", "script") | list %}
-{%- if script_hooks %}
+{%- if script_hooks -%}
 {#- For Stop events, generate both Stop and SubagentStop blocks #}
 {%- if event_name == "Stop" %}
 {%- for stop_event in ["Stop", "SubagentStop"] %}
@@ -71,20 +71,20 @@ hooks:
 {%- for hook in script_hooks %}
         - type: command
           command: ".deepwork/jobs/{{ job_name }}/{{ hook.path }}"
-{%- endfor %}
-{%- endfor %}
+{%- endfor %}{#- for hook in script_hooks #}
+{%- endfor %}{#- for stop_event in ["Stop", "SubagentStop"] #}
 {%- elif event_name != "SubagentStop" or "Stop" not in hooks %}
   {{ event_name }}:
     - hooks:
 {%- for hook in script_hooks %}
         - type: command
           command: ".deepwork/jobs/{{ job_name }}/{{ hook.path }}"
-{%- endfor %}
-{%- endif %}
-{%- endif %}
-{%- endfor %}
-{%- endif %}
-{%- endif %}
+{%- endfor %}{#- for hook in script_hooks #}
+{%- endif %}{#- if event_name == "Stop" #}
+{%- endif %}{#- if script_hooks #}
+{%- endfor %}{#- for event_name, event_hooks in hooks.items() #}
+{%- endif %}{#- if has_command_hooks.value #}
+{%- endif %}{#- if hooks #}
 ---
 
 # {{ job_name }}.{{ step_id }}
@@ -93,7 +93,7 @@ hooks:
 **Standalone skill** - can be run anytime
 {% else %}
 **Step {{ step_number }}/{{ total_steps }}** in **{{ job_name }}** workflow
-{% endif %}
+{% endif %}{#- if is_standalone #}
 
 > {{ job_summary }}
 
@@ -103,8 +103,8 @@ hooks:
 Before proceeding, confirm these steps are complete:
 {% for dep in dependencies %}
 - `/{{ job_name }}.{{ dep }}`
-{% endfor %}
-{% endif %}
+{% endfor %}{#- for dep in dependencies #}
+{% endif %}{#- if dependencies #}
 
 ## Instructions
 
@@ -116,7 +116,7 @@ Before proceeding, confirm these steps are complete:
 ### Job Context
 
 {{ job_description }}
-{% endif %}
+{% endif %}{#- if job_description #}
 
 {% if user_inputs or file_inputs %}
 ## Required Inputs
@@ -125,16 +125,16 @@ Before proceeding, confirm these steps are complete:
 **User Parameters** - Gather from user before starting:
 {% for input in user_inputs %}
 - **{{ input.name }}**: {{ input.description }}
-{% endfor %}
-{% endif %}
+{% endfor %}{#- for input in user_inputs #}
+{% endif %}{#- if user_inputs #}
 
 {% if file_inputs %}
 **Files from Previous Steps** - Read these first:
 {% for input in file_inputs %}
 - `{{ input.file }}` (from `{{ input.from_step }}`)
-{% endfor %}
-{% endif %}
-{% endif %}
+{% endfor %}{#- for input in file_inputs #}
+{% endif %}{#- if file_inputs #}
+{% endif %}{#- if user_inputs or file_inputs #}
 
 ## Work Branch
 
@@ -156,13 +156,13 @@ Use branch format: `deepwork/{{ job_name }}-[instance]-YYYYMMDD`
   **Definition**: `{{ output.doc_spec.path }}`
 {% if output.doc_spec.target_audience %}
   **Target Audience**: {{ output.doc_spec.target_audience }}
-{% endif %}
+{% endif %}{#- if output.doc_spec.target_audience #}
 {% if output.doc_spec.quality_criteria %}
   **Quality Criteria**:
 {% for criterion in output.doc_spec.quality_criteria %}
   {{ loop.index }}. **{{ criterion.name }}**: {{ criterion.description }}
-{% endfor %}
-{% endif %}
+{% endfor %}{#- for criterion in output.doc_spec.quality_criteria #}
+{% endif %}{#- if output.doc_spec.quality_criteria #}
 {% if output.doc_spec.example_document %}
 
   <details>
@@ -173,12 +173,12 @@ Use branch format: `deepwork/{{ job_name }}-[instance]-YYYYMMDD`
   ```
 
   </details>
-{% endif %}
-{% endif %}
-{% endfor %}
+{% endif %}{#- if output.doc_spec.example_document #}
+{% endif %}{#- if output.has_doc_spec and output.doc_spec #}
+{% endfor %}{#- for output in outputs #}
 {% else %}
 No specific file outputs required.
-{% endif %}
+{% endif %}{#- if outputs #}
 
 ## Guardrails
 
@@ -197,7 +197,7 @@ Use a sub-agent (Haiku model) to review your work against these criteria:
 **Criteria (all must be satisfied)**:
 {% for criterion in quality_criteria -%}
 {{ loop.index }}. {{ criterion }}
-{% endfor %}
+{% endfor %}{#- for criterion in quality_criteria #}
 **Review Process**:
 1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
 2. The sub-agent should examine your outputs and verify each criterion is met
@@ -205,14 +205,14 @@ Use a sub-agent (Haiku model) to review your work against these criteria:
 4. Have the sub-agent review again until all valid feedback has been addressed
 5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
-{% endif %}
+{% endif %}{#- if quality_criteria #}
 {% if stop_hooks -%}
 {% for hook in stop_hooks -%}
 {% if hook.type == "script" -%}
 **Validation script**: `.deepwork/jobs/{{ job_name }}/{{ hook.path }}` (runs automatically)
-{% endif -%}
-{% endfor %}
-{% endif %}
+{% endif -%}{#- if hook.type == "script" #}
+{% endfor %}{#- for hook in stop_hooks #}
+{% endif %}{#- if stop_hooks #}
 ## On Completion
 
 {% if is_standalone %}
@@ -227,8 +227,8 @@ This standalone skill can be re-run anytime.
 3. **Continue workflow**: Use Skill tool to invoke `/{{ job_name }}.{{ next_step }}`
 {% else %}
 3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
-{% endif %}
-{% endif %}
+{% endif %}{#- if next_step #}
+{% endif %}{#- if is_standalone #}
 
 ---
 
