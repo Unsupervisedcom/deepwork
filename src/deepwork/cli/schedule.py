@@ -272,7 +272,9 @@ def _uninstall_systemd_timer(task_name: str, user_mode: bool = True) -> None:
             capture_output=True,
         )
         console.print(f"  [green]✓[/green] Stopped and disabled {service_name}.timer")
-    except Exception:
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e:
+        # Timer may not exist or systemctl may not be available - continue cleanup
+        console.print(f"  [dim]•[/dim] Could not stop timer: {e}")
         pass
 
     # Remove files
@@ -312,7 +314,9 @@ def _uninstall_launchd_agent(task_name: str) -> None:
     try:
         subprocess.run(["launchctl", "unload", str(plist_file)], check=False, capture_output=True)
         console.print(f"  [green]✓[/green] Unloaded {label}")
-    except Exception:
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e:
+        # Agent may not be loaded or launchctl may not be available - continue cleanup
+        console.print(f"  [dim]•[/dim] Could not unload agent: {e}")
         pass
 
     # Remove plist file
