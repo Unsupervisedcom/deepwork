@@ -290,7 +290,7 @@ def _uninstall_systemd_timer(task_name: str, user_mode: bool = True) -> None:
     if user_mode:
         systemctl_cmd.append("--user")
 
-    # Stop and disable timer
+    # Stop and disable timer (ignore errors as timer may not exist)
     try:
         subprocess.run(
             [*systemctl_cmd, "stop", f"{service_name}.timer"],
@@ -303,8 +303,8 @@ def _uninstall_systemd_timer(task_name: str, user_mode: bool = True) -> None:
             capture_output=True,
         )
         console.print(f"  [green]✓[/green] Stopped and disabled {service_name}.timer")
-    except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e:
-        # Timer may not exist or systemctl may not be available - continue cleanup
+    except (FileNotFoundError, OSError) as e:
+        # systemctl may not be available or file system errors - continue cleanup
         console.print(f"  [dim]•[/dim] Could not stop timer: {e}")
 
     # Remove files
@@ -340,12 +340,12 @@ def _uninstall_launchd_agent(task_name: str) -> None:
     launch_agents_dir = Path.home() / "Library" / "LaunchAgents"
     plist_file = launch_agents_dir / f"{label}.plist"
 
-    # Unload the agent
+    # Unload the agent (ignore errors as agent may not be loaded)
     try:
         subprocess.run(["launchctl", "unload", str(plist_file)], check=False, capture_output=True)
         console.print(f"  [green]✓[/green] Unloaded {label}")
-    except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e:
-        # Agent may not be loaded or launchctl may not be available - continue cleanup
+    except (FileNotFoundError, OSError) as e:
+        # launchctl may not be available or file system errors - continue cleanup
         console.print(f"  [dim]•[/dim] Could not unload agent: {e}")
 
     # Remove plist file
