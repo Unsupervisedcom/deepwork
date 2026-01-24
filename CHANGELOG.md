@@ -8,17 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Installer now auto-adds permission for `make_new_job.sh` script, allowing Claude to run job creation without manual configuration
 
 ### Changed
 
 ### Fixed
 
 ### Removed
-
-## [0.4.3] - 2026-01-24
-
-### Added
-- Installer now auto-adds permission for `make_new_job.sh` script, allowing Claude to run job creation without manual configuration
 
 ## [0.4.2] - 2026-01-24
 
