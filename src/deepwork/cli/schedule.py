@@ -438,6 +438,7 @@ def _add_schedule(task_name: str, command: str, interval: str, project_path: Pat
                 "hourly": 3600,
                 "daily": 86400,
                 "weekly": 604800,
+                "monthly": 2592000,  # 30 days
             }
             if interval.lower() not in interval_map:
                 raise ScheduleError(
