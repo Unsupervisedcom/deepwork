@@ -35,6 +35,8 @@ jobs:
       - name: Create release branch
         run: |
           VERSION="${{ inputs.version }}"
+          # Delete remote branch if it exists from a previous attempt
+          git push origin --delete "release/${VERSION}" 2>/dev/null || true
           git checkout -b "release/${VERSION}"
 
       - name: Update CHANGELOG.md
