@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Use PAT to allow the created release to trigger other workflows
+          token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Get version from PR title
         id: version
@@ -72,3 +74,5 @@ jobs:
           body_path: release_notes.md
           draft: false
           prerelease: false
+          # Use PAT to trigger the release.yml workflow for PyPI publishing
+          token: ${{ secrets.RELEASE_TOKEN }}
