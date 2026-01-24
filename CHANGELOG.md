@@ -15,6 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.4.2] - 2026-01-24
+
+### Changed
+- Added closing tag comments to jinja templates for improved readability
+
+## [0.4.1] - 2026-01-23
+
+### Changed
+- Disabled prompt-based stop hooks in Claude templates due to upstream bug ([#20221](https://github.com/anthropics/claude-code/issues/20221))
+- Quality validation now uses sub-agent review pattern instead of prompt hooks
+
 ## [0.4.0] - 2026-01-23
 
 ### Added
@@ -178,7 +189,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/anthropics/deepwork/compare/0.4.0...HEAD
+[Unreleased]: https://github.com/anthropics/deepwork/compare/0.4.2...HEAD
+[0.4.2]: https://github.com/anthropics/deepwork/compare/0.4.1...0.4.2
+[0.4.1]: https://github.com/anthropics/deepwork/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/anthropics/deepwork/compare/0.3.1...0.4.0
 [0.3.1]: https://github.com/anthropics/deepwork/releases/tag/0.3.1
 [0.3.0]: https://github.com/anthropics/deepwork/releases/tag/0.3.0
