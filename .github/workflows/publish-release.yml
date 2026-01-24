@@ -1,0 +1,74 @@
+name: Publish Release
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # Only run if PR was merged and has the 'release' label
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'release')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from PR title
+        id: version
+        run: |
+          VERSION="${{ github.event.pull_request.title }}"
+          # Validate version format
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Error: PR title must be a version number in format X.Y.Z (e.g., 0.6.0)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
+
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Extract the changelog content for this version (for the release notes)
+          # Get everything between the version header and the next version header
+          RELEASE_NOTES=$(awk -v version="$VERSION" '
+            BEGIN { capture = 0 }
+            /^## \[/ {
+              if (capture) exit
+              if ($0 ~ "\\[" version "\\]") {
+                capture = 1
+                next
+              }
+            }
+            capture { print }
+          ' CHANGELOG.md)
+
+          # Save release notes to a file for the release step
+          echo "$RELEASE_NOTES" > release_notes.md
+
+          # Output for debugging
+          echo "Release notes:"
+          cat release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
