@@ -423,5 +423,5 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     console.print()
     console.print("[bold]Next steps:[/bold]")
     console.print("  1. Start your agent CLI (ex. [cyan]claude[/cyan] or [cyan]gemini[/cyan])")
-    console.print("  2. Define your first job using the command [cyan]/deepwork_jobs.define[/cyan]")
+    console.print("  2. Define your first job using the command [cyan]/deepwork_jobs[/cyan]")
     console.print()

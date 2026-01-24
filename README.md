@@ -74,10 +74,10 @@ Jobs are multi-step workflows where each Step has clear input and output artifac
 
 The process of defining a job itself is actually a DeepWork job. You can see it at `.deepwork/jobs/deepwork_jobs/`.
 
-To start the process, just run the first Step in the job:
+To start the process, just run:
 
 ```
-/deepwork_jobs.define
+/deepwork_jobs
 ```
 
 Follow the interactive prompts to:
