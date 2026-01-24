@@ -1,31 +1,6 @@
 ---
 name: commit.commit_and_push
-description: "Verifies changed files, creates commit, and pushes to remote. Use after linting passes to finalize changes."
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the commit is ready:
-            1. Changed files list was reviewed by the agent
-            2. Files match what was modified during this session (or unexpected changes were investigated)
-            3. Commit was created with appropriate message
-            4. Changes were pushed to remote
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
-  SubagentStop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the commit is ready:
-            1. Changed files list was reviewed by the agent
-            2. Files match what was modified during this session (or unexpected changes were investigated)
-            3. Commit was created with appropriate message
-            4. Changes were pushed to remote
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
----
+description: "Verifies changed files, creates commit, and pushes to remote. Use after linting passes to finalize changes."user-invocable: false---
 
 # commit.commit_and_push
 
@@ -68,14 +43,27 @@ Check the list of changed files against what was modified during this session, e
    - Are there any unexpected deleted files?
    - Do the line counts seem reasonable for the changes you made?
 
-   If changes match expectations, proceed to commit.
+   If changes match expectations, proceed to the next step.
 
    If there are unexpected changes:
    - Investigate why (e.g., lint auto-fixes, generated files)
    - If they're legitimate side effects of your work, include them
    - If they're unrelated or shouldn't be committed, use `git restore` to discard them
 
-3. **Stage all appropriate changes**
+3. **Update CHANGELOG.md if needed**
+
+   If your changes include new features, bug fixes, or other notable changes:
+   - Add entries to the `## [Unreleased]` section of CHANGELOG.md
+   - Use the appropriate subsection: `### Added`, `### Changed`, `### Fixed`, or `### Removed`
+   - Write concise descriptions that explain the user-facing impact
+
+   **CRITICAL: NEVER modify version numbers**
+   - Do NOT change the version in `pyproject.toml`
+   - Do NOT change version headers in CHANGELOG.md (e.g., `## [0.4.2]`)
+   - Do NOT rename the `## [Unreleased]` section
+   - Version updates are handled by the release workflow, not commits
+
+4. **Stage all appropriate changes**
    ```bash
    git add -A
    ```
@@ -93,8 +81,9 @@ Check the list of changed files against what was modified during this session, e
    - The style of recent commits
    - Conventional commit format if the project uses it
 
+   **IMPORTANT:** Use the commit job script (not `git commit` directly):
    ```bash
-   git commit -m "commit message here"
+   .claude/hooks/commit_job_git_commit.sh -m "commit message here"
    ```
 
 7. **Push to remote**
@@ -110,6 +99,8 @@ Check the list of changed files against what was modified during this session, e
 
 - Changed files list was reviewed by the agent
 - Files match what was modified during this session (or unexpected changes were investigated and handled)
+- CHANGELOG.md was updated with entries in the `[Unreleased]` section (if changes warrant documentation)
+- Version numbers were NOT modified (in pyproject.toml or CHANGELOG.md version headers)
 - Commit message follows project conventions
 - Commit was created successfully
 - Changes were pushed to remote
@@ -155,14 +146,6 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
-
-## Quality Validation
-
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
 
 ## On Completion
 

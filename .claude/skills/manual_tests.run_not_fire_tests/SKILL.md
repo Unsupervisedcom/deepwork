@@ -1,61 +1,6 @@
 ---
 name: manual_tests.run_not_fire_tests
-description: "Runs all 6 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met."
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
-            1. **Sub-Agents Used**: Did the main agent spawn sub-agents (using the Task tool) to make the file edits? The main agent must NOT edit the test files directly.
-            2. **Sub-Agent Config**: Did all sub-agents use `model: "haiku"` and `max_turns: 5`?
-            3. **Parallel Execution**: Were all 6 sub-agents launched in parallel (in a single message with multiple Task tool calls)?
-            4. **Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command.
-            5. **Queue Verified Empty**: After all sub-agents completed, was the rules queue checked and confirmed empty (no entries = rules did not fire)?
-            6. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
-            7. **Reset Performed**: Was the reset step called internally after tests completed (or after early termination)?
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
-            all criteria appear to be met, let the agent finish.
-
-            If criteria are NOT met AND the promise tag is missing, have the agent keep working
-            until all criteria are satisfied.
-  SubagentStop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
-            1. **Sub-Agents Used**: Did the main agent spawn sub-agents (using the Task tool) to make the file edits? The main agent must NOT edit the test files directly.
-            2. **Sub-Agent Config**: Did all sub-agents use `model: "haiku"` and `max_turns: 5`?
-            3. **Parallel Execution**: Were all 6 sub-agents launched in parallel (in a single message with multiple Task tool calls)?
-            4. **Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command.
-            5. **Queue Verified Empty**: After all sub-agents completed, was the rules queue checked and confirmed empty (no entries = rules did not fire)?
-            6. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
-            7. **Reset Performed**: Was the reset step called internally after tests completed (or after early termination)?
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
-            all criteria appear to be met, let the agent finish.
-
-            If criteria are NOT met AND the promise tag is missing, have the agent keep working
-            until all criteria are satisfied.
----
+description: "Runs all 6 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met."user-invocable: false---
 
 # manual_tests.run_not_fire_tests
 
@@ -258,7 +203,9 @@ Use branch format: `deepwork/manual_tests-[instance]-YYYYMMDD`
 
 ## Quality Validation
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
+**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
+
+Use a sub-agent (Haiku model) to review your work against these criteria:
 
 **Criteria (all must be satisfied)**:
 1. **Sub-Agents Used**: Did the main agent spawn sub-agents (using the Task tool) to make the file edits? The main agent must NOT edit the test files directly.
@@ -268,9 +215,12 @@ Stop hooks will automatically validate your work. The loop continues until all c
 5. **Queue Verified Empty**: After all sub-agents completed, was the rules queue checked and confirmed empty (no entries = rules did not fire)?
 6. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
 7. **Reset Performed**: Was the reset step called internally after tests completed (or after early termination)?
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
+**Review Process**:
+1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
+2. The sub-agent should examine your outputs and verify each criterion is met
+3. If the sub-agent identifies valid issues, fix them
+4. Have the sub-agent review again until all valid feedback has been addressed
+5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
 ## On Completion
 

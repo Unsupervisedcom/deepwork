@@ -1,61 +1,6 @@
 ---
 name: manual_tests.run_fire_tests
-description: "Runs all 6 'should fire' tests serially with resets between each. Use after NOT-fire tests to verify rules fire correctly."
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
-            1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
-            2. **Sub-Agent Config**: Did all sub-agents use `model: "haiku"` and `max_turns: 5`?
-            3. **Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?
-            4. **Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command.
-            5. **Reset Between Tests**: Was the reset step called internally after each test to revert files and prevent cross-contamination?
-            6. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
-            7. **Results Recorded**: Did the main agent track pass/fail status for each test case?
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
-            all criteria appear to be met, let the agent finish.
-
-            If criteria are NOT met AND the promise tag is missing, have the agent keep working
-            until all criteria are satisfied.
-  SubagentStop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
-            1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
-            2. **Sub-Agent Config**: Did all sub-agents use `model: "haiku"` and `max_turns: 5`?
-            3. **Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?
-            4. **Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command.
-            5. **Reset Between Tests**: Was the reset step called internally after each test to revert files and prevent cross-contamination?
-            6. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
-            7. **Results Recorded**: Did the main agent track pass/fail status for each test case?
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
-            all criteria appear to be met, let the agent finish.
-
-            If criteria are NOT met AND the promise tag is missing, have the agent keep working
-            until all criteria are satisfied.
----
+description: "Runs all 6 'should fire' tests serially with resets between each. Use after NOT-fire tests to verify rules fire correctly."user-invocable: false---
 
 # manual_tests.run_fire_tests
 
@@ -272,7 +217,9 @@ Use branch format: `deepwork/manual_tests-[instance]-YYYYMMDD`
 
 ## Quality Validation
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
+**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
+
+Use a sub-agent (Haiku model) to review your work against these criteria:
 
 **Criteria (all must be satisfied)**:
 1. **Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly.
@@ -282,9 +229,12 @@ Stop hooks will automatically validate your work. The loop continues until all c
 5. **Reset Between Tests**: Was the reset step called internally after each test to revert files and prevent cross-contamination?
 6. **Early Termination**: If 2 tests failed, did testing halt immediately with results reported?
 7. **Results Recorded**: Did the main agent track pass/fail status for each test case?
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
+**Review Process**:
+1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
+2. The sub-agent should examine your outputs and verify each criterion is met
+3. If the sub-agent identifies valid issues, fix them
+4. Have the sub-agent review again until all valid feedback has been addressed
+5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
 ## On Completion
 

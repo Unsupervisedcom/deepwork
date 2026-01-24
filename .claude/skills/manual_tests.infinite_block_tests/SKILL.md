@@ -1,55 +1,6 @@
 ---
 name: manual_tests.infinite_block_tests
-description: "Runs all 4 infinite block tests serially. Tests both 'should fire' (no promise) and 'should NOT fire' (with promise) scenarios."
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
-            1. **Sub-Agents Used**: Each test run via Task tool with `model: "haiku"` and `max_turns: 5`
-            2. **Serial Execution**: Sub-agents launched ONE AT A TIME with reset between each
-            3. **Promise Tests**: Completed WITHOUT blocking (promise bypassed the rule)
-            4. **No-Promise Tests**: Hook fired AND sub-agent returned in reasonable time (not hung)
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
-            all criteria appear to be met, let the agent finish.
-
-            If criteria are NOT met AND the promise tag is missing, have the agent keep working
-            until all criteria are satisfied.
-  SubagentStop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
-            1. **Sub-Agents Used**: Each test run via Task tool with `model: "haiku"` and `max_turns: 5`
-            2. **Serial Execution**: Sub-agents launched ONE AT A TIME with reset between each
-            3. **Promise Tests**: Completed WITHOUT blocking (promise bypassed the rule)
-            4. **No-Promise Tests**: Hook fired AND sub-agent returned in reasonable time (not hung)
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
-            all criteria appear to be met, let the agent finish.
-
-            If criteria are NOT met AND the promise tag is missing, have the agent keep working
-            until all criteria are satisfied.
----
+description: "Runs all 4 infinite block tests serially. Tests both 'should fire' (no promise) and 'should NOT fire' (with promise) scenarios."user-invocable: false---
 
 # manual_tests.infinite_block_tests
 
@@ -270,16 +221,21 @@ Use branch format: `deepwork/manual_tests-[instance]-YYYYMMDD`
 
 ## Quality Validation
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
+**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
+
+Use a sub-agent (Haiku model) to review your work against these criteria:
 
 **Criteria (all must be satisfied)**:
 1. **Sub-Agents Used**: Each test run via Task tool with `model: "haiku"` and `max_turns: 5`
 2. **Serial Execution**: Sub-agents launched ONE AT A TIME with reset between each
 3. **Promise Tests**: Completed WITHOUT blocking (promise bypassed the rule)
 4. **No-Promise Tests**: Hook fired AND sub-agent returned in reasonable time (not hung)
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
+**Review Process**:
+1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
+2. The sub-agent should examine your outputs and verify each criterion is met
+3. If the sub-agent identifies valid issues, fix them
+4. Have the sub-agent review again until all valid feedback has been addressed
+5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
 ## On Completion
 

@@ -9,8 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Installer now auto-adds permission for `make_new_job.sh` script, allowing Claude to run job creation without manual configuration
+- Manual release workflow (`create-release.yml`) that automates version releases:
+  - Takes version number as input, validates format
+  - Updates CHANGELOG.md: converts Unreleased section to new version with date
+  - Adds fresh Unreleased section with placeholder categories
+  - Updates pyproject.toml version and runs uv sync for lock file
+  - Commits changes directly to main, creates tag, and publishes GitHub release
 
 ### Changed
+- Commit job now requires changelog entries go to `[Unreleased]` section and explicitly prohibits modifying version numbers
 
 ### Fixed
 

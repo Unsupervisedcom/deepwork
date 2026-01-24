@@ -128,7 +128,8 @@
       "Edit(./.deepwork/**)",
       "Write(./.deepwork/**)",
       "Bash(deepwork:*)",
-      "Bash(.claude/hooks/commit_job_git_commit.sh:*)"
+      "Bash(.claude/hooks/commit_job_git_commit.sh:*)",
+      "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)"
     ]
   },
   "hooks": {
