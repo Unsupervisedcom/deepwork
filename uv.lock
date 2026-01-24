@@ -126,7 +126,7 @@ toml = [
 
 [[package]]
 name = "deepwork"
-version = "0.5.2"
+version = "0.4.2"
 source = { editable = "." }
 dependencies = [
     { name = "click" },

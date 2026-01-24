@@ -21,6 +21,7 @@ def run_check_version_with_mock_claude(
     script_path: Path,
     mock_version: str | None,
     cwd: Path | None = None,
+    mock_deepwork: bool = True,
 ) -> tuple[str, str, int]:
     """
     Run check_version.sh with a mocked claude command.
@@ -29,6 +30,8 @@ def run_check_version_with_mock_claude(
         script_path: Path to check_version.sh
         mock_version: Version string to return from mock claude, or None for failure
         cwd: Working directory
+        mock_deepwork: If True, create a mock deepwork command that succeeds.
+                       If False, do not create mock deepwork (simulates not installed).
 
     Returns:
         Tuple of (stdout, stderr, return_code)
@@ -41,6 +44,17 @@ def run_check_version_with_mock_claude(
         else:
             mock_claude.write_text("#!/bin/bash\nexit 1\n")
         mock_claude.chmod(0o755)
+
+        # Create mock deepwork command
+        # When mock_deepwork=True, create a working mock
+        # When mock_deepwork=False, create a failing mock that shadows the real one
+        mock_deepwork_cmd = Path(tmpdir) / "deepwork"
+        if mock_deepwork:
+            mock_deepwork_cmd.write_text('#!/bin/bash\necho "deepwork 0.1.0"\n')
+        else:
+            # Create a mock that fails (simulating deepwork not being installed)
+            mock_deepwork_cmd.write_text("#!/bin/bash\nexit 127\n")
+        mock_deepwork_cmd.chmod(0o755)
 
         # Prepend mock dir to PATH
         env = os.environ.copy()
@@ -209,3 +223,70 @@ class TestEdgeCases:
         assert code == 0
         # Version 2.1.14 equals minimum, no warning
         assert "WARNING" not in stderr
+
+
+class TestDeepworkInstallationCheck:
+    """Tests for deepwork installation check (blocking)."""
+
+    def test_deepwork_installed_allows_session(self, check_version_script: Path) -> None:
+        """Test that script proceeds when deepwork is installed."""
+        # With mock_deepwork=True (default), deepwork is available
+        stdout, stderr, code = run_check_version_with_mock_claude(
+            check_version_script, "3.0.0", mock_deepwork=True
+        )
+
+        assert code == 0
+        assert "DEEPWORK NOT INSTALLED" not in stderr
+
+    def test_deepwork_not_installed_blocks_session(self, check_version_script: Path) -> None:
+        """Test that script blocks when deepwork is not installed."""
+        stdout, stderr, code = run_check_version_with_mock_claude(
+            check_version_script, "3.0.0", mock_deepwork=False
+        )
+
+        # Should exit with code 2 (blocking error)
+        assert code == 2
+        assert "DEEPWORK NOT INSTALLED" in stderr
+
+    def test_deepwork_error_message_content(self, check_version_script: Path) -> None:
+        """Test that deepwork error message has helpful content."""
+        stdout, stderr, code = run_check_version_with_mock_claude(
+            check_version_script, "3.0.0", mock_deepwork=False
+        )
+
+        # Should mention direct invocation requirement
+        assert "directly invok" in stderr.lower()
+        # Should mention NOT using wrappers
+        assert "uv run deepwork" in stderr
+        # Should suggest installation options
+        assert "pipx" in stderr or "pip install" in stderr
+
+    def test_deepwork_error_outputs_json(self, check_version_script: Path) -> None:
+        """Test that deepwork error outputs valid JSON with error info."""
+        import json
+
+        stdout, stderr, code = run_check_version_with_mock_claude(
+            check_version_script, "3.0.0", mock_deepwork=False
+        )
+
+        output = json.loads(stdout.strip())
+        assert "hookSpecificOutput" in output
+        assert "error" in output
+        assert "deepwork" in output["error"].lower()
+        # Should have additional context for Claude
+        assert "additionalContext" in output["hookSpecificOutput"]
+        assert "DEEPWORK" in output["hookSpecificOutput"]["additionalContext"]
+
+    def test_deepwork_check_happens_before_version_check(self, check_version_script: Path) -> None:
+        """Test that deepwork check runs before version check."""
+        # Even with a low version that would trigger warning,
+        # missing deepwork should block first
+        stdout, stderr, code = run_check_version_with_mock_claude(
+            check_version_script, "1.0.0", mock_deepwork=False
+        )
+
+        # Should exit with deepwork error, not version warning
+        assert code == 2
+        assert "DEEPWORK NOT INSTALLED" in stderr
+        # Should NOT show version warning
+        assert "CLAUDE CODE VERSION WARNING" not in stderr

@@ -1,5 +1,5 @@
 <!--
-Last Updated: 2026-01-15
+Last Updated: 2026-01-23
 Source: https://code.claude.com/docs/en/hooks
 -->
 
@@ -8,6 +8,24 @@ Source: https://code.claude.com/docs/en/hooks
 ## Overview
 
 Claude Code hooks are scripts that execute at specific points in Claude's workflow. They enable intercepting and controlling tool execution, validating user input, and performing custom actions.
+
+## Known Issues
+
+### Prompt-Based Stop Hooks Not Working
+
+**IMPORTANT**: Prompt-based hooks (`type: prompt`) for Stop and SubagentStop events do not currently work properly.
+
+Reference: https://github.com/anthropics/claude-code/issues/20221
+
+**Impact**:
+- Quality validation loops using prompt hooks will not block the agent as expected
+- The agent may stop without the prompt hook properly evaluating the response
+
+**Workaround**:
+- Use command-type hooks (`type: command`) for Stop events if automated validation is needed
+- Alternatively, include explicit instructions in the command content directing the agent to use a sub-agent (e.g., Haiku) to review work against quality criteria before completing
+
+**Future**: If this issue is resolved, prompt-based stop hooks can be re-enabled. Check the GitHub issue for updates.
 
 ## Configuration
 

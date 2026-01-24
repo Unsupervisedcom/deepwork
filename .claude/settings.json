@@ -123,10 +123,26 @@
       "Bash(deepwork rules clear_queue)",
       "Bash(rm -rf .deepwork/tmp/rules/queue/*.json)",
       "Skill(manual_tests.reset)",
-      "Skill(manual_tests.infinite_block_tests)"
+      "Skill(manual_tests.infinite_block_tests)",
+      "Read(./.deepwork/**)",
+      "Edit(./.deepwork/**)",
+      "Write(./.deepwork/**)",
+      "Bash(deepwork:*)",
+      "Bash(.claude/hooks/commit_job_git_commit.sh:*)"
     ]
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/block_bash_with_instructions.sh"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "",
@@ -155,7 +171,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -m deepwork.hooks.rules_check"
+            "command": "deepwork hook rules_check"
           }
         ]
       }
@@ -166,7 +182,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -m deepwork.hooks.rules_check"
+            "command": "deepwork hook rules_check"
           }
         ]
       }

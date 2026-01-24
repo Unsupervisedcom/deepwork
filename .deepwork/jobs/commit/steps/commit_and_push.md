@@ -49,8 +49,9 @@ Check the list of changed files against what was modified during this session, e
    - The style of recent commits
    - Conventional commit format if the project uses it
 
+   **IMPORTANT:** Use the commit job script (not `git commit` directly):
    ```bash
-   git commit -m "commit message here"
+   .claude/hooks/commit_job_git_commit.sh -m "commit message here"
    ```
 
 7. **Push to remote**

@@ -25,10 +25,10 @@ hooks:
             Look for evidence that each criterion has been addressed.
 
             If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
-            all criteria appear to be met, respond with: {"ok": true}
+            all criteria appear to be met, let the agent finish.
 
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
+            If criteria are NOT met AND the promise tag is missing, have the agent keep working
+            until all criteria are satisfied.
   SubagentStop:
     - hooks:
         - type: prompt
@@ -51,10 +51,10 @@ hooks:
             Look for evidence that each criterion has been addressed.
 
             If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
-            all criteria appear to be met, respond with: {"ok": true}
+            all criteria appear to be met, let the agent finish.
 
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
+            If criteria are NOT met AND the promise tag is missing, have the agent keep working
+            until all criteria are satisfied.
 ---
 
 # manual_tests.run_not_fire_tests

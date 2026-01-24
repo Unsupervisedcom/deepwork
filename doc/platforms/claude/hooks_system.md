@@ -1,5 +1,5 @@
 <!--
-Last Updated: 2026-01-16
+Last Updated: 2026-01-23
 Source: https://docs.anthropic.com/en/docs/claude-code/hooks
         https://docs.anthropic.com/en/docs/claude-code/settings
 -->
@@ -11,6 +11,28 @@ Source: https://docs.anthropic.com/en/docs/claude-code/hooks
 Claude Code supports **command-level hooks** within slash command definitions. This is a key differentiator from platforms like Gemini CLI, where hooks are only configurable globally.
 
 Hooks in command definitions allow per-command quality validation, input preprocessing, and output verification. These hooks are defined in the YAML frontmatter of markdown command files.
+
+## Known Issues
+
+### Prompt-Based Stop Hooks Not Working
+
+**IMPORTANT**: Prompt-based hooks (`type: prompt`) for Stop and SubagentStop events do not currently work properly.
+
+Reference: https://github.com/anthropics/claude-code/issues/20221
+
+**Impact**:
+- Quality validation loops using prompt hooks will not block the agent as expected
+- The agent may finish without the prompt hook properly evaluating the response
+
+**Workaround**:
+For quality validation, instead of using prompt-based stop hooks, include explicit instructions in the command content directing the agent to:
+1. Spawn a sub-agent (e.g., using Haiku model) to review work against quality criteria
+2. Fix any valid issues raised by the sub-agent
+3. Have the sub-agent review again until all valid feedback is handled
+
+**Command-type hooks still work**: If you need automated validation via Stop hooks, use `type: command` hooks that run shell scripts.
+
+**Future**: If this issue is resolved, prompt-based stop hooks can be re-enabled. Check the GitHub issue for updates.
 
 ## Command-Level Hook Support
 
@@ -60,15 +82,16 @@ Triggered when the main agent finishes responding. Use for:
 - Output verification
 - Completion criteria checking
 
+**NOTE**: Prompt-based stop hooks (`type: prompt`) do not currently work. See [Known Issues](#prompt-based-stop-hooks-not-working) above.
+
+For command-type hooks:
+
 ```yaml
 hooks:
   Stop:
     - hooks:
-        - type: prompt
-          prompt: |
-            Verify all acceptance criteria are met.
-            If met, respond: {"ok": true}
-            If not met, respond: {"ok": false, "reason": "..."}
+        - type: command
+          command: ".deepwork/jobs/my_job/hooks/validate.sh"
 ```
 
 **Blocking behavior**: Return JSON with `{"decision": "block", "reason": "..."}` or exit code 2 with stderr message.
@@ -182,46 +205,56 @@ hooks:
 
 ### Prompt Hooks
 
-Use LLM evaluation:
+**NOTE**: Prompt hooks for Stop/SubagentStop events do not currently work. See [Known Issues](#prompt-based-stop-hooks-not-working).
+
+Prompt hooks may work for other event types (e.g., PreToolUse, UserPromptSubmit), but this has not been fully tested.
 
 ```yaml
+# Example for non-Stop events (untested)
 hooks:
-  Stop:
+  UserPromptSubmit:
     - hooks:
         - type: prompt
           prompt: |
-            Evaluate whether the response meets all criteria.
-            Respond with {"ok": true} or {"ok": false, "reason": "..."}
+            Validate the user's prompt before processing.
 ```
 
 ## Quality Validation Loop Pattern
 
-Claude Code's Stop hooks enable iterative quality validation:
+**NOTE**: This pattern using prompt-based Stop hooks does not currently work. See [Known Issues](#prompt-based-stop-hooks-not-working).
 
-1. Agent completes its response
-2. Stop hook evaluates quality criteria
-3. If criteria not met, agent continues working
-4. Loop repeats until criteria are satisfied
+### Alternative: Sub-Agent Review
 
-This pattern is unique to Claude Code among DeepWork-supported platforms.
+Instead of relying on prompt hooks, include explicit instructions in your command content:
 
-### Implementation Example
+```markdown
+## Quality Validation
+
+Before completing this step, you MUST have your work reviewed.
+
+**Quality Criteria**:
+1. All tests pass
+2. Code follows style guide
+3. Documentation updated
+
+**Review Process**:
+1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
+2. The sub-agent should examine your outputs and verify each criterion is met
+3. If the sub-agent identifies valid issues, fix them
+4. Have the sub-agent review again until all valid feedback has been addressed
+5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
+```
+
+### Command-Type Hooks (Still Work)
+
+If you need automated validation, use command-type hooks that run shell scripts:
 
 ```yaml
 hooks:
   Stop:
     - hooks:
-        - type: prompt
-          prompt: |
-            ## Quality Criteria
-            1. All tests pass
-            2. Code follows style guide
-            3. Documentation updated
-
-            Review the conversation. If ALL criteria met and
-            <promise> tag present, respond: {"ok": true}
-
-            Otherwise respond: {"ok": false, "reason": "..."}
+        - type: command
+          command: ".deepwork/jobs/my_job/hooks/validate.sh"
 ```
 
 ## Comparison with Other Platforms
@@ -230,18 +263,22 @@ hooks:
 |---------|-------------|------------|
 | Command-level hooks | Yes | No |
 | Global hooks | Yes | Yes |
-| Hook types | `command`, `prompt` | `command` only |
-| Quality validation loops | Yes (Stop hooks) | No (workarounds only) |
+| Hook types | `command`, `prompt`* | `command` only |
+| Quality validation loops | Via sub-agent review** | No (workarounds only) |
 | Per-command customization | Full | None |
+
+*Prompt hooks for Stop/SubagentStop events do not currently work (see [Known Issues](#prompt-based-stop-hooks-not-working))
+**Prompt-based Stop hooks are not working; use sub-agent review pattern instead
 
 ## Implications for DeepWork
 
-Since Claude Code fully supports command-level hooks:
+Due to the prompt-based Stop hooks not working:
 
-1. **`stop_hooks` are fully supported** - Quality validation loops work as designed
-2. **Job definitions** can use `hooks.after_agent` (maps to Stop)
-3. **Platform adapter** implements all hook mappings
-4. **Command templates** generate YAML frontmatter with hook configurations
+1. **Prompt-based `stop_hooks` are NOT generated** - Templates filter out prompt hooks for Stop events
+2. **Quality validation** uses explicit sub-agent review instructions in command content
+3. **Command-type hooks still work** - Script-based hooks for Stop events are generated as expected
+4. **Job definitions** can still use `hooks.after_agent` for script hooks (maps to Stop)
+5. **Platform adapter** implements all hook mappings (but prompt Stop hooks are skipped in templates)
 
 ## Environment Variables
 
@@ -255,7 +292,7 @@ Available to hook scripts:
 
 ## Limitations
 
-1. **Prompt hooks are evaluated by the model** - May have latency
+1. **Prompt hooks for Stop/SubagentStop do not work** - See [Known Issues](#prompt-based-stop-hooks-not-working)
 2. **Timeout default is 60 seconds** - Long-running hooks may fail
 3. **Multiple hooks run in parallel** - Cannot depend on order
 4. **Transcript path is JSONL** - Requires line-by-line parsing
