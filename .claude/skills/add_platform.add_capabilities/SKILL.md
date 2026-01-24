@@ -1,39 +1,6 @@
 ---
 name: add_platform.add_capabilities
-description: "Updates job schema and adapters with any new hook events the platform supports. Use after research to extend DeepWork's hook system."
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the capability additions meet ALL criteria:
-            1. Any new hooks from the platform (for slash commands only) are added to src/deepwork/schemas/job_schema.py
-            2. All existing adapters in src/deepwork/adapters.py are updated with the new hook fields
-               (set to None/null if the platform doesn't support that hook)
-            3. Only hooks available on slash command definitions are added (not general CLI hooks)
-            4. job_schema.py remains valid Python with no syntax errors
-            5. adapters.py remains consistent - all adapters have the same hook fields
-            6. If no new hooks are needed, document why in a comment
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
-  SubagentStop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the capability additions meet ALL criteria:
-            1. Any new hooks from the platform (for slash commands only) are added to src/deepwork/schemas/job_schema.py
-            2. All existing adapters in src/deepwork/adapters.py are updated with the new hook fields
-               (set to None/null if the platform doesn't support that hook)
-            3. Only hooks available on slash command definitions are added (not general CLI hooks)
-            4. job_schema.py remains valid Python with no syntax errors
-            5. adapters.py remains consistent - all adapters have the same hook fields
-            6. If no new hooks are needed, document why in a comment
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
----
+description: "Updates job schema and adapters with any new hook events the platform supports. Use after research to extend DeepWork's hook system."user-invocable: false---
 
 # add_platform.add_capabilities
 
@@ -232,14 +199,6 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
-
-## Quality Validation
-
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
 
 ## On Completion
 

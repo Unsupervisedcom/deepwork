@@ -1,29 +1,6 @@
 ---
 name: commit.lint
-description: "Formats and lints code with ruff using a sub-agent. Use after tests pass to ensure code style compliance."
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the linting is complete:
-            1. ruff format was run successfully
-            2. ruff check was run successfully (with --fix)
-            3. No remaining lint errors
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
-  SubagentStop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the linting is complete:
-            1. ruff format was run successfully
-            2. ruff check was run successfully (with --fix)
-            3. No remaining lint errors
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
----
+description: "Formats and lints code with ruff using a sub-agent. Use after tests pass to ensure code style compliance."user-invocable: false---
 
 # commit.lint
 
@@ -149,14 +126,6 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
-
-## Quality Validation
-
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
 
 ## On Completion
 
