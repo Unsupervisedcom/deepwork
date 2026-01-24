@@ -1,49 +1,6 @@
 ---
 name: manual_tests.reset
-description: "Runs FIRST to ensure clean environment. Also called internally by other steps when they need to revert changes and clear the queue."
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
-            1. **Environment Clean**: Git changes reverted, created files removed, and rules queue cleared
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
-            all criteria appear to be met, respond with: {"ok": true}
-
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
-  SubagentStop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
-            1. **Environment Clean**: Git changes reverted, created files removed, and rules queue cleared
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
-            all criteria appear to be met, respond with: {"ok": true}
-
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
----
+description: "Runs FIRST to ensure clean environment. Also called internally by other steps when they need to revert changes and clear the queue."user-invocable: false---
 
 # manual_tests.reset
 
@@ -157,13 +114,18 @@ Use branch format: `deepwork/manual_tests-[instance]-YYYYMMDD`
 
 ## Quality Validation
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
+**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
+
+Use a sub-agent (Haiku model) to review your work against these criteria:
 
 **Criteria (all must be satisfied)**:
 1. **Environment Clean**: Git changes reverted, created files removed, and rules queue cleared
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
+**Review Process**:
+1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
+2. The sub-agent should examine your outputs and verify each criterion is met
+3. If the sub-agent identifies valid issues, fix them
+4. Have the sub-agent review again until all valid feedback has been addressed
+5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
 ## On Completion
 

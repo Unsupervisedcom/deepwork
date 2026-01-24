@@ -1,47 +1,10 @@
 ---
 name: add_platform.implement
-description: "Creates platform adapter, templates, tests with 100% coverage, and README documentation. Use after adding hook capabilities."
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: command
-          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"
-        - type: prompt
-          prompt: |
-            Verify the implementation meets ALL criteria:
-            1. Platform adapter class is added to src/deepwork/adapters.py
-            2. Templates exist in src/deepwork/templates/<platform>/ with appropriate command structure
-            3. Tests exist for all new functionality
-            4. Test coverage is 100% for new code (run: uv run pytest --cov)
-            5. All tests pass
-            6. README.md is updated with:
-               - New platform listed in supported platforms
-               - Installation instructions for the platform
-               - Any platform-specific notes
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
-  SubagentStop:
-    - hooks:
-        - type: command
-          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"
-        - type: prompt
-          prompt: |
-            Verify the implementation meets ALL criteria:
-            1. Platform adapter class is added to src/deepwork/adapters.py
-            2. Templates exist in src/deepwork/templates/<platform>/ with appropriate command structure
-            3. Tests exist for all new functionality
-            4. Test coverage is 100% for new code (run: uv run pytest --cov)
-            5. All tests pass
-            6. README.md is updated with:
-               - New platform listed in supported platforms
-               - Installation instructions for the platform
-               - Any platform-specific notes
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
----
+description: "Creates platform adapter, templates, tests with 100% coverage, and README documentation. Use after adding hook capabilities."user-invocable: falsehooks:  Stop:
+    - hooks:        - type: command
+          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"  SubagentStop:
+    - hooks:        - type: command
+          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"---
 
 # add_platform.implement
 
@@ -336,15 +299,7 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
 
-## Quality Validation
-
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
 **Validation script**: `.deepwork/jobs/add_platform/hooks/run_tests.sh` (runs automatically)
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
-
 ## On Completion
 
 1. Verify outputs are created

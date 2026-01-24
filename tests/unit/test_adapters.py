@@ -194,16 +194,18 @@ class TestClaudeAdapter:
 
         count = adapter.sync_permissions(temp_dir)
 
-        assert count == 4  # Read, Edit, Write for .deepwork/tmp/** + Bash for queue
+        assert (
+            count == 5
+        )  # Read, Edit, Write for .deepwork/** + Bash for deepwork CLI + Bash for make_new_job.sh
         settings_file = temp_dir / ".claude" / "settings.json"
         assert settings_file.exists()
         settings = json.loads(settings_file.read_text())
         assert "permissions" in settings
         assert "allow" in settings["permissions"]
-        assert "Read(./.deepwork/tmp/**)" in settings["permissions"]["allow"]
-        assert "Edit(./.deepwork/tmp/**)" in settings["permissions"]["allow"]
-        assert "Write(./.deepwork/tmp/**)" in settings["permissions"]["allow"]
-        assert "Bash(rm -rf .deepwork/tmp/rules/queue/*.json)" in settings["permissions"]["allow"]
+        assert "Read(./.deepwork/**)" in settings["permissions"]["allow"]
+        assert "Edit(./.deepwork/**)" in settings["permissions"]["allow"]
+        assert "Write(./.deepwork/**)" in settings["permissions"]["allow"]
+        assert "Bash(deepwork:*)" in settings["permissions"]["allow"]
 
     def test_sync_permissions_merges_with_existing(self, temp_dir: Path) -> None:
         """Test sync_permissions merges with existing settings."""
@@ -217,7 +219,7 @@ class TestClaudeAdapter:
 
         settings = json.loads(settings_file.read_text())
         assert "Bash(ls:*)" in settings["permissions"]["allow"]
-        assert "Read(./.deepwork/tmp/**)" in settings["permissions"]["allow"]
+        assert "Read(./.deepwork/**)" in settings["permissions"]["allow"]
 
     def test_sync_permissions_idempotent(self, temp_dir: Path) -> None:
         """Test sync_permissions is idempotent (doesn't duplicate permissions)."""
@@ -226,7 +228,9 @@ class TestClaudeAdapter:
 
         # First call adds permissions
         count1 = adapter.sync_permissions(temp_dir)
-        assert count1 == 4
+        assert (
+            count1 == 5
+        )  # Read, Edit, Write for .deepwork/** + Bash for deepwork CLI + Bash for make_new_job.sh
 
         # Second call should add nothing
         count2 = adapter.sync_permissions(temp_dir)
@@ -236,10 +240,10 @@ class TestClaudeAdapter:
         settings_file = temp_dir / ".claude" / "settings.json"
         settings = json.loads(settings_file.read_text())
         allow_list = settings["permissions"]["allow"]
-        assert allow_list.count("Read(./.deepwork/tmp/**)") == 1
-        assert allow_list.count("Edit(./.deepwork/tmp/**)") == 1
-        assert allow_list.count("Write(./.deepwork/tmp/**)") == 1
-        assert allow_list.count("Bash(rm -rf .deepwork/tmp/rules/queue/*.json)") == 1
+        assert allow_list.count("Read(./.deepwork/**)") == 1
+        assert allow_list.count("Edit(./.deepwork/**)") == 1
+        assert allow_list.count("Write(./.deepwork/**)") == 1
+        assert allow_list.count("Bash(deepwork:*)") == 1
 
     def test_add_permission_single(self, temp_dir: Path) -> None:
         """Test add_permission adds a single permission."""

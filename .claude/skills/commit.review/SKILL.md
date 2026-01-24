@@ -1,29 +1,6 @@
 ---
 name: commit.review
-description: "Reviews changed code for issues, DRY opportunities, naming clarity, and test coverage using a sub-agent. Use as the first step before testing."
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the code review is complete:
-            1. Changed files were identified
-            2. Sub-agent reviewed the code for general issues, DRY opportunities, naming clarity, and test coverage
-            3. All identified issues were addressed or documented as intentional
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
-  SubagentStop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the code review is complete:
-            1. Changed files were identified
-            2. Sub-agent reviewed the code for general issues, DRY opportunities, naming clarity, and test coverage
-            3. All identified issues were addressed or documented as intentional
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
----
+description: "Reviews changed code for issues, DRY opportunities, naming clarity, and test coverage using a sub-agent. Use as the first step before testing."user-invocable: false---
 
 # commit.review
 
@@ -178,14 +155,6 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
-
-## Quality Validation
-
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
 
 ## On Completion
 

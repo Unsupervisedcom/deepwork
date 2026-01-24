@@ -8,7 +8,7 @@ from rich.console import Console
 
 from deepwork.core.adapters import AgentAdapter
 from deepwork.core.detector import PlatformDetector
-from deepwork.utils.fs import ensure_dir
+from deepwork.utils.fs import ensure_dir, fix_permissions
 from deepwork.utils.git import is_git_repo
 from deepwork.utils.yaml_utils import load_yaml, save_yaml
 
@@ -52,6 +52,8 @@ def _inject_standard_job(job_name: str, jobs_dir: Path, project_path: Path) -> N
             shutil.rmtree(target_dir)
 
         shutil.copytree(standard_jobs_dir, target_dir)
+        # Fix permissions - source may have restrictive permissions (e.g., read-only)
+        fix_permissions(target_dir)
         console.print(
             f"  [green]✓[/green] Installed {job_name} ({target_dir.relative_to(project_path)})"
         )
@@ -63,6 +65,8 @@ def _inject_standard_job(job_name: str, jobs_dir: Path, project_path: Path) -> N
             for doc_spec_file in doc_specs_source.glob("*.md"):
                 target_doc_spec = doc_specs_target / doc_spec_file.name
                 shutil.copy(doc_spec_file, target_doc_spec)
+                # Fix permissions for copied doc spec
+                fix_permissions(target_doc_spec)
                 console.print(
                     f"  [green]✓[/green] Installed doc spec {doc_spec_file.name} ({target_doc_spec.relative_to(project_path)})"
                 )
@@ -174,6 +178,8 @@ def _create_rules_directory(project_path: Path) -> bool:
         for example_file in example_rules_dir.glob("*.md.example"):
             dest_file = rules_dir / example_file.name
             shutil.copy(example_file, dest_file)
+            # Fix permissions for copied rule template
+            fix_permissions(dest_file)
 
     # Create a README file explaining the rules system
     readme_content = """# DeepWork Rules

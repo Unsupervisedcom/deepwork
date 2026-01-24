@@ -1,31 +1,6 @@
 ---
 name: commit.test
-description: "Pulls latest code and runs tests until all pass. Use after code review passes to verify changes work correctly."
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the tests are passing:
-            1. Latest code was pulled from the branch
-            2. All tests completed successfully
-            3. No test failures or errors remain
-            4. Test output shows passing status
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
-  SubagentStop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the tests are passing:
-            1. Latest code was pulled from the branch
-            2. All tests completed successfully
-            3. No test failures or errors remain
-            4. Test output shows passing status
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
----
+description: "Pulls latest code and runs tests until all pass. Use after code review passes to verify changes work correctly."user-invocable: false---
 
 # commit.test
 
@@ -137,14 +112,6 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
-
-## Quality Validation
-
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
 
 ## On Completion
 

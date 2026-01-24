@@ -1,37 +1,6 @@
 ---
 name: add_platform.verify
-description: "Sets up platform directories and verifies deepwork install works correctly. Use after implementation to confirm integration."
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the installation meets ALL criteria:
-            1. Platform-specific directories/files are added to the deepwork repo as needed
-            2. Running `deepwork install --platform <platform>` completes without errors
-            3. Expected command files are created in the platform's command directory
-            4. Command file content matches the templates and job definitions
-            5. Established DeepWork jobs (deepwork_jobs, deepwork_rules) are installed correctly
-            6. The platform can be used alongside existing platforms without conflicts
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
-  SubagentStop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the installation meets ALL criteria:
-            1. Platform-specific directories/files are added to the deepwork repo as needed
-            2. Running `deepwork install --platform <platform>` completes without errors
-            3. Expected command files are created in the platform's command directory
-            4. Command file content matches the templates and job definitions
-            5. Established DeepWork jobs (deepwork_jobs, deepwork_rules) are installed correctly
-            6. The platform can be used alongside existing platforms without conflicts
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
----
+description: "Sets up platform directories and verifies deepwork install works correctly. Use after implementation to confirm integration."user-invocable: false---
 
 # add_platform.verify
 
@@ -205,14 +174,6 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
-
-## Quality Validation
-
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
 
 ## On Completion
 
