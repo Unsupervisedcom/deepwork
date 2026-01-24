@@ -469,6 +469,8 @@ class ClaudeAdapter(AgentAdapter):
             "Write(./.deepwork/**)",
             # All deepwork CLI commands
             "Bash(deepwork:*)",
+            # Job scripts that need to be executable
+            "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
         ]
 
         # Load settings once, add all permissions, then save once
