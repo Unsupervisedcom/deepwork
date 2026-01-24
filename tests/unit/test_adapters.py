@@ -194,7 +194,9 @@ class TestClaudeAdapter:
 
         count = adapter.sync_permissions(temp_dir)
 
-        assert count == 4  # Read, Edit, Write for .deepwork/** + Bash for deepwork CLI
+        assert (
+            count == 5
+        )  # Read, Edit, Write for .deepwork/** + Bash for deepwork CLI + Bash for make_new_job.sh
         settings_file = temp_dir / ".claude" / "settings.json"
         assert settings_file.exists()
         settings = json.loads(settings_file.read_text())
@@ -226,7 +228,9 @@ class TestClaudeAdapter:
 
         # First call adds permissions
         count1 = adapter.sync_permissions(temp_dir)
-        assert count1 == 4
+        assert (
+            count1 == 5
+        )  # Read, Edit, Write for .deepwork/** + Bash for deepwork CLI + Bash for make_new_job.sh
 
         # Second call should add nothing
         count2 = adapter.sync_permissions(temp_dir)

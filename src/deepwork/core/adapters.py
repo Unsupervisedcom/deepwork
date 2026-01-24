@@ -469,7 +469,11 @@ class ClaudeAdapter(AgentAdapter):
             "Write(./.deepwork/**)",
             # All deepwork CLI commands
             "Bash(deepwork:*)",
+            # Job scripts that need to be executable
+            "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
         ]
+        # NOTE: When modifying required_permissions, update the test assertion in
+        # tests/unit/test_adapters.py::TestClaudeAdapter::test_sync_permissions_idempotent
 
         # Load settings once, add all permissions, then save once
         settings = self._load_settings(project_path)
