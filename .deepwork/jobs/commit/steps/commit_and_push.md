@@ -24,14 +24,27 @@ Check the list of changed files against what was modified during this session, e
    - Are there any unexpected deleted files?
    - Do the line counts seem reasonable for the changes you made?
 
-   If changes match expectations, proceed to commit.
+   If changes match expectations, proceed to the next step.
 
    If there are unexpected changes:
    - Investigate why (e.g., lint auto-fixes, generated files)
    - If they're legitimate side effects of your work, include them
    - If they're unrelated or shouldn't be committed, use `git restore` to discard them
 
-3. **Stage all appropriate changes**
+3. **Update CHANGELOG.md if needed**
+
+   If your changes include new features, bug fixes, or other notable changes:
+   - Add entries to the `## [Unreleased]` section of CHANGELOG.md
+   - Use the appropriate subsection: `### Added`, `### Changed`, `### Fixed`, or `### Removed`
+   - Write concise descriptions that explain the user-facing impact
+
+   **CRITICAL: NEVER modify version numbers**
+   - Do NOT change the version in `pyproject.toml`
+   - Do NOT change version headers in CHANGELOG.md (e.g., `## [0.4.2]`)
+   - Do NOT rename the `## [Unreleased]` section
+   - Version updates are handled by the release workflow, not commits
+
+4. **Stage all appropriate changes**
    ```bash
    git add -A
    ```
@@ -67,6 +80,8 @@ Check the list of changed files against what was modified during this session, e
 
 - Changed files list was reviewed by the agent
 - Files match what was modified during this session (or unexpected changes were investigated and handled)
+- CHANGELOG.md was updated with entries in the `[Unreleased]` section (if changes warrant documentation)
+- Version numbers were NOT modified (in pyproject.toml or CHANGELOG.md version headers)
 - Commit message follows project conventions
 - Commit was created successfully
 - Changes were pushed to remote
