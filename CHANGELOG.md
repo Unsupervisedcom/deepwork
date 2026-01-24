@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+## [0.5.0] - 2026-01-24
+
+### Added
 - Installer now auto-adds permission for `make_new_job.sh` script, allowing Claude to run job creation without manual configuration
 - Manual release workflow (`create-release.yml`) that automates version releases:
   - Takes version number as input, validates format
@@ -197,7 +206,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/anthropics/deepwork/compare/0.4.2...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.5.0...HEAD
+[0.5.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.5.0
 [0.4.2]: https://github.com/anthropics/deepwork/compare/0.4.1...0.4.2
 [0.4.1]: https://github.com/anthropics/deepwork/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/anthropics/deepwork/compare/0.3.1...0.4.0
