@@ -138,7 +138,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/Block_Bash_With_Instructions.sh"
+            "command": ".claude/hooks/block_bash_with_instructions.sh"
           }
         ]
       }

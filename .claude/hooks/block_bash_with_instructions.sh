@@ -1,5 +1,5 @@
 #!/bin/bash
-# Block_Bash_With_Instructions.sh - Blocks specific bash commands and provides alternative instructions
+# block_bash_with_instructions.sh - Blocks specific bash commands and provides alternative instructions
 #
 # This hook intercepts Bash tool use calls and blocks commands that match
 # specific patterns, providing alternative instructions to the agent.
