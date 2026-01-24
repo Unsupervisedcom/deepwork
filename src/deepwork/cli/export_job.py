@@ -94,13 +94,14 @@ def _export_job(job_name: str, project_path: Path, force: bool) -> None:
         raise ExportError(
             f"Job '{job_name}' not found in project.\n"
             f"Expected location: {project_job_dir}\n"
-            f"Use '/deepwork_jobs.define' to create a new job."
+            "To create a new job, use the '/deepwork_jobs.define' skill in your AI assistant."
         )
 
     job_yml_path = project_job_dir / "job.yml"
     if not job_yml_path.exists():
         raise ExportError(
-            f"Job definition not found: {job_yml_path}\n" "Job directory exists but job.yml is missing."
+            f"Job definition not found: {job_yml_path}\n"
+            "Job directory exists but job.yml is missing."
         )
 
     # Parse the job definition
