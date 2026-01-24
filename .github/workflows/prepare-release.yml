@@ -1,4 +1,4 @@
-name: Create Release
+name: Prepare Release
 
 on:
   workflow_dispatch:
@@ -10,16 +10,15 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
-  release:
+  prepare:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # Use PAT with bypass permissions for pushing to protected branch
-          token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Validate version format
         run: |
@@ -33,8 +32,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Create release branch
+        run: |
+          VERSION="${{ inputs.version }}"
+          git checkout -b "release/${VERSION}"
+
       - name: Update CHANGELOG.md
-        id: changelog
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
@@ -98,28 +101,6 @@ jobs:
             fi
           fi
 
-          # Extract the changelog content for this version (for the release notes)
-          # Get everything between the version header and the next version header
-          RELEASE_NOTES=$(awk -v version="$VERSION" '
-            BEGIN { capture = 0; found = 0 }
-            /^## \[/ {
-              if (capture) exit
-              if ($0 ~ "\\[" version "\\]") {
-                capture = 1
-                found = 1
-                next
-              }
-            }
-            capture { print }
-          ' CHANGELOG.md)
-
-          # Save release notes to a file for the release step
-          echo "$RELEASE_NOTES" > release_notes.md
-
-          # Output for debugging
-          echo "Release notes extracted:"
-          cat release_notes.md
-
       - name: Update pyproject.toml version
         run: |
           VERSION="${{ inputs.version }}"
@@ -141,24 +122,29 @@ jobs:
       - name: Update lock file
         run: uv sync
 
-      - name: Commit changes
+      - name: Commit and push
         run: |
           VERSION="${{ inputs.version }}"
           git add CHANGELOG.md pyproject.toml uv.lock
           git commit -m "Release v${VERSION}"
-          git push origin main
+          git push -u origin "release/${VERSION}"
 
-      - name: Create and push tag
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ inputs.version }}"
-          git tag -a "$VERSION" -m "Release $VERSION"
-          git push origin "$VERSION"
+          gh pr create \
+            --title "${VERSION}" \
+            --body "## Release v${VERSION}
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ inputs.version }}
-          name: ${{ inputs.version }}
-          body_path: release_notes.md
-          draft: false
-          prerelease: false
+          This PR prepares the release of version ${VERSION}.
+
+          ### Changes
+          - Updated version in pyproject.toml
+          - Updated CHANGELOG.md
+          - Updated uv.lock
+
+          ### After Merge
+          A GitHub Release will be automatically created when this PR is merged." \
+            --label "release"
