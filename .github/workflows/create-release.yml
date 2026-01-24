@@ -41,17 +41,12 @@ jobs:
           DATE=$(date +%Y-%m-%d)
 
           # Create the new Unreleased section template
-          UNRELEASED_TEMPLATE="## [Unreleased]
-
-### Added
-
-### Changed
-
-### Fixed
-
-### Removed
-
-"
+          UNRELEASED_TEMPLATE=$(printf '%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n' \
+            '## [Unreleased]' \
+            '### Added' \
+            '### Changed' \
+            '### Fixed' \
+            '### Removed')
 
           # Read the current changelog
           CHANGELOG=$(cat CHANGELOG.md)
