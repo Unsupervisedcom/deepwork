@@ -127,10 +127,22 @@
       "Read(./.deepwork/**)",
       "Edit(./.deepwork/**)",
       "Write(./.deepwork/**)",
-      "Bash(deepwork:*)"
+      "Bash(deepwork:*)",
+      "Bash(.claude/hooks/commit_job_git_commit.sh:*)"
     ]
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/block_bash_with_instructions.sh"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "",
