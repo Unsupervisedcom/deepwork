@@ -10,7 +10,31 @@ from deepwork.cli.schedule import (
     _create_launchd_plist,
     _create_systemd_service,
     _detect_system,
+    _validate_task_name,
 )
+
+
+class TestValidateTaskName:
+    """Tests for task name validation."""
+
+    def test_valid_task_names(self) -> None:
+        """Test that valid task names pass validation."""
+        valid_names = ["test-task", "task_name", "task123", "my-task-123_test"]
+        for name in valid_names:
+            _validate_task_name(name)  # Should not raise
+
+    def test_invalid_task_names(self) -> None:
+        """Test that invalid task names raise errors."""
+        invalid_names = [
+            "task name",  # space
+            "task@name",  # special char
+            "task/name",  # slash
+            "task.name",  # dot
+            "task:name",  # colon
+        ]
+        for name in invalid_names:
+            with pytest.raises(ScheduleError, match="Invalid task name"):
+                _validate_task_name(name)
 
 
 class TestDetectSystem:
@@ -62,7 +86,7 @@ class TestCreateSystemdService:
         # Check service content
         assert "Description=DeepWork task: test-task" in service_content
         assert f"WorkingDirectory={temp_dir}" in service_content
-        assert f"ExecStart={command}" in service_content
+        assert "ExecStart=/bin/sh -c" in service_content
         assert "Type=oneshot" in service_content
 
         # Check timer content
@@ -78,6 +102,11 @@ class TestCreateSystemdService:
                 "test-task", "echo test", temp_dir, interval
             )
             assert f"OnCalendar={interval}" in timer_content
+
+    def test_create_systemd_service_invalid_task_name(self, temp_dir: Path) -> None:
+        """Test that invalid task name raises error."""
+        with pytest.raises(ScheduleError, match="Invalid task name"):
+            _create_systemd_service("test task", "echo test", temp_dir, "daily")
 
 
 class TestCreateLaunchdPlist:
@@ -115,6 +144,31 @@ class TestCreateLaunchdPlist:
         assert "<string>origin</string>" in plist_content
         assert "<string>main</string>" in plist_content
 
+    def test_create_launchd_plist_with_quoted_arguments(self, temp_dir: Path) -> None:
+        """Test creating launchd plist with quoted arguments."""
+        task_name = "test-task"
+        command = 'git commit -m "My commit message"'
+        interval = 3600
+
+        plist_content = _create_launchd_plist(task_name, command, temp_dir, interval)
+
+        # Check that quoted argument is preserved as single argument
+        assert "<string>git</string>" in plist_content
+        assert "<string>commit</string>" in plist_content
+        assert "<string>-m</string>" in plist_content
+        assert "<string>My commit message</string>" in plist_content
+
+    def test_create_launchd_plist_xml_escaping(self, temp_dir: Path) -> None:
+        """Test that XML special characters are properly escaped."""
+        task_name = "test-task"
+        command = 'echo "test <tag> & more"'
+        interval = 3600
+
+        plist_content = _create_launchd_plist(task_name, command, temp_dir, interval)
+
+        # Check that XML characters are escaped
+        assert "&lt;tag&gt; &amp; more" in plist_content
+
     def test_create_launchd_plist_logs_path(self, temp_dir: Path) -> None:
         """Test that launchd plist includes log paths."""
         plist_content = _create_launchd_plist(
@@ -130,6 +184,11 @@ class TestCreateLaunchdPlist:
         """Test that empty command raises ValueError."""
         with pytest.raises(ValueError, match="Command cannot be empty"):
             _create_launchd_plist("test-task", "", temp_dir, 3600)
+
+    def test_create_launchd_plist_invalid_task_name(self, temp_dir: Path) -> None:
+        """Test that invalid task name raises error."""
+        with pytest.raises(ScheduleError, match="Invalid task name"):
+            _create_launchd_plist("test task", "echo test", temp_dir, 3600)
 
 
 class TestScheduleAdd:
@@ -198,6 +257,26 @@ class TestScheduleAdd:
 
         with pytest.raises(ScheduleError, match="Not a Git repository"):
             _add_schedule("test-task", "deepwork sync", "daily", temp_dir)
+
+    @patch("deepwork.cli.schedule._detect_system")
+    @patch("deepwork.cli.schedule.is_git_repo")
+    def test_add_schedule_invalid_interval(
+        self,
+        mock_is_git: Mock,
+        mock_detect: Mock,
+        temp_dir: Path,
+    ) -> None:
+        """Test adding schedule with invalid interval on launchd."""
+        from deepwork.cli.schedule import _add_schedule
+
+        mock_is_git.return_value = True
+        mock_detect.return_value = "launchd"
+
+        # Create .deepwork directory
+        (temp_dir / ".deepwork").mkdir()
+
+        with pytest.raises(ScheduleError, match="Invalid interval"):
+            _add_schedule("test-task", "deepwork sync", "invalid", temp_dir)
 
     @patch("deepwork.cli.schedule._detect_system")
     @patch("deepwork.cli.schedule.is_git_repo")

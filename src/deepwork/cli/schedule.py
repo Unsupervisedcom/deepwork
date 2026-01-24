@@ -1,6 +1,9 @@
 """Schedule command for DeepWork CLI."""
 
+import html
 import platform
+import re
+import shlex
 import shutil
 import subprocess
 from pathlib import Path
@@ -17,6 +20,23 @@ class ScheduleError(Exception):
     """Exception raised for scheduling errors."""
 
     pass
+
+
+def _validate_task_name(task_name: str) -> None:
+    """
+    Validate that task name contains only safe characters.
+
+    Args:
+        task_name: Name to validate
+
+    Raises:
+        ScheduleError: If task name contains unsafe characters
+    """
+    if not re.match(r'^[a-zA-Z0-9_-]+$', task_name):
+        raise ScheduleError(
+            f"Invalid task name '{task_name}'. "
+            "Task names must contain only alphanumeric characters, hyphens, and underscores."
+        )
 
 
 def _detect_system() -> str:
@@ -46,15 +66,19 @@ def _create_systemd_service(
     Create systemd service and timer content.
 
     Args:
-        task_name: Name of the scheduled task
-        command: Command to execute
+        task_name: Name of the scheduled task (must be validated)
+        command: Command to execute (will be shell-escaped)
         project_path: Path to the project directory
         interval: Systemd timer interval (e.g., 'daily', 'weekly', 'hourly')
 
     Returns:
         Tuple of (service_content, timer_content)
     """
+    _validate_task_name(task_name)
     service_name = f"deepwork-{task_name}"
+
+    # Use sh -c to properly handle complex commands
+    safe_command = shlex.quote(command)
 
     service_content = f"""[Unit]
 Description=DeepWork task: {task_name}
@@ -63,7 +87,7 @@ After=network.target
 [Service]
 Type=oneshot
 WorkingDirectory={project_path}
-ExecStart={command}
+ExecStart=/bin/sh -c {safe_command}
 StandardOutput=journal
 StandardError=journal
 
@@ -93,24 +117,29 @@ def _create_launchd_plist(
     Create launchd plist content.
 
     Args:
-        task_name: Name of the scheduled task
-        command: Command to execute (will be split into arguments)
+        task_name: Name of the scheduled task (must be validated)
+        command: Command to execute (will be parsed and escaped)
         project_path: Path to the project directory
         interval: Interval in seconds
 
     Returns:
         Plist XML content
     """
+    _validate_task_name(task_name)
     label = f"com.deepwork.{task_name}"
 
-    # Split command into program and arguments
-    command_parts = command.split()
+    # Parse command properly using shlex to handle quoted arguments
+    try:
+        command_parts = shlex.split(command)
+    except ValueError as e:
+        raise ScheduleError(f"Invalid command syntax: {e}") from e
+
     if not command_parts:
         raise ValueError("Command cannot be empty")
-    program = command_parts[0]
-    args = command_parts[1:] if len(command_parts) > 1 else []
 
-    args_xml = "\n        ".join(f"<string>{arg}</string>" for arg in [program] + args)
+    # Escape each argument for XML
+    escaped_args = [html.escape(arg) for arg in command_parts]
+    args_xml = "\n        ".join(f"<string>{arg}</string>" for arg in escaped_args)
 
     plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -403,14 +432,20 @@ def _add_schedule(task_name: str, command: str, interval: str, project_path: Pat
         # Convert interval to seconds for launchd
         try:
             interval_seconds = int(interval)
-        except ValueError:
+        except ValueError as e:
             # Map common intervals to seconds
             interval_map = {
                 "hourly": 3600,
                 "daily": 86400,
                 "weekly": 604800,
             }
-            interval_seconds = interval_map.get(interval.lower(), 86400)
+            if interval.lower() not in interval_map:
+                raise ScheduleError(
+                    f"Invalid interval '{interval}'. "
+                    f"Valid options are: {', '.join(interval_map.keys())}, "
+                    "or a number of seconds."
+                ) from e
+            interval_seconds = interval_map[interval.lower()]
 
         console.print("[yellow]→[/yellow] Installing launchd agent...")
         _install_launchd_agent(task_name, command, project_path, interval_seconds)
