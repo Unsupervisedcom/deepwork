@@ -766,7 +766,9 @@ class TestGeneratorTemplateOutput:
 
         # Should NOT generate Stop/SubagentStop hooks (prompt hooks disabled)
         assert "Stop:" not in content, "Prompt-based Stop hooks should not be generated"
-        assert "SubagentStop:" not in content, "Prompt-based SubagentStop hooks should not be generated"
+        assert "SubagentStop:" not in content, (
+            "Prompt-based SubagentStop hooks should not be generated"
+        )
 
         # Should generate sub-agent review instructions in content
         assert "## Quality Validation" in content, "Quality Validation section should be generated"
@@ -794,10 +796,14 @@ class TestGeneratorTemplateOutput:
 
         # Should NOT generate Stop/SubagentStop hooks for prompt-type hooks
         assert "Stop:" not in content, "Prompt-based Stop hooks should not be generated"
-        assert "SubagentStop:" not in content, "Prompt-based SubagentStop hooks should not be generated"
+        assert "SubagentStop:" not in content, (
+            "Prompt-based SubagentStop hooks should not be generated"
+        )
 
         # The prompt content should NOT appear in the hooks section
-        assert "Custom validation prompt" not in content, "Prompt content should not be in generated skill"
+        assert "Custom validation prompt" not in content, (
+            "Prompt content should not be in generated skill"
+        )
 
     @pytest.fixture
     def job_with_script_hooks(self, tmp_path: Path) -> JobDefinition:
