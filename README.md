@@ -109,6 +109,20 @@ Use the refine skill to update existing jobs:
 /deepwork_jobs.refine
 ```
 
+### 4. Share Jobs Globally
+
+Export jobs to your global Claude settings to use them across all projects:
+
+```bash
+# Export a job to ~/.claude/ (global settings)
+deepwork export-job my_workflow
+
+# Use the --force flag to overwrite without confirmation
+deepwork export-job my_workflow --force
+```
+
+Once exported, the job is available in all your Claude projects without needing to install it per-project.
+
 ## Example: Competitive Research Workflow
 
 Here's a sample 4-step workflow for competitive analysis:
