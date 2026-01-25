@@ -18,20 +18,19 @@ DeepWork is an open-source plugin for Claude Code (and other CLI agents). It:
 - makes it easy for you to define them 
 - learns and updates automatically
 
----
+## Example
 
-## What You Get
+You can make a DeepWork job that uses Claude Code to automatically run a deep competitive research workflow. To do this you:
+- Run `/deepwork_jobs` in Claude Code and select `define`
+- Explain your process _e.g. "Go look at my company's website and social channels to capture any new developments, look at our existing list of competitors, do broad web searches to identify any new competitiors, and then do deep research on each competitor and produce a comprehensive set of md reports including a summary report for me._
 
-This skill took less than 30 minutes to build and uses a browser to deeply explore our product, documents the findings, and produces user-facing documentation about each part of the product. It runs on its own, produces thousands of words of analysis that is turned into user-friendly analysis. It runs for me weekly to capture any updates or changes.
+Deepwork will ask you questions to improve the plan and make a hardened automation workflow. This usually takes ~10 mintues. 
 
-**Example: Competitive research in 45 minutes**
+When this is done, it will create a .yml file that details the plan and then will use templates to document how Claude should execute each individual step in the workflow. This usually takes 2-5 minutes.
 
-```
-/competitive_research
-```
+After that, it will create a new skill for you in Claude, something like `/competitive_research` that you can run at any time (or automate). 
 
-Output:
-
+Running that `/competitive_research` command will get you output that looks something like this:
 ```
 deepwork-output/competitive_research/
 ├── competitors.md           # Who they are, what they do
@@ -40,7 +39,9 @@ deepwork-output/competitive_research/
 └── strategic_overview.md    # Your positioning recommendations
 ```
 
-Build the skill once. Run it whenever you need it.
+You only have to build a skill once. Then: run it whenever you need it.
+
+_Note: all of these skills are compostable. You can call skills inside of other jobs. As an example, you could create a `make_comparison_document` skill and call it at the end of the `/competitive_research` skill — automating the process of going from research to having final breifings and materials on competitiors for your sales team._
 
 ---
 
@@ -50,12 +51,17 @@ Build the skill once. Run it whenever you need it.
 
 | You | What You'd Automate |
 |-----|---------------------|
-| **Solo founder** | Competitive research, meeting prep, investor updates |
-| **Indie hacker** | Daily briefs, SEO analysis, git summaries |
-| **PM / Ops** | Tutorial writing, quarterly audits, process docs |
-| **Power user** | Multi-agent orchestration, overnight coding runs |
+| **Founders** | Competitive research, automatically discover bugs/issues and open tickets, reports or investor updates pulling from multiple sources |
+| **Ops** | Daily briefs, SEO analysis, git summaries |
+| **Product Managers** | Tutorial writing, QA reports, simulated user testing, updating process docs or sales materials |
+| **Engineers** | Automate standup summary, git summaries, reports |
+| **Data/Analytics** | Pull data from multiple sources, ETL, create custom reports and dashboards |
 
-We call it **vibe automation**: describe what you want, let it run, iterate on what works.
+One user used DeepWork to automatically research email performance across hundreds of millions of marketing emails. It accessed data from a data warehouse, came up with reserach questions, queried to answer those questions, and then produced a several page, comprehensive report. The process ran autonomously for ~90 minutes and produced a report better than internal dashboards that had been refined for months.
+
+DeepWork is a free, open-source tool — if you're already paying for a Claude Max subscription, each of these automations costs you nothing additional.
+
+Similar to how vibe coding makes easier for anyone to produce software, this is **vibe automation**: describe what you want, let it run, and then iterate on what works.
 
 ---
 
@@ -74,58 +80,54 @@ Then in any project folder:
 deepwork install
 ```
 
-**After install, exit Claude and restart.** Then verify you see these commands:
-- `/deepwork`
-- `/deepwork_jobs.define`
-- `/deepwork_jobs.implement`
+**After install, load Claude.** Then verify you see this command: `/deepwork_jobs`
 
 ### 2. Define Your First Workflow
 
-Start simple—something you do manually in 15-30 minutes.
+Start simple—something you do manually in 15-30 minutes. Here's an example:
 
 ```
-/deepwork_jobs.define "write a tutorial for how to [your process]"
+/deepwork_jobs.define "write a tutorial for how to use a new feature we just launched"
 ```
 
-DeepWork asks questions, then writes the steps. You're creating a **reusable skill**—this setup is one-time.
+DeepWork asks you questions (this usually takes about 10 minutes) then writes the steps. You're creating a **reusable skill** — after you do this process you can run that skill any time you want without repeating this process.
 
 ### 3. Run It
 
-```
-/tutorial_writer.discover
-/tutorial_writer.draft
-/tutorial_writer.polish
-```
+Once the skill is created, type the name of your job (e.g. `/tutorial`) in Claude and you'll see the skill show up in your suggestions (e.g. `/tutorial_writer`).
 
-Each step produces an output. Quality checks happen automatically.
+Hit enter to run the skill. Claude will follow the workflow step by step. 
 
----
+Each step produces output that is quality checked before the next step starts. Quality checks happen automatically. 
 
-## What People Are Building
-
-| Workflow | What It Does |
-|----------|--------------|
-| **Email triage** | Scan inbox, categorize, archive—following YOUR rules |
-| **Competitive research** | Track competitors weekly, generate diff reports |
-| **Tutorial writer** | Turn your expertise into docs |
-| **SaaS user audit** | Quarterly audit of who has access to what |
-| **Meeting prep** | Research attendees before calls |
+You can leave the skill running (it may intermittently ask you to approve certain actions if you have your Claude Code configured to do that).
 
 ---
 
-## How It Works
+## Some Examples of What Other People Are Building with DeepWork
+
+| Workflow | What It Does | Why it matters|
+|----------|--------------|--------------|
+| **Email triage** | Scan inbox, categorize, archive, and draft replies | Save time processing email |
+| **Competitive research** | Track competitors weekly, generate diff reports | Fast feedback on how your competition is changing |
+| **Tutorial writer** | Turn your expertise into docs | Rapidly build docs, guides, etc. |
+| **SaaS user audit** | Quarterly audit of who has access to various services | Save money on forgotten SaaS licenses |
+
+---
+
+## Why It Works Well
 
 **1. Strict workflows** — Claude follows step-by-step instructions with quality checks. No more going off-script.
 
-**2. Easy to define and refine** — Describe what you want in plain English. DeepWork writes the steps.
+**2. Easy to define** — Describe what you want in plain English. DeepWork knows how to ask you the right questions to refine your plan.
 
 ```
-/deepwork_jobs.define "weekly competitive research on my top 5 competitors"
+/deepwork_jobs "weekly competitive research on my top 5 competitors"
 ```
 
-**3. Learns automatically** — Run `/deepwork_jobs.learn` after any job to capture what worked and improve for next time.
+**3. Learns automatically** — Run `/deepwork_jobs.learn` (or ask claude to `run the deepwork learn job`) after any job to automatically capture what worked and improve for next time.
 
-All work happens on Git branches. Every change is tracked.
+**4. All work happens on Git branches** — Every change can be version-controlled and tracked. You can roll-back to prior versions of the skill or keep skills in-sync and up-to-date across your team.
 
 ---
 
@@ -144,91 +146,39 @@ All work happens on Git branches. Every change is tracked.
 
 ## Browser Automation
 
-For workflows that need to interact with websites, DeepWork works with [Claude in Chrome](https://www.anthropic.com/claude-in-chrome).
+For workflows that need to interact with websites, you can use any browser automation tool that works in Claude Code. We generally recommend [Claude in Chrome](https://www.anthropic.com/claude-in-chrome).
 
-**⚠️ Safety note:** Browser automation can modify your system. We recommend using a dedicated Chrome profile for automation. See [Browser Automation Safety](docs/browser-automation-safety.md).
+**⚠️ Safety note:** Browser automation is still something models can be hit-or-miss on. We recommend using a dedicated Chrome profile for automation.
 
 ---
 
 ## Troubleshooting
 
+Here are some known issues that affect some early users — we're working on improving normal performance on these, but here are some known workarounds.
+
 ### Commands don't appear after install
 
-Exit Claude completely and restart. Commands load on startup.
-
-### Python version errors
-
-DeepWork requires Python 3.11+. Check your version:
-
-```bash
-python --version
-```
+Exit Claude completely and restart.
 
 ### Stop hooks firing unexpectedly
 
-This is a known issue we're fixing. For now, if stop hooks fire when they shouldn't, exit and restart Claude.
+Occasionally, especially after updating a job or running the `deepwork_jobs learn` process after completing a task, Claude will get confused about which workflow it's running checks for. For now, if stop hooks fire when they shouldn't, you can either:
+- Ask claude `do we need to address any of these stop hooks or can we ignore them for now?` 
+- Ignore the stop hooks and keep going until the workflow steps are complete
+- Run the `/clear` command to start a new context window (you'll have to re-run the job after this)
 
 ### Claude "just does the task" instead of using DeepWork
 
-If Claude bypasses the workflow, explicitly run the step command:
-
+If Claude attempts to bypass the workflow and do the task on it's own, tell it explicitly to use the skill. You can also manually run the step command:
 ```
-/your_job.step_name
-```
-
-Don't say "just do it" or "can you do X"—run the slash command directly.
-
----
-
-## Documentation
-
-- **[Architecture](doc/architecture.md)** — How DeepWork works under the hood
-- **[Doc Specs](doc/doc-specs.md)** — Quality criteria for document outputs
-- **[Contributing](CONTRIBUTING.md)** — Development setup and guidelines
-
----
-
-## Example Job Definition
-
-Here's what a job looks like under the hood:
-
-```yaml
-name: tutorial_writer
-version: "1.0.0"
-summary: "Create tutorials from your domain expertise"
-
-steps:
-  - id: discover
-    name: "Discover & Outline"
-    description: "Interview user, create outline"
-    inputs:
-      - name: topic
-        description: "What to document"
-    outputs:
-      - deepwork-output/tutorial_writer/outline.md
-
-  - id: draft
-    name: "Write Tutorial"
-    inputs:
-      - file: deepwork-output/tutorial_writer/outline.md
-        from_step: discover
-    outputs:
-      - deepwork-output/tutorial_writer/tutorial.md
-    dependencies:
-      - discover
-
-  - id: polish
-    name: "Polish & Export"
-    inputs:
-      - file: deepwork-output/tutorial_writer/tutorial.md
-        from_step: draft
-    outputs:
-      - deepwork-output/tutorial_writer/final/[topic].md
-    dependencies:
-      - draft
+/your_job
 ```
 
-You don't need to write this by hand—`/deepwork_jobs.define` creates it from your description.
+Tip: Don't say things like "can you do X" while in **defining** a new `/deepwork_jobs` — Claude has a bias towards action and workarounds and may abandon the skill creation workflow and attempt to do your task as a one off. Instead, say something like "create a workflow that..."
+
+### If you can't solve your issues using the above and need help
+
+Send [@tylerwillis](https://x.com/tylerwillis) a message on X.
 
 ---
 
@@ -267,11 +217,10 @@ uv tool install deepwork
 pip install deepwork
 ```
 
-Then in your project:
+Then in your project (in terminal, not in Claude Code):
 
 ```bash
-deepwork install --platform claude
-# or: deepwork install --platform gemini
+deepwork install
 ```
 
 </details>
