@@ -21,11 +21,11 @@ When creating or modifying jobs in this repository, you MUST understand which ty
 - NEVER edit the installed copies in `.deepwork/jobs/` directly
 - After editing, run `deepwork install --platform claude` to sync
 
-### 2. Library Jobs (`jobs/library/`)
+### 2. Library Jobs (`library/jobs/`)
 
 **What they are**: Example or reusable jobs that any repository is welcome to use, but are NOT auto-installed. Users must explicitly copy or import these into their projects.
 
-**Location**: `jobs/library/[job_name]/`
+**Location**: `library/jobs/[job_name]/`
 
 **Examples** (potential):
 - Competitive research workflows
@@ -34,7 +34,7 @@ When creating or modifying jobs in this repository, you MUST understand which ty
 - Release management
 
 **Editing rules**:
-- Edit directly in `jobs/library/[job_name]/`
+- Edit directly in `library/jobs/[job_name]/`
 - These are templates/examples for users to adopt
 - Should be well-documented and self-contained
 
@@ -77,7 +77,7 @@ deepwork/
 ├── src/deepwork/standard_jobs/    # Standard jobs (source of truth)
 │   ├── deepwork_jobs/
 │   └── deepwork_rules/
-├── jobs/library/                   # Library/example jobs
+├── library/jobs/                   # Library/example jobs
 │   └── [example_job]/
 └── .deepwork/jobs/                 # Installed standard jobs + bespoke jobs
     ├── deepwork_jobs/              # ← Installed copy, NOT source of truth

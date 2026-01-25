@@ -47,7 +47,7 @@ deepwork/
 │   │   └── deepwork_rules/
 │   ├── schemas/          # Job definition schemas
 │   └── utils/            # Utilities (fs, git, yaml, validation)
-├── jobs/library/         # Reusable example jobs (not auto-installed)
+├── library/jobs/         # Reusable example jobs (not auto-installed)
 ├── tests/                # Test suite
 ├── doc/                  # Documentation
 └── doc/architecture.md   # Detailed architecture document
@@ -191,7 +191,7 @@ my-project/
 | Type | Location | Purpose |
 |------|----------|---------|
 | **Standard Jobs** | `src/deepwork/standard_jobs/` | Framework core, auto-installed to users |
-| **Library Jobs** | `jobs/library/` | Reusable examples users can adopt |
+| **Library Jobs** | `library/jobs/` | Reusable examples users can adopt |
 | **Bespoke Jobs** | `.deepwork/jobs/` (if not in standard_jobs) | This repo's internal workflows only |
 
 ### Editing Standard Jobs
@@ -218,7 +218,7 @@ Instead, follow this workflow:
 ### How to Identify Job Types
 
 - **Standard jobs**: Exist in `src/deepwork/standard_jobs/` (currently: `deepwork_jobs`, `deepwork_rules`)
-- **Library jobs**: Exist in `jobs/library/`
+- **Library jobs**: Exist in `library/jobs/`
 - **Bespoke jobs**: Exist ONLY in `.deepwork/jobs/` with no corresponding standard_jobs entry
 
 **When creating a new job, always clarify which type it should be.** If uncertain, ask the user.

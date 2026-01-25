@@ -15,7 +15,7 @@ The job library provides:
 Each job in this library follows the same structure as the `.deepwork/jobs` subfolders in your local project:
 
 ```
-jobs/library/
+library/jobs/
 ├── [job-name]/
 │   ├── job.yml              # Job definition (name, steps, dependencies)
 │   └── steps/
