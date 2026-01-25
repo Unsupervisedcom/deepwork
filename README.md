@@ -10,11 +10,18 @@ brew tap unsupervisedcom/deepwork && brew install deepwork
 Then in your project folder:
 ```bash
 deepwork install
+claude
 ```
+
+Now inside claude, define your first job using the `/deepwork_jobs` command. Ex.
+```
+/deepwork_jobs Make a job for doing competitive research. It will take the URL of the competitor as an input, and should make report including a SWOT analysis for that competitor.
+```
+
 See below for additional installation options
 
 DeepWork is an open-source plugin for Claude Code (and other CLI agents). It:
-- teaches Claude to follow strict workflows
+- teaches Claude to follow strict workflows consistently
 - makes it easy for you to define them 
 - learns and updates automatically
 
@@ -87,7 +94,7 @@ deepwork install
 Start simple—something you do manually in 15-30 minutes. Here's an example:
 
 ```
-/deepwork_jobs.define "write a tutorial for how to use a new feature we just launched"
+/deepwork_jobs write a tutorial for how to use a new feature we just launched
 ```
 
 DeepWork asks you questions (this usually takes about 10 minutes) then writes the steps. You're creating a **reusable skill** — after you do this process you can run that skill any time you want without repeating this process.
@@ -120,14 +127,15 @@ You can leave the skill running (it may intermittently ask you to approve certai
 **1. Strict workflows** — Claude follows step-by-step instructions with quality checks. No more going off-script.
 
 **2. Easy to define** — Describe what you want in plain English. DeepWork knows how to ask you the right questions to refine your plan.
-
 ```
 /deepwork_jobs
 ```
 
 **3. Learns automatically** — Run `/deepwork_jobs.learn` (or ask claude to `run the deepwork learn job`) after any job to automatically capture what worked and improve for next time.
 
-**4. All work happens on Git branches** — Every change can be version-controlled and tracked. You can roll-back to prior versions of the skill or keep skills in-sync and up-to-date across your team.
+**4. Rules** - The system adds enforced rules that are truly evaluated for everything it does, not just "hints" that Claude does by default
+
+**5. All work happens on Git branches** — Every change can be version-controlled and tracked. You can roll-back to prior versions of the skill or keep skills in-sync and up-to-date across your team.
 
 ---
 
@@ -136,9 +144,10 @@ You can leave the skill running (it may intermittently ask you to approve certai
 | Platform | Status | Notes |
 |----------|--------|-------|
 | **Claude Code** | Full Support | Recommended. Quality hooks, rules, best DX. |
-| **Gemini CLI** | Full Support | TOML format, global hooks only |
+| **Gemini CLI** | Partial Support | TOML format, global hooks only |
 | OpenCode | Planned | |
 | GitHub Copilot CLI | Planned | |
+| Others | Planned | We are nailing Claude and Gemini first, then adding others according ot demand |
 
 **Tip:** Use the terminal (Claude Code CLI), not the VS Code extension. The terminal has full feature support.
 
@@ -156,7 +165,7 @@ For workflows that need to interact with websites, you can use any browser autom
 
 Here are some known issues that affect some early users — we're working on improving normal performance on these, but here are some known workarounds.
 
-### Commands don't appear after install
+### Slash Commands don't appear after install
 
 Exit Claude completely and restart.
 
@@ -209,17 +218,17 @@ your-project/
 Homebrew is recommended, but you can also use:
 
 ```bash
-# pipx (isolated environment)
-pipx install deepwork
-
-# uv
+# uv (Recommended)
 uv tool install deepwork
+
+# pipx
+pipx install deepwork
 
 # pip
 pip install deepwork
 ```
 
-Then in your project (in terminal, not in Claude Code):
+Then in your project folder (in terminal, not in Claude Code):
 
 ```bash
 deepwork install
