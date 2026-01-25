@@ -105,13 +105,13 @@ Once the skill is created, type the name of your job (e.g. `/tutorial`) in Claud
 
 Hit enter to run the skill. Claude will follow the workflow step by step. 
 
-Each step produces output that is quality checked before the next step starts. Quality checks happen automatically. 
-
-You can leave the skill running (it may intermittently ask you to approve certain actions if you have your Claude Code configured to do that).
-
----
-
 ## Some Examples of What Other People Are Building with DeepWork
+=======
+To start the process, just run:
+
+```
+/deepwork_jobs
+```
 
 | Workflow | What It Does | Why it matters|
 |----------|--------------|--------------|

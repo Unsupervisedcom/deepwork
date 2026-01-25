@@ -1,14 +1,77 @@
 #!/bin/bash
-# check_version.sh - SessionStart hook to check Claude Code version
+# check_version.sh - SessionStart hook to check Claude Code version and deepwork installation
 #
-# Warns users if their Claude Code version is below the minimum required
-# version, as older versions may have bugs that affect DeepWork functionality.
+# This hook performs two critical checks:
+# 1. Verifies that the 'deepwork' command is installed and directly invokable
+# 2. Warns users if their Claude Code version is below the minimum required
 #
-# Uses hookSpecificOutput.additionalContext to pass the warning to Claude's
-# context so it can inform the user appropriately.
+# The deepwork check is blocking (exit 2) because hooks cannot function without it.
+# The version check is informational only (exit 0) to avoid blocking sessions.
+#
+# Uses hookSpecificOutput.additionalContext to pass messages to Claude's context.
 
 # ============================================================================
-# RE-ENTRY GUARD
+# DEEPWORK INSTALLATION CHECK (BLOCKING)
+# ============================================================================
+# This check runs on EVERY hook invocation (no re-entry guard) because if
+# deepwork is not installed, nothing else will work.
+
+check_deepwork_installed() {
+    # Run 'deepwork rules clear_queue' instead of just '--version' for double utility:
+    # 1. Verifies that the 'deepwork' command is installed and directly invokable
+    # 2. Clears any stale rules from the queue, ensuring a clean slate for the session
+    if ! deepwork rules clear_queue >/dev/null 2>&1; then
+        return 1
+    fi
+    return 0
+}
+
+print_deepwork_error() {
+    cat >&2 << 'EOF'
+
+================================================================================
+                    *** DEEPWORK NOT INSTALLED ***
+================================================================================
+
+  ERROR: The 'deepwork' command is not available or cannot be directly invoked.
+
+  DeepWork must be installed such that running 'deepwork' directly works.
+  For example, running 'deepwork rules clear_queue' should succeed.
+
+  IMPORTANT: Do NOT use 'uv run deepwork' or similar wrappers.
+  The command must be directly invokable as just 'deepwork'.
+
+  ------------------------------------------------------------------------
+  |                                                                      |
+  |   Please fix your deepwork installation before proceeding.           |
+  |                                                                      |
+  |   Installation options:                                              |
+  |     - pipx install deepwork                                          |
+  |     - pip install --user deepwork (ensure ~/.local/bin is in PATH)   |
+  |     - nix develop (if using the nix flake)                           |
+  |                                                                      |
+  ------------------------------------------------------------------------
+
+================================================================================
+
+EOF
+}
+
+output_deepwork_error_json() {
+    cat << 'EOF'
+{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"DEEPWORK INSTALLATION ERROR: The 'deepwork' command is not installed or cannot be directly invoked. DeepWork must be installed such that it can be directly invoked (e.g., 'deepwork', NOT 'uv run deepwork'). Please fix your deepwork installation before proceeding with anything else. DO NOT CONTINUE until this is resolved."},"error":"deepwork command not found - please install deepwork so it can be directly invoked"}
+EOF
+}
+
+# Check deepwork installation FIRST (before any other checks)
+if ! check_deepwork_installed; then
+    print_deepwork_error
+    output_deepwork_error_json
+    exit 2  # Blocking error - prevent session from continuing
+fi
+
+# ============================================================================
+# RE-ENTRY GUARD (for version check only)
 # ============================================================================
 # SessionStart hooks can be triggered multiple times in a session (on resume,
 # clear, etc.). We only want to show the version warning once per session to
