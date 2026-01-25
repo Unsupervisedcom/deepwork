@@ -24,7 +24,7 @@ You can make a DeepWork job that uses Claude Code to automatically run a deep co
 - Run `/deepwork_jobs` in Claude Code and select `define`
 - Explain your process _e.g. "Go look at my company's website and social channels to capture any new developments, look at our existing list of competitors, do broad web searches to identify any new competitiors, and then do deep research on each competitor and produce a comprehensive set of md reports including a summary report for me._
 
-Deepwork will ask you questions to improve the plan and make a hardened automation workflow. This usually takes ~10 mintues. 
+Deepwork will ask you questions to improve the plan and make a hardened automation workflow. This usually takes ~10 minutes. 
 
 When this is done, it will create a .yml file that details the plan and then will use templates to document how Claude should execute each individual step in the workflow. This usually takes 2-5 minutes.
 
@@ -41,7 +41,7 @@ deepwork-output/competitive_research/
 
 You only have to build a skill once. Then: run it whenever you need it.
 
-_Note: all of these skills are compostable. You can call skills inside of other jobs. As an example, you could create a `make_comparison_document` skill and call it at the end of the `/competitive_research` skill — automating the process of going from research to having final breifings and materials on competitiors for your sales team._
+_Note: all of these skills are composable. You can call skills inside of other jobs. As an example, you could create a `make_comparison_document` skill and call it at the end of the `/competitive_research` skill — automating the process of going from research to having final breifings and materials on competitiors for your sales team._
 
 ---
 
@@ -57,7 +57,7 @@ _Note: all of these skills are compostable. You can call skills inside of other 
 | **Engineers** | Automate standup summary, git summaries, reports |
 | **Data/Analytics** | Pull data from multiple sources, ETL, create custom reports and dashboards |
 
-One user used DeepWork to automatically research email performance across hundreds of millions of marketing emails. It accessed data from a data warehouse, came up with reserach questions, queried to answer those questions, and then produced a several page, comprehensive report. The process ran autonomously for ~90 minutes and produced a report better than internal dashboards that had been refined for months.
+One user used DeepWork to automatically research email performance across hundreds of millions of marketing emails. It accessed data from a data warehouse, came up with research questions, queried to answer those questions, and then produced a several page, comprehensive report. The process ran autonomously for ~90 minutes and produced a report better than internal dashboards that had been refined for months.
 
 DeepWork is a free, open-source tool — if you're already paying for a Claude Max subscription, each of these automations costs you nothing additional.
 
@@ -122,7 +122,7 @@ You can leave the skill running (it may intermittently ask you to approve certai
 **2. Easy to define** — Describe what you want in plain English. DeepWork knows how to ask you the right questions to refine your plan.
 
 ```
-/deepwork_jobs "weekly competitive research on my top 5 competitors"
+/deepwork_jobs
 ```
 
 **3. Learns automatically** — Run `/deepwork_jobs.learn` (or ask claude to `run the deepwork learn job`) after any job to automatically capture what worked and improve for next time.
@@ -195,7 +195,7 @@ your-project/
 │           ├── job.yml     # Job metadata
 │           └── steps/      # Step instructions
 ├── .claude/                # Generated Claude skills
-│   └── commands/
+│   └── skills/
 └── deepwork-output/        # Job outputs (gitignored)
 ```
 
@@ -203,6 +203,8 @@ your-project/
 
 <details>
 <summary><strong>Alternative Installation Methods</strong></summary>
+
+**Prerequisites** (for non-Homebrew installs): Python 3.11+, Git
 
 Homebrew is recommended, but you can also use:
 
@@ -277,3 +279,7 @@ We're iterating fast. [Open an issue](https://github.com/Unsupervisedcom/deepwor
 ---
 
 *DeepWork is in active development. Expect rough edges—and rapid improvement.*
+
+---
+
+<sub>Inspired by [GitHub's spec-kit](https://github.com/github/spec-kit)</sub>
