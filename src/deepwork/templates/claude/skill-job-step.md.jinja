@@ -40,52 +40,51 @@ Template Variables:
 ---
 name: {{ job_name }}.{{ step_id }}
 description: "{{ step_description }}"
-{% if not exposed %}
+{%- if not exposed %}
 user-invocable: false
-{% endif %}
-{% if quality_criteria or hooks %}
+{%- endif %}{#- if not exposed #}
+{#-
+  NOTE: Prompt-based stop hooks do not currently work in Claude Code.
+  See: https://github.com/anthropics/claude-code/issues/20221
+  Only command/script hooks are generated here. Prompt hooks are filtered out.
+  Quality validation is handled via sub-agent review in the instructions section.
+#}
+{%- if hooks -%}
+{%- set has_command_hooks = namespace(value=false) -%}
+{%- for event_name, event_hooks in hooks.items() -%}
+{%- for hook in event_hooks -%}
+{%- if hook.type == "script" -%}
+{%- set has_command_hooks.value = true -%}
+{%- endif -%}{#- if hook.type == "script" #}
+{%- endfor -%}{#- for hook in event_hooks #}
+{%- endfor -%}{#- for event_name, event_hooks in hooks.items() #}
+{%- if has_command_hooks.value %}
 hooks:
-{% if quality_criteria %}
-  Stop:
+{%- for event_name, event_hooks in hooks.items() %}
+{%- set script_hooks = event_hooks | selectattr("type", "equalto", "script") | list %}
+{%- if script_hooks -%}
+{#- For Stop events, generate both Stop and SubagentStop blocks #}
+{%- if event_name == "Stop" %}
+{%- for stop_event in ["Stop", "SubagentStop"] %}
+  {{ stop_event }}:
     - hooks:
-        - type: prompt
-          prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
-{% for criterion in quality_criteria %}
-            {{ loop.index }}. {{ criterion }}
-{% endfor %}
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
-            all criteria appear to be met, respond with: {"ok": true}
-
-            If criteria are NOT met OR the promise tag is missing, respond with:
-            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
-{% endif %}
-{% for event_name, event_hooks in hooks.items() %}
-{% if not (event_name == "Stop" and quality_criteria) %}
-  {{ event_name }}:
-    - hooks:
-{% for hook in event_hooks %}
-{% if hook.type == "script" %}
+{%- for hook in script_hooks %}
         - type: command
           command: ".deepwork/jobs/{{ job_name }}/{{ hook.path }}"
-{% else %}
-        - type: prompt
-          prompt: |
-            {{ hook.content | indent(12) }}
-{% endif %}
-{% endfor %}
-{% endif %}
-{% endfor %}
-{% endif %}
+{%- endfor %}{#- for hook in script_hooks #}
+{%- endfor %}{#- for stop_event in ["Stop", "SubagentStop"] #}
+{%- elif event_name != "SubagentStop" or "Stop" not in hooks %}
+  {{ event_name }}:
+    - hooks:
+{%- for hook in script_hooks %}
+        - type: command
+          command: ".deepwork/jobs/{{ job_name }}/{{ hook.path }}"
+{%- endfor %}{#- for hook in script_hooks #}
+{%- endif %}{#- if event_name == "Stop" #}
+{%- endif %}{#- if script_hooks #}
+{%- endfor %}{#- for event_name, event_hooks in hooks.items() #}
+{%- endif %}{#- if has_command_hooks.value #}
+{%- endif %}{#- if hooks #}
 ---
 
 # {{ job_name }}.{{ step_id }}
@@ -94,7 +93,7 @@ hooks:
 **Standalone skill** - can be run anytime
 {% else %}
 **Step {{ step_number }}/{{ total_steps }}** in **{{ job_name }}** workflow
-{% endif %}
+{% endif %}{#- if is_standalone #}
 
 > {{ job_summary }}
 
@@ -104,8 +103,8 @@ hooks:
 Before proceeding, confirm these steps are complete:
 {% for dep in dependencies %}
 - `/{{ job_name }}.{{ dep }}`
-{% endfor %}
-{% endif %}
+{% endfor %}{#- for dep in dependencies #}
+{% endif %}{#- if dependencies #}
 
 ## Instructions
 
@@ -117,7 +116,7 @@ Before proceeding, confirm these steps are complete:
 ### Job Context
 
 {{ job_description }}
-{% endif %}
+{% endif %}{#- if job_description #}
 
 {% if user_inputs or file_inputs %}
 ## Required Inputs
@@ -126,16 +125,16 @@ Before proceeding, confirm these steps are complete:
 **User Parameters** - Gather from user before starting:
 {% for input in user_inputs %}
 - **{{ input.name }}**: {{ input.description }}
-{% endfor %}
-{% endif %}
+{% endfor %}{#- for input in user_inputs #}
+{% endif %}{#- if user_inputs #}
 
 {% if file_inputs %}
 **Files from Previous Steps** - Read these first:
 {% for input in file_inputs %}
 - `{{ input.file }}` (from `{{ input.from_step }}`)
-{% endfor %}
-{% endif %}
-{% endif %}
+{% endfor %}{#- for input in file_inputs #}
+{% endif %}{#- if file_inputs #}
+{% endif %}{#- if user_inputs or file_inputs #}
 
 ## Work Branch
 
@@ -149,49 +148,87 @@ Use branch format: `deepwork/{{ job_name }}-[instance]-YYYYMMDD`
 {% if outputs %}
 **Required outputs**:
 {% for output in outputs %}
-- `{{ output }}`{% if output.endswith('/') %} (directory){% endif %}
-{% endfor %}
+- `{{ output.file }}`{% if output.file.endswith('/') %} (directory){% endif %}
+
+{% if output.has_doc_spec and output.doc_spec %}
+  **Doc Spec**: {{ output.doc_spec.name }}
+  > {{ output.doc_spec.description }}
+  **Definition**: `{{ output.doc_spec.path }}`
+{% if output.doc_spec.target_audience %}
+  **Target Audience**: {{ output.doc_spec.target_audience }}
+{% endif %}{#- if output.doc_spec.target_audience #}
+{% if output.doc_spec.quality_criteria %}
+  **Quality Criteria**:
+{% for criterion in output.doc_spec.quality_criteria %}
+  {{ loop.index }}. **{{ criterion.name }}**: {{ criterion.description }}
+{% endfor %}{#- for criterion in output.doc_spec.quality_criteria #}
+{% endif %}{#- if output.doc_spec.quality_criteria #}
+{% if output.doc_spec.example_document %}
+
+  <details>
+  <summary>Example Document Structure</summary>
+
+  ```markdown
+  {{ output.doc_spec.example_document | indent(2) }}
+  ```
+
+  </details>
+{% endif %}{#- if output.doc_spec.example_document #}
+{% endif %}{#- if output.has_doc_spec and output.doc_spec #}
+{% endfor %}{#- for output in outputs #}
 {% else %}
 No specific file outputs required.
-{% endif %}
+{% endif %}{#- if outputs #}
 
-{% if quality_criteria or stop_hooks %}
-## Quality Validation
+## Guardrails
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 {% if quality_criteria %}
+## Quality Validation
+
+**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
+
+Use a sub-agent (Haiku model) to review your work against these criteria:
+
 **Criteria (all must be satisfied)**:
-{% for criterion in quality_criteria %}
+{% for criterion in quality_criteria -%}
 {{ loop.index }}. {{ criterion }}
-{% endfor %}
-{% endif %}
+{% endfor %}{#- for criterion in quality_criteria #}
+**Review Process**:
+1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
+2. The sub-agent should examine your outputs and verify each criterion is met
+3. If the sub-agent identifies valid issues, fix them
+4. Have the sub-agent review again until all valid feedback has been addressed
+5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
-{% for hook in stop_hooks %}
-{% if hook.type == "script" %}
+{% endif %}{#- if quality_criteria #}
+{% if stop_hooks -%}
+{% for hook in stop_hooks -%}
+{% if hook.type == "script" -%}
 **Validation script**: `.deepwork/jobs/{{ job_name }}/{{ hook.path }}` (runs automatically)
-{% endif %}
-{% endfor %}
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
-
-{% endif %}
+{% endif -%}{#- if hook.type == "script" #}
+{% endfor %}{#- for hook in stop_hooks #}
+{% endif %}{#- if stop_hooks #}
 ## On Completion
 
 {% if is_standalone %}
 1. Verify outputs are created
-2. Inform user: "{{ step_id }} complete{% if outputs %}, outputs: {{ outputs | join(', ') }}{% endif %}"
+2. Inform user: "{{ step_id }} complete{% if outputs %}, outputs: {{ outputs | map(attribute='file') | join(', ') }}{% endif %}"
 
 This standalone skill can be re-run anytime.
 {% else %}
 1. Verify outputs are created
-2. Inform user: "Step {{ step_number }}/{{ total_steps }} complete{% if outputs %}, outputs: {{ outputs | join(', ') }}{% endif %}"
+2. Inform user: "Step {{ step_number }}/{{ total_steps }} complete{% if outputs %}, outputs: {{ outputs | map(attribute='file') | join(', ') }}{% endif %}"
 {% if next_step %}
 3. **Continue workflow**: Use Skill tool to invoke `/{{ job_name }}.{{ next_step }}`
 {% else %}
 3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
-{% endif %}
-{% endif %}
+{% endif %}{#- if next_step #}
+{% endif %}{#- if is_standalone #}
 
 ---
 

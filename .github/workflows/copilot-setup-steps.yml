@@ -1,0 +1,63 @@
+name: Copilot Setup Steps
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/copilot-setup-steps.yml'
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # NOTE: Nix would be the preferred environment, but it causes Copilot agent
+      # Bash tool calls to silently hang. Using uv/Python setup as a workaround.
+      # - name: Install Nix
+      #   uses: cachix/install-nix-action@v31
+      #   with:
+      #     nix_path: nixpkgs=channel:nixos-unstable
+      # - uses: nicknovitski/nix-develop@v1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache UV dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Verify environment setup
+        run: |
+          echo "Python version:"
+          python --version
+          echo ""
+          echo "UV version:"
+          uv --version
+          echo ""
+          echo "Pytest available:"
+          uv run pytest --version
+          echo ""
+          echo "Ruff available:"
+          uv run ruff --version
+          echo ""
+          echo "Environment setup complete!"

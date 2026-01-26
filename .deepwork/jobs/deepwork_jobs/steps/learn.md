@@ -2,13 +2,13 @@
 
 ## Objective
 
-Think deeply about this task. Reflect on the current conversation to identify learnings from DeepWork job executions, improve job instructions with generalizable insights, and capture bespoke (run-specific) learnings in AGENTS.md files in the appropriate working folder.
+Think deeply about this task. Reflect on the current conversation to identify learnings from DeepWork job executions, improve job instructions with generalizable insights, and capture bespoke (run-specific) learnings in AGENTS.md files in the deepest common folder that would contain all work on the topic in the future.
 
 ## Task
 
 Analyze the conversation history to extract learnings and improvements, then apply them appropriately:
 - **Generalizable learnings** → Update job instruction files
-- **Bespoke learnings** (specific to this run) → Add to AGENTS.md in working folder
+- **Bespoke learnings** (specific to this run) → Add to AGENTS.md in the deepest common folder for the topic
 
 ### Step 1: Analyze Conversation for Job Executions
 
@@ -17,7 +17,8 @@ Analyze the conversation history to extract learnings and improvements, then app
    - Identify which jobs and steps were executed
    - Note the order of execution
 
-2. **Identify the working folder**
+2. **Identify the target folder**
+   - This should be the deepest common folder that would contain all work on the topic in the future
    - Should be clear from conversation history where work was done
    - If unclear, run `git diff` to see where changes were made on the branch
 
@@ -65,6 +66,15 @@ For each learning identified, determine if it is:
   - "Quality criteria should include checking for Y"
   - "Add example of correct output format"
 
+**doc spec-Related** (should improve doc spec files):
+- Improvements to document quality criteria
+- Changes to document structure or format
+- Updated audience or frequency information
+- Examples:
+  - "The report should include a summary table"
+  - "Quality criterion 'Visualization' needs clearer requirements"
+  - "Documents need a section for action items"
+
 **Bespoke** (should go in AGENTS.md):
 - Specific to THIS project/codebase/run
 - Depends on local conventions or structure
@@ -74,6 +84,30 @@ For each learning identified, determine if it is:
   - "In this codebase, API endpoints are in `src/api/`"
   - "This project uses camelCase for function names"
   - "The main config file is at `config/settings.yml`"
+
+### Step 3.5: Identify doc spec-Related Learnings
+
+Review the conversation for doc spec-related improvements:
+
+1. **Quality Criteria Changes**
+   - Were any quality criteria unclear or insufficient?
+   - Did the agent repeatedly fail certain criteria?
+   - Are there new criteria that should be added?
+
+2. **Document Structure Changes**
+   - Did the user request different sections?
+   - Were parts of the document format confusing?
+   - Should the example document be updated?
+
+3. **Metadata Updates**
+   - Has the target audience changed?
+   - Should frequency or path patterns be updated?
+
+**Signals for doc spec improvements:**
+- User asked for changes to document format
+- Repeated validation failures on specific criteria
+- Feedback about missing sections or information
+- Changes to how documents are organized/stored
 
 ### Step 4: Update Job Instructions (Generalizable Learnings)
 
@@ -128,12 +162,47 @@ Review all instruction files for the job and identify content that:
    - Shorter instruction files - easier to read and maintain
    - Consistent guidance across steps
 
+### Step 4.5: Update doc spec Files (doc spec-Related Learnings)
+
+If doc spec-related learnings were identified:
+
+1. **Locate the doc spec file**
+   - Find doc spec references in job.yml outputs (look for `doc_spec: .deepwork/doc_specs/[doc_spec_name].md`)
+   - doc spec files are at `.deepwork/doc_specs/[doc_spec_name].md`
+
+2. **Update quality_criteria array**
+   - Add new criteria with name and description
+   - Modify existing criteria descriptions for clarity
+   - Remove criteria that are no longer relevant
+
+3. **Update example document**
+   - Modify the markdown body to reflect structure changes
+   - Ensure the example matches updated criteria
+
+4. **Update metadata as needed**
+   - target_audience: If audience has changed
+   - frequency: If production cadence has changed
+   - path_patterns: If storage location has changed
+
+**Example doc spec update:**
+```yaml
+# Before
+quality_criteria:
+  - name: Visualization
+    description: Include charts
+
+# After
+quality_criteria:
+  - name: Visualization
+    description: Include Mermaid.js charts showing spend breakdown by service and month-over-month trend
+```
+
 ### Step 5: Create/Update AGENTS.md (Bespoke Learnings)
 
 The AGENTS.md file captures project-specific knowledge that helps future agent runs.
 
 1. **Determine the correct location**
-   - Place AGENTS.md in the working folder where job outputs live
+   - Place AGENTS.md in the deepest common folder that would contain all work on the topic in the future
    - This ensures the knowledge is available when working in that context
    - If uncertain, place at the project root
 
@@ -201,7 +270,7 @@ When adding entries to AGENTS.md, prefer these patterns:
 - Shared/lengthy content extracted into referenced files where appropriate
 - AGENTS.md created/updated with bespoke learnings
 - File references used instead of duplicating content
-- AGENTS.md is in the correct working folder
+- AGENTS.md is in the correct folder (the deepest common folder for the topic)
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
 
 ## Example Dialog

@@ -1,11 +1,11 @@
 ---
 name: update
-description: "Update standard jobs in src/ and sync to installed locations"
+description: "Updates DeepWork standard jobs in src/ and syncs to installed locations. Use when modifying deepwork_jobs or deepwork_rules."
 ---
 
 # update
 
-**Multi-step workflow**: Update standard jobs in src/ and sync to installed locations
+**Multi-step workflow**: Updates DeepWork standard jobs in src/ and syncs to installed locations. Use when modifying deepwork_jobs or deepwork_rules.
 
 > **CRITICAL**: Always invoke steps using the Skill tool. Never copy/paste step instructions directly.
 
@@ -26,7 +26,7 @@ for any standard job in the DeepWork repository.
 
 ## Available Steps
 
-1. **job** - Edit standard job source files and sync to installed locations
+1. **job** - Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions.
 
 ## Execution Instructions
 
@@ -54,6 +54,13 @@ After each step completes:
 If user intent is unclear, use AskUserQuestion to clarify:
 - Present available steps as numbered options
 - Let user select the starting point
+
+## Guardrails
+
+- Do NOT copy/paste step instructions directly; always use the Skill tool to invoke steps
+- Do NOT skip steps in the workflow unless the user explicitly requests it
+- Do NOT proceed to the next step if the current step's outputs are incomplete
+- Do NOT make assumptions about user intent; ask for clarification when ambiguous
 
 ## Context Files
 

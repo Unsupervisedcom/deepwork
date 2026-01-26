@@ -1,29 +1,12 @@
 ---
 name: add_platform.verify
-description: "Set up platform directories and verify deepwork install works correctly"
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the installation meets ALL criteria:
-            1. Platform-specific directories/files are added to the deepwork repo as needed
-            2. Running `deepwork install --platform <platform>` completes without errors
-            3. Expected command files are created in the platform's command directory
-            4. Command file content matches the templates and job definitions
-            5. Established DeepWork jobs (deepwork_jobs, deepwork_rules) are installed correctly
-            6. The platform can be used alongside existing platforms without conflicts
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
----
+description: "Sets up platform directories and verifies deepwork install works correctly. Use after implementation to confirm integration."user-invocable: false---
 
 # add_platform.verify
 
 **Step 4/4** in **add_platform** workflow
 
-> Add a new AI platform to DeepWork with adapter, templates, and tests
+> Adds a new AI platform to DeepWork with adapter, templates, and tests. Use when integrating Cursor, Windsurf, or other AI coding tools.
 
 ## Prerequisites (Verify First)
 
@@ -32,7 +15,7 @@ Before proceeding, confirm these steps are complete:
 
 ## Instructions
 
-**Goal**: Set up platform directories and verify deepwork install works correctly
+**Goal**: Sets up platform directories and verifies deepwork install works correctly. Use after implementation to confirm integration.
 
 # Verify Installation
 
@@ -182,20 +165,20 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 
 ## Outputs
 
-No specific file outputs required.
+**Required outputs**:
+- `verification_checklist.md`
 
-## Quality Validation
+## Guardrails
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 4/4 complete"
+2. Inform user: "Step 4/4 complete, outputs: verification_checklist.md"
 3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
 
 ---

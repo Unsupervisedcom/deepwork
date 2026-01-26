@@ -89,3 +89,33 @@ deepwork/
     └── rules/                      # Repo-specific rules
         └── json_validation/        # ← Bespoke rule (also exposed in library/)
 ```
+
+## Debugging Issues
+
+When debugging issues in this codebase, **always consult `doc/debugging_history/`** first. This directory contains documentation of past debugging sessions, including:
+
+- Root causes of tricky bugs
+- Key learnings and patterns to avoid
+- Related files and test cases
+
+**After resolving an issue**, append your findings to the appropriate file in `doc/debugging_history/` (or create a new file if none exists for that subsystem). This helps future agents avoid the same pitfalls.
+
+Current debugging history files:
+- `doc/debugging_history/hooks.md` - Hooks system debugging (rules_check, blocking, queue management)
+
+## Development Environment
+
+This project uses **Nix Flakes** to provide a reproducible development environment.
+
+### Using the Environment
+
+- **With direnv (Recommended)**: Just `cd` into the directory. The `.envrc` will automatically load the flake environment.
+- **Without direnv**: Run `nix develop` to enter the shell.
+- **Building**: Run `nix build` to build the package.
+
+**Note**: The flake is configured to automatically allow unfree packages (required for the BSL 1.1 license), so you do not need to set `NIXPKGS_ALLOW_UNFREE=1`.
+
+The environment includes:
+- Python 3.11
+- uv (package manager)
+- All dev dependencies (pytest, ruff, mypy, etc.)

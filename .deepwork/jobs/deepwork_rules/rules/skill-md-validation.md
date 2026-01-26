@@ -1,6 +1,7 @@
 ---
 name: SKILL.md Validation
 trigger: "**/SKILL.md"
+compare_to: base
 ---
 A SKILL.md file has been created or modified. Please validate that it follows the required format:
 

@@ -6,7 +6,7 @@ import pytest
 
 from deepwork.core.adapters import ClaudeAdapter
 from deepwork.core.generator import GeneratorError, SkillGenerator
-from deepwork.core.parser import HookAction, JobDefinition, Step, StopHook
+from deepwork.core.parser import HookAction, JobDefinition, OutputSpec, Step, StopHook
 from deepwork.schemas.job_schema import JOB_SCHEMA
 from deepwork.utils.validation import ValidationError, validate_against_schema
 
@@ -70,7 +70,7 @@ class TestStepWithStopHooks:
             name="Test Step",
             description="A test step",
             instructions_file="steps/test.md",
-            outputs=["output.md"],
+            outputs=[OutputSpec(file="output.md")],
         )
         assert step.stop_hooks == []
 
@@ -81,7 +81,7 @@ class TestStepWithStopHooks:
             name="Test Step",
             description="A test step",
             instructions_file="steps/test.md",
-            outputs=["output.md"],
+            outputs=[OutputSpec(file="output.md")],
             hooks={"after_agent": [HookAction(prompt="Check quality")]},
         )
         assert len(step.stop_hooks) == 1
@@ -95,7 +95,7 @@ class TestStepWithStopHooks:
             name="Test Step",
             description="A test step",
             instructions_file="steps/test.md",
-            outputs=["output.md"],
+            outputs=[OutputSpec(file="output.md")],
             hooks={
                 "after_agent": [
                     HookAction(prompt="Check criteria 1"),
@@ -410,7 +410,7 @@ hooks:
                     name="Step 1",
                     description="First step",
                     instructions_file="steps/step1.md",
-                    outputs=["output.md"],
+                    outputs=[OutputSpec(file="output.md")],
                     hooks={
                         "after_agent": [HookAction(prompt="Verify quality criteria")],
                     },
@@ -439,7 +439,7 @@ hooks:
                     name="Step 1",
                     description="First step",
                     instructions_file="steps/step1.md",
-                    outputs=["output.md"],
+                    outputs=[OutputSpec(file="output.md")],
                     hooks={
                         "after_agent": [HookAction(script="hooks/validate.sh")],
                     },
@@ -471,7 +471,7 @@ hooks:
                     name="Step 1",
                     description="First step",
                     instructions_file="steps/step1.md",
-                    outputs=["output.md"],
+                    outputs=[OutputSpec(file="output.md")],
                     hooks={
                         "after_agent": [HookAction(prompt_file="hooks/quality.md")],
                     },
@@ -538,7 +538,7 @@ hooks:
                     name="Step 1",
                     description="Step",
                     instructions_file="steps/step1.md",
-                    outputs=["out.md"],
+                    outputs=[OutputSpec(file="out.md")],
                     hooks={
                         "after_agent": [HookAction(prompt_file="missing.md")],
                     },
@@ -570,7 +570,7 @@ hooks:
                     name="Step 1",
                     description="Step",
                     instructions_file="steps/step1.md",
-                    outputs=["out.md"],
+                    outputs=[OutputSpec(file="out.md")],
                 )
             ],
             job_dir=job_dir,
@@ -599,7 +599,7 @@ hooks:
                     name="Step 1",
                     description="Step",
                     instructions_file="steps/step1.md",
-                    outputs=["out.md"],
+                    outputs=[OutputSpec(file="out.md")],
                     hooks={
                         "after_agent": [
                             HookAction(prompt="Check criteria 1"),
@@ -618,3 +618,243 @@ hooks:
         assert context["stop_hooks"][0]["type"] == "prompt"
         assert context["stop_hooks"][1]["type"] == "script"
         assert context["stop_hooks"][2]["type"] == "prompt"
+
+    def test_build_context_duplicates_stop_to_subagent_stop(
+        self, generator: SkillGenerator, job_with_hooks: JobDefinition
+    ) -> None:
+        """Test that Stop hooks are also registered for SubagentStop event.
+
+        Claude Code has separate Stop and SubagentStop events. When a Stop hook
+        is defined, it should also be registered for SubagentStop so the hook
+        triggers for both the main agent and subagents.
+        """
+        adapter = ClaudeAdapter()
+        context = generator._build_step_context(job_with_hooks, job_with_hooks.steps[0], 0, adapter)
+
+        # Should have both Stop and SubagentStop in hooks dict
+        assert "hooks" in context
+        assert "Stop" in context["hooks"]
+        assert "SubagentStop" in context["hooks"]
+
+        # Both should have the same hooks
+        assert context["hooks"]["Stop"] == context["hooks"]["SubagentStop"]
+        assert len(context["hooks"]["Stop"]) == 1
+        assert context["hooks"]["Stop"][0]["type"] == "prompt"
+
+    def test_build_context_no_subagent_stop_without_stop(
+        self, generator: SkillGenerator, tmp_path: Path
+    ) -> None:
+        """Test that SubagentStop is not created if there are no Stop hooks."""
+        job_dir = tmp_path / "test_job"
+        job_dir.mkdir()
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step1.md").write_text("# Step 1")
+
+        job = JobDefinition(
+            name="test_job",
+            version="1.0.0",
+            summary="Test",
+            description="Test",
+            steps=[
+                Step(
+                    id="step1",
+                    name="Step 1",
+                    description="Step",
+                    instructions_file="steps/step1.md",
+                    outputs=[OutputSpec(file="out.md")],
+                )
+            ],
+            job_dir=job_dir,
+        )
+
+        adapter = ClaudeAdapter()
+        context = generator._build_step_context(job, job.steps[0], 0, adapter)
+
+        # Should not have Stop or SubagentStop without any hooks
+        assert "hooks" in context
+        assert "Stop" not in context["hooks"]
+        assert "SubagentStop" not in context["hooks"]
+
+
+class TestGeneratorTemplateOutput:
+    """Tests for generated skill file output."""
+
+    @pytest.fixture
+    def full_generator(self) -> SkillGenerator:
+        """Create generator using actual package templates."""
+        # Use the actual templates directory from the package
+        templates_dir = Path(__file__).parent.parent.parent / "src" / "deepwork" / "templates"
+        return SkillGenerator(templates_dir)
+
+    @pytest.fixture
+    def job_with_quality_criteria(self, tmp_path: Path) -> JobDefinition:
+        """Create job with quality_criteria for testing template output."""
+        job_dir = tmp_path / "test_job"
+        job_dir.mkdir()
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step1.md").write_text("# Step 1 Instructions\n\nDo the thing.")
+
+        return JobDefinition(
+            name="test_job",
+            version="1.0.0",
+            summary="Test job",
+            description="A test job",
+            steps=[
+                Step(
+                    id="step1",
+                    name="Step 1",
+                    description="First step",
+                    instructions_file="steps/step1.md",
+                    outputs=[OutputSpec(file="output.md")],
+                    quality_criteria=["Criterion 1 is met", "Criterion 2 is verified"],
+                ),
+            ],
+            job_dir=job_dir,
+        )
+
+    @pytest.fixture
+    def job_with_stop_hooks(self, tmp_path: Path) -> JobDefinition:
+        """Create job with custom stop hooks for testing template output."""
+        job_dir = tmp_path / "test_job"
+        job_dir.mkdir()
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step1.md").write_text("# Step 1 Instructions")
+
+        return JobDefinition(
+            name="test_job",
+            version="1.0.0",
+            summary="Test job",
+            description="A test job",
+            steps=[
+                Step(
+                    id="step1",
+                    name="Step 1",
+                    description="First step",
+                    instructions_file="steps/step1.md",
+                    outputs=[OutputSpec(file="output.md")],
+                    hooks={
+                        "after_agent": [HookAction(prompt="Custom validation prompt")],
+                    },
+                ),
+            ],
+            job_dir=job_dir,
+        )
+
+    def test_template_generates_subagent_review_for_quality_criteria(
+        self,
+        full_generator: SkillGenerator,
+        job_with_quality_criteria: JobDefinition,
+        tmp_path: Path,
+    ) -> None:
+        """Test that template generates sub-agent review instructions for quality_criteria.
+
+        NOTE: Prompt-based stop hooks don't work in Claude Code (issue #20221).
+        Instead, quality_criteria generates sub-agent review instructions in content.
+        """
+        adapter = ClaudeAdapter()
+        skill_path = full_generator.generate_step_skill(
+            job_with_quality_criteria,
+            job_with_quality_criteria.steps[0],
+            adapter,
+            tmp_path,
+        )
+
+        content = skill_path.read_text()
+
+        # Should NOT generate Stop/SubagentStop hooks (prompt hooks disabled)
+        assert "Stop:" not in content, "Prompt-based Stop hooks should not be generated"
+        assert "SubagentStop:" not in content, (
+            "Prompt-based SubagentStop hooks should not be generated"
+        )
+
+        # Should generate sub-agent review instructions in content
+        assert "## Quality Validation" in content, "Quality Validation section should be generated"
+        assert "sub-agent" in content.lower(), "Sub-agent review instructions should be present"
+        assert "Criterion 1 is met" in content, "Quality criteria should be in content"
+        assert "Criterion 2 is verified" in content, "Quality criteria should be in content"
+
+    def test_template_does_not_generate_prompt_hooks(
+        self, full_generator: SkillGenerator, job_with_stop_hooks: JobDefinition, tmp_path: Path
+    ) -> None:
+        """Test that template does NOT generate prompt-based stop hooks.
+
+        NOTE: Prompt-based stop hooks don't work in Claude Code (issue #20221).
+        The template should filter out prompt hooks and not generate them.
+        """
+        adapter = ClaudeAdapter()
+        skill_path = full_generator.generate_step_skill(
+            job_with_stop_hooks,
+            job_with_stop_hooks.steps[0],
+            adapter,
+            tmp_path,
+        )
+
+        content = skill_path.read_text()
+
+        # Should NOT generate Stop/SubagentStop hooks for prompt-type hooks
+        assert "Stop:" not in content, "Prompt-based Stop hooks should not be generated"
+        assert "SubagentStop:" not in content, (
+            "Prompt-based SubagentStop hooks should not be generated"
+        )
+
+        # The prompt content should NOT appear in the hooks section
+        assert "Custom validation prompt" not in content, (
+            "Prompt content should not be in generated skill"
+        )
+
+    @pytest.fixture
+    def job_with_script_hooks(self, tmp_path: Path) -> JobDefinition:
+        """Create job with script-type stop hooks for testing template output."""
+        job_dir = tmp_path / "test_job"
+        job_dir.mkdir()
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step1.md").write_text("# Step 1 Instructions")
+
+        return JobDefinition(
+            name="test_job",
+            version="1.0.0",
+            summary="Test job",
+            description="A test job",
+            steps=[
+                Step(
+                    id="step1",
+                    name="Step 1",
+                    description="First step",
+                    instructions_file="steps/step1.md",
+                    outputs=[OutputSpec(file="output.md")],
+                    hooks={
+                        "after_agent": [HookAction(script="hooks/validate.sh")],
+                    },
+                ),
+            ],
+            job_dir=job_dir,
+        )
+
+    def test_template_generates_stop_hooks_for_script_type(
+        self, full_generator: SkillGenerator, job_with_script_hooks: JobDefinition, tmp_path: Path
+    ) -> None:
+        """Test that template generates Stop/SubagentStop hooks for script-type hooks.
+
+        Script-type hooks (type: command) still work in Claude Code, so they should be generated.
+        """
+        adapter = ClaudeAdapter()
+        skill_path = full_generator.generate_step_skill(
+            job_with_script_hooks,
+            job_with_script_hooks.steps[0],
+            adapter,
+            tmp_path,
+        )
+
+        content = skill_path.read_text()
+
+        # Should generate Stop and SubagentStop hooks for script-type hooks
+        assert "Stop:" in content, "Script-based Stop hooks should be generated"
+        assert "SubagentStop:" in content, "Script-based SubagentStop hooks should be generated"
+
+        # Should contain the command type and path
+        assert "type: command" in content, "Hook should have type: command"
+        assert "hooks/validate.sh" in content, "Hook path should be in generated skill"

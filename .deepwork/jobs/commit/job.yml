@@ -1,32 +1,63 @@
 name: commit
-version: "1.0.0"
-summary: "Run tests, lint, and commit code changes"
+version: "1.4.0"
+summary: "Reviews code, runs tests, lints, and commits changes. Use when ready to commit work with quality checks."
 description: |
   A workflow for preparing and committing code changes with quality checks.
 
-  This job runs tests until they pass, formats and lints code with ruff,
-  then reviews changed files before committing and pushing. The lint step
-  uses a sub-agent to reduce context usage.
+  This job starts with a code review to catch issues early, runs tests until
+  they pass, formats and lints code with ruff, then reviews changed files
+  before committing and pushing. The review and lint steps use sub-agents
+  to reduce context usage.
 
   Steps:
-  1. test - Pull latest code and run tests until they pass
-  2. lint - Format and lint code with ruff (runs in sub-agent)
-  3. commit_and_push - Review changes and commit/push
+  1. review - Code review for issues, DRY opportunities, naming, and test coverage (runs in sub-agent)
+  2. test - Pull latest code and run tests until they pass
+  3. lint - Format and lint code with ruff (runs in sub-agent)
+  4. commit_and_push - Review changes and commit/push
 
 changelog:
+  - version: "1.4.0"
+    changes: "Added changelog guidance: entries must go in [Unreleased] section, NEVER modify version numbers in pyproject.toml or CHANGELOG.md"
+  - version: "1.3.0"
+    changes: "Added code review step that runs in sub-agent to check for general issues, DRY opportunities, naming clarity, and test coverage"
+  - version: "1.0.1"
+    changes: "Changed file review from user confirmation to agent self-verification - agent now checks files match its own expectations instead of asking user every time"
   - version: "1.0.0"
     changes: "Initial job creation"
+  - version: "1.1.0"
+    changes: "Added nominal outputs to process-oriented steps for doc spec compliance (tests_passing, code_formatted, changes_committed)"
+  - version: "1.2.0"
+    changes: "Improved skill descriptions with third-person voice and 'Use when...' triggers for better discoverability"
 
 steps:
+  - id: review
+    name: "Code Review"
+    description: "Reviews changed code for issues, DRY opportunities, naming clarity, and test coverage using a sub-agent. Use as the first step before testing."
+    instructions_file: steps/review.md
+    inputs: []
+    outputs:
+      - code_reviewed  # implicit state: code has been reviewed and issues addressed
+    dependencies: []
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the code review is complete:
+            1. Changed files were identified
+            2. Sub-agent reviewed the code for general issues, DRY opportunities, naming clarity, and test coverage
+            3. All identified issues were addressed or documented as intentional
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
   - id: test
     name: "Run Tests"
-    description: "Pull latest code and run the test suite until all tests pass"
+    description: "Pulls latest code and runs tests until all pass. Use after code review passes to verify changes work correctly."
     instructions_file: steps/test.md
     inputs:
       - name: test_command
         description: "Test command to run (optional - will auto-detect if not provided)"
-    outputs: []
-    dependencies: []
+    outputs:
+      - tests_passing  # implicit state: all tests pass
+    dependencies:
+      - review
     hooks:
       after_agent:
         - prompt: |
@@ -39,10 +70,11 @@ steps:
 
   - id: lint
     name: "Lint Code"
-    description: "Format and lint code with ruff using a sub-agent"
+    description: "Formats and lints code with ruff using a sub-agent. Use after tests pass to ensure code style compliance."
     instructions_file: steps/lint.md
     inputs: []
-    outputs: []
+    outputs:
+      - code_formatted  # implicit state: code formatted and linted
     dependencies:
       - test
     hooks:
@@ -56,18 +88,21 @@ steps:
 
   - id: commit_and_push
     name: "Commit and Push"
-    description: "Review changed files, commit, and push to remote"
+    description: "Verifies changed files, creates commit, and pushes to remote. Use after linting passes to finalize changes."
     instructions_file: steps/commit_and_push.md
     inputs: []
-    outputs: []
+    outputs:
+      - changes_committed  # implicit state: changes committed and pushed
     dependencies:
       - lint
     hooks:
       after_agent:
         - prompt: |
             Verify the commit is ready:
-            1. Changed files list was reviewed with user
-            2. User confirmed the files match expectations
-            3. Commit was created with appropriate message
-            4. Changes were pushed to remote
+            1. Changed files list was reviewed by the agent
+            2. Files match what was modified during this session (or unexpected changes were investigated)
+            3. CHANGELOG.md was updated with entries in the [Unreleased] section (if changes warrant documentation)
+            4. Version numbers were NOT modified (pyproject.toml version and CHANGELOG version headers must remain unchanged)
+            5. Commit was created with appropriate message
+            6. Changes were pushed to remote
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.

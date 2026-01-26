@@ -1,26 +1,12 @@
 ---
 name: commit.commit_and_push
-description: "Review changed files, commit, and push to remote"
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the commit is ready:
-            1. Changed files list was reviewed with user
-            2. User confirmed the files match expectations
-            3. Commit was created with appropriate message
-            4. Changes were pushed to remote
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
----
+description: "Verifies changed files, creates commit, and pushes to remote. Use after linting passes to finalize changes."user-invocable: false---
 
 # commit.commit_and_push
 
-**Step 3/3** in **commit** workflow
+**Step 4/4** in **commit** workflow
 
-> Run tests, lint, and commit code changes
+> Reviews code, runs tests, lints, and commits changes. Use when ready to commit work with quality checks.
 
 ## Prerequisites (Verify First)
 
@@ -29,17 +15,17 @@ Before proceeding, confirm these steps are complete:
 
 ## Instructions
 
-**Goal**: Review changed files, commit, and push to remote
+**Goal**: Verifies changed files, creates commit, and pushes to remote. Use after linting passes to finalize changes.
 
 # Commit and Push
 
 ## Objective
 
-Review the changed files with the user, create a commit with an appropriate message, and push to the remote repository.
+Review the changed files to verify they match the agent's expectations, create a commit with an appropriate message, and push to the remote repository.
 
 ## Task
 
-Present the list of changed files for user review, ensure they match expectations, then commit and push the changes.
+Check the list of changed files against what was modified during this session, ensure they match expectations, then commit and push the changes.
 
 ### Process
 
@@ -49,31 +35,39 @@ Present the list of changed files for user review, ensure they match expectation
    ```
    Also run `git diff --stat` to see a summary of changes.
 
-2. **Present changes to the user for review**
+2. **Verify changes match expectations**
 
-   Use the AskUserQuestion tool to ask structured questions about the changes:
+   Compare the changed files against what you modified during this session:
+   - Do the modified files match what you edited?
+   - Are there any unexpected new files?
+   - Are there any unexpected deleted files?
+   - Do the line counts seem reasonable for the changes you made?
 
-   Show the user:
-   - List of modified files
-   - List of new files
-   - List of deleted files
-   - Summary of changes (lines added/removed)
+   If changes match expectations, proceed to the next step.
 
-   Ask them to confirm:
-   - "Do these changed files match your expectations?"
-   - Provide options: "Yes, proceed with commit" / "No, let me review first" / "No, some files shouldn't be included"
+   If there are unexpected changes:
+   - Investigate why (e.g., lint auto-fixes, generated files)
+   - If they're legitimate side effects of your work, include them
+   - If they're unrelated or shouldn't be committed, use `git restore` to discard them
 
-3. **Handle user response**
+3. **Update CHANGELOG.md if needed**
 
-   - If user confirms, proceed to commit
-   - If user wants to review first, wait for them to come back
-   - If user says some files shouldn't be included, ask which files to exclude and use `git restore` or `git checkout` to unstage them
+   If your changes include new features, bug fixes, or other notable changes:
+   - Add entries to the `## [Unreleased]` section of CHANGELOG.md
+   - Use the appropriate subsection: `### Added`, `### Changed`, `### Fixed`, or `### Removed`
+   - Write concise descriptions that explain the user-facing impact
+
+   **CRITICAL: NEVER modify version numbers**
+   - Do NOT change the version in `pyproject.toml`
+   - Do NOT change version headers in CHANGELOG.md (e.g., `## [0.4.2]`)
+   - Do NOT rename the `## [Unreleased]` section
+   - Version updates are handled by the release workflow, not commits
 
 4. **Stage all appropriate changes**
    ```bash
    git add -A
    ```
-   Or stage specific files if user excluded some.
+   Or stage specific files if some were excluded.
 
 5. **View recent commit messages for style reference**
    ```bash
@@ -87,8 +81,9 @@ Present the list of changed files for user review, ensure they match expectation
    - The style of recent commits
    - Conventional commit format if the project uses it
 
+   **IMPORTANT:** Use the commit job script (not `git commit` directly):
    ```bash
-   git commit -m "commit message here"
+   .claude/hooks/commit_job_git_commit.sh -m "commit message here"
    ```
 
 7. **Push to remote**
@@ -102,8 +97,10 @@ Present the list of changed files for user review, ensure they match expectation
 
 ## Quality Criteria
 
-- Changed files list was presented to user
-- User explicitly confirmed the files match expectations
+- Changed files list was reviewed by the agent
+- Files match what was modified during this session (or unexpected changes were investigated and handled)
+- CHANGELOG.md was updated with entries in the `[Unreleased]` section (if changes warrant documentation)
+- Version numbers were NOT modified (in pyproject.toml or CHANGELOG.md version headers)
 - Commit message follows project conventions
 - Commit was created successfully
 - Changes were pushed to remote
@@ -111,21 +108,23 @@ Present the list of changed files for user review, ensure they match expectation
 
 ## Context
 
-This is the final step of the commit workflow. It ensures the user has reviewed and approved the changes before they are committed and pushed. This prevents accidental commits of unintended files or changes.
+This is the final step of the commit workflow. The agent verifies that the changed files match its own expectations from the work done during the session, then commits and pushes. This catches unexpected changes while avoiding unnecessary user interruptions.
 
 
 ### Job Context
 
 A workflow for preparing and committing code changes with quality checks.
 
-This job runs tests until they pass, formats and lints code with ruff,
-then reviews changed files before committing and pushing. The lint step
-uses a sub-agent to reduce context usage.
+This job starts with a code review to catch issues early, runs tests until
+they pass, formats and lints code with ruff, then reviews changed files
+before committing and pushing. The review and lint steps use sub-agents
+to reduce context usage.
 
 Steps:
-1. test - Pull latest code and run tests until they pass
-2. lint - Format and lint code with ruff (runs in sub-agent)
-3. commit_and_push - Review changes and commit/push
+1. review - Code review for issues, DRY opportunities, naming, and test coverage (runs in sub-agent)
+2. test - Pull latest code and run tests until they pass
+3. lint - Format and lint code with ruff (runs in sub-agent)
+4. commit_and_push - Review changes and commit/push
 
 
 
@@ -138,20 +137,20 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 
 ## Outputs
 
-No specific file outputs required.
+**Required outputs**:
+- `changes_committed`
 
-## Quality Validation
+## Guardrails
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 3/3 complete"
+2. Inform user: "Step 4/4 complete, outputs: changes_committed"
 3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
 
 ---

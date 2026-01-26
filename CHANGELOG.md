@@ -5,6 +5,121 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+## [0.5.1] - 2026-01-24
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+## [0.5.0] - 2026-01-24
+
+### Added
+- Installer now auto-adds permission for `make_new_job.sh` script, allowing Claude to run job creation without manual configuration
+- Manual release workflow (`create-release.yml`) that automates version releases:
+  - Takes version number as input, validates format
+  - Updates CHANGELOG.md: converts Unreleased section to new version with date
+  - Adds fresh Unreleased section with placeholder categories
+  - Updates pyproject.toml version and runs uv sync for lock file
+  - Commits changes directly to main, creates tag, and publishes GitHub release
+
+### Changed
+- Commit job now requires changelog entries go to `[Unreleased]` section and explicitly prohibits modifying version numbers
+
+### Fixed
+
+### Removed
+
+## [0.4.2] - 2026-01-24
+
+### Changed
+- Added closing tag comments to jinja templates for improved readability
+
+## [0.4.1] - 2026-01-23
+
+### Changed
+- Disabled prompt-based stop hooks in Claude templates due to upstream bug ([#20221](https://github.com/anthropics/claude-code/issues/20221))
+- Quality validation now uses sub-agent review pattern instead of prompt hooks
+
+## [0.4.0] - 2026-01-23
+
+### Added
+- Doc specs (document specifications) as a first-class feature for formalizing document quality criteria
+  - New `src/deepwork/schemas/doc_spec_schema.py` with JSON schema validation
+  - New `src/deepwork/core/doc_spec_parser.py` with parser for frontmatter markdown doc spec files
+  - Doc spec files stored in `.deepwork/doc_specs/` directory with quality criteria and example documents
+  - Auto-creates `.deepwork/doc_specs/` directory during `deepwork install`
+- Extended job.yml output schema to support doc spec references
+  - Outputs can now be strings (backward compatible) or objects with `file` and optional `doc_spec` fields
+  - Example: `outputs: [{file: "report.md", doc_spec: ".deepwork/doc_specs/monthly_report.md"}]`
+  - The `doc_spec` uses the full path to the doc spec file, making references self-documenting
+- Doc spec-aware skill generation
+  - Step skills now include doc spec quality criteria, target audience, and example documents
+  - Both Claude and Gemini templates updated for doc spec rendering
+- Document detection workflow in `deepwork_jobs.define`
+  - Steps 1.5, 1.6, 1.7 guide users through creating doc specs for document-oriented jobs
+  - Pattern indicators: "report", "summary", "create", "monthly", "for stakeholders"
+- Doc spec improvement workflow in `deepwork_jobs.learn`
+  - Steps 3.5, 4.5 capture doc spec-related learnings and update doc spec files
+- New `OutputSpec` dataclass in parser for structured output handling
+- Comprehensive doc spec documentation in `doc/doc-specs.md`
+- New test fixtures for doc spec validation and parsing
+- Comprehensive tests for generator doc spec integration (9 new tests)
+  - `test_load_doc_spec_returns_parsed_spec` - Verifies doc spec loading
+  - `test_load_doc_spec_caches_result` - Verifies caching behavior
+  - `test_load_doc_spec_returns_none_for_missing_file` - Graceful handling of missing files
+  - `test_generate_step_skill_with_doc_spec` - End-to-end skill generation with doc spec
+  - `test_build_step_context_includes_doc_spec_info` - Context building verification
+
+### Changed
+- **BREAKING**: Renamed `document_type` to `doc_spec` throughout the codebase
+  - Job.yml field: `document_type` → `doc_spec` (e.g., `outputs: [{file: "report.md", doc_spec: ".deepwork/doc_specs/report.md"}]`)
+  - Class: `DocumentTypeDefinition` → `DocSpec` (backward compat alias provided)
+  - Methods: `has_document_type()` → `has_doc_spec()`, `validate_document_type_references()` → `validate_doc_spec_references()`
+  - Template variables: `has_document_type` → `has_doc_spec`, `document_type` → `doc_spec`
+  - Internal: `_load_document_type()` → `_load_doc_spec()`, `_doc_type_cache` → `_doc_spec_cache`
+- `Step.outputs` changed from `list[str]` to `list[OutputSpec]` for richer output metadata
+- `SkillGenerator.generate_all_skills()` now accepts `project_root` parameter for doc spec loading
+- Updated `deepwork_jobs` to v0.6.0 with doc spec-related quality criteria
+
+### Fixed
+- Fixed COMMAND rules promise handling to properly update queue status
+  - When an agent provides a promise tag for a FAILED command rule, the queue entry is now correctly updated to SKIPPED status
+  - Previously, FAILED queue entries remained in FAILED state even after being acknowledged via promise
+  - This ensures the rules queue accurately reflects rule state throughout the workflow
+- Fixed quality criteria validation logic in skill template (#111)
+  - Changed promise condition from AND to OR: promise OR all criteria met now passes
+  - Changed failure condition from OR to AND: requires both criteria NOT met AND promise missing to fail
+  - This corrects the logic so the promise mechanism properly serves as a bypass for quality criteria
+
+### Migration Guide
+- Update job.yml files: Change `document_type:` to `doc_spec:` in output definitions
+- Update any code importing `DocumentTypeDefinition`: Use `DocSpec` instead (alias still works)
+- Run `deepwork install` to regenerate skills with updated terminology
+
+## [0.3.1] - 2026-01-20
+
+### Added
+- `created` rule mode for matching only newly created files (#76)
+  - Rules with `mode: created` only fire when files are first added, not on modifications
+  - Useful for enforcing patterns on new files without triggering on existing file edits
+
+### Fixed
+- Fixed `created` mode rules incorrectly firing on modified files (#83)
+- Fixed `compare_to: prompt` mode not detecting files that were committed during agent response
+  - Rules like `uv-lock-sync` now correctly fire even when changes are committed before the Stop hook runs
+
 ## [0.3.0] - 2026-01-18
 
 ### Added
@@ -100,6 +215,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.5.1...HEAD
+[0.5.1]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.5.1
+[0.5.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.5.0
+[0.4.2]: https://github.com/anthropics/deepwork/compare/0.4.1...0.4.2
+[0.4.1]: https://github.com/anthropics/deepwork/compare/0.4.0...0.4.1
+[0.4.0]: https://github.com/anthropics/deepwork/compare/0.3.1...0.4.0
+[0.3.1]: https://github.com/anthropics/deepwork/releases/tag/0.3.1
 [0.3.0]: https://github.com/anthropics/deepwork/releases/tag/0.3.0
 [0.1.1]: https://github.com/anthropics/deepwork/releases/tag/0.1.1
 [0.1.0]: https://github.com/anthropics/deepwork/releases/tag/0.1.0

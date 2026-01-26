@@ -1,25 +1,12 @@
 ---
 name: commit.lint
-description: "Format and lint code with ruff using a sub-agent"
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the linting is complete:
-            1. ruff format was run successfully
-            2. ruff check was run successfully (with --fix)
-            3. No remaining lint errors
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
----
+description: "Formats and lints code with ruff using a sub-agent. Use after tests pass to ensure code style compliance."user-invocable: false---
 
 # commit.lint
 
-**Step 2/3** in **commit** workflow
+**Step 3/4** in **commit** workflow
 
-> Run tests, lint, and commit code changes
+> Reviews code, runs tests, lints, and commits changes. Use when ready to commit work with quality checks.
 
 ## Prerequisites (Verify First)
 
@@ -28,7 +15,7 @@ Before proceeding, confirm these steps are complete:
 
 ## Instructions
 
-**Goal**: Format and lint code with ruff using a sub-agent
+**Goal**: Formats and lints code with ruff using a sub-agent. Use after tests pass to ensure code style compliance.
 
 # Lint Code
 
@@ -108,14 +95,16 @@ This step ensures code quality and consistency before committing. It runs after 
 
 A workflow for preparing and committing code changes with quality checks.
 
-This job runs tests until they pass, formats and lints code with ruff,
-then reviews changed files before committing and pushing. The lint step
-uses a sub-agent to reduce context usage.
+This job starts with a code review to catch issues early, runs tests until
+they pass, formats and lints code with ruff, then reviews changed files
+before committing and pushing. The review and lint steps use sub-agents
+to reduce context usage.
 
 Steps:
-1. test - Pull latest code and run tests until they pass
-2. lint - Format and lint code with ruff (runs in sub-agent)
-3. commit_and_push - Review changes and commit/push
+1. review - Code review for issues, DRY opportunities, naming, and test coverage (runs in sub-agent)
+2. test - Pull latest code and run tests until they pass
+3. lint - Format and lint code with ruff (runs in sub-agent)
+4. commit_and_push - Review changes and commit/push
 
 
 
@@ -128,20 +117,20 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 
 ## Outputs
 
-No specific file outputs required.
+**Required outputs**:
+- `code_formatted`
 
-## Quality Validation
+## Guardrails
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 2/3 complete"
+2. Inform user: "Step 3/4 complete, outputs: code_formatted"
 3. **Continue workflow**: Use Skill tool to invoke `/commit.commit_and_push`
 
 ---

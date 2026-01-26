@@ -1,3 +1,8 @@
-# DeepWork temporary files
-# These files are used for rules evaluation during sessions
+# DeepWork runtime artifacts
+# These files are generated during sessions and should not be committed
 .last_work_tree
+.last_head_ref
+
+# Temporary files (but keep the directory via .gitkeep)
+tmp/*
+!tmp/.gitkeep

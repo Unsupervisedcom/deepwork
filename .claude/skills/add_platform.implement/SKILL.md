@@ -1,34 +1,16 @@
 ---
 name: add_platform.implement
-description: "Add platform adapter, templates, tests with 100% coverage, and README documentation"
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: command
-          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"
-        - type: prompt
-          prompt: |
-            Verify the implementation meets ALL criteria:
-            1. Platform adapter class is added to src/deepwork/adapters.py
-            2. Templates exist in src/deepwork/templates/<platform>/ with appropriate command structure
-            3. Tests exist for all new functionality
-            4. Test coverage is 100% for new code (run: uv run pytest --cov)
-            5. All tests pass
-            6. README.md is updated with:
-               - New platform listed in supported platforms
-               - Installation instructions for the platform
-               - Any platform-specific notes
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
----
+description: "Creates platform adapter, templates, tests with 100% coverage, and README documentation. Use after adding hook capabilities."user-invocable: falsehooks:  Stop:
+    - hooks:        - type: command
+          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"  SubagentStop:
+    - hooks:        - type: command
+          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"---
 
 # add_platform.implement
 
 **Step 3/4** in **add_platform** workflow
 
-> Add a new AI platform to DeepWork with adapter, templates, and tests
+> Adds a new AI platform to DeepWork with adapter, templates, and tests. Use when integrating Cursor, Windsurf, or other AI coding tools.
 
 ## Prerequisites (Verify First)
 
@@ -38,7 +20,7 @@ Before proceeding, confirm these steps are complete:
 
 ## Instructions
 
-**Goal**: Add platform adapter, templates, tests with 100% coverage, and README documentation
+**Goal**: Creates platform adapter, templates, tests with 100% coverage, and README documentation. Use after adding hook capabilities.
 
 # Implement Platform Support
 
@@ -306,16 +288,18 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 ## Outputs
 
 **Required outputs**:
-- `templates/` (directory)- `tests/` (directory)- `README.md`
-## Quality Validation
+- `templates/` (directory)
+- `tests/` (directory)
+- `README.md`
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
+## Guardrails
 
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 **Validation script**: `.deepwork/jobs/add_platform/hooks/run_tests.sh` (runs automatically)
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
-
 ## On Completion
 
 1. Verify outputs are created

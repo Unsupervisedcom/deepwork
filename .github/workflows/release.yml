@@ -3,6 +3,10 @@ name: Release to PyPI
 on:
   release:
     types: [published]
+  # Dry-run build on PRs to catch build issues before release
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
 
 jobs:
   build:
@@ -37,6 +41,7 @@ jobs:
 
   publish:
     needs: build
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -50,3 +55,16 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  update-homebrew:
+    needs: publish
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Homebrew formula update
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.DEPLOYER_CI_TOKEN }}
+          repository: Unsupervisedcom/homebrew-deepwork
+          event-type: update-formula
+          client-payload: '{"version": "${{ github.event.release.tag_name }}"}'

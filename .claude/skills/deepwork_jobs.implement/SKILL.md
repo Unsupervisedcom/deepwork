@@ -1,58 +1,27 @@
 ---
 name: deepwork_jobs.implement
-description: "Generate instruction files for each step based on the job.yml specification"
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
-            1. **Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?
-            2. **Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?
-            3. **Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?
-            4. **Output Examples**: Does each instruction file show what good output looks like?
-            5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
-            6. **Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase "ask structured questions"?
-            7. **Sync Complete**: Has `deepwork sync` been run successfully?
-            8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-            9. **Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to run `/deepwork_rules.define`? Not every job needs rules - only suggest when genuinely helpful.
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
-            all criteria appear to be met, respond with: {"ok": true}
-
-            If criteria are NOT met OR the promise tag is missing, respond with:
-            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
----
+description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes."user-invocable: false---
 
 # deepwork_jobs.implement
 
-**Step 2/3** in **deepwork_jobs** workflow
+**Step 3/4** in **deepwork_jobs** workflow
 
-> DeepWork job management commands
+> Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs.
 
 ## Prerequisites (Verify First)
 
 Before proceeding, confirm these steps are complete:
-- `/deepwork_jobs.define`
+- `/deepwork_jobs.review_job_spec`
 
 ## Instructions
 
-**Goal**: Generate instruction files for each step based on the job.yml specification
+**Goal**: Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes.
 
 # Implement Job Steps
 
 ## Objective
 
-Generate the DeepWork job directory structure and instruction files for each step based on the `job.yml` specification created in the previous step.
+Generate the DeepWork job directory structure and instruction files for each step based on the validated `job.yml` specification from the review_job_spec step.
 
 ## Task
 
@@ -82,7 +51,7 @@ touch .deepwork/jobs/[job_name]/hooks/.gitkeep .deepwork/jobs/[job_name]/templat
 ### Step 2: Read and Validate the Specification
 
 1. **Locate the job.yml file**
-   - Read `.deepwork/jobs/[job_name]/job.yml` from the define step
+   - Read `.deepwork/jobs/[job_name]/job.yml` from the review_job_spec step
    - Parse the YAML content
 
 2. **Validate the specification**
@@ -161,7 +130,7 @@ See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for det
 
 ### Step 4: Verify job.yml Location
 
-Verify that `job.yml` is in the correct location at `.deepwork/jobs/[job_name]/job.yml`. The define step should have created it there. If for some reason it's not there, you may need to create or move it.
+Verify that `job.yml` is in the correct location at `.deepwork/jobs/[job_name]/job.yml`. The define and review_job_spec steps should have created and validated it. If for some reason it's not there, you may need to create or move it.
 
 ### Step 5: Sync Skills
 
@@ -306,7 +275,7 @@ learnings specific to the current run into AGENTS.md files in the working folder
 
 
 **Files from Previous Steps** - Read these first:
-- `job.yml` (from `define`)
+- `job.yml` (from `review_job_spec`)
 
 ## Work Branch
 
@@ -319,9 +288,19 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `steps/` (directory)
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
+
 ## Quality Validation
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
+**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
+
+Use a sub-agent (Haiku model) to review your work against these criteria:
 
 **Criteria (all must be satisfied)**:
 1. **Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?
@@ -333,14 +312,17 @@ Stop hooks will automatically validate your work. The loop continues until all c
 7. **Sync Complete**: Has `deepwork sync` been run successfully?
 8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
 9. **Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to run `/deepwork_rules.define`? Not every job needs rules - only suggest when genuinely helpful.
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
+**Review Process**:
+1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
+2. The sub-agent should examine your outputs and verify each criterion is met
+3. If the sub-agent identifies valid issues, fix them
+4. Have the sub-agent review again until all valid feedback has been addressed
+5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 2/3 complete, outputs: steps/"
+2. Inform user: "Step 3/4 complete, outputs: steps/"
 3. **Continue workflow**: Use Skill tool to invoke `/deepwork_jobs.learn`
 
 ---

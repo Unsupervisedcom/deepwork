@@ -1,60 +1,29 @@
 ---
 name: deepwork_jobs.learn
-description: "Reflect on conversation to improve job instructions and capture learnings"
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
-            1. **Conversation Analyzed**: Did the agent review the conversation for DeepWork job executions?
-            2. **Confusion Identified**: Did the agent identify points of confusion, errors, or inefficiencies?
-            3. **Instructions Improved**: Were job instructions updated to address identified issues?
-            4. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
-            5. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
-            6. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
-            7. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
-            8. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
-            9. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
-            10. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response AND
-            all criteria appear to be met, respond with: {"ok": true}
-
-            If criteria are NOT met OR the promise tag is missing, respond with:
-            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
----
+description: "Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it."---
 
 # deepwork_jobs.learn
 
 **Standalone skill** - can be run anytime
 
-> DeepWork job management commands
+> Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs.
 
 
 ## Instructions
 
-**Goal**: Reflect on conversation to improve job instructions and capture learnings
+**Goal**: Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
 
 # Learn from Job Execution
 
 ## Objective
 
-Think deeply about this task. Reflect on the current conversation to identify learnings from DeepWork job executions, improve job instructions with generalizable insights, and capture bespoke (run-specific) learnings in AGENTS.md files in the appropriate working folder.
+Think deeply about this task. Reflect on the current conversation to identify learnings from DeepWork job executions, improve job instructions with generalizable insights, and capture bespoke (run-specific) learnings in AGENTS.md files in the deepest common folder that would contain all work on the topic in the future.
 
 ## Task
 
 Analyze the conversation history to extract learnings and improvements, then apply them appropriately:
 - **Generalizable learnings** → Update job instruction files
-- **Bespoke learnings** (specific to this run) → Add to AGENTS.md in working folder
+- **Bespoke learnings** (specific to this run) → Add to AGENTS.md in the deepest common folder for the topic
 
 ### Step 1: Analyze Conversation for Job Executions
 
@@ -63,7 +32,8 @@ Analyze the conversation history to extract learnings and improvements, then app
    - Identify which jobs and steps were executed
    - Note the order of execution
 
-2. **Identify the working folder**
+2. **Identify the target folder**
+   - This should be the deepest common folder that would contain all work on the topic in the future
    - Should be clear from conversation history where work was done
    - If unclear, run `git diff` to see where changes were made on the branch
 
@@ -111,6 +81,15 @@ For each learning identified, determine if it is:
   - "Quality criteria should include checking for Y"
   - "Add example of correct output format"
 
+**doc spec-Related** (should improve doc spec files):
+- Improvements to document quality criteria
+- Changes to document structure or format
+- Updated audience or frequency information
+- Examples:
+  - "The report should include a summary table"
+  - "Quality criterion 'Visualization' needs clearer requirements"
+  - "Documents need a section for action items"
+
 **Bespoke** (should go in AGENTS.md):
 - Specific to THIS project/codebase/run
 - Depends on local conventions or structure
@@ -120,6 +99,30 @@ For each learning identified, determine if it is:
   - "In this codebase, API endpoints are in `src/api/`"
   - "This project uses camelCase for function names"
   - "The main config file is at `config/settings.yml`"
+
+### Step 3.5: Identify doc spec-Related Learnings
+
+Review the conversation for doc spec-related improvements:
+
+1. **Quality Criteria Changes**
+   - Were any quality criteria unclear or insufficient?
+   - Did the agent repeatedly fail certain criteria?
+   - Are there new criteria that should be added?
+
+2. **Document Structure Changes**
+   - Did the user request different sections?
+   - Were parts of the document format confusing?
+   - Should the example document be updated?
+
+3. **Metadata Updates**
+   - Has the target audience changed?
+   - Should frequency or path patterns be updated?
+
+**Signals for doc spec improvements:**
+- User asked for changes to document format
+- Repeated validation failures on specific criteria
+- Feedback about missing sections or information
+- Changes to how documents are organized/stored
 
 ### Step 4: Update Job Instructions (Generalizable Learnings)
 
@@ -174,12 +177,47 @@ Review all instruction files for the job and identify content that:
    - Shorter instruction files - easier to read and maintain
    - Consistent guidance across steps
 
+### Step 4.5: Update doc spec Files (doc spec-Related Learnings)
+
+If doc spec-related learnings were identified:
+
+1. **Locate the doc spec file**
+   - Find doc spec references in job.yml outputs (look for `doc_spec: .deepwork/doc_specs/[doc_spec_name].md`)
+   - doc spec files are at `.deepwork/doc_specs/[doc_spec_name].md`
+
+2. **Update quality_criteria array**
+   - Add new criteria with name and description
+   - Modify existing criteria descriptions for clarity
+   - Remove criteria that are no longer relevant
+
+3. **Update example document**
+   - Modify the markdown body to reflect structure changes
+   - Ensure the example matches updated criteria
+
+4. **Update metadata as needed**
+   - target_audience: If audience has changed
+   - frequency: If production cadence has changed
+   - path_patterns: If storage location has changed
+
+**Example doc spec update:**
+```yaml
+# Before
+quality_criteria:
+  - name: Visualization
+    description: Include charts
+
+# After
+quality_criteria:
+  - name: Visualization
+    description: Include Mermaid.js charts showing spend breakdown by service and month-over-month trend
+```
+
 ### Step 5: Create/Update AGENTS.md (Bespoke Learnings)
 
 The AGENTS.md file captures project-specific knowledge that helps future agent runs.
 
 1. **Determine the correct location**
-   - Place AGENTS.md in the working folder where job outputs live
+   - Place AGENTS.md in the deepest common folder that would contain all work on the topic in the future
    - This ensures the knowledge is available when working in that context
    - If uncertain, place at the project root
 
@@ -247,7 +285,7 @@ When adding entries to AGENTS.md, prefer these patterns:
 - Shared/lengthy content extracted into referenced files where appropriate
 - AGENTS.md created/updated with bespoke learnings
 - File references used instead of duplicating content
-- AGENTS.md is in the correct working folder
+- AGENTS.md is in the correct folder (the deepest common folder for the topic)
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
 
 ## Example Dialog
@@ -365,9 +403,19 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `AGENTS.md`
+
+## Guardrails
+
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
+
 ## Quality Validation
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
+**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
+
+Use a sub-agent (Haiku model) to review your work against these criteria:
 
 **Criteria (all must be satisfied)**:
 1. **Conversation Analyzed**: Did the agent review the conversation for DeepWork job executions?
@@ -375,14 +423,19 @@ Stop hooks will automatically validate your work. The loop continues until all c
 3. **Instructions Improved**: Were job instructions updated to address identified issues?
 4. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
 5. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
-6. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
-7. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
-8. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
-9. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
-10. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
+6. **doc spec Reviewed (if applicable)**: For jobs with doc spec outputs, were doc spec-related learnings identified?
+7. **doc spec Updated (if applicable)**: Were doc spec files updated with improved quality criteria or structure?
+8. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
+9. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
+10. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
+11. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
+12. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
+**Review Process**:
+1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
+2. The sub-agent should examine your outputs and verify each criterion is met
+3. If the sub-agent identifies valid issues, fix them
+4. Have the sub-agent review again until all valid feedback has been addressed
+5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
 ## On Completion
 

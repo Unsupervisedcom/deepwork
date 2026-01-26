@@ -46,6 +46,7 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── detector.py     # AI platform detection
 │       │   ├── generator.py    # Command file generation
 │       │   ├── parser.py       # Job definition parsing
+│       │   ├── doc_spec_parser.py   # Doc spec parsing
 │       │   ├── rules_parser.py     # Rule definition parsing
 │       │   ├── pattern_matcher.py  # Variable pattern matching for rules
 │       │   ├── rules_queue.py      # Rule state queue system
@@ -65,7 +66,10 @@ deepwork/                       # DeepWork tool repository
 │       ├── standard_jobs/      # Built-in job definitions
 │       │   ├── deepwork_jobs/
 │       │   │   ├── job.yml
-│       │   │   └── steps/
+│       │   │   ├── steps/
+│       │   │   └── templates/
+│       │   │       ├── doc_spec.md.template
+│       │   │       └── doc_spec.md.example
 │       │   └── deepwork_rules/   # Rule management job
 │       │       ├── job.yml
 │       │       ├── steps/
@@ -76,6 +80,7 @@ deepwork/                       # DeepWork tool repository
 │       │           └── capture_prompt_work_tree.sh
 │       ├── schemas/            # Definition schemas
 │       │   ├── job_schema.py
+│       │   ├── doc_spec_schema.py   # Doc spec schema definition
 │       │   └── rules_schema.py
 │       └── utils/
 │           ├── fs.py
@@ -290,6 +295,8 @@ my-project/                     # User's project (target)
 ├── .deepwork/                  # DeepWork configuration
 │   ├── config.yml              # Platform config
 │   ├── .gitignore              # Ignores tmp/ directory
+│   ├── doc_specs/                   # Doc specs (document specifications)
+│   │   └── monthly_aws_report.md
 │   ├── rules/                  # Rule definitions (v2 format)
 │   │   ├── source-test-pairing.md
 │   │   ├── format-python.md
@@ -1028,6 +1035,7 @@ name: Source/Test Pairing
 set:
   - src/{path}.py
   - tests/{path}_test.py
+compare_to: base
 ---
 When source files change, corresponding test files should also change.
 Please create or update tests for the modified source files.
@@ -1043,6 +1051,7 @@ Rules support three detection modes:
 name: Update install guide
 trigger: "app/config/**/*"
 safety: "docs/install_guide.md"
+compare_to: base
 ---
 ```
 
@@ -1053,6 +1062,7 @@ name: Source/Test Pairing
 set:
   - src/{path}.py
   - tests/{path}_test.py
+compare_to: base
 ---
 ```
 Uses variable patterns like `{path}` (multi-segment) and `{name}` (single-segment) for matching.
@@ -1064,6 +1074,7 @@ name: API Documentation
 pair:
   trigger: src/api/{name}.py
   expects: docs/api/{name}.md
+compare_to: base
 ---
 ```
 
@@ -1074,6 +1085,7 @@ pair:
 ---
 name: Security Review
 trigger: "src/auth/**/*"
+compare_to: base
 ---
 Please check for hardcoded credentials and validate input.
 ```
@@ -1086,6 +1098,7 @@ trigger: "**/*.py"
 action:
   command: "ruff format {file}"
   run_for: each_match  # or "all_matches"
+compare_to: prompt
 ---
 ```
 
@@ -1134,7 +1147,7 @@ The hooks are installed to `.claude/settings.json` during `deepwork sync`:
 {
   "hooks": {
     "Stop": [
-      {"matcher": "", "hooks": [{"type": "command", "command": "python -m deepwork.hooks.rules_check"}]}
+      {"matcher": "", "hooks": [{"type": "command", "command": "deepwork hook rules_check"}]}
     ]
   }
 }
@@ -1189,6 +1202,90 @@ def my_hook(input: HookInput) -> HookOutput:
 ```
 
 See `doc/platforms/` for detailed platform-specific hook documentation.
+
+---
+
+## Doc Specs (Document Specifications)
+
+Doc specs formalize document specifications for job outputs. They enable consistent document structure and automated quality validation.
+
+### Purpose
+
+Doc specs solve a common problem with AI-generated documents: inconsistent quality and structure. By defining:
+- Required quality criteria
+- Target audience
+- Document structure (via example)
+
+Doc specs ensure that documents produced by job steps meet consistent standards.
+
+### Doc Spec File Format
+
+Doc specs are stored in `.deepwork/doc_specs/[doc_spec_name].md` using frontmatter markdown:
+
+```markdown
+---
+name: "Monthly AWS Spending Report"
+description: "A Markdown summary of AWS spend across accounts"
+path_patterns:
+  - "finance/aws-reports/*.md"
+target_audience: "Finance team and Engineering leadership"
+frequency: "Monthly, following AWS invoice arrival"
+quality_criteria:
+  - name: Visualization
+    description: Must include Mermaid.js charts showing spend per service
+  - name: Variance Analysis
+    description: Must compare current month against previous with percentages
+---
+
+# Monthly AWS Spending Report: [Month, Year]
+
+## Executive Summary
+[Example content...]
+```
+
+### Using Doc Specs in Jobs
+
+Reference doc specs in job.yml outputs:
+
+```yaml
+outputs:
+  - file: reports/monthly_spending.md
+    doc_spec: .deepwork/doc_specs/monthly_aws_report.md
+```
+
+### Generated Skills
+
+When `deepwork sync` runs, skills with doc spec-referenced outputs include:
+- Document name and description
+- Target audience
+- All quality criteria with descriptions
+- Example document structure (collapsible)
+
+### Doc Spec Schema
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Human-readable document name |
+| `description` | Yes | Purpose of the document |
+| `quality_criteria` | Yes | Array of `{name, description}` quality requirements |
+| `path_patterns` | No | Where documents should be stored |
+| `target_audience` | No | Who reads the document |
+| `frequency` | No | How often produced |
+
+### Workflow Integration
+
+The `/deepwork_jobs.define` command:
+1. Detects document-oriented workflows (keywords: "report", "summary", "monthly")
+2. Guides users through doc spec creation
+3. Links doc specs to job outputs
+
+The `/deepwork_jobs.learn` command:
+1. Identifies doc spec-related learnings (quality criteria issues, structure changes)
+2. Updates doc spec files with improvements
+
+See `doc/doc-specs.md` for complete documentation.
+
+---
 
 ### Rule Schema
 

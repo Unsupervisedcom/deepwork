@@ -65,6 +65,13 @@ If user intent is unclear, use AskUserQuestion to clarify:
 - Present available steps as numbered options
 - Let user select the starting point
 
+## Guardrails
+
+- Do NOT copy/paste step instructions directly; always use the Skill tool to invoke steps
+- Do NOT skip steps in the workflow unless the user explicitly requests it
+- Do NOT proceed to the next step if the current step's outputs are incomplete
+- Do NOT make assumptions about user intent; ask for clarification when ambiguous
+
 ## Context Files
 
 - Job definition: `.deepwork/jobs/{{ job_name }}/job.yml`

@@ -136,11 +136,15 @@ def sync_skills(project_path: Path) -> None:
         ensure_dir(skills_dir)
 
         # Generate skills for all jobs
+        all_skill_paths: list[Path] = []
         if jobs:
             console.print("  [dim]•[/dim] Generating skills...")
             for job in jobs:
                 try:
-                    job_paths = generator.generate_all_skills(job, adapter, platform_dir)
+                    job_paths = generator.generate_all_skills(
+                        job, adapter, platform_dir, project_root=project_path
+                    )
+                    all_skill_paths.extend(job_paths)
                     stats["skills"] += len(job_paths)
                     console.print(f"    [green]✓[/green] {job.name} ({len(job_paths)} skills)")
                 except Exception as e:
@@ -156,6 +160,28 @@ def sync_skills(project_path: Path) -> None:
                     console.print(f"    [green]✓[/green] Synced {hooks_count} hook(s)")
             except Exception as e:
                 console.print(f"    [red]✗[/red] Failed to sync hooks: {e}")
+
+        # Sync required permissions to platform settings
+        console.print("  [dim]•[/dim] Syncing permissions...")
+        try:
+            perms_count = adapter.sync_permissions(project_path)
+            if perms_count > 0:
+                console.print(f"    [green]✓[/green] Added {perms_count} base permission(s)")
+            else:
+                console.print("    [dim]•[/dim] Base permissions already configured")
+        except Exception as e:
+            console.print(f"    [red]✗[/red] Failed to sync permissions: {e}")
+
+        # Add skill permissions for generated skills (if adapter supports it)
+        if all_skill_paths and hasattr(adapter, "add_skill_permissions"):
+            try:
+                skill_perms_count = adapter.add_skill_permissions(project_path, all_skill_paths)
+                if skill_perms_count > 0:
+                    console.print(
+                        f"    [green]✓[/green] Added {skill_perms_count} skill permission(s)"
+                    )
+            except Exception as e:
+                console.print(f"    [red]✗[/red] Failed to sync skill permissions: {e}")
 
         stats["platforms"] += 1
         synced_adapters.append(adapter)

@@ -2,11 +2,11 @@
 
 ## Objective
 
-Review the changed files with the user, create a commit with an appropriate message, and push to the remote repository.
+Review the changed files to verify they match the agent's expectations, create a commit with an appropriate message, and push to the remote repository.
 
 ## Task
 
-Present the list of changed files for user review, ensure they match expectations, then commit and push the changes.
+Check the list of changed files against what was modified during this session, ensure they match expectations, then commit and push the changes.
 
 ### Process
 
@@ -16,31 +16,39 @@ Present the list of changed files for user review, ensure they match expectation
    ```
    Also run `git diff --stat` to see a summary of changes.
 
-2. **Present changes to the user for review**
+2. **Verify changes match expectations**
 
-   Use the AskUserQuestion tool to ask structured questions about the changes:
+   Compare the changed files against what you modified during this session:
+   - Do the modified files match what you edited?
+   - Are there any unexpected new files?
+   - Are there any unexpected deleted files?
+   - Do the line counts seem reasonable for the changes you made?
 
-   Show the user:
-   - List of modified files
-   - List of new files
-   - List of deleted files
-   - Summary of changes (lines added/removed)
+   If changes match expectations, proceed to the next step.
 
-   Ask them to confirm:
-   - "Do these changed files match your expectations?"
-   - Provide options: "Yes, proceed with commit" / "No, let me review first" / "No, some files shouldn't be included"
+   If there are unexpected changes:
+   - Investigate why (e.g., lint auto-fixes, generated files)
+   - If they're legitimate side effects of your work, include them
+   - If they're unrelated or shouldn't be committed, use `git restore` to discard them
 
-3. **Handle user response**
+3. **Update CHANGELOG.md if needed**
 
-   - If user confirms, proceed to commit
-   - If user wants to review first, wait for them to come back
-   - If user says some files shouldn't be included, ask which files to exclude and use `git restore` or `git checkout` to unstage them
+   If your changes include new features, bug fixes, or other notable changes:
+   - Add entries to the `## [Unreleased]` section of CHANGELOG.md
+   - Use the appropriate subsection: `### Added`, `### Changed`, `### Fixed`, or `### Removed`
+   - Write concise descriptions that explain the user-facing impact
+
+   **CRITICAL: NEVER modify version numbers**
+   - Do NOT change the version in `pyproject.toml`
+   - Do NOT change version headers in CHANGELOG.md (e.g., `## [0.4.2]`)
+   - Do NOT rename the `## [Unreleased]` section
+   - Version updates are handled by the release workflow, not commits
 
 4. **Stage all appropriate changes**
    ```bash
    git add -A
    ```
-   Or stage specific files if user excluded some.
+   Or stage specific files if some were excluded.
 
 5. **View recent commit messages for style reference**
    ```bash
@@ -54,8 +62,9 @@ Present the list of changed files for user review, ensure they match expectation
    - The style of recent commits
    - Conventional commit format if the project uses it
 
+   **IMPORTANT:** Use the commit job script (not `git commit` directly):
    ```bash
-   git commit -m "commit message here"
+   .claude/hooks/commit_job_git_commit.sh -m "commit message here"
    ```
 
 7. **Push to remote**
@@ -69,8 +78,10 @@ Present the list of changed files for user review, ensure they match expectation
 
 ## Quality Criteria
 
-- Changed files list was presented to user
-- User explicitly confirmed the files match expectations
+- Changed files list was reviewed by the agent
+- Files match what was modified during this session (or unexpected changes were investigated and handled)
+- CHANGELOG.md was updated with entries in the `[Unreleased]` section (if changes warrant documentation)
+- Version numbers were NOT modified (in pyproject.toml or CHANGELOG.md version headers)
 - Commit message follows project conventions
 - Commit was created successfully
 - Changes were pushed to remote
@@ -78,4 +89,4 @@ Present the list of changed files for user review, ensure they match expectation
 
 ## Context
 
-This is the final step of the commit workflow. It ensures the user has reviewed and approved the changes before they are committed and pushed. This prevents accidental commits of unintended files or changes.
+This is the final step of the commit workflow. The agent verifies that the changed files match its own expectations from the work done during the session, then commits and pushes. This catches unexpected changes while avoiding unnecessary user interruptions.

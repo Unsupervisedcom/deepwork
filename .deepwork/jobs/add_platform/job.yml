@@ -1,6 +1,6 @@
 name: add_platform
-version: "0.1.0"
-summary: "Add a new AI platform to DeepWork with adapter, templates, and tests"
+version: "0.3.0"
+summary: "Adds a new AI platform to DeepWork with adapter, templates, and tests. Use when integrating Cursor, Windsurf, or other AI coding tools."
 
 description: |
   A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
@@ -23,11 +23,15 @@ description: |
 changelog:
   - version: "0.1.0"
     changes: "Initial version"
+  - version: "0.2.0"
+    changes: "Added verification_checklist.md output to verify step for doc spec compliance"
+  - version: "0.3.0"
+    changes: "Improved skill descriptions with third-person voice and 'Use when...' triggers for better discoverability"
 
 steps:
   - id: research
     name: "Research Platform Documentation"
-    description: "Capture CLI configuration and hooks system documentation for the new platform"
+    description: "Captures CLI configuration and hooks system documentation for the new platform. Use when starting platform integration."
     instructions_file: steps/research.md
     inputs:
       - name: platform_name
@@ -53,7 +57,7 @@ steps:
 
   - id: add_capabilities
     name: "Add Hook Capabilities"
-    description: "Update job schema and adapters with any new hook events the platform supports"
+    description: "Updates job schema and adapters with any new hook events the platform supports. Use after research to extend DeepWork's hook system."
     instructions_file: steps/add_capabilities.md
     inputs:
       - file: hooks_system.md
@@ -79,7 +83,7 @@ steps:
 
   - id: implement
     name: "Implement Platform Support"
-    description: "Add platform adapter, templates, tests with 100% coverage, and README documentation"
+    description: "Creates platform adapter, templates, tests with 100% coverage, and README documentation. Use after adding hook capabilities."
     instructions_file: steps/implement.md
     inputs:
       - file: job_schema.py
@@ -114,12 +118,13 @@ steps:
 
   - id: verify
     name: "Verify Installation"
-    description: "Set up platform directories and verify deepwork install works correctly"
+    description: "Sets up platform directories and verifies deepwork install works correctly. Use after implementation to confirm integration."
     instructions_file: steps/verify.md
     inputs:
       - file: templates/
         from_step: implement
-    outputs: []
+    outputs:
+      - verification_checklist.md
     dependencies:
       - implement
     hooks:

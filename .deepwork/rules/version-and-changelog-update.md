@@ -4,6 +4,7 @@ trigger: src/**/*
 safety:
   - pyproject.toml
   - CHANGELOG.md
+compare_to: base
 ---
 Source code in src/ has been modified. **You MUST evaluate whether version and changelog updates are needed.**
 

@@ -1,31 +1,17 @@
 ---
 name: update.job
-description: "Edit standard job source files and sync to installed locations"
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the update process completed successfully:
-            1. Changes were made in src/deepwork/standard_jobs/[job_name]/ (NOT in .deepwork/jobs/)
-            2. `deepwork install --platform claude` was run
-            3. Files in .deepwork/jobs/ match the source files
-            4. Command files in .claude/commands/ were regenerated
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
----
+description: "Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions."user-invocable: false---
 
 # update.job
 
 **Standalone skill** - can be run anytime
 
-> Update standard jobs in src/ and sync to installed locations
+> Updates DeepWork standard jobs in src/ and syncs to installed locations. Use when modifying deepwork_jobs or deepwork_rules.
 
 
 ## Instructions
 
-**Goal**: Edit standard job source files and sync to installed locations
+**Goal**: Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions.
 
 # Update Standard Job
 
@@ -134,20 +120,20 @@ Use branch format: `deepwork/update-[instance]-YYYYMMDD`
 
 ## Outputs
 
-No specific file outputs required.
+**Required outputs**:
+- `files_synced`
 
-## Quality Validation
+## Guardrails
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
+- Do NOT skip prerequisite verification if this step has dependencies
+- Do NOT produce partial outputs; complete all required outputs before finishing
+- Do NOT proceed without required inputs; ask the user if any are missing
+- Do NOT modify files outside the scope of this step's defined outputs
 
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "job complete"
+2. Inform user: "job complete, outputs: files_synced"
 
 This standalone skill can be re-run anytime.
 
