@@ -143,11 +143,11 @@ To start the process, just run:
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| **Claude Code** | Full Support | Recommended. Quality hooks, rules, best DX. |
+| **Claude Code** | Full Support | Recommended. Works on Windows, macOS, Linux. Quality hooks, rules, best DX. |
 | **Gemini CLI** | Partial Support | TOML format, global hooks only |
 | OpenCode | Planned | |
 | GitHub Copilot CLI | Planned | |
-| Others | Planned | We are nailing Claude and Gemini first, then adding others according ot demand |
+| Others | Planned | We are nailing Claude and Gemini first, then adding others according to demand |
 
 **Tip:** Use the terminal (Claude Code CLI), not the VS Code extension. The terminal has full feature support.
 
@@ -233,6 +233,38 @@ Then in your project folder (in terminal, not in Claude Code):
 ```bash
 deepwork install
 ```
+
+</details>
+
+<details>
+<summary><strong>Windows Installation</strong></summary>
+
+DeepWork fully supports Windows with Claude Code. Install using PowerShell:
+
+```powershell
+# Option 1: Download and run the installer (recommended)
+Invoke-WebRequest -Uri "https://github.com/unsupervisedcom/deepwork/releases/latest/download/install-windows.ps1" -OutFile install-windows.ps1
+.\install-windows.ps1
+
+# Option 2: Using pip (requires Python 3.11+)
+pip install deepwork
+
+# Option 3: Using pipx
+pipx install deepwork
+```
+
+Then in your project folder:
+
+```powershell
+deepwork install
+```
+
+**Requirements:**
+- Windows 10 or later
+- Git for Windows (provides Git Bash for hook execution)
+- Claude Code installed via npm or winget
+
+See [doc/installation/windows.md](doc/installation/windows.md) for detailed instructions and troubleshooting.
 
 </details>
 

@@ -462,15 +462,14 @@ class ClaudeAdapter(AgentAdapter):
         """
         # Define required permissions for DeepWork functionality
         # Uses ./ prefix for paths relative to project root (per Claude Code docs)
+        # Note: Forward slashes work on all platforms including Windows
         required_permissions = [
             # Full access to .deepwork directory
             "Read(./.deepwork/**)",
             "Edit(./.deepwork/**)",
             "Write(./.deepwork/**)",
-            # All deepwork CLI commands
+            # All deepwork CLI commands (cross-platform)
             "Bash(deepwork:*)",
-            # Job scripts that need to be executable
-            "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
         ]
         # NOTE: When modifying required_permissions, update the test assertion in
         # tests/unit/test_adapters.py::TestClaudeAdapter::test_sync_permissions_idempotent

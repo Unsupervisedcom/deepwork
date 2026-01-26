@@ -1,0 +1,68 @@
+name: Build Windows Executable
+
+on:
+  release:
+    types: [published]
+  # Allow manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      upload_to_release:
+        description: 'Upload to latest release'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -e .
+
+      - name: Build Windows executable
+        run: |
+          pyinstaller scripts/deepwork.spec --distpath dist --clean -y
+
+      - name: Test executable
+        run: |
+          .\dist\deepwork.exe --version
+          .\dist\deepwork.exe --help
+
+      - name: Rename executable for release
+        run: |
+          Move-Item dist\deepwork.exe dist\deepwork-windows-x64.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deepwork-windows-x64
+          path: dist/deepwork-windows-x64.exe
+
+      - name: Upload to Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/deepwork-windows-x64.exe
+          tag_name: ${{ github.event.release.tag_name }}
+
+      - name: Upload to Latest Release (manual)
+        if: github.event_name == 'workflow_dispatch' && inputs.upload_to_release
+        run: |
+          # Get latest release tag
+          $latestTag = gh release list --limit 1 --json tagName -q '.[0].tagName'
+          Write-Host "Uploading to release: $latestTag"
+          gh release upload $latestTag dist/deepwork-windows-x64.exe --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
