@@ -161,15 +161,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".deepwork/jobs/deepwork_rules/hooks/user_prompt_submit.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
             "command": "deepwork hook user_prompt_submit"
           }
         ]
