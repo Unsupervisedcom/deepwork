@@ -112,16 +112,16 @@ class SkillGenerator:
         # If workflows are defined, use workflow membership
         if job.workflows:
             return job.get_workflow_for_step(step.id) is None
-
-        # Backward compatibility: if no workflows defined, use dependency analysis
-        # Step has dependencies - not standalone
-        if step.dependencies:
-            return False
-
-        # Check if any other step depends on this step
-        for other_step in job.steps:
-            if step.id in other_step.dependencies:
+        else:
+            # Backward compatibility: if no workflows defined, use dependency analysis
+            # Step has dependencies - not standalone
+            if step.dependencies:
                 return False
+
+            # Check if any other step depends on this step
+            for other_step in job.steps:
+                if step.id in other_step.dependencies:
+                    return False
 
         return True
 
