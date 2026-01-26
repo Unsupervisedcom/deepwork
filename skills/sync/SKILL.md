@@ -5,7 +5,7 @@ description: Sync DeepWork job definitions to platform-specific skills. Use afte
 
 # DeepWork Sync
 
-Synchronize job definitions from `.deepwork/jobs/` to platform-specific skills and commands.
+Synchronize job definitions from `.deepwork/jobs/` to platform-specific skills.
 
 ## Usage
 

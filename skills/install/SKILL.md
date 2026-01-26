@@ -1,6 +1,6 @@
 ---
 name: install
-description: Install DeepWork in a project. Adds AI platform support and syncs commands for configured platforms. Use when setting up DeepWork in a new or existing project.
+description: Install DeepWork in a project. Adds AI platform support and syncs skills for configured platforms. Use when setting up DeepWork in a new or existing project.
 ---
 
 # DeepWork Install
