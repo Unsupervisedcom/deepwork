@@ -31,9 +31,6 @@ These skills can be run independently at any time:
 - **job** - Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions.
   Command: `/update.job`
 
-## Available Steps
-
-1. **job** - Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions.
 
 ## Execution Instructions
 
@@ -41,7 +38,6 @@ These skills can be run independently at any time:
 
 Parse any text following `/update` to determine user intent:
 - "job" or related terms → run standalone skill `update.job`
-- "job" or related terms → start at `update.job`
 
 ### Step 2: Invoke Starting Step
 

@@ -67,7 +67,7 @@ These skills can be run independently at any time:
 {% endfor %}
 
 {% endif %}
-{% if not has_workflows %}
+{% if not has_workflows and not standalone_steps %}
 ## Available Steps
 
 {% for step in steps %}
@@ -89,7 +89,7 @@ Parse any text following `/{{ job_name }}` to determine user intent:
 {% for step in standalone_steps %}
 - "{{ step.id }}" or related terms → run standalone skill `{{ step.command_name }}`
 {% endfor %}
-{% if not has_workflows %}
+{% if not has_workflows and not standalone_steps %}
 {% for step in steps %}
 - "{{ step.id }}" or related terms → start at `{{ step.command_name }}`
 {% endfor %}

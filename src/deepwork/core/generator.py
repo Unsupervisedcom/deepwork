@@ -11,7 +11,7 @@ from deepwork.core.doc_spec_parser import (
     DocSpecParseError,
     parse_doc_spec_file,
 )
-from deepwork.core.parser import JobDefinition, Step, Workflow
+from deepwork.core.parser import JobDefinition, Step
 from deepwork.schemas.job_schema import LIFECYCLE_HOOK_EVENTS
 from deepwork.utils.fs import safe_read, safe_write
 
@@ -125,9 +125,7 @@ class SkillGenerator:
 
         return True
 
-    def _get_workflow_context(
-        self, job: JobDefinition, step: Step
-    ) -> dict[str, Any]:
+    def _get_workflow_context(self, job: JobDefinition, step: Step) -> dict[str, Any]:
         """
         Build workflow context for a step.
 
@@ -378,9 +376,7 @@ class SkillGenerator:
             )
 
         # Identify standalone steps (not in any workflow)
-        standalone_steps = [
-            s for s in steps_info if s["is_standalone"]
-        ]
+        standalone_steps = [s for s in steps_info if s["is_standalone"]]
 
         return {
             "job_name": job.name,

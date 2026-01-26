@@ -447,9 +447,7 @@ class JobDefinition:
         Returns:
             JobDefinition instance
         """
-        workflows = [
-            Workflow.from_dict(wf_data) for wf_data in data.get("workflows", [])
-        ]
+        workflows = [Workflow.from_dict(wf_data) for wf_data in data.get("workflows", [])]
         return cls(
             name=data["name"],
             version=data["version"],

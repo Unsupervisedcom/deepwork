@@ -41,9 +41,6 @@ These skills can be run independently at any time:
 - **define** - Creates a rule file that triggers when specified files change. Use when setting up documentation sync, code review requirements, or automated commands.
   Command: `/deepwork_rules.define`
 
-## Available Steps
-
-1. **define** - Creates a rule file that triggers when specified files change. Use when setting up documentation sync, code review requirements, or automated commands.
 
 ## Execution Instructions
 
@@ -51,7 +48,6 @@ These skills can be run independently at any time:
 
 Parse any text following `/deepwork_rules` to determine user intent:
 - "define" or related terms → run standalone skill `deepwork_rules.define`
-- "define" or related terms → start at `deepwork_rules.define`
 
 ### Step 2: Invoke Starting Step
 
