@@ -63,9 +63,7 @@ Report the results of each command.
 
 - ruff format was run successfully
 - ruff check was run with --fix flag
-- No remaining lint errors (or all are documented and intentional)
-- Sub-agent was used to conserve context
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+- No remaining lint errors
 
 ## Context
 

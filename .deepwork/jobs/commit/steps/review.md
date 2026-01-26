@@ -94,11 +94,8 @@ If no issues are found in a category, state that explicitly.
 ## Quality Criteria
 
 - Changed files were identified
-- Sub-agent reviewed all changed files
-- Issues were categorized (general, DRY, naming, tests)
+- Sub-agent reviewed the code for general issues, DRY opportunities, naming clarity, and test coverage
 - All identified issues were addressed or documented as intentional
-- Sub-agent was used to conserve context
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
 

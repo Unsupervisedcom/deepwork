@@ -44,9 +44,7 @@ Execute the test suite for the project and iteratively fix any failures until al
 ## Quality Criteria
 
 - Latest code was pulled from the branch
-- Test command was correctly identified or used from input
-- All tests are now passing
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+- All tests are passing
 
 ## Context
 
