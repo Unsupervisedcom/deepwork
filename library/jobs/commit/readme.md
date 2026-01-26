@@ -52,9 +52,23 @@ In `steps/lint.md`, replace `[lint and format command]` with your project's form
 - Go: `go fmt ./...` and `golangci-lint run`
 - Rust: `cargo fmt` and `cargo clippy`
 
-### 3. Replace `[commit script path]`
+### 3. Replace `[code review standards path]`
 
-In `steps/commit_and_push.md`, replace `[commit script path]` with the path to your commit wrapper script (see installation step 3 below).
+In `steps/review.md`, replace `[code review standards path]` with the path to your project's code review standards file.
+
+**Example:** `docs/code_review_standards.md`
+
+If your project doesn't have a code review standards file yet, you can use the provided example as a starting point:
+
+```bash
+cp library/jobs/commit/code_review_standards.example.md docs/code_review_standards.md
+```
+
+Then customize `docs/code_review_standards.md` to match your project's specific requirements, coding style, and quality expectations.
+
+### 4. Replace `[commit script path]`
+
+In `steps/commit_and_push.md`, replace `[commit script path]` with the path to your commit wrapper script (see installation step 4 below).
 
 **Example:** `.claude/hooks/commit_job_git_commit.sh`
 
@@ -152,7 +166,7 @@ Then add this to your `.claude/settings.json`:
 }
 ```
 
-### 3. Create the Commit Wrapper Script
+### 4. Create the Commit Wrapper Script
 
 Create a wrapper script that the commit job will use to actually run `git commit`. This script bypasses the hook interception.
 
@@ -170,7 +184,7 @@ Make it executable:
 chmod +x .claude/hooks/commit_job_git_commit.sh
 ```
 
-### 4. Allow the Commit Script in Permissions
+### 5. Allow the Commit Script in Permissions
 
 Add the commit script to your allowed permissions in `.claude/settings.json`:
 
@@ -184,11 +198,11 @@ Add the commit script to your allowed permissions in `.claude/settings.json`:
 }
 ```
 
-### 5. Customize the Placeholders
+### 6. Customize the Placeholders
 
 Replace all placeholders in the step files as described in the "Required Customization" section above.
 
-### 6. Sync the Skills
+### 7. Sync the Skills
 
 Run `deepwork sync` to generate the slash commands for your AI coding assistant.
 
@@ -196,7 +210,7 @@ Run `deepwork sync` to generate the slash commands for your AI coding assistant.
 
 ### 1. Code Review (`/commit.review`)
 
-Uses a sub-agent to review changed files for:
+Uses a sub-agent to review changed files against the standards defined in your project's code review standards file. The example standards file checks for:
 - General issues (bugs, security, performance)
 - DRY opportunities (duplicated code)
 - Naming clarity (descriptive names)

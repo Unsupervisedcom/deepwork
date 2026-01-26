@@ -19,72 +19,53 @@ Use a sub-agent to review the staged/changed code and identify issues that shoul
    ```
    Combine these to get all files that have been modified.
 
-2. **Spawn a sub-agent to review the code**
+2. **Read the code review standards**
+
+   First, read the project's code review standards file:
+   ```
+   [code review standards path]
+   ```
+
+3. **Spawn a sub-agent to review the code**
 
    Use the Task tool with these parameters:
    - `subagent_type`: "general-purpose"
-   - `prompt`: Include the list of changed files and the review criteria below
+   - `prompt`: Include the list of changed files and the review standards from the file above
 
-   The sub-agent should review each changed file for:
+   The sub-agent should review each changed file against the standards defined in your project's code review standards file.
 
-   **General Issues**
-   - Logic errors or potential bugs
-   - Error handling gaps
-   - Security concerns
-   - Performance issues
-
-   **DRY Opportunities**
-   - Duplicated code that should be extracted into functions
-   - Repeated patterns that could be abstracted
-   - Copy-pasted logic with minor variations
-
-   **Naming Clarity**
-   - Variables, functions, and classes should have clear, descriptive names
-   - Names should reflect purpose and intent
-   - Avoid abbreviations that aren't universally understood
-   - Consistent naming conventions throughout
-
-   **Test Coverage**
-   - New functions or classes should have corresponding tests
-   - New code paths should be tested
-   - Edge cases should be covered
-   - If tests are missing, note what should be tested
-
-3. **Review sub-agent findings**
+4. **Review sub-agent findings**
    - Examine each issue identified
    - Prioritize issues by severity
 
-4. **Fix identified issues**
+5. **Fix identified issues**
    - Address each issue found by the review
    - For DRY violations: extract shared code into functions/modules
    - For naming issues: rename to be clearer
    - For missing tests: add appropriate test cases
    - For bugs: fix the underlying issue
 
-5. **Re-run review if significant changes made**
+6. **Re-run review if significant changes made**
    - If you made substantial changes, consider running another review pass
    - Ensure fixes didn't introduce new issues
 
 ## Example Sub-Agent Prompt
 
 ```
-Review the following changed files for code quality issues:
+Review the following changed files for code quality issues.
 
 Files to review:
 - src/module.py
 - src/utils.py
 - tests/test_module.py
 
-For each file, check for:
+Use the code review standards defined in [code review standards path].
 
-1. **General issues**: Logic errors, bugs, error handling gaps, security concerns
-2. **DRY opportunities**: Duplicated code, repeated patterns that should be extracted
-3. **Naming clarity**: Are variable/function/class names clear and descriptive?
-4. **Test coverage**: Does new functionality have corresponding tests?
-
-Read each file and provide a structured report of issues found, organized by category.
+Read each file and provide a structured report of issues found, organized by the categories in the standards file.
 For each issue, include:
 - File and line number
+- Severity level
+- Category
 - Description of the issue
 - Suggested fix
 
@@ -94,8 +75,8 @@ If no issues are found in a category, state that explicitly.
 ## Quality Criteria
 
 - Changed files were identified
-- Sub-agent reviewed all changed files
-- Issues were categorized (general, DRY, naming, tests)
+- Code review standards file was read
+- Sub-agent reviewed all changed files against the standards
 - All identified issues were addressed or documented as intentional
 - Sub-agent was used to conserve context
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response

@@ -37,24 +37,16 @@ Check the list of changed files against what was modified during this session, e
    ```
    Or stage specific files if some were excluded.
 
-4. **View recent commit messages for style reference**
-   ```bash
-   git log --oneline -10
-   ```
+4. **Create the commit**
 
-5. **Create the commit**
-
-   Generate an appropriate commit message based on:
-   - The changes made
-   - The style of recent commits
-   - Conventional commit format if the project uses it
+   Generate an appropriate commit message based on the changes made.
 
    **IMPORTANT:** Use the commit job script (not `git commit` directly):
    ```bash
    [commit script path] -m "commit message here"
    ```
 
-6. **Push to remote**
+5. **Push to remote**
    ```bash
    git push
    ```
