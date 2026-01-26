@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `deepwork_jobs.implement` step no longer creates directory structure (already done by `define` step)
 - `deepwork_jobs.implement` now references tool documentation when generating step instructions
-- Updated `deepwork_jobs` to v0.10.0
+- Updated `deepwork_jobs` to v0.11.0
 
 ### Fixed
 

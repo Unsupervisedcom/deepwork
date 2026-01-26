@@ -296,11 +296,13 @@ This technique uses pandoc.
         assert not (dest_dir / "SKILL.md").exists()
         assert (dest_dir / "index.toml").exists()
 
-        # Verify TOML content
+        # Verify TOML content (Gemini format: description + prompt, no name)
         toml_content = (dest_dir / "index.toml").read_text()
-        assert 'name = "making_pdfs"' in toml_content
         assert 'description = "Convert documents to PDF format"' in toml_content
+        assert 'prompt = """' in toml_content
         assert "# Making PDFs" in toml_content
+        # Should not include name field
+        assert "name =" not in toml_content
 
     def test_preserves_assets_for_gemini(self, temp_dir: Path) -> None:
         """Test that asset files are preserved for Gemini."""
@@ -346,10 +348,12 @@ Content here.
         _convert_skill_md_to_toml(skill_md, toml_path)
 
         content = toml_path.read_text()
-        assert 'name = "my_technique"' in content
         assert 'description = "A useful technique"' in content
+        assert 'prompt = """' in content
         assert "# My Technique" in content
         assert "Content here." in content
+        # Should not include name field (Gemini format)
+        assert "name =" not in content
 
     def test_handles_missing_frontmatter(self, temp_dir: Path) -> None:
         """Test conversion when frontmatter is missing."""
@@ -360,7 +364,7 @@ Content here.
         _convert_skill_md_to_toml(skill_md, toml_path)
 
         content = toml_path.read_text()
-        assert 'name = ""' in content
+        assert 'description = ""' in content
         assert "# No Frontmatter" in content
 
     def test_handles_quoted_values(self, temp_dir: Path) -> None:
@@ -378,8 +382,28 @@ Body
         _convert_skill_md_to_toml(skill_md, toml_path)
 
         content = toml_path.read_text()
-        assert 'name = "single_quoted"' in content
         assert 'description = "double_quoted"' in content
+        # Should not include name field (Gemini format)
+        assert "name =" not in content
+
+    def test_escapes_special_characters_in_description(self, temp_dir: Path) -> None:
+        """Test that special characters in description are escaped for TOML."""
+        skill_md = temp_dir / "SKILL.md"
+        skill_md.write_text("""---
+name: special_chars
+description: 'A "quoted" string with backslash \\ char'
+---
+
+Body content.
+""")
+        toml_path = temp_dir / "index.toml"
+
+        _convert_skill_md_to_toml(skill_md, toml_path)
+
+        content = toml_path.read_text()
+        # Backslash should be escaped to \\
+        # Quote should be escaped to \"
+        assert 'description = "A \\"quoted\\" string with backslash \\\\ char"' in content
 
 
 class TestCopyTechnique:

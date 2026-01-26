@@ -145,6 +145,6 @@ You can also create techniques manually by adding a new folder with a `SKILL.md`
 Once synced, techniques can be invoked as skills:
 
 - **Claude Code**: `/dwt_making_pdfs`
-- **Gemini CLI**: `:dwt_making_pdfs`
+- **Gemini CLI**: `/dwt_making_pdfs`
 
 The `dwt_` prefix indicates these are DeepWork-managed techniques.

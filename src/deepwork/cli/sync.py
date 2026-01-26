@@ -71,9 +71,12 @@ def sync_techniques_to_platform(
     stale_techniques = existing_dwt_folders - current_techniques
     for stale_name in stale_techniques:
         stale_dir = skills_dir / f"{TECHNIQUE_PREFIX}{stale_name}"
-        if stale_dir.exists():
+        try:
             shutil.rmtree(stale_dir)
             removed_count += 1
+        except FileNotFoundError:
+            # Directory was already removed (race condition), skip
+            pass
 
     # Copy/update current techniques
     for technique_name in current_techniques:
@@ -142,12 +145,13 @@ def _convert_skill_md_to_toml(skill_md: Path, toml_path: Path) -> None:
                 elif line.startswith("description:"):
                     description = line.split(":", 1)[1].strip().strip('"\'')
 
-    # Write TOML format
-    toml_content = f'''name = "{name}"
-description = "{description}"
+    # Escape special characters in description for TOML
+    description = description.replace("\\", "\\\\").replace('"', '\\"')
 
-[prompt]
-content = """
+    # Write TOML format (matches Gemini CLI expected format)
+    toml_content = f'''description = "{description}"
+
+prompt = """
 {body}
 """
 '''
