@@ -26,12 +26,6 @@ description: |
   - Projects where specification quality directly impacts implementation success
   - Teams wanting to capture design decisions for future reference
 
-  **IMPORTANT: Pause for Feedback**
-  After completing each step, you MUST pause and ask the user for feedback before proceeding
-  to the next step. Do not automatically continue to the next phase. Wait for explicit user
-  approval or requested changes before moving forward. This ensures the user maintains control
-  over the development process and can course-correct at each stage.
-
 changelog:
   - version: "1.0.0"
     changes: "Initial version based on GitHub spec-kit workflow"
