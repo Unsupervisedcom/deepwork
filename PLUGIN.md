@@ -38,19 +38,16 @@ claude plugin install .
 deepwork/
 ├── .claude-plugin/
 │   └── plugin.json         # Plugin manifest
-├── commands/
-│   ├── install/COMMAND.md  # /deepwork:install command
-│   └── sync/COMMAND.md     # /deepwork:sync command
 ├── skills/
-│   ├── install/SKILL.md    # Agent skill for auto-detection
-│   └── sync/SKILL.md       # Agent skill for auto-sync
+│   ├── install/SKILL.md    # /deepwork:install skill
+│   └── sync/SKILL.md       # /deepwork:sync skill
 └── hooks/
     └── hooks.json          # Event hooks configuration
 ```
 
-## Available Commands
+## Available Skills
 
-After installation, the following skills are available:
+After installation, the following skills are available and can be invoked with slash commands:
 
 ### `/deepwork:install`
 Install DeepWork in a project. Adds AI platform support and syncs commands for configured platforms.
@@ -144,12 +141,12 @@ To test the plugin structure before distribution:
 # From the DeepWork repository root
 claude --plugin-dir /path/to/deepwork
 
-# In Claude Code, test the commands:
-/deepwork:install --help
-/deepwork:sync --help
+# In Claude Code, test the skills with slash commands:
+/deepwork:install
+/deepwork:sync
 ```
 
-You should see the commands available with the `deepwork:` namespace prefix.
+You should see the skills available with the `deepwork:` namespace prefix.
 
 ## Plugin Development Notes
 
@@ -157,25 +154,20 @@ You should see the commands available with the `deepwork:` namespace prefix.
 
 Claude Code plugins must follow this structure:
 - `.claude-plugin/plugin.json` (required) - Plugin manifest
-- `commands/` (optional) - User-invocable slash commands
-- `skills/` (optional) - Agent Skills invoked automatically
+- `skills/` (optional) - Skills invocable with slash commands and by Claude automatically
 - `hooks/` (optional) - Event hooks configuration
 - `.mcp.json` (optional) - MCP server configurations
 - `.lsp.json` (optional) - LSP server configurations
 
-### Command Files
-
-Command files in `commands/[name]/COMMAND.md`:
-- Are user-invocable as `/plugin-name:command-name`
-- Should NOT have YAML frontmatter
-- Should be descriptive markdown with usage examples
+**Note**: Claude Code has retired the separate `commands/` directory. Skills now serve both purposes - they can be invoked by users with slash commands (e.g., `/deepwork:install`) AND automatically by Claude based on context.
 
 ### Skill Files
 
 Skill files in `skills/[name]/SKILL.md`:
 - Have YAML frontmatter with `name` and `description`
-- Are invoked automatically by Claude based on context
-- Should include clear usage guidelines
+- Are invoked as `/plugin-name:skill-name` by users
+- Can also be invoked automatically by Claude based on context
+- Should include clear usage guidelines and examples
 
 ### Hooks Configuration
 

@@ -2,6 +2,40 @@
 
 This file contains critical instructions for AI agents working on this codebase.
 
+## Claude Code Plugin Architecture
+
+**IMPORTANT**: Claude Code has retired the separate "commands" concept. Skills are now directly invocable with slash commands (e.g., `/plugin-name:skill-name`). 
+
+### Plugin Structure
+
+DeepWork is distributed as a Claude Code plugin with the following structure:
+
+```
+.claude-plugin/
+└── plugin.json              # Plugin manifest
+
+skills/
+├── install/SKILL.md         # /deepwork:install
+└── sync/SKILL.md            # /deepwork:sync
+
+hooks/
+└── hooks.json               # Event hooks configuration
+```
+
+### Skills vs Commands
+
+- **Previous approach**: Separate `commands/` and `skills/` directories where commands were user-invocable and skills were agent-invocable
+- **Current approach**: Only `skills/` directory, where all skills can be both user-invoked with slash commands AND automatically invoked by Claude based on context
+- Skills are invoked as `/deepwork:skill-name` (e.g., `/deepwork:install`, `/deepwork:sync`)
+
+### When Creating Plugin Skills
+
+- Place all skills in `skills/[skill-name]/SKILL.md`
+- Use YAML frontmatter with `name` and `description`
+- Skills will be namespaced as `/deepwork:skill-name`
+- Claude can invoke them automatically OR users can invoke them with slash commands
+- Do NOT create a separate `commands/` directory
+
 ## CRITICAL: Job Type Classification
 
 When creating or modifying jobs in this repository, you MUST understand which type of job you are working with. There are exactly **three types of jobs**, each with a specific location and purpose.

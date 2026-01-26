@@ -9,11 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Claude Code plugin structure with `.claude-plugin/plugin.json` manifest
-- User-invocable commands: `/deepwork:install` and `/deepwork:sync`
-- Agent Skills for automatic installation and sync detection
+- Plugin skills: `/deepwork:install` and `/deepwork:sync` (invocable by users and automatically by Claude)
 - Plugin hooks configuration in `hooks/hooks.json`
 - Comprehensive PLUGIN.md documentation for plugin usage
-- README updated with plugin installation instructions
+- AGENTS.md section documenting Claude Code plugin architecture
+
+### Changed
+- **Architecture**: Removed separate `commands/` directory following Claude Code's retirement of commands in favor of skills
+- Skills in `skills/` directory now serve dual purpose: user-invocable with slash commands AND automatic invocation by Claude
+- Documentation updated to reflect unified skill approach
 
 ## [0.5.2] - 2026-01-22
 
