@@ -57,7 +57,7 @@ Then customize `docs/code_review_standards.md` to match your project's specific 
 
 ### 5. Replace `[commit script path]`
 
-In `steps/commit_and_push.md`, replace `[commit script path]` with the path to your commit wrapper script (e.g., `.claude/hooks/commit_job_git_commit.sh`). See installation step 3 below for how to create this script.
+In `steps/commit_and_push.md`, replace `[commit script path]` with the path to your commit wrapper script (e.g., `.deepwork/jobs/commit/commit_job_git_commit.sh`). See installation step 3 below for how to create this script.
 
 ## Installation
 
@@ -157,7 +157,7 @@ Then add this to your `.claude/settings.json`:
 
 Create a wrapper script that the commit job will use to actually run `git commit`. This script bypasses the hook interception.
 
-Create `.claude/hooks/commit_job_git_commit.sh`:
+Create `.deepwork/jobs/commit/commit_job_git_commit.sh`:
 
 ```bash
 #!/bin/bash
@@ -168,7 +168,7 @@ exec git commit "$@"
 
 Make it executable:
 ```bash
-chmod +x .claude/hooks/commit_job_git_commit.sh
+chmod +x .deepwork/jobs/commit/commit_job_git_commit.sh
 ```
 
 ### 4. Allow the Commit Script in Permissions
@@ -179,7 +179,7 @@ Add the commit script to your allowed permissions in `.claude/settings.json`:
 {
   "permissions": {
     "allow": [
-      "Bash(.claude/hooks/commit_job_git_commit.sh:*)"
+      "Bash(.deepwork/jobs/commit/commit_job_git_commit.sh:*)"
     ]
   }
 }
