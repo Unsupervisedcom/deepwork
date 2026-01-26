@@ -1,41 +1,6 @@
 ---
 name: add_platform.research
-description: "Captures CLI configuration and hooks system documentation for the new platform. Use when starting platform integration."
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the research output meets ALL criteria:
-            1. Both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md
-            2. Each file has a comment at the top with:
-               - Last updated date
-               - Source URL where the documentation was obtained
-            3. cli_configuration.md covers how the platform's CLI is configured
-            4. hooks_system.md covers hooks available for slash command definitions ONLY
-            5. No extraneous documentation (only these two specific topics)
-            6. Documentation is comprehensive enough to implement the platform
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
-  SubagentStop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the research output meets ALL criteria:
-            1. Both files exist in doc/platforms/<platform>/: cli_configuration.md and hooks_system.md
-            2. Each file has a comment at the top with:
-               - Last updated date
-               - Source URL where the documentation was obtained
-            3. cli_configuration.md covers how the platform's CLI is configured
-            4. hooks_system.md covers hooks available for slash command definitions ONLY
-            5. No extraneous documentation (only these two specific topics)
-            6. Documentation is comprehensive enough to implement the platform
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
-
----
+description: "Captures CLI configuration and hooks system documentation for the new platform. Use when starting platform integration."user-invocable: false---
 
 # add_platform.research
 
@@ -283,14 +248,6 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
-
-## Quality Validation
-
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
 
 ## On Completion
 

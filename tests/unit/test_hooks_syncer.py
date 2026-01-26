@@ -43,7 +43,7 @@ class TestHookEntry:
         )
 
         cmd = entry.get_command(temp_dir)
-        assert cmd == "deepwork hook deepwork.hooks.rules_check"
+        assert cmd == "deepwork hook rules_check"
 
 
 class TestJobHooks:

@@ -35,9 +35,10 @@ class HookEntry:
             Command string to execute
         """
         if self.module:
-            # Python module - run via deepwork CLI
-            # This works regardless of how deepwork was installed (pipx, uv, homebrew, etc.)
-            return f"deepwork hook {self.module}"
+            # Python module - use deepwork hook CLI for portability
+            # Extract hook name from module path (e.g., "deepwork.hooks.rules_check" -> "rules_check")
+            hook_name = self.module.rsplit(".", 1)[-1]
+            return f"deepwork hook {hook_name}"
         elif self.script:
             # Script path is: .deepwork/jobs/{job_name}/hooks/{script}
             script_path = self.job_dir / "hooks" / self.script

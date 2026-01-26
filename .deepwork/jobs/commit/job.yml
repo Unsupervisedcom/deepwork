@@ -1,5 +1,5 @@
 name: commit
-version: "1.3.0"
+version: "1.4.0"
 summary: "Reviews code, runs tests, lints, and commits changes. Use when ready to commit work with quality checks."
 description: |
   A workflow for preparing and committing code changes with quality checks.
@@ -16,6 +16,8 @@ description: |
   4. commit_and_push - Review changes and commit/push
 
 changelog:
+  - version: "1.4.0"
+    changes: "Added changelog guidance: entries must go in [Unreleased] section, NEVER modify version numbers in pyproject.toml or CHANGELOG.md"
   - version: "1.3.0"
     changes: "Added code review step that runs in sub-agent to check for general issues, DRY opportunities, naming clarity, and test coverage"
   - version: "1.0.1"
@@ -99,6 +101,8 @@ steps:
             Verify the commit is ready:
             1. Changed files list was reviewed by the agent
             2. Files match what was modified during this session (or unexpected changes were investigated)
-            3. Commit was created with appropriate message
-            4. Changes were pushed to remote
+            3. CHANGELOG.md was updated with entries in the [Unreleased] section (if changes warrant documentation)
+            4. Version numbers were NOT modified (pyproject.toml version and CHANGELOG version headers must remain unchanged)
+            5. Commit was created with appropriate message
+            6. Changes were pushed to remote
             If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
