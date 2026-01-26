@@ -1,0 +1,96 @@
+name: commit
+version: "1.0.0"
+summary: "Reviews code, runs tests, lints, and commits changes. Use when ready to commit work with quality checks."
+description: |
+  A workflow for preparing and committing code changes with quality checks.
+
+  This job starts with a code review to catch issues early, runs tests until
+  they pass, formats and lints code, then reviews changed files before
+  committing and pushing. The review and lint steps use sub-agents to reduce
+  context usage.
+
+  Steps:
+  1. review - Code review for issues, DRY opportunities, naming, and test coverage (runs in sub-agent)
+  2. test - Pull latest code and run tests until they pass
+  3. lint - Format and lint code (runs in sub-agent)
+  4. commit_and_push - Review changes and commit/push
+
+changelog:
+  - version: "1.0.0"
+    changes: "Initial library version - generalized from project-specific commit workflow"
+
+steps:
+  - id: review
+    name: "Code Review"
+    description: "Reviews changed code for issues, DRY opportunities, naming clarity, and test coverage using a sub-agent. Use as the first step before testing."
+    instructions_file: steps/review.md
+    inputs: []
+    outputs:
+      - code_reviewed  # implicit state: code has been reviewed and issues addressed
+    dependencies: []
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the code review is complete:
+            1. Changed files were identified
+            2. Sub-agent reviewed the code for general issues, DRY opportunities, naming clarity, and test coverage
+            3. All identified issues were addressed or documented as intentional
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
+  - id: test
+    name: "Run Tests"
+    description: "Pulls latest code and runs tests until all pass. Use after code review passes to verify changes work correctly."
+    instructions_file: steps/test.md
+    inputs:
+      - name: test_command
+        description: "Test command to run (optional - will auto-detect if not provided)"
+    outputs:
+      - tests_passing  # implicit state: all tests pass
+    dependencies:
+      - review
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the tests are passing:
+            1. Latest code was pulled from the branch
+            2. All tests completed successfully
+            3. No test failures or errors remain
+            4. Test output shows passing status
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
+  - id: lint
+    name: "Lint Code"
+    description: "Formats and lints code using a sub-agent. Use after tests pass to ensure code style compliance."
+    instructions_file: steps/lint.md
+    inputs: []
+    outputs:
+      - code_formatted  # implicit state: code formatted and linted
+    dependencies:
+      - test
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the linting is complete:
+            1. Format command was run successfully
+            2. Lint check command was run successfully
+            3. No remaining lint errors
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+
+  - id: commit_and_push
+    name: "Commit and Push"
+    description: "Verifies changed files, creates commit, and pushes to remote. Use after linting passes to finalize changes."
+    instructions_file: steps/commit_and_push.md
+    inputs: []
+    outputs:
+      - changes_committed  # implicit state: changes committed and pushed
+    dependencies:
+      - lint
+    hooks:
+      after_agent:
+        - prompt: |
+            Verify the commit is ready:
+            1. Changed files list was reviewed by the agent
+            2. Files match what was modified during this session (or unexpected changes were investigated)
+            3. Commit was created with appropriate message
+            4. Changes were pushed to remote
+            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
