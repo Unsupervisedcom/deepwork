@@ -364,6 +364,18 @@ changelog:
   - version: "1.0.0"
     changes: "Initial job creation"
 
+# Workflows define named sequences of steps that form complete processes.
+# Steps not in any workflow are "standalone skills" that can be run anytime.
+workflows:
+  - name: full_analysis
+    summary: "Complete competitive analysis from identification through positioning"
+    steps:
+      - identify_competitors
+      - primary_research
+      - secondary_research
+      - comparative_report
+      - positioning
+
 steps:
   - id: identify_competitors
     name: "Identify Competitors"
@@ -569,15 +581,21 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
    [Interactive dialog to define all the steps]
 
    Claude: ✓ Job 'competitive_research' created with 5 steps
-          Run /deepwork_jobs.implement to generate skill files
-          Then run 'deepwork sync' to install skills
+          new_job step 1/3 complete, outputs: job.yml
+          Continuing workflow: invoking review_job_spec...
 
-   User: /deepwork_jobs.implement
+   [Claude automatically continues with review_job_spec step]
+
+   Claude: ✓ Job spec validated against quality criteria
+          new_job step 2/3 complete
+          Continuing workflow: invoking implement...
+
+   [Claude automatically continues with implement step]
 
    Claude: [Generates step instruction files]
           [Runs deepwork sync]
           ✓ Skills installed to .claude/skills/
-          Run /competitive_research.identify_competitors to start
+          new_job workflow complete. Run /competitive_research.identify_competitors to start
    ```
 
 3. **Execute a Job Instance** (each time you need to do the work):
@@ -752,13 +770,16 @@ When all steps are done, remind the user they should:
 
 ### Standard Job: `deepwork_jobs`
 
-DeepWork includes a built-in job called `deepwork_jobs` with three commands for managing jobs:
+DeepWork includes a built-in job called `deepwork_jobs` for managing jobs. It provides:
 
-1. **`/deepwork_jobs.define`** - Interactive job definition wizard
-2. **`/deepwork_jobs.implement`** - Generates step instruction files from job.yml
-3. **`/deepwork_jobs.refine`** - Modifies existing job definitions
+**Workflows** (multi-step sequences):
+- **`new_job`** workflow: `define` → `review_job_spec` → `implement`
+  - Creates complete job definitions through interactive Q&A, validation, and file generation
 
-These commands are installed automatically when you run `deepwork install`.
+**Standalone Skills** (can be run anytime):
+- **`/deepwork_jobs.learn`** - Analyzes conversations to improve job instructions and capture learnings
+
+These skills are installed automatically when you run `deepwork install`.
 
 ### The `/deepwork_jobs.define` Command
 
@@ -842,35 +863,31 @@ Claude: Reading job definition from .deepwork/jobs/competitive_research/job.yml.
         - /competitive_research.positioning
 ```
 
-### The `/deepwork_jobs.refine` Command
+### The `/deepwork_jobs.learn` Command
 
-Allows updating existing job definitions:
+Analyzes conversation history to improve job instructions and capture learnings:
 
 ```
-User: /deepwork_jobs.refine
+User: /deepwork_jobs.learn
 
-Claude: Which job would you like to refine?
-        Available jobs:
-        - competitive_research
-        - deepwork_jobs
+Claude: I'll analyze this conversation for DeepWork job executions...
+        Found: competitive_research job was executed
 
-User: competitive_research
+        Identified issues:
+        1. Step 2 instructions unclear about source prioritization
+        2. Output format for competitor_profiles/ not specified
 
-Claude: Loading competitive_research job definition...
-        What would you like to update?
-        1. Add a new step
-        2. Modify existing step
-        3. Remove a step
-        4. Update metadata
+        Improvements made:
+        ✓ Updated steps/primary_research.md with source prioritization guidance
+        ✓ Added output format example to steps/primary_research.md
 
-User: Add a new step between primary_research and secondary_research
+        Bespoke learnings captured:
+        ✓ Created AGENTS.md with project-specific notes about this competitive research instance
 
-Claude: [Interactive dialog...]
-        ✓ Added step 'social_media_analysis'
-        ✓ Updated dependencies in job.yml
-        ✓ Updated changelog with version 1.1.0
-        ✓ Please run /deepwork_jobs.implement to generate the new step file
+        Run 'deepwork sync' to update skills with improved instructions.
 ```
+
+This standalone skill can be run anytime after executing a job to capture learnings and improve instructions.
 
 ### Template System
 
