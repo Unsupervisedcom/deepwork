@@ -153,20 +153,10 @@ Then add this to your `.claude/settings.json`:
 }
 ```
 
-### 3. Create the Commit Wrapper Script
+### 3. Make the Commit Wrapper Script Executable
 
-Create a wrapper script that the commit job will use to actually run `git commit`. This script bypasses the hook interception.
+The job includes a `commit_job_git_commit.sh` script that bypasses the hook interception. Make it executable:
 
-Create `.deepwork/jobs/commit/commit_job_git_commit.sh`:
-
-```bash
-#!/bin/bash
-# commit_job_git_commit.sh - Wrapper for git commit invoked via the /commit skill
-
-exec git commit "$@"
-```
-
-Make it executable:
 ```bash
 chmod +x .deepwork/jobs/commit/commit_job_git_commit.sh
 ```
