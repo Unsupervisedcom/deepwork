@@ -15,37 +15,29 @@ Execute the test suite for the project and iteratively fix any failures until al
    - If there are merge conflicts, resolve them before proceeding
    - This ensures you're testing against the latest code
 
-2. **Detect or use the test command**
-   - If a test command was provided, use that
-   - Otherwise, use the configured test command: `[test command]`
-   - Common test commands by project type:
-     - Python: `pytest`, `python -m pytest`, `uv run pytest`
-     - Node.js: `npm test`, `yarn test`, `bun test`
-     - Go: `go test ./...`
-     - Rust: `cargo test`
-   - Check `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod` for hints
+2. **Run the test command**
+   ```bash
+   [test command]
+   ```
+   Capture the output.
 
-3. **Run the tests**
-   - Execute the test command
-   - Capture the output
-
-4. **Analyze failures**
+3. **Analyze failures**
    - If tests pass, proceed to output
    - If tests fail, analyze the failure messages
    - Identify the root cause of each failure
 
-5. **Fix failing tests**
+4. **Fix failing tests**
    - Make the necessary code changes to fix failures
    - This may involve fixing bugs in implementation code or updating tests
    - Re-run tests after each fix
 
-6. **Iterate until passing**
+5. **Iterate until passing**
    - Continue the fix/test cycle until all tests pass
 
 ## Quality Criteria
 
 - Latest code was pulled from the branch
-- Test command was correctly identified or used from input
+- Test command was run
 - All tests are now passing
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 

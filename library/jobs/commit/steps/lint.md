@@ -17,24 +17,11 @@ Run the project's format and lint commands. This step should be executed using a
    Use the Task tool with these parameters:
    - `subagent_type`: "Bash"
    - `model`: "haiku"
-   - `prompt`: See below
-
-   The sub-agent should:
-
-   a. **Run the format command**
-      ```bash
-      [lint and format command]
-      ```
-      This formats the code according to the project's style rules.
-
-   b. **Run the lint check command**
-      ```bash
-      [lint and format command]
-      ```
-      This checks for lint errors.
-
-   c. **Run lint check again to verify**
-      Capture the final output to verify no remaining issues.
+   - `prompt`: Instruct the sub-agent to:
+     - Run the format command: `[format command]`
+     - Run the lint check command: `[lint check command]`
+     - Run lint check again to verify no remaining issues
+     - Report the results of each command
 
 2. **Review sub-agent results**
    - Check that both format and check completed successfully
@@ -43,18 +30,6 @@ Run the project's format and lint commands. This step should be executed using a
 3. **Handle remaining issues**
    - If there are lint errors that couldn't be auto-fixed, fix them manually
    - Re-run lint check to verify
-
-## Example Sub-Agent Prompt
-
-```
-Run the lint and format commands for the codebase:
-
-1. Run: [lint and format command]
-2. Run: [lint check command]
-3. Verify no remaining issues
-
-Report the results of each command.
-```
 
 ## Quality Criteria
 

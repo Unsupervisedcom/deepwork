@@ -19,64 +19,35 @@ Use a sub-agent to review the staged/changed code and identify issues that shoul
    ```
    Combine these to get all files that have been modified.
 
-2. **Read the code review standards**
-
-   First, read the project's code review standards file:
-   ```
-   [code review standards path]
-   ```
-
-3. **Spawn a sub-agent to review the code**
+2. **Spawn a sub-agent to review the code**
 
    Use the Task tool with these parameters:
    - `subagent_type`: "general-purpose"
-   - `prompt`: Include the list of changed files and the review standards from the file above
+   - `prompt`: Instruct the sub-agent to:
+     - Read the code review standards from `[code review standards path]`
+     - Read each of the changed files
+     - Review each file against the standards
+     - Report issues found with file, line number, severity, and suggested fix
 
-   The sub-agent should review each changed file against the standards defined in your project's code review standards file.
-
-4. **Review sub-agent findings**
+3. **Review sub-agent findings**
    - Examine each issue identified
    - Prioritize issues by severity
 
-5. **Fix identified issues**
+4. **Fix identified issues**
    - Address each issue found by the review
    - For DRY violations: extract shared code into functions/modules
    - For naming issues: rename to be clearer
    - For missing tests: add appropriate test cases
    - For bugs: fix the underlying issue
 
-6. **Re-run review if significant changes made**
+5. **Re-run review if significant changes made**
    - If you made substantial changes, consider running another review pass
    - Ensure fixes didn't introduce new issues
-
-## Example Sub-Agent Prompt
-
-```
-Review the following changed files for code quality issues.
-
-Files to review:
-- src/module.py
-- src/utils.py
-- tests/test_module.py
-
-Use the code review standards defined in [code review standards path].
-
-Read each file and provide a structured report of issues found, organized by the categories in the standards file.
-For each issue, include:
-- File and line number
-- Severity level
-- Category
-- Description of the issue
-- Suggested fix
-
-If no issues are found in a category, state that explicitly.
-```
 
 ## Quality Criteria
 
 - Changed files were identified
-- Code review standards file was read
-- Sub-agent reviewed all changed files against the standards
+- Sub-agent read the code review standards and reviewed all changed files
 - All identified issues were addressed or documented as intentional
 - Sub-agent was used to conserve context
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response

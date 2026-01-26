@@ -33,30 +33,19 @@ When installing this job to a new project, you must customize the following:
 
 ### 1. Replace `[test command]`
 
-In `steps/test.md`, replace `[test command]` with your project's test command.
+In `steps/test.md`, replace `[test command]` with your project's test command (e.g., `pytest`, `npm test`, `go test ./...`).
 
-**Examples:**
-- Python: `pytest` or `uv run pytest`
-- Node.js: `npm test` or `yarn test`
-- Go: `go test ./...`
-- Rust: `cargo test`
+### 2. Replace `[format command]`
 
-### 2. Replace `[lint and format command]`
+In `steps/lint.md`, replace `[format command]` with your project's code formatting command (e.g., `ruff format .`, `npx prettier --write .`, `go fmt ./...`).
 
-In `steps/lint.md`, replace `[lint and format command]` with your project's formatting and linting commands.
+### 3. Replace `[lint check command]`
 
-**Examples:**
-- Python (ruff): `ruff format .` and `ruff check --fix .`
-- Python (black/flake8): `black .` and `flake8 .`
-- Node.js (prettier/eslint): `npx prettier --write .` and `npx eslint --fix .`
-- Go: `go fmt ./...` and `golangci-lint run`
-- Rust: `cargo fmt` and `cargo clippy`
+In `steps/lint.md`, replace `[lint check command]` with your project's lint check command (e.g., `ruff check --fix .`, `npx eslint --fix .`, `golangci-lint run`).
 
-### 3. Replace `[code review standards path]`
+### 4. Replace `[code review standards path]`
 
-In `steps/review.md`, replace `[code review standards path]` with the path to your project's code review standards file.
-
-**Example:** `docs/code_review_standards.md`
+In `steps/review.md`, replace `[code review standards path]` with the path to your project's code review standards file (e.g., `docs/code_review_standards.md`).
 
 If your project doesn't have a code review standards file yet, you can use the provided example as a starting point:
 
@@ -66,11 +55,9 @@ cp library/jobs/commit/code_review_standards.example.md docs/code_review_standar
 
 Then customize `docs/code_review_standards.md` to match your project's specific requirements, coding style, and quality expectations.
 
-### 4. Replace `[commit script path]`
+### 5. Replace `[commit script path]`
 
-In `steps/commit_and_push.md`, replace `[commit script path]` with the path to your commit wrapper script (see installation step 4 below).
-
-**Example:** `.claude/hooks/commit_job_git_commit.sh`
+In `steps/commit_and_push.md`, replace `[commit script path]` with the path to your commit wrapper script (e.g., `.claude/hooks/commit_job_git_commit.sh`). See installation step 3 below for how to create this script.
 
 ## Installation
 
@@ -166,7 +153,7 @@ Then add this to your `.claude/settings.json`:
 }
 ```
 
-### 4. Create the Commit Wrapper Script
+### 3. Create the Commit Wrapper Script
 
 Create a wrapper script that the commit job will use to actually run `git commit`. This script bypasses the hook interception.
 
@@ -184,7 +171,7 @@ Make it executable:
 chmod +x .claude/hooks/commit_job_git_commit.sh
 ```
 
-### 5. Allow the Commit Script in Permissions
+### 4. Allow the Commit Script in Permissions
 
 Add the commit script to your allowed permissions in `.claude/settings.json`:
 
@@ -198,11 +185,11 @@ Add the commit script to your allowed permissions in `.claude/settings.json`:
 }
 ```
 
-### 6. Customize the Placeholders
+### 5. Customize the Placeholders
 
 Replace all placeholders in the step files as described in the "Required Customization" section above.
 
-### 7. Sync the Skills
+### 6. Sync the Skills
 
 Run `deepwork sync` to generate the slash commands for your AI coding assistant.
 
