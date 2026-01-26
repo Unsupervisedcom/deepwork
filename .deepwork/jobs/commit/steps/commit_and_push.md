@@ -78,14 +78,11 @@ Check the list of changed files against what was modified during this session, e
 
 ## Quality Criteria
 
-- Changed files list was reviewed by the agent
-- Files match what was modified during this session (or unexpected changes were investigated and handled)
-- CHANGELOG.md was updated with entries in the `[Unreleased]` section (if changes warrant documentation)
-- Version numbers were NOT modified (in pyproject.toml or CHANGELOG.md version headers)
-- Commit message follows project conventions
-- Commit was created successfully
+- Changed files were verified against expectations
+- CHANGELOG.md was updated with entries in [Unreleased] section (if changes warrant documentation)
+- Version numbers were NOT modified (pyproject.toml version and CHANGELOG version headers unchanged)
+- Commit was created with appropriate message
 - Changes were pushed to remote
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
 
