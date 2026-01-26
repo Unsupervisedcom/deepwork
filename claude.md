@@ -47,7 +47,9 @@ deepwork/
 │   │   └── deepwork_rules/
 │   ├── schemas/          # Job definition schemas
 │   └── utils/            # Utilities (fs, git, yaml, validation)
-├── library/jobs/         # Reusable example jobs (not auto-installed)
+├── library/              # Reusable examples (not auto-installed)
+│   ├── jobs/             # Example jobs (some may be symlinks)
+│   └── rules/            # Example rules (some may be symlinks)
 ├── tests/                # Test suite
 ├── doc/                  # Documentation
 └── doc/architecture.md   # Detailed architecture document

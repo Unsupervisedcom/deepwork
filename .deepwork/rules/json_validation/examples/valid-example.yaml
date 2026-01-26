@@ -1,0 +1,4 @@
+$schema: ./test-schema.json
+name: my-project
+version: "1.0.0"
+description: A sample project
