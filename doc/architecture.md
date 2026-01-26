@@ -52,12 +52,13 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── rules_queue.py      # Rule state queue system
 │       │   ├── command_executor.py # Command action execution
 │       │   └── hooks_syncer.py     # Hook syncing to platforms
-│       ├── hooks/              # Hook system and cross-platform wrappers
+│       ├── hooks/              # Hook system (cross-platform Python modules)
 │       │   ├── __init__.py
 │       │   ├── wrapper.py           # Cross-platform input/output normalization
-│       │   ├── claude_hook.sh       # Shell wrapper for Claude Code
-│       │   ├── gemini_hook.sh       # Shell wrapper for Gemini CLI
-│       │   └── rules_check.py       # Cross-platform rule evaluation hook
+│       │   ├── rules_check.py       # Cross-platform rule evaluation hook
+│       │   ├── user_prompt_submit.py # Captures work tree on prompt submission
+│       │   ├── capture_prompt.py    # Git work tree state capture utility
+│       │   └── hook_entry.py        # Cross-platform hook entry point
 │       ├── templates/          # Skill templates for each platform
 │       │   ├── claude/
 │       │   │   └── skill-job-step.md.jinja
@@ -73,10 +74,8 @@ deepwork/                       # DeepWork tool repository
 │       │       ├── job.yml
 │       │       ├── steps/
 │       │       │   └── define.md
-│       │       └── hooks/         # Hook scripts
-│       │           ├── global_hooks.yml
-│       │           ├── user_prompt_submit.sh
-│       │           └── capture_prompt_work_tree.sh
+│       │       └── hooks/         # Hook configuration
+│       │           └── global_hooks.yml  # Maps events to Python modules
 │       ├── schemas/            # Definition schemas
 │       │   ├── job_schema.py
 │       │   ├── doc_spec_schema.py   # Doc spec schema definition
@@ -310,10 +309,8 @@ my-project/                     # User's project (target)
 │       │   ├── job.yml
 │       │   ├── steps/
 │       │   │   └── define.md
-│       │   └── hooks/          # Hook scripts (installed from standard_jobs)
-│       │       ├── global_hooks.yml
-│       │       ├── user_prompt_submit.sh
-│       │       └── capture_prompt_work_tree.sh
+│       │   └── hooks/          # Hook configuration (installed from standard_jobs)
+│       │       └── global_hooks.yml  # Maps events to Python modules
 │       ├── competitive_research/
 │       │   ├── job.yml         # Job metadata
 │       │   └── steps/
@@ -1142,19 +1139,20 @@ This prevents re-prompting for the same rule violation within a session.
 
 ### Hook Integration
 
-The v2 rules system uses the cross-platform hook wrapper:
+The v2 rules system uses cross-platform Python hooks:
 
 ```
 src/deepwork/hooks/
-├── wrapper.py           # Cross-platform input/output normalization
-├── rules_check.py       # Rule evaluation hook (v2)
-├── claude_hook.sh       # Claude Code shell wrapper
-└── gemini_hook.sh       # Gemini CLI shell wrapper
+├── wrapper.py              # Cross-platform input/output normalization
+├── rules_check.py          # Rule evaluation hook (v2)
+├── user_prompt_submit.py   # Captures work tree on prompt submission
+├── capture_prompt.py       # Git work tree state capture utility
+└── hook_entry.py           # Cross-platform hook entry point
 ```
 
-Hooks are called via the shell wrappers:
+Hooks are invoked via the `deepwork hook` CLI command:
 ```bash
-claude_hook.sh deepwork.hooks.rules_check
+deepwork hook rules_check
 ```
 
 The hooks are installed to `.claude/settings.json` during `deepwork sync`:
@@ -1169,9 +1167,9 @@ The hooks are installed to `.claude/settings.json` during `deepwork sync`:
 }
 ```
 
-### Cross-Platform Hook Wrapper System
+### Cross-Platform Hook System
 
-The `hooks/` module provides a wrapper system that allows writing hooks once in Python and running them on multiple platforms. This normalizes the differences between Claude Code and Gemini CLI hook systems.
+The `hooks/` module provides a cross-platform hook system that works on Windows, macOS, and Linux without requiring bash. Hooks are written in Python and invoked via the `deepwork hook` CLI command.
 
 **Architecture:**
 ```
@@ -1180,14 +1178,13 @@ The `hooks/` module provides a wrapper system that allows writing hooks once in 
 │  (Stop event)   │     │ (AfterAgent)    │
 └────────┬────────┘     └────────┬────────┘
          │                       │
-         ▼                       ▼
-┌─────────────────┐     ┌─────────────────┐
-│ claude_hook.sh  │     │ gemini_hook.sh  │
-│ (shell wrapper) │     │ (shell wrapper) │
-└────────┬────────┘     └────────┬────────┘
-         │                       │
          └───────────┬───────────┘
                      ▼
+           ┌─────────────────┐
+           │  deepwork hook  │
+           │   (CLI entry)   │
+           └────────┬────────┘
+                    ▼
            ┌─────────────────┐
            │   wrapper.py    │
            │ (normalization) │
@@ -1214,7 +1211,7 @@ def my_hook(input: HookInput) -> HookOutput:
         return HookOutput(decision="block", reason="Complete X first")
     return HookOutput()
 
-# Called via: claude_hook.sh mymodule or gemini_hook.sh mymodule
+# Called via: deepwork hook mymodule
 ```
 
 See `doc/platforms/` for detailed platform-specific hook documentation.
