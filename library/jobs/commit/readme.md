@@ -69,74 +69,35 @@ Copy this entire `commit` folder to your project's `.deepwork/jobs/` directory:
 cp -r library/jobs/commit .deepwork/jobs/
 ```
 
-### 2. Add the Hook Configuration to settings.json
+### 2. Install the Git Commit Blocker Hook
 
-Add a PreToolUse hook to your `.claude/settings.json` that blocks `git commit` and redirects to the commit skill. This is the key mechanism that enforces the commit workflow.
-
-First, create the hook script at `.claude/hooks/block_bash_with_instructions.sh`:
+The job includes a `block_bash_with_instructions.sh` script that intercepts `git commit` commands and redirects the agent to use the `/commit` skill. Copy it to your hooks directory and make it executable:
 
 ```bash
-#!/bin/bash
-# block_bash_with_instructions.sh - Blocks specific bash commands and provides alternative instructions
-
-set -e
-
-BLOCKED_COMMANDS=(
-    'git[[:space:]]+commit|||All commits must be done via the `/commit` skill. Do not use git commit directly. Instead, run `/commit` to start the commit workflow which includes code review, testing, and linting before committing.'
-)
-
-# Read stdin into variable
-HOOK_INPUT=""
-if [ ! -t 0 ]; then
-    HOOK_INPUT=$(cat)
-fi
-
-# Exit early if no input
-if [ -z "${HOOK_INPUT}" ]; then
-    exit 0
-fi
-
-# Extract tool_name from input
-TOOL_NAME=$(echo "${HOOK_INPUT}" | jq -r '.tool_name // empty' 2>/dev/null)
-
-# Only process Bash tool calls
-if [ "${TOOL_NAME}" != "Bash" ]; then
-    exit 0
-fi
-
-# Extract the command from tool_input
-COMMAND=$(echo "${HOOK_INPUT}" | jq -r '.tool_input.command // empty' 2>/dev/null)
-
-# Exit if no command
-if [ -z "${COMMAND}" ]; then
-    exit 0
-fi
-
-# Check each blocked pattern
-for entry in "${BLOCKED_COMMANDS[@]}"; do
-    pattern="${entry%%|||*}"
-    instructions="${entry##*|||}"
-
-    if echo "${COMMAND}" | grep -qE "${pattern}"; then
-        cat << EOF
-{"error": "${instructions}"}
-EOF
-        exit 2
-    fi
-done
-
-exit 0
-```
-
-Make it executable:
-```bash
+mkdir -p .claude/hooks
+cp .deepwork/jobs/commit/block_bash_with_instructions.sh .claude/hooks/
 chmod +x .claude/hooks/block_bash_with_instructions.sh
 ```
 
-Then add this to your `.claude/settings.json`:
+### 3. Make the Commit Wrapper Script Executable
+
+The job also includes a `commit_job_git_commit.sh` script that bypasses the hook interception (used by the commit job itself). Make it executable:
+
+```bash
+chmod +x .deepwork/jobs/commit/commit_job_git_commit.sh
+```
+
+### 4. Configure settings.json
+
+Add the following to your `.claude/settings.json`:
 
 ```json
 {
+  "permissions": {
+    "allow": [
+      "Bash(.deepwork/jobs/commit/commit_job_git_commit.sh:*)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -153,27 +114,9 @@ Then add this to your `.claude/settings.json`:
 }
 ```
 
-### 3. Make the Commit Wrapper Script Executable
-
-The job includes a `commit_job_git_commit.sh` script that bypasses the hook interception. Make it executable:
-
-```bash
-chmod +x .deepwork/jobs/commit/commit_job_git_commit.sh
-```
-
-### 4. Allow the Commit Script in Permissions
-
-Add the commit script to your allowed permissions in `.claude/settings.json`:
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(.deepwork/jobs/commit/commit_job_git_commit.sh:*)"
-    ]
-  }
-}
-```
+This configuration:
+- Allows the commit wrapper script to run without prompts
+- Registers the hook that blocks direct `git commit` commands
 
 ### 5. Customize the Placeholders
 
