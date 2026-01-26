@@ -14,6 +14,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Removed
+
+## [0.6.0] - 2026-01-26
+
+### Added
+- Windows support for Claude Code integration
+  - PyInstaller spec for building standalone Windows executable (`deepwork.exe`)
+  - PowerShell installer script that downloads and adds DeepWork to PATH
+  - GitHub Actions workflow for automated Windows builds on release
+  - Windows installation documentation at `doc/installation/windows.md`
+- Cross-platform Python hook modules replacing bash scripts
+  - `capture_prompt.py` - Git work tree state capture
+  - `user_prompt_submit.py` - User prompt submission hook
+  - `hook_entry.py` - Direct Python entry point for hooks
+- New tests for cross-platform hook functionality
+
+### Changed
+- Hooks now use `deepwork hook <name>` command format instead of bash wrapper scripts
+- `global_hooks.yml` updated to use Python modules for cross-platform compatibility
+- `hooks_syncer.py` now generates forward-slash paths for bash compatibility on all platforms
+
+### Removed
+- Bash hook scripts (`user_prompt_submit.sh`, `capture_prompt_work_tree.sh`) replaced by Python modules
+
 ## [0.5.1] - 2026-01-24
 
 ### Added
