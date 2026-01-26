@@ -33,6 +33,7 @@ changelog:
 steps:
   - id: constitution
     name: "Establish Constitution"
+    hidden: true
     description: "Creates foundational governance principles and development guidelines for the project. Use when starting a new project or establishing standards."
     instructions_file: steps/constitution.md
     inputs:
@@ -50,6 +51,7 @@ steps:
 
   - id: specify
     name: "Create Specification"
+    hidden: true
     description: "Defines functional requirements as user stories without technology choices. Use when starting to design a new feature."
     instructions_file: steps/specify.md
     inputs:
@@ -74,6 +76,7 @@ steps:
 
   - id: clarify
     name: "Clarify Specification"
+    hidden: true
     description: "Resolves ambiguities and gaps in the specification through structured questioning. Use after specification to ensure completeness."
     instructions_file: steps/clarify.md
     inputs:
@@ -93,6 +96,7 @@ steps:
 
   - id: plan
     name: "Generate Technical Plan"
+    hidden: true
     description: "Creates technical implementation strategy including architecture and technology choices. Use after specification is clarified."
     instructions_file: steps/plan.md
     inputs:
@@ -124,6 +128,7 @@ steps:
 
   - id: tasks
     name: "Generate Task Breakdown"
+    hidden: true
     description: "Converts the implementation plan into actionable, ordered development tasks. Use after plan is validated."
     instructions_file: steps/tasks.md
     inputs:
@@ -149,6 +154,7 @@ steps:
 
   - id: implement
     name: "Execute Implementation"
+    hidden: true
     description: "Generates code and assets by executing the task breakdown. Use when ready to build the feature."
     instructions_file: steps/implement.md
     inputs:
