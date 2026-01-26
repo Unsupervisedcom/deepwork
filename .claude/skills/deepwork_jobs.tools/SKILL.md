@@ -1,6 +1,6 @@
 ---
 name: deepwork_jobs.tools
-description: "Verifies required external tools are available and documents how to use them. Use after job spec review to ensure implementation can succeed."
+description: "Verifies required techniques are available and documents how to use them. Use after job spec review to ensure implementation can succeed."
 user-invocable: false
 hooks:
   Stop:
@@ -11,12 +11,13 @@ hooks:
 
             ## Quality Criteria
 
-            1. **Tasks Analyzed**: Were all job steps reviewed to identify required tools and capabilities (CLI tools, MCP servers, browser extensions, etc.)?
-            2. **Parallel Sub-Agents**: Were parallel sub-agents spawned for each process requiring tooling?
-            3. **Had Working Process**: Does each required process have a working solution (original tool or alternative)?
-            4. **Process Documentation**: Was a markdown document created for each process (e.g., making_pdfs.md, not pandoc.md)?
-            5. **Installation Documented**: Is there a separate install_[tool].md file for each tool that requires installation?
-            6. **Invocation Documented**: Does each process document show how to use the tool with examples?
+            1. **Tasks Analyzed**: Were all job steps reviewed to identify required techniques (CLI tools, MCP servers, browser extensions, etc.)?
+            2. **Parallel Sub-Agents**: Were parallel sub-agents spawned for each technique requiring tooling?
+            3. **Had Working Technique**: Does each required technique have a working solution (original tool or alternative)?
+            4. **Technique Created**: Was a technique folder created in `.deepwork/techniques/` for each technique (e.g., making_pdfs/, not pandoc/)?
+            5. **SKILL.md Format**: Does each technique folder contain a SKILL.md file following the Claude Skills format?
+            6. **Assets Included**: Are helper scripts and assets stored alongside SKILL.md in the technique folder?
+            7. **Sync Complete**: Was `deepwork sync` run to sync techniques to platform skill directories?
 
             ## Instructions
 
@@ -36,12 +37,13 @@ hooks:
 
             ## Quality Criteria
 
-            1. **Tasks Analyzed**: Were all job steps reviewed to identify required tools and capabilities (CLI tools, MCP servers, browser extensions, etc.)?
-            2. **Parallel Sub-Agents**: Were parallel sub-agents spawned for each process requiring tooling?
-            3. **Had Working Process**: Does each required process have a working solution (original tool or alternative)?
-            4. **Process Documentation**: Was a markdown document created for each process (e.g., making_pdfs.md, not pandoc.md)?
-            5. **Installation Documented**: Is there a separate install_[tool].md file for each tool that requires installation?
-            6. **Invocation Documented**: Does each process document show how to use the tool with examples?
+            1. **Tasks Analyzed**: Were all job steps reviewed to identify required techniques (CLI tools, MCP servers, browser extensions, etc.)?
+            2. **Parallel Sub-Agents**: Were parallel sub-agents spawned for each technique requiring tooling?
+            3. **Had Working Technique**: Does each required technique have a working solution (original tool or alternative)?
+            4. **Technique Created**: Was a technique folder created in `.deepwork/techniques/` for each technique (e.g., making_pdfs/, not pandoc/)?
+            5. **SKILL.md Format**: Does each technique folder contain a SKILL.md file following the Claude Skills format?
+            6. **Assets Included**: Are helper scripts and assets stored alongside SKILL.md in the technique folder?
+            7. **Sync Complete**: Was `deepwork sync` run to sync techniques to platform skill directories?
 
             ## Instructions
 
@@ -68,19 +70,19 @@ Before proceeding, confirm these steps are complete:
 
 ## Instructions
 
-**Goal**: Verifies required external tools are available and documents how to use them. Use after job spec review to ensure implementation can succeed.
+**Goal**: Verifies required techniques are available and documents how to use them. Use after job spec review to ensure implementation can succeed.
 
-# Verify and Document Tools
+# Verify and Document Techniques
 
 ## Objective
 
-Verify that all external tools and capabilities required by the job are available and working, find alternatives if needed, and create process-focused documentation for future reference.
+Verify that all external tools and capabilities required by the job are available and working, find alternatives if needed, and create reusable **techniques** for future reference.
 
 ## Task
 
-Analyze the job specification to determine what tools are needed, then spawn parallel sub-agents to test, configure, and document each process.
+Analyze the job specification to determine what techniques are needed, then spawn parallel sub-agents to test, configure, and document each technique.
 
-### Step 1: Analyze the Job for Required Tools and Capabilities
+### Step 1: Analyze the Job for Required Techniques
 
 Read the `job.yml` file and examine each step to identify tasks that require external tools or capabilities beyond the agent's built-in abilities.
 
@@ -107,59 +109,113 @@ Read the `job.yml` file and examine each step to identify tasks that require ext
 - What external tools or capabilities might be required
 - What the expected input/output formats are
 
-### Step 2: Spawn Parallel Sub-Agents for Each Process
+### Step 2: Spawn Parallel Sub-Agents for Each Technique
 
-For each process you identified, spawn a sub-agent **in parallel** to handle testing and documentation. This allows all processes to be verified concurrently.
+For each technique you identified, spawn a sub-agent **in parallel** to handle testing and documentation. This allows all techniques to be verified concurrently.
 
-**Sub-agent prompt template (customize for each process):**
+**Sub-agent prompt template (customize for each technique):**
 
 ```
-You are verifying and documenting a tool for the "[PROCESS_NAME]" process in a DeepWork job.
+You are verifying and documenting a technique for the "[TECHNIQUE_NAME]" process in a DeepWork job.
 
-## Process Requirement
+## Technique Requirement
 
-[Describe what this specific process needs to accomplish]
+[Describe what this specific technique needs to accomplish]
 
 ## Your Tasks
 
-1. **Test if a tool exists** - Check if a tool is available that can accomplish this process
+1. **Test if a tool exists** - Check if a tool is available that can accomplish this technique
 2. **Verify it works** - Run a simple test to confirm functionality
 3. **Find alternatives if needed** - If the tool is missing or broken, research and test alternatives until you have a working solution
-4. **Create installation documentation** - Write `install_[tool_name].md` with:
-   - How it was installed on this machine
-   - Alternative installation methods (macOS, Ubuntu, Windows, pip/npm)
-   - Verification steps
-   - Troubleshooting tips
-5. **Create process documentation** - Write `[process_name].md` (e.g., `making_pdfs.md`, NOT `pandoc.md`) with:
-   - Purpose of this process
-   - Selected tool, type, and version
-   - Reference to installation doc
-   - Usage examples
-   - Alternatives considered
+4. **Create the technique** - Create a folder in `.deepwork/techniques/[technique_name]/` with:
+   - `SKILL.md` - The main technique skill file following the Claude Skills format:
+     ```markdown
+     ---
+     name: technique_name
+     description: "Brief description of what this technique accomplishes"
+     ---
+
+     # Technique Name
+
+     ## Purpose
+     What this technique accomplishes and when to use it.
+
+     ## Tool
+     - **Name**: Tool name (e.g., pandoc, playwright)
+     - **Type**: CLI tool / MCP server / Browser extension / API
+     - **Version**: Known working version
+
+     ## Installation
+
+     ### macOS
+     ```bash
+     brew install tool-name
+     ```
+
+     ### Ubuntu/Debian
+     ```bash
+     apt-get install tool-name
+     ```
+
+     ### pip/npm (if applicable)
+     ```bash
+     pip install tool-name
+     ```
+
+     ## Verification
+     ```bash
+     tool-name --version
+     ```
+
+     ## Usage
+
+     ### Basic Example
+     ```bash
+     tool-name input.md -o output.pdf
+     ```
+
+     ### Common Options
+     - `-o, --output`: Output file path
+     - Other relevant options...
+
+     ## Troubleshooting
+     Common issues and solutions.
+
+     ## Alternatives Considered
+     - Alternative 1: Why not chosen
+     - Alternative 2: Why not chosen
+     ```
+   - Any helper scripts or assets the technique needs (e.g., `convert.py`, `template.html`)
 
 ## Output Location
 
-Create documentation in: `.deepwork/jobs/[job_name]/tools/`
+Create the technique in: `.deepwork/techniques/[technique_name]/`
+
+Use descriptive, process-focused names like `making_pdfs`, `accessing_websites`, `creating_charts` (NOT tool names like `pandoc`, `playwright`).
 
 ## Success Criteria
 
-- The process has a working tool
-- Created `[process_name].md` document
-- Created `install_[tool_name].md` document
+- The technique has a working tool
+- Created `.deepwork/techniques/[technique_name]/SKILL.md`
+- Included any necessary helper scripts or assets in the same folder
 ```
 
-**Example:** If you identified 3 processes (making PDFs, accessing websites, creating charts), spawn 3 sub-agents in parallel:
-- Sub-agent 1: "making_pdfs" process
-- Sub-agent 2: "accessing_websites" process
-- Sub-agent 3: "creating_charts" process
+**Example:** If you identified 3 techniques (making PDFs, accessing websites, creating charts), spawn 3 sub-agents in parallel:
+- Sub-agent 1: "making_pdfs" technique
+- Sub-agent 2: "accessing_websites" technique
+- Sub-agent 3: "creating_charts" technique
 
 ### Step 3: Review Sub-Agent Outputs
 
 After all sub-agents complete:
 
-1. **Verify all processes are covered** - Check that each identified need has documentation
-2. **Spot-check the documentation** - Ensure the docs are complete and accurate
-3. **Verify tools work together** - If processes depend on each other, confirm compatibility
+1. **Verify all techniques are covered** - Check that each identified need has a technique folder
+2. **Spot-check the documentation** - Ensure the SKILL.md files are complete and accurate
+3. **Verify tools work together** - If techniques depend on each other, confirm compatibility
+
+### Step 4: Run Sync
+
+After all techniques are created, run `deepwork sync` to copy them to the platform skill directories (`.claude/skills/`, `.gemini/skills/`) with the `dwt_` prefix.
 
 ## Example
 
@@ -167,45 +223,66 @@ For a job that creates research reports from web sources:
 
 **Step 1 output (your analysis):**
 ```
-Required processes:
+Required techniques:
 1. Accessing websites - Need to browse and extract data from web pages
 2. Creating charts - Need to generate visualizations from data
 3. Making PDFs - Need to convert markdown reports to PDF format
 ```
 
-**Step 2:** Spawn 3 parallel sub-agents, one for each process
+**Step 2:** Spawn 3 parallel sub-agents, one for each technique
 
-**Step 3:** Verify all sub-agents created their docs:
-- `tools/accessing_websites.md` + `tools/install_chrome_mcp.md`
-- `tools/creating_charts.md` + `tools/install_matplotlib.md`
-- `tools/making_pdfs.md` + `tools/install_pandoc.md`
+**Step 3:** Verify all sub-agents created their techniques:
+```
+.deepwork/techniques/
+├── accessing_websites/
+│   └── SKILL.md
+├── creating_charts/
+│   ├── SKILL.md
+│   └── chart_helper.py
+└── making_pdfs/
+    └── SKILL.md
+```
+
+**Step 4:** Run `deepwork sync` to sync techniques to platforms
 
 ## Output
 
 After completing this step, you should have:
 
-1. **tools/ directory** with process and installation documentation:
+1. **techniques/ directory** with technique folders:
    ```
-   .deepwork/jobs/[job_name]/tools/
-   ├── [process_1].md
-   ├── [process_2].md
-   ├── install_[tool_1].md
-   ├── install_[tool_2].md
+   .deepwork/techniques/
+   ├── [technique_1]/
+   │   ├── SKILL.md
+   │   └── [optional assets]
+   ├── [technique_2]/
+   │   ├── SKILL.md
+   │   └── [optional assets]
    └── ...
    ```
 
-2. **Confidence that all processes work** and the job can be implemented successfully
+2. **Synced skills** in platform directories (after running `deepwork sync`):
+   ```
+   .claude/skills/
+   ├── dwt_[technique_1]/
+   │   └── SKILL.md
+   └── dwt_[technique_2]/
+       └── SKILL.md
+   ```
+
+3. **Confidence that all techniques work** and the job can be implemented successfully
 
 ## Quality Criteria
 
-- All job steps have been analyzed for tool/capability requirements
-- Parallel sub-agents were spawned for each process requiring tooling
+- All job steps have been analyzed for technique requirements
+- Parallel sub-agents were spawned for each technique requiring tooling
 - Every required tool has been tested and verified working
-- Each required process has a working solution (original tool or alternative)
-- Documentation is organized by PROCESS, not by tool name
-- Installation instructions are in separate `install_[tool].md` files
-- Each process document references its installation doc
-- All tools have been verified to work together
+- Each required technique has a working solution (original tool or alternative)
+- Techniques are organized by PROCESS name, not by tool name
+- Each technique folder contains a SKILL.md following the Claude Skills format
+- Helper scripts and assets are stored alongside SKILL.md in the technique folder
+- All techniques have been verified to work together
+- `deepwork sync` was run to sync techniques to platform skill directories
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 
@@ -239,7 +316,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 ## Outputs
 
 **Required outputs**:
-- `tools/` (directory)
+- `.deepwork/techniques/` (directory)
 
 ## Guardrails
 
@@ -253,12 +330,13 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 Stop hooks will automatically validate your work. The loop continues until all criteria pass.
 
 **Criteria (all must be satisfied)**:
-1. **Tasks Analyzed**: Were all job steps reviewed to identify required tools and capabilities (CLI tools, MCP servers, browser extensions, etc.)?
-2. **Parallel Sub-Agents**: Were parallel sub-agents spawned for each process requiring tooling?
-3. **Had Working Process**: Does each required process have a working solution (original tool or alternative)?
-4. **Process Documentation**: Was a markdown document created for each process (e.g., making_pdfs.md, not pandoc.md)?
-5. **Installation Documented**: Is there a separate install_[tool].md file for each tool that requires installation?
-6. **Invocation Documented**: Does each process document show how to use the tool with examples?
+1. **Tasks Analyzed**: Were all job steps reviewed to identify required techniques (CLI tools, MCP servers, browser extensions, etc.)?
+2. **Parallel Sub-Agents**: Were parallel sub-agents spawned for each technique requiring tooling?
+3. **Had Working Technique**: Does each required technique have a working solution (original tool or alternative)?
+4. **Technique Created**: Was a technique folder created in `.deepwork/techniques/` for each technique (e.g., making_pdfs/, not pandoc/)?
+5. **SKILL.md Format**: Does each technique folder contain a SKILL.md file following the Claude Skills format?
+6. **Assets Included**: Are helper scripts and assets stored alongside SKILL.md in the technique folder?
+7. **Sync Complete**: Was `deepwork sync` run to sync techniques to platform skill directories?
 
 
 **To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
@@ -266,7 +344,7 @@ Stop hooks will automatically validate your work. The loop continues until all c
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 3/5 complete, outputs: tools/"
+2. Inform user: "Step 3/5 complete, outputs: .deepwork/techniques/"
 3. **Continue workflow**: Use Skill tool to invoke `/deepwork_jobs.implement`
 
 ---

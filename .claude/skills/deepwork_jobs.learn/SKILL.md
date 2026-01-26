@@ -1,7 +1,73 @@
 ---
 name: deepwork_jobs.learn
-description: "Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it."
+description: "Analyzes conversation history to improve job instructions, techniques, and capture learnings. Use after running a job to refine it."
+hooks:
+  Stop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            You must evaluate whether Claude has met all the below quality criteria for the request.
 
+            ## Quality Criteria
+
+            1. **Conversation Analyzed**: Did the agent review the conversation for DeepWork job executions?
+            2. **Confusion Identified**: Did the agent identify points of confusion, errors, or inefficiencies?
+            3. **Learnings Classified**: Were learnings classified as generalizable, technique-related, or bespoke?
+            4. **Instructions Improved**: Were job instructions updated to address identified issues?
+            5. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
+            6. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
+            7. **doc spec Reviewed (if applicable)**: For jobs with doc spec outputs, were doc spec-related learnings identified?
+            8. **doc spec Updated (if applicable)**: Were doc spec files updated with improved quality criteria or structure?
+            9. **Techniques Created/Updated (if applicable)**: Were new techniques created or existing ones improved based on tool usage learnings?
+            10. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
+            11. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
+            12. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
+            13. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
+            14. **Sync Complete**: Has `deepwork sync` been run if instructions or techniques were modified?
+
+            ## Instructions
+
+            Review the conversation and determine if ALL quality criteria above have been satisfied.
+            Look for evidence that each criterion has been addressed.
+
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
+            all criteria appear to be met, respond with: {"ok": true}
+
+            If criteria are NOT met AND the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
+  SubagentStop:
+    - hooks:
+        - type: prompt
+          prompt: |
+            You must evaluate whether Claude has met all the below quality criteria for the request.
+
+            ## Quality Criteria
+
+            1. **Conversation Analyzed**: Did the agent review the conversation for DeepWork job executions?
+            2. **Confusion Identified**: Did the agent identify points of confusion, errors, or inefficiencies?
+            3. **Learnings Classified**: Were learnings classified as generalizable, technique-related, or bespoke?
+            4. **Instructions Improved**: Were job instructions updated to address identified issues?
+            5. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
+            6. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
+            7. **doc spec Reviewed (if applicable)**: For jobs with doc spec outputs, were doc spec-related learnings identified?
+            8. **doc spec Updated (if applicable)**: Were doc spec files updated with improved quality criteria or structure?
+            9. **Techniques Created/Updated (if applicable)**: Were new techniques created or existing ones improved based on tool usage learnings?
+            10. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
+            11. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
+            12. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
+            13. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
+            14. **Sync Complete**: Has `deepwork sync` been run if instructions or techniques were modified?
+
+            ## Instructions
+
+            Review the conversation and determine if ALL quality criteria above have been satisfied.
+            Look for evidence that each criterion has been addressed.
+
+            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
+            all criteria appear to be met, respond with: {"ok": true}
+
+            If criteria are NOT met AND the promise tag is missing, respond with:
+            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
 ---
 
 # deepwork_jobs.learn
@@ -13,7 +79,7 @@ description: "Analyzes conversation history to improve job instructions and capt
 
 ## Instructions
 
-**Goal**: Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
+**Goal**: Analyzes conversation history to improve job instructions, techniques, and capture learnings. Use after running a job to refine it.
 
 # Learn from Job Execution
 
@@ -91,6 +157,16 @@ For each learning identified, determine if it is:
   - "The report should include a summary table"
   - "Quality criterion 'Visualization' needs clearer requirements"
   - "Documents need a section for action items"
+
+**Technique-Related** (should improve or create techniques):
+- Improvements to how external tools are used
+- Better installation or usage instructions
+- New tools discovered during execution
+- Workarounds or troubleshooting tips
+- Examples:
+  - "The PDF generation command needs an extra flag for better formatting"
+  - "Found a better tool for web scraping that handles dynamic content"
+  - "Installation steps needed adjustment for macOS"
 
 **Bespoke** (should go in AGENTS.md):
 - Specific to THIS project/codebase/run
@@ -214,6 +290,73 @@ quality_criteria:
     description: Include Mermaid.js charts showing spend breakdown by service and month-over-month trend
 ```
 
+### Step 4.6: Create/Update Techniques (Technique-Related Learnings)
+
+If technique-related learnings were identified, update or create techniques in `.deepwork/techniques/`:
+
+1. **For existing techniques** (update):
+   - Locate the technique folder: `.deepwork/techniques/[technique_name]/`
+   - Update the `SKILL.md` file with improvements:
+     - Better usage examples
+     - Additional command-line options
+     - Troubleshooting tips discovered during execution
+     - Workarounds for edge cases
+
+2. **For new techniques** (create):
+   - Create a new folder: `.deepwork/techniques/[technique_name]/`
+   - Create a `SKILL.md` file following the Claude Skills format:
+     ```markdown
+     ---
+     name: technique_name
+     description: "Brief description of what this technique accomplishes"
+     ---
+
+     # Technique Name
+
+     ## Purpose
+     What this technique accomplishes and when to use it.
+
+     ## Tool
+     - **Name**: Tool name
+     - **Type**: CLI tool / MCP server / Browser extension / API
+     - **Version**: Known working version
+
+     ## Installation
+     [Installation instructions for different platforms]
+
+     ## Verification
+     [How to verify the tool is working]
+
+     ## Usage
+     [Usage examples and common options]
+
+     ## Troubleshooting
+     [Common issues and solutions]
+
+     ## Alternatives Considered
+     [Other tools that were considered]
+     ```
+   - Include any helper scripts or assets in the technique folder
+
+3. **After updating/creating techniques**, run `deepwork sync` to sync them to platform skill directories with the `dwt_` prefix.
+
+**Example technique update:**
+```markdown
+# Before (in SKILL.md)
+## Usage
+```bash
+pandoc input.md -o output.pdf
+```
+
+# After (improved based on learnings)
+## Usage
+```bash
+pandoc input.md -o output.pdf --pdf-engine=xelatex -V geometry:margin=1in
+```
+
+**Note**: The `--pdf-engine=xelatex` flag is required for Unicode support. The margin setting prevents text from running off the page.
+```
+
 ### Step 5: Create/Update AGENTS.md (Bespoke Learnings)
 
 The AGENTS.md file captures project-specific knowledge that helps future agent runs.
@@ -281,13 +424,15 @@ When adding entries to AGENTS.md, prefer these patterns:
 
 - Conversation has been analyzed for job executions
 - Points of confusion and inefficiency are identified
-- Learnings are correctly classified (generalizable vs bespoke)
+- Learnings are correctly classified (generalizable vs technique-related vs bespoke)
 - Job instructions updated for generalizable improvements
 - Instructions are concise - no redundancy or unnecessary verbosity
 - Shared/lengthy content extracted into referenced files where appropriate
+- Techniques created/updated for technique-related improvements
 - AGENTS.md created/updated with bespoke learnings
 - File references used instead of duplicating content
 - AGENTS.md is in the correct folder (the deepest common folder for the topic)
+- `deepwork sync` run if instructions or techniques were modified
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
 
 ## Example Dialog
@@ -405,6 +550,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 **Required outputs**:
 - `AGENTS.md`
+- `.deepwork/techniques/` (directory)
 
 ## Guardrails
 
@@ -415,34 +561,31 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 ## Quality Validation
 
-**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
-
-Use a sub-agent (Haiku model) to review your work against these criteria:
+Stop hooks will automatically validate your work. The loop continues until all criteria pass.
 
 **Criteria (all must be satisfied)**:
 1. **Conversation Analyzed**: Did the agent review the conversation for DeepWork job executions?
 2. **Confusion Identified**: Did the agent identify points of confusion, errors, or inefficiencies?
-3. **Instructions Improved**: Were job instructions updated to address identified issues?
-4. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
-5. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
-6. **doc spec Reviewed (if applicable)**: For jobs with doc spec outputs, were doc spec-related learnings identified?
-7. **doc spec Updated (if applicable)**: Were doc spec files updated with improved quality criteria or structure?
-8. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
-9. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
-10. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
-11. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
-12. **Sync Complete**: Has `deepwork sync` been run if instructions were modified?
-**Review Process**:
-1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
-2. The sub-agent should examine your outputs and verify each criterion is met
-3. If the sub-agent identifies valid issues, fix them
-4. Have the sub-agent review again until all valid feedback has been addressed
-5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
+3. **Learnings Classified**: Were learnings classified as generalizable, technique-related, or bespoke?
+4. **Instructions Improved**: Were job instructions updated to address identified issues?
+5. **Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?
+6. **Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?
+7. **doc spec Reviewed (if applicable)**: For jobs with doc spec outputs, were doc spec-related learnings identified?
+8. **doc spec Updated (if applicable)**: Were doc spec files updated with improved quality criteria or structure?
+9. **Techniques Created/Updated (if applicable)**: Were new techniques created or existing ones improved based on tool usage learnings?
+10. **Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?
+11. **File References Used**: Do AGENTS.md entries reference other files where appropriate?
+12. **Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?
+13. **Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?
+14. **Sync Complete**: Has `deepwork sync` been run if instructions or techniques were modified?
+
+
+**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
 
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "learn complete, outputs: AGENTS.md"
+2. Inform user: "learn complete, outputs: AGENTS.md, .deepwork/techniques/"
 
 This standalone skill can be re-run anytime.
 

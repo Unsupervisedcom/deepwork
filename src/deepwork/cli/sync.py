@@ -1,5 +1,6 @@
 """Sync command for DeepWork CLI."""
 
+import shutil
 from pathlib import Path
 
 import click
@@ -10,8 +11,11 @@ from deepwork.core.adapters import AgentAdapter
 from deepwork.core.generator import SkillGenerator
 from deepwork.core.hooks_syncer import collect_job_hooks, sync_hooks_to_platform
 from deepwork.core.parser import parse_job_definition
-from deepwork.utils.fs import ensure_dir
+from deepwork.utils.fs import ensure_dir, fix_permissions
 from deepwork.utils.yaml_utils import load_yaml
+
+# Prefix for DeepWork-managed technique folders in platform skill directories
+TECHNIQUE_PREFIX = "dwt_"
 
 console = Console()
 
@@ -20,6 +24,138 @@ class SyncError(Exception):
     """Exception raised for sync errors."""
 
     pass
+
+
+def sync_techniques_to_platform(
+    techniques_dir: Path, skills_dir: Path, adapter: AgentAdapter
+) -> tuple[int, int]:
+    """
+    Sync techniques from .deepwork/techniques/ to platform skill directory.
+
+    Copies technique folders with a 'dwt_' prefix and removes stale dwt_ folders
+    that no longer have corresponding techniques.
+
+    Args:
+        techniques_dir: Path to .deepwork/techniques/ directory
+        skills_dir: Path to platform skills directory (e.g., .claude/skills/)
+        adapter: The agent adapter for platform-specific handling
+
+    Returns:
+        Tuple of (synced_count, removed_count)
+    """
+    synced_count = 0
+    removed_count = 0
+
+    # Get current technique names (directories with SKILL.md or index.toml)
+    current_techniques: set[str] = set()
+    if techniques_dir.exists():
+        for technique_dir in techniques_dir.iterdir():
+            if technique_dir.is_dir() and not technique_dir.name.startswith("."):
+                # Check for SKILL.md (Claude) or any .toml file (Gemini)
+                has_skill = (technique_dir / "SKILL.md").exists() or any(
+                    technique_dir.glob("*.toml")
+                )
+                if has_skill:
+                    current_techniques.add(technique_dir.name)
+
+    # Find existing dwt_ prefixed folders in skills directory
+    existing_dwt_folders: set[str] = set()
+    if skills_dir.exists():
+        for item in skills_dir.iterdir():
+            if item.is_dir() and item.name.startswith(TECHNIQUE_PREFIX):
+                # Extract the technique name without prefix
+                technique_name = item.name[len(TECHNIQUE_PREFIX) :]
+                existing_dwt_folders.add(technique_name)
+
+    # Remove stale dwt_ folders (no longer in techniques)
+    stale_techniques = existing_dwt_folders - current_techniques
+    for stale_name in stale_techniques:
+        stale_dir = skills_dir / f"{TECHNIQUE_PREFIX}{stale_name}"
+        try:
+            shutil.rmtree(stale_dir)
+            removed_count += 1
+        except FileNotFoundError:
+            # Directory was already removed (race condition), skip
+            pass
+
+    # Copy/update current techniques
+    for technique_name in current_techniques:
+        source_dir = techniques_dir / technique_name
+        dest_dir = skills_dir / f"{TECHNIQUE_PREFIX}{technique_name}"
+
+        # Convert SKILL.md to platform-specific format if needed
+        _copy_technique(source_dir, dest_dir, adapter)
+        synced_count += 1
+
+    return synced_count, removed_count
+
+
+def _copy_technique(source_dir: Path, dest_dir: Path, adapter: AgentAdapter) -> None:
+    """
+    Copy a technique folder to the destination with platform-specific handling.
+
+    Args:
+        source_dir: Source technique directory
+        dest_dir: Destination directory in platform skills folder
+        adapter: Agent adapter for platform-specific handling
+    """
+    # Remove existing destination if present
+    if dest_dir.exists():
+        shutil.rmtree(dest_dir)
+
+    # Copy the entire directory
+    shutil.copytree(source_dir, dest_dir)
+    fix_permissions(dest_dir)
+
+    # Handle Gemini-specific conversion (SKILL.md -> index.toml)
+    if adapter.name == "gemini":
+        skill_md = dest_dir / "SKILL.md"
+        if skill_md.exists():
+            _convert_skill_md_to_toml(skill_md, dest_dir / "index.toml")
+            skill_md.unlink()
+
+
+def _convert_skill_md_to_toml(skill_md: Path, toml_path: Path) -> None:
+    """
+    Convert a SKILL.md file to Gemini's TOML format.
+
+    This is a simple conversion that extracts the frontmatter and content.
+
+    Args:
+        skill_md: Path to the SKILL.md file
+        toml_path: Path to write the TOML file
+    """
+    content = skill_md.read_text()
+
+    # Parse frontmatter
+    name = ""
+    description = ""
+    body = content
+
+    if content.startswith("---"):
+        parts = content.split("---", 2)
+        if len(parts) >= 3:
+            frontmatter = parts[1].strip()
+            body = parts[2].strip()
+
+            # Simple YAML parsing for name and description
+            for line in frontmatter.split("\n"):
+                if line.startswith("name:"):
+                    name = line.split(":", 1)[1].strip().strip('"\'')
+                elif line.startswith("description:"):
+                    description = line.split(":", 1)[1].strip().strip('"\'')
+
+    # Escape special characters in description for TOML
+    description = description.replace("\\", "\\\\").replace('"', '\\"')
+
+    # Write TOML format (matches Gemini CLI expected format)
+    toml_content = f'''description = "{description}"
+
+prompt = """
+{body}
+"""
+'''
+    toml_path.write_text(toml_content)
 
 
 @click.command()
@@ -182,6 +318,28 @@ def sync_skills(project_path: Path) -> None:
             except Exception as e:
                 console.print(f"    [red]✗[/red] Failed to sync skill permissions: {e}")
 
+        # Sync techniques to platform
+        techniques_dir = deepwork_dir / "techniques"
+        if techniques_dir.exists():
+            console.print("  [dim]•[/dim] Syncing techniques...")
+            try:
+                synced, removed = sync_techniques_to_platform(
+                    techniques_dir, skills_dir, adapter
+                )
+                stats["techniques_synced"] = stats.get("techniques_synced", 0) + synced
+                stats["techniques_removed"] = stats.get("techniques_removed", 0) + removed
+                if synced > 0 or removed > 0:
+                    msg_parts = []
+                    if synced > 0:
+                        msg_parts.append(f"{synced} synced")
+                    if removed > 0:
+                        msg_parts.append(f"{removed} removed")
+                    console.print(f"    [green]✓[/green] Techniques: {', '.join(msg_parts)}")
+                else:
+                    console.print("    [dim]•[/dim] No techniques to sync")
+            except Exception as e:
+                console.print(f"    [red]✗[/red] Failed to sync techniques: {e}")
+
         stats["platforms"] += 1
 
     # Summary
@@ -197,5 +355,9 @@ def sync_skills(project_path: Path) -> None:
     table.add_row("Total skills", str(stats["skills"]))
     if stats["hooks"] > 0:
         table.add_row("Hooks synced", str(stats["hooks"]))
+    if stats.get("techniques_synced", 0) > 0:
+        table.add_row("Techniques synced", str(stats["techniques_synced"]))
+    if stats.get("techniques_removed", 0) > 0:
+        table.add_row("Techniques removed", str(stats["techniques_removed"]))
 
     console.print(table)
