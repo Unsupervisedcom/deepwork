@@ -47,10 +47,8 @@ Use a sub-agent to review the staged/changed code and identify issues that shoul
 ## Quality Criteria
 
 - Changed files were identified
-- Sub-agent read the code review standards and reviewed all changed files
+- Code was reviewed against the project's code review standards
 - All identified issues were addressed or documented as intentional
-- Sub-agent was used to conserve context
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
 

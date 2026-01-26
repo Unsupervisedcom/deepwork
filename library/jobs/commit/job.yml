@@ -28,35 +28,23 @@ steps:
     outputs:
       - code_reviewed  # implicit state: code has been reviewed and issues addressed
     dependencies: []
-    hooks:
-      after_agent:
-        - prompt: |
-            Verify the code review is complete:
-            1. Changed files were identified
-            2. Sub-agent reviewed the code for general issues, DRY opportunities, naming clarity, and test coverage
-            3. All identified issues were addressed or documented as intentional
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+    quality_criteria:
+      - "Changed files were identified"
+      - "Code was reviewed against the project's code review standards"
+      - "All identified issues were addressed or documented as intentional"
 
   - id: test
     name: "Run Tests"
     description: "Pulls latest code and runs tests until all pass. Use after code review passes to verify changes work correctly."
     instructions_file: steps/test.md
-    inputs:
-      - name: test_command
-        description: "Test command to run (optional - will auto-detect if not provided)"
+    inputs: []
     outputs:
       - tests_passing  # implicit state: all tests pass
     dependencies:
       - review
-    hooks:
-      after_agent:
-        - prompt: |
-            Verify the tests are passing:
-            1. Latest code was pulled from the branch
-            2. All tests completed successfully
-            3. No test failures or errors remain
-            4. Test output shows passing status
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+    quality_criteria:
+      - "Latest code was pulled from the branch"
+      - "All tests are passing"
 
   - id: lint
     name: "Lint Code"
@@ -67,14 +55,9 @@ steps:
       - code_formatted  # implicit state: code formatted and linted
     dependencies:
       - test
-    hooks:
-      after_agent:
-        - prompt: |
-            Verify the linting is complete:
-            1. Format command was run successfully
-            2. Lint check command was run successfully
-            3. No remaining lint errors
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+    quality_criteria:
+      - "Code was formatted"
+      - "Lint check passed with no errors"
 
   - id: commit_and_push
     name: "Commit and Push"
@@ -85,12 +68,7 @@ steps:
       - changes_committed  # implicit state: changes committed and pushed
     dependencies:
       - lint
-    hooks:
-      after_agent:
-        - prompt: |
-            Verify the commit is ready:
-            1. Changed files list was reviewed by the agent
-            2. Files match what was modified during this session (or unexpected changes were investigated)
-            3. Commit was created with appropriate message
-            4. Changes were pushed to remote
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+    quality_criteria:
+      - "Changed files were verified against expectations"
+      - "Commit was created with appropriate message"
+      - "Changes were pushed to remote"

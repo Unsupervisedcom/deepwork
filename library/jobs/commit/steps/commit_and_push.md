@@ -57,12 +57,9 @@ Check the list of changed files against what was modified during this session, e
 
 ## Quality Criteria
 
-- Changed files list was reviewed by the agent
-- Files match what was modified during this session (or unexpected changes were investigated and handled)
-- Commit message follows project conventions
-- Commit was created successfully
+- Changed files were verified against expectations
+- Commit was created with appropriate message
 - Changes were pushed to remote
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
 

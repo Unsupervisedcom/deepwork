@@ -33,11 +33,8 @@ Run the project's format and lint commands. This step should be executed using a
 
 ## Quality Criteria
 
-- Format command was run successfully
-- Lint check was run successfully
-- No remaining lint errors (or all are documented and intentional)
-- Sub-agent was used to conserve context
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+- Code was formatted
+- Lint check passed with no errors
 
 ## Context
 
