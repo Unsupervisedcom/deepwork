@@ -11,10 +11,53 @@
 # Uses hookSpecificOutput.additionalContext to pass messages to Claude's context.
 
 # ============================================================================
+# READ STDIN INPUT
+# ============================================================================
+# SessionStart hooks receive JSON input via stdin with session information.
+# We need to read this to check the session source (startup, resume, clear).
+
+HOOK_INPUT=""
+if [ ! -t 0 ]; then
+    HOOK_INPUT=$(cat)
+fi
+
+# ============================================================================
+# SKIP NON-INITIAL SESSIONS
+# ============================================================================
+# SessionStart hooks can be triggered for different reasons:
+# - "startup": Initial session start (user ran `claude` or similar)
+# - "resume": Session resumed (user ran `claude --resume`)
+# - "clear": Context was cleared/compacted
+#
+# We only want to run the full check on initial startup. For resumed or
+# compacted sessions, return immediately with empty JSON to avoid redundant
+# checks and noise.
+
+get_session_source() {
+    # Extract the "source" field from the JSON input
+    # Returns empty string if not found or not valid JSON
+    if [ -n "$HOOK_INPUT" ]; then
+        # Use grep and sed for simple JSON parsing (avoid jq dependency)
+        echo "$HOOK_INPUT" | grep -o '"source"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/' | head -1
+    fi
+}
+
+SESSION_SOURCE=$(get_session_source)
+
+# If source is anything other than "startup" (or empty/missing for backwards compat),
+# skip this hook entirely. Empty source means older Claude Code version that doesn't
+# send the source field - we treat that as an initial session to maintain backwards compat.
+if [ -n "$SESSION_SOURCE" ] && [ "$SESSION_SOURCE" != "startup" ]; then
+    # Non-initial session (resume, clear, etc.) - skip all checks
+    echo '{}'
+    exit 0
+fi
+
+# ============================================================================
 # DEEPWORK INSTALLATION CHECK (BLOCKING)
 # ============================================================================
-# This check runs on EVERY hook invocation (no re-entry guard) because if
-# deepwork is not installed, nothing else will work.
+# This check runs on initial session start because if deepwork is not installed,
+# nothing else will work.
 
 check_deepwork_installed() {
     # Run 'deepwork rules clear_queue' instead of just '--version' for double utility:
@@ -70,20 +113,10 @@ if ! check_deepwork_installed; then
     exit 2  # Blocking error - prevent session from continuing
 fi
 
-# ============================================================================
-# RE-ENTRY GUARD (for version check only)
-# ============================================================================
-# SessionStart hooks can be triggered multiple times in a session (on resume,
-# clear, etc.). We only want to show the version warning once per session to
-# avoid spamming the user. We use an environment variable to track whether
-# we've already run. Note: This relies on the parent process preserving env
-# vars across hook invocations within the same session.
-if [ -n "$DEEPWORK_VERSION_CHECK_DONE" ]; then
-    # Already checked version this session, exit silently with empty JSON
-    echo '{}'
-    exit 0
-fi
-export DEEPWORK_VERSION_CHECK_DONE=1
+# Note: We previously had a re-entry guard using DEEPWORK_VERSION_CHECK_DONE
+# environment variable, but that was unreliable across session resumptions.
+# Now we use the source field in the hook input JSON to detect initial sessions
+# vs resumed/compacted sessions (see SKIP NON-INITIAL SESSIONS section above).
 
 # ============================================================================
 # MINIMUM VERSION CONFIGURATION
