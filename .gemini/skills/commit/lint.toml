@@ -100,7 +100,7 @@ This step ensures code quality and consistency before committing. It runs after 
 
 A workflow for preparing and committing code changes with quality checks.
 
-This job starts with a code review to catch issues early, runs tests until
+The **full** workflow starts with a code review to catch issues early, runs tests until
 they pass, formats and lints code with ruff, then reviews changed files
 before committing and pushing. The review and lint steps use sub-agents
 to reduce context usage.

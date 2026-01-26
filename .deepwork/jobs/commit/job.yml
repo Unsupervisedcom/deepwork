@@ -1,10 +1,10 @@
 name: commit
-version: "1.4.0"
+version: "1.5.0"
 summary: "Reviews code, runs tests, lints, and commits changes. Use when ready to commit work with quality checks."
 description: |
   A workflow for preparing and committing code changes with quality checks.
 
-  This job starts with a code review to catch issues early, runs tests until
+  The **full** workflow starts with a code review to catch issues early, runs tests until
   they pass, formats and lints code with ruff, then reviews changed files
   before committing and pushing. The review and lint steps use sub-agents
   to reduce context usage.
@@ -15,7 +15,18 @@ description: |
   3. lint - Format and lint code with ruff (runs in sub-agent)
   4. commit_and_push - Review changes and commit/push
 
+workflows:
+  - name: full
+    summary: "Full commit workflow: review, test, lint, and commit"
+    steps:
+      - review
+      - test
+      - lint
+      - commit_and_push
+
 changelog:
+  - version: "1.5.0"
+    changes: "Added workflows section to explicitly define the full commit workflow sequence"
   - version: "1.4.0"
     changes: "Added changelog guidance: entries must go in [Unreleased] section, NEVER modify version numbers in pyproject.toml or CHANGELOG.md"
   - version: "1.3.0"

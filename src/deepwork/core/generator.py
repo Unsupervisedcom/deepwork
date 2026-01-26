@@ -11,7 +11,7 @@ from deepwork.core.doc_spec_parser import (
     DocSpecParseError,
     parse_doc_spec_file,
 )
-from deepwork.core.parser import JobDefinition, Step
+from deepwork.core.parser import JobDefinition, Step, Workflow
 from deepwork.schemas.job_schema import LIFECYCLE_HOOK_EVENTS
 from deepwork.utils.fs import safe_read, safe_write
 
@@ -95,9 +95,12 @@ class SkillGenerator:
 
     def _is_standalone_step(self, job: JobDefinition, step: Step) -> bool:
         """
-        Check if a step is standalone (disconnected from the main workflow).
+        Check if a step is standalone (not part of any workflow).
 
-        A standalone step has no dependencies AND no other steps depend on it.
+        A step is standalone if:
+        - It's not listed in any workflow definition
+        - OR (for backward compatibility) no workflows are defined and the step
+          has no dependencies and no other steps depend on it
 
         Args:
             job: Job definition
@@ -106,6 +109,11 @@ class SkillGenerator:
         Returns:
             True if step is standalone
         """
+        # If workflows are defined, use workflow membership
+        if job.workflows:
+            return job.get_workflow_for_step(step.id) is None
+
+        # Backward compatibility: if no workflows defined, use dependency analysis
         # Step has dependencies - not standalone
         if step.dependencies:
             return False
@@ -116,6 +124,33 @@ class SkillGenerator:
                 return False
 
         return True
+
+    def _get_workflow_context(
+        self, job: JobDefinition, step: Step
+    ) -> dict[str, Any]:
+        """
+        Build workflow context for a step.
+
+        Args:
+            job: Job definition
+            step: Step to build context for
+
+        Returns:
+            Workflow context dictionary with workflow info, or empty dict if standalone
+        """
+        workflow = job.get_workflow_for_step(step.id)
+        if not workflow:
+            return {}
+
+        position = job.get_step_position_in_workflow(step.id)
+        return {
+            "workflow_name": workflow.name,
+            "workflow_summary": workflow.summary,
+            "workflow_step_number": position[0] if position else 1,
+            "workflow_total_steps": position[1] if position else 1,
+            "workflow_next_step": job.get_next_step_in_workflow(step.id),
+            "workflow_prev_step": job.get_prev_step_in_workflow(step.id),
+        }
 
     def _build_hook_context(self, job: JobDefinition, hook_action: Any) -> dict[str, Any]:
         """
@@ -188,14 +223,23 @@ class SkillGenerator:
         # Check if this is a standalone step
         is_standalone = self._is_standalone_step(job, step)
 
-        # Determine next and previous steps (only for non-standalone steps)
+        # Get workflow context (empty dict if standalone)
+        workflow_ctx = self._get_workflow_context(job, step)
+
+        # Determine next and previous steps based on workflow (if defined) or order
         next_step = None
         prev_step = None
         if not is_standalone:
-            if step_index < len(job.steps) - 1:
-                next_step = job.steps[step_index + 1].id
-            if step_index > 0:
-                prev_step = job.steps[step_index - 1].id
+            if workflow_ctx:
+                # Use workflow-defined order
+                next_step = workflow_ctx.get("workflow_next_step")
+                prev_step = workflow_ctx.get("workflow_prev_step")
+            else:
+                # Backward compatibility: use step array order
+                if step_index < len(job.steps) - 1:
+                    next_step = job.steps[step_index + 1].id
+                if step_index > 0:
+                    prev_step = job.steps[step_index - 1].id
 
         # Build hooks context for all lifecycle events
         # Structure: {platform_event_name: [hook_contexts]}
@@ -247,7 +291,7 @@ class SkillGenerator:
                     }
             outputs_context.append(output_ctx)
 
-        return {
+        context = {
             "job_name": job.name,
             "job_version": job.version,
             "job_summary": job.summary,
@@ -270,6 +314,11 @@ class SkillGenerator:
             "stop_hooks": stop_hooks,  # Backward compat: after_agent hooks only
             "quality_criteria": step.quality_criteria,  # Declarative criteria with framing
         }
+
+        # Add workflow context if step is part of a workflow
+        context.update(workflow_ctx)
+
+        return context
 
     def _build_meta_skill_context(
         self, job: JobDefinition, adapter: AgentAdapter
@@ -300,16 +349,38 @@ class SkillGenerator:
                 # job_name.step_id/SKILL.md -> job_name.step_id
                 skill_name = skill_filename.replace("/SKILL.md", "")
 
-            steps_info.append(
+            # Get workflow info for step
+            workflow = job.get_workflow_for_step(step.id)
+            step_info = {
+                "id": step.id,
+                "name": step.name,
+                "description": step.description,
+                "command_name": skill_name,
+                "dependencies": step.dependencies,
+                "exposed": step.exposed,
+                "is_standalone": self._is_standalone_step(job, step),
+            }
+            if workflow:
+                step_info["workflow_name"] = workflow.name
+
+            steps_info.append(step_info)
+
+        # Build workflow info
+        workflows_info = []
+        for workflow in job.workflows:
+            workflows_info.append(
                 {
-                    "id": step.id,
-                    "name": step.name,
-                    "description": step.description,
-                    "command_name": skill_name,
-                    "dependencies": step.dependencies,
-                    "exposed": step.exposed,
+                    "name": workflow.name,
+                    "summary": workflow.summary,
+                    "steps": workflow.steps,
+                    "first_step": workflow.steps[0] if workflow.steps else None,
                 }
             )
+
+        # Identify standalone steps (not in any workflow)
+        standalone_steps = [
+            s for s in steps_info if s["is_standalone"]
+        ]
 
         return {
             "job_name": job.name,
@@ -318,6 +389,9 @@ class SkillGenerator:
             "job_description": job.description,
             "total_steps": len(job.steps),
             "steps": steps_info,
+            "workflows": workflows_info,
+            "standalone_steps": standalone_steps,
+            "has_workflows": bool(job.workflows),
         }
 
     def generate_meta_skill(

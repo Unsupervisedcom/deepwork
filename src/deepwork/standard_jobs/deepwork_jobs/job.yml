@@ -1,19 +1,29 @@
 name: deepwork_jobs
-version: "0.9.0"
+version: "1.0.0"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs."
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
   workflows and learn from running them.
 
-  The `define` command guides you through an interactive process to create a new job by
+  The `new_job` workflow guides you through defining and implementing a new job by
   asking structured questions about your workflow, understanding each step's inputs and outputs,
-  and generating all necessary files.
+  reviewing the specification, and generating all necessary files.
 
-  The `learn` command reflects on conversations where DeepWork jobs were run, identifies
+  The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
   confusion or inefficiencies, and improves job instructions. It also captures bespoke
   learnings specific to the current run into AGENTS.md files in the working folder.
 
+workflows:
+  - name: new_job
+    summary: "Create a new DeepWork job from scratch through definition, review, and implementation"
+    steps:
+      - define
+      - review_job_spec
+      - implement
+
 changelog:
+  - version: "1.0.0"
+    changes: "Added workflows section to distinguish new_job workflow (define→review_job_spec→implement) from standalone learn skill"
   - version: "0.1.0"
     changes: "Initial version"
   - version: "0.2.0"

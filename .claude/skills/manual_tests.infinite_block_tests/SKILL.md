@@ -4,7 +4,9 @@ description: "Runs all 4 infinite block tests serially. Tests both 'should fire'
 
 # manual_tests.infinite_block_tests
 
-**Step 4/4** in **manual_tests** workflow
+**Step 4/4** in **run_all** workflow
+
+> Run all manual tests: reset, NOT-fire tests, fire tests, and infinite block tests
 
 > Runs all manual hook/rule tests using sub-agents. Use when validating that DeepWork rules fire correctly.
 
@@ -159,7 +161,7 @@ This step runs after both the "should NOT fire" and "should fire" test steps. It
 
 A workflow for running manual tests that validate DeepWork rules/hooks fire correctly.
 
-This job tests that rules fire when they should AND do not fire when they shouldn't.
+The **run_all** workflow tests that rules fire when they should AND do not fire when they shouldn't.
 Each test is run in a SUB-AGENT (not the main agent) because:
 1. Sub-agents run in isolated contexts where file changes can be detected
 2. The Stop hook automatically evaluates rules when each sub-agent completes
@@ -240,8 +242,8 @@ Use a sub-agent (Haiku model) to review your work against these criteria:
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 4/4 complete, outputs: infinite_block_results"
-3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
+2. Inform user: "run_all step 4/4 complete, outputs: infinite_block_results"
+3. **run_all workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
 
 ---
 
