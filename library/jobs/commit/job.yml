@@ -4,7 +4,7 @@ summary: "Reviews code, runs tests, lints, and commits changes. Use when ready t
 description: |
   A workflow for preparing and committing code changes with quality checks.
 
-  This job starts with a code review to catch issues early, runs tests until
+  The **full** workflow starts with a code review to catch issues early, runs tests until
   they pass, formats and lints code, then reviews changed files before
   committing and pushing. The review and lint steps use sub-agents to reduce
   context usage.
@@ -14,6 +14,15 @@ description: |
   2. test - Pull latest code and run tests until they pass
   3. lint - Format and lint code (runs in sub-agent)
   4. commit_and_push - Review changes and commit/push
+
+workflows:
+  - name: full
+    summary: "Full commit workflow: review, test, lint, and commit"
+    steps:
+      - review
+      - test
+      - lint
+      - commit_and_push
 
 changelog:
   - version: "1.0.0"
