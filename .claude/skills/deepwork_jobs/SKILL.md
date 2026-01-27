@@ -10,7 +10,7 @@ Creates and manages multi-step AI workflows. Use when defining, implementing, or
 > **CRITICAL**: Always invoke steps using the Skill tool. Never copy/paste step instructions directly.
 
 Core commands for managing DeepWork jobs. These commands help you define new multi-step
-workflows, install pre-built jobs from remote repositories, and learn from running them.
+workflows and learn from running them.
 
 The `new_job` workflow guides you through defining and implementing a new job by
 asking structured questions about your workflow, understanding each step's inputs and outputs,

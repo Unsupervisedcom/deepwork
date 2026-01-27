@@ -100,20 +100,14 @@ After applying customizations:
    - Document any customizations made
    - Add notes about how this job fits into the project workflow
 
-### Step 6: Sync and Test
+### Step 6: Sync and Review
 
 1. **Run deepwork sync**
    ```bash
    deepwork sync
    ```
 
-2. **Verify the job is available**
-   - Check that slash commands are generated in `.claude/commands/`
-   - Test that the job appears in command completion
-
-3. **Relay reload instructions**
-   - If skills were regenerated, tell the user to reload their environment
-   - For Claude Code: "Type 'exit' then run 'claude --resume'"
+2. **Review the new skills** in `.claude/skills/` to make sure they make sense
 
 ## Output Format
 
@@ -129,12 +123,8 @@ After completing the installation and customization:
 ### Customizations Applied
 - [List of customizations made]
 
-### Available Commands
-- /<job_name>.<step1> - <description>
-- /<job_name>.<step2> - <description>
-...
-
 ### Next Steps
+- [Instructions on how to kick off the main job workflow, e.g., "Run /<job_name> to start"]
 - [Any remaining setup or first-use guidance]
 ```
 
@@ -145,7 +135,7 @@ After completing the installation and customization:
 - All required placeholders replaced with project-specific values
 - README updated to remove/update customization instructions
 - `deepwork sync` run successfully
-- User informed of available slash commands
+- User informed how to kick off the job workflow
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
 
 ## Example Dialog
@@ -198,15 +188,9 @@ Now let me sync the job to generate slash commands.
 - Replaced `[docs_folder]` with `docs` in job.yml, constitution.md, plan.md
 - Updated readme to remove customization instructions
 
-### Available Commands
-- /spec_driven_development.constitution - Establish project governance principles
-- /spec_driven_development.specify - Create feature specification
-- /spec_driven_development.clarify - Clarify specification details
-- /spec_driven_development.plan - Generate technical plan
-- /spec_driven_development.tasks - Generate task breakdown
-- /spec_driven_development.implement - Execute implementation
-
-To use the new commands, type 'exit' then run 'claude --resume'.
+### Next Steps
+- Run `/spec_driven_development` to start the workflow
+- Type 'exit' then run 'claude --resume' to load the new skills
 
 <promise>✓ Quality Criteria Met</promise>
 ```
@@ -215,7 +199,7 @@ To use the new commands, type 'exit' then run 'claude --resume'.
 ### Job Context
 
 Core commands for managing DeepWork jobs. These commands help you define new multi-step
-workflows, install pre-built jobs from remote repositories, and learn from running them.
+workflows and learn from running them.
 
 The `new_job` workflow guides you through defining and implementing a new job by
 asking structured questions about your workflow, understanding each step's inputs and outputs,
@@ -267,7 +251,7 @@ Use a sub-agent (Haiku model) to review your work against these criteria:
 4. **Placeholders Replaced**: Were all required placeholders replaced with project-specific values?
 5. **README Updated**: Was the readme updated to remove/update customization instructions?
 6. **Sync Complete**: Has `deepwork sync` been run successfully?
-7. **Commands Available**: Are the new slash commands accessible to the user?
+7. **Workflow Instructions**: Was the user informed how to kick off the job workflow?
 **Review Process**:
 1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
 2. The sub-agent should examine your outputs and verify each criterion is met

@@ -3,7 +3,7 @@ version: "1.1.0"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs."
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
-  workflows, install pre-built jobs from remote repositories, and learn from running them.
+  workflows and learn from running them.
 
   The `new_job` workflow guides you through defining and implementing a new job by
   asking structured questions about your workflow, understanding each step's inputs and outputs,
@@ -157,4 +157,4 @@ steps:
       - "**Placeholders Replaced**: Were all required placeholders replaced with project-specific values?"
       - "**README Updated**: Was the readme updated to remove/update customization instructions?"
       - "**Sync Complete**: Has `deepwork sync` been run successfully?"
-      - "**Commands Available**: Are the new slash commands accessible to the user?"
+      - "**Workflow Instructions**: Was the user informed how to kick off the job workflow?"
