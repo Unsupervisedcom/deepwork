@@ -14,7 +14,7 @@ workflows and learn from running them.
 
 The `new_job` workflow guides you through defining and implementing a new job by
 asking structured questions about your workflow, understanding each step's inputs and outputs,
-reviewing the specification, and generating all necessary files.
+reviewing the specification, verifying required techniques, and generating all necessary files.
 
 The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
 confusion or inefficiencies, and improves job instructions. It also captures bespoke
@@ -25,12 +25,13 @@ learnings specific to the current run into AGENTS.md files in the working folder
 
 ### new_job
 
-Create a new DeepWork job from scratch through definition, review, and implementation
+Create a new DeepWork job from scratch through definition, review, tools verification, and implementation
 
 **Steps in order**:
 1. **define** - Creates a job.yml specification by gathering workflow requirements through structured questions. Use when starting a new multi-step workflow.
 2. **review_job_spec** - Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification.
-3. **implement** - Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes.
+3. **tools** - Verifies required techniques are available and documents how to use them. Use after job spec review to ensure implementation can succeed.
+4. **implement** - Generates step instruction files and syncs slash commands from the job.yml specification. Use after tools verification passes.
 
 **Start workflow**: `/deepwork_jobs.define`
 
@@ -38,7 +39,7 @@ Create a new DeepWork job from scratch through definition, review, and implement
 
 These skills can be run independently at any time:
 
-- **learn** - Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
+- **learn** - Analyzes conversation history to improve job instructions, techniques, and capture learnings. Use after running a job to refine it.
   Command: `/deepwork_jobs.learn`
 
 

@@ -1,15 +1,12 @@
 ---
 name: deepwork_jobs.implement
-description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes."
-user-invocable: false
-
----
+description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after tools verification passes."user-invocable: false---
 
 # deepwork_jobs.implement
 
-**Step 3/3** in **new_job** workflow
+**Step 4/4** in **new_job** workflow
 
-> Create a new DeepWork job from scratch through definition, review, and implementation
+> Create a new DeepWork job from scratch through definition, review, tools verification, and implementation
 
 > Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs.
 
@@ -17,43 +14,25 @@ user-invocable: false
 
 Before proceeding, confirm these steps are complete:
 - `/deepwork_jobs.review_job_spec`
+- `/deepwork_jobs.tools`
 
 ## Instructions
 
-**Goal**: Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes.
+**Goal**: Generates step instruction files and syncs slash commands from the job.yml specification. Use after tools verification passes.
 
 # Implement Job Steps
 
 ## Objective
 
-Generate the DeepWork job directory structure and instruction files for each step based on the validated `job.yml` specification from the review_job_spec step.
+Generate step instruction files for each step based on the validated `job.yml` specification from the review_job_spec step.
 
 ## Task
 
-Read the `job.yml` specification file and create all the necessary files to make the job functional, including directory structure and step instruction files. Then sync the commands to make them available.
+Read the `job.yml` specification file and create all the necessary step instruction files to make the job functional. Then sync the commands to make them available.
 
-### Step 1: Create Directory Structure Using Script
+**Note:** The `define` step already creates the directory structure using `make_new_job.sh`, so you don't need to create directories here.
 
-Run the `make_new_job.sh` script to create the standard directory structure:
-
-```bash
-.deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
-```
-
-This creates:
-- `.deepwork/jobs/[job_name]/` - Main job directory
-- `.deepwork/jobs/[job_name]/steps/` - Step instruction files
-- `.deepwork/jobs/[job_name]/hooks/` - Custom validation scripts (with .gitkeep)
-- `.deepwork/jobs/[job_name]/templates/` - Example file formats (with .gitkeep)
-- `.deepwork/jobs/[job_name]/AGENTS.md` - Job management guidance
-
-**Note**: If the directory already exists (e.g., job.yml was created by define step), you can skip this step or manually create the additional directories:
-```bash
-mkdir -p .deepwork/jobs/[job_name]/hooks .deepwork/jobs/[job_name]/templates
-touch .deepwork/jobs/[job_name]/hooks/.gitkeep .deepwork/jobs/[job_name]/templates/.gitkeep
-```
-
-### Step 2: Read and Validate the Specification
+### Step 1: Read and Validate the Specification
 
 1. **Locate the job.yml file**
    - Read `.deepwork/jobs/[job_name]/job.yml` from the review_job_spec step
@@ -70,7 +49,7 @@ touch .deepwork/jobs/[job_name]/hooks/.gitkeep .deepwork/jobs/[job_name]/templat
    - List of all steps with their details
    - Understand the workflow structure
 
-### Step 3: Generate Step Instruction Files
+### Step 2: Generate Step Instruction Files
 
 For each step in the job.yml, create a comprehensive instruction file at `.deepwork/jobs/[job_name]/steps/[step_id].md`.
 
@@ -94,6 +73,7 @@ For each step in the job.yml, create a comprehensive instruction file at `.deepw
 5. **Quality over quantity** - Detailed, actionable instructions are better than vague ones
 6. **Align with stop hooks** - If the step has `stop_hooks` defined, ensure the quality criteria in the instruction file match the validation criteria in the hooks
 7. **Ask structured questions** - When a step has user inputs, the instructions MUST explicitly tell the agent to "ask structured questions" using the AskUserQuestion tool to gather that information. Never use generic phrasing like "ask the user" - always use "ask structured questions"
+8. **Reference techniques** - When a step requires external tools, include a reference to the relevant technique created in the `tools` step. See the section below on "Incorporating Techniques"
 
 ### Handling Stop Hooks
 
@@ -133,11 +113,55 @@ Step instructions can include additional `.md` files in the `steps/` directory f
 
 See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for detailed documentation and examples.
 
-### Step 4: Verify job.yml Location
+### Incorporating Techniques
+
+The `tools` step (which runs before `implement`) creates reusable techniques in `.deepwork/techniques/`. When generating step instructions, **reference these techniques** for any step that requires external tools.
+
+Techniques are synced to platform skill directories with a `dwt_` prefix (e.g., `making_pdfs` becomes `/dwt_making_pdfs`), so agents can invoke them directly.
+
+**How to incorporate techniques:**
+
+1. **Check what techniques exist:**
+   ```bash
+   ls .deepwork/techniques/
+   ```
+
+2. **Reference relevant techniques in step instructions:**
+   When a step uses an external tool (e.g., PDF generation, image processing), add a reference like:
+
+   ```markdown
+   ## Required Techniques
+
+   This step requires external tools. Use the following techniques:
+   - `/dwt_making_pdfs` - How to generate PDF output
+   - `/dwt_resizing_images` - How to resize and optimize images
+
+   See `.deepwork/techniques/[technique_name]/SKILL.md` for detailed usage instructions.
+   ```
+
+3. **Include key commands inline when helpful:**
+   For frequently-used commands, you can quote the essential invocation from the technique:
+
+   ```markdown
+   To convert markdown to PDF, use:
+   ```bash
+   pandoc input.md -o output.pdf --pdf-engine=xelatex
+   ```
+   See `/dwt_making_pdfs` (or `.deepwork/techniques/making_pdfs/SKILL.md`) for full documentation and troubleshooting.
+   ```
+
+**Why this matters:**
+- Step instructions stay focused on workflow logic
+- Techniques are documented once and synced to all platforms
+- Agents can invoke techniques directly as skills (e.g., `/dwt_making_pdfs`)
+- If techniques change, only the `.deepwork/techniques/` folder needs updating
+- New users can refer to technique SKILL.md files for installation help
+
+### Step 3: Verify job.yml Location
 
 Verify that `job.yml` is in the correct location at `.deepwork/jobs/[job_name]/job.yml`. The define and review_job_spec steps should have created and validated it. If for some reason it's not there, you may need to create or move it.
 
-### Step 5: Sync Skills
+### Step 4: Sync Skills
 
 Run `deepwork sync` to generate the skills for this job:
 
@@ -150,11 +174,11 @@ This will:
 - Generate skills for each step
 - Make the skills available in `.claude/skills/` (or appropriate platform directory)
 
-### Step 6: Relay Reload Instructions
+### Step 5: Relay Reload Instructions
 
 After running `deepwork sync`, look at the "To use the new skills" section in the output. **Relay these exact reload instructions to the user** so they know how to pick up the new skills. Don't just reference the sync output - tell them directly what they need to do (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code, or "Run '/memory refresh'" for Gemini CLI).
 
-### Step 7: Consider Rules for the New Job
+### Step 6: Consider Rules for the New Job
 
 After implementing the job, consider whether there are **rules** that would help enforce quality or consistency when working with this job's domain.
 
@@ -243,10 +267,11 @@ Before marking this step complete, ensure:
 - [ ] job.yml validated and copied to job directory
 - [ ] All step instruction files created
 - [ ] Each instruction file is complete and actionable
+- [ ] Steps requiring external tools reference techniques from `.deepwork/techniques/`
 - [ ] `deepwork sync` executed successfully
 - [ ] Skills generated in platform directory
 - [ ] User informed to follow reload instructions from `deepwork sync`
-- [ ] Considered whether rules would benefit this job (Step 7)
+- [ ] Considered whether rules would benefit this job (Step 6)
 - [ ] If rules suggested, offered to run `/deepwork_rules.define`
 
 ## Quality Criteria
@@ -257,6 +282,7 @@ Before marking this step complete, ensure:
 - Output examples are provided in each instruction file
 - Quality criteria defined for each step
 - Steps with user inputs explicitly use "ask structured questions" phrasing
+- Steps requiring external tools reference the appropriate techniques from `.deepwork/techniques/`
 - Sync completed successfully
 - Skills available for use
 - Thoughtfully considered relevant rules for the job domain
@@ -269,7 +295,7 @@ workflows and learn from running them.
 
 The `new_job` workflow guides you through defining and implementing a new job by
 asking structured questions about your workflow, understanding each step's inputs and outputs,
-reviewing the specification, and generating all necessary files.
+reviewing the specification, verifying required techniques, and generating all necessary files.
 
 The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
 confusion or inefficiencies, and improves job instructions. It also captures bespoke
@@ -314,9 +340,10 @@ Use a sub-agent (Haiku model) to review your work against these criteria:
 4. **Output Examples**: Does each instruction file show what good output looks like?
 5. **Quality Criteria**: Does each instruction file define quality criteria for its outputs?
 6. **Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase "ask structured questions"?
-7. **Sync Complete**: Has `deepwork sync` been run successfully?
-8. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
-9. **Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to run `/deepwork_rules.define`? Not every job needs rules - only suggest when genuinely helpful.
+7. **Techniques Referenced**: Do steps requiring external tools reference the appropriate techniques from `.deepwork/techniques/`?
+8. **Sync Complete**: Has `deepwork sync` been run successfully?
+9. **Commands Available**: Are the slash-commands generated in `.claude/commands/`?
+10. **Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to run `/deepwork_rules.define`? Not every job needs rules - only suggest when genuinely helpful.
 **Review Process**:
 1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
 2. The sub-agent should examine your outputs and verify each criterion is met
@@ -327,7 +354,7 @@ Use a sub-agent (Haiku model) to review your work against these criteria:
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "new_job step 3/3 complete, outputs: steps/"
+2. Inform user: "new_job step 4/4 complete, outputs: steps/"
 3. **new_job workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
 
 ---

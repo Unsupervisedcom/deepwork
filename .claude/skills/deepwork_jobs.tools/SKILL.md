@@ -1,65 +1,12 @@
 ---
 name: deepwork_jobs.tools
-description: "Verifies required techniques are available and documents how to use them. Use after job spec review to ensure implementation can succeed."
-user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
-            1. **Tasks Analyzed**: Were all job steps reviewed to identify required techniques (CLI tools, MCP servers, browser extensions, etc.)?
-            2. **Parallel Sub-Agents**: Were parallel sub-agents spawned for each technique requiring tooling?
-            3. **Had Working Technique**: Does each required technique have a working solution (original tool or alternative)?
-            4. **Technique Created**: Was a technique folder created in `.deepwork/techniques/` for each technique (e.g., making_pdfs/, not pandoc/)?
-            5. **SKILL.md Format**: Does each technique folder contain a SKILL.md file following the Claude Skills format?
-            6. **Assets Included**: Are helper scripts and assets stored alongside SKILL.md in the technique folder?
-            7. **Sync Complete**: Was `deepwork sync` run to sync techniques to platform skill directories?
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
-            all criteria appear to be met, respond with: {"ok": true}
-
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
-  SubagentStop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            You must evaluate whether Claude has met all the below quality criteria for the request.
-
-            ## Quality Criteria
-
-            1. **Tasks Analyzed**: Were all job steps reviewed to identify required techniques (CLI tools, MCP servers, browser extensions, etc.)?
-            2. **Parallel Sub-Agents**: Were parallel sub-agents spawned for each technique requiring tooling?
-            3. **Had Working Technique**: Does each required technique have a working solution (original tool or alternative)?
-            4. **Technique Created**: Was a technique folder created in `.deepwork/techniques/` for each technique (e.g., making_pdfs/, not pandoc/)?
-            5. **SKILL.md Format**: Does each technique folder contain a SKILL.md file following the Claude Skills format?
-            6. **Assets Included**: Are helper scripts and assets stored alongside SKILL.md in the technique folder?
-            7. **Sync Complete**: Was `deepwork sync` run to sync techniques to platform skill directories?
-
-            ## Instructions
-
-            Review the conversation and determine if ALL quality criteria above have been satisfied.
-            Look for evidence that each criterion has been addressed.
-
-            If the agent has included `<promise>✓ Quality Criteria Met</promise>` in their response OR
-            all criteria appear to be met, respond with: {"ok": true}
-
-            If criteria are NOT met AND the promise tag is missing, respond with:
-            {"ok": false, "reason": "**AGENT: TAKE ACTION** - [which criteria failed and why]"}
----
+description: "Verifies required techniques are available and documents how to use them. Use after job spec review to ensure implementation can succeed."user-invocable: false---
 
 # deepwork_jobs.tools
 
-**Step 3/5** in **deepwork_jobs** workflow
+**Step 3/4** in **new_job** workflow
+
+> Create a new DeepWork job from scratch through definition, review, tools verification, and implementation
 
 > Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs.
 
@@ -291,11 +238,11 @@ After completing this step, you should have:
 Core commands for managing DeepWork jobs. These commands help you define new multi-step
 workflows and learn from running them.
 
-The `define` command guides you through an interactive process to create a new job by
+The `new_job` workflow guides you through defining and implementing a new job by
 asking structured questions about your workflow, understanding each step's inputs and outputs,
-and generating all necessary files.
+reviewing the specification, verifying required techniques, and generating all necessary files.
 
-The `learn` command reflects on conversations where DeepWork jobs were run, identifies
+The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
 confusion or inefficiencies, and improves job instructions. It also captures bespoke
 learnings specific to the current run into AGENTS.md files in the working folder.
 
@@ -327,7 +274,9 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 
 ## Quality Validation
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
+**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
+
+Use a sub-agent (Haiku model) to review your work against these criteria:
 
 **Criteria (all must be satisfied)**:
 1. **Tasks Analyzed**: Were all job steps reviewed to identify required techniques (CLI tools, MCP servers, browser extensions, etc.)?
@@ -337,14 +286,17 @@ Stop hooks will automatically validate your work. The loop continues until all c
 5. **SKILL.md Format**: Does each technique folder contain a SKILL.md file following the Claude Skills format?
 6. **Assets Included**: Are helper scripts and assets stored alongside SKILL.md in the technique folder?
 7. **Sync Complete**: Was `deepwork sync` run to sync techniques to platform skill directories?
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
+**Review Process**:
+1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
+2. The sub-agent should examine your outputs and verify each criterion is met
+3. If the sub-agent identifies valid issues, fix them
+4. Have the sub-agent review again until all valid feedback has been addressed
+5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 3/5 complete, outputs: .deepwork/techniques/"
+2. Inform user: "new_job step 3/4 complete, outputs: .deepwork/techniques/"
 3. **Continue workflow**: Use Skill tool to invoke `/deepwork_jobs.implement`
 
 ---
