@@ -17,7 +17,14 @@ from deepwork.core.adapters import (
 
 def _get_claude_required_permissions() -> list[str]:
     """Load the required permissions from the Claude settings template."""
-    settings_path = Path(__file__).parent.parent.parent / "src" / "deepwork" / "templates" / "claude" / "settings.json"
+    settings_path = (
+        Path(__file__).parent.parent.parent
+        / "src"
+        / "deepwork"
+        / "templates"
+        / "claude"
+        / "settings.json"
+    )
     with open(settings_path, encoding="utf-8") as f:
         settings = json.load(f)
     permissions = settings["permissions"]["allow"]
