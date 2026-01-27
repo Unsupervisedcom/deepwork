@@ -24,7 +24,7 @@ Use a sub-agent to review the staged/changed code and identify issues that shoul
    Use the Task tool with these parameters:
    - `subagent_type`: "general-purpose"
    - `prompt`: Instruct the sub-agent to:
-     - Read the code review standards from `doc/code_review_standards.md`
+     - Read the code review standards from `[code review standards path]`
      - Read each of the changed files
      - Review each file against the standards
      - Report issues found with file, line number, severity, and suggested fix
@@ -47,7 +47,7 @@ Use a sub-agent to review the staged/changed code and identify issues that shoul
 ## Quality Criteria
 
 - Changed files were identified
-- Sub-agent read the code review standards and reviewed all changed files
+- Code was reviewed against the project's code review standards
 - All identified issues were addressed or documented as intentional
 
 ## Context

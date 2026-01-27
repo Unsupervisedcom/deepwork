@@ -1,18 +1,18 @@
 name: commit
-version: "1.5.0"
+version: "1.0.0"
 summary: "Reviews code, runs tests, lints, and commits changes. Use when ready to commit work with quality checks."
 description: |
   A workflow for preparing and committing code changes with quality checks.
 
   The **full** workflow starts with a code review to catch issues early, runs tests until
-  they pass, formats and lints code with ruff, then reviews changed files
-  before committing and pushing. The review and lint steps use sub-agents
-  to reduce context usage.
+  they pass, formats and lints code, then reviews changed files before
+  committing and pushing. The review and lint steps use sub-agents to reduce
+  context usage.
 
   Steps:
   1. review - Code review for issues, DRY opportunities, naming, and test coverage (runs in sub-agent)
   2. test - Pull latest code and run tests until they pass
-  3. lint - Format and lint code with ruff (runs in sub-agent)
+  3. lint - Format and lint code (runs in sub-agent)
   4. commit_and_push - Review changes and commit/push
 
 workflows:
@@ -25,20 +25,8 @@ workflows:
       - commit_and_push
 
 changelog:
-  - version: "1.5.0"
-    changes: "Added workflows section to explicitly define the full commit workflow sequence"
-  - version: "1.4.0"
-    changes: "Added changelog guidance: entries must go in [Unreleased] section, NEVER modify version numbers in pyproject.toml or CHANGELOG.md"
-  - version: "1.3.0"
-    changes: "Added code review step that runs in sub-agent to check for general issues, DRY opportunities, naming clarity, and test coverage"
-  - version: "1.0.1"
-    changes: "Changed file review from user confirmation to agent self-verification - agent now checks files match its own expectations instead of asking user every time"
   - version: "1.0.0"
-    changes: "Initial job creation"
-  - version: "1.1.0"
-    changes: "Added nominal outputs to process-oriented steps for doc spec compliance (tests_passing, code_formatted, changes_committed)"
-  - version: "1.2.0"
-    changes: "Improved skill descriptions with third-person voice and 'Use when...' triggers for better discoverability"
+    changes: "Initial library version - generalized from project-specific commit workflow"
 
 steps:
   - id: review
@@ -51,7 +39,7 @@ steps:
     dependencies: []
     quality_criteria:
       - "Changed files were identified"
-      - "Sub-agent reviewed the code for general issues, DRY opportunities, naming clarity, and test coverage"
+      - "Code was reviewed against the project's code review standards"
       - "All identified issues were addressed or documented as intentional"
 
   - id: test
@@ -69,7 +57,7 @@ steps:
 
   - id: lint
     name: "Lint Code"
-    description: "Formats and lints code with ruff using a sub-agent. Use after tests pass to ensure code style compliance."
+    description: "Formats and lints code using a sub-agent. Use after tests pass to ensure code style compliance."
     instructions_file: steps/lint.md
     inputs: []
     outputs:
@@ -77,9 +65,8 @@ steps:
     dependencies:
       - test
     quality_criteria:
-      - "ruff format was run successfully"
-      - "ruff check was run with --fix flag"
-      - "No remaining lint errors"
+      - "Code was formatted"
+      - "Lint check passed with no errors"
 
   - id: commit_and_push
     name: "Commit and Push"
@@ -92,7 +79,5 @@ steps:
       - lint
     quality_criteria:
       - "Changed files were verified against expectations"
-      - "CHANGELOG.md was updated with entries in [Unreleased] section (if changes warrant documentation)"
-      - "Version numbers were NOT modified (pyproject.toml version and CHANGELOG version headers unchanged)"
       - "Commit was created with appropriate message"
       - "Changes were pushed to remote"

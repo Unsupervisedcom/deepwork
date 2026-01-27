@@ -31,43 +31,22 @@ Check the list of changed files against what was modified during this session, e
    - If they're legitimate side effects of your work, include them
    - If they're unrelated or shouldn't be committed, use `git restore` to discard them
 
-3. **Update CHANGELOG.md if needed**
-
-   If your changes include new features, bug fixes, or other notable changes:
-   - Add entries to the `## [Unreleased]` section of CHANGELOG.md
-   - Use the appropriate subsection: `### Added`, `### Changed`, `### Fixed`, or `### Removed`
-   - Write concise descriptions that explain the user-facing impact
-
-   **CRITICAL: NEVER modify version numbers**
-   - Do NOT change the version in `pyproject.toml`
-   - Do NOT change version headers in CHANGELOG.md (e.g., `## [0.4.2]`)
-   - Do NOT rename the `## [Unreleased]` section
-   - Version updates are handled by the release workflow, not commits
-
-4. **Stage all appropriate changes**
+3. **Stage all appropriate changes**
    ```bash
    git add -A
    ```
    Or stage specific files if some were excluded.
 
-5. **View recent commit messages for style reference**
-   ```bash
-   git log --oneline -10
-   ```
+4. **Create the commit**
 
-6. **Create the commit**
-
-   Generate an appropriate commit message based on:
-   - The changes made
-   - The style of recent commits
-   - Conventional commit format if the project uses it
+   Generate an appropriate commit message based on the changes made.
 
    **IMPORTANT:** Use the commit job script (not `git commit` directly):
    ```bash
-   .claude/hooks/commit_job_git_commit.sh -m "commit message here"
+   [commit script path] -m "commit message here"
    ```
 
-7. **Push to remote**
+5. **Push to remote**
    ```bash
    git push
    ```
@@ -79,8 +58,6 @@ Check the list of changed files against what was modified during this session, e
 ## Quality Criteria
 
 - Changed files were verified against expectations
-- CHANGELOG.md was updated with entries in [Unreleased] section (if changes warrant documentation)
-- Version numbers were NOT modified (pyproject.toml version and CHANGELOG version headers unchanged)
 - Commit was created with appropriate message
 - Changes were pushed to remote
 
