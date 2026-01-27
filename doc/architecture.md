@@ -777,6 +777,7 @@ DeepWork includes a built-in job called `deepwork_jobs` for managing jobs. It pr
   - Creates complete job definitions through interactive Q&A, validation, and file generation
 
 **Standalone Skills** (can be run anytime):
+- **`/deepwork_jobs.clone_remote_job`** - Installs a job from a GitHub repository and guides customization
 - **`/deepwork_jobs.learn`** - Analyzes conversations to improve job instructions and capture learnings
 
 These skills are installed automatically when you run `deepwork install`.

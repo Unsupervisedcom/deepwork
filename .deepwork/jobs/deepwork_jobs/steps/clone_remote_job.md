@@ -1,0 +1,197 @@
+# Clone Remote Job
+
+## Objective
+
+Help the user install a DeepWork job from a remote GitHub repository and customize it for their project.
+
+## Task
+
+Guide the user through cloning a remote job from the DeepWork job library (or any GitHub repository), then assist with any required customization.
+
+### Step 1: Understand the User's Request
+
+1. **Get the job URL**
+   - Ask the user for the GitHub URL of the job they want to install
+   - The URL should point to a job directory, e.g.:
+     - `https://github.com/Unsupervisedcom/deepwork/tree/main/library/jobs/spec_driven_development`
+   - If they don't have a URL, point them to the job library: `https://github.com/Unsupervisedcom/deepwork/tree/main/library/jobs`
+
+2. **Confirm the destination**
+   - Jobs are installed to `.deepwork/jobs/<job_name>/`
+   - If a job with the same name exists, warn the user it will be overwritten
+
+### Step 2: Run the Install Script
+
+Execute the `install_remote_job.sh` script:
+
+```bash
+.deepwork/jobs/deepwork_jobs/install_remote_job.sh <github_url>
+```
+
+**Script requirements:**
+- `curl` - for downloading files
+- `jq` - for parsing JSON responses from GitHub API
+
+If the script fails due to missing dependencies, help the user install them:
+- On macOS: `brew install jq`
+- On Ubuntu/Debian: `sudo apt-get install jq`
+- On other systems: Guide them to https://stedolan.github.io/jq/download/
+
+### Step 3: Review the Job's README
+
+After installation, check for a readme file in the installed job directory:
+
+1. **Read the readme**
+   - Check for `readme.md` or `README.md` in `.deepwork/jobs/<job_name>/`
+   - Look for sections about customization, configuration, or setup
+
+2. **Identify required customizations**
+   - Look for placeholders like `[docs_folder]`, `[project_name]`, etc.
+   - Note any environment variables or configuration needed
+   - Check for technology stack requirements
+
+### Step 4: Apply Customizations
+
+Work through any required customizations with the user:
+
+1. **Replace placeholders**
+   - Use find/replace to update placeholders throughout the job files
+   - Example: Replace `[docs_folder]` with the actual documentation directory
+   ```bash
+   # Find all occurrences
+   grep -r "\[docs_folder\]" .deepwork/jobs/<job_name>/
+
+   # Replace throughout the job (preview first)
+   find .deepwork/jobs/<job_name>/ -type f -name "*.md" -o -name "*.yml" | xargs sed -i 's/\[docs_folder\]/docs/g'
+   ```
+
+2. **Adjust for project conventions**
+   - Review step instructions for any project-specific adjustments
+   - Update paths, naming conventions, or workflow steps as needed
+
+3. **Configure any required integrations**
+   - Set up environment variables if needed
+   - Configure any external services or tools
+
+### Step 5: Update the README
+
+After applying customizations:
+
+1. **Remove customization instructions**
+   - Delete or update the "REQUIRED CUSTOMIZATION" section in the readme
+   - The readme should now describe the job as configured for this project
+
+2. **Add project-specific notes**
+   - Document any customizations made
+   - Add notes about how this job fits into the project workflow
+
+### Step 6: Sync and Test
+
+1. **Run deepwork sync**
+   ```bash
+   deepwork sync
+   ```
+
+2. **Verify the job is available**
+   - Check that slash commands are generated in `.claude/commands/`
+   - Test that the job appears in command completion
+
+3. **Relay reload instructions**
+   - If skills were regenerated, tell the user to reload their environment
+   - For Claude Code: "Type 'exit' then run 'claude --resume'"
+
+## Output Format
+
+After completing the installation and customization:
+
+```
+## Installation Summary
+
+**Job:** <job_name>
+**Source:** <github_url>
+**Installed to:** .deepwork/jobs/<job_name>/
+
+### Customizations Applied
+- [List of customizations made]
+
+### Available Commands
+- /<job_name>.<step1> - <description>
+- /<job_name>.<step2> - <description>
+...
+
+### Next Steps
+- [Any remaining setup or first-use guidance]
+```
+
+## Quality Criteria
+
+- Job files downloaded successfully to `.deepwork/jobs/<job_name>/`
+- README reviewed for customization requirements
+- All required placeholders replaced with project-specific values
+- README updated to remove/update customization instructions
+- `deepwork sync` run successfully
+- User informed of available slash commands
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
+
+## Example Dialog
+
+```
+User: /deepwork_jobs.clone_remote_job
+
+Claude: I'll help you install a remote DeepWork job.
+
+What is the GitHub URL of the job you'd like to install?
+
+If you're looking for jobs to install, you can browse the job library at:
+https://github.com/Unsupervisedcom/deepwork/tree/main/library/jobs
+
+User: https://github.com/Unsupervisedcom/deepwork/tree/main/library/jobs/spec_driven_development
+
+Claude: I'll install the spec_driven_development job for you.
+
+*Runs install_remote_job.sh script*
+
+The job has been installed to `.deepwork/jobs/spec_driven_development/`.
+
+Let me review the readme for any required customization...
+
+I found that this job requires customization - there's a placeholder `[docs_folder]` that needs to be replaced with your project's documentation directory.
+
+Where do you keep your documentation? (e.g., `docs/`, `documentation/`, or at the root)
+
+User: We use docs/
+
+Claude: I'll replace `[docs_folder]` with `docs` throughout the job files.
+
+*Makes replacements*
+
+I've updated 4 files with the correct documentation path. Let me also update the readme to remove the customization instructions since this is now configured for your project.
+
+*Updates readme*
+
+Now let me sync the job to generate slash commands.
+
+*Runs deepwork sync*
+
+## Installation Summary
+
+**Job:** spec_driven_development
+**Source:** https://github.com/Unsupervisedcom/deepwork/tree/main/library/jobs/spec_driven_development
+**Installed to:** .deepwork/jobs/spec_driven_development/
+
+### Customizations Applied
+- Replaced `[docs_folder]` with `docs` in job.yml, constitution.md, plan.md
+- Updated readme to remove customization instructions
+
+### Available Commands
+- /spec_driven_development.constitution - Establish project governance principles
+- /spec_driven_development.specify - Create feature specification
+- /spec_driven_development.clarify - Clarify specification details
+- /spec_driven_development.plan - Generate technical plan
+- /spec_driven_development.tasks - Generate task breakdown
+- /spec_driven_development.implement - Execute implementation
+
+To use the new commands, type 'exit' then run 'claude --resume'.
+
+<promise>✓ Quality Criteria Met</promise>
+```

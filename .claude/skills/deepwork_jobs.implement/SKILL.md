@@ -265,11 +265,14 @@ Before marking this step complete, ensure:
 ### Job Context
 
 Core commands for managing DeepWork jobs. These commands help you define new multi-step
-workflows and learn from running them.
+workflows, install pre-built jobs from remote repositories, and learn from running them.
 
 The `new_job` workflow guides you through defining and implementing a new job by
 asking structured questions about your workflow, understanding each step's inputs and outputs,
 reviewing the specification, and generating all necessary files.
+
+The `clone_remote_job` skill installs a job from a GitHub repository (like the DeepWork
+job library) and guides you through any required customization for your project.
 
 The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
 confusion or inefficiencies, and improves job instructions. It also captures bespoke

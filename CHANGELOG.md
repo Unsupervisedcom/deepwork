@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `clone_remote_job` skill in `deepwork_jobs` for installing jobs from GitHub repositories
+  - New `install_remote_job.sh` script that fetches job files from GitHub URLs
+  - Guides users through customization of installed jobs (placeholder replacement, README updates)
+  - Supports the DeepWork job library at `https://github.com/Unsupervisedcom/deepwork/tree/main/library/jobs/`
 - Explicit workflow definitions in job.yml for distinguishing multi-step workflows from standalone skills
   - New `workflows` section in job.yml with `name`, `summary`, and ordered `steps` array
   - Workflows are shown separately from standalone skills in generated meta-skills
@@ -18,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Skill templates now show workflow-aware progress (e.g., "new_job step 2/3 complete")
 - Meta-skill template reorganized to show "Workflows" and "Standalone Skills" sections separately
-- Updated `deepwork_jobs` standard job to v1.0.0 with explicit `new_job` workflow
+- Updated `deepwork_jobs` standard job to v1.1.0 with explicit `new_job` workflow and `clone_remote_job` skill
 - SessionStart hook now skips non-initial sessions (resume, compact/clear) by checking the `source` field in stdin JSON, reducing noise and redundant checks
 
 ### Fixed
