@@ -300,30 +300,31 @@ You can test a feature branch directly from GitHub without cloning or modifying 
 
 ```bash
 # Run DeepWork CLI directly from a feature branch
-nix run github:unsupervised/deepwork/feature-branch-name -- --help
+nix run github:Unsupervisedcom/deepwork/feature-branch-name -- --help
 
 # Enter a development shell with a specific branch
-nix develop github:unsupervised/deepwork/feature-branch-name
+nix develop github:Unsupervisedcom/deepwork/feature-branch-name
 
 # Run a specific command from a feature branch
-nix develop github:unsupervised/deepwork/feature-branch-name --command deepwork install --platform claude
+nix develop github:Unsupervisedcom/deepwork/feature-branch-name --command deepwork install --platform claude
 
 # Test against a specific commit
-nix run github:unsupervised/deepwork/abc1234 -- --version
+nix run github:Unsupervisedcom/deepwork/abc1234 -- --version
 
-# Test against a PR (using the PR's head branch)
-nix run github:unsupervised/deepwork/pr-author:feature-name -- --help
+# Test against a PR from a fork
+nix run github:pr-author/deepwork/feature-name -- --help
+# Or if the PR is from a branch in this repository:
+nix run github:Unsupervisedcom/deepwork/feature-name -- --help
 ```
 
 For example, to test a branch named `feat/new-parser`:
 
 ```bash
 # Quick test of the CLI
-nix run github:unsupervised/deepwork/feat/new-parser -- install --platform claude --dry-run
+nix run github:Unsupervisedcom/deepwork/feat/new-parser -- install --platform claude --dry-run
 
-# Or enter a full development shell to run tests
-nix develop github:unsupervised/deepwork/feat/new-parser
-pytest tests/unit/core/test_parser.py -v
+# Or enter a full development shell to run tests and run a specific test
+nix develop github:Unsupervisedcom/deepwork/feat/new-parser --command pytest tests/unit/core/test_parser.py -v
 ```
 
 **Note**: The first run will take longer as Nix fetches and builds the branch. Subsequent runs use the cached build.
