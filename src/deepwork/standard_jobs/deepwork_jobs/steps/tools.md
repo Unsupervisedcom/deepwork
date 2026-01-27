@@ -30,6 +30,9 @@ Read the `job.yml` file and examine each step to identify tasks that require ext
 - **Language runtimes**: Python, Node.js, Ruby, etc. with specific packages
 - **External services**: APIs that require authentication or setup
 
+**Tool Selection Principle:**
+When no tool is currently available for a technique, **prefer open source and free tools** by default. Only suggest paid or proprietary tools if the user explicitly requests them or if no viable free alternative exists.
+
 **For each step, create a requirements list:**
 - What the step needs to accomplish
 - What external tools or capabilities might be required
@@ -52,7 +55,7 @@ You are verifying and documenting a technique for the "[TECHNIQUE_NAME]" process
 
 1. **Test if a tool exists** - Check if a tool is available that can accomplish this technique
 2. **Verify it works** - Run a simple test to confirm functionality
-3. **Find alternatives if needed** - If the tool is missing or broken, research and test alternatives until you have a working solution
+3. **Find alternatives if needed** - If the tool is missing or broken, research and test alternatives until you have a working solution. **Prefer open source and free tools** by default; only suggest paid/proprietary tools if explicitly requested or no viable free alternative exists.
 4. **Create the technique** - Create a folder in `.deepwork/techniques/[technique_name]/` with:
    - `SKILL.md` - The main technique skill file following the Claude Skills format:
      ```markdown
@@ -204,6 +207,7 @@ After completing this step, you should have:
 - Parallel sub-agents were spawned for each technique requiring tooling
 - Every required tool has been tested and verified working
 - Each required technique has a working solution (original tool or alternative)
+- Open source/free tools were preferred when no existing capability was available
 - Techniques are organized by PROCESS name, not by tool name
 - Each technique folder contains a SKILL.md following the Claude Skills format
 - Helper scripts and assets are stored alongside SKILL.md in the technique folder

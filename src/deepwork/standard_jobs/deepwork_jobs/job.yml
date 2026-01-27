@@ -104,6 +104,7 @@ steps:
     quality_criteria:
       - "**Tasks Analyzed**: Were all job steps reviewed to identify required techniques (CLI tools, MCP servers, browser extensions, etc.)?"
       - "**Parallel Sub-Agents**: Were parallel sub-agents spawned for each technique requiring tooling?"
+      - "**Open Source Preferred**: Were open source/free tools preferred when no existing capability was available?"
       - "**Had Working Technique**: Does each required technique have a working solution (original tool or alternative)?"
       - "**Technique Created**: Was a technique folder created in `.deepwork/techniques/` for each technique (e.g., making_pdfs/, not pandoc/)?"
       - "**SKILL.md Format**: Does each technique folder contain a SKILL.md file following the Claude Skills format?"
