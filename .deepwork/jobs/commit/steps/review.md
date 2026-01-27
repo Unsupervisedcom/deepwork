@@ -23,32 +23,11 @@ Use a sub-agent to review the staged/changed code and identify issues that shoul
 
    Use the Task tool with these parameters:
    - `subagent_type`: "general-purpose"
-   - `prompt`: Include the list of changed files and the review criteria below
-
-   The sub-agent should review each changed file for:
-
-   **General Issues**
-   - Logic errors or potential bugs
-   - Error handling gaps
-   - Security concerns
-   - Performance issues
-
-   **DRY Opportunities**
-   - Duplicated code that should be extracted into functions
-   - Repeated patterns that could be abstracted
-   - Copy-pasted logic with minor variations
-
-   **Naming Clarity**
-   - Variables, functions, and classes should have clear, descriptive names
-   - Names should reflect purpose and intent
-   - Avoid abbreviations that aren't universally understood
-   - Consistent naming conventions throughout
-
-   **Test Coverage**
-   - New functions or classes should have corresponding tests
-   - New code paths should be tested
-   - Edge cases should be covered
-   - If tests are missing, note what should be tested
+   - `prompt`: Instruct the sub-agent to:
+     - Read the code review standards from `doc/code_review_standards.md`
+     - Read each of the changed files
+     - Review each file against the standards
+     - Report issues found with file, line number, severity, and suggested fix
 
 3. **Review sub-agent findings**
    - Examine each issue identified
@@ -65,36 +44,10 @@ Use a sub-agent to review the staged/changed code and identify issues that shoul
    - If you made substantial changes, consider running another review pass
    - Ensure fixes didn't introduce new issues
 
-## Example Sub-Agent Prompt
-
-```
-Review the following changed files for code quality issues:
-
-Files to review:
-- src/module.py
-- src/utils.py
-- tests/test_module.py
-
-For each file, check for:
-
-1. **General issues**: Logic errors, bugs, error handling gaps, security concerns
-2. **DRY opportunities**: Duplicated code, repeated patterns that should be extracted
-3. **Naming clarity**: Are variable/function/class names clear and descriptive?
-4. **Test coverage**: Does new functionality have corresponding tests?
-
-Read each file and provide a structured report of issues found, organized by category.
-For each issue, include:
-- File and line number
-- Description of the issue
-- Suggested fix
-
-If no issues are found in a category, state that explicitly.
-```
-
 ## Quality Criteria
 
 - Changed files were identified
-- Sub-agent reviewed the code for general issues, DRY opportunities, naming clarity, and test coverage
+- Sub-agent read the code review standards and reviewed all changed files
 - All identified issues were addressed or documented as intentional
 
 ## Context
