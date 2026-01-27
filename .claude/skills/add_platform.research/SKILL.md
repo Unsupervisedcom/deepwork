@@ -4,7 +4,9 @@ description: "Captures CLI configuration and hooks system documentation for the 
 
 # add_platform.research
 
-**Step 1/4** in **add_platform** workflow
+**Step 1/4** in **integrate** workflow
+
+> Full workflow to integrate a new AI platform into DeepWork
 
 > Adds a new AI platform to DeepWork with adapter, templates, and tests. Use when integrating Cursor, Windsurf, or other AI coding tools.
 
@@ -207,7 +209,7 @@ Take time to be thorough - incomplete documentation will slow down subsequent st
 
 A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
 
-This job guides you through four phases:
+The **integrate** workflow guides you through four phases:
 1. **Research**: Capture the platform's CLI configuration and hooks system documentation
 2. **Add Capabilities**: Update the job schema and adapters with any new hook events
 3. **Implement**: Create the platform adapter, templates, tests (100% coverage), and README updates
@@ -252,7 +254,7 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 1/4 complete, outputs: cli_configuration.md, hooks_system.md"
+2. Inform user: "integrate step 1/4 complete, outputs: cli_configuration.md, hooks_system.md"
 3. **Continue workflow**: Use Skill tool to invoke `/add_platform.add_capabilities`
 
 ---

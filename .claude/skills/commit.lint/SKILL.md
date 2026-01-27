@@ -4,7 +4,9 @@ description: "Formats and lints code with ruff using a sub-agent. Use after test
 
 # commit.lint
 
-**Step 3/4** in **commit** workflow
+**Step 3/4** in **full** workflow
+
+> Full commit workflow: review, test, lint, and commit
 
 > Reviews code, runs tests, lints, and commits changes. Use when ready to commit work with quality checks.
 
@@ -95,7 +97,7 @@ This step ensures code quality and consistency before committing. It runs after 
 
 A workflow for preparing and committing code changes with quality checks.
 
-This job starts with a code review to catch issues early, runs tests until
+The **full** workflow starts with a code review to catch issues early, runs tests until
 they pass, formats and lints code with ruff, then reviews changed files
 before committing and pushing. The review and lint steps use sub-agents
 to reduce context usage.
@@ -130,7 +132,7 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 3/4 complete, outputs: code_formatted"
+2. Inform user: "full step 3/4 complete, outputs: code_formatted"
 3. **Continue workflow**: Use Skill tool to invoke `/commit.commit_and_push`
 
 ---

@@ -4,7 +4,9 @@ description: "Creates a job.yml specification by gathering workflow requirements
 
 # deepwork_jobs.define
 
-**Step 1/4** in **deepwork_jobs** workflow
+**Step 1/3** in **new_job** workflow
+
+> Create a new DeepWork job from scratch through definition, review, and implementation
 
 > Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs.
 
@@ -417,11 +419,11 @@ After creating the file:
 Core commands for managing DeepWork jobs. These commands help you define new multi-step
 workflows and learn from running them.
 
-The `define` command guides you through an interactive process to create a new job by
+The `new_job` workflow guides you through defining and implementing a new job by
 asking structured questions about your workflow, understanding each step's inputs and outputs,
-and generating all necessary files.
+reviewing the specification, and generating all necessary files.
 
-The `learn` command reflects on conversations where DeepWork jobs were run, identifies
+The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
 confusion or inefficiencies, and improves job instructions. It also captures bespoke
 learnings specific to the current run into AGENTS.md files in the working folder.
 
@@ -663,7 +665,7 @@ Use a sub-agent (Haiku model) to review your work against these criteria:
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 1/4 complete, outputs: job.yml"
+2. Inform user: "new_job step 1/3 complete, outputs: job.yml"
 3. **Continue workflow**: Use Skill tool to invoke `/deepwork_jobs.review_job_spec`
 
 ---

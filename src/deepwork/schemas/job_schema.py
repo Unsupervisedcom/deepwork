@@ -46,6 +46,35 @@ HOOK_ACTION_SCHEMA: dict[str, Any] = {
     ],
 }
 
+# Schema for a workflow definition
+WORKFLOW_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": ["name", "summary", "steps"],
+    "properties": {
+        "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "description": "Workflow name (lowercase letters, numbers, underscores)",
+        },
+        "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Brief one-line summary of what this workflow accomplishes",
+        },
+        "steps": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Ordered list of step IDs that comprise this workflow",
+            "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$",
+            },
+        },
+    },
+    "additionalProperties": False,
+}
+
 # JSON Schema for job.yml files
 JOB_SCHEMA: dict[str, Any] = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -72,6 +101,11 @@ JOB_SCHEMA: dict[str, Any] = {
             "type": "string",
             "minLength": 1,
             "description": "Detailed multi-line description of the job's purpose, process, and goals",
+        },
+        "workflows": {
+            "type": "array",
+            "description": "Named workflows that group steps into multi-step sequences",
+            "items": WORKFLOW_SCHEMA,
         },
         "changelog": {
             "type": "array",

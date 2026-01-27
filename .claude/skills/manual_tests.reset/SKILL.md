@@ -4,7 +4,9 @@ description: "Runs FIRST to ensure clean environment. Also called internally by 
 
 # manual_tests.reset
 
-**Step 1/4** in **manual_tests** workflow
+**Step 1/4** in **run_all** workflow
+
+> Run all manual tests: reset, NOT-fire tests, fire tests, and infinite block tests
 
 > Runs all manual hook/rule tests using sub-agents. Use when validating that DeepWork rules fire correctly.
 
@@ -57,7 +59,7 @@ deepwork rules clear_queue
 
 A workflow for running manual tests that validate DeepWork rules/hooks fire correctly.
 
-This job tests that rules fire when they should AND do not fire when they shouldn't.
+The **run_all** workflow tests that rules fire when they should AND do not fire when they shouldn't.
 Each test is run in a SUB-AGENT (not the main agent) because:
 1. Sub-agents run in isolated contexts where file changes can be detected
 2. The Stop hook automatically evaluates rules when each sub-agent completes
@@ -130,7 +132,7 @@ Use a sub-agent (Haiku model) to review your work against these criteria:
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 1/4 complete, outputs: clean_environment"
+2. Inform user: "run_all step 1/4 complete, outputs: clean_environment"
 3. **Continue workflow**: Use Skill tool to invoke `/manual_tests.run_not_fire_tests`
 
 ---

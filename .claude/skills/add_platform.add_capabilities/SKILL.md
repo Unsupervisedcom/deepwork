@@ -4,7 +4,9 @@ description: "Updates job schema and adapters with any new hook events the platf
 
 # add_platform.add_capabilities
 
-**Step 2/4** in **add_platform** workflow
+**Step 2/4** in **integrate** workflow
+
+> Full workflow to integrate a new AI platform into DeepWork
 
 > Adds a new AI platform to DeepWork with adapter, templates, and tests. Use when integrating Cursor, Windsurf, or other AI coding tools.
 
@@ -158,7 +160,7 @@ When you find a new hook type, consider whether it maps to an existing pattern o
 
 A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
 
-This job guides you through four phases:
+The **integrate** workflow guides you through four phases:
 1. **Research**: Capture the platform's CLI configuration and hooks system documentation
 2. **Add Capabilities**: Update the job schema and adapters with any new hook events
 3. **Implement**: Create the platform adapter, templates, tests (100% coverage), and README updates
@@ -203,7 +205,7 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 2/4 complete, outputs: job_schema.py, adapters.py"
+2. Inform user: "integrate step 2/4 complete, outputs: job_schema.py, adapters.py"
 3. **Continue workflow**: Use Skill tool to invoke `/add_platform.implement`
 
 ---

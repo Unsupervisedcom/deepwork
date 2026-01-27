@@ -11,13 +11,21 @@ Template Variables:
   Step Metadata:
     - step_id: string - Step identifier
     - step_description: string - What this step does
-    - step_number: int - Position in workflow (1-indexed)
+    - step_number: int - Position in steps array (1-indexed, for backward compat)
     - total_steps: int - Total steps in job
-    - is_standalone: bool - True if step can run independently
+    - is_standalone: bool - True if step can run independently (not in any workflow)
     - exposed: bool - True if user can invoke directly (default: true)
     - dependencies: list[string]|null - Required prior step IDs
     - next_step: string|null - Next step ID in workflow
     - instructions_file: string - Path to step instructions file
+
+  Workflow Context (only if step is in a workflow):
+    - workflow_name: string - Name of the workflow this step belongs to
+    - workflow_summary: string - Summary of the workflow
+    - workflow_step_number: int - Position in workflow (1-indexed)
+    - workflow_total_steps: int - Total steps in this workflow
+    - workflow_next_step: string|null - Next step ID in workflow
+    - workflow_prev_step: string|null - Previous step ID in workflow
 
   Step Content:
     - instructions_content: string - Full instructions markdown
@@ -91,6 +99,10 @@ hooks:
 
 {% if is_standalone %}
 **Standalone skill** - can be run anytime
+{% elif workflow_name %}
+**Step {{ workflow_step_number }}/{{ workflow_total_steps }}** in **{{ workflow_name }}** workflow
+
+> {{ workflow_summary }}
 {% else %}
 **Step {{ step_number }}/{{ total_steps }}** in **{{ job_name }}** workflow
 {% endif %}{#- if is_standalone #}
@@ -220,6 +232,14 @@ Use a sub-agent (Haiku model) to review your work against these criteria:
 2. Inform user: "{{ step_id }} complete{% if outputs %}, outputs: {{ outputs | map(attribute='file') | join(', ') }}{% endif %}"
 
 This standalone skill can be re-run anytime.
+{% elif workflow_name %}
+1. Verify outputs are created
+2. Inform user: "{{ workflow_name }} step {{ workflow_step_number }}/{{ workflow_total_steps }} complete{% if outputs %}, outputs: {{ outputs | map(attribute='file') | join(', ') }}{% endif %}"
+{% if next_step %}
+3. **Continue workflow**: Use Skill tool to invoke `/{{ job_name }}.{{ next_step }}`
+{% else %}
+3. **{{ workflow_name }} workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
+{% endif %}{#- if next_step #}
 {% else %}
 1. Verify outputs are created
 2. Inform user: "Step {{ step_number }}/{{ total_steps }} complete{% if outputs %}, outputs: {{ outputs | map(attribute='file') | join(', ') }}{% endif %}"

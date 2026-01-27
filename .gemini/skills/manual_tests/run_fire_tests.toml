@@ -160,7 +160,7 @@ This step runs after the "should NOT fire" tests. These tests verify that rules 
 
 A workflow for running manual tests that validate DeepWork rules/hooks fire correctly.
 
-This job tests that rules fire when they should AND do not fire when they shouldn't.
+The **run_all** workflow tests that rules fire when they should AND do not fire when they shouldn't.
 Each test is run in a SUB-AGENT (not the main agent) because:
 1. Sub-agents run in isolated contexts where file changes can be detected
 2. The Stop hook automatically evaluates rules when each sub-agent completes

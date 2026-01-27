@@ -4,7 +4,9 @@ description: "Runs all 6 'should NOT fire' tests in parallel sub-agents. Use to 
 
 # manual_tests.run_not_fire_tests
 
-**Step 2/4** in **manual_tests** workflow
+**Step 2/4** in **run_all** workflow
+
+> Run all manual tests: reset, NOT-fire tests, fire tests, and infinite block tests
 
 > Runs all manual hook/rule tests using sub-agents. Use when validating that DeepWork rules fire correctly.
 
@@ -141,7 +143,7 @@ This step runs after the reset step (which ensures a clean environment) and test
 
 A workflow for running manual tests that validate DeepWork rules/hooks fire correctly.
 
-This job tests that rules fire when they should AND do not fire when they shouldn't.
+The **run_all** workflow tests that rules fire when they should AND do not fire when they shouldn't.
 Each test is run in a SUB-AGENT (not the main agent) because:
 1. Sub-agents run in isolated contexts where file changes can be detected
 2. The Stop hook automatically evaluates rules when each sub-agent completes
@@ -225,7 +227,7 @@ Use a sub-agent (Haiku model) to review your work against these criteria:
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 2/4 complete, outputs: not_fire_results"
+2. Inform user: "run_all step 2/4 complete, outputs: not_fire_results"
 3. **Continue workflow**: Use Skill tool to invoke `/manual_tests.run_fire_tests`
 
 ---

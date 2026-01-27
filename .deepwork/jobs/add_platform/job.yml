@@ -1,11 +1,11 @@
 name: add_platform
-version: "0.3.0"
+version: "0.4.0"
 summary: "Adds a new AI platform to DeepWork with adapter, templates, and tests. Use when integrating Cursor, Windsurf, or other AI coding tools."
 
 description: |
   A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
 
-  This job guides you through four phases:
+  The **integrate** workflow guides you through four phases:
   1. **Research**: Capture the platform's CLI configuration and hooks system documentation
   2. **Add Capabilities**: Update the job schema and adapters with any new hook events
   3. **Implement**: Create the platform adapter, templates, tests (100% coverage), and README updates
@@ -20,7 +20,18 @@ description: |
   - Tests must achieve 100% coverage for any new functionality
   - Installation verification confirms the platform integrates correctly with existing jobs
 
+workflows:
+  - name: integrate
+    summary: "Full workflow to integrate a new AI platform into DeepWork"
+    steps:
+      - research
+      - add_capabilities
+      - implement
+      - verify
+
 changelog:
+  - version: "0.4.0"
+    changes: "Added workflows section to explicitly define the integrate workflow sequence"
   - version: "0.1.0"
     changes: "Initial version"
   - version: "0.2.0"
