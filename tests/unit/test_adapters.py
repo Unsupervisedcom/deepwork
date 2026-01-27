@@ -20,7 +20,10 @@ def _get_claude_required_permissions() -> list[str]:
     settings_path = Path(__file__).parent.parent.parent / "src" / "deepwork" / "templates" / "claude" / "settings.json"
     with open(settings_path, encoding="utf-8") as f:
         settings = json.load(f)
-    return settings["permissions"]["allow"]
+    permissions = settings["permissions"]["allow"]
+    # Sanity check: ensure the template file has meaningful content
+    assert len(permissions) > 2, "Settings template should have more than 2 permissions"
+    return permissions
 
 
 class TestAgentAdapterRegistry:

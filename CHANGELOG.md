@@ -8,11 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- WebSearch permission automatically added to installed repos, enabling research-based jobs to use web search without permission prompts
 - Explicit workflow definitions in job.yml for distinguishing multi-step workflows from standalone skills
-
-### Changed
-- Refactored ClaudeAdapter to load required permissions from `templates/claude/settings.json` instead of hardcoding in Python
   - New `workflows` section in job.yml with `name`, `summary`, and ordered `steps` array
   - Workflows are shown separately from standalone skills in generated meta-skills
   - Step skills now display workflow context (e.g., "Step 2/3 in new_job workflow")
