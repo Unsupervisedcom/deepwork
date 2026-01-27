@@ -1,6 +1,6 @@
 ---
 name: deepwork_jobs.clone_remote_job
-description: "Installs a DeepWork job from a GitHub repository and guides customization. Use when adding a pre-built job from the library."---
+description: "Installs a DeepWork job from a GitHub repository and guides customization. Use when adding a pre-built job from the library."user-invocable: false---
 
 # deepwork_jobs.clone_remote_job
 

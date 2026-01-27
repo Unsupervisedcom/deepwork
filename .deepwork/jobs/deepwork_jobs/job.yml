@@ -143,7 +143,7 @@ steps:
     name: "Clone Remote Job"
     description: "Installs a DeepWork job from a GitHub repository and guides customization. Use when adding a pre-built job from the library."
     instructions_file: steps/clone_remote_job.md
-    exposed: true
+    exposed: false
     inputs:
       - name: github_url
         description: "GitHub URL to the job directory (e.g., https://github.com/Unsupervisedcom/deepwork/tree/main/library/jobs/spec_driven_development)"
