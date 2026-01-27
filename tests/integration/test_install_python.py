@@ -191,3 +191,77 @@ class TestInstallPythonEnvironment:
         assert config is not None
         assert "python" in config
         assert config["python"]["manager"] == "skip"
+
+    def test_install_creates_gitignore_with_venv(self, mock_claude_project: Path) -> None:
+        """Test that install creates .gitignore with .venv entry."""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            [
+                "install",
+                "--platform", "claude",
+                "--path", str(mock_claude_project),
+                "--python-manager", "uv"
+            ],
+            catch_exceptions=False,
+        )
+
+        # Verify .gitignore was created
+        gitignore_path = mock_claude_project / ".gitignore"
+        assert gitignore_path.exists()
+        
+        # Verify .venv is in .gitignore
+        gitignore_content = gitignore_path.read_text()
+        assert ".venv" in gitignore_content
+
+    def test_install_appends_to_existing_gitignore(self, mock_claude_project: Path) -> None:
+        """Test that install appends .venv to existing .gitignore."""
+        # Create existing .gitignore
+        gitignore_path = mock_claude_project / ".gitignore"
+        original_content = "*.pyc\n__pycache__/\n"
+        gitignore_path.write_text(original_content)
+
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            [
+                "install",
+                "--platform", "claude",
+                "--path", str(mock_claude_project),
+                "--python-manager", "uv"
+            ],
+            catch_exceptions=False,
+        )
+
+        # Verify original content is preserved
+        gitignore_content = gitignore_path.read_text()
+        assert "*.pyc" in gitignore_content
+        assert "__pycache__/" in gitignore_content
+        
+        # Verify .venv was added
+        assert ".venv" in gitignore_content
+
+    def test_install_does_not_duplicate_venv_in_gitignore(self, mock_claude_project: Path) -> None:
+        """Test that install doesn't duplicate .venv if already in .gitignore."""
+        # Create .gitignore with .venv already present
+        gitignore_path = mock_claude_project / ".gitignore"
+        gitignore_path.write_text(".venv\n")
+
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            [
+                "install",
+                "--platform", "claude",
+                "--path", str(mock_claude_project),
+                "--python-manager", "uv"
+            ],
+            catch_exceptions=False,
+        )
+
+        # Verify .venv appears only once
+        gitignore_content = gitignore_path.read_text()
+        assert gitignore_content.count(".venv") == 1

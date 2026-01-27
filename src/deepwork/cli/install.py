@@ -148,6 +148,42 @@ def _create_tmp_directory(deepwork_dir: Path) -> None:
         )
 
 
+def _ensure_venv_in_gitignore(project_path: Path, venv_path: str) -> None:
+    """
+    Ensure the virtual environment is in the project's .gitignore.
+
+    Creates or updates the project's .gitignore file to include the venv path.
+
+    Args:
+        project_path: Path to project root directory
+        venv_path: Path to virtual environment (e.g., ".venv")
+    """
+    gitignore_path = project_path / ".gitignore"
+    
+    # Read existing .gitignore if it exists
+    if gitignore_path.exists():
+        content = gitignore_path.read_text()
+        lines = content.splitlines()
+    else:
+        content = ""
+        lines = []
+    
+    # Check if venv_path is already in .gitignore (with or without trailing slash)
+    venv_patterns = {venv_path, f"{venv_path}/", f"/{venv_path}", f"/{venv_path}/"}
+    if any(line.strip() in venv_patterns for line in lines):
+        return  # Already present
+    
+    # Add venv to .gitignore
+    if content and not content.endswith("\n"):
+        content += "\n"
+    
+    if content:
+        content += "\n"
+    
+    content += f"# Python virtual environment (added by DeepWork)\n{venv_path}\n"
+    gitignore_path.write_text(content)
+
+
 def _create_rules_directory(project_path: Path) -> bool:
     """
     Create the v2 rules directory structure with example templates.
@@ -400,6 +436,9 @@ def _install_deepwork(platform_name: str | None, project_path: Path, python_mana
             success = env.setup(project_path)
             if success:
                 console.print("  [green]✓[/green] Virtual environment created")
+                # Ensure venv is in project's .gitignore
+                _ensure_venv_in_gitignore(project_path, python_config["venv_path"])
+                console.print("  [green]✓[/green] Added .venv to .gitignore")
             else:
                 console.print("  [yellow]⚠[/yellow] Virtual environment setup returned False")
         except RuntimeError as e:
