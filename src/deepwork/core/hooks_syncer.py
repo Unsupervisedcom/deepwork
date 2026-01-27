@@ -28,6 +28,10 @@ class HookEntry:
         """
         Get the command to run this hook.
 
+        This generates a cross-platform command that works on Windows, macOS, and Linux.
+        For module-based hooks, uses `deepwork hook <name>` which works everywhere.
+        For script-based hooks, uses forward slashes (works in bash on all platforms).
+
         Args:
             project_path: Path to project root
 
@@ -43,10 +47,15 @@ class HookEntry:
             # Script path is: .deepwork/jobs/{job_name}/hooks/{script}
             script_path = self.job_dir / "hooks" / self.script
             try:
-                return str(script_path.relative_to(project_path))
+                rel_path = script_path.relative_to(project_path)
             except ValueError:
-                # If not relative, return the full path
-                return str(script_path)
+                # If not relative, use the full path
+                rel_path = script_path
+
+            # Always use forward slashes for cross-platform compatibility
+            # Claude Code runs hooks via bash (even on Windows via Git Bash/WSL)
+            # and bash expects forward slashes
+            return str(rel_path).replace("\\", "/")
         else:
             raise ValueError("HookEntry must have either script or module")
 

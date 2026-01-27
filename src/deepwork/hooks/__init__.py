@@ -2,41 +2,36 @@
 
 This package provides:
 
-1. Cross-platform hook wrapper system:
+1. Cross-platform hook system (Windows, macOS, Linux):
    - wrapper.py: Normalizes input/output between Claude Code and Gemini CLI
-   - claude_hook.sh: Shell wrapper for Claude Code hooks
-   - gemini_hook.sh: Shell wrapper for Gemini CLI hooks
+   - All hooks use Python modules for cross-platform compatibility
 
 2. Hook implementations:
    - rules_check.py: Evaluates rules on after_agent events
+   - user_prompt_submit.py: Captures work tree state on prompt submission
+   - capture_prompt.py: Git work tree state capture utility
 
-Usage with wrapper system:
-    # Register hook in .claude/settings.json:
+Usage:
+    # Hooks are registered in .claude/settings.json by `deepwork sync`:
     {
       "hooks": {
         "Stop": [{
           "hooks": [{
             "type": "command",
-            "command": ".deepwork/hooks/claude_hook.sh rules_check"
+            "command": "deepwork hook rules_check"
           }]
-        }]
-      }
-    }
-
-    # Register hook in .gemini/settings.json:
-    {
-      "hooks": {
-        "AfterAgent": [{
+        }],
+        "UserPromptSubmit": [{
           "hooks": [{
             "type": "command",
-            "command": ".gemini/hooks/gemini_hook.sh rules_check"
+            "command": "deepwork hook user_prompt_submit"
           }]
         }]
       }
     }
 
-The shell wrappers call `deepwork hook <hook_name>` which works regardless
-of how deepwork was installed (pipx, uv, nix flake, etc.).
+The `deepwork hook <name>` command works on all platforms regardless
+of how deepwork was installed (pip, pipx, uv, Windows EXE, etc.).
 
 Writing custom hooks:
     from deepwork.hooks.wrapper import (

@@ -32,6 +32,8 @@ env/
 # PyInstaller
 *.manifest
 *.spec
+# But keep our build spec file
+!scripts/deepwork.spec
 
 # Unit test / coverage reports
 htmlcov/
