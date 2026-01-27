@@ -4,7 +4,9 @@ description: "Verifies changed files, creates commit, and pushes to remote. Use 
 
 # commit.commit_and_push
 
-**Step 4/4** in **commit** workflow
+**Step 4/4** in **full** workflow
+
+> Full commit workflow: review, test, lint, and commit
 
 > Reviews code, runs tests, lints, and commits changes. Use when ready to commit work with quality checks.
 
@@ -115,7 +117,7 @@ This is the final step of the commit workflow. The agent verifies that the chang
 
 A workflow for preparing and committing code changes with quality checks.
 
-This job starts with a code review to catch issues early, runs tests until
+The **full** workflow starts with a code review to catch issues early, runs tests until
 they pass, formats and lints code with ruff, then reviews changed files
 before committing and pushing. The review and lint steps use sub-agents
 to reduce context usage.
@@ -150,8 +152,8 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 4/4 complete, outputs: changes_committed"
-3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
+2. Inform user: "full step 4/4 complete, outputs: changes_committed"
+3. **full workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
 
 ---
 

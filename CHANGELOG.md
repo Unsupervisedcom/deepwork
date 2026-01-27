@@ -8,8 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Explicit workflow definitions in job.yml for distinguishing multi-step workflows from standalone skills
+  - New `workflows` section in job.yml with `name`, `summary`, and ordered `steps` array
+  - Workflows are shown separately from standalone skills in generated meta-skills
+  - Step skills now display workflow context (e.g., "Step 2/3 in new_job workflow")
+  - Standalone skills are clearly marked as "can be run anytime"
+  - Backward compatible: jobs without `workflows` section use dependency-based detection
 
 ### Changed
+- Skill templates now show workflow-aware progress (e.g., "new_job step 2/3 complete")
+- Meta-skill template reorganized to show "Workflows" and "Standalone Skills" sections separately
+- Updated `deepwork_jobs` standard job to v1.0.0 with explicit `new_job` workflow
+- SessionStart hook now skips non-initial sessions (resume, compact/clear) by checking the `source` field in stdin JSON, reducing noise and redundant checks
 
 ### Fixed
 

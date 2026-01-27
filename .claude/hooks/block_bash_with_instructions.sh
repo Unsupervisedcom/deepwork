@@ -7,7 +7,7 @@
 # Usage: Registered as a PreToolUse hook in .claude/settings.json
 #
 # Input (stdin): JSON from Claude Code hook system containing tool_name and tool_input
-# Output (stdout): JSON response with error message if blocked
+# Output (stderr): Error message if blocked (Claude Code reads stderr for exit code 2)
 # Exit codes:
 #   0 - Success (allow action)
 #   2 - Blocking error (prevent action with message)
@@ -22,7 +22,7 @@ set -e
 # Add new blocked commands here:
 
 BLOCKED_COMMANDS=(
-    'git[[:space:]]+commit|||All commits must be done via the `/commit` skill. Do not use git commit directly. Instead, run `/commit` to start the commit workflow which includes code review, testing, and linting before committing.'
+    '^[[:space:]]*git[[:space:]]+commit|||All commits must be done via the `/commit` skill. Do not use git commit directly. Instead, run `/commit` to start the commit workflow which includes code review, testing, and linting before committing.'
 )
 
 # =============================================================================
@@ -64,10 +64,8 @@ for entry in "${BLOCKED_COMMANDS[@]}"; do
 
     # Check if command matches pattern (using extended regex)
     if echo "${COMMAND}" | grep -qE "${pattern}"; then
-        # Output error message as JSON
-        cat << EOF
-{"error": "${instructions}"}
-EOF
+        # Output error message to stderr (Claude Code reads stderr for exit code 2)
+        echo "${instructions}" >&2
         exit 2
     fi
 done

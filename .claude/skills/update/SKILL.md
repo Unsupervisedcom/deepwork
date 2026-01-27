@@ -5,7 +5,7 @@ description: "Updates DeepWork standard jobs in src/ and syncs to installed loca
 
 # update
 
-**Multi-step workflow**: Updates DeepWork standard jobs in src/ and syncs to installed locations. Use when modifying deepwork_jobs or deepwork_rules.
+Updates DeepWork standard jobs in src/ and syncs to installed locations. Use when modifying deepwork_jobs or deepwork_rules.
 
 > **CRITICAL**: Always invoke steps using the Skill tool. Never copy/paste step instructions directly.
 
@@ -24,16 +24,20 @@ Use this job whenever you need to modify job.yml files, step instructions, or ho
 for any standard job in the DeepWork repository.
 
 
-## Available Steps
+## Standalone Skills
 
-1. **job** - Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions.
+These skills can be run independently at any time:
+
+- **job** - Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions.
+  Command: `/update.job`
+
 
 ## Execution Instructions
 
 ### Step 1: Analyze Intent
 
 Parse any text following `/update` to determine user intent:
-- "job" or related terms → start at `update.job`
+- "job" or related terms → run standalone skill `update.job`
 
 ### Step 2: Invoke Starting Step
 
@@ -45,9 +49,11 @@ Skill tool: update.job
 ### Step 3: Continue Workflow Automatically
 
 After each step completes:
-1. Check if there's a next step in the sequence
+1. Check if there's a next step in the workflow sequence
 2. Invoke the next step using the Skill tool
 3. Repeat until workflow is complete or user intervenes
+
+**Note**: Standalone skills do not auto-continue to other steps.
 
 ### Handling Ambiguous Intent
 
@@ -58,7 +64,7 @@ If user intent is unclear, use AskUserQuestion to clarify:
 ## Guardrails
 
 - Do NOT copy/paste step instructions directly; always use the Skill tool to invoke steps
-- Do NOT skip steps in the workflow unless the user explicitly requests it
+- Do NOT skip steps in a workflow unless the user explicitly requests it
 - Do NOT proceed to the next step if the current step's outputs are incomplete
 - Do NOT make assumptions about user intent; ask for clarification when ambiguous
 

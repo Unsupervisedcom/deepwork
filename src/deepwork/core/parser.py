@@ -184,6 +184,24 @@ class Step:
 
 
 @dataclass
+class Workflow:
+    """Represents a named workflow grouping steps into a multi-step sequence."""
+
+    name: str
+    summary: str
+    steps: list[str]  # List of step IDs in order
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Workflow":
+        """Create Workflow from dictionary."""
+        return cls(
+            name=data["name"],
+            summary=data["summary"],
+            steps=data["steps"],
+        )
+
+
+@dataclass
 class JobDefinition:
     """Represents a complete job definition."""
 
@@ -193,6 +211,7 @@ class JobDefinition:
     description: str | None
     steps: list[Step]
     job_dir: Path
+    workflows: list[Workflow] = field(default_factory=list)
 
     def get_step(self, step_id: str) -> Step | None:
         """
@@ -308,6 +327,114 @@ class JobDefinition:
                     doc_spec_refs.add(output.doc_spec)
         return list(doc_spec_refs)
 
+    def get_workflow_for_step(self, step_id: str) -> Workflow | None:
+        """
+        Get the workflow containing a step.
+
+        Args:
+            step_id: Step ID to look up
+
+        Returns:
+            Workflow containing the step, or None if step is standalone
+        """
+        for workflow in self.workflows:
+            if step_id in workflow.steps:
+                return workflow
+        return None
+
+    def get_next_step_in_workflow(self, step_id: str) -> str | None:
+        """
+        Get the next step in a workflow after the given step.
+
+        Args:
+            step_id: Current step ID
+
+        Returns:
+            Next step ID, or None if this is the last step or not in a workflow
+        """
+        workflow = self.get_workflow_for_step(step_id)
+        if not workflow:
+            return None
+        try:
+            index = workflow.steps.index(step_id)
+            if index < len(workflow.steps) - 1:
+                return workflow.steps[index + 1]
+        except ValueError:
+            pass
+        return None
+
+    def get_prev_step_in_workflow(self, step_id: str) -> str | None:
+        """
+        Get the previous step in a workflow before the given step.
+
+        Args:
+            step_id: Current step ID
+
+        Returns:
+            Previous step ID, or None if this is the first step or not in a workflow
+        """
+        workflow = self.get_workflow_for_step(step_id)
+        if not workflow:
+            return None
+        try:
+            index = workflow.steps.index(step_id)
+            if index > 0:
+                return workflow.steps[index - 1]
+        except ValueError:
+            pass
+        return None
+
+    def get_step_position_in_workflow(self, step_id: str) -> tuple[int, int] | None:
+        """
+        Get the position of a step within its workflow.
+
+        Args:
+            step_id: Step ID to look up
+
+        Returns:
+            Tuple of (1-based position, total steps in workflow), or None if standalone
+        """
+        workflow = self.get_workflow_for_step(step_id)
+        if not workflow:
+            return None
+        try:
+            index = workflow.steps.index(step_id)
+            return (index + 1, len(workflow.steps))
+        except ValueError:
+            return None
+
+    def validate_workflows(self) -> None:
+        """
+        Validate workflow definitions.
+
+        Raises:
+            ParseError: If workflow references non-existent steps or has duplicates
+        """
+        step_ids = {step.id for step in self.steps}
+        workflow_names = set()
+
+        for workflow in self.workflows:
+            # Check for duplicate workflow names
+            if workflow.name in workflow_names:
+                raise ParseError(f"Duplicate workflow name: '{workflow.name}'")
+            workflow_names.add(workflow.name)
+
+            # Check all step references exist
+            for step_id in workflow.steps:
+                if step_id not in step_ids:
+                    raise ParseError(
+                        f"Workflow '{workflow.name}' references non-existent step '{step_id}'"
+                    )
+
+            # Check for duplicate steps within a workflow
+            seen_steps = set()
+            for step_id in workflow.steps:
+                if step_id in seen_steps:
+                    raise ParseError(
+                        f"Workflow '{workflow.name}' contains duplicate step '{step_id}'"
+                    )
+                seen_steps.add(step_id)
+
     @classmethod
     def from_dict(cls, data: dict[str, Any], job_dir: Path) -> "JobDefinition":
         """
@@ -320,6 +447,7 @@ class JobDefinition:
         Returns:
             JobDefinition instance
         """
+        workflows = [Workflow.from_dict(wf_data) for wf_data in data.get("workflows", [])]
         return cls(
             name=data["name"],
             version=data["version"],
@@ -327,6 +455,7 @@ class JobDefinition:
             description=data.get("description"),
             steps=[Step.from_dict(step_data) for step_data in data["steps"]],
             job_dir=job_dir,
+            workflows=workflows,
         )
 
 
@@ -373,8 +502,9 @@ def parse_job_definition(job_dir: Path | str) -> JobDefinition:
     # Parse into dataclass
     job_def = JobDefinition.from_dict(job_data, job_dir_path)
 
-    # Validate dependencies and file inputs
+    # Validate dependencies, file inputs, and workflows
     job_def.validate_dependencies()
     job_def.validate_file_inputs()
+    job_def.validate_workflows()
 
     return job_def

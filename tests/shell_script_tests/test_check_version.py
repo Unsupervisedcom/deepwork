@@ -22,6 +22,7 @@ def run_check_version_with_mock_claude(
     mock_version: str | None,
     cwd: Path | None = None,
     mock_deepwork: bool = True,
+    stdin_json: str | None = None,
 ) -> tuple[str, str, int]:
     """
     Run check_version.sh with a mocked claude command.
@@ -32,6 +33,7 @@ def run_check_version_with_mock_claude(
         cwd: Working directory
         mock_deepwork: If True, create a mock deepwork command that succeeds.
                        If False, do not create mock deepwork (simulates not installed).
+        stdin_json: Optional JSON string to pass via stdin (simulates hook input)
 
     Returns:
         Tuple of (stdout, stderr, return_code)
@@ -66,6 +68,7 @@ def run_check_version_with_mock_claude(
             text=True,
             cwd=cwd or tmpdir,
             env=env,
+            input=stdin_json,
         )
 
         return result.stdout, result.stderr, result.returncode
@@ -290,3 +293,120 @@ class TestDeepworkInstallationCheck:
         assert "DEEPWORK NOT INSTALLED" in stderr
         # Should NOT show version warning
         assert "CLAUDE CODE VERSION WARNING" not in stderr
+
+
+class TestSessionSourceDetection:
+    """Tests for skipping non-initial sessions based on source field."""
+
+    def test_startup_source_runs_normally(self, check_version_script: Path) -> None:
+        """Test that source='startup' runs the full check."""
+        import json
+
+        stdin_json = json.dumps({"source": "startup", "session_id": "test123"})
+        stdout, stderr, code = run_check_version_with_mock_claude(
+            check_version_script, "3.0.0", stdin_json=stdin_json
+        )
+
+        # Should run normally and output empty JSON (version OK)
+        assert code == 0
+        assert stdout.strip() == "{}"
+
+    def test_resume_source_skips_check(self, check_version_script: Path) -> None:
+        """Test that source='resume' skips all checks and returns empty JSON."""
+        import json
+
+        stdin_json = json.dumps({"source": "resume", "session_id": "test123"})
+        stdout, stderr, code = run_check_version_with_mock_claude(
+            check_version_script,
+            "1.0.0",
+            stdin_json=stdin_json,  # Low version that would trigger warning
+        )
+
+        # Should skip and return empty JSON without warnings
+        assert code == 0
+        assert stdout.strip() == "{}"
+        assert "WARNING" not in stderr
+        assert "DEEPWORK" not in stderr
+
+    def test_clear_source_skips_check(self, check_version_script: Path) -> None:
+        """Test that source='clear' (compact) skips all checks."""
+        import json
+
+        stdin_json = json.dumps({"source": "clear", "session_id": "test123"})
+        stdout, stderr, code = run_check_version_with_mock_claude(
+            check_version_script, "1.0.0", stdin_json=stdin_json
+        )
+
+        # Should skip and return empty JSON
+        assert code == 0
+        assert stdout.strip() == "{}"
+        assert "WARNING" not in stderr
+
+    def test_no_source_field_runs_normally(self, check_version_script: Path) -> None:
+        """Test backwards compatibility: missing source field runs full check."""
+        import json
+
+        # JSON without source field (older Claude Code version)
+        stdin_json = json.dumps({"session_id": "test123"})
+        stdout, stderr, code = run_check_version_with_mock_claude(
+            check_version_script,
+            "2.0.0",
+            stdin_json=stdin_json,  # Low version
+        )
+
+        # Should run normally and show warning (backwards compat)
+        assert code == 0
+        assert "WARNING" in stderr
+
+    def test_empty_stdin_runs_normally(self, check_version_script: Path) -> None:
+        """Test that empty stdin runs full check (backwards compat)."""
+        stdout, stderr, code = run_check_version_with_mock_claude(
+            check_version_script, "2.0.0", stdin_json=""
+        )
+
+        # Should run normally and show warning
+        assert code == 0
+        assert "WARNING" in stderr
+
+    def test_resume_skips_even_with_missing_deepwork(self, check_version_script: Path) -> None:
+        """Test that resume sessions skip before deepwork check."""
+        import json
+
+        stdin_json = json.dumps({"source": "resume"})
+        stdout, stderr, code = run_check_version_with_mock_claude(
+            check_version_script, "3.0.0", mock_deepwork=False, stdin_json=stdin_json
+        )
+
+        # Should skip immediately, NOT block on deepwork
+        assert code == 0
+        assert stdout.strip() == "{}"
+        assert "DEEPWORK NOT INSTALLED" not in stderr
+
+    def test_startup_with_low_version_shows_warning(self, check_version_script: Path) -> None:
+        """Test that startup sessions with low version show warning."""
+        import json
+
+        stdin_json = json.dumps({"source": "startup"})
+        stdout, stderr, code = run_check_version_with_mock_claude(
+            check_version_script, "2.0.0", stdin_json=stdin_json
+        )
+
+        # Should run full check and show warning
+        assert code == 0
+        assert "WARNING" in stderr
+        assert "hookSpecificOutput" in stdout
+
+    def test_unknown_source_skips_check(self, check_version_script: Path) -> None:
+        """Test that unknown source values skip the check."""
+        import json
+
+        # Future-proofing: unknown source values should be treated as non-startup
+        stdin_json = json.dumps({"source": "unknown_future_value"})
+        stdout, stderr, code = run_check_version_with_mock_claude(
+            check_version_script, "1.0.0", stdin_json=stdin_json
+        )
+
+        # Should skip and return empty JSON
+        assert code == 0
+        assert stdout.strip() == "{}"
+        assert "WARNING" not in stderr
