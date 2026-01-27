@@ -17,7 +17,7 @@ class TestInstallCommand:
 
         result = runner.invoke(
             cli,
-            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            ["install", "--platform", "claude", "--path", str(mock_claude_project), "--python-manager", "skip"],
             catch_exceptions=False,
         )
 
@@ -63,7 +63,7 @@ class TestInstallCommand:
         runner = CliRunner()
 
         result = runner.invoke(
-            cli, ["install", "--path", str(mock_claude_project)], catch_exceptions=False
+            cli, ["install", "--path", str(mock_claude_project), "--python-manager", "skip"], catch_exceptions=False
         )
 
         assert result.exit_code == 0
@@ -84,7 +84,7 @@ class TestInstallCommand:
         runner = CliRunner()
 
         result = runner.invoke(
-            cli, ["install", "--path", str(mock_git_repo)], catch_exceptions=False
+            cli, ["install", "--path", str(mock_git_repo), "--python-manager", "skip"], catch_exceptions=False
         )
 
         assert result.exit_code == 0
@@ -114,7 +114,7 @@ class TestInstallCommand:
 
         result = runner.invoke(
             cli,
-            ["install", "--path", str(mock_multi_platform_project)],
+            ["install", "--path", str(mock_multi_platform_project), "--python-manager", "skip"],
             catch_exceptions=False,
         )
 
@@ -162,7 +162,7 @@ class TestInstallCommand:
         # First install
         result1 = runner.invoke(
             cli,
-            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            ["install", "--platform", "claude", "--path", str(mock_claude_project), "--python-manager", "skip"],
             catch_exceptions=False,
         )
         assert result1.exit_code == 0
@@ -170,7 +170,7 @@ class TestInstallCommand:
         # Second install
         result2 = runner.invoke(
             cli,
-            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            ["install", "--platform", "claude", "--path", str(mock_claude_project), "--python-manager", "skip"],
             catch_exceptions=False,
         )
         assert result2.exit_code == 0
@@ -191,7 +191,7 @@ class TestInstallCommand:
 
         result = runner.invoke(
             cli,
-            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            ["install", "--platform", "claude", "--path", str(mock_claude_project), "--python-manager", "skip"],
             catch_exceptions=False,
         )
 
@@ -231,7 +231,7 @@ Custom instructions here.
 
         result = runner.invoke(
             cli,
-            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            ["install", "--platform", "claude", "--path", str(mock_claude_project), "--python-manager", "skip"],
             catch_exceptions=False,
         )
 

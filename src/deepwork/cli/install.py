@@ -2,14 +2,17 @@
 
 import shutil
 from pathlib import Path
+from typing import Optional
 
 import click
 from rich.console import Console
+from rich.prompt import Prompt
 
 from deepwork.core.adapters import AgentAdapter
 from deepwork.core.detector import PlatformDetector
 from deepwork.utils.fs import ensure_dir
 from deepwork.utils.git import is_git_repo
+from deepwork.utils.python_env import PythonEnvironment
 from deepwork.utils.yaml_utils import load_yaml, save_yaml
 
 console = Console()
@@ -145,6 +148,42 @@ def _create_tmp_directory(deepwork_dir: Path) -> None:
         )
 
 
+def _ensure_venv_in_gitignore(project_path: Path, venv_path: str) -> None:
+    """
+    Ensure the virtual environment is in the project's .gitignore.
+
+    Creates or updates the project's .gitignore file to include the venv path.
+
+    Args:
+        project_path: Path to project root directory
+        venv_path: Path to virtual environment (e.g., ".venv")
+    """
+    gitignore_path = project_path / ".gitignore"
+    
+    # Read existing .gitignore if it exists
+    if gitignore_path.exists():
+        content = gitignore_path.read_text()
+        lines = content.splitlines()
+    else:
+        content = ""
+        lines = []
+    
+    # Check if venv_path is already in .gitignore (with or without trailing slash)
+    venv_patterns = {venv_path, f"{venv_path}/", f"/{venv_path}", f"/{venv_path}/"}
+    if any(line.strip() in venv_patterns for line in lines):
+        return  # Already present
+    
+    # Add venv to .gitignore
+    if content and not content.endswith("\n"):
+        content += "\n"
+    
+    if content:
+        content += "\n"
+    
+    content += f"# Python virtual environment (added by DeepWork)\n{venv_path}\n"
+    gitignore_path.write_text(content)
+
+
 def _create_rules_directory(project_path: Path) -> bool:
     """
     Create the v2 rules directory structure with example templates.
@@ -226,6 +265,42 @@ Use `/deepwork_rules.define` to create new rules with guidance.
     return True
 
 
+def _prompt_python_setup(console: Console) -> dict:
+    """Prompt user for Python environment preferences.
+    
+    Args:
+        console: Rich console for output
+        
+    Returns:
+        Dictionary containing python configuration:
+            - manager: "uv" | "system" | "skip"
+            - version: Python version string
+            - venv_path: Path to virtual environment
+    """
+    console.print("\n[bold]Python Environment Setup[/bold]")
+    console.print("=" * 40)
+    console.print("\nHow should Python dependencies be managed?\n")
+
+    choices_display = [
+        ("1", "uv (Recommended)", "Creates isolated .venv with project-specific Python"),
+        ("2", "System Python", "Uses existing python3 from PATH"),
+        ("3", "Skip", "No Python environment setup"),
+    ]
+
+    for key, name, desc in choices_display:
+        console.print(f"  [{key}] {name}")
+        console.print(f"      {desc}\n")
+
+    choice = Prompt.ask("Choice", default="1", choices=["1", "2", "3"])
+
+    manager_map = {"1": "uv", "2": "system", "3": "skip"}
+    return {
+        "manager": manager_map[choice],
+        "version": "3.11",
+        "venv_path": ".venv"
+    }
+
+
 class DynamicChoice(click.Choice):
     """A Click Choice that gets its values dynamically from AgentAdapter."""
 
@@ -248,7 +323,12 @@ class DynamicChoice(click.Choice):
     default=".",
     help="Path to project directory (default: current directory)",
 )
-def install(platform: str | None, path: Path) -> None:
+@click.option(
+    "--python-manager",
+    type=click.Choice(["uv", "system", "skip"]),
+    help="Python environment manager (skips interactive prompt)",
+)
+def install(platform: str | None, path: Path, python_manager: str | None) -> None:
     """
     Install DeepWork in a project.
 
@@ -256,7 +336,7 @@ def install(platform: str | None, path: Path) -> None:
     commands for all configured platforms.
     """
     try:
-        _install_deepwork(platform, path)
+        _install_deepwork(platform, path, python_manager)
     except InstallError as e:
         console.print(f"[red]Error:[/red] {e}")
         raise click.Abort() from e
@@ -265,13 +345,14 @@ def install(platform: str | None, path: Path) -> None:
         raise
 
 
-def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
+def _install_deepwork(platform_name: str | None, project_path: Path, python_manager: str | None) -> None:
     """
     Install DeepWork in a project.
 
     Args:
         platform_name: Platform to install for (or None to auto-detect)
         project_path: Path to project directory
+        python_manager: Python environment manager choice (or None to prompt)
 
     Raises:
         InstallError: If installation fails
@@ -335,6 +416,35 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
                 platforms_to_add.append(adapter.name)
             detected_adapters = available_adapters
 
+    # Step 2b: Python environment setup
+    if python_manager:
+        python_config = {"manager": python_manager, "version": "3.11", "venv_path": ".venv"}
+    else:
+        # Check for existing venv
+        existing = PythonEnvironment.detect_existing(project_path)
+        if existing:
+            console.print(f"\n[green]→[/green] Found existing virtual environment: {existing.relative_to(project_path)}")
+            python_config = {"manager": "skip", "version": "3.11", "venv_path": str(existing.relative_to(project_path))}
+        else:
+            python_config = _prompt_python_setup(console)
+
+    # Create Python environment
+    if python_config["manager"] != "skip":
+        console.print(f"\n[yellow]→[/yellow] Setting up Python environment with {python_config['manager']}...")
+        env = PythonEnvironment(python_config)
+        try:
+            success = env.setup(project_path)
+            if success:
+                console.print("  [green]✓[/green] Virtual environment created")
+                # Ensure venv is in project's .gitignore
+                _ensure_venv_in_gitignore(project_path, python_config["venv_path"])
+                console.print("  [green]✓[/green] Added .venv to .gitignore")
+            else:
+                console.print("  [yellow]⚠[/yellow] Virtual environment setup returned False")
+        except RuntimeError as e:
+            console.print(f"  [red]✗[/red] Failed: {e}")
+            raise InstallError(f"Python environment setup failed: {e}") from e
+
     # Step 3: Create .deepwork/ directory structure
     console.print("[yellow]→[/yellow] Creating DeepWork directory structure...")
     deepwork_dir = project_path / ".deepwork"
@@ -392,6 +502,9 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
             console.print(f"  [green]✓[/green] Added {adapter.display_name} to platforms")
         else:
             console.print(f"  [dim]•[/dim] {adapter.display_name} already configured")
+
+    # Add python configuration
+    config_data["python"] = python_config
 
     save_yaml(config_file, config_data)
     console.print(f"  [green]✓[/green] Updated {config_file.relative_to(project_path)}")
