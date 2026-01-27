@@ -443,13 +443,25 @@ class ClaudeAdapter(AgentAdapter):
             return True
         return False
 
+    def _get_settings_template_path(self) -> Path:
+        """Get the path to the settings.json template for this adapter."""
+        return Path(__file__).parent.parent / "templates" / self.name / "settings.json"
+
+    def _load_required_permissions(self) -> list[str]:
+        """Load required permissions from the settings template file."""
+        settings_template = self._get_settings_template_path()
+        with open(settings_template, encoding="utf-8") as f:
+            template_settings = json.load(f)
+        result: list[str] = template_settings["permissions"]["allow"]
+        return result
+
     def sync_permissions(self, project_path: Path) -> int:
         """
         Sync required permissions to Claude Code settings.json.
 
-        Adds permissions for:
-        - .deepwork/** - full access to deepwork directory
-        - All deepwork CLI commands (deepwork:*)
+        Loads permissions from the settings template file at
+        templates/claude/settings.json and merges them into the
+        project's .claude/settings.json.
 
         Args:
             project_path: Path to project root
@@ -460,20 +472,7 @@ class ClaudeAdapter(AgentAdapter):
         Raises:
             AdapterError: If sync fails
         """
-        # Define required permissions for DeepWork functionality
-        # Uses ./ prefix for paths relative to project root (per Claude Code docs)
-        required_permissions = [
-            # Full access to .deepwork directory
-            "Read(./.deepwork/**)",
-            "Edit(./.deepwork/**)",
-            "Write(./.deepwork/**)",
-            # All deepwork CLI commands
-            "Bash(deepwork:*)",
-            # Job scripts that need to be executable
-            "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
-        ]
-        # NOTE: When modifying required_permissions, update the test assertion in
-        # tests/unit/test_adapters.py::TestClaudeAdapter::test_sync_permissions_idempotent
+        required_permissions = self._load_required_permissions()
 
         # Load settings once, add all permissions, then save once
         settings = self._load_settings(project_path)

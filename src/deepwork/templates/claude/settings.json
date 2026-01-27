@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(./.deepwork/**)",
+      "Edit(./.deepwork/**)",
+      "Write(./.deepwork/**)",
+      "Bash(deepwork:*)",
+      "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
+      "WebSearch"
+    ]
+  }
+}

@@ -102,14 +102,11 @@ Check the list of changed files against what was modified during this session, e
 
 ## Quality Criteria
 
-- Changed files list was reviewed by the agent
-- Files match what was modified during this session (or unexpected changes were investigated and handled)
-- CHANGELOG.md was updated with entries in the `[Unreleased]` section (if changes warrant documentation)
-- Version numbers were NOT modified (in pyproject.toml or CHANGELOG.md version headers)
-- Commit message follows project conventions
-- Commit was created successfully
+- Changed files were verified against expectations
+- CHANGELOG.md was updated with entries in [Unreleased] section (if changes warrant documentation)
+- Version numbers were NOT modified (pyproject.toml version and CHANGELOG version headers unchanged)
+- Commit was created with appropriate message
 - Changes were pushed to remote
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
 
@@ -145,6 +142,16 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 **Required outputs**:
 - `changes_committed`
 
+## Quality Validation (Manual)
+
+**NOTE**: Gemini CLI does not support automated validation. Manually verify criteria before completing.
+
+**Criteria (all must be satisfied)**:
+1. Changed files were verified against expectations
+2. CHANGELOG.md was updated with entries in [Unreleased] section (if changes warrant documentation)
+3. Version numbers were NOT modified (pyproject.toml version and CHANGELOG version headers unchanged)
+4. Commit was created with appropriate message
+5. Changes were pushed to remote
 ## On Completion
 
 1. Verify outputs are created
