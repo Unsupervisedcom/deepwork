@@ -471,6 +471,8 @@ class ClaudeAdapter(AgentAdapter):
             "Bash(deepwork:*)",
             # Job scripts that need to be executable
             "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
+            # Web search for research-based jobs
+            "WebSearch",
         ]
         # NOTE: When modifying required_permissions, update the test assertion in
         # tests/unit/test_adapters.py::TestClaudeAdapter::test_sync_permissions_idempotent
