@@ -291,6 +291,43 @@ claude  # Start Claude Code
 /deepwork.define
 ```
 
+### 5. Test a Feature Branch with One-Off Nix Shell
+
+You can test a feature branch directly from GitHub without cloning or modifying your local environment. This is useful for:
+- Reviewing someone else's PR
+- Testing a feature branch before merging
+- Trying out experimental changes without affecting your setup
+
+```bash
+# Run DeepWork CLI directly from a feature branch
+nix run github:unsupervised/deepwork/feature-branch-name -- --help
+
+# Enter a development shell with a specific branch
+nix develop github:unsupervised/deepwork/feature-branch-name
+
+# Run a specific command from a feature branch
+nix develop github:unsupervised/deepwork/feature-branch-name --command deepwork install --platform claude
+
+# Test against a specific commit
+nix run github:unsupervised/deepwork/abc1234 -- --version
+
+# Test against a PR (using the PR's head branch)
+nix run github:unsupervised/deepwork/pr-author:feature-name -- --help
+```
+
+For example, to test a branch named `feat/new-parser`:
+
+```bash
+# Quick test of the CLI
+nix run github:unsupervised/deepwork/feat/new-parser -- install --platform claude --dry-run
+
+# Or enter a full development shell to run tests
+nix develop github:unsupervised/deepwork/feat/new-parser
+pytest tests/unit/core/test_parser.py -v
+```
+
+**Note**: The first run will take longer as Nix fetches and builds the branch. Subsequent runs use the cached build.
+
 ## Running Tests
 
 DeepWork has a comprehensive test suite with 568+ tests.
