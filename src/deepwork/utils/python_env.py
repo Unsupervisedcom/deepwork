@@ -40,17 +40,18 @@ class PythonEnvironment:
         venv_dir = project_root / self.venv_path
 
         if self.manager == "uv":
-            return self._setup_with_uv(venv_dir)
+            return self._setup_with_uv(venv_dir, project_root)
         elif self.manager == "system":
             return self._setup_with_system(venv_dir)
 
         return False
 
-    def _setup_with_uv(self, venv_dir: Path) -> bool:
+    def _setup_with_uv(self, venv_dir: Path, project_root: Path) -> bool:
         """Create venv using uv.
         
         Args:
             venv_dir: Path where virtual environment should be created
+            project_root: Path to the project root directory
             
         Returns:
             True if creation succeeded, False otherwise
@@ -60,6 +61,15 @@ class PythonEnvironment:
         """
         if not shutil.which("uv"):
             raise RuntimeError("uv not found. Install via: brew install uv")
+
+        # Initialize pyproject.toml if it doesn't exist
+        pyproject_path = project_root / "pyproject.toml"
+        if not pyproject_path.exists():
+            init_cmd = ["uv", "init", "--no-workspace"]
+            init_result = subprocess.run(init_cmd, capture_output=True, text=True, cwd=project_root)
+            if init_result.returncode != 0:
+                # Non-fatal: Continue even if init fails
+                pass
 
         cmd = ["uv", "venv", str(venv_dir), "--python", self.version]
         result = subprocess.run(cmd, capture_output=True, text=True)

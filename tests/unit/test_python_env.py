@@ -67,12 +67,42 @@ class TestPythonEnvironment:
         result = env.setup(tmp_path)
 
         assert result is True
+        # Should call uv init first (since pyproject.toml doesn't exist), then uv venv
+        assert mock_run.call_count == 2
+        
+        # First call should be uv init
+        first_call_args = mock_run.call_args_list[0][0][0]
+        assert first_call_args[0] == "uv"
+        assert first_call_args[1] == "init"
+        assert "--no-workspace" in first_call_args
+        
+        # Second call should be uv venv
+        second_call_args = mock_run.call_args_list[1][0][0]
+        assert second_call_args[0] == "uv"
+        assert second_call_args[1] == "venv"
+        assert "--python" in second_call_args
+        assert "3.11" in second_call_args
+
+    def test_setup_with_uv_existing_pyproject(self, tmp_path, mocker):
+        """Test creating venv using uv when pyproject.toml already exists."""
+        # Create existing pyproject.toml
+        (tmp_path / "pyproject.toml").write_text("[project]\nname = \"test\"\n")
+        
+        mocker.patch("shutil.which", return_value="/usr/bin/uv")
+        mock_run = mocker.patch("subprocess.run", return_value=Mock(returncode=0))
+
+        env = PythonEnvironment({"manager": "uv", "version": "3.11"})
+        result = env.setup(tmp_path)
+
+        assert result is True
+        # Should only call uv venv (not uv init since pyproject.toml exists)
         mock_run.assert_called_once()
         args = mock_run.call_args[0][0]
         assert args[0] == "uv"
         assert args[1] == "venv"
         assert "--python" in args
         assert "3.11" in args
+
 
     def test_setup_with_uv_not_found(self, tmp_path, mocker):
         """Test error when uv is not found."""

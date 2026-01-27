@@ -265,3 +265,57 @@ class TestInstallPythonEnvironment:
         # Verify .venv appears only once
         gitignore_content = gitignore_path.read_text()
         assert gitignore_content.count(".venv") == 1
+
+    def test_install_creates_pyproject_with_uv(self, mock_claude_project: Path) -> None:
+        """Test that install creates pyproject.toml when using uv."""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            [
+                "install",
+                "--platform", "claude",
+                "--path", str(mock_claude_project),
+                "--python-manager", "uv"
+            ],
+            catch_exceptions=False,
+        )
+
+        # Verify pyproject.toml was created
+        pyproject_path = mock_claude_project / "pyproject.toml"
+        assert pyproject_path.exists()
+        
+        # Verify it has basic structure
+        pyproject_content = pyproject_path.read_text()
+        assert "[project]" in pyproject_content
+        assert "name" in pyproject_content
+
+    def test_install_preserves_existing_pyproject(self, mock_claude_project: Path) -> None:
+        """Test that install doesn't overwrite existing pyproject.toml."""
+        # Create existing pyproject.toml
+        pyproject_path = mock_claude_project / "pyproject.toml"
+        original_content = """[project]
+name = "my-custom-project"
+version = "2.0.0"
+dependencies = ["custom-package"]
+"""
+        pyproject_path.write_text(original_content)
+
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            [
+                "install",
+                "--platform", "claude",
+                "--path", str(mock_claude_project),
+                "--python-manager", "uv"
+            ],
+            catch_exceptions=False,
+        )
+
+        # Verify original content is preserved
+        pyproject_content = pyproject_path.read_text()
+        assert pyproject_content == original_content
+        assert "my-custom-project" in pyproject_content
+        assert "custom-package" in pyproject_content
