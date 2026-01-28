@@ -2,6 +2,7 @@
 name: commit.test
 description: "Pulls latest code and runs tests until all pass. Use after code review passes to verify changes work correctly."
 user-invocable: false
+
 ---
 
 # commit.test

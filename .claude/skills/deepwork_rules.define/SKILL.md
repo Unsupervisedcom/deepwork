@@ -2,6 +2,7 @@
 name: deepwork_rules.define
 description: "Creates a rule file that triggers when specified files change. Use when setting up documentation sync, code review requirements, or automated commands."
 user-invocable: false
+
 ---
 
 # deepwork_rules.define

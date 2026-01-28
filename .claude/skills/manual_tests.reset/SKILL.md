@@ -2,6 +2,7 @@
 name: manual_tests.reset
 description: "Runs FIRST to ensure clean environment. Also called internally by other steps when they need to revert changes and clear the queue."
 user-invocable: false
+
 ---
 
 # manual_tests.reset

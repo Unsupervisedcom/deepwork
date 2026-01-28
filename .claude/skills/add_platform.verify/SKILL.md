@@ -2,6 +2,7 @@
 name: add_platform.verify
 description: "Sets up platform directories and verifies deepwork install works correctly. Use after implementation to confirm integration."
 user-invocable: false
+
 ---
 
 # add_platform.verify

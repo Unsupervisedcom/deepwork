@@ -11,6 +11,7 @@ hooks:
     - hooks:
         - type: command
           command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"
+
 ---
 
 # add_platform.implement
