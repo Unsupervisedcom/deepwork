@@ -2,6 +2,7 @@
 name: manual_tests.run_fire_tests
 description: "Runs all 6 'should fire' tests serially with resets between each. Use after NOT-fire tests to verify rules fire correctly."
 user-invocable: false
+
 ---
 
 # manual_tests.run_fire_tests

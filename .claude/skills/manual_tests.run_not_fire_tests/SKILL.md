@@ -2,6 +2,7 @@
 name: manual_tests.run_not_fire_tests
 description: "Runs all 6 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met."
 user-invocable: false
+
 ---
 
 # manual_tests.run_not_fire_tests

@@ -2,6 +2,7 @@
 name: manual_tests.infinite_block_tests
 description: "Runs all 4 infinite block tests serially. Tests both 'should fire' (no promise) and 'should NOT fire' (with promise) scenarios."
 user-invocable: false
+
 ---
 
 # manual_tests.infinite_block_tests
