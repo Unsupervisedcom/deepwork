@@ -1,6 +1,9 @@
 ---
 name: deepwork_jobs.define
-description: "Creates a job.yml specification by gathering workflow requirements through structured questions. Use when starting a new multi-step workflow."user-invocable: false---
+description: "Creates a job.yml specification by gathering workflow requirements through structured questions. Use when starting a new multi-step workflow."
+user-invocable: false
+
+---
 
 # deepwork_jobs.define
 

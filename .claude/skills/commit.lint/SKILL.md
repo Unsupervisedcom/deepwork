@@ -1,6 +1,9 @@
 ---
 name: commit.lint
-description: "Formats and lints code with ruff using a sub-agent. Use after tests pass to ensure code style compliance."user-invocable: false---
+description: "Formats and lints code with ruff using a sub-agent. Use after tests pass to ensure code style compliance."
+user-invocable: false
+
+---
 
 # commit.lint
 
@@ -84,9 +87,7 @@ Report the results of each command.
 
 - ruff format was run successfully
 - ruff check was run with --fix flag
-- No remaining lint errors (or all are documented and intentional)
-- Sub-agent was used to conserve context
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+- No remaining lint errors
 
 ## Context
 
@@ -128,6 +129,23 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
+
+## Quality Validation
+
+**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
+
+Use a sub-agent (Haiku model) to review your work against these criteria:
+
+**Criteria (all must be satisfied)**:
+1. ruff format was run successfully
+2. ruff check was run with --fix flag
+3. No remaining lint errors
+**Review Process**:
+1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
+2. The sub-agent should examine your outputs and verify each criterion is met
+3. If the sub-agent identifies valid issues, fix them
+4. Have the sub-agent review again until all valid feedback has been addressed
+5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
 ## On Completion
 

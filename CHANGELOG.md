@@ -22,8 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SessionStart hook now skips non-initial sessions (resume, compact/clear) by checking the `source` field in stdin JSON, reducing noise and redundant checks
 
 ### Fixed
+- Fixed skill template generating malformed YAML frontmatter with fields concatenated on single lines
+  - Removed over-aggressive `{%-` whitespace stripping from Jinja template
+  - Fields like `user-invocable` and `hooks` now render on proper separate lines
+  - Affects `src/deepwork/templates/claude/skill-job-step.md.jinja`
 
 ### Removed
+
 ## [0.5.1] - 2026-01-24
 
 ### Added

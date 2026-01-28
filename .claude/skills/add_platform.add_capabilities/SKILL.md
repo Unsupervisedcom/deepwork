@@ -1,6 +1,9 @@
 ---
 name: add_platform.add_capabilities
-description: "Updates job schema and adapters with any new hook events the platform supports. Use after research to extend DeepWork's hook system."user-invocable: false---
+description: "Updates job schema and adapters with any new hook events the platform supports. Use after research to extend DeepWork's hook system."
+user-invocable: false
+
+---
 
 # add_platform.add_capabilities
 

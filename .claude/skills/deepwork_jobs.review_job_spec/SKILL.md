@@ -1,6 +1,9 @@
 ---
 name: deepwork_jobs.review_job_spec
-description: "Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification."user-invocable: false---
+description: "Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification."
+user-invocable: false
+
+---
 
 # deepwork_jobs.review_job_spec
 

@@ -1,6 +1,9 @@
 ---
 name: commit.test
-description: "Pulls latest code and runs tests until all pass. Use after code review passes to verify changes work correctly."user-invocable: false---
+description: "Pulls latest code and runs tests until all pass. Use after code review passes to verify changes work correctly."
+user-invocable: false
+
+---
 
 # commit.test
 
@@ -65,9 +68,7 @@ Execute the test suite for the project and iteratively fix any failures until al
 ## Quality Criteria
 
 - Latest code was pulled from the branch
-- Test command was correctly identified or used from input
-- All tests are now passing
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+- All tests are passing
 
 ## Context
 
@@ -90,11 +91,6 @@ Steps:
 4. commit_and_push - Review changes and commit/push
 
 
-## Required Inputs
-
-**User Parameters** - Gather from user before starting:
-- **test_command**: Test command to run (optional - will auto-detect if not provided)
-
 
 ## Work Branch
 
@@ -114,6 +110,22 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
+
+## Quality Validation
+
+**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
+
+Use a sub-agent (Haiku model) to review your work against these criteria:
+
+**Criteria (all must be satisfied)**:
+1. Latest code was pulled from the branch
+2. All tests are passing
+**Review Process**:
+1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
+2. The sub-agent should examine your outputs and verify each criterion is met
+3. If the sub-agent identifies valid issues, fix them
+4. Have the sub-agent review again until all valid feedback has been addressed
+5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
 ## On Completion
 

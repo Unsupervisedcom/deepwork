@@ -1,6 +1,9 @@
 ---
 name: commit.commit_and_push
-description: "Verifies changed files, creates commit, and pushes to remote. Use after linting passes to finalize changes."user-invocable: false---
+description: "Verifies changed files, creates commit, and pushes to remote. Use after linting passes to finalize changes."
+user-invocable: false
+
+---
 
 # commit.commit_and_push
 
@@ -99,14 +102,11 @@ Check the list of changed files against what was modified during this session, e
 
 ## Quality Criteria
 
-- Changed files list was reviewed by the agent
-- Files match what was modified during this session (or unexpected changes were investigated and handled)
-- CHANGELOG.md was updated with entries in the `[Unreleased]` section (if changes warrant documentation)
-- Version numbers were NOT modified (in pyproject.toml or CHANGELOG.md version headers)
-- Commit message follows project conventions
-- Commit was created successfully
+- Changed files were verified against expectations
+- CHANGELOG.md was updated with entries in [Unreleased] section (if changes warrant documentation)
+- Version numbers were NOT modified (pyproject.toml version and CHANGELOG version headers unchanged)
+- Commit was created with appropriate message
 - Changes were pushed to remote
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
 
@@ -148,6 +148,25 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
+
+## Quality Validation
+
+**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
+
+Use a sub-agent (Haiku model) to review your work against these criteria:
+
+**Criteria (all must be satisfied)**:
+1. Changed files were verified against expectations
+2. CHANGELOG.md was updated with entries in [Unreleased] section (if changes warrant documentation)
+3. Version numbers were NOT modified (pyproject.toml version and CHANGELOG version headers unchanged)
+4. Commit was created with appropriate message
+5. Changes were pushed to remote
+**Review Process**:
+1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
+2. The sub-agent should examine your outputs and verify each criterion is met
+3. If the sub-agent identifies valid issues, fix them
+4. Have the sub-agent review again until all valid feedback has been addressed
+5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
 ## On Completion
 

@@ -87,9 +87,7 @@ Report the results of each command.
 
 - ruff format was run successfully
 - ruff check was run with --fix flag
-- No remaining lint errors (or all are documented and intentional)
-- Sub-agent was used to conserve context
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+- No remaining lint errors
 
 ## Context
 
@@ -125,6 +123,14 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 **Required outputs**:
 - `code_formatted`
 
+## Quality Validation (Manual)
+
+**NOTE**: Gemini CLI does not support automated validation. Manually verify criteria before completing.
+
+**Criteria (all must be satisfied)**:
+1. ruff format was run successfully
+2. ruff check was run with --fix flag
+3. No remaining lint errors
 ## On Completion
 
 1. Verify outputs are created

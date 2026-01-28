@@ -68,9 +68,7 @@ Execute the test suite for the project and iteratively fix any failures until al
 ## Quality Criteria
 
 - Latest code was pulled from the branch
-- Test command was correctly identified or used from input
-- All tests are now passing
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+- All tests are passing
 
 ## Context
 
@@ -93,11 +91,6 @@ Steps:
 4. commit_and_push - Review changes and commit/push
 
 
-## Required Inputs
-
-**User Parameters** - Gather from user before starting:
-- **test_command**: Test command to run (optional - will auto-detect if not provided)
-
 
 ## Work Branch
 
@@ -111,6 +104,13 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 **Required outputs**:
 - `tests_passing`
 
+## Quality Validation (Manual)
+
+**NOTE**: Gemini CLI does not support automated validation. Manually verify criteria before completing.
+
+**Criteria (all must be satisfied)**:
+1. Latest code was pulled from the branch
+2. All tests are passing
 ## On Completion
 
 1. Verify outputs are created
