@@ -1,6 +1,8 @@
 ---
 name: commit.review
-description: "Reviews changed code for issues, DRY opportunities, naming clarity, and test coverage using a sub-agent. Use as the first step before testing."user-invocable: false---
+description: "Reviews changed code for issues, DRY opportunities, naming clarity, and test coverage using a sub-agent. Use as the first step before testing."
+user-invocable: false
+---
 
 # commit.review
 
