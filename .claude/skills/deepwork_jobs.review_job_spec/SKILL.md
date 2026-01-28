@@ -241,6 +241,9 @@ The `new_job` workflow guides you through defining and implementing a new job by
 asking structured questions about your workflow, understanding each step's inputs and outputs,
 reviewing the specification, and generating all necessary files.
 
+The `clone_remote_job` skill installs a job from a GitHub repository (like the DeepWork
+job library) and guides you through any required customization for your project.
+
 The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
 confusion or inefficiencies, and improves job instructions. It also captures bespoke
 learnings specific to the current run into AGENTS.md files in the working folder.
