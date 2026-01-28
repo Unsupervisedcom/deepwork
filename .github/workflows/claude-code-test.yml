@@ -84,18 +84,18 @@ jobs:
           echo "Checking generated commands..."
           ls -la test_project/.claude/skills/
 
-          # Verify command files exist
-          test -f test_project/.claude/skills/fruits.identify.md || (echo "Missing fruits.identify.md" && exit 1)
-          test -f test_project/.claude/skills/fruits.classify.md || (echo "Missing fruits.classify.md" && exit 1)
+          # Verify command files exist (skills are directories with SKILL.md)
+          test -f test_project/.claude/skills/fruits.identify/SKILL.md || (echo "Missing fruits.identify/SKILL.md" && exit 1)
+          test -f test_project/.claude/skills/fruits.classify/SKILL.md || (echo "Missing fruits.classify/SKILL.md" && exit 1)
 
           # Verify command content
-          grep -q "# fruits.identify" test_project/.claude/skills/fruits.identify.md
-          grep -q "raw_items" test_project/.claude/skills/fruits.identify.md
-          grep -q "identified_fruits.md" test_project/.claude/skills/fruits.identify.md
+          grep -q "# fruits.identify" test_project/.claude/skills/fruits.identify/SKILL.md
+          grep -q "raw_items" test_project/.claude/skills/fruits.identify/SKILL.md
+          grep -q "identified_fruits.md" test_project/.claude/skills/fruits.identify/SKILL.md
 
-          grep -q "# fruits.classify" test_project/.claude/skills/fruits.classify.md
-          grep -q "identified_fruits.md" test_project/.claude/skills/fruits.classify.md
-          grep -q "classified_fruits.md" test_project/.claude/skills/fruits.classify.md
+          grep -q "# fruits.classify" test_project/.claude/skills/fruits.classify/SKILL.md
+          grep -q "identified_fruits.md" test_project/.claude/skills/fruits.classify/SKILL.md
+          grep -q "classified_fruits.md" test_project/.claude/skills/fruits.classify/SKILL.md
 
           echo "Command generation validated successfully!"
 
@@ -272,7 +272,7 @@ jobs:
           echo "=== Checking generated commands ==="
           ls -la test_project/.claude/skills/
 
-          if [ -f "test_project/.claude/skills/fruits.identify.md" ] && [ -f "test_project/.claude/skills/fruits.classify.md" ]; then
+          if [ -f "test_project/.claude/skills/fruits.identify/SKILL.md" ] && [ -f "test_project/.claude/skills/fruits.classify/SKILL.md" ]; then
             echo "SUCCESS: Slash commands generated"
           else
             echo "ERROR: Slash commands were not generated"
@@ -368,7 +368,7 @@ jobs:
           name: claude-code-e2e-outputs
           path: |
             test_project/.deepwork/jobs/fruits/
-            test_project/.claude/skills/fruits.*.md
+            test_project/.claude/skills/fruits.*/SKILL.md
             test_project/identified_fruits.md
             test_project/classified_fruits.md
           retention-days: 7
