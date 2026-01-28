@@ -2,9 +2,9 @@ name: Validate
 
 on:
   pull_request:
-    branches: [main, test-merge-queue]
+    branches: [main]
   merge_group:
-    branches: [main, test-merge-queue]
+    branches: [main]
   workflow_dispatch:
 
 # Minimal permissions for this workflow

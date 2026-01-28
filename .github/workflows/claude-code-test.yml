@@ -11,10 +11,10 @@ on:
         type: boolean
   # Run on all PRs (shows as check, but steps skip unless in merge queue)
   pull_request:
-    branches: [main, test-merge-queue]
+    branches: [main]
   # Run in the merge queue to validate before merging
   merge_group:
-    branches: [main, test-merge-queue]
+    branches: [main]
 
 # Ensure only one instance runs at a time per PR/branch
 concurrency:
@@ -82,20 +82,20 @@ jobs:
 
           # Validate generated commands exist
           echo "Checking generated commands..."
-          ls -la test_project/.claude/commands/
+          ls -la test_project/.claude/skills/
 
           # Verify command files exist
-          test -f test_project/.claude/commands/fruits.identify.md || (echo "Missing fruits.identify.md" && exit 1)
-          test -f test_project/.claude/commands/fruits.classify.md || (echo "Missing fruits.classify.md" && exit 1)
+          test -f test_project/.claude/skills/fruits.identify.md || (echo "Missing fruits.identify.md" && exit 1)
+          test -f test_project/.claude/skills/fruits.classify.md || (echo "Missing fruits.classify.md" && exit 1)
 
           # Verify command content
-          grep -q "# fruits.identify" test_project/.claude/commands/fruits.identify.md
-          grep -q "raw_items" test_project/.claude/commands/fruits.identify.md
-          grep -q "identified_fruits.md" test_project/.claude/commands/fruits.identify.md
+          grep -q "# fruits.identify" test_project/.claude/skills/fruits.identify.md
+          grep -q "raw_items" test_project/.claude/skills/fruits.identify.md
+          grep -q "identified_fruits.md" test_project/.claude/skills/fruits.identify.md
 
-          grep -q "# fruits.classify" test_project/.claude/commands/fruits.classify.md
-          grep -q "identified_fruits.md" test_project/.claude/commands/fruits.classify.md
-          grep -q "classified_fruits.md" test_project/.claude/commands/fruits.classify.md
+          grep -q "# fruits.classify" test_project/.claude/skills/fruits.classify.md
+          grep -q "identified_fruits.md" test_project/.claude/skills/fruits.classify.md
+          grep -q "classified_fruits.md" test_project/.claude/skills/fruits.classify.md
 
           echo "Command generation validated successfully!"
 
@@ -173,7 +173,7 @@ jobs:
 
           echo "Fresh test project setup complete"
           echo "Available commands:"
-          ls -la test_project/.claude/commands/
+          ls -la test_project/.claude/skills/
 
       # STEP 1: Use /deepwork_jobs.define to CREATE the fruits job
       - name: Create job with /deepwork_jobs.define
@@ -270,9 +270,9 @@ jobs:
           uv run deepwork sync --path test_project
 
           echo "=== Checking generated commands ==="
-          ls -la test_project/.claude/commands/
+          ls -la test_project/.claude/skills/
 
-          if [ -f "test_project/.claude/commands/fruits.identify.md" ] && [ -f "test_project/.claude/commands/fruits.classify.md" ]; then
+          if [ -f "test_project/.claude/skills/fruits.identify.md" ] && [ -f "test_project/.claude/skills/fruits.classify.md" ]; then
             echo "SUCCESS: Slash commands generated"
           else
             echo "ERROR: Slash commands were not generated"
@@ -368,7 +368,7 @@ jobs:
           name: claude-code-e2e-outputs
           path: |
             test_project/.deepwork/jobs/fruits/
-            test_project/.claude/commands/fruits.*.md
+            test_project/.claude/skills/fruits.*.md
             test_project/identified_fruits.md
             test_project/classified_fruits.md
           retention-days: 7
