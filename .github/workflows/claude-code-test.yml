@@ -184,7 +184,7 @@ jobs:
           echo "=== Running /deepwork_jobs.define to create fruits job ==="
 
           # Provide detailed, deterministic instructions for creating the job
-          claude --yes --print "/deepwork_jobs.define" <<'PROMPT_EOF'
+          claude --dangerously-skip-permissions --print "/deepwork_jobs.define" <<'PROMPT_EOF'
           I want to create a simple job called "fruits" for identifying and classifying fruits.
 
           Here are the EXACT specifications - please create the job.yml with these exact details:
@@ -233,7 +233,7 @@ jobs:
         run: |
           echo "=== Running /deepwork_jobs.implement to generate step instructions ==="
 
-          claude --yes --print "/deepwork_jobs.implement" <<'PROMPT_EOF'
+          claude --dangerously-skip-permissions --print "/deepwork_jobs.implement" <<'PROMPT_EOF'
           Please implement the "fruits" job that was just defined.
 
           For the identify step, create instructions that:
@@ -287,7 +287,7 @@ jobs:
         run: |
           echo "=== Running /fruits.identify with test input ==="
 
-          claude --yes --print "/fruits.identify" <<'PROMPT_EOF'
+          claude --dangerously-skip-permissions --print "/fruits.identify" <<'PROMPT_EOF'
           raw_items: apple, car, banana, chair, orange, table, mango, laptop, grape, bicycle
           PROMPT_EOF
 
@@ -309,7 +309,7 @@ jobs:
         run: |
           echo "=== Running /fruits.classify ==="
 
-          claude --yes --print "/fruits.classify"
+          claude --dangerously-skip-permissions --print "/fruits.classify"
 
           # Verify output was created
           if [ -f "classified_fruits.md" ]; then
