@@ -1,6 +1,9 @@
 ---
 name: deepwork_jobs.implement
-description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after tools verification passes."user-invocable: false---
+description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after tools verification passes."
+user-invocable: false
+
+---
 
 # deepwork_jobs.implement
 

@@ -1,6 +1,8 @@
 ---
 name: deepwork_jobs.learn
-description: "Analyzes conversation history to improve job instructions, techniques, and capture learnings. Use after running a job to refine it."---
+description: "Analyzes conversation history to improve job instructions, techniques, and capture learnings. Use after running a job to refine it."
+
+---
 
 # deepwork_jobs.learn
 

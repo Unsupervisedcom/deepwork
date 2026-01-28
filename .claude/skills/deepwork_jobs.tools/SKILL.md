@@ -1,6 +1,9 @@
 ---
 name: deepwork_jobs.tools
-description: "Verifies required techniques are available and documents how to use them. Use after job spec review to ensure implementation can succeed."user-invocable: false---
+description: "Verifies required techniques are available and documents how to use them. Use after job spec review to ensure implementation can succeed."
+user-invocable: false
+
+---
 
 # deepwork_jobs.tools
 
