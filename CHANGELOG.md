@@ -14,12 +14,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Step skills now display workflow context (e.g., "Step 2/3 in new_job workflow")
   - Standalone skills are clearly marked as "can be run anytime"
   - Backward compatible: jobs without `workflows` section use dependency-based detection
+- New `tools` step in `deepwork_jobs` workflow for verifying and documenting techniques
+  - Analyzes job steps to identify required external tools (PDF generation, data processing, etc.)
+  - Spawns parallel sub-agents to test each tool and find alternatives if missing
+  - Creates reusable techniques in `.deepwork/techniques/` following Claude Skills format
+  - Techniques are synced to platform skill directories with `dwt_` prefix
 
 ### Changed
 - Skill templates now show workflow-aware progress (e.g., "new_job step 2/3 complete")
 - Meta-skill template reorganized to show "Workflows" and "Standalone Skills" sections separately
-- Updated `deepwork_jobs` standard job to v1.0.0 with explicit `new_job` workflow
+- Updated `deepwork_jobs` standard job to v1.1.0 with `tools` step in `new_job` workflow
 - SessionStart hook now skips non-initial sessions (resume, compact/clear) by checking the `source` field in stdin JSON, reducing noise and redundant checks
+- `deepwork_jobs.implement` step no longer creates directory structure (already done by `define` step)
+- `deepwork_jobs.implement` now references techniques when generating step instructions
 
 ### Fixed
 - Fixed skill template generating malformed YAML frontmatter with fields concatenated on single lines

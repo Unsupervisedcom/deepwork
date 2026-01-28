@@ -7,9 +7,9 @@ user-invocable: false
 
 # deepwork_jobs.define
 
-**Step 1/3** in **new_job** workflow
+**Step 1/4** in **new_job** workflow
 
-> Create a new DeepWork job from scratch through definition, review, and implementation
+> Create a new DeepWork job from scratch through definition, review, tools verification, and implementation
 
 > Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs.
 
@@ -424,7 +424,7 @@ workflows and learn from running them.
 
 The `new_job` workflow guides you through defining and implementing a new job by
 asking structured questions about your workflow, understanding each step's inputs and outputs,
-reviewing the specification, and generating all necessary files.
+reviewing the specification, verifying required techniques, and generating all necessary files.
 
 The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
 confusion or inefficiencies, and improves job instructions. It also captures bespoke
@@ -668,7 +668,7 @@ Use a sub-agent (Haiku model) to review your work against these criteria:
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "new_job step 1/3 complete, outputs: job.yml"
+2. Inform user: "new_job step 1/4 complete, outputs: job.yml"
 3. **Continue workflow**: Use Skill tool to invoke `/deepwork_jobs.review_job_spec`
 
 ---
