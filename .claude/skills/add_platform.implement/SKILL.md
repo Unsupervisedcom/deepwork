@@ -1,10 +1,17 @@
 ---
 name: add_platform.implement
-description: "Creates platform adapter, templates, tests with 100% coverage, and README documentation. Use after adding hook capabilities."user-invocable: falsehooks:  Stop:
-    - hooks:        - type: command
-          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"  SubagentStop:
-    - hooks:        - type: command
-          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"---
+description: "Creates platform adapter, templates, tests with 100% coverage, and README documentation. Use after adding hook capabilities."
+user-invocable: false
+hooks:
+  Stop:
+    - hooks:
+        - type: command
+          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"
+  SubagentStop:
+    - hooks:
+        - type: command
+          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"
+---
 
 # add_platform.implement
 

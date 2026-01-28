@@ -48,10 +48,10 @@ Template Variables:
 ---
 name: {{ job_name }}.{{ step_id }}
 description: "{{ step_description }}"
-{%- if not exposed %}
+{% if not exposed %}
 user-invocable: false
-{%- endif %}{#- if not exposed #}
-{#-
+{% endif %}{#- if not exposed #}
+{#
   NOTE: Prompt-based stop hooks do not currently work in Claude Code.
   See: https://github.com/anthropics/claude-code/issues/20221
   Only command/script hooks are generated here. Prompt hooks are filtered out.
@@ -68,7 +68,7 @@ user-invocable: false
 {%- endfor -%}{#- for event_name, event_hooks in hooks.items() #}
 {%- if has_command_hooks.value %}
 hooks:
-{%- for event_name, event_hooks in hooks.items() %}
+{% for event_name, event_hooks in hooks.items() %}
 {%- set script_hooks = event_hooks | selectattr("type", "equalto", "script") | list %}
 {%- if script_hooks -%}
 {#- For Stop events, generate both Stop and SubagentStop blocks #}
@@ -76,19 +76,19 @@ hooks:
 {%- for stop_event in ["Stop", "SubagentStop"] %}
   {{ stop_event }}:
     - hooks:
-{%- for hook in script_hooks %}
+{% for hook in script_hooks %}
         - type: command
           command: ".deepwork/jobs/{{ job_name }}/{{ hook.path }}"
-{%- endfor %}{#- for hook in script_hooks #}
-{%- endfor %}{#- for stop_event in ["Stop", "SubagentStop"] #}
+{% endfor %}{#- for hook in script_hooks #}
+{% endfor %}{#- for stop_event in ["Stop", "SubagentStop"] #}
 {%- elif event_name != "SubagentStop" or "Stop" not in hooks %}
   {{ event_name }}:
     - hooks:
-{%- for hook in script_hooks %}
+{% for hook in script_hooks %}
         - type: command
           command: ".deepwork/jobs/{{ job_name }}/{{ hook.path }}"
-{%- endfor %}{#- for hook in script_hooks #}
-{%- endif %}{#- if event_name == "Stop" #}
+{% endfor %}{#- for hook in script_hooks #}
+{% endif %}{#- if event_name == "Stop" #}
 {%- endif %}{#- if script_hooks #}
 {%- endfor %}{#- for event_name, event_hooks in hooks.items() #}
 {%- endif %}{#- if has_command_hooks.value #}
