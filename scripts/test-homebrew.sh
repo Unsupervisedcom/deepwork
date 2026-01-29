@@ -17,11 +17,13 @@ fi
 echo "==> Building deepwork from $REPO_DIR"
 cd "$REPO_DIR"
 
+PYTHON=$(command -v python3 || command -v python) || { echo "Error: No python found"; exit 1; }
+
 # Clean previous builds
 rm -rf dist/
 
 # Build the sdist tarball
-python -m build --sdist
+$PYTHON -m build --sdist
 
 # Find the built tarball
 TARBALL=$(ls dist/deepwork-*.tar.gz | head -1)
