@@ -235,7 +235,7 @@ class TestClaudeCodeExecution:
         """Test executing the identify step with Claude Code."""
         # Run Claude Code with the fruits skill, providing input via stdin
         result = subprocess.run(
-            ["claude", "--yes", "--print", "/fruits"],
+            ["claude", "--print", "/fruits"],
             input=f"raw_items: {TEST_INPUT}",
             cwd=project_with_skills,
             capture_output=True,
@@ -264,7 +264,7 @@ class TestClaudeCodeExecution:
 
         # Run Claude Code with the classify command
         result = subprocess.run(
-            ["claude", "--yes", "--print", "/fruits.classify"],
+            ["claude", "--print", "/fruits.classify"],
             cwd=project_with_skills,
             capture_output=True,
             text=True,
@@ -288,7 +288,7 @@ class TestClaudeCodeExecution:
         """Test executing the complete fruits workflow with Claude Code."""
         # Run identify step via /fruits skill
         result1 = subprocess.run(
-            ["claude", "--yes", "--print", "/fruits"],
+            ["claude", "--print", "/fruits"],
             input=f"raw_items: {TEST_INPUT}",
             cwd=project_with_skills,
             capture_output=True,
@@ -303,7 +303,7 @@ class TestClaudeCodeExecution:
 
         # Run classify step
         result2 = subprocess.run(
-            ["claude", "--yes", "--print", "/fruits.classify"],
+            ["claude", "--print", "/fruits.classify"],
             cwd=project_with_skills,
             capture_output=True,
             text=True,
