@@ -7,7 +7,7 @@ This directory contains CI/CD workflows for the DeepWork project. We use GitHub'
 | Workflow | File | Purpose |
 |----------|------|---------|
 | **Validate** | `validate.yml` | Linting (ruff) and unit tests |
-| **Integration Tests** | `claude-code-test.yml` | Command generation and e2e tests |
+| **Integration Tests** | `claude-code-test.yml` | Skill generation and e2e tests |
 | **CLA Assistant** | `cla.yml` | Contributor License Agreement verification |
 | **Release** | `release.yml` | PyPI publishing on tags |
 
@@ -85,7 +85,7 @@ All checks will pass in both PR and merge queue contexts (either by running or b
 - **Triggers**: `pull_request` (main), `merge_group` (main), `workflow_dispatch`
 - **Jobs**:
   - `pr-check`: Runs on PRs only, always passes (lightweight check)
-  - `validate-generation`: Tests command generation from fixtures (no API key needed)
+  - `validate-generation`: Tests skill generation from fixtures (no API key needed)
   - `claude-code-e2e`: Full end-to-end test with Claude Code CLI (requires `ANTHROPIC_API_KEY`)
 - `validate-generation` and `claude-code-e2e` skip on PRs, run in merge queue and manual dispatch
 

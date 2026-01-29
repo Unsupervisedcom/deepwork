@@ -26,7 +26,7 @@ permissions:
   contents: read
 
 jobs:
-  # Job 1: Validate command generation from fixtures (no API key needed)
+  # Job 1: Validate skill generation from fixtures (no API key needed)
   # Runs on all events, but actual work only happens in merge_group/workflow_dispatch
   # This ensures the check name exists for PRs (needed for GitHub's merge queue)
   validate-generation:
@@ -60,7 +60,7 @@ jobs:
         if: github.event_name != 'pull_request'
         run: uv run pytest tests/integration/test_fruits_workflow.py -v
 
-      - name: Generate commands and validate structure
+      - name: Generate skills and validate structure
         if: github.event_name != 'pull_request'
         run: |
           # Create a test environment
@@ -80,27 +80,30 @@ jobs:
           # Run deepwork install to set up the project (this also runs sync)
           uv run deepwork install --platform claude --path test_project
 
-          # Validate generated commands exist
-          echo "Checking generated commands..."
-          ls -la test_project/.claude/commands/
+          # Validate generated skills exist
+          echo "Checking generated skills..."
+          ls -la test_project/.claude/skills/
 
-          # Verify command files exist
-          test -f test_project/.claude/commands/fruits.identify.md || (echo "Missing fruits.identify.md" && exit 1)
-          test -f test_project/.claude/commands/fruits.classify.md || (echo "Missing fruits.classify.md" && exit 1)
+          # Verify skill directories and SKILL.md files exist
+          # Meta-skill for the job itself
+          test -f test_project/.claude/skills/fruits/SKILL.md || (echo "Missing fruits meta-skill" && exit 1)
+          # Step skills
+          test -f test_project/.claude/skills/fruits.identify/SKILL.md || (echo "Missing fruits.identify skill" && exit 1)
+          test -f test_project/.claude/skills/fruits.classify/SKILL.md || (echo "Missing fruits.classify skill" && exit 1)
 
-          # Verify command content
-          grep -q "# fruits.identify" test_project/.claude/commands/fruits.identify.md
-          grep -q "raw_items" test_project/.claude/commands/fruits.identify.md
-          grep -q "identified_fruits.md" test_project/.claude/commands/fruits.identify.md
+          # Verify skill content
+          grep -q "# fruits.identify" test_project/.claude/skills/fruits.identify/SKILL.md
+          grep -q "raw_items" test_project/.claude/skills/fruits.identify/SKILL.md
+          grep -q "identified_fruits.md" test_project/.claude/skills/fruits.identify/SKILL.md
 
-          grep -q "# fruits.classify" test_project/.claude/commands/fruits.classify.md
-          grep -q "identified_fruits.md" test_project/.claude/commands/fruits.classify.md
-          grep -q "classified_fruits.md" test_project/.claude/commands/fruits.classify.md
+          grep -q "# fruits.classify" test_project/.claude/skills/fruits.classify/SKILL.md
+          grep -q "identified_fruits.md" test_project/.claude/skills/fruits.classify/SKILL.md
+          grep -q "classified_fruits.md" test_project/.claude/skills/fruits.classify/SKILL.md
 
-          echo "Command generation validated successfully!"
+          echo "Skill generation validated successfully!"
 
   # Job 2: Full end-to-end test with Claude Code
-  # Tests the COMPLETE workflow: define job -> implement -> execute
+  # Tests the COMPLETE workflow:
   # Runs on all events, but actual work only happens in merge_group/workflow_dispatch
   # This ensures the check name exists for PRs (needed for GitHub's merge queue)
   claude-code-e2e:
@@ -171,46 +174,53 @@ jobs:
           # Install deepwork (this sets up .deepwork/ with standard jobs only)
           uv run deepwork install --platform claude --path test_project
 
+          # Create permissive settings.json to allow file operations in CI
+          cat > test_project/.claude/settings.json << 'SETTINGS_EOF'
+          {
+            "permissions": {
+              "allow": [
+                "Bash(*)",
+                "Read(./**)",
+                "Edit(./**)",
+                "Write(./**)",
+                "Skill(*)"
+              ]
+            }
+          }
+          SETTINGS_EOF
+
           echo "Fresh test project setup complete"
-          echo "Available commands:"
-          ls -la test_project/.claude/commands/
+          echo "Available skills:"
+          ls -la test_project/.claude/skills/
 
       # STEP 1: Use /deepwork_jobs.define to CREATE the fruits job
-      - name: Create job with /deepwork_jobs.define
+      - name: Create job with /deepwork_jobs
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
         timeout-minutes: 10
         run: |
-          echo "=== Running /deepwork_jobs.define to create fruits job ==="
+          echo "=== Running /deepwork_jobs to create fruits job ==="
 
           # Provide detailed, deterministic instructions for creating the job
-          claude --yes --print "/deepwork_jobs.define" <<'PROMPT_EOF'
-          I want to create a simple job called "fruits" for identifying and classifying fruits.
+          claude --print <<'PROMPT_EOF'
+          /deepwork_jobs I want to create a simple job called "fruits" for identifying and classifying fruits.
 
-          Here are the EXACT specifications - please create the job.yml with these exact details:
-
-          Job name: fruits
-          Version: 1.0.0
-          Summary: Identify and classify fruits from a mixed list of items
-
-          Description: A simple workflow that takes a list of mixed items, identifies which are fruits, then classifies them by category. Designed for CI testing.
+          Here are the EXACT specifications.
+          
+          Intent: A simple workflow that takes a list of mixed items, identifies which are fruits, then classifies them by category. Designed for CI testing.
 
           Steps:
-          1. Step ID: identify
+          1. Step: identify
              Name: Identify Fruits
-             Description: Filter a list of items to identify only the fruits
-             Input: raw_items (user parameter) - A comma-separated list of items
-             Output: identified_fruits.md
-             Dependencies: none
+             Description: Filter a list of items to include only the fruits
 
-          2. Step ID: classify
+          2. Step: classify
              Name: Classify Fruits
              Description: Organize identified fruits into categories (citrus, tropical, berries, etc.)
              Input: identified_fruits.md (file from step identify)
              Output: classified_fruits.md
-             Dependencies: identify
 
-          Please create this job definition now. Do not ask questions - use these exact specifications.
+          Please create this job now. Do not ask questions.
           PROMPT_EOF
 
           # Verify the job.yml was created
@@ -224,30 +234,6 @@ jobs:
             ls -la .deepwork/jobs/ || echo "No jobs directory"
             exit 1
           fi
-
-      # STEP 2: Use /deepwork_jobs.implement to generate step instructions
-      - name: Generate step instructions with /deepwork_jobs.implement
-        if: steps.check-key.outputs.has_key == 'true'
-        working-directory: test_project
-        timeout-minutes: 10
-        run: |
-          echo "=== Running /deepwork_jobs.implement to generate step instructions ==="
-
-          claude --yes --print "/deepwork_jobs.implement" <<'PROMPT_EOF'
-          Please implement the "fruits" job that was just defined.
-
-          For the identify step, create instructions that:
-          - Parse the comma-separated raw_items input
-          - Identify which items are fruits (apple, banana, orange, mango, grape, etc.)
-          - Output a markdown file listing the identified fruits
-
-          For the classify step, create instructions that:
-          - Read identified_fruits.md from the previous step
-          - Classify fruits into categories: Citrus (orange, lemon), Tropical (banana, mango), Pome (apple, pear), Berries, etc.
-          - Output a markdown file with fruits organized by category
-
-          Generate the step instruction files now.
-          PROMPT_EOF
 
           # Verify step files were created
           echo "=== Checking step files were created ==="
@@ -264,34 +250,34 @@ jobs:
             exit 1
           fi
 
-          # Run sync to generate the slash commands
-          echo "=== Running deepwork sync to generate commands ==="
+          # Run sync to generate the skills
+          echo "=== Running deepwork sync to generate skills ==="
           cd ..
           uv run deepwork sync --path test_project
 
-          echo "=== Checking generated commands ==="
-          ls -la test_project/.claude/commands/
+          echo "=== Checking generated skills ==="
+          ls -la test_project/.claude/skills/
 
-          if [ -f "test_project/.claude/commands/fruits.identify.md" ] && [ -f "test_project/.claude/commands/fruits.classify.md" ]; then
-            echo "SUCCESS: Slash commands generated"
+          if [ -f "test_project/.claude/skills/fruits.identify/SKILL.md" ] && [ -f "test_project/.claude/skills/fruits.classify/SKILL.md" ]; then
+            echo "SUCCESS: Skills generated"
           else
-            echo "ERROR: Slash commands were not generated"
+            echo "ERROR: Skills were not generated"
             exit 1
           fi
 
-      # STEP 3: Execute the generated /fruits.identify command
-      - name: Run /fruits.identify
+      # STEP 3: Execute the /fruits workflow (runs all steps automatically)
+      - name: Run /fruits workflow
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
-          echo "=== Running /fruits.identify with test input ==="
+          echo "=== Running /fruits workflow with test input ==="
 
-          claude --yes --print "/fruits.identify" <<'PROMPT_EOF'
+          claude --print "/fruits" <<'PROMPT_EOF'
           raw_items: apple, car, banana, chair, orange, table, mango, laptop, grape, bicycle
           PROMPT_EOF
 
-          # Verify output was created
+          # Verify both outputs were created
           if [ -f "identified_fruits.md" ]; then
             echo "SUCCESS: identified_fruits.md created"
             echo "--- Output ---"
@@ -301,17 +287,6 @@ jobs:
             exit 1
           fi
 
-      # STEP 4: Execute the generated /fruits.classify command
-      - name: Run /fruits.classify
-        if: steps.check-key.outputs.has_key == 'true'
-        working-directory: test_project
-        timeout-minutes: 5
-        run: |
-          echo "=== Running /fruits.classify ==="
-
-          claude --yes --print "/fruits.classify"
-
-          # Verify output was created
           if [ -f "classified_fruits.md" ]; then
             echo "SUCCESS: classified_fruits.md created"
             echo "--- Output ---"
@@ -321,7 +296,7 @@ jobs:
             exit 1
           fi
 
-      # STEP 5: Validate the complete workflow output
+      # STEP 4: Validate the complete workflow output
       - name: Validate complete workflow
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
@@ -355,10 +330,8 @@ jobs:
           echo "=========================================="
           echo ""
           echo "Workflow tested:"
-          echo "  1. /deepwork_jobs.define - Created job specification"
-          echo "  2. /deepwork_jobs.implement - Generated step instructions"
-          echo "  3. /fruits.identify - Executed identify step"
-          echo "  4. /fruits.classify - Executed classify step"
+          echo "  1. /deepwork_jobs - Created job"
+          echo "  2. /fruits - Executed full fruits workflow (identify + classify)"
           echo ""
 
       - name: Upload test artifacts
@@ -368,7 +341,7 @@ jobs:
           name: claude-code-e2e-outputs
           path: |
             test_project/.deepwork/jobs/fruits/
-            test_project/.claude/commands/fruits.*.md
+            test_project/.claude/skills/fruits*/
             test_project/identified_fruits.md
             test_project/classified_fruits.md
           retention-days: 7
