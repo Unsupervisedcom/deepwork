@@ -19,6 +19,9 @@ cd "$REPO_DIR"
 
 PYTHON=$(command -v python3 || command -v python) || { echo "Error: No python found"; exit 1; }
 
+# Ensure build tool is available
+$PYTHON -m pip install --quiet build
+
 # Clean previous builds
 rm -rf dist/
 
