@@ -26,7 +26,7 @@ permissions:
   contents: read
 
 jobs:
-  # Job 1: Validate command generation from fixtures (no API key needed)
+  # Job 1: Validate skill generation from fixtures (no API key needed)
   # Runs on all events, but actual work only happens in merge_group/workflow_dispatch
   # This ensures the check name exists for PRs (needed for GitHub's merge queue)
   validate-generation:
@@ -60,7 +60,7 @@ jobs:
         if: github.event_name != 'pull_request'
         run: uv run pytest tests/integration/test_fruits_workflow.py -v
 
-      - name: Generate commands and validate structure
+      - name: Generate skills and validate structure
         if: github.event_name != 'pull_request'
         run: |
           # Create a test environment
@@ -80,24 +80,27 @@ jobs:
           # Run deepwork install to set up the project (this also runs sync)
           uv run deepwork install --platform claude --path test_project
 
-          # Validate generated commands exist
-          echo "Checking generated commands..."
-          ls -la test_project/.claude/commands/
+          # Validate generated skills exist
+          echo "Checking generated skills..."
+          ls -la test_project/.claude/skills/
 
-          # Verify command files exist
-          test -f test_project/.claude/commands/fruits.identify.md || (echo "Missing fruits.identify.md" && exit 1)
-          test -f test_project/.claude/commands/fruits.classify.md || (echo "Missing fruits.classify.md" && exit 1)
+          # Verify skill directories and SKILL.md files exist
+          # Meta-skill for the job itself
+          test -f test_project/.claude/skills/fruits/SKILL.md || (echo "Missing fruits meta-skill" && exit 1)
+          # Step skills
+          test -f test_project/.claude/skills/fruits.identify/SKILL.md || (echo "Missing fruits.identify skill" && exit 1)
+          test -f test_project/.claude/skills/fruits.classify/SKILL.md || (echo "Missing fruits.classify skill" && exit 1)
 
-          # Verify command content
-          grep -q "# fruits.identify" test_project/.claude/commands/fruits.identify.md
-          grep -q "raw_items" test_project/.claude/commands/fruits.identify.md
-          grep -q "identified_fruits.md" test_project/.claude/commands/fruits.identify.md
+          # Verify skill content
+          grep -q "# fruits.identify" test_project/.claude/skills/fruits.identify/SKILL.md
+          grep -q "raw_items" test_project/.claude/skills/fruits.identify/SKILL.md
+          grep -q "identified_fruits.md" test_project/.claude/skills/fruits.identify/SKILL.md
 
-          grep -q "# fruits.classify" test_project/.claude/commands/fruits.classify.md
-          grep -q "identified_fruits.md" test_project/.claude/commands/fruits.classify.md
-          grep -q "classified_fruits.md" test_project/.claude/commands/fruits.classify.md
+          grep -q "# fruits.classify" test_project/.claude/skills/fruits.classify/SKILL.md
+          grep -q "identified_fruits.md" test_project/.claude/skills/fruits.classify/SKILL.md
+          grep -q "classified_fruits.md" test_project/.claude/skills/fruits.classify/SKILL.md
 
-          echo "Command generation validated successfully!"
+          echo "Skill generation validated successfully!"
 
   # Job 2: Full end-to-end test with Claude Code
   # Tests the COMPLETE workflow: define job -> implement -> execute
@@ -172,8 +175,8 @@ jobs:
           uv run deepwork install --platform claude --path test_project
 
           echo "Fresh test project setup complete"
-          echo "Available commands:"
-          ls -la test_project/.claude/commands/
+          echo "Available skills:"
+          ls -la test_project/.claude/skills/
 
       # STEP 1: Use /deepwork_jobs.define to CREATE the fruits job
       - name: Create job with /deepwork_jobs.define
@@ -264,22 +267,22 @@ jobs:
             exit 1
           fi
 
-          # Run sync to generate the slash commands
-          echo "=== Running deepwork sync to generate commands ==="
+          # Run sync to generate the skills
+          echo "=== Running deepwork sync to generate skills ==="
           cd ..
           uv run deepwork sync --path test_project
 
-          echo "=== Checking generated commands ==="
-          ls -la test_project/.claude/commands/
+          echo "=== Checking generated skills ==="
+          ls -la test_project/.claude/skills/
 
-          if [ -f "test_project/.claude/commands/fruits.identify.md" ] && [ -f "test_project/.claude/commands/fruits.classify.md" ]; then
-            echo "SUCCESS: Slash commands generated"
+          if [ -f "test_project/.claude/skills/fruits.identify/SKILL.md" ] && [ -f "test_project/.claude/skills/fruits.classify/SKILL.md" ]; then
+            echo "SUCCESS: Skills generated"
           else
-            echo "ERROR: Slash commands were not generated"
+            echo "ERROR: Skills were not generated"
             exit 1
           fi
 
-      # STEP 3: Execute the generated /fruits.identify command
+      # STEP 3: Execute the generated /fruits.identify skill
       - name: Run /fruits.identify
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
@@ -301,7 +304,7 @@ jobs:
             exit 1
           fi
 
-      # STEP 4: Execute the generated /fruits.classify command
+      # STEP 4: Execute the generated /fruits.classify skill
       - name: Run /fruits.classify
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
@@ -368,7 +371,7 @@ jobs:
           name: claude-code-e2e-outputs
           path: |
             test_project/.deepwork/jobs/fruits/
-            test_project/.claude/commands/fruits.*.md
+            test_project/.claude/skills/fruits*/
             test_project/identified_fruits.md
             test_project/classified_fruits.md
           retention-days: 7
