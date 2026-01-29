@@ -23,7 +23,17 @@ class GeneratorError(Exception):
 
 
 class SkillGenerator:
-    """Generates skill files from job definitions."""
+    """Generates skill files from job definitions.
+
+    Supports two generation modes:
+    1. Agent mode (default): Generates a single agent file containing the job
+       with all steps as embedded skills. The agent can be spawned via Task tool.
+    2. Legacy mode: Generates separate meta-skill and step skill files that use
+       the Skill tool to invoke each other.
+    """
+
+    # Template names for agent generation
+    AGENT_TEMPLATE = "agent-job.md.jinja"
 
     def __init__(self, templates_dir: Path | str | None = None):
         """
@@ -550,3 +560,182 @@ class SkillGenerator:
             skill_paths.append(skill_path)
 
         return skill_paths
+
+    def _build_agent_context(
+        self,
+        job: JobDefinition,
+        adapter: AgentAdapter,
+        project_root: Path | None = None,
+    ) -> dict[str, Any]:
+        """
+        Build template context for an agent file.
+
+        The agent context includes full step details with instructions embedded,
+        unlike the meta-skill context which only includes step metadata.
+
+        Args:
+            job: Job definition
+            adapter: Agent adapter for platform-specific configuration
+            project_root: Optional project root for loading doc specs
+
+        Returns:
+            Template context dictionary with full step details
+        """
+        # Build full step info with instructions for the agent
+        steps_info = []
+        for step_index, step in enumerate(job.steps):
+            # Build full step context
+            step_context = self._build_step_context(
+                job, step, step_index, adapter, project_root
+            )
+
+            # Get workflow info for step
+            workflow = job.get_workflow_for_step(step.id)
+
+            step_info = {
+                "id": step.id,
+                "name": step.name,
+                "description": step.description,
+                "instructions_file": step.instructions_file,
+                "instructions_content": step_context["instructions_content"],
+                "user_inputs": step_context["user_inputs"],
+                "file_inputs": step_context["file_inputs"],
+                "outputs": step_context["outputs"],
+                "dependencies": step.dependencies,
+                "exposed": step.exposed,
+                "is_standalone": self._is_standalone_step(job, step),
+                "quality_criteria": step.quality_criteria,
+                "next_step": step_context.get("next_step"),
+                "prev_step": step_context.get("prev_step"),
+            }
+
+            # Add workflow context if applicable
+            if workflow:
+                step_info["workflow_name"] = workflow.name
+                step_info["workflow_step_number"] = step_context.get("workflow_step_number")
+                step_info["workflow_total_steps"] = step_context.get("workflow_total_steps")
+
+            steps_info.append(step_info)
+
+        # Build workflow info
+        workflows_info = []
+        for workflow in job.workflows:
+            workflows_info.append(
+                {
+                    "name": workflow.name,
+                    "summary": workflow.summary,
+                    "steps": workflow.steps,
+                    "first_step": workflow.steps[0] if workflow.steps else None,
+                }
+            )
+
+        # Identify standalone steps (not in any workflow)
+        standalone_steps = [s for s in steps_info if s["is_standalone"]]
+
+        return {
+            "job_name": job.name,
+            "job_version": job.version,
+            "job_summary": job.summary,
+            "job_description": job.description,
+            "total_steps": len(job.steps),
+            "steps": steps_info,
+            "workflows": workflows_info,
+            "standalone_steps": standalone_steps,
+            "has_workflows": bool(job.workflows),
+        }
+
+    def generate_agent(
+        self,
+        job: JobDefinition,
+        adapter: AgentAdapter,
+        output_dir: Path | str,
+        project_root: Path | str | None = None,
+    ) -> Path:
+        """
+        Generate an agent file for a job.
+
+        The agent file contains the job as an agent with all steps embedded
+        as skills. This is the new pattern replacing the meta-skill + step skills
+        approach.
+
+        Args:
+            job: Job definition
+            adapter: Agent adapter for the target platform
+            output_dir: Directory to write agent file to
+            project_root: Optional project root for loading doc specs
+
+        Returns:
+            Path to generated agent file
+
+        Raises:
+            GeneratorError: If generation fails
+        """
+        output_dir = Path(output_dir)
+        project_root_path = Path(project_root) if project_root else output_dir
+
+        # Create skills subdirectory if needed
+        skills_dir = output_dir / adapter.skills_dir
+        skills_dir.mkdir(parents=True, exist_ok=True)
+
+        # Build context with full step details
+        context = self._build_agent_context(job, adapter, project_root_path)
+
+        # Load and render agent template
+        env = self._get_jinja_env(adapter)
+        try:
+            template = env.get_template(self.AGENT_TEMPLATE)
+        except TemplateNotFound as e:
+            raise GeneratorError(f"Agent template not found: {e}") from e
+
+        try:
+            rendered = template.render(**context)
+        except Exception as e:
+            raise GeneratorError(f"Agent template rendering failed: {e}") from e
+
+        # Write agent file using meta-skill filename (job_name/SKILL.md)
+        # The agent replaces the meta-skill as the job's entry point
+        agent_filename = adapter.get_meta_skill_filename(job.name)
+        agent_path = skills_dir / agent_filename
+
+        # Ensure parent directories exist
+        agent_path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            safe_write(agent_path, rendered)
+        except Exception as e:
+            raise GeneratorError(f"Failed to write agent file: {e}") from e
+
+        return agent_path
+
+    def generate_all(
+        self,
+        job: JobDefinition,
+        adapter: AgentAdapter,
+        output_dir: Path | str,
+        project_root: Path | str | None = None,
+        use_agent_mode: bool = True,
+    ) -> list[Path]:
+        """
+        Generate all files for a job.
+
+        Args:
+            job: Job definition
+            adapter: Agent adapter for the target platform
+            output_dir: Directory to write files to
+            project_root: Optional project root for loading doc specs
+            use_agent_mode: If True (default), generate single agent file.
+                           If False, use legacy meta-skill + step skills pattern.
+
+        Returns:
+            List of paths to generated files
+
+        Raises:
+            GeneratorError: If generation fails
+        """
+        if use_agent_mode:
+            # Agent mode: single agent file containing all skills
+            agent_path = self.generate_agent(job, adapter, output_dir, project_root)
+            return [agent_path]
+        else:
+            # Legacy mode: meta-skill + separate step skills
+            return self.generate_all_skills(job, adapter, output_dir, project_root)

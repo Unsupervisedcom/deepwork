@@ -1,0 +1,257 @@
+{#
+Template: agent-job.md.jinja
+Purpose: Generates an agent definition file for Claude Code that contains the job as an agent
+         with all steps as embedded skills. This replaces the meta-skill pattern.
+
+The agent can be spawned via the Task tool or invoked as a slash command.
+
+Template Variables:
+  - job_name: string - Job identifier (e.g., "competitive_research")
+  - job_summary: string - Short one-line summary of the job
+  - job_description: string|null - Full description (optional)
+  - total_steps: int - Number of steps in the job
+  - has_workflows: bool - True if workflows are defined
+  - workflows: list - Array of workflow objects:
+      - name: string - Workflow identifier
+      - summary: string - Short description of workflow
+      - steps: list[string] - Ordered list of step IDs
+      - first_step: string - First step ID to start workflow
+  - standalone_steps: list - Steps not in any workflow
+  - steps: list - Array of step objects with full context:
+      - id: string - Step identifier
+      - name: string - Human-readable step name
+      - description: string - What the step does
+      - instructions_content: string - Full instructions markdown
+      - user_inputs: list - User parameters to gather
+      - file_inputs: list - Files from previous steps
+      - outputs: list - Output specifications
+      - dependencies: list[string] - Required prior step IDs
+      - is_standalone: bool - True if not in any workflow
+      - workflow_name: string|null - Name of workflow if in one
+      - workflow_step_number: int|null - Position in workflow
+      - workflow_total_steps: int|null - Total steps in workflow
+      - next_step: string|null - Next step in workflow
+      - quality_criteria: list[string]|null - Criteria for completion
+#}
+---
+name: {{ job_name }}
+description: "{{ job_summary }}"
+---
+
+# {{ job_name }} Agent
+
+{{ job_summary }}
+
+{% if job_description %}
+{{ job_description }}
+{% endif %}
+
+## Agent Overview
+
+This agent handles the **{{ job_name }}** job. It contains {{ total_steps }} skill{{ 's' if total_steps != 1 else '' }} that can be executed as part of workflows or standalone.
+
+{% if has_workflows %}
+### Available Workflows
+
+{% for workflow in workflows %}
+**{{ workflow.name }}**: {{ workflow.summary }}
+- Steps: {{ workflow.steps | join(' → ') }}
+- Start with: `{{ workflow.first_step }}`
+{% endfor %}
+{% endif %}
+
+{% if standalone_steps %}
+### Standalone Skills
+
+These skills can be run independently:
+{% for step in standalone_steps %}
+- **{{ step.id }}**: {{ step.description }}
+{% endfor %}
+{% endif %}
+
+---
+
+## How to Use This Agent
+
+### Option 1: Start a Workflow
+Tell the agent which workflow to run:
+- "Run the {{ workflows[0].name if workflows else 'default' }} workflow"
+- "Start {{ job_name }}"
+{% if has_workflows %}
+{% for workflow in workflows %}
+- "{{ workflow.name }}" → starts at `{{ workflow.first_step }}`
+{% endfor %}
+{% endif %}
+
+### Option 2: Run a Specific Skill
+Request a specific skill by name:
+{% for step in steps %}
+- "{{ step.id }}" - {{ step.description }}
+{% endfor %}
+
+### Option 3: Let the Agent Decide
+Describe what you want to accomplish, and the agent will select the appropriate skill(s).
+
+---
+
+## Agent Execution Instructions
+
+When invoked, follow these steps:
+
+### Step 1: Understand Intent
+
+Parse the user's request to determine:
+1. Which workflow or skill to execute
+2. Any parameters or context provided
+3. Whether this is a continuation of previous work
+
+{% if has_workflows %}
+**Workflow Detection**:
+{% for workflow in workflows %}
+- Keywords like "{{ workflow.name }}", "{{ workflow.summary | lower | truncate(30, True, '') }}" → Start `{{ workflow.name }}` workflow at `{{ workflow.first_step }}`
+{% endfor %}
+{% endif %}
+
+{% if standalone_steps %}
+**Standalone Skill Detection**:
+{% for step in standalone_steps %}
+- Keywords like "{{ step.id }}", "{{ step.description | lower | truncate(30, True, '') }}" → Run `{{ step.id }}` skill
+{% endfor %}
+{% endif %}
+
+### Step 2: Check Work Branch
+
+Before executing any skill:
+1. Check current git branch
+2. If on a `deepwork/{{ job_name }}-*` branch: continue using it
+3. If on main/master: create new branch `deepwork/{{ job_name }}-[instance]-$(date +%Y%m%d)`
+
+### Step 3: Execute the Appropriate Skill
+
+Navigate to the relevant skill section below and follow its instructions.
+
+### Step 4: Workflow Continuation
+
+{% if has_workflows %}
+After completing a workflow step:
+1. Inform the user of completion and outputs created
+2. Automatically proceed to the next step in the workflow
+3. Continue until the workflow is complete or the user intervenes
+
+**Workflow sequences**:
+{% for workflow in workflows %}
+- **{{ workflow.name }}**: {{ workflow.steps | join(' → ') }}
+{% endfor %}
+{% else %}
+After completing a step, check if there are dependent steps that should run next.
+{% endif %}
+
+---
+
+## Skills
+{% for step in steps %}
+
+### Skill: {{ step.id }}
+
+{% if step.is_standalone %}
+**Type**: Standalone (can be run anytime)
+{% elif step.workflow_name %}
+**Type**: Workflow step {{ step.workflow_step_number }}/{{ step.workflow_total_steps }} in **{{ step.workflow_name }}**
+{% endif %}
+
+**Description**: {{ step.description }}
+
+{% if step.dependencies %}
+#### Prerequisites
+
+Before running this skill, ensure these are complete:
+{% for dep in step.dependencies %}
+- `{{ dep }}`
+{% endfor %}
+{% endif %}
+
+{% if step.user_inputs %}
+#### Required User Input
+
+Gather these from the user before starting:
+{% for input in step.user_inputs %}
+- **{{ input.name }}**: {{ input.description }}
+{% endfor %}
+{% endif %}
+
+{% if step.file_inputs %}
+#### Input Files
+
+Read these files (from previous steps):
+{% for input in step.file_inputs %}
+- `{{ input.file }}` (from `{{ input.from_step }}`)
+{% endfor %}
+{% endif %}
+
+#### Instructions
+
+{{ step.instructions_content }}
+
+{% if step.outputs %}
+#### Outputs
+
+Create these files/directories:
+{% for output in step.outputs %}
+- `{{ output.file }}`{% if output.file.endswith('/') %} (directory){% endif %}
+{% if output.has_doc_spec and output.doc_spec %}
+
+  **Doc Spec**: {{ output.doc_spec.name }}
+  > {{ output.doc_spec.description }}
+{% if output.doc_spec.quality_criteria %}
+  **Quality Criteria**:
+{% for criterion in output.doc_spec.quality_criteria %}
+  - **{{ criterion.name }}**: {{ criterion.description }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if step.quality_criteria %}
+#### Quality Validation
+
+Before completing this skill, verify:
+{% for criterion in step.quality_criteria %}
+{{ loop.index }}. {{ criterion }}
+{% endfor %}
+
+Use a sub-agent (Haiku model) to review your work against these criteria before marking complete.
+{% endif %}
+
+#### On Completion
+
+{% if step.is_standalone %}
+1. Verify outputs are created
+2. Inform user: "{{ step.id }} complete{% if step.outputs %}, outputs: {{ step.outputs | map(attribute='file') | join(', ') }}{% endif %}"
+{% elif step.next_step %}
+1. Verify outputs are created
+2. Inform user: "{{ step.id }} complete{% if step.outputs %}, outputs: {{ step.outputs | map(attribute='file') | join(', ') }}{% endif %}"
+3. **Continue to next skill**: Proceed to `{{ step.next_step }}`
+{% else %}
+1. Verify outputs are created
+2. Inform user: "{{ step.workflow_name if step.workflow_name else job_name }} workflow complete{% if step.outputs %}, outputs: {{ step.outputs | map(attribute='file') | join(', ') }}{% endif %}"
+3. Consider creating a PR to merge the work branch
+{% endif %}
+
+---
+{% endfor %}
+
+## Guardrails
+
+- **Never skip prerequisites**: Always verify required steps are complete before running a skill
+- **Never produce partial outputs**: Complete all required outputs before marking a skill done
+- **Always use the work branch**: Never commit directly to main/master
+- **Follow quality criteria**: Use sub-agent review when quality criteria are specified
+- **Ask for clarification**: If user intent is unclear, ask before proceeding
+
+## Context Files
+
+- Job definition: `.deepwork/jobs/{{ job_name }}/job.yml`
+{% for step in steps %}
+- {{ step.id }} instructions: `.deepwork/jobs/{{ job_name }}/{{ step.instructions_file }}`
+{% endfor %}
