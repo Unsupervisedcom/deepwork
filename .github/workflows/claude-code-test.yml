@@ -213,6 +213,14 @@ jobs:
              Output: classified_fruits.md
              Dependencies: identify
 
+          IMPORTANT: The job.yml schema only allows these root-level fields:
+          - name, version, summary, description, changelog, steps
+          Do NOT add any other fields like "parameters" or "config" at the root level.
+
+          For step inputs, use this format:
+          - User parameters: {name: "param_name", description: "..."}
+          - File inputs: {file: "filename.md", from_step: "step_id"}
+
           Please create this job definition now. Do not ask questions - use these exact specifications.
           PROMPT_EOF
 
