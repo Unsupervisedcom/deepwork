@@ -101,9 +101,62 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Where should each output be saved? (filename/path)
    - Should outputs be organized in subdirectories? (e.g., `reports/`, `data/`, `drafts/`)
    - Will other steps need this output?
-
-   **Important**: Output paths should always be within the main repository directory structure, not in dot-directories like `.deepwork/`. Dot-directories are for configuration and job definitions, not for job outputs. Use paths like `research/competitors/report.md` rather than `.deepwork/outputs/report.md`.
    - **Does this output have a doc spec?** If a doc spec was created in Step 1.6/1.7, reference it for the appropriate output
+
+   #### Work Product Storage Guidelines
+
+   **Key principle**: Job outputs belong in the main repository directory structure, not in dot-directories. The `.deepwork/` directory is for job definitions and configuration only.
+
+   **Why this matters**:
+   - **Version control**: Work products in the main repo are tracked by git and visible in PRs
+   - **Discoverability**: Team members can find outputs without knowing about DeepWork internals
+   - **Tooling compatibility**: IDEs, search tools, and CI/CD work naturally with standard paths
+   - **Glob patterns**: Well-structured paths enable powerful file matching (e.g., `competitive_research/**/*.md`)
+
+   **Good output path patterns**:
+   ```
+   competitive_research/competitors_list.md
+   competitive_research/acme_corp/research.md
+   operations/reports/2026-01/spending_analysis.md
+   docs/api/endpoints.md
+   ```
+
+   **Avoid these patterns**:
+   ```
+   .deepwork/outputs/report.md          # Hidden in dot-directory
+   output.md                            # Too generic, no context
+   research.md                          # Unclear which research
+   temp/draft.md                        # Transient-sounding paths
+   ```
+
+   **Organizing multi-file outputs**:
+   - Use the job name as a top-level folder when outputs are job-specific
+   - Use parameterized paths for per-entity outputs: `competitive_research/[competitor_name]/`
+   - Match existing project conventions when extending a codebase
+
+   **When to include dates in paths**:
+   - **Include date** for periodic outputs where each version is retained (e.g., monthly reports, quarterly reviews, weekly summaries). These accumulate over time and historical versions remain useful.
+     ```
+     operations/reports/2026-01/spending_analysis.md              # Monthly report - keep history
+     hr/employees/[employee_name]/quarterly_reviews/2026-Q1.pdf   # Per-employee quarterly review
+     ```
+   - **Omit date** for current-state outputs that represent the latest understanding and get updated in place. Previous versions live in git history, not separate files.
+     ```
+     competitive_research/acme_corp/swot.md  # Current SWOT - updated over time
+     docs/architecture/overview.md           # Living document
+     ```
+
+   **Supporting materials and intermediate outputs**:
+   - Content generated in earlier steps to support the final output (research notes, data extracts, drafts) should be placed in a `_dataroom` folder that is a peer to the final output
+   - Name the dataroom folder by replacing the file extension with `_dataroom`
+     ```
+     operations/reports/2026-01/spending_analysis.md           # Final output
+     operations/reports/2026-01/spending_analysis_dataroom/    # Supporting materials
+         raw_data.csv
+         vendor_breakdown.md
+         notes.md
+     ```
+   - This keeps supporting materials organized and discoverable without cluttering the main output location
 
 4. **Step Dependencies**
    - Which previous steps must complete before this one?
