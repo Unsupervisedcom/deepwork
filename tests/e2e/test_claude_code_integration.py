@@ -255,7 +255,9 @@ class TestClaudeCodeExecution:
         # Validate identify output content
         identify_content = identify_output.read_text().lower()
         for fruit in EXPECTED_FRUITS:
-            assert fruit in identify_content, f"Expected fruit '{fruit}' not found in identified_fruits.md"
+            assert fruit in identify_content, (
+                f"Expected fruit '{fruit}' not found in identified_fruits.md"
+            )
 
         # Verify classify step output was created
         classify_output = project_with_skills / "classified_fruits.md"
@@ -270,4 +272,3 @@ class TestClaudeCodeExecution:
         # Validate final output quality
         assert len(classify_content) > 100, "Output seems too short"
         assert "##" in classify_output.read_text(), "Output lacks markdown structure"
-
