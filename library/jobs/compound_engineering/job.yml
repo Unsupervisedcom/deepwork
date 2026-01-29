@@ -1,0 +1,143 @@
+name: compound_engineering
+version: "1.0.0"
+summary: "Engineering workflow where each unit of work makes subsequent work easier through systematic planning, execution, review, and learning."
+description: |
+  A DeepWork implementation inspired by Every Inc's Compound Engineering methodology.
+  The core philosophy: "Each unit of engineering work should make subsequent units easier—not harder."
+
+  This workflow inverts traditional development: 80% planning and review, 20% execution.
+  By frontloading quality checks and systematically capturing learnings, technical debt
+  decreases over time instead of accumulating.
+
+  The workflow operates in a continuous cycle:
+  1. **Plan**: Convert feature ideas into detailed implementation plans with research
+  2. **Work**: Execute plans systematically with task tracking and incremental commits
+  3. **Review**: Multi-perspective code review before merging
+  4. **Compound**: Document solutions and learnings for future reuse
+
+  Each cycle compounds knowledge: plans inform future plans, reviews catch patterns,
+  solutions get documented, and quality stays high.
+
+  Ideal for:
+  - Teams wanting to reduce technical debt over time
+  - Projects requiring high-quality, well-documented code
+  - Engineers who want their work to compound rather than accumulate complexity
+  - Organizations building institutional knowledge
+
+  Based on: https://github.com/EveryInc/compound-engineering-plugin
+
+changelog:
+  - version: "1.0.0"
+    changes: "Initial DeepWork port of Compound Engineering methodology"
+
+workflows:
+  - name: full_cycle
+    summary: "Complete cycle: plan -> work -> review -> compound"
+    steps:
+      - plan
+      - work
+      - review
+      - compound
+
+  - name: plan_and_work
+    summary: "Plan a feature and implement it"
+    steps:
+      - plan
+      - work
+
+  - name: review_only
+    summary: "Review existing changes"
+    steps:
+      - review
+
+steps:
+  - id: plan
+    name: "Create Implementation Plan"
+    description: "Transforms feature ideas into detailed implementation plans through interactive refinement, local codebase research, and optional external research. Use when starting a new feature or task."
+    instructions_file: steps/plan.md
+    inputs:
+      - name: feature_description
+        description: "High-level description of the feature or task to plan"
+      - name: existing_learnings
+        description: "Path to docs/solutions/ if prior learnings exist"
+        file: "docs/solutions/"
+    outputs:
+      - file: "docs/plans/[date]-[type]-[name]-plan.md"
+        description: "Implementation plan with research, approach, and checklist"
+    dependencies: []
+    quality_criteria:
+      - "**Idea Refined**: Did the agent ask clarifying questions to fully understand the requirement?"
+      - "**Codebase Researched**: Were existing patterns and conventions identified from the codebase?"
+      - "**Approach Defined**: Is the implementation approach clear with specific files/components to modify?"
+      - "**Checklist Created**: Is there a concrete checklist of tasks to complete?"
+      - "**Risks Identified**: Are potential risks and edge cases documented?"
+      - "**Plan File Created**: Has the plan been saved to docs/plans/?"
+
+  - id: work
+    name: "Execute Implementation"
+    description: "Executes implementation plans systematically with task tracking, continuous testing, and incremental commits. Use after planning is complete."
+    instructions_file: steps/work.md
+    inputs:
+      - name: plan_file
+        description: "Path to the implementation plan"
+        file: "docs/plans/[plan-file].md"
+        from_step: plan
+    outputs:
+      - directory: "src/"
+        description: "Implementation source files"
+      - directory: "tests/"
+        description: "Test files"
+      - file: "docs/plans/[plan-file].md"
+        description: "Plan with completed task checkboxes"
+    dependencies:
+      - plan
+    quality_criteria:
+      - "**Plan Loaded**: Was the implementation plan read and understood?"
+      - "**Tasks Tracked**: Were tasks tracked using TodoWrite throughout execution?"
+      - "**Tests Run Continuously**: Were tests run after each logical change, not batched at end?"
+      - "**Commits Incremental**: Were changes committed incrementally after each completed task?"
+      - "**Plan Updated**: Were completed tasks checked off in the plan file?"
+      - "**All Tasks Complete**: Have all tasks in the plan been completed?"
+
+  - id: review
+    name: "Multi-Perspective Code Review"
+    description: "Comprehensive code review using multiple specialized review perspectives. Use before merging changes."
+    instructions_file: steps/review.md
+    inputs:
+      - name: review_target
+        description: "Branch name, PR number, or files to review"
+      - name: code_review_standards
+        description: "Project-specific code review standards"
+        file: "[code_review_standards_path]"
+    outputs:
+      - file: "review-findings.md"
+        description: "Categorized review findings by severity (P1/P2/P3)"
+    dependencies: []
+    quality_criteria:
+      - "**Target Identified**: Was the code to review clearly identified?"
+      - "**Multiple Perspectives**: Were at least 3 different review perspectives applied?"
+      - "**Findings Categorized**: Are findings categorized by severity (P1=critical, P2=important, P3=nice-to-have)?"
+      - "**P1 Issues Flagged**: Are any merge-blocking issues clearly marked?"
+      - "**Actionable Feedback**: Is each finding actionable with clear remediation?"
+      - "**Summary Provided**: Is there a summary of the overall code quality?"
+
+  - id: compound
+    name: "Document Learnings"
+    description: "Captures solutions and learnings while context is fresh. Creates searchable documentation for future reference. Use after solving problems or completing features."
+    instructions_file: steps/compound.md
+    inputs:
+      - name: problem_context
+        description: "The problem that was solved or feature that was completed"
+      - name: solution_details
+        description: "What worked and why"
+    outputs:
+      - file: "docs/solutions/[category]/[filename].md"
+        description: "Documented solution with problem, symptoms, root cause, and fix"
+    dependencies: []
+    quality_criteria:
+      - "**Problem Captured**: Is the problem clearly described with symptoms?"
+      - "**Root Cause Documented**: Is the root cause identified and explained?"
+      - "**Solution Clear**: Is the solution documented step-by-step?"
+      - "**Category Assigned**: Is the documentation filed in the appropriate category?"
+      - "**Searchable**: Does the documentation include keywords for future searchability?"
+      - "**Prevention Noted**: Are prevention strategies documented to avoid recurrence?"
