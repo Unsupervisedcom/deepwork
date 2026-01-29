@@ -1,0 +1,163 @@
+name: compound_engineering
+version: "1.0.0"
+summary: "Compound engineering workflow: Plan, Work, Review, Compound - making each unit of work easier than the last."
+description: |
+  A comprehensive workflow inspired by Every's Compound Engineering methodology that makes
+  each unit of engineering work easier than the last. Instead of accumulating technical debt,
+  this workflow compounds knowledge.
+
+  The philosophy: 80% planning and review, 20% execution.
+
+  This job implements the core Compound Engineering cycle:
+
+  1. **Brainstorm** (optional): Explore requirements through collaborative dialogue
+  2. **Plan**: Transform feature ideas into detailed implementation plans with research
+  3. **Work**: Execute plans efficiently while maintaining quality
+  4. **Review**: Multi-perspective code review before merging
+  5. **Compound**: Document learnings to make future work easier
+
+  Each cycle compounds: plans inform future plans, reviews catch more issues, patterns get documented.
+
+  The workflow produces artifacts in:
+  - `docs/plans/` - Implementation plans with YAML frontmatter
+  - `docs/brainstorms/` - Design exploration documents
+  - `docs/solutions/` - Documented problem resolutions (compounded knowledge)
+
+  Credit: Inspired by Every's compound-engineering-plugin
+  (https://github.com/EveryInc/compound-engineering-plugin)
+
+  Ideal for:
+  - Feature development with thorough upfront planning
+  - Teams wanting to capture and reuse learnings
+  - Projects where documentation compounds over time
+  - Workflows emphasizing code review and quality
+
+changelog:
+  - version: "1.0.0"
+    changes: "Initial implementation based on Every's Compound Engineering methodology"
+
+workflows:
+  - name: full_cycle
+    summary: "Complete cycle: brainstorm, plan, work, review, compound"
+    steps:
+      - brainstorm
+      - plan
+      - work
+      - review
+      - compound
+
+  - name: plan_and_work
+    summary: "Plan and execute without brainstorming"
+    steps:
+      - plan
+      - work
+
+  - name: review_cycle
+    summary: "Review existing work and compound learnings"
+    steps:
+      - review
+      - compound
+
+steps:
+  - id: brainstorm
+    name: "Brainstorm Feature"
+    description: "Explore requirements and approaches through collaborative dialogue before planning. Use when the feature is unclear or needs design exploration."
+    instructions_file: steps/brainstorm.md
+    inputs:
+      - name: feature_idea
+        description: "Feature idea, problem, or improvement to explore"
+    outputs:
+      - file: docs/brainstorms/[date]-[topic]-brainstorm.md
+    dependencies: []
+    quality_criteria:
+      - "**Idea Understood**: Did the agent ask clarifying questions to understand the feature?"
+      - "**Approaches Explored**: Were 2-3 concrete approaches proposed with pros/cons?"
+      - "**Decision Captured**: Is there a clear chosen approach with rationale?"
+      - "**Document Created**: Has a brainstorm document been created in docs/brainstorms/?"
+      - "**Handoff Ready**: Is the document ready to inform the plan step?"
+
+  - id: plan
+    name: "Create Implementation Plan"
+    description: "Transform feature descriptions into well-structured implementation plans. Includes local and optional external research."
+    instructions_file: steps/plan.md
+    inputs:
+      - name: feature_description
+        description: "Feature description, bug report, or improvement idea"
+      - file: docs/brainstorms/[relevant]-brainstorm.md
+        description: "Previous brainstorm document if available"
+        required: false
+    outputs:
+      - file: docs/plans/[date]-[type]-[name]-plan.md
+    dependencies: []
+    quality_criteria:
+      - "**Research Completed**: Was codebase research performed to understand existing patterns?"
+      - "**Detail Level Chosen**: Was an appropriate detail level selected (minimal/more/a lot)?"
+      - "**Acceptance Criteria**: Are acceptance criteria clear and measurable?"
+      - "**References Included**: Are similar code patterns and file paths referenced?"
+      - "**Plan Created**: Has a plan document been created in docs/plans/?"
+      - "**Next Steps Clear**: Are follow-up options presented (work, review, create issue)?"
+
+  - id: work
+    name: "Execute Implementation"
+    description: "Execute a work plan efficiently while maintaining quality. Uses TodoWrite for task tracking and incremental commits."
+    instructions_file: steps/work.md
+    inputs:
+      - file: docs/plans/[relevant]-plan.md
+        from_step: plan
+        description: "Implementation plan to execute"
+    outputs:
+      - directory: src/
+        description: "Implementation source files"
+      - directory: tests/
+        description: "Test files"
+      - file: docs/plans/[relevant]-plan.md
+        description: "Plan with checkboxes marked complete"
+    dependencies:
+      - plan
+    quality_criteria:
+      - "**Plan Read**: Was the plan document read and understood?"
+      - "**Branch Setup**: Was a feature branch created or worktree used?"
+      - "**Tasks Tracked**: Were tasks created and tracked in TodoWrite?"
+      - "**Tests Written**: Were tests created for new functionality?"
+      - "**Incremental Commits**: Were logical commits made throughout?"
+      - "**Plan Updated**: Were completed items checked off in the plan?"
+      - "**Quality Checks**: Did tests and linting pass?"
+      - "**PR Created**: Was a pull request created with proper description?"
+
+  - id: review
+    name: "Review Changes"
+    description: "Perform comprehensive code review from multiple perspectives: simplicity, performance, security, architecture."
+    instructions_file: steps/review.md
+    inputs:
+      - name: review_target
+        description: "PR number, branch name, or 'latest' for current branch"
+    outputs:
+      - file: docs/reviews/[pr-or-branch]-review.md
+        description: "Review findings document"
+    dependencies: []
+    quality_criteria:
+      - "**Target Identified**: Was the review target (PR/branch) identified?"
+      - "**Multi-Perspective**: Were multiple review angles covered (simplicity, security, performance)?"
+      - "**Findings Categorized**: Were findings categorized by severity (P1/P2/P3)?"
+      - "**Actionable Feedback**: Is feedback specific with file:line references?"
+      - "**Summary Provided**: Is there a clear summary with recommended actions?"
+      - "**Blockers Identified**: Are P1 (merge-blocking) issues clearly flagged?"
+
+  - id: compound
+    name: "Compound Learnings"
+    description: "Document recently solved problems to compound team knowledge. Creates searchable documentation in docs/solutions/."
+    instructions_file: steps/compound.md
+    inputs:
+      - name: context
+        description: "Brief context about what was fixed (optional, will extract from conversation)"
+        required: false
+    outputs:
+      - file: docs/solutions/[category]/[filename].md
+    dependencies: []
+    quality_criteria:
+      - "**Problem Identified**: Was the solved problem clearly identified?"
+      - "**Root Cause Documented**: Is the root cause technically explained?"
+      - "**Solution Captured**: Are the solution steps with code examples documented?"
+      - "**Prevention Included**: Is there guidance on avoiding this in the future?"
+      - "**Category Correct**: Is the documentation in the right category folder?"
+      - "**Searchable**: Does the document have YAML frontmatter for searchability?"
