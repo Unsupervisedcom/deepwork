@@ -179,16 +179,16 @@ jobs:
           ls -la test_project/.claude/skills/
 
       # STEP 1: Use /deepwork_jobs.define to CREATE the fruits job
-      - name: Create job with /deepwork_jobs.define
+      - name: Create job with /deepwork_jobs
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
         timeout-minutes: 10
         run: |
-          echo "=== Running /deepwork_jobs.define to create fruits job ==="
+          echo "=== Running /deepwork_jobs to create fruits job ==="
 
           # Provide detailed, deterministic instructions for creating the job
-          claude --print "/deepwork_jobs " <<'PROMPT_EOF'
-          I want to create a simple job called "fruits" for identifying and classifying fruits.
+          claude --print <<'PROMPT_EOF'
+          /deepwork_jobs I want to create a simple job called "fruits" for identifying and classifying fruits.
 
           Here are the EXACT specifications.
           
@@ -205,7 +205,7 @@ jobs:
              Input: identified_fruits.md (file from step identify)
              Output: classified_fruits.md
 
-          Please create this job now. Do not ask questions - use these exact specifications.
+          Please create this job now. Do not ask questions.
           PROMPT_EOF
 
           # Verify the job.yml was created
