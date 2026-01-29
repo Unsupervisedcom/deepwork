@@ -103,7 +103,7 @@ jobs:
           echo "Skill generation validated successfully!"
 
   # Job 2: Full end-to-end test with Claude Code
-  # Tests the COMPLETE workflow: define job -> implement -> execute
+  # Tests the COMPLETE workflow:
   # Runs on all events, but actual work only happens in merge_group/workflow_dispatch
   # This ensures the check name exists for PRs (needed for GitHub's merge queue)
   claude-code-e2e:
@@ -187,41 +187,25 @@ jobs:
           echo "=== Running /deepwork_jobs.define to create fruits job ==="
 
           # Provide detailed, deterministic instructions for creating the job
-          claude --print "/deepwork_jobs.define" <<'PROMPT_EOF'
+          claude --print "/deepwork_jobs " <<'PROMPT_EOF'
           I want to create a simple job called "fruits" for identifying and classifying fruits.
 
-          Here are the EXACT specifications - please create the job.yml with these exact details:
-
-          Job name: fruits
-          Version: 1.0.0
-          Summary: Identify and classify fruits from a mixed list of items
-
-          Description: A simple workflow that takes a list of mixed items, identifies which are fruits, then classifies them by category. Designed for CI testing.
+          Here are the EXACT specifications.
+          
+          Intent: A simple workflow that takes a list of mixed items, identifies which are fruits, then classifies them by category. Designed for CI testing.
 
           Steps:
-          1. Step ID: identify
+          1. Step: identify
              Name: Identify Fruits
-             Description: Filter a list of items to identify only the fruits
-             Input: raw_items (user parameter) - A comma-separated list of items
-             Output: identified_fruits.md
-             Dependencies: none
+             Description: Filter a list of items to include only the fruits
 
-          2. Step ID: classify
+          2. Step: classify
              Name: Classify Fruits
              Description: Organize identified fruits into categories (citrus, tropical, berries, etc.)
              Input: identified_fruits.md (file from step identify)
              Output: classified_fruits.md
-             Dependencies: identify
 
-          IMPORTANT: The job.yml schema only allows these root-level fields:
-          - name, version, summary, description, changelog, steps
-          Do NOT add any other fields like "parameters" or "config" at the root level.
-
-          For step inputs, use this format:
-          - User parameters: {name: "param_name", description: "..."}
-          - File inputs: {file: "filename.md", from_step: "step_id"}
-
-          Please create this job definition now. Do not ask questions - use these exact specifications.
+          Please create this job now. Do not ask questions - use these exact specifications.
           PROMPT_EOF
 
           # Verify the job.yml was created
@@ -235,30 +219,6 @@ jobs:
             ls -la .deepwork/jobs/ || echo "No jobs directory"
             exit 1
           fi
-
-      # STEP 2: Use /deepwork_jobs.implement to generate step instructions
-      - name: Generate step instructions with /deepwork_jobs.implement
-        if: steps.check-key.outputs.has_key == 'true'
-        working-directory: test_project
-        timeout-minutes: 10
-        run: |
-          echo "=== Running /deepwork_jobs.implement to generate step instructions ==="
-
-          claude --print "/deepwork_jobs.implement" <<'PROMPT_EOF'
-          Please implement the "fruits" job that was just defined.
-
-          For the identify step, create instructions that:
-          - Parse the comma-separated raw_items input
-          - Identify which items are fruits (apple, banana, orange, mango, grape, etc.)
-          - Output a markdown file listing the identified fruits
-
-          For the classify step, create instructions that:
-          - Read identified_fruits.md from the previous step
-          - Classify fruits into categories: Citrus (orange, lemon), Tropical (banana, mango), Pome (apple, pear), Berries, etc.
-          - Output a markdown file with fruits organized by category
-
-          Generate the step instruction files now.
-          PROMPT_EOF
 
           # Verify step files were created
           echo "=== Checking step files were created ==="
@@ -355,9 +315,8 @@ jobs:
           echo "=========================================="
           echo ""
           echo "Workflow tested:"
-          echo "  1. /deepwork_jobs.define - Created job specification"
-          echo "  2. /deepwork_jobs.implement - Generated step instructions"
-          echo "  3. /fruits - Executed full fruits workflow (identify + classify)"
+          echo "  1. /deepwork_jobs - Created job"
+          echo "  2. /fruits - Executed full fruits workflow (identify + classify)"
           echo ""
 
       - name: Upload test artifacts
