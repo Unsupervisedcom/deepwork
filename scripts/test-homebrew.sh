@@ -39,8 +39,9 @@ echo "    Tarball: $TARBALL_PATH"
 echo "    SHA256:  $SHA256"
 
 # Create a temporary formula pointing to the local tarball
-TEMP_FORMULA=$(mktemp)
-trap "rm -f $TEMP_FORMULA" EXIT
+TEMP_DIR=$(mktemp -d)
+TEMP_FORMULA="$TEMP_DIR/deepwork.rb"
+trap "rm -rf $TEMP_DIR" EXIT
 
 sed -e "s|url \"https://.*\"|url \"file://$TARBALL_PATH\"|" \
     -e "s|sha256 \".*\"|sha256 \"$SHA256\"|" \
@@ -48,7 +49,7 @@ sed -e "s|url \"https://.*\"|url \"file://$TARBALL_PATH\"|" \
 
 echo "==> Installing from local build..."
 brew uninstall deepwork 2>/dev/null || true
-brew install --verbose "$TEMP_FORMULA"
+brew install --formula --verbose "$TEMP_FORMULA"
 
 echo "==> Running brew test..."
 brew test deepwork
