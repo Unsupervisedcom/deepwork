@@ -60,7 +60,8 @@ deepwork/                       # DeepWork tool repository
 │       │   └── rules_check.py       # Cross-platform rule evaluation hook
 │       ├── templates/          # Skill templates for each platform
 │       │   ├── claude/
-│       │   │   └── skill-job-step.md.jinja
+│       │   │   ├── agent-job.md.jinja     # Agent template (single file per job)
+│       │   │   └── skill-job-step.md.jinja # Legacy step skill template
 │       │   ├── gemini/
 │       │   └── copilot/
 │       ├── standard_jobs/      # Built-in job definitions
@@ -196,6 +197,9 @@ class ClaudeAdapter(AgentAdapter):
         SkillLifecycleHook.BEFORE_TOOL: "PreToolUse",
         SkillLifecycleHook.BEFORE_PROMPT: "UserPromptSubmit",
     }
+
+    # Claude Code supports agent mode - jobs generate single agent files
+    supports_agent_mode = True
 ```
 
 ### 3. Platform Detector (`detector.py`)
@@ -226,50 +230,50 @@ class PlatformDetector:
 
 Generates AI-platform-specific skill files from job definitions.
 
-This component is called by the `sync` command to regenerate all skills:
-1. Reads the job definition from `.deepwork/jobs/[job-name]/job.yml`
-2. Loads platform-specific templates
-3. Generates skill files for each step in the job
-4. Writes skills to the AI platform's skills directory
+This component is called by the `sync` command to regenerate all skills.
+
+**Two Generation Modes**:
+
+1. **Agent Mode** (Claude Code): Generates a single agent file per job containing all steps as embedded skills. The agent file can be invoked as a slash command and handles workflow orchestration internally.
+
+2. **Legacy Mode** (Gemini, others): Generates a meta-skill file plus separate step skill files that invoke each other via the Skill tool.
 
 **Example Generation Flow**:
 ```python
 class SkillGenerator:
-    def generate_all_skills(self, job: JobDefinition,
-                            platform: PlatformConfig,
-                            output_dir: Path) -> list[Path]:
-        """Generate skill files for all steps in a job."""
-        skill_paths = []
+    def generate_all(self, job: JobDefinition,
+                     adapter: AgentAdapter,
+                     output_dir: Path,
+                     use_agent_mode: bool = True) -> list[Path]:
+        """Generate skill files for a job.
 
-        for step_index, step in enumerate(job.steps):
-            # Load step instructions
-            instructions = read_file(job.job_dir / step.instructions_file)
+        Args:
+            use_agent_mode: If True (default for Claude), generate single
+                           agent file. If False, use legacy meta-skill +
+                           step skills pattern.
+        """
+        if use_agent_mode:
+            # Agent mode: single file containing all skills
+            return [self.generate_agent(job, adapter, output_dir)]
+        else:
+            # Legacy mode: meta-skill + separate step skills
+            return self.generate_all_skills(job, adapter, output_dir)
 
-            # Build template context
-            context = {
-                "job_name": job.name,
-                "step_id": step.id,
-                "step_name": step.name,
-                "step_number": step_index + 1,
-                "total_steps": len(job.steps),
-                "instructions_content": instructions,
-                "user_inputs": [inp for inp in step.inputs if inp.is_user_input()],
-                "file_inputs": [inp for inp in step.inputs if inp.is_file_input()],
-                "outputs": step.outputs,
-                "dependencies": step.dependencies,
-                "exposed": step.exposed,
-            }
+    def generate_agent(self, job: JobDefinition,
+                       adapter: AgentAdapter,
+                       output_dir: Path) -> Path:
+        """Generate a single agent file with all steps embedded."""
+        # Build context with full step details
+        context = self._build_agent_context(job, adapter)
 
-            # Render template
-            template = env.get_template("skill-job-step.md.jinja")
-            rendered = template.render(**context)
+        # Render agent template
+        template = env.get_template("agent-job.md.jinja")
+        rendered = template.render(**context)
 
-            # Write to platform's skills directory
-            skill_path = output_dir / platform.config_dir / platform.skills_dir / f"{job.name}.{step.id}.md"
-            write_file(skill_path, rendered)
-            skill_paths.append(skill_path)
-
-        return skill_paths
+        # Write to skills directory (e.g., .claude/skills/job_name/SKILL.md)
+        skill_path = output_dir / adapter.skills_dir / job.name / "SKILL.md"
+        write_file(skill_path, rendered)
+        return skill_path
 ```
 
 ---
@@ -285,13 +289,13 @@ my-project/                     # User's project (target)
 ├── .git/
 ├── .claude/                    # Claude Code directory
 │   ├── settings.json           # Includes installed hooks
-│   └── skills/                 # Skill files
-│       ├── deepwork_jobs.define.md         # Core DeepWork skills
-│       ├── deepwork_jobs.implement.md
-│       ├── deepwork_jobs.refine.md
-│       ├── deepwork_rules.define.md        # Rule management
-│       ├── competitive_research.identify_competitors.md
-│       └── ...
+│   └── skills/                 # Skill files (agent mode: one dir per job)
+│       ├── deepwork_jobs/              # Job as agent with embedded skills
+│       │   └── SKILL.md
+│       ├── deepwork_rules/
+│       │   └── SKILL.md
+│       └── competitive_research/
+│           └── SKILL.md                # Contains all steps as embedded skills
 ├── .deepwork/                  # DeepWork configuration
 │   ├── config.yml              # Platform config
 │   ├── .gitignore              # Ignores tmp/ directory
@@ -547,11 +551,13 @@ Create `competitors.md` with this structure:
 - [ ] No duplicate entries
 ```
 
-## Generated Command Files
+## Generated Skill Files
 
-When the job is defined and `sync` is run, DeepWork generates command files. Example for Claude Code:
+When the job is defined and `sync` is run, DeepWork generates skill files.
 
-`.deepwork/jobs/competitive_research` a step called `identify_competitors` will generate a skill file at `.claude/skills/competitive_research.identify_competitors.md`:
+**Claude Code (Agent Mode)**: Generates a single agent file per job at `.claude/skills/[job_name]/SKILL.md` containing all steps as embedded skills.
+
+**Gemini CLI (Legacy Mode)**: Generates separate files - a meta-skill at `.gemini/skills/[job_name]/index.toml` plus step skills at `.gemini/skills/[job_name]/[step_id].toml`.
 
 
 # Part 3: Runtime Execution Model
