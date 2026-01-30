@@ -217,7 +217,7 @@ jobs:
           2. Step: classify
              Name: Classify Fruits
              Description: Organize identified fruits into categories (citrus, tropical, berries, etc.). 
-             **CRITICAL**: must put the classified fruit list in `classified_fruits.md` in the project base folder.
+             **CRITICAL**: must put the classified fruit list in `classified_fruits.md` in the current working directory.
 
           **Key Instructions:**
           - Do not ask questions - just make the job
@@ -279,6 +279,8 @@ jobs:
           /fruits Proccess the list to the file and don't give any extra commentary or text output.
           raw_items: apple, car, banana, chair, orange, table, mango, laptop, grape, bicycle
           PROMPT_EOF
+          
+          echo "=== Workflow finished - looking for output file ==="
 
           # Verify both outputs were created
           if [ -f "identified_fruits.md" ]; then
