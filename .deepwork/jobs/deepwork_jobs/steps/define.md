@@ -205,6 +205,8 @@ When defining steps, identify any that require specialized tools:
 
 **Browser Automation**: If any step involves web scraping, form filling, interactive browsing, UI testing, or research requiring website visits, ask the user what browser tools they have available. For Claude Code users, **Claude in Chrome** (Anthropic's browser extension) has been tested with DeepWork and is recommended for new users. Don't assume a default—confirm the tool before designing browser-dependent steps.
 
+**Multiple Workflows**: Most jobs have a single workflow, but consider defining multiple workflows when different parts need to happen at different points in time—for example, an analysis workflow that produces a report for human review, then a separate execution workflow to act on approved items. Other examples: `provision` + `teardown` for environment management, or `gather_data` + `finalize_report` for phased work. If the job needs multiple workflows, define them in a `workflows` section in job.yml.
+
 ### Step 3: Validate the Workflow
 
 After gathering information about all steps:
@@ -363,44 +365,36 @@ Claude: Great. Now for the "Research each one" step:
 
 [After gathering all information:]
 
-Claude: Let me summarize the workflow I've designed based on our conversation:
+Claude: Let me summarize the workflow I've designed:
 
 **Job: competitive_research**
 Summary: Systematic competitive analysis workflow for product positioning
 
 Description:
-A comprehensive workflow for analyzing competitors in your market segment. This job helps product teams understand the competitive landscape by systematically identifying competitors, researching their offerings, creating comparison matrices, and developing strategic positioning recommendations.
-
-The workflow produces:
-- A vetted list of key competitors
-- Detailed research notes on each competitor
-- A comparison matrix highlighting key differentiators
-- Strategic positioning recommendations
-
-Designed for product teams conducting quarterly competitive analysis.
+A comprehensive workflow for analyzing competitors in your market segment. Helps product teams understand the competitive landscape through systematic identification, research, comparison, and positioning recommendations.
 
 **Steps:**
 
-Step 1: identify_competitors
-- Input: market_segment (user), product_category (user)
-- Output: competitors_list.md (5-7 competitors with descriptions)
+1. **identify_competitors**
+   - Input: market_segment (user), product_category (user)
+   - Output: competitive_research/competitors_list.md
 
-Step 2: research_competitors
-- Input: competitors_list.md (from step 1)
-- Output: research_notes.md (detailed findings for each competitor)
-- Depends on: identify_competitors
+2. **research_competitors**
+   - Input: competitors_list.md (from step 1)
+   - Output: competitive_research/research_notes.md
+   - Depends on: identify_competitors
 
-Step 3: comparative_analysis
-- Input: research_notes.md (from step 2)
-- Output: comparison_matrix.md (side-by-side analysis)
-- Depends on: research_competitors
+3. **comparative_analysis**
+   - Input: research_notes.md (from step 2)
+   - Output: competitive_research/comparison_matrix.md
+   - Depends on: research_competitors
 
-Step 4: positioning_recommendations
-- Input: comparison_matrix.md (from step 3)
-- Output: positioning_report.md (strategic recommendations)
-- Depends on: comparative_analysis
+4. **positioning_recommendations**
+   - Input: comparison_matrix.md (from step 3)
+   - Output: competitive_research/positioning_report.md
+   - Depends on: comparative_analysis
 
-Does this accurately capture your workflow? Any changes needed?
+Does this accurately capture your workflow?
 
 User: Yes, that's perfect!
 

@@ -24,6 +24,8 @@ quality_criteria:
     description: "File inputs with `from_step` must reference a step that is in the dependencies array"
   - name: Output Paths
     description: "Outputs must be valid filenames or paths within the main repo directory structure, never in dot-directories like `.deepwork/`. Use specific, descriptive paths that lend themselves to glob patterns (e.g., `competitive_research/acme_corp/swot.md` or `operations/reports/2026-01/spending_analysis.md`). Parameterized paths like `[competitor_name]/` are encouraged for per-entity outputs. Avoid generic names (`output.md`, `analysis.md`) and transient-sounding paths (`temp/`, `draft.md`). Supporting materials for a final output should go in a peer `_dataroom` folder (e.g., `spending_analysis_dataroom/`)."
+  - name: Valid Workflows
+    description: "If a `workflows` section is present, each workflow must have a unique name (lowercase_underscores), a summary, and a steps array. All step IDs referenced in workflows must exist in the steps section. Multiple workflows can share steps and define different execution paths through the same step set."
   - name: Concise Instructions
     description: "The content of the file, particularly the description, must not have excessively redundant information. It should be concise and to the point given that extra tokens will confuse the AI."
 ---
@@ -54,6 +56,36 @@ changelog:
   - version: "1.1.0"
     changes: "Added quality validation hooks"
 ```
+
+### Workflows (Optional)
+
+Jobs can define multiple workflows that use different combinations of the same steps:
+
+```yaml
+workflows:
+  - name: full_analysis
+    summary: "Complete analysis with all steps"
+    steps:
+      - identify
+      - research
+      - analyze
+      - report
+
+  - name: quick_summary
+    summary: "Rapid analysis skipping deep research"
+    steps:
+      - identify
+      - report
+
+  - name: refresh
+    summary: "Update existing research"
+    steps:
+      - research
+      - analyze
+      - report
+```
+
+If the `workflows` section is omitted, all steps form a single implicit workflow.
 
 ### Steps Array
 
@@ -140,6 +172,7 @@ steps:
 3. **Unique step IDs**: No two steps can have the same id
 4. **Valid file paths**: Output paths must not contain invalid characters and should be in the main repo (not dot-directories)
 5. **Instructions files exist**: Each `instructions_file` path should have a corresponding file created
+6. **Valid workflow references**: If workflows are defined, all step IDs in workflow steps arrays must exist in the steps section
 
 ## Example: Complete Job Specification
 
@@ -157,6 +190,21 @@ description: |
   - Research notes per competitor
   - Comparison matrix
   - Strategic positioning report
+
+# Multiple workflows using the same steps
+workflows:
+  - name: full_analysis
+    summary: "Complete competitive analysis with all steps"
+    steps:
+      - identify_competitors
+      - research_competitors
+      - positioning_report
+
+  - name: quick_summary
+    summary: "Rapid analysis skipping deep research"
+    steps:
+      - identify_competitors
+      - positioning_report
 
 changelog:
   - version: "1.0.0"
