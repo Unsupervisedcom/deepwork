@@ -33,11 +33,22 @@ if [[ -f "$TMPDIR/src/package-lock.json" ]]; then
     cp "$TMPDIR/src/package-lock.json" package-lock.json
 else
     echo "No package-lock.json in tarball, generating from package.json"
+    # Verify package.json exists
+    if [[ ! -f "$TMPDIR/src/package.json" ]]; then
+        echo "Error: No package.json in tarball"
+        exit 1
+    fi
     # Generate package-lock.json from package.json
     cp "$TMPDIR/src/package.json" "$TMPDIR/package.json"
-    cd "$TMPDIR"
-    npm install --package-lock-only --ignore-scripts
-    cd "$SCRIPT_DIR"
+    (cd "$TMPDIR" && npm install --package-lock-only --ignore-scripts) || {
+        echo "Error: Failed to generate package-lock.json"
+        exit 1
+    }
+    # Verify package-lock.json was generated
+    if [[ ! -f "$TMPDIR/package-lock.json" ]]; then
+        echo "Error: package-lock.json was not generated"
+        exit 1
+    fi
     cp "$TMPDIR/package-lock.json" package-lock.json
 fi
 
