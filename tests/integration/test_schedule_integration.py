@@ -12,21 +12,21 @@ from deepwork.cli.main import cli
 class TestScheduleCommand:
     """Integration tests for 'deepwork schedule' command."""
 
-    @patch("deepwork.cli.schedule._detect_system")
+    @patch("deepwork.cli.schedule.ScheduleRunner.detect_runner")
     @patch("deepwork.cli.schedule.is_git_repo")
-    @patch("deepwork.cli.schedule._install_systemd_timer")
     def test_schedule_add_systemd(
         self,
-        mock_install: Mock,
         mock_is_git: Mock,
         mock_detect: Mock,
         temp_dir: Path,
     ) -> None:
         """Test scheduling a task on systemd."""
+        mock_runner = Mock()
+        mock_runner.name = "systemd"
+        mock_runner.display_name = "Systemd Timer"
+        mock_detect.return_value = mock_runner
         mock_is_git.return_value = True
-        mock_detect.return_value = "systemd"
 
-        # Create .deepwork directory
         (temp_dir / ".deepwork").mkdir()
 
         runner = CliRunner()
@@ -50,25 +50,25 @@ class TestScheduleCommand:
         assert "Detected system: systemd" in result.output
         assert "scheduled successfully" in result.output
 
-        mock_install.assert_called_once_with(
+        mock_runner.install.assert_called_once_with(
             "test-task", "deepwork sync", temp_dir, "daily"
         )
 
-    @patch("deepwork.cli.schedule._detect_system")
+    @patch("deepwork.cli.schedule.ScheduleRunner.detect_runner")
     @patch("deepwork.cli.schedule.is_git_repo")
-    @patch("deepwork.cli.schedule._install_launchd_agent")
     def test_schedule_add_launchd(
         self,
-        mock_install: Mock,
         mock_is_git: Mock,
         mock_detect: Mock,
         temp_dir: Path,
     ) -> None:
         """Test scheduling a task on launchd."""
+        mock_runner = Mock()
+        mock_runner.name = "launchd"
+        mock_runner.display_name = "macOS LaunchAgent"
+        mock_detect.return_value = mock_runner
         mock_is_git.return_value = True
-        mock_detect.return_value = "launchd"
 
-        # Create .deepwork directory
         (temp_dir / ".deepwork").mkdir()
 
         runner = CliRunner()
@@ -92,18 +92,17 @@ class TestScheduleCommand:
         assert "Detected system: launchd" in result.output
         assert "scheduled successfully" in result.output
 
-        # hourly should be converted to 3600 seconds
-        mock_install.assert_called_once_with(
-            "test-task", "deepwork sync", temp_dir, 3600
+        mock_runner.install.assert_called_once_with(
+            "test-task", "deepwork sync", temp_dir, "hourly"
         )
 
-    @patch("deepwork.cli.schedule._detect_system")
-    @patch("deepwork.cli.schedule._uninstall_systemd_timer")
-    def test_schedule_remove(
-        self, mock_uninstall: Mock, mock_detect: Mock, temp_dir: Path
-    ) -> None:
+    @patch("deepwork.cli.schedule.ScheduleRunner.detect_runner")
+    def test_schedule_remove(self, mock_detect: Mock, temp_dir: Path) -> None:
         """Test removing a scheduled task."""
-        mock_detect.return_value = "systemd"
+        mock_runner = Mock()
+        mock_runner.name = "systemd"
+        mock_runner.display_name = "Systemd Timer"
+        mock_detect.return_value = mock_runner
 
         runner = CliRunner()
         result = runner.invoke(
@@ -116,15 +115,14 @@ class TestScheduleCommand:
         assert "Removing scheduled task: test-task" in result.output
         assert "unscheduled successfully" in result.output
 
-        mock_uninstall.assert_called_once_with("test-task")
+        mock_runner.uninstall.assert_called_once_with("test-task")
 
-    @patch("deepwork.cli.schedule._detect_system")
-    @patch("deepwork.cli.schedule._list_systemd_timers")
-    def test_schedule_list(
-        self, mock_list: Mock, mock_detect: Mock
-    ) -> None:
+    @patch("deepwork.cli.schedule.ScheduleRunner.detect_runner")
+    def test_schedule_list(self, mock_detect: Mock) -> None:
         """Test listing scheduled tasks."""
-        mock_detect.return_value = "systemd"
+        mock_runner = Mock()
+        mock_runner.name = "systemd"
+        mock_detect.return_value = mock_runner
 
         runner = CliRunner()
         result = runner.invoke(cli, ["schedule", "list"], catch_exceptions=False)
@@ -133,9 +131,9 @@ class TestScheduleCommand:
         assert "Scheduled DeepWork Tasks" in result.output
         assert "System: systemd" in result.output
 
-        mock_list.assert_called_once()
+        mock_runner.list_tasks.assert_called_once()
 
-    @patch("deepwork.cli.schedule._detect_system")
+    @patch("deepwork.cli.schedule.ScheduleRunner.detect_runner")
     @patch("deepwork.cli.schedule.is_git_repo")
     def test_schedule_add_not_git_repo(
         self, mock_is_git: Mock, mock_detect: Mock, temp_dir: Path
@@ -152,16 +150,15 @@ class TestScheduleCommand:
         assert result.exit_code == 1
         assert "Not a Git repository" in result.output
 
-    @patch("deepwork.cli.schedule._detect_system")
+    @patch("deepwork.cli.schedule.ScheduleRunner.detect_runner")
     @patch("deepwork.cli.schedule.is_git_repo")
     def test_schedule_add_unsupported_system(
         self, mock_is_git: Mock, mock_detect: Mock, temp_dir: Path
     ) -> None:
         """Test that scheduling fails on unsupported systems."""
         mock_is_git.return_value = True
-        mock_detect.return_value = "unsupported"
+        mock_detect.return_value = None
 
-        # Create .deepwork directory
         (temp_dir / ".deepwork").mkdir()
 
         runner = CliRunner()

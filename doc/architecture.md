@@ -40,7 +40,9 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── __init__.py
 │       │   ├── main.py         # CLI entry point
 │       │   ├── install.py      # Install command
-│       │   └── sync.py         # Sync command
+│       │   ├── sync.py         # Sync command
+│       │   ├── schedule.py     # Schedule command (thin CLI layer)
+│       │   └── runners.py      # Schedule runners (systemd, launchd)
 │       ├── core/
 │       │   ├── adapters.py     # Agent adapters for AI platforms
 │       │   ├── detector.py     # AI platform detection
