@@ -47,9 +47,17 @@ description: "{{ job_summary }}"
 {{ workflow.summary }}
 
 **Steps in order**:
-{% for step_id in workflow.steps %}
+{% for entry in workflow.step_entries %}
+{% if entry.is_concurrent %}
+{{ loop.index }}. **Concurrent Steps** - Execute the following tasks in parallel:
+{% for task in entry.concurrent_steps %}
+   - **Background Task {{ task.task_number }}**: {{ task.id }} - {{ task.description }}
+{% endfor %}
+{% else %}
+{% set step_id = entry.step_ids[0] %}
 {% set step = steps | selectattr("id", "equalto", step_id) | first %}
 {{ loop.index }}. **{{ step_id }}** - {{ step.description if step else "Unknown step" }}
+{% endif %}
 {% endfor %}
 
 **Start workflow**: `/{{ job_name }}.{{ workflow.first_step }}`

@@ -365,13 +365,22 @@ changelog:
 
 # Workflows define named sequences of steps that form complete processes.
 # Steps not in any workflow are "standalone skills" that can be run anytime.
+# Steps can be listed as simple strings (sequential) or arrays (concurrent execution).
+#
+# Concurrent step patterns:
+# 1. Multiple different steps: [step_a, step_b] - run both in parallel
+# 2. Single step with multiple instances: [fetch_campaign_data] - indicates this
+#    step should be run in parallel for each instance (e.g., each ad campaign)
+#
+# Use a single-item array when a step needs multiple parallel instances, like
+# "fetch performance data" that runs once per campaign in an ad reporting job.
 workflows:
   - name: full_analysis
     summary: "Complete competitive analysis from identification through positioning"
     steps:
       - identify_competitors
-      - primary_research
-      - secondary_research
+      # Steps in an array execute concurrently (as "Background Tasks")
+      - [primary_research, secondary_research]
       - comparative_report
       - positioning
 

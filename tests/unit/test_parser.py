@@ -447,3 +447,119 @@ class TestParseJobDefinition:
 
         with pytest.raises(ParseError, match="validation failed"):
             parse_job_definition(job_dir)
+
+
+class TestConcurrentSteps:
+    """Tests for concurrent step parsing in workflows."""
+
+    def test_parses_concurrent_steps_workflow(self, fixtures_dir: Path) -> None:
+        """Test parsing job with concurrent steps in workflow."""
+        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
+        job = parse_job_definition(job_dir)
+
+        assert job.name == "concurrent_workflow"
+        assert len(job.workflows) == 1
+        assert job.workflows[0].name == "full_analysis"
+
+    def test_workflow_step_entries(self, fixtures_dir: Path) -> None:
+        """Test workflow step_entries structure with concurrent steps."""
+        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
+        job = parse_job_definition(job_dir)
+
+        workflow = job.workflows[0]
+        assert len(workflow.step_entries) == 4
+
+        # First entry: sequential step
+        assert not workflow.step_entries[0].is_concurrent
+        assert workflow.step_entries[0].step_ids == ["setup"]
+
+        # Second entry: concurrent steps
+        assert workflow.step_entries[1].is_concurrent
+        assert workflow.step_entries[1].step_ids == [
+            "research_web",
+            "research_docs",
+            "research_interviews",
+        ]
+
+        # Third entry: sequential step
+        assert not workflow.step_entries[2].is_concurrent
+        assert workflow.step_entries[2].step_ids == ["compile_results"]
+
+        # Fourth entry: sequential step
+        assert not workflow.step_entries[3].is_concurrent
+        assert workflow.step_entries[3].step_ids == ["final_review"]
+
+    def test_workflow_flattened_steps(self, fixtures_dir: Path) -> None:
+        """Test backward-compatible flattened steps list."""
+        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
+        job = parse_job_definition(job_dir)
+
+        workflow = job.workflows[0]
+        # Flattened list should include all step IDs
+        assert workflow.steps == [
+            "setup",
+            "research_web",
+            "research_docs",
+            "research_interviews",
+            "compile_results",
+            "final_review",
+        ]
+
+    def test_get_step_entry_for_step(self, fixtures_dir: Path) -> None:
+        """Test getting the step entry containing a step."""
+        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
+        job = parse_job_definition(job_dir)
+
+        workflow = job.workflows[0]
+
+        # Sequential step
+        entry = workflow.get_step_entry_for_step("setup")
+        assert entry is not None
+        assert not entry.is_concurrent
+        assert entry.step_ids == ["setup"]
+
+        # Concurrent step
+        entry = workflow.get_step_entry_for_step("research_web")
+        assert entry is not None
+        assert entry.is_concurrent
+        assert "research_web" in entry.step_ids
+
+    def test_get_step_entry_position_in_workflow(self, fixtures_dir: Path) -> None:
+        """Test getting entry-based position in workflow."""
+        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
+        job = parse_job_definition(job_dir)
+
+        # Sequential step
+        result = job.get_step_entry_position_in_workflow("setup")
+        assert result is not None
+        entry_pos, total_entries, entry = result
+        assert entry_pos == 1
+        assert total_entries == 4
+        assert not entry.is_concurrent
+
+        # Concurrent step - all share same entry position
+        for step_id in ["research_web", "research_docs", "research_interviews"]:
+            result = job.get_step_entry_position_in_workflow(step_id)
+            assert result is not None
+            entry_pos, total_entries, entry = result
+            assert entry_pos == 2  # All in second position
+            assert total_entries == 4
+            assert entry.is_concurrent
+
+    def test_get_concurrent_step_info(self, fixtures_dir: Path) -> None:
+        """Test getting info about position within concurrent group."""
+        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
+        job = parse_job_definition(job_dir)
+
+        # Sequential step returns None
+        assert job.get_concurrent_step_info("setup") is None
+
+        # Concurrent steps return their position in group
+        result = job.get_concurrent_step_info("research_web")
+        assert result == (1, 3)
+
+        result = job.get_concurrent_step_info("research_docs")
+        assert result == (2, 3)
+
+        result = job.get_concurrent_step_info("research_interviews")
+        assert result == (3, 3)
