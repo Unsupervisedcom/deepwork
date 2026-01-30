@@ -192,12 +192,73 @@ When defining steps, identify any that require specialized tools:
 
 **Browser Automation**: If any step involves web scraping, form filling, interactive browsing, UI testing, or research requiring website visits, ask the user what browser tools they have available. For Claude Code users, **Claude in Chrome** (Anthropic's browser extension) has been tested with DeepWork and is recommended for new users. Don't assume a default—confirm the tool before designing browser-dependent steps.
 
-### Step 3: Validate the Workflow
+### Step 2.5: Organize Steps into Workflows
 
-After gathering information about all steps:
+A job can contain **multiple workflows** that use the same set of steps in different sequences or combinations. After defining individual steps, determine if the job should have multiple workflows.
 
-1. **Review the flow**
-   - Summarize the complete workflow
+**Ask structured questions to understand workflow organization:**
+
+1. **Are there different ways to use these steps?**
+   - Can some steps be run independently as standalone skills?
+   - Are there different entry points or use cases?
+   - Are there shorter variations that skip some steps?
+
+2. **What are the distinct use cases?**
+   - What's the full workflow from start to finish?
+   - Are there "quick" variations that skip optional steps?
+   - Are there standalone utilities (like "learn" or "validate")?
+
+**When to use multiple workflows:**
+
+- **Different entry points**: A "quick_analysis" workflow might skip the deep research step
+- **Standalone skills**: A "learn" step that can be run independently after any job execution
+- **Different audiences**: A "detailed_report" workflow for executives vs. "quick_summary" for team standups
+- **Optional phases**: Some workflows might include review/validation, others might skip it
+
+**Workflow definition format:**
+
+```yaml
+workflows:
+  - name: full_analysis
+    summary: "Complete analysis with all steps"
+    steps:
+      - identify
+      - research
+      - analyze
+      - report
+
+  - name: quick_summary
+    summary: "Rapid analysis skipping deep research"
+    steps:
+      - identify
+      - analyze
+      - report
+```
+
+**Single workflow jobs:**
+
+If the job has only one workflow (the most common case), you can either:
+1. Define it explicitly in the `workflows` section
+2. Omit the `workflows` section entirely (all steps form the implicit workflow)
+
+**Exposed steps:**
+
+Steps marked with `exposed: true` can be invoked directly without running their dependencies. These are useful for standalone utilities like "learn" that can run anytime.
+
+```yaml
+steps:
+  - id: learn
+    name: "Learn from Execution"
+    exposed: true  # Can be run directly via /job_name.learn
+    ...
+```
+
+### Step 3: Validate the Workflow(s)
+
+After gathering information about all steps and workflows:
+
+1. **Review the flow(s)**
+   - Summarize each complete workflow
    - Show how outputs from one step feed into the next
    - Ask if anything is missing
 
@@ -205,12 +266,14 @@ After gathering information about all steps:
    - Are there any steps where the input isn't clearly defined?
    - Are there any outputs that aren't used by later steps?
    - Are there circular dependencies?
+   - Do all workflows reference valid step IDs?
 
 3. **Confirm details**
    - Job name (lowercase, underscores, descriptive)
    - Job summary (one clear sentence, max 200 chars)
    - Job description (detailed multi-line explanation)
    - Version number (start with 1.0.0)
+   - Workflow names and their step sequences (if multiple workflows)
 
 ### Step 4: Define Quality Validation (Stop Hooks)
 
@@ -350,7 +413,22 @@ Claude: Great. Now for the "Research each one" step:
 
 [After gathering all information:]
 
-Claude: Let me summarize the workflow I've designed based on our conversation:
+Claude: Now let's think about how these steps should be organized into workflows. Are there different ways you might want to use these steps?
+
+For example:
+- A full analysis that goes through all steps?
+- A quick version that skips some steps?
+- Any steps that should be available to run independently?
+
+User: Yes, I'd like a full workflow for complete analysis, but also a quick workflow that just identifies competitors and goes straight to a summary. Also, I sometimes want to just refresh the research on existing competitors without re-identifying them.
+
+Claude: Great! So we have three workflows:
+
+1. **full_analysis** - Complete workflow: identify → research → comparative_analysis → positioning_recommendations
+2. **quick_summary** - Fast workflow: identify → positioning_recommendations (skip deep research)
+3. **refresh_research** - Update existing: research → comparative_analysis → positioning_recommendations
+
+Let me summarize the complete job I've designed:
 
 **Job: competitive_research**
 Summary: Systematic competitive analysis workflow for product positioning
@@ -365,6 +443,17 @@ The workflow produces:
 - Strategic positioning recommendations
 
 Designed for product teams conducting quarterly competitive analysis.
+
+**Workflows:**
+
+1. **full_analysis** - Complete analysis with all steps
+   - identify_competitors → research_competitors → comparative_analysis → positioning_recommendations
+
+2. **quick_summary** - Rapid analysis skipping deep research
+   - identify_competitors → positioning_recommendations
+
+3. **refresh_research** - Update research on existing competitors
+   - research_competitors → comparative_analysis → positioning_recommendations
 
 **Steps:**
 
