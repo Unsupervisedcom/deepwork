@@ -317,9 +317,7 @@ Use branch format: `deepwork/deepwork_rules-[instance]-YYYYMMDD`
 - Do NOT skip prerequisite verification if this step has dependencies
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
-- Do NOT modify files outside the scope of this step's defined outputs
-
-## On Completion
+- Do NOT modify files outside the scope of this step's defined outputs## On Completion
 
 1. Verify outputs are created
 2. Inform user: "define complete, outputs: .deepwork/rules/{rule-name}.md"

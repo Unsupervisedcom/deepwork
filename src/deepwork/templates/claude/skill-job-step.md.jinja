@@ -200,7 +200,15 @@ No specific file outputs required.
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
 
-{% if quality_criteria %}
+{#- Check if any output has doc_spec quality criteria to avoid duplicate quality validation sections #}
+{%- set has_doc_spec_quality = namespace(value=false) -%}
+{%- for output in outputs -%}
+{%- if output.has_doc_spec and output.doc_spec and output.doc_spec.quality_criteria -%}
+{%- set has_doc_spec_quality.value = true -%}
+{%- endif -%}
+{%- endfor -%}
+{#- Only show step-level quality_criteria if no doc_spec quality criteria exist (avoids duplication) #}
+{% if quality_criteria and not has_doc_spec_quality.value %}
 ## Quality Validation
 
 **Before completing this step, you MUST have your work reviewed against the quality criteria below.**
@@ -218,7 +226,7 @@ Use a sub-agent (Haiku model) to review your work against these criteria:
 4. Have the sub-agent review again until all valid feedback has been addressed
 5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
-{% endif %}{#- if quality_criteria #}
+{% endif %}{#- if quality_criteria and not has_doc_spec_quality.value #}
 {% if stop_hooks -%}
 {% for hook in stop_hooks -%}
 {% if hook.type == "script" -%}

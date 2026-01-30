@@ -127,7 +127,15 @@ Use branch format: `deepwork/{{ job_name }}-[instance]-YYYYMMDD`
 No specific file outputs required.
 {% endif %}
 
-{% if quality_criteria or stop_hooks %}
+{#- Check if any output has doc_spec quality criteria to avoid duplicate quality validation sections #}
+{%- set has_doc_spec_quality = namespace(value=false) -%}
+{%- for output in outputs -%}
+{%- if output.has_doc_spec and output.doc_spec and output.doc_spec.quality_criteria -%}
+{%- set has_doc_spec_quality.value = true -%}
+{%- endif -%}
+{%- endfor -%}
+{#- Only show step-level quality_criteria if no doc_spec quality criteria exist (avoids duplication) #}
+{% if (quality_criteria or stop_hooks) and not has_doc_spec_quality.value %}
 ## Quality Validation (Manual)
 
 **NOTE**: Gemini CLI does not support automated validation. Manually verify criteria before completing.

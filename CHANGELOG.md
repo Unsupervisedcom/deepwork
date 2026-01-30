@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SessionStart hook now skips non-initial sessions (resume, compact/clear) by checking the `source` field in stdin JSON, reducing noise and redundant checks
 
 ### Fixed
+- Fixed duplicate quality criteria rendering in generated skill files
+  - Steps with outputs having doc_spec quality criteria no longer render a separate "Quality Validation" section
+  - Doc spec criteria are shown under outputs; step-level criteria are only shown when no doc_spec criteria exist
+  - Applies to both Claude and Gemini templates
 - Fixed skill template generating malformed YAML frontmatter with fields concatenated on single lines
   - Removed over-aggressive `{%-` whitespace stripping from Jinja template
   - Fields like `user-invocable` and `hooks` now render on proper separate lines

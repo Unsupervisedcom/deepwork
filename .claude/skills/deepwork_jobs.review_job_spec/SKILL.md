@@ -452,27 +452,7 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
 - Do NOT skip prerequisite verification if this step has dependencies
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
-- Do NOT modify files outside the scope of this step's defined outputs
-
-## Quality Validation
-
-**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
-
-Use a sub-agent (Haiku model) to review your work against these criteria:
-
-**Criteria (all must be satisfied)**:
-1. **Sub-Agent Used**: Was a sub-agent spawned to provide unbiased review?
-2. **All doc spec Criteria Evaluated**: Did the sub-agent assess all 9 quality criteria?
-3. **Findings Addressed**: Were all failed criteria addressed by the main agent?
-4. **Validation Loop Complete**: Did the review-fix cycle continue until all criteria passed?
-**Review Process**:
-1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
-2. The sub-agent should examine your outputs and verify each criterion is met
-3. If the sub-agent identifies valid issues, fix them
-4. Have the sub-agent review again until all valid feedback has been addressed
-5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
-
-## On Completion
+- Do NOT modify files outside the scope of this step's defined outputs## On Completion
 
 1. Verify outputs are created
 2. Inform user: "new_job step 2/3 complete, outputs: job.yml"

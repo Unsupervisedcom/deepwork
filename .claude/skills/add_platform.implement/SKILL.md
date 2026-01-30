@@ -307,9 +307,7 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 - Do NOT skip prerequisite verification if this step has dependencies
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
-- Do NOT modify files outside the scope of this step's defined outputs
-
-**Validation script**: `.deepwork/jobs/add_platform/hooks/run_tests.sh` (runs automatically)
+- Do NOT modify files outside the scope of this step's defined outputs**Validation script**: `.deepwork/jobs/add_platform/hooks/run_tests.sh` (runs automatically)
 ## On Completion
 
 1. Verify outputs are created
