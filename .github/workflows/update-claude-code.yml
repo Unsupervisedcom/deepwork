@@ -5,6 +5,10 @@ on:
     # Run daily at 6 AM UTC
     - cron: '0 6 * * *'
   workflow_dispatch: # Allow manual trigger
+  pull_request:
+    paths:
+      - 'nix/claude-code/**'
+      - '.github/workflows/update-claude-code.yml'
 
 jobs:
   update:
@@ -25,6 +29,7 @@ jobs:
             experimental-features = nix-command flakes
 
       - name: Update claude-code package
+        if: github.event_name != 'pull_request'
         id: update
         run: |
           # Script exits 0 if already at latest (no changes to commit)
@@ -35,12 +40,14 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Update flake.lock
+        if: github.event_name != 'pull_request'
         run: nix flake update
 
       - name: Verify build
         run: nix develop --command claude --version
 
       - name: Create Pull Request
+        if: github.event_name != 'pull_request'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
