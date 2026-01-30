@@ -192,6 +192,19 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Are there any quality checks or validation needed?
    - What makes a good vs. bad output for this step?
 
+6. **Agent Delegation** (optional)
+   - Should this step be executed by a specific agent type?
+   - Use the `agent` field when the step should run in a forked context with a specific agent
+   - When `agent` is set, the generated skill automatically includes `context: fork`
+   - Available agent types:
+     - `general-purpose` - Standard agent for multi-step tasks
+
+   ```yaml
+   steps:
+     - id: research_step
+       agent: general-purpose  # Delegates to the general-purpose agent
+   ```
+
 **Note**: You're gathering this information to understand what instructions will be needed, but you won't create the instruction files yet - that happens in the `implement` step.
 
 #### Doc Spec-Aware Output Format

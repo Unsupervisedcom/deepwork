@@ -34,6 +34,8 @@ steps:
     outputs:
       - [output_filename_or_path]  # e.g., "report.md" or "reports/analysis.md"
     dependencies: []  # List of step IDs that must complete first
+    # Optional: Delegate to a specific agent type (uses context: fork)
+    # agent: general-purpose  # or other agent type
     # Optional: Quality validation hooks
     hooks:
       after_agent:
