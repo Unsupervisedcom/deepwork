@@ -28,7 +28,14 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-      - name: Update claude-code package
+      - name: Update claude-code package (test)
+        if: github.event_name == 'pull_request'
+        run: |
+          # On PRs, run the update script to test it works
+          # but don't commit or create PRs with the changes
+          ./nix/claude-code/update.sh || echo "::warning::Update script execution test failed"
+
+      - name: Update claude-code package (production)
         if: github.event_name != 'pull_request'
         id: update
         run: |
