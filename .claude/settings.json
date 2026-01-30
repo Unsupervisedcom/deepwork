@@ -130,7 +130,8 @@
       "Bash(deepwork:*)",
       "Bash(.claude/hooks/commit_job_git_commit.sh:*)",
       "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
-      "WebSearch"
+      "WebSearch",
+      "Skill(deepwork_jobs.clone_remote_job)"
     ]
   },
   "hooks": {

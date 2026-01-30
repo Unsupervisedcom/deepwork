@@ -16,6 +16,9 @@ The `new_job` workflow guides you through defining and implementing a new job by
 asking structured questions about your workflow, understanding each step's inputs and outputs,
 reviewing the specification, and generating all necessary files.
 
+The `clone_remote_job` skill installs a job from a GitHub repository (like the DeepWork
+job library) and guides you through any required customization for your project.
+
 The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
 confusion or inefficiencies, and improves job instructions. It also captures bespoke
 learnings specific to the current run into AGENTS.md files in the working folder.
@@ -40,6 +43,8 @@ These skills can be run independently at any time:
 
 - **learn** - Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
   Command: `/deepwork_jobs.learn`
+- **clone_remote_job** - Installs a DeepWork job from a GitHub repository and guides customization. Use when adding a pre-built job from the library.
+  Command: `/deepwork_jobs.clone_remote_job`
 
 
 ## Execution Instructions
@@ -49,6 +54,7 @@ These skills can be run independently at any time:
 Parse any text following `/deepwork_jobs` to determine user intent:
 - "new_job" or related terms → start new_job workflow at `deepwork_jobs.define`
 - "learn" or related terms → run standalone skill `deepwork_jobs.learn`
+- "clone_remote_job" or related terms → run standalone skill `deepwork_jobs.clone_remote_job`
 
 ### Step 2: Invoke Starting Step
 
