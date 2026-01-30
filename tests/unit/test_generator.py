@@ -268,6 +268,98 @@ class TestSkillGenerator:
         assert all(p.name == "SKILL.md" for p in skill_paths)
 
 
+class TestConcurrentStepsGeneration:
+    """Tests for concurrent steps in skill generation."""
+
+    def test_generate_meta_skill_with_concurrent_steps(
+        self, fixtures_dir: Path, temp_dir: Path
+    ) -> None:
+        """Test generating meta-skill for job with concurrent steps."""
+        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
+        job = parse_job_definition(job_dir)
+
+        generator = SkillGenerator()
+        adapter = ClaudeAdapter()
+
+        meta_skill_path = generator.generate_meta_skill(job, adapter, temp_dir)
+
+        assert meta_skill_path.exists()
+        content = meta_skill_path.read_text()
+
+        # Check meta-skill content has workflow section
+        assert "# concurrent_workflow" in content
+        assert "full_analysis" in content
+
+        # Check concurrent steps are rendered correctly
+        assert "Concurrent Steps" in content
+        assert "Background Task 1" in content
+        assert "Background Task 2" in content
+        assert "Background Task 3" in content
+        assert "research_web" in content
+        assert "research_docs" in content
+        assert "research_interviews" in content
+
+    def test_meta_skill_context_has_step_entries(self, fixtures_dir: Path, temp_dir: Path) -> None:
+        """Test that meta-skill context includes step_entries with concurrency info."""
+        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
+        job = parse_job_definition(job_dir)
+
+        generator = SkillGenerator()
+        adapter = ClaudeAdapter()
+
+        context = generator._build_meta_skill_context(job, adapter)
+
+        assert "workflows" in context
+        assert len(context["workflows"]) == 1
+
+        workflow = context["workflows"][0]
+        assert "step_entries" in workflow
+        assert len(workflow["step_entries"]) == 4
+
+        # Check first entry (sequential)
+        entry1 = workflow["step_entries"][0]
+        assert entry1["is_concurrent"] is False
+        assert entry1["step_ids"] == ["setup"]
+
+        # Check second entry (concurrent)
+        entry2 = workflow["step_entries"][1]
+        assert entry2["is_concurrent"] is True
+        assert entry2["step_ids"] == ["research_web", "research_docs", "research_interviews"]
+        assert "concurrent_steps" in entry2
+        assert len(entry2["concurrent_steps"]) == 3
+        assert entry2["concurrent_steps"][0]["task_number"] == 1
+        assert entry2["concurrent_steps"][0]["id"] == "research_web"
+
+    def test_generate_all_skills_with_concurrent_steps(
+        self, fixtures_dir: Path, temp_dir: Path
+    ) -> None:
+        """Test generating all skills for job with concurrent steps."""
+        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
+        job = parse_job_definition(job_dir)
+
+        generator = SkillGenerator()
+        adapter = ClaudeAdapter()
+
+        skill_paths = generator.generate_all_skills(job, adapter, temp_dir)
+
+        # 1 meta-skill + 6 step skills
+        assert len(skill_paths) == 7
+        assert all(p.exists() for p in skill_paths)
+
+        # Check all step skills are generated
+        expected_dirs = [
+            "concurrent_workflow",  # Meta-skill
+            "concurrent_workflow.setup",
+            "concurrent_workflow.research_web",
+            "concurrent_workflow.research_docs",
+            "concurrent_workflow.research_interviews",
+            "concurrent_workflow.compile_results",
+            "concurrent_workflow.final_review",
+        ]
+        actual_dirs = [p.parent.name for p in skill_paths]
+        assert actual_dirs == expected_dirs
+
+
 class TestDocSpecIntegration:
     """Tests for doc spec integration in skill generation."""
 
