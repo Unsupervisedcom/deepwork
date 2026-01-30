@@ -202,7 +202,7 @@ jobs:
           echo "=== Running /deepwork_jobs to create fruits job ==="
 
           # Provide detailed, deterministic instructions for creating the job
-          claude --print --model claude-sonnet-4.5 <<'PROMPT_EOF'
+          claude --print --model claude-sonnet-4-5 <<'PROMPT_EOF'
           /deepwork_jobs I want to create a simple job called "fruits" for identifying and classifying fruits.
 
           Here are the EXACT specifications.
@@ -276,7 +276,7 @@ jobs:
         run: |
           echo "=== Running /fruits workflow with test input ==="
 
-          claude --print --model claude-sonnet-4.5 "/fruits" <<'PROMPT_EOF'
+          claude --print --model claude-sonnet-4-5 "/fruits" <<'PROMPT_EOF'
           raw_items: apple, car, banana, chair, orange, table, mango, laptop, grape, bicycle
           PROMPT_EOF
 
