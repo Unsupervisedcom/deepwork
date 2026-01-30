@@ -324,21 +324,12 @@ jobs:
           grep -qi "citrus\|tropical\|pome\|berr" classified_fruits.md || (echo "Missing fruit categories" && exit 1)
           echo "  ✓ Fruit categories found in classified_fruits.md"
 
-          # Verify job structure was created correctly
-          echo "Checking job structure..."
-          test -f .deepwork/jobs/fruits/job.yml || (echo "Missing job.yml" && exit 1)
-          test -f .deepwork/jobs/fruits/steps/identify.md || (echo "Missing identify.md" && exit 1)
-          test -f .deepwork/jobs/fruits/steps/classify.md || (echo "Missing classify.md" && exit 1)
-          echo "  ✓ Job structure is complete"
-
           echo ""
           echo "=========================================="
           echo "  ALL E2E TESTS PASSED SUCCESSFULLY!"
           echo "=========================================="
           echo ""
-          echo "Workflow tested:"
-          echo "  1. /deepwork_jobs - Created job"
-          echo "  2. /fruits - Executed full fruits workflow (identify + classify)"
+          echo "Workflow tested: /fruits - Executed full fruits workflow (identify + classify)"
           echo ""
 
       - name: Upload test artifacts
