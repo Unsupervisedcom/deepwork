@@ -197,7 +197,7 @@ jobs:
       - name: Create job with /deepwork_jobs
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
-        timeout-minutes: 5
+        timeout-minutes: 6
         run: |
           echo "=== Running /deepwork_jobs to create fruits job ==="
 
@@ -222,8 +222,7 @@ jobs:
           **Key Instructions:**
           - Do not ask questions - just make the job
           - Rules are explicitly not desired. Tell the review agents that.
-
-          No 
+          - Do not give long commentary of what you did - just make the job with no commentary.
           PROMPT_EOF
 
           # Verify the job.yml was created
@@ -276,7 +275,8 @@ jobs:
         run: |
           echo "=== Running /fruits workflow with test input ==="
 
-          claude --print --model claude-sonnet-4-5 "/fruits" <<'PROMPT_EOF'
+          claude --print --model claude-sonnet-4-5 <<'PROMPT_EOF'
+          /fruits Proccess the list to the file and don't give any extra commentary or text output.
           raw_items: apple, car, banana, chair, orange, table, mango, laptop, grape, bicycle
           PROMPT_EOF
 
