@@ -199,12 +199,18 @@ your-project/
 ├── .deepwork/
 │   ├── config.yml          # Platform configuration
 │   ├── rules/              # Automated rules
+│   ├── experts/            # Domain knowledge experts
+│   │   └── expert_name/
+│   │       ├── expert.yml  # Expert definition
+│   │       ├── topics/     # Detailed topic documentation
+│   │       └── learnings/  # Experience-based insights
 │   └── jobs/               # Job definitions
 │       └── job_name/
 │           ├── job.yml     # Job metadata
 │           └── steps/      # Step instructions
-├── .claude/                # Generated Claude skills
-│   └── skills/
+├── .claude/                # Generated Claude skills and agents
+│   ├── skills/
+│   └── agents/             # Expert agents (dwe_*.md)
 └── deepwork-output/        # Job outputs (gitignored)
 ```
 

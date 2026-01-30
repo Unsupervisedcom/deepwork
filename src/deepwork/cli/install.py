@@ -102,6 +102,61 @@ def _inject_deepwork_rules(jobs_dir: Path, project_path: Path) -> None:
     _inject_standard_job("deepwork_rules", jobs_dir, project_path)
 
 
+def _inject_standard_experts(experts_dir: Path, project_path: Path) -> int:
+    """
+    Inject standard expert definitions into the project.
+
+    Copies all experts from src/deepwork/standard/experts/ to .deepwork/experts/.
+
+    Args:
+        experts_dir: Path to .deepwork/experts directory
+        project_path: Path to project root (for relative path display)
+
+    Returns:
+        Number of experts installed
+
+    Raises:
+        InstallError: If injection fails
+    """
+    # Find the standard experts directory
+    standard_experts_dir = Path(__file__).parent.parent / "standard" / "experts"
+
+    if not standard_experts_dir.exists():
+        # No standard experts to install - this is OK
+        return 0
+
+    installed_count = 0
+
+    # Iterate through each expert in the standard experts directory
+    for expert_source_dir in standard_experts_dir.iterdir():
+        if not expert_source_dir.is_dir():
+            continue
+
+        # Check if this is a valid expert (has expert.yml)
+        if not (expert_source_dir / "expert.yml").exists():
+            continue
+
+        expert_name = expert_source_dir.name
+        target_dir = experts_dir / expert_name
+
+        try:
+            if target_dir.exists():
+                # Remove existing if present (for reinstall/upgrade)
+                shutil.rmtree(target_dir)
+
+            shutil.copytree(expert_source_dir, target_dir)
+            # Fix permissions - source may have restrictive permissions
+            fix_permissions(target_dir)
+            console.print(
+                f"  [green]✓[/green] Installed expert: {expert_name} ({target_dir.relative_to(project_path)})"
+            )
+            installed_count += 1
+        except Exception as e:
+            raise InstallError(f"Failed to install expert {expert_name}: {e}") from e
+
+    return installed_count
+
+
 def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
     """
     Create .gitignore file in .deepwork/ directory.
@@ -346,15 +401,23 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     deepwork_dir = project_path / ".deepwork"
     jobs_dir = deepwork_dir / "jobs"
     doc_specs_dir = deepwork_dir / "doc_specs"
+    experts_dir = deepwork_dir / "experts"
     ensure_dir(deepwork_dir)
     ensure_dir(jobs_dir)
     ensure_dir(doc_specs_dir)
+    ensure_dir(experts_dir)
     console.print(f"  [green]✓[/green] Created {deepwork_dir.relative_to(project_path)}/")
 
     # Step 3b: Inject standard jobs (core job definitions)
     console.print("[yellow]→[/yellow] Installing core job definitions...")
     _inject_deepwork_jobs(jobs_dir, project_path)
     _inject_deepwork_rules(jobs_dir, project_path)
+
+    # Step 3b-2: Inject standard experts
+    console.print("[yellow]→[/yellow] Installing standard experts...")
+    experts_count = _inject_standard_experts(experts_dir, project_path)
+    if experts_count == 0:
+        console.print("  [dim]•[/dim] No standard experts to install")
 
     # Step 3c: Create .gitignore for temporary files
     _create_deepwork_gitignore(deepwork_dir)

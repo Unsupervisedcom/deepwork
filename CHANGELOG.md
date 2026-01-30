@@ -16,6 +16,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Meta-skill template renders concurrent steps as "Background Task 1/2/3" with clear instructions
   - Added `get_step_entry_position_in_workflow()` and `get_concurrent_step_info()` methods to JobDefinition
   - Full backward compatibility: existing workflows with simple step arrays continue to work
+
+### Changed
+
+### Fixed
+
+### Removed
+
+## [0.6.0] - 2026-01-30
+
+### Added
+- **Experts system** for auto-improving collections of domain knowledge
+  - New `expert.yml` format with `discovery_description` and `full_expertise` fields
+  - Topics: Detailed documentation in `topics/*.md` with name, keywords, and last_updated frontmatter
+  - Learnings: Experience-based insights in `learnings/*.md` with summarized_result frontmatter
+  - Experts live in `.deepwork/experts/[folder-name]/` directory
+- New CLI commands for experts:
+  - `deepwork topics --expert "name"` - Lists topics as markdown, sorted by most recently updated
+  - `deepwork learnings --expert "name"` - Lists learnings as markdown with summarized results
+- Expert agent generation during `deepwork sync`:
+  - Generates Claude agents in `.claude/agents/dwe_[expert-name].md`
+  - Agent name format: `[expert-name]-expert`
+  - Uses dynamic command embedding (`$(deepwork topics ...)`) for always-current content
+- Standard "experts" expert shipped with DeepWork documenting the experts system itself
+  - Includes topics on design patterns and discovery descriptions
+  - Includes learning on keeping experts focused
+- Expert installation during `deepwork install`:
+  - Standard experts from `src/deepwork/standard/experts/` copied to `.deepwork/experts/`
+  - Creates `.deepwork/experts/` directory during installation
+- Comprehensive test suite for experts (99 new tests)
 - Agent delegation field for job.yml steps
   - New `agent` field on steps allows specifying an agent type (e.g., `agent: general-purpose`)
   - When `agent` is set, generated Claude Code skills automatically include `context: fork` and `agent:` in frontmatter
@@ -244,7 +273,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.5.1...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.6.0...HEAD
+[0.6.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.6.0
 [0.5.1]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.5.1
 [0.5.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.5.0
 [0.4.2]: https://github.com/anthropics/deepwork/compare/0.4.1...0.4.2

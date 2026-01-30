@@ -1,0 +1,33 @@
+{#
+Template: agent-expert.md.jinja
+Purpose: Generates an expert agent file for Claude Code
+
+Template Variables:
+  - expert_name: string - Expert identifier (e.g., "rails-activejob")
+  - discovery_description: string - Short description for expert discovery
+  - full_expertise: string - Complete expertise knowledge payload
+  - topics_count: int - Number of topics in this expert
+  - learnings_count: int - Number of learnings in this expert
+#}
+---
+name: {{ expert_name }}-expert
+description: "{{ discovery_description | replace('"', '\\"') | replace('\n', ' ') | truncate(200) }}"
+---
+
+{{ full_expertise }}
+
+---
+
+## Topics
+
+Detailed documentation on specific subjects within this domain.
+
+$(deepwork topics --expert "{{ expert_name }}")
+
+---
+
+## Learnings
+
+Hard-fought insights from real experiences.
+
+$(deepwork learnings --expert "{{ expert_name }}")
