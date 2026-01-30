@@ -25,7 +25,6 @@ cli.add_command(sync)
 cli.add_command(hook)
 cli.add_command(rules)
 cli.add_command(port)
-cli.add_command(port)
 
 
 if __name__ == "__main__":
