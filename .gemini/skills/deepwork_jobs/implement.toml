@@ -150,11 +150,7 @@ This will:
 - Generate skills for each step
 - Make the skills available in `.claude/skills/` (or appropriate platform directory)
 
-### Step 6: Relay Reload Instructions
-
-After running `deepwork sync`, look at the "To use the new skills" section in the output. **Relay these exact reload instructions to the user** so they know how to pick up the new skills. Don't just reference the sync output - tell them directly what they need to do (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code, or "Run '/memory refresh'" for Gemini CLI).
-
-### Step 7: Consider Rules for the New Job
+### Step 6: Consider Rules for the New Job
 
 After implementing the job, consider whether there are **rules** that would help enforce quality or consistency when working with this job's domain.
 
@@ -245,8 +241,7 @@ Before marking this step complete, ensure:
 - [ ] Each instruction file is complete and actionable
 - [ ] `deepwork sync` executed successfully
 - [ ] Skills generated in platform directory
-- [ ] User informed to follow reload instructions from `deepwork sync`
-- [ ] Considered whether rules would benefit this job (Step 7)
+- [ ] Considered whether rules would benefit this job (Step 6)
 - [ ] If rules suggested, offered to run `/deepwork_rules.define`
 
 ## Quality Criteria

@@ -23,7 +23,7 @@ quality_criteria:
   - name: Input Consistency
     description: "File inputs with `from_step` must reference a step that is in the dependencies array"
   - name: Output Paths
-    description: "Outputs must be valid filenames or paths within the main repo (not in dot-directories). Use specific, descriptive paths that lend themselves to glob patterns, e.g., `competitive_research/competitors_list.md` or `competitive_research/[competitor_name]/research.md`. Avoid generic names like `output.md`."
+    description: "Outputs must be valid filenames or paths within the main repo directory structure, never in dot-directories like `.deepwork/`. Use specific, descriptive paths that lend themselves to glob patterns (e.g., `competitive_research/acme_corp/swot.md` or `operations/reports/2026-01/spending_analysis.md`). Parameterized paths like `[competitor_name]/` are encouraged for per-entity outputs. Avoid generic names (`output.md`, `analysis.md`) and transient-sounding paths (`temp/`, `draft.md`). Supporting materials for a final output should go in a peer `_dataroom` folder (e.g., `spending_analysis_dataroom/`)."
   - name: Concise Instructions
     description: "The content of the file, particularly the description, must not have excessively redundant information. It should be concise and to the point given that extra tokens will confuse the AI."
 ---
@@ -89,6 +89,19 @@ steps:
   - id: learn
     exposed: true                 # Makes step available without running dependencies
 ```
+
+### Agent Delegation
+
+When a step should be executed by a specific agent type, use the `agent` field. This automatically sets `context: fork` in the generated skill.
+
+```yaml
+steps:
+  - id: research_step
+    agent: general-purpose        # Delegates to the general-purpose agent
+```
+
+Available agent types:
+- `general-purpose` - Standard agent for multi-step tasks
 
 ### Quality Hooks
 

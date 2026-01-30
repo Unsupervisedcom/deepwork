@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Agent delegation field for job.yml steps
+  - New `agent` field on steps allows specifying an agent type (e.g., `agent: general-purpose`)
+  - When `agent` is set, generated Claude Code skills automatically include `context: fork` and `agent:` in frontmatter
+  - Enables steps to delegate execution to specific agent types
+  - Updated `deepwork_jobs.define` step instructions with agent delegation guidance
+  - Updated `job_spec.md` doc spec with "Agent Delegation" section
 - Explicit workflow definitions in job.yml for distinguishing multi-step workflows from standalone skills
   - New `workflows` section in job.yml with `name`, `summary`, and ordered `steps` array
   - Workflows are shown separately from standalone skills in generated meta-skills

@@ -253,14 +253,12 @@ If instruction files were modified:
      changes: "Improved [step] instructions based on execution learnings: [brief description]"
    ```
 
-### Step 7: Sync and Relay Instructions
+### Step 7: Sync Skills
 
-1. **Run deepwork sync** (if instructions were modified)
-   ```bash
-   deepwork sync
-   ```
-
-2. **If skills were regenerated**, look at the "To use the new skills" section in the `deepwork sync` output and **relay these exact reload instructions to the user** (e.g., "Type 'exit' then run 'claude --resume'" for Claude Code)
+**Run deepwork sync** (if instructions were modified)
+```bash
+deepwork sync
+```
 
 ## File Reference Patterns
 
@@ -350,7 +348,7 @@ I found the following job executions:
 
 **Summary**
 
-Updated job instructions and created AGENTS.md with bespoke learnings. To get the updated skills, type 'exit' then run 'claude --resume'.
+Updated job instructions and created AGENTS.md with bespoke learnings.
 ```
 
 ## Handling Edge Cases

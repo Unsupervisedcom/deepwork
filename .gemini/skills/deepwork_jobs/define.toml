@@ -126,9 +126,62 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Where should each output be saved? (filename/path)
    - Should outputs be organized in subdirectories? (e.g., `reports/`, `data/`, `drafts/`)
    - Will other steps need this output?
-
-   **Important**: Output paths should always be within the main repository directory structure, not in dot-directories like `.deepwork/`. Dot-directories are for configuration and job definitions, not for job outputs. Use paths like `research/competitors/report.md` rather than `.deepwork/outputs/report.md`.
    - **Does this output have a doc spec?** If a doc spec was created in Step 1.6/1.7, reference it for the appropriate output
+
+   #### Work Product Storage Guidelines
+
+   **Key principle**: Job outputs belong in the main repository directory structure, not in dot-directories. The `.deepwork/` directory is for job definitions and configuration only.
+
+   **Why this matters**:
+   - **Version control**: Work products in the main repo are tracked by git and visible in PRs
+   - **Discoverability**: Team members can find outputs without knowing about DeepWork internals
+   - **Tooling compatibility**: IDEs, search tools, and CI/CD work naturally with standard paths
+   - **Glob patterns**: Well-structured paths enable powerful file matching (e.g., `competitive_research/**/*.md`)
+
+   **Good output path patterns**:
+   ```
+   competitive_research/competitors_list.md
+   competitive_research/acme_corp/research.md
+   operations/reports/2026-01/spending_analysis.md
+   docs/api/endpoints.md
+   ```
+
+   **Avoid these patterns**:
+   ```
+   .deepwork/outputs/report.md          # Hidden in dot-directory
+   output.md                            # Too generic, no context
+   research.md                          # Unclear which research
+   temp/draft.md                        # Transient-sounding paths
+   ```
+
+   **Organizing multi-file outputs**:
+   - Use the job name as a top-level folder when outputs are job-specific
+   - Use parameterized paths for per-entity outputs: `competitive_research/[competitor_name]/`
+   - Match existing project conventions when extending a codebase
+
+   **When to include dates in paths**:
+   - **Include date** for periodic outputs where each version is retained (e.g., monthly reports, quarterly reviews, weekly summaries). These accumulate over time and historical versions remain useful.
+     ```
+     operations/reports/2026-01/spending_analysis.md              # Monthly report - keep history
+     hr/employees/[employee_name]/quarterly_reviews/2026-Q1.pdf   # Per-employee quarterly review
+     ```
+   - **Omit date** for current-state outputs that represent the latest understanding and get updated in place. Previous versions live in git history, not separate files.
+     ```
+     competitive_research/acme_corp/swot.md  # Current SWOT - updated over time
+     docs/architecture/overview.md           # Living document
+     ```
+
+   **Supporting materials and intermediate outputs**:
+   - Content generated in earlier steps to support the final output (research notes, data extracts, drafts) should be placed in a `_dataroom` folder that is a peer to the final output
+   - Name the dataroom folder by replacing the file extension with `_dataroom`
+     ```
+     operations/reports/2026-01/spending_analysis.md           # Final output
+     operations/reports/2026-01/spending_analysis_dataroom/    # Supporting materials
+         raw_data.csv
+         vendor_breakdown.md
+         notes.md
+     ```
+   - This keeps supporting materials organized and discoverable without cluttering the main output location
 
 4. **Step Dependencies**
    - Which previous steps must complete before this one?
@@ -138,6 +191,19 @@ For each major phase they mentioned, ask structured questions to gather details:
    - What are the key activities in this step?
    - Are there any quality checks or validation needed?
    - What makes a good vs. bad output for this step?
+
+6. **Agent Delegation** (optional)
+   - Should this step be executed by a specific agent type?
+   - Use the `agent` field when the step should run in a forked context with a specific agent
+   - When `agent` is set, the generated skill automatically includes `context: fork`
+   - Available agent types:
+     - `general-purpose` - Standard agent for multi-step tasks
+
+   ```yaml
+   steps:
+     - id: research_step
+       agent: general-purpose  # Delegates to the general-purpose agent
+   ```
 
 **Note**: You're gathering this information to understand what instructions will be needed, but you won't create the instruction files yet - that happens in the `implement` step.
 
@@ -410,16 +476,6 @@ After creating the file:
 2. Recommend that they review the job.yml file
 3. Tell them to run `/deepwork_jobs.review_job_spec` next
 
-## Quality Criteria
-
-- Asked structured questions to fully understand user requirements
-- User fully understands what job they're creating
-- All steps have clear inputs and outputs
-- Dependencies make logical sense
-- Summary is concise and descriptive
-- Description provides rich context for future refinement
-- Specification is valid YAML and follows the schema
-- Ready for implementation step
 
 
 ### Job Context
@@ -466,26 +522,9 @@ Use branch format: `deepwork/deepwork_jobs-[instance]-YYYYMMDD`
   6. **Complete Steps**: Each step must have: id (lowercase_underscores), name, description, instructions_file, outputs (at least one), and dependencies array
   7. **Valid Dependencies**: Dependencies must reference existing step IDs with no circular references
   8. **Input Consistency**: File inputs with `from_step` must reference a step that is in the dependencies array
-  9. **Output Paths**: Outputs must be valid filenames or paths within the main repo (not in dot-directories). Use specific, descriptive paths that lend themselves to glob patterns, e.g., `competitive_research/competitors_list.md` or `competitive_research/[competitor_name]/research.md`. Avoid generic names like `output.md`.
+  9. **Output Paths**: Outputs must be valid filenames or paths within the main repo directory structure, never in dot-directories like `.deepwork/`. Use specific, descriptive paths that lend themselves to glob patterns (e.g., `competitive_research/acme_corp/swot.md` or `operations/reports/2026-01/spending_analysis.md`). Parameterized paths like `[competitor_name]/` are encouraged for per-entity outputs. Avoid generic names (`output.md`, `analysis.md`) and transient-sounding paths (`temp/`, `draft.md`). Supporting materials for a final output should go in a peer `_dataroom` folder (e.g., `spending_analysis_dataroom/`).
   10. **Concise Instructions**: The content of the file, particularly the description, must not have excessively redundant information. It should be concise and to the point given that extra tokens will confuse the AI.
 
-## Quality Validation (Manual)
-
-**NOTE**: Gemini CLI does not support automated validation. Manually verify criteria before completing.
-
-**Criteria (all must be satisfied)**:
-1. **User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?
-2. **Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?
-3. **Document Detection**: For document-oriented workflows, did the agent detect patterns and offer doc spec creation?
-4. **doc spec Created (if applicable)**: If a doc spec was needed, was it created in `.deepwork/doc_specs/[doc_spec_name].md` with proper quality criteria?
-5. **doc spec References**: Are document outputs properly linked to their doc specs using `{file, doc_spec}` format?
-6. **Valid Against doc spec**: Does the job.yml conform to the job.yml doc spec quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?
-7. **Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?
-8. **Logical Dependencies**: Do step dependencies make sense and avoid circular references?
-9. **Concise Summary**: Is the summary under 200 characters and descriptive?
-10. **Rich Description**: Does the description provide enough context for future refinement?
-11. **Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?
-12. **File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?
 ## On Completion
 
 1. Verify outputs are created
