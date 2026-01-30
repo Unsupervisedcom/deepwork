@@ -58,10 +58,6 @@ class AgentAdapter(ABC):
     skill_template: ClassVar[str] = "skill-job-step.md.jinja"
     meta_skill_template: ClassVar[str] = "skill-job-meta.md.jinja"
 
-    # Instructions for reloading skills after sync (shown to users)
-    # Subclasses should override with platform-specific instructions.
-    reload_instructions: ClassVar[str] = "Restart your AI assistant session to use the new skills."
-
     # Mapping from generic SkillLifecycleHook to platform-specific event names.
     # Subclasses should override this to provide platform-specific mappings.
     hook_name_mapping: ClassVar[dict[SkillLifecycleHook, str]] = {}
@@ -295,12 +291,6 @@ class ClaudeAdapter(AgentAdapter):
     name = "claude"
     display_name = "Claude Code"
     config_dir = ".claude"
-
-    # Claude Code doesn't have a reload command - must restart session
-    reload_instructions: ClassVar[str] = (
-        "Type 'exit' to leave your current session, then run "
-        "'claude --resume' (your history will be maintained)."
-    )
 
     # Claude Code uses PascalCase event names
     hook_name_mapping: ClassVar[dict[SkillLifecycleHook, str]] = {
@@ -575,11 +565,6 @@ class GeminiAdapter(AgentAdapter):
     config_dir = ".gemini"
     skill_template = "skill-job-step.toml.jinja"
     meta_skill_template = "skill-job-meta.toml.jinja"
-
-    # Gemini CLI can reload with /memory refresh
-    reload_instructions: ClassVar[str] = (
-        "Run '/memory refresh' to reload skills, or restart your Gemini CLI session."
-    )
 
     # Gemini CLI does NOT support skill-level hooks
     # Hooks are global/project-level in settings.json, not per-skill
