@@ -12,7 +12,6 @@ from rich.table import Table
 
 from deepwork.core.parser import parse_job_definition
 from deepwork.utils.fs import ensure_dir, fix_permissions
-from deepwork.utils.yaml_utils import load_yaml
 
 console = Console()
 
@@ -50,10 +49,10 @@ def _get_deepwork_default_library() -> Path:
     # Try to find the library/jobs in the deepwork package
     deepwork_root = Path(__file__).parent.parent.parent.parent
     library_path = deepwork_root / "library" / "jobs"
-    
+
     if library_path.exists():
         return library_path
-    
+
     # Fallback: try to clone from GitHub
     raise JobsError(
         "Could not find library/jobs in deepwork package. "
@@ -77,7 +76,7 @@ def _resolve_source(source: str | None) -> Path:
     if source is None:
         # Default to deepwork library/jobs
         return _get_deepwork_default_library()
-    
+
     # Check if it's a local path
     source_path = Path(source)
     if source_path.exists():
@@ -88,7 +87,7 @@ def _resolve_source(source: str | None) -> Path:
             # If pointing directly to a jobs directory
             return source_path
         raise JobsError(f"Source path exists but is not a directory: {source}")
-    
+
     # Check if it's a GitHub URL
     if _is_github_url(source):
         # Clone to temporary directory
@@ -97,23 +96,23 @@ def _resolve_source(source: str | None) -> Path:
         try:
             Repo.clone_from(source, tmp_dir, depth=1)
             console.print("  [green]✓[/green] Repository cloned")
-            
+
             # Look for library/jobs in the cloned repo
             if (tmp_dir / "library" / "jobs").exists():
                 return tmp_dir / "library" / "jobs"
-            
+
             # Look for a jobs directory at the root
             if (tmp_dir / "jobs").exists():
                 return tmp_dir / "jobs"
-            
+
             raise JobsError(
-                f"Could not find jobs in cloned repository. "
-                f"Expected 'library/jobs' or 'jobs' directory."
+                "Could not find jobs in cloned repository. "
+                "Expected 'library/jobs' or 'jobs' directory."
             )
         except Exception as e:
             shutil.rmtree(tmp_dir, ignore_errors=True)
             raise JobsError(f"Failed to clone repository: {e}") from e
-    
+
     raise JobsError(
         f"Source not found: {source}\n"
         "Provide a local path or GitHub URL (e.g., https://github.com/owner/repo)"
@@ -130,17 +129,17 @@ def _discover_jobs(jobs_path: Path) -> list[tuple[str, Path]]:
     Returns:
         List of (job_name, job_path) tuples
     """
-    jobs = []
-    
+    jobs: list[tuple[str, Path]] = []
+
     if not jobs_path.exists():
         return jobs
-    
+
     for item in jobs_path.iterdir():
         if item.is_dir():
             job_yml = item / "job.yml"
             if job_yml.exists():
                 jobs.append((item.name, item))
-    
+
     return sorted(jobs, key=lambda x: x[0])
 
 
@@ -150,9 +149,9 @@ def jobs() -> None:
     pass
 
 
-@jobs.command()
+@jobs.command(name="list")
 @click.argument("source", required=False)
-def list(source: str | None) -> None:
+def list_jobs(source: str | None) -> None:
     """
     List available jobs from a repository.
 
@@ -168,40 +167,40 @@ def list(source: str | None) -> None:
     """
     try:
         console.print("\n[bold cyan]Available Jobs[/bold cyan]\n")
-        
+
         # Resolve source
         jobs_path = _resolve_source(source)
-        
+
         if source is None:
             console.print("[dim]Source: deepwork library/jobs (default)[/dim]\n")
         else:
             console.print(f"[dim]Source: {source}[/dim]\n")
-        
+
         # Discover jobs
         discovered_jobs = _discover_jobs(jobs_path)
-        
+
         if not discovered_jobs:
             console.print("[yellow]No jobs found in source.[/yellow]")
             return
-        
+
         # Parse and display jobs
         table = Table(show_header=True, header_style="bold cyan")
         table.add_column("Name", style="green")
         table.add_column("Version", style="blue")
         table.add_column("Summary")
-        
+
         for job_name, job_path in discovered_jobs:
             try:
                 job_def = parse_job_definition(job_path)
                 table.add_row(job_def.name, job_def.version, job_def.summary)
             except Exception as e:
                 table.add_row(job_name, "[red]error[/red]", f"Failed to parse: {e}")
-        
+
         console.print(table)
         console.print()
         console.print("[dim]To clone a job, run: deepwork jobs clone <job-name>[/dim]")
         console.print()
-        
+
     except JobsError as e:
         console.print(f"[red]Error:[/red] {e}")
         raise click.Abort() from e
@@ -237,26 +236,26 @@ def clone(job_name: str, source: str | None, path: Path) -> None:
     """
     try:
         console.print("\n[bold cyan]Cloning Job[/bold cyan]\n")
-        
+
         # Check if project has DeepWork installed
         project_path = Path(path).resolve()
         deepwork_dir = project_path / ".deepwork"
-        
+
         if not deepwork_dir.exists():
             raise JobsError(
                 "DeepWork not initialized in this project.\n"
                 "Run 'deepwork install --platform <platform>' first."
             )
-        
+
         # Resolve source
-        console.print(f"[yellow]→[/yellow] Resolving source...")
+        console.print("[yellow]→[/yellow] Resolving source...")
         jobs_path = _resolve_source(source)
-        
+
         if source is None:
             console.print("  [dim]Using deepwork library/jobs (default)[/dim]")
         else:
             console.print(f"  [dim]Using {source}[/dim]")
-        
+
         # Find the job
         source_job_path = jobs_path / job_name
         if not source_job_path.exists():
@@ -264,22 +263,22 @@ def clone(job_name: str, source: str | None, path: Path) -> None:
                 f"Job '{job_name}' not found in source.\n"
                 "Run 'deepwork jobs list' to see available jobs."
             )
-        
+
         if not (source_job_path / "job.yml").exists():
             raise JobsError(
                 f"Invalid job: {job_name} (missing job.yml)"
             )
-        
+
         console.print(f"  [green]✓[/green] Found job '{job_name}'")
-        
+
         # Validate job definition
-        console.print(f"[yellow]→[/yellow] Validating job definition...")
+        console.print("[yellow]→[/yellow] Validating job definition...")
         try:
             job_def = parse_job_definition(source_job_path)
             console.print(f"  [green]✓[/green] {job_def.name} v{job_def.version}")
         except Exception as e:
             raise JobsError(f"Invalid job definition: {e}") from e
-        
+
         # Check if job already exists
         target_job_path = deepwork_dir / "jobs" / job_name
         if target_job_path.exists():
@@ -290,24 +289,24 @@ def clone(job_name: str, source: str | None, path: Path) -> None:
                 console.print("[dim]Clone cancelled.[/dim]")
                 return
             shutil.rmtree(target_job_path)
-        
+
         # Copy job to project
-        console.print(f"[yellow]→[/yellow] Copying job to project...")
+        console.print("[yellow]→[/yellow] Copying job to project...")
         ensure_dir(deepwork_dir / "jobs")
         shutil.copytree(source_job_path, target_job_path)
         fix_permissions(target_job_path)
         console.print(f"  [green]✓[/green] Copied to {target_job_path.relative_to(project_path)}")
-        
+
         # Run sync
-        console.print(f"\n[yellow]→[/yellow] Syncing skills...")
+        console.print("\n[yellow]→[/yellow] Syncing skills...")
         from deepwork.cli.sync import sync_skills
-        
+
         try:
             sync_skills(project_path)
         except Exception as e:
             console.print(f"[yellow]⚠[/yellow] Sync failed: {e}")
             console.print("[dim]Run 'deepwork sync' manually to generate skills.[/dim]")
-        
+
         # Success
         console.print()
         console.print(f"[bold green]✓ Job '{job_name}' cloned successfully![/bold green]")
@@ -316,7 +315,7 @@ def clone(job_name: str, source: str | None, path: Path) -> None:
         console.print(f"  1. Review the job definition: {target_job_path.relative_to(project_path)}/job.yml")
         console.print(f"  2. Use the job with: [cyan]/{job_def.name}[/cyan]")
         console.print()
-        
+
     except JobsError as e:
         console.print(f"[red]Error:[/red] {e}")
         raise click.Abort() from e
