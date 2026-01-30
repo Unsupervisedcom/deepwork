@@ -62,6 +62,8 @@ For EACH test below, follow this cycle:
 
 **IMPORTANT**: Only launch ONE sub-agent at a time. Wait for it to complete and reset before launching the next.
 
+**IMPORTANT**: Always check the queue file before reverting to verify the rule was queued.
+
 ### Test Cases (run serially)
 
 **Test 1: Trigger/Safety**

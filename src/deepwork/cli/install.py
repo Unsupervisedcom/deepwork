@@ -115,6 +115,7 @@ def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
     gitignore_path = deepwork_dir / ".gitignore"
     gitignore_content = """# DeepWork runtime artifacts
 # These files are generated during sessions and should not be committed
+.last_tree_hash
 .last_work_tree
 .last_head_ref
 
