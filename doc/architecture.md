@@ -68,8 +68,7 @@ deepwork/                       # DeepWork tool repository
 │       │   │   ├── job.yml
 │       │   │   ├── steps/
 │       │   │   └── templates/
-│       │   │       ├── doc_spec.md.template
-│       │   │       └── doc_spec.md.example
+│       │   │       └── doc_spec.md.template
 │       │   └── deepwork_rules/   # Rule management job
 │       │       ├── job.yml
 │       │       ├── steps/

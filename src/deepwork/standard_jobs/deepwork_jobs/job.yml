@@ -55,20 +55,6 @@ steps:
       - file: job.yml
         doc_spec: .deepwork/doc_specs/job_spec.md
     dependencies: []
-    quality_criteria:
-      - "**User Understanding**: Did the agent fully understand the user's workflow by asking structured questions?"
-      - "**Structured Questions Used**: Did the agent ask structured questions (using the AskUserQuestion tool) to gather user input?"
-      - "**Document Detection**: For document-oriented workflows, did the agent detect patterns and offer doc spec creation?"
-      - "**doc spec Created (if applicable)**: If a doc spec was needed, was it created in `.deepwork/doc_specs/[doc_spec_name].md` with proper quality criteria?"
-      - "**doc spec References**: Are document outputs properly linked to their doc specs using `{file, doc_spec}` format?"
-      - "**Valid Against doc spec**: Does the job.yml conform to the job.yml doc spec quality criteria (valid identifier, semantic version, concise summary, rich description, complete steps, valid dependencies)?"
-      - "**Clear Inputs/Outputs**: Does every step have clearly defined inputs and outputs?"
-      - "**Logical Dependencies**: Do step dependencies make sense and avoid circular references?"
-      - "**Concise Summary**: Is the summary under 200 characters and descriptive?"
-      - "**Rich Description**: Does the description provide enough context for future refinement?"
-      - "**Valid Schema**: Does the job.yml follow the required schema (name, version, summary, steps)?"
-      - "**File Created**: Has the job.yml file been created in `.deepwork/jobs/[job_name]/job.yml`?"
-
   - id: review_job_spec
     name: "Review Job Specification"
     description: "Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification."
