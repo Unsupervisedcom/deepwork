@@ -1351,11 +1351,9 @@ Claude: Created rule "API documentation update" in .deepwork/rules/api-documenta
 
 ---
 
-## Experts (Planned)
+## Experts
 
 Experts are auto-improving collections of domain knowledge. They provide a structured mechanism for accumulating expertise and exposing it through Claude agents.
-
-**Status**: Specification complete, implementation pending.
 
 See `doc/experts_requirements.md` for the full specification.
 

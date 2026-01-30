@@ -1,6 +1,6 @@
 # Experts System
 
-> **Status**: Specification complete, implementation pending. This document describes planned functionality.
+> **Status**: Implemented. See `doc/architecture.md` for integration details.
 
 Experts are auto-improving collections of domain knowledge. They provide a structured mechanism for accumulating expertise and exposing it throughout the system.
 
