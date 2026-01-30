@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `deepwork learnings --expert "name"` - Lists learnings as markdown with summarized results
 - Expert agent generation during `deepwork sync`:
   - Generates Claude agents in `.claude/agents/dwe_[expert-name].md`
-  - Agent name format: `[expert-name]-expert`
+  - Agent name format: `[expert-name]`
   - Uses dynamic command embedding (`$(deepwork topics ...)`) for always-current content
 - Standard "experts" expert shipped with DeepWork documenting the experts system itself
   - Includes topics on design patterns and discovery descriptions

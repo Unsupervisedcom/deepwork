@@ -135,7 +135,7 @@ Returns a Markdown list of learnings:
 
 Agents are created in `.claude/agents/` with:
 - **Filename**: `dwe_[expert-name].md` (e.g., `dwe_rails-activejob.md`)
-- **name field**: `[expert-name]-expert` (e.g., `rails-activejob-expert`)
+- **name field**: `[expert-name]` (e.g., `rails-activejob`)
 - **description**: The `discovery_description` from expert.yml
 
 ### Agent Body Content

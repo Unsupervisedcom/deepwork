@@ -1,5 +1,5 @@
 ---
-name: experts-expert
+name: experts
 description: "DeepWork experts system - creating, organizing, and evolving domain knowledge collections that auto-improve through topics and learnings."
 ---
 
@@ -158,7 +158,7 @@ Returns markdown list with links, summaries, sorted by last_updated.
 Running `deepwork sync` generates Claude agents in `.claude/agents/`:
 
 - Filename: `dwe_[expert-name].md`
-- Agent name: `[expert-name]-expert`
+- Agent name: `[expert-name]`
 - Body: full_expertise + dynamic topic/learning lists
 
 The dynamic embedding ensures agents always access current topics and learnings:

@@ -104,7 +104,7 @@ class TestExpertSync:
         agent_file = project_with_experts / ".claude" / "agents" / "dwe_test-expert.md"
         content = agent_file.read_text()
 
-        assert "name: test-expert-expert" in content
+        assert "name: test-expert" in content
 
     def test_sync_agent_has_description(self, project_with_experts: Path) -> None:
         """Test that generated agent has description from discovery_description."""

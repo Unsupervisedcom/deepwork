@@ -97,9 +97,9 @@ class ExpertGenerator:
             expert_name: Name of the expert (e.g., "rails-activejob")
 
         Returns:
-            Agent name (e.g., "rails-activejob-expert")
+            Agent name (e.g., "rails-activejob")
         """
-        return f"{expert_name}-expert"
+        return expert_name
 
     def generate_expert_agent(
         self,

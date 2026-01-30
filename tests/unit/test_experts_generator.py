@@ -44,8 +44,8 @@ class TestExpertGenerator:
         """Test agent name generation."""
         generator = ExpertGenerator()
 
-        assert generator.get_agent_name("rails-activejob") == "rails-activejob-expert"
-        assert generator.get_agent_name("experts") == "experts-expert"
+        assert generator.get_agent_name("rails-activejob") == "rails-activejob"
+        assert generator.get_agent_name("experts") == "experts"
 
 
 class TestGenerateExpertAgent:
@@ -104,7 +104,7 @@ class TestGenerateExpertAgent:
         content = agent_path.read_text()
 
         # Check frontmatter
-        assert "name: rails-activejob-expert" in content
+        assert "name: rails-activejob" in content
         assert "Rails ActiveJob" in content
 
         # Check full_expertise is included

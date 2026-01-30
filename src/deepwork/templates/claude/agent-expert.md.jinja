@@ -10,7 +10,7 @@ Template Variables:
   - learnings_count: int - Number of learnings in this expert
 #}
 ---
-name: {{ expert_name }}-expert
+name: {{ expert_name }}
 description: "{{ discovery_description | replace('"', '\\"') | replace('\n', ' ') | truncate(200) }}"
 ---
 

@@ -147,6 +147,16 @@ dev = [
     { name = "types-pyyaml" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+    { name = "ruff" },
+    { name = "types-pyyaml" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1.0" },
@@ -163,6 +173,16 @@ requires-dist = [
     { name = "types-pyyaml", marker = "extra == 'dev'" },
 ]
 provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=1.0" },
+    { name = "pytest", specifier = ">=7.0" },
+    { name = "pytest-cov", specifier = ">=4.0" },
+    { name = "pytest-mock", specifier = ">=3.10" },
+    { name = "ruff", specifier = ">=0.1.0" },
+    { name = "types-pyyaml" },
+]
 
 [[package]]
 name = "gitdb"
