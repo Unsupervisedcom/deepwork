@@ -199,6 +199,7 @@ jobs:
         working-directory: test_project
         timeout-minutes: 6
         run: |
+          mkdir fruits
           echo "=== Running /deepwork_jobs to create fruits job ==="
 
           # Provide detailed, deterministic instructions for creating the job
@@ -213,11 +214,12 @@ jobs:
           1. Step: identify
              Name: Identify Fruits
              Description: Filter a list of items to include only the fruits
+             **CRITICAL**: The output MUST be stored in `fruits/identified_fruits.md`.
 
           2. Step: classify
              Name: Classify Fruits
              Description: Organize identified fruits into categories (citrus, tropical, berries, etc.). 
-             **CRITICAL**: must put the classified fruit list in `classified_fruits.md` in the current working directory.
+             **CRITICAL**: must put the classified fruit list in `./fruits/classified_fruits.md`.
 
           **Key Instructions:**
           - Do not ask questions - just make the job
@@ -283,19 +285,19 @@ jobs:
           echo "=== Workflow finished - looking for output file ==="
 
           # Verify both outputs were created
-          if [ -f "identified_fruits.md" ]; then
+          if [ -f "fruits/identified_fruits.md" ]; then
             echo "SUCCESS: identified_fruits.md created"
             echo "--- Output ---"
-            cat identified_fruits.md
+            cat fruits/identified_fruits.md
           else
             echo "ERROR: identified_fruits.md was not created"
             exit 1
           fi
 
-          if [ -f "classified_fruits.md" ]; then
+          if [ -f "fruits/classified_fruits.md" ]; then
             echo "SUCCESS: classified_fruits.md created"
             echo "--- Output ---"
-            cat classified_fruits.md
+            cat fruits/classified_fruits.md
           else
             echo "ERROR: classified_fruits.md was not created"
             exit 1
