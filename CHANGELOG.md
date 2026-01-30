@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Meta-skill template reorganized to show "Workflows" and "Standalone Skills" sections separately
 - Updated `deepwork_jobs` standard job to v1.0.0 with explicit `new_job` workflow
 - SessionStart hook now skips non-initial sessions (resume, compact/clear) by checking the `source` field in stdin JSON, reducing noise and redundant checks
+- Converted bash hook scripts to Python modules for cross-platform compatibility
+  - `user_prompt_submit.sh` replaced by `deepwork.hooks.user_prompt_submit` Python module
+  - `capture_prompt_work_tree.sh` replaced by `deepwork.hooks.capture_prompt` Python module
+  - Added `hook_entry.py` for cross-platform hook invocation
+  - Updated `global_hooks.yml` to use module references instead of shell scripts
+  - Hooks now work on Windows, macOS, and Linux without requiring bash
 
 ### Fixed
 - Fixed skill template generating malformed YAML frontmatter with fields concatenated on single lines
@@ -28,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Affects `src/deepwork/templates/claude/skill-job-step.md.jinja`
 
 ### Removed
+- Removed deprecated bash hook scripts (`user_prompt_submit.sh`, `capture_prompt_work_tree.sh`)
+- Removed `make_new_job.sh` permission from Claude adapter (no longer needed)
 
 ## [0.5.1] - 2026-01-24
 
