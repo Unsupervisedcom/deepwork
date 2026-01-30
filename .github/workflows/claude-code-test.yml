@@ -199,8 +199,8 @@ jobs:
         working-directory: test_project
         timeout-minutes: 6
         run: |
-          mkdir fruits
           echo "=== Running /deepwork_jobs to create fruits job ==="
+          mkdir fruits
 
           # Provide detailed, deterministic instructions for creating the job
           claude --print --model claude-sonnet-4-5 <<'PROMPT_EOF'
@@ -306,7 +306,7 @@ jobs:
       # STEP 4: Validate the complete workflow output
       - name: Validate Workflow Output
         if: steps.check-key.outputs.has_key == 'true'
-        working-directory: test_project
+        working-directory: test_project/fruits
         run: |
           echo "=== Validating complete workflow ==="
 
