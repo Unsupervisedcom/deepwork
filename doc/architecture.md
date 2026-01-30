@@ -63,7 +63,7 @@ deepwork/                       # DeepWork tool repository
 │       │   │   └── skill-job-step.md.jinja
 │       │   ├── gemini/
 │       │   └── copilot/
-│       ├── standard_jobs/      # Built-in job definitions
+│       ├── standard_jobs/      # Built-in job definitions (legacy location)
 │       │   ├── deepwork_jobs/
 │       │   │   ├── job.yml
 │       │   │   ├── steps/
@@ -77,6 +77,13 @@ deepwork/                       # DeepWork tool repository
 │       │           ├── global_hooks.yml
 │       │           ├── user_prompt_submit.sh
 │       │           └── capture_prompt_work_tree.sh
+│       ├── standard/             # Standard assets (new consolidated location)
+│       │   └── experts/          # Built-in expert definitions
+│       │       └── experts/      # Meta-expert for the experts system itself
+│       │           ├── expert.yml
+│       │           ├── topics/
+│       │           └── learnings/
+│       │               └── .gitkeep
 │       ├── schemas/            # Definition schemas
 │       │   ├── job_schema.py
 │       │   ├── doc_spec_schema.py   # Doc spec schema definition
@@ -1341,6 +1348,20 @@ Claude: Got it. Let me ask a few questions...
 
 Claude: Created rule "API documentation update" in .deepwork/rules/api-documentation.md
 ```
+
+---
+
+## Experts
+
+Experts are auto-improving collections of domain knowledge. They provide a structured mechanism for accumulating expertise and exposing it through Claude agents.
+
+See `doc/experts_requirements.md` for the full specification.
+
+**Key Concepts**:
+- Experts live in `.deepwork/experts/[name]/` with `expert.yml`, `topics/`, and `learnings/`
+- Standard experts ship from `src/deepwork/standard/experts/` and are installed during `deepwork install`
+- `deepwork sync` will generate Claude agents in `.claude/agents/` with `dwe_` prefix
+- CLI commands: `deepwork topics --expert "name"` and `deepwork learnings --expert "name"`
 
 ---
 

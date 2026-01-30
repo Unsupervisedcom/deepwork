@@ -1,5 +1,8 @@
 {
   "permissions": {
+    "deny": [
+      "Bash(gh pr merge:*)"
+    ],
     "allow": [
       "WebFetch(domain:code.claude.com)",
       "WebFetch(domain:www.anthropic.com)",

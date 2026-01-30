@@ -1,0 +1,301 @@
+---
+name: deepwork-jobs
+description: "DeepWork Jobs system - defining, implementing, and syncing multi-step AI workflows. Covers job.yml schema, step instructions, skill generation, hooks, and CLI commands."
+---
+
+# DeepWork Jobs System
+
+You are an expert on the DeepWork Jobs system - the framework for building
+reusable, multi-step AI workflows that integrate with AI coding assistants.
+
+## Core Concepts
+
+**Jobs** are complex, multi-step tasks defined once and executed many times.
+Each job consists of:
+
+- **job.yml**: The specification file defining the job's structure
+- **steps/**: Markdown files with detailed instructions for each step
+- **hooks/**: Optional validation scripts or prompts
+- **templates/**: Example file formats for outputs
+
+**Skills** are generated from jobs and loaded by AI platforms (Claude Code,
+Gemini CLI). Each step becomes a slash command the user can invoke.
+
+## Job Definition Structure
+
+Jobs live in `.deepwork/jobs/[job_name]/`:
+
+```
+.deepwork/jobs/
+└── competitive_research/
+    ├── job.yml
+    ├── steps/
+    │   ├── identify_competitors.md
+    │   └── research_competitors.md
+    ├── hooks/
+    │   └── validate_research.sh
+    └── templates/
+        └── competitor_profile.md
+```
+
+## The job.yml Schema
+
+Required fields:
+- `name`: lowercase with underscores, must start with letter (e.g., `competitive_research`)
+- `version`: semantic versioning X.Y.Z (e.g., `1.0.0`)
+- `summary`: concise description under 200 characters
+- `steps`: array of step definitions
+
+Optional fields:
+- `description`: detailed multi-line explanation of the job
+- `workflows`: named sequences that group steps
+- `changelog`: version history with changes
+
+## Step Definition Fields
+
+Each step in the `steps` array requires:
+- `id`: unique identifier, lowercase with underscores
+- `name`: human-readable name
+- `description`: what this step accomplishes
+- `instructions_file`: path to step markdown (e.g., `steps/identify.md`)
+- `outputs`: array of output files (string or object with `file` and optional `doc_spec`)
+
+Optional step fields:
+- `inputs`: user parameters or file inputs from previous steps
+- `dependencies`: array of step IDs this step requires
+- `exposed`: boolean, if true skill appears in user menus (default: false)
+- `quality_criteria`: array of criteria strings for validation
+- `agent`: agent type for delegation (e.g., `general-purpose`), adds `context: fork`
+- `hooks`: lifecycle hooks for validation (see Hooks section)
+- `stop_hooks`: deprecated, use `hooks.after_agent` instead
+
+## Input Types
+
+**User inputs** - parameters gathered from the user:
+```yaml
+inputs:
+  - name: market_segment
+    description: "Target market segment for research"
+```
+
+**File inputs** - outputs from previous steps:
+```yaml
+inputs:
+  - file: competitors_list.md
+    from_step: identify_competitors
+```
+
+Note: `from_step` must be listed in the step's `dependencies` array.
+
+## Output Types
+
+**Simple output** (string):
+```yaml
+outputs:
+  - competitors_list.md
+  - research/
+```
+
+**Output with doc spec** (object):
+```yaml
+outputs:
+  - file: reports/analysis.md
+    doc_spec: .deepwork/doc_specs/analysis_report.md
+```
+
+Doc specs define quality criteria for document outputs and are embedded in
+generated skills for validation.
+
+## Workflows
+
+Workflows group steps into named sequences. Steps not in any workflow are
+"standalone" and can be run independently.
+
+```yaml
+workflows:
+  - name: new_job
+    summary: "Create a new DeepWork job from scratch"
+    steps:
+      - define
+      - review_job_spec
+      - implement
+```
+
+**Concurrent steps** can run in parallel:
+```yaml
+steps:
+  - define
+  - [research_competitor_a, research_competitor_b]  # run in parallel
+  - synthesize
+```
+
+## Lifecycle Hooks
+
+Hooks trigger at specific points during skill execution.
+
+**Supported events**:
+- `after_agent`: runs after agent finishes (quality validation)
+- `before_tool`: runs before tool use
+- `before_prompt`: runs when user submits prompt
+
+**Hook action types**:
+```yaml
+hooks:
+  after_agent:
+    - prompt: "Verify all criteria are met"      # inline prompt
+    - prompt_file: hooks/quality_check.md        # prompt from file
+    - script: hooks/run_tests.sh                 # shell script
+```
+
+Note: Claude Code currently only supports script hooks. Prompt hooks are
+parsed but not executed (documented limitation).
+
+## Skill Generation
+
+Running `deepwork sync` generates skills from job definitions:
+
+1. Parses all `job.yml` files in `.deepwork/jobs/`
+2. For each job, generates a **meta-skill** (entry point) and **step skills**
+3. Writes to platform-specific directories (e.g., `.claude/skills/`)
+
+**Claude Code skill structure**:
+- Meta-skill: `.claude/skills/[job_name]/SKILL.md`
+- Step skill: `.claude/skills/[job_name].[step_id]/SKILL.md`
+
+**Gemini CLI skill structure**:
+- Meta-skill: `.gemini/skills/[job_name]/index.toml`
+- Step skill: `.gemini/skills/[job_name]/[step_id].toml`
+
+## CLI Commands
+
+**Install DeepWork**:
+```bash
+deepwork install --platform claude
+```
+Creates `.deepwork/` structure, copies standard jobs, runs sync.
+
+**Sync skills**:
+```bash
+deepwork sync
+```
+Regenerates all skills from job definitions.
+
+**Hook execution** (internal):
+```bash
+deepwork hook check  # check for pending rules
+deepwork hook run    # execute pending rule actions
+```
+
+## Standard Jobs
+
+DeepWork ships with standard jobs that are auto-installed:
+
+- `deepwork_jobs`: Create and manage multi-step workflows
+  - `define`: Interactive job specification creation
+  - `review_job_spec`: Sub-agent validation against doc spec
+  - `implement`: Generate step files and sync
+  - `learn`: Improve instructions from execution learnings
+
+- `deepwork_rules`: Create file-change trigger rules
+  - `define`: Interactive rule creation
+
+Standard jobs live in `src/deepwork/standard_jobs/` and are copied to
+`.deepwork/jobs/` during installation.
+
+## Writing Step Instructions
+
+Step instruction files should include:
+
+1. **Objective**: Clear statement of what this step accomplishes
+2. **Task**: Detailed process with numbered steps
+3. **Inputs section**: What to gather/read before starting
+4. **Output format**: Examples of expected outputs
+5. **Quality criteria**: How to verify the step is complete
+
+Use the phrase "ask structured questions" when gathering user input -
+this triggers proper tooling for interactive prompts.
+
+## Template System
+
+Skills are generated using Jinja2 templates in `src/deepwork/templates/`:
+
+- `claude/skill-job-meta.md.jinja`: Meta-skill template
+- `claude/skill-job-step.md.jinja`: Step skill template
+- `gemini/skill-job-meta.toml.jinja`: Gemini meta-skill
+- `gemini/skill-job-step.toml.jinja`: Gemini step skill
+
+Template variables include job context, step metadata, inputs, outputs,
+hooks, quality criteria, and workflow position.
+
+## Platform Adapters
+
+The `AgentAdapter` class abstracts platform differences:
+
+- `ClaudeAdapter`: Claude Code with markdown skills in `.claude/skills/`
+- `GeminiAdapter`: Gemini CLI with TOML skills in `.gemini/skills/`
+
+Adapters handle:
+- Skill filename patterns
+- Hook event name mapping (e.g., `after_agent` -> `Stop` for Claude)
+- Settings file management
+- Permission syncing
+
+## Parser Dataclasses
+
+The `parser.py` module defines the job structure:
+
+- `JobDefinition`: Top-level job with name, version, steps, workflows
+- `Step`: Individual step with inputs, outputs, hooks, dependencies
+- `StepInput`: User parameter or file input
+- `OutputSpec`: Output file optionally with doc_spec reference
+- `HookAction`: Hook configuration (prompt, prompt_file, or script)
+- `Workflow`: Named step sequence
+- `WorkflowStepEntry`: Sequential or concurrent step group
+
+## Validation Rules
+
+The parser validates:
+- Dependencies reference existing steps
+- No circular dependencies
+- File inputs reference steps in dependencies
+- Workflow steps exist
+- No duplicate workflow names
+- Doc spec files exist (when referenced)
+
+## Common Patterns
+
+**Creating a new job**:
+1. Run `/deepwork_jobs` (or `/deepwork_jobs.define`)
+2. Answer structured questions about your workflow
+3. Review generated job.yml
+4. Run `/deepwork_jobs.implement` to generate step files
+5. Run `deepwork sync` to create skills
+
+**Adding a step to existing job**:
+1. Edit `.deepwork/jobs/[job_name]/job.yml`
+2. Add step definition with required fields
+3. Create instructions file in `steps/`
+4. Update workflow if applicable
+5. Run `deepwork sync`
+
+**Debugging sync issues**:
+- Check job.yml syntax with a YAML validator
+- Verify step IDs match filenames
+- Ensure dependencies form valid DAG
+- Check instructions files exist
+
+---
+
+## Topics
+
+Detailed documentation on specific subjects within this domain.
+
+$(deepwork topics --expert "deepwork-jobs")
+
+---
+
+## Learnings
+
+Hard-fought insights from real experiences.
+
+$(deepwork learnings --expert "deepwork-jobs")

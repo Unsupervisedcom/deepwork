@@ -7,6 +7,12 @@ from rich.console import Console
 from rich.table import Table
 
 from deepwork.core.adapters import AgentAdapter
+from deepwork.core.experts_generator import ExpertGenerator
+from deepwork.core.experts_parser import (
+    ExpertParseError,
+    discover_experts,
+    parse_expert_definition,
+)
 from deepwork.core.generator import SkillGenerator
 from deepwork.core.hooks_syncer import collect_job_hooks, sync_hooks_to_platform
 from deepwork.core.parser import parse_job_definition
@@ -114,9 +120,33 @@ def sync_skills(project_path: Path) -> None:
     if job_hooks_list:
         console.print(f"[yellow]→[/yellow] Found {len(job_hooks_list)} job(s) with hooks")
 
+    # Discover and parse experts
+    experts_dir = deepwork_dir / "experts"
+    expert_dirs = discover_experts(experts_dir)
+    console.print(f"[yellow]→[/yellow] Found {len(expert_dirs)} expert(s) to sync")
+
+    experts = []
+    failed_experts: list[tuple[str, str]] = []
+    for expert_dir in expert_dirs:
+        try:
+            expert_def = parse_expert_definition(expert_dir)
+            experts.append(expert_def)
+            console.print(f"  [green]✓[/green] Loaded {expert_def.name}")
+        except ExpertParseError as e:
+            console.print(f"  [red]✗[/red] Failed to load {expert_dir.name}: {e}")
+            failed_experts.append((expert_dir.name, str(e)))
+
+    # Warn but don't fail for expert parsing errors (experts are optional)
+    if failed_experts:
+        console.print()
+        console.print("[yellow]Warning: Some experts failed to parse:[/yellow]")
+        for expert_name, error in failed_experts:
+            console.print(f"  • {expert_name}: {error}")
+
     # Sync each platform
     generator = SkillGenerator()
-    stats = {"platforms": 0, "skills": 0, "hooks": 0}
+    expert_generator = ExpertGenerator()
+    stats = {"platforms": 0, "skills": 0, "hooks": 0, "agents": 0}
 
     for platform_name in platforms:
         try:
@@ -148,6 +178,21 @@ def sync_skills(project_path: Path) -> None:
                     console.print(f"    [green]✓[/green] {job.name} ({len(job_paths)} skills)")
                 except Exception as e:
                     console.print(f"    [red]✗[/red] Failed for {job.name}: {e}")
+
+        # Generate expert agents (only for Claude currently - agents live in .claude/agents/)
+        if experts and adapter.name == "claude":
+            console.print("  [dim]•[/dim] Generating expert agents...")
+            for expert in experts:
+                try:
+                    agent_path = expert_generator.generate_expert_agent(
+                        expert, adapter, platform_dir
+                    )
+                    stats["agents"] += 1
+                    console.print(
+                        f"    [green]✓[/green] {expert.name} ({agent_path.name})"
+                    )
+                except Exception as e:
+                    console.print(f"    [red]✗[/red] Failed for {expert.name}: {e}")
 
         # Sync hooks to platform settings
         if job_hooks_list:
@@ -195,6 +240,8 @@ def sync_skills(project_path: Path) -> None:
 
     table.add_row("Platforms synced", str(stats["platforms"]))
     table.add_row("Total skills", str(stats["skills"]))
+    if stats["agents"] > 0:
+        table.add_row("Expert agents", str(stats["agents"]))
     if stats["hooks"] > 0:
         table.add_row("Hooks synced", str(stats["hooks"]))
 
