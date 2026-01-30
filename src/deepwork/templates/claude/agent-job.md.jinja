@@ -33,6 +33,30 @@ Template Variables:
       - next_step: string|null - Next step in workflow
       - quality_criteria: list[string]|null - Criteria for completion
 #}
+{#- ==================== MACROS ==================== -#}
+
+{#- Macro: Render output file list as comma-separated string -#}
+{% macro output_files(outputs) -%}
+{{ outputs | map(attribute='file') | join(', ') }}
+{%- endmacro %}
+
+{#- Macro: Render workflow as "name: summary (steps)" -#}
+{% macro workflow_desc(workflow) -%}
+**{{ workflow.name }}**: {{ workflow.summary }} ({{ workflow.steps | join(' → ') }})
+{%- endmacro %}
+
+{#- Macro: Render step completion message -#}
+{% macro completion_msg(step, job_name) -%}
+{% if step.is_standalone -%}
+"{{ step.id }} complete{% if step.outputs %}, outputs: {{ output_files(step.outputs) }}{% endif %}"
+{%- elif step.next_step -%}
+"{{ step.id }} complete{% if step.outputs %}, outputs: {{ output_files(step.outputs) }}{% endif %}"
+{%- else -%}
+"{{ step.workflow_name if step.workflow_name else job_name }} workflow complete{% if step.outputs %}, outputs: {{ output_files(step.outputs) }}{% endif %}"
+{%- endif %}
+{%- endmacro %}
+
+{#- ==================== TEMPLATE ==================== -#}
 ---
 name: {{ job_name }}
 description: "{{ job_summary }}"
@@ -48,49 +72,39 @@ description: "{{ job_summary }}"
 
 ## Agent Overview
 
-This agent handles the **{{ job_name }}** job. It contains {{ total_steps }} skill{{ 's' if total_steps != 1 else '' }} that can be executed as part of workflows or standalone.
+This agent handles the **{{ job_name }}** job with {{ total_steps }} skill{{ 's' if total_steps != 1 else '' }}.
 
 {% if has_workflows %}
-### Available Workflows
+**Workflows**: {% for workflow in workflows %}{{ workflow.name }}{% if not loop.last %}, {% endif %}{% endfor %}
 
-{% for workflow in workflows %}
-**{{ workflow.name }}**: {{ workflow.summary }}
-- Steps: {{ workflow.steps | join(' → ') }}
-- Start with: `{{ workflow.first_step }}`
-{% endfor %}
 {% endif %}
-
 {% if standalone_steps %}
-### Standalone Skills
+**Standalone Skills**: {% for step in standalone_steps %}{{ step.id }}{% if not loop.last %}, {% endif %}{% endfor %}
 
-These skills can be run independently:
-{% for step in standalone_steps %}
-- **{{ step.id }}**: {{ step.description }}
-{% endfor %}
 {% endif %}
-
 ---
 
 ## How to Use This Agent
 
-### Option 1: Start a Workflow
-Tell the agent which workflow to run:
-- "Run the {{ workflows[0].name if workflows else 'default' }} workflow"
-- "Start {{ job_name }}"
 {% if has_workflows %}
+### Workflows
 {% for workflow in workflows %}
-- "{{ workflow.name }}" → starts at `{{ workflow.first_step }}`
+- {{ workflow_desc(workflow) }}
+  - Start: `{{ workflow.first_step }}`
 {% endfor %}
+
 {% endif %}
-
-### Option 2: Run a Specific Skill
-Request a specific skill by name:
-{% for step in steps %}
-- "{{ step.id }}" - {{ step.description }}
+{% if standalone_steps %}
+### Standalone Skills (run anytime)
+{% for step in standalone_steps %}
+- **{{ step.id }}**: {{ step.description }}
 {% endfor %}
 
-### Option 3: Let the Agent Decide
-Describe what you want to accomplish, and the agent will select the appropriate skill(s).
+{% endif %}
+### All Skills
+{% for step in steps %}
+- `{{ step.id }}` - {{ step.description }}
+{% endfor %}
 
 ---
 
@@ -105,20 +119,6 @@ Parse the user's request to determine:
 2. Any parameters or context provided
 3. Whether this is a continuation of previous work
 
-{% if has_workflows %}
-**Workflow Detection**:
-{% for workflow in workflows %}
-- Keywords like "{{ workflow.name }}", "{{ workflow.summary | lower | truncate(30, True, '') }}" → Start `{{ workflow.name }}` workflow at `{{ workflow.first_step }}`
-{% endfor %}
-{% endif %}
-
-{% if standalone_steps %}
-**Standalone Skill Detection**:
-{% for step in standalone_steps %}
-- Keywords like "{{ step.id }}", "{{ step.description | lower | truncate(30, True, '') }}" → Run `{{ step.id }}` skill
-{% endfor %}
-{% endif %}
-
 ### Step 2: Check Work Branch
 
 Before executing any skill:
@@ -132,19 +132,10 @@ Navigate to the relevant skill section below and follow its instructions.
 
 ### Step 4: Workflow Continuation
 
-{% if has_workflows %}
 After completing a workflow step:
 1. Inform the user of completion and outputs created
-2. Automatically proceed to the next step in the workflow
+2. Automatically proceed to the next step if one exists
 3. Continue until the workflow is complete or the user intervenes
-
-**Workflow sequences**:
-{% for workflow in workflows %}
-- **{{ workflow.name }}**: {{ workflow.steps | join(' → ') }}
-{% endfor %}
-{% else %}
-After completing a step, check if there are dependent steps that should run next.
-{% endif %}
 
 ---
 
@@ -225,16 +216,11 @@ Use a sub-agent (Haiku model) to review your work against these criteria before 
 
 #### On Completion
 
-{% if step.is_standalone %}
 1. Verify outputs are created
-2. Inform user: "{{ step.id }} complete{% if step.outputs %}, outputs: {{ step.outputs | map(attribute='file') | join(', ') }}{% endif %}"
-{% elif step.next_step %}
-1. Verify outputs are created
-2. Inform user: "{{ step.id }} complete{% if step.outputs %}, outputs: {{ step.outputs | map(attribute='file') | join(', ') }}{% endif %}"
+2. Inform user: {{ completion_msg(step, job_name) }}
+{% if step.next_step %}
 3. **Continue to next skill**: Proceed to `{{ step.next_step }}`
-{% else %}
-1. Verify outputs are created
-2. Inform user: "{{ step.workflow_name if step.workflow_name else job_name }} workflow complete{% if step.outputs %}, outputs: {{ step.outputs | map(attribute='file') | join(', ') }}{% endif %}"
+{% elif not step.is_standalone %}
 3. Consider creating a PR to merge the work branch
 {% endif %}
 

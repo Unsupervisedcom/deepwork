@@ -46,34 +46,22 @@ Test types covered:
 
 ## Agent Overview
 
-This agent handles the **manual_tests** job. It contains 4 skills that can be executed as part of workflows or standalone.
+This agent handles the **manual_tests** job with 4 skills.
 
-### Available Workflows
-
-**run_all**: Run all manual tests: reset, NOT-fire tests, fire tests, and infinite block tests
-- Steps: reset → run_not_fire_tests → run_fire_tests → infinite_block_tests
-- Start with: `reset`
-
-
+**Workflows**: run_all
 ---
 
 ## How to Use This Agent
 
-### Option 1: Start a Workflow
-Tell the agent which workflow to run:
-- "Run the run_all workflow"
-- "Start manual_tests"
-- "run_all" → starts at `reset`
+### Workflows
+- **run_all**: Run all manual tests: reset, NOT-fire tests, fire tests, and infinite block tests (reset → run_not_fire_tests → run_fire_tests → infinite_block_tests)
+  - Start: `reset`
 
-### Option 2: Run a Specific Skill
-Request a specific skill by name:
-- "reset" - Runs FIRST to ensure clean environment. Also called internally by other steps when they need to revert changes and clear the queue.
-- "run_not_fire_tests" - Runs all 6 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met.
-- "run_fire_tests" - Runs all 6 'should fire' tests serially with resets between each. Use after NOT-fire tests to verify rules fire correctly.
-- "infinite_block_tests" - Runs all 4 infinite block tests serially. Tests both 'should fire' (no promise) and 'should NOT fire' (with promise) scenarios.
-
-### Option 3: Let the Agent Decide
-Describe what you want to accomplish, and the agent will select the appropriate skill(s).
+### All Skills
+- `reset` - Runs FIRST to ensure clean environment. Also called internally by other steps when they need to revert changes and clear the queue.
+- `run_not_fire_tests` - Runs all 6 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met.
+- `run_fire_tests` - Runs all 6 'should fire' tests serially with resets between each. Use after NOT-fire tests to verify rules fire correctly.
+- `infinite_block_tests` - Runs all 4 infinite block tests serially. Tests both 'should fire' (no promise) and 'should NOT fire' (with promise) scenarios.
 
 ---
 
@@ -87,10 +75,6 @@ Parse the user's request to determine:
 1. Which workflow or skill to execute
 2. Any parameters or context provided
 3. Whether this is a continuation of previous work
-
-**Workflow Detection**:
-- Keywords like "run_all", "run all manual tests: reset, n" → Start `run_all` workflow at `reset`
-
 
 ### Step 2: Check Work Branch
 
@@ -107,11 +91,8 @@ Navigate to the relevant skill section below and follow its instructions.
 
 After completing a workflow step:
 1. Inform the user of completion and outputs created
-2. Automatically proceed to the next step in the workflow
+2. Automatically proceed to the next step if one exists
 3. Continue until the workflow is complete or the user intervenes
-
-**Workflow sequences**:
-- **run_all**: reset → run_not_fire_tests → run_fire_tests → infinite_block_tests
 
 ---
 

@@ -23,34 +23,22 @@ Steps:
 
 ## Agent Overview
 
-This agent handles the **commit** job. It contains 4 skills that can be executed as part of workflows or standalone.
+This agent handles the **commit** job with 4 skills.
 
-### Available Workflows
-
-**full**: Full commit workflow: review, test, lint, and commit
-- Steps: review → test → lint → commit_and_push
-- Start with: `review`
-
-
+**Workflows**: full
 ---
 
 ## How to Use This Agent
 
-### Option 1: Start a Workflow
-Tell the agent which workflow to run:
-- "Run the full workflow"
-- "Start commit"
-- "full" → starts at `review`
+### Workflows
+- **full**: Full commit workflow: review, test, lint, and commit (review → test → lint → commit_and_push)
+  - Start: `review`
 
-### Option 2: Run a Specific Skill
-Request a specific skill by name:
-- "review" - Reviews changed code for issues, DRY opportunities, naming clarity, and test coverage using a sub-agent. Use as the first step before testing.
-- "test" - Pulls latest code and runs tests until all pass. Use after code review passes to verify changes work correctly.
-- "lint" - Formats and lints code with ruff using a sub-agent. Use after tests pass to ensure code style compliance.
-- "commit_and_push" - Verifies changed files, creates commit, and pushes to remote. Use after linting passes to finalize changes.
-
-### Option 3: Let the Agent Decide
-Describe what you want to accomplish, and the agent will select the appropriate skill(s).
+### All Skills
+- `review` - Reviews changed code for issues, DRY opportunities, naming clarity, and test coverage using a sub-agent. Use as the first step before testing.
+- `test` - Pulls latest code and runs tests until all pass. Use after code review passes to verify changes work correctly.
+- `lint` - Formats and lints code with ruff using a sub-agent. Use after tests pass to ensure code style compliance.
+- `commit_and_push` - Verifies changed files, creates commit, and pushes to remote. Use after linting passes to finalize changes.
 
 ---
 
@@ -64,10 +52,6 @@ Parse the user's request to determine:
 1. Which workflow or skill to execute
 2. Any parameters or context provided
 3. Whether this is a continuation of previous work
-
-**Workflow Detection**:
-- Keywords like "full", "full commit workflow: review, " → Start `full` workflow at `review`
-
 
 ### Step 2: Check Work Branch
 
@@ -84,11 +68,8 @@ Navigate to the relevant skill section below and follow its instructions.
 
 After completing a workflow step:
 1. Inform the user of completion and outputs created
-2. Automatically proceed to the next step in the workflow
+2. Automatically proceed to the next step if one exists
 3. Continue until the workflow is complete or the user intervenes
-
-**Workflow sequences**:
-- **full**: review → test → lint → commit_and_push
 
 ---
 

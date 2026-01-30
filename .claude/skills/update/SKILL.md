@@ -24,29 +24,18 @@ for any standard job in the DeepWork repository.
 
 ## Agent Overview
 
-This agent handles the **update** job. It contains 1 skill that can be executed as part of workflows or standalone.
+This agent handles the **update** job with 1 skill.
 
-
-### Standalone Skills
-
-These skills can be run independently:
-- **job**: Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions.
-
+**Standalone Skills**: job
 ---
 
 ## How to Use This Agent
 
-### Option 1: Start a Workflow
-Tell the agent which workflow to run:
-- "Run the default workflow"
-- "Start update"
+### Standalone Skills (run anytime)
+- **job**: Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions.
 
-### Option 2: Run a Specific Skill
-Request a specific skill by name:
-- "job" - Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions.
-
-### Option 3: Let the Agent Decide
-Describe what you want to accomplish, and the agent will select the appropriate skill(s).
+### All Skills
+- `job` - Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions.
 
 ---
 
@@ -61,10 +50,6 @@ Parse the user's request to determine:
 2. Any parameters or context provided
 3. Whether this is a continuation of previous work
 
-
-**Standalone Skill Detection**:
-- Keywords like "job", "edits standard job source file" → Run `job` skill
-
 ### Step 2: Check Work Branch
 
 Before executing any skill:
@@ -78,7 +63,10 @@ Navigate to the relevant skill section below and follow its instructions.
 
 ### Step 4: Workflow Continuation
 
-After completing a step, check if there are dependent steps that should run next.
+After completing a workflow step:
+1. Inform the user of completion and outputs created
+2. Automatically proceed to the next step if one exists
+3. Continue until the workflow is complete or the user intervenes
 
 ---
 

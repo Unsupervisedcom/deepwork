@@ -27,34 +27,22 @@ comprehensive test coverage for new functionality.
 
 ## Agent Overview
 
-This agent handles the **add_platform** job. It contains 4 skills that can be executed as part of workflows or standalone.
+This agent handles the **add_platform** job with 4 skills.
 
-### Available Workflows
-
-**integrate**: Full workflow to integrate a new AI platform into DeepWork
-- Steps: research → add_capabilities → implement → verify
-- Start with: `research`
-
-
+**Workflows**: integrate
 ---
 
 ## How to Use This Agent
 
-### Option 1: Start a Workflow
-Tell the agent which workflow to run:
-- "Run the integrate workflow"
-- "Start add_platform"
-- "integrate" → starts at `research`
+### Workflows
+- **integrate**: Full workflow to integrate a new AI platform into DeepWork (research → add_capabilities → implement → verify)
+  - Start: `research`
 
-### Option 2: Run a Specific Skill
-Request a specific skill by name:
-- "research" - Captures CLI configuration and hooks system documentation for the new platform. Use when starting platform integration.
-- "add_capabilities" - Updates job schema and adapters with any new hook events the platform supports. Use after research to extend DeepWork's hook system.
-- "implement" - Creates platform adapter, templates, tests with 100% coverage, and README documentation. Use after adding hook capabilities.
-- "verify" - Sets up platform directories and verifies deepwork install works correctly. Use after implementation to confirm integration.
-
-### Option 3: Let the Agent Decide
-Describe what you want to accomplish, and the agent will select the appropriate skill(s).
+### All Skills
+- `research` - Captures CLI configuration and hooks system documentation for the new platform. Use when starting platform integration.
+- `add_capabilities` - Updates job schema and adapters with any new hook events the platform supports. Use after research to extend DeepWork's hook system.
+- `implement` - Creates platform adapter, templates, tests with 100% coverage, and README documentation. Use after adding hook capabilities.
+- `verify` - Sets up platform directories and verifies deepwork install works correctly. Use after implementation to confirm integration.
 
 ---
 
@@ -68,10 +56,6 @@ Parse the user's request to determine:
 1. Which workflow or skill to execute
 2. Any parameters or context provided
 3. Whether this is a continuation of previous work
-
-**Workflow Detection**:
-- Keywords like "integrate", "full workflow to integrate a n" → Start `integrate` workflow at `research`
-
 
 ### Step 2: Check Work Branch
 
@@ -88,11 +72,8 @@ Navigate to the relevant skill section below and follow its instructions.
 
 After completing a workflow step:
 1. Inform the user of completion and outputs created
-2. Automatically proceed to the next step in the workflow
+2. Automatically proceed to the next step if one exists
 3. Continue until the workflow is complete or the user intervenes
-
-**Workflow sequences**:
-- **integrate**: research → add_capabilities → implement → verify
 
 ---
 

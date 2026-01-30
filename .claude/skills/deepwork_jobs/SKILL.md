@@ -21,38 +21,26 @@ learnings specific to the current run into AGENTS.md files in the working folder
 
 ## Agent Overview
 
-This agent handles the **deepwork_jobs** job. It contains 4 skills that can be executed as part of workflows or standalone.
+This agent handles the **deepwork_jobs** job with 4 skills.
 
-### Available Workflows
-
-**new_job**: Create a new DeepWork job from scratch through definition, review, and implementation
-- Steps: define → review_job_spec → implement
-- Start with: `define`
-
-### Standalone Skills
-
-These skills can be run independently:
-- **learn**: Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
-
+**Workflows**: new_job
+**Standalone Skills**: learn
 ---
 
 ## How to Use This Agent
 
-### Option 1: Start a Workflow
-Tell the agent which workflow to run:
-- "Run the new_job workflow"
-- "Start deepwork_jobs"
-- "new_job" → starts at `define`
+### Workflows
+- **new_job**: Create a new DeepWork job from scratch through definition, review, and implementation (define → review_job_spec → implement)
+  - Start: `define`
 
-### Option 2: Run a Specific Skill
-Request a specific skill by name:
-- "define" - Creates a job.yml specification by gathering workflow requirements through structured questions. Use when starting a new multi-step workflow.
-- "review_job_spec" - Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification.
-- "implement" - Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes.
-- "learn" - Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
+### Standalone Skills (run anytime)
+- **learn**: Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
 
-### Option 3: Let the Agent Decide
-Describe what you want to accomplish, and the agent will select the appropriate skill(s).
+### All Skills
+- `define` - Creates a job.yml specification by gathering workflow requirements through structured questions. Use when starting a new multi-step workflow.
+- `review_job_spec` - Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification.
+- `implement` - Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes.
+- `learn` - Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it.
 
 ---
 
@@ -66,12 +54,6 @@ Parse the user's request to determine:
 1. Which workflow or skill to execute
 2. Any parameters or context provided
 3. Whether this is a continuation of previous work
-
-**Workflow Detection**:
-- Keywords like "new_job", "create a new deepwork job from" → Start `new_job` workflow at `define`
-
-**Standalone Skill Detection**:
-- Keywords like "learn", "analyzes conversation history " → Run `learn` skill
 
 ### Step 2: Check Work Branch
 
@@ -88,11 +70,8 @@ Navigate to the relevant skill section below and follow its instructions.
 
 After completing a workflow step:
 1. Inform the user of completion and outputs created
-2. Automatically proceed to the next step in the workflow
+2. Automatically proceed to the next step if one exists
 3. Continue until the workflow is complete or the user intervenes
-
-**Workflow sequences**:
-- **new_job**: define → review_job_spec → implement
 
 ---
 
