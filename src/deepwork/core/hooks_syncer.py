@@ -7,6 +7,7 @@ from typing import Any
 import yaml
 
 from deepwork.core.adapters import AgentAdapter
+from deepwork.utils.paths import discover_all_jobs_dirs
 
 
 class HooksSyncError(Exception):
@@ -119,24 +120,22 @@ class JobHooks:
         )
 
 
-def collect_job_hooks(jobs_dir: Path) -> list[JobHooks]:
+def collect_job_hooks(project_path: Path) -> list[JobHooks]:
     """
-    Collect hooks from all jobs in the jobs directory.
+    Collect hooks from all jobs in both local and global locations.
 
     Args:
-        jobs_dir: Path to .deepwork/jobs directory
+        project_path: Path to project root
 
     Returns:
         List of JobHooks for all jobs with hooks defined
     """
-    if not jobs_dir.exists():
-        return []
-
     job_hooks_list = []
-    for job_dir in jobs_dir.iterdir():
-        if not job_dir.is_dir():
-            continue
-
+    
+    # Discover jobs from both local and global locations
+    job_dirs_with_location = discover_all_jobs_dirs(project_path)
+    
+    for job_dir, _ in job_dirs_with_location:
         job_hooks = JobHooks.from_job_dir(job_dir)
         if job_hooks:
             job_hooks_list.append(job_hooks)
