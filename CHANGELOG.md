@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Step skills now display workflow context (e.g., "Step 2/3 in new_job workflow")
   - Standalone skills are clearly marked as "can be run anytime"
   - Backward compatible: jobs without `workflows` section use dependency-based detection
+- Enhanced `deepwork_jobs.define` with guidance for creating jobs with multiple workflows
+  - New Step 2.5 asks structured questions about workflow organization
+  - Updated example dialog demonstrates multi-workflow discovery conversation
+  - Templates and doc_specs updated with `workflows` section examples and validation criteria
 
 ### Changed
 - Skill templates now show workflow-aware progress (e.g., "new_job step 2/3 complete")
