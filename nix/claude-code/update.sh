@@ -28,12 +28,17 @@ mkdir -p "$TMPDIR/src"
 tar -xzf "$TMPDIR/claude-code.tgz" -C "$TMPDIR/src" --strip-components=1
 SRC_HASH=$(nix hash path "$TMPDIR/src")
 
-# Get package-lock.json from tarball
+# Get package-lock.json from tarball, or generate it if not present
 if [[ -f "$TMPDIR/src/package-lock.json" ]]; then
     cp "$TMPDIR/src/package-lock.json" package-lock.json
 else
-    echo "Error: No package-lock.json in tarball"
-    exit 1
+    echo "No package-lock.json in tarball, generating from package.json"
+    # Generate package-lock.json from package.json
+    cp "$TMPDIR/src/package.json" "$TMPDIR/package.json"
+    cd "$TMPDIR"
+    npm install --package-lock-only --ignore-scripts
+    cd "$SCRIPT_DIR"
+    cp "$TMPDIR/package-lock.json" package-lock.json
 fi
 
 # Compute npmDepsHash using prefetch-npm-deps
