@@ -272,6 +272,11 @@ JOB_SCHEMA: dict[str, Any] = {
                             "minLength": 1,
                         },
                     },
+                    "agent": {
+                        "type": "string",
+                        "description": "Agent type for this step. When set, the skill uses context: fork and delegates to the specified agent (e.g., 'general-purpose').",
+                        "minLength": 1,
+                    },
                 },
                 "additionalProperties": False,
             },

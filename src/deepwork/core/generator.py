@@ -311,6 +311,7 @@ class SkillGenerator:
             "hooks": hooks,  # New: all hooks by platform event name
             "stop_hooks": stop_hooks,  # Backward compat: after_agent hooks only
             "quality_criteria": step.quality_criteria,  # Declarative criteria with framing
+            "agent": step.agent,  # Agent type (e.g., "general-purpose") - triggers context: fork
         }
 
         # Add workflow context if step is part of a workflow
