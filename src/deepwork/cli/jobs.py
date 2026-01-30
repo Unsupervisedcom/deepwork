@@ -87,7 +87,9 @@ def _resolve_source(source: str | None) -> Path:
     source_path = Path(source)
     if source_path.exists():
         if source_path.is_dir():
-            # If pointing to a repo root, look for library/jobs
+            # If pointing to a repo root, look for jobs in standard locations
+            if (source_path / ".deepwork" / "jobs").exists():
+                return source_path / ".deepwork" / "jobs"
             if (source_path / "library" / "jobs").exists():
                 return source_path / "library" / "jobs"
             # If pointing directly to a jobs directory
@@ -105,7 +107,10 @@ def _resolve_source(source: str | None) -> Path:
             Repo.clone_from(source, tmp_dir, depth=1)
             console.print("  [green]✓[/green] Repository cloned")
 
-            # Look for library/jobs in the cloned repo
+            # Look for jobs in standard locations (in order of priority)
+            if (tmp_dir / ".deepwork" / "jobs").exists():
+                return tmp_dir / ".deepwork" / "jobs"
+
             if (tmp_dir / "library" / "jobs").exists():
                 return tmp_dir / "library" / "jobs"
 
@@ -117,7 +122,7 @@ def _resolve_source(source: str | None) -> Path:
             shutil.rmtree(tmp_dir, ignore_errors=True)
             raise JobsError(
                 "Could not find jobs in cloned repository. "
-                "Expected 'library/jobs' or 'jobs' directory."
+                "Expected '.deepwork/jobs', 'library/jobs', or 'jobs' directory."
             )
         except GitCommandError as e:
             shutil.rmtree(tmp_dir, ignore_errors=True)

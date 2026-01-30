@@ -76,6 +76,54 @@ steps:
         assert "1.0.0" in result.output
         assert "A test job for integration testing" in result.output
 
+    def test_jobs_list_from_deepwork_jobs_directory(self, tmp_path: Path) -> None:
+        """Test listing jobs from a .deepwork/jobs directory."""
+        runner = CliRunner()
+
+        # Create a test .deepwork/jobs directory
+        jobs_dir = tmp_path / "test_repo" / ".deepwork" / "jobs"
+        jobs_dir.mkdir(parents=True)
+
+        # Create a test job
+        test_job_dir = jobs_dir / "deepwork_test_job"
+        test_job_dir.mkdir()
+        (test_job_dir / "job.yml").write_text(
+            """name: deepwork_test_job
+version: "2.0.0"
+summary: "A test job from .deepwork/jobs"
+description: |
+  This is a test job from .deepwork/jobs.
+
+steps:
+  - id: test_step
+    name: "Test Step"
+    description: "A test step"
+    instructions_file: steps/test.md
+    inputs: []
+    outputs: []
+    dependencies: []
+    quality_criteria:
+      - "Test passed"
+"""
+        )
+
+        # Create steps directory
+        (test_job_dir / "steps").mkdir()
+        (test_job_dir / "steps" / "test.md").write_text("# Test Step\n\nTest instructions.")
+
+        # List jobs from local path
+        result = runner.invoke(
+            cli,
+            ["jobs", "list", str(tmp_path / "test_repo")],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+        assert "Available Jobs" in result.output
+        assert "deepwork_test_job" in result.output
+        assert "2.0.0" in result.output
+        assert "A test job from .deepwork/jobs" in result.output
+
     def test_jobs_list_nonexistent_path(self) -> None:
         """Test listing jobs from a nonexistent path."""
         runner = CliRunner()
