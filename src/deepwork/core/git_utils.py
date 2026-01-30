@@ -41,13 +41,13 @@ WHY THIS IS ROBUST:
 - CLEAN: Respects .gitignore automatically
 
 WHAT WE CAN DETECT:
-| Scenario              | Handled? | Explanation                                |
-|-----------------------|----------|-------------------------------------------|
-| Modified files        | ✅ Yes   | Git detects content hash changed          |
-| New untracked files   | ✅ Yes   | git add -A captures them in temp index    |
-| Deleted files         | ✅ Yes   | Tree comparison shows them as missing     |
-| Staged vs Unstaged    | ✅ Yes   | We look at disk state, ignore staging     |
-| Ignored files         | ❌ No    | git add respects .gitignore (by design)   |
+| Scenario              | Detected? | Explanation                                |
+|-----------------------|-----------|-------------------------------------------|
+| Modified files        | ✅ Yes    | Git detects content hash changed          |
+| New untracked files   | ✅ Yes    | git add -A captures them in temp index    |
+| Deleted files         | ✅ Yes    | Tree comparison shows them as missing     |
+| Staged vs Unstaged    | ✅ Yes    | We look at disk state, ignore staging     |
+| Ignored files (.gitignore) | ✅ Excluded | Correctly excluded - rules don't trigger |
 
 KEY GIT PLUMBING CONCEPTS:
 - GIT_INDEX_FILE: By setting this env var, Git uses a different index file.

@@ -34,13 +34,13 @@
 # - CLEAN: Respects .gitignore automatically
 #
 # WHAT WE CAN DETECT:
-# | Scenario              | Handled? | Explanation                                |
-# |-----------------------|----------|-------------------------------------------|
-# | Modified files        | ✅ Yes   | Git detects content hash changed          |
-# | New untracked files   | ✅ Yes   | git add -A captures them in temp index    |
-# | Deleted files         | ✅ Yes   | Tree comparison shows them as missing     |
-# | Staged vs Unstaged    | ✅ Yes   | We look at disk state, ignore staging     |
-# | Ignored files         | ❌ No    | git add respects .gitignore (by design)   |
+# | Scenario              | Detected? | Explanation                                |
+# |-----------------------|-----------|-------------------------------------------|
+# | Modified files        | ✅ Yes    | Git detects content hash changed          |
+# | New untracked files   | ✅ Yes    | git add -A captures them in temp index    |
+# | Deleted files         | ✅ Yes    | Tree comparison shows them as missing     |
+# | Staged vs Unstaged    | ✅ Yes    | We look at disk state, ignore staging     |
+# | Ignored files (.gitignore) | ✅ Excluded | Correctly excluded - rules don't trigger |
 #
 # =============================================================================
 
@@ -65,8 +65,9 @@ git add -A 2>/dev/null || true
 #    This stores the snapshot in git's object database without creating a commit
 TREE_HASH=$(git write-tree 2>/dev/null || echo "")
 
-# 5. Clean up the temporary index
+# 5. Clean up the temporary index and restore environment
 rm -f "$TEMP_INDEX"
+unset GIT_INDEX_FILE  # Restore normal Git behavior
 
 # 6. Save the tree hash for later comparison by rules_check
 if [ -n "$TREE_HASH" ]; then
