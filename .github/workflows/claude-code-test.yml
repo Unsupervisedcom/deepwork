@@ -197,12 +197,12 @@ jobs:
       - name: Create job with /deepwork_jobs
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
-        timeout-minutes: 10
+        timeout-minutes: 4
         run: |
           echo "=== Running /deepwork_jobs to create fruits job ==="
 
           # Provide detailed, deterministic instructions for creating the job
-          claude --print <<'PROMPT_EOF'
+          claude --print --model claude-sonnet-4.5 <<'PROMPT_EOF'
           /deepwork_jobs I want to create a simple job called "fruits" for identifying and classifying fruits.
 
           Here are the EXACT specifications.
@@ -219,7 +219,11 @@ jobs:
              Description: Organize identified fruits into categories (citrus, tropical, berries, etc.). 
              **CRITICAL**: must put the classified fruit list in `classified_fruits.md` in the project base folder.
 
-          Create this job now. Do not ask questions.
+          **Key Instructions:**
+          - Do not ask questions - just make the job
+          - Rules are explicitly not desired. Tell the review agents that.
+
+          No 
           PROMPT_EOF
 
           # Verify the job.yml was created
@@ -265,14 +269,14 @@ jobs:
           fi
 
       # STEP 3: Execute the /fruits workflow (runs all steps automatically)
-      - name: Run /fruits workflow
+      - name: Run Workflow
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
-        timeout-minutes: 10
+        timeout-minutes: 2
         run: |
           echo "=== Running /fruits workflow with test input ==="
 
-          claude --print "/fruits" <<'PROMPT_EOF'
+          claude --print --model claude-sonnet-4.5 "/fruits" <<'PROMPT_EOF'
           raw_items: apple, car, banana, chair, orange, table, mango, laptop, grape, bicycle
           PROMPT_EOF
 
@@ -296,7 +300,7 @@ jobs:
           fi
 
       # STEP 4: Validate the complete workflow output
-      - name: Validate complete workflow
+      - name: Validate Workflow Output
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
         run: |
