@@ -10,7 +10,8 @@ from git import Repo
 from rich.console import Console
 from rich.table import Table
 
-from deepwork.core.parser import parse_job_definition
+from deepwork.cli.sync import SyncError, sync_skills
+from deepwork.core.parser import ParseError, parse_job_definition
 from deepwork.utils.fs import ensure_dir, fix_permissions
 
 console = Console()
@@ -34,8 +35,13 @@ def _is_github_url(source: str) -> bool:
     """
     try:
         parsed = urlparse(source)
-        return parsed.scheme in ("http", "https") and "github.com" in parsed.netloc
-    except Exception:
+        # Check for exact match on github.com or GitHub Enterprise subdomains
+        is_github = (
+            parsed.scheme in ("http", "https")
+            and (parsed.netloc == "github.com" or parsed.netloc.endswith(".github.com"))
+        )
+        return is_github
+    except ValueError:
         return False
 
 
@@ -94,6 +100,8 @@ def _resolve_source(source: str | None) -> Path:
         console.print(f"[yellow]→[/yellow] Cloning repository from {source}...")
         tmp_dir = Path(tempfile.mkdtemp(prefix="deepwork_jobs_"))
         try:
+            from git import GitCommandError
+
             Repo.clone_from(source, tmp_dir, depth=1)
             console.print("  [green]✓[/green] Repository cloned")
 
@@ -105,13 +113,22 @@ def _resolve_source(source: str | None) -> Path:
             if (tmp_dir / "jobs").exists():
                 return tmp_dir / "jobs"
 
+            # Clean up if jobs not found
+            shutil.rmtree(tmp_dir, ignore_errors=True)
             raise JobsError(
                 "Could not find jobs in cloned repository. "
                 "Expected 'library/jobs' or 'jobs' directory."
             )
-        except Exception as e:
+        except GitCommandError as e:
             shutil.rmtree(tmp_dir, ignore_errors=True)
             raise JobsError(f"Failed to clone repository: {e}") from e
+        except JobsError:
+            # Re-raise our own errors
+            raise
+        except Exception as e:
+            # Cleanup and wrap any other unexpected errors
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            raise JobsError(f"Unexpected error accessing repository: {e}") from e
 
     raise JobsError(
         f"Source not found: {source}\n"
@@ -193,7 +210,8 @@ def list_jobs(source: str | None) -> None:
             try:
                 job_def = parse_job_definition(job_path)
                 table.add_row(job_def.name, job_def.version, job_def.summary)
-            except Exception as e:
+            except ParseError as e:
+                # Expected error when job definition is invalid
                 table.add_row(job_name, "[red]error[/red]", f"Failed to parse: {e}")
 
         console.print(table)
@@ -276,7 +294,7 @@ def clone(job_name: str, source: str | None, path: Path) -> None:
         try:
             job_def = parse_job_definition(source_job_path)
             console.print(f"  [green]✓[/green] {job_def.name} v{job_def.version}")
-        except Exception as e:
+        except ParseError as e:
             raise JobsError(f"Invalid job definition: {e}") from e
 
         # Check if job already exists
@@ -299,11 +317,10 @@ def clone(job_name: str, source: str | None, path: Path) -> None:
 
         # Run sync
         console.print("\n[yellow]→[/yellow] Syncing skills...")
-        from deepwork.cli.sync import sync_skills
 
         try:
             sync_skills(project_path)
-        except Exception as e:
+        except SyncError as e:
             console.print(f"[yellow]⚠[/yellow] Sync failed: {e}")
             console.print("[dim]Run 'deepwork sync' manually to generate skills.[/dim]")
 
