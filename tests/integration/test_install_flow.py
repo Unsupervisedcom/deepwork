@@ -39,25 +39,23 @@ class TestInstallCommand:
         assert config is not None
         assert "claude" in config["platforms"]
 
-        # Verify core skills were created (directory/SKILL.md format)
+        # Verify agent file was created (agent mode: single file per job)
         claude_dir = mock_claude_project / ".claude" / "skills"
-        # Meta-skill
+        # Agent file (contains all skills embedded)
         assert (claude_dir / "deepwork_jobs" / "SKILL.md").exists()
-        # Step skill (no prefix, but has user-invocable: false in frontmatter)
-        assert (claude_dir / "deepwork_jobs.define" / "SKILL.md").exists()
-        # Exposed step skill (user-invocable - learn has exposed: true)
-        assert (claude_dir / "deepwork_jobs.learn" / "SKILL.md").exists()
+        # In agent mode, step skill directories should NOT exist
+        assert not (claude_dir / "deepwork_jobs.define" / "SKILL.md").exists()
+        assert not (claude_dir / "deepwork_jobs.learn" / "SKILL.md").exists()
 
-        # Verify meta-skill content
-        meta_skill = (claude_dir / "deepwork_jobs" / "SKILL.md").read_text()
-        assert "# deepwork_jobs" in meta_skill
-        # deepwork_jobs has workflows defined, so it shows "Workflows" instead of "Available Steps"
-        assert "Workflows" in meta_skill or "Available Steps" in meta_skill
-
-        # Verify step skill content
-        define_skill = (claude_dir / "deepwork_jobs.define" / "SKILL.md").read_text()
-        assert "# deepwork_jobs.define" in define_skill
-        assert "Define Job Specification" in define_skill
+        # Verify agent content includes all skills embedded
+        agent_content = (claude_dir / "deepwork_jobs" / "SKILL.md").read_text()
+        assert "# deepwork_jobs Agent" in agent_content
+        # deepwork_jobs has workflows defined
+        assert "Available Workflows" in agent_content or "Workflows" in agent_content
+        # Agent should have skills section with all steps embedded
+        assert "## Skills" in agent_content
+        assert "### Skill: define" in agent_content
+        assert "### Skill: learn" in agent_content
 
     def test_install_with_auto_detect(self, mock_claude_project: Path) -> None:
         """Test installing with auto-detection."""
@@ -134,11 +132,12 @@ class TestInstallCommand:
 
         # Verify skills were created for both platforms
         claude_dir = mock_multi_platform_project / ".claude" / "skills"
-        # Meta-skill and step skills (directory/SKILL.md format)
+        # Claude uses agent mode: single agent file per job
         assert (claude_dir / "deepwork_jobs" / "SKILL.md").exists()
-        assert (claude_dir / "deepwork_jobs.define" / "SKILL.md").exists()
+        # In agent mode, step skill directories should NOT exist for Claude
+        assert not (claude_dir / "deepwork_jobs.define" / "SKILL.md").exists()
 
-        # Gemini uses job_name/step_id.toml structure
+        # Gemini uses legacy mode (doesn't support agent mode): job_name/step_id.toml structure
         gemini_dir = mock_multi_platform_project / ".gemini" / "skills"
         # Meta-skill (index.toml) and step skills
         assert (gemini_dir / "deepwork_jobs" / "index.toml").exists()
@@ -181,10 +180,11 @@ class TestInstallCommand:
         assert (deepwork_dir / "config.yml").exists()
 
         claude_dir = mock_claude_project / ".claude" / "skills"
-        # Meta-skill and step skills (directory/SKILL.md format)
+        # Agent file (agent mode: single file per job)
         assert (claude_dir / "deepwork_jobs" / "SKILL.md").exists()
-        assert (claude_dir / "deepwork_jobs.define" / "SKILL.md").exists()
-        assert (claude_dir / "deepwork_jobs.learn" / "SKILL.md").exists()
+        # In agent mode, step skill directories should NOT exist
+        assert not (claude_dir / "deepwork_jobs.define" / "SKILL.md").exists()
+        assert not (claude_dir / "deepwork_jobs.learn" / "SKILL.md").exists()
 
     def test_install_creates_rules_directory(self, mock_claude_project: Path) -> None:
         """Test that install creates the v2 rules directory with example templates."""

@@ -66,6 +66,10 @@ class AgentAdapter(ABC):
     # Subclasses should override this to provide platform-specific mappings.
     hook_name_mapping: ClassVar[dict[SkillLifecycleHook, str]] = {}
 
+    # Whether this adapter supports agent mode (single agent file with embedded skills).
+    # If False, falls back to legacy meta-skill + step skills pattern.
+    supports_agent_mode: ClassVar[bool] = False
+
     def __init__(self, project_root: Path | str | None = None):
         """
         Initialize adapter with optional project root.
@@ -308,6 +312,9 @@ class ClaudeAdapter(AgentAdapter):
         SkillLifecycleHook.BEFORE_TOOL: "PreToolUse",
         SkillLifecycleHook.BEFORE_PROMPT: "UserPromptSubmit",
     }
+
+    # Claude Code supports agent mode - jobs become agents with embedded skills
+    supports_agent_mode: ClassVar[bool] = True
 
     def sync_hooks(self, project_path: Path, hooks: dict[str, list[dict[str, Any]]]) -> int:
         """

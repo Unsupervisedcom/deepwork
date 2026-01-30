@@ -1,5 +1,6 @@
 """Sync command for DeepWork CLI."""
 
+import shutil
 from pathlib import Path
 
 import click
@@ -9,7 +10,7 @@ from rich.table import Table
 from deepwork.core.adapters import AgentAdapter
 from deepwork.core.generator import SkillGenerator
 from deepwork.core.hooks_syncer import collect_job_hooks, sync_hooks_to_platform
-from deepwork.core.parser import parse_job_definition
+from deepwork.core.parser import JobDefinition, parse_job_definition
 from deepwork.utils.fs import ensure_dir
 from deepwork.utils.yaml_utils import load_yaml
 
@@ -20,6 +21,39 @@ class SyncError(Exception):
     """Exception raised for sync errors."""
 
     pass
+
+
+def _cleanup_old_step_skills(
+    skills_dir: Path, job: JobDefinition, adapter: AgentAdapter
+) -> int:
+    """
+    Remove old step skill directories when switching to agent mode.
+
+    In agent mode, we only generate a single agent file per job (job_name/SKILL.md).
+    This function removes any legacy step skill directories (job_name.step_id/).
+
+    Args:
+        skills_dir: Path to the skills directory
+        job: Job definition
+        adapter: Agent adapter
+
+    Returns:
+        Number of directories removed
+    """
+    removed = 0
+    for step in job.steps:
+        # Get the old step skill path (e.g., job_name.step_id/SKILL.md)
+        step_skill_filename = adapter.get_step_skill_filename(job.name, step.id, step.exposed)
+        step_skill_dir = skills_dir / step_skill_filename.split("/")[0]  # Get directory part
+
+        if step_skill_dir.exists() and step_skill_dir.is_dir():
+            try:
+                shutil.rmtree(step_skill_dir)
+                removed += 1
+            except OSError:
+                pass  # Ignore errors during cleanup
+
+    return removed
 
 
 @click.command()
@@ -116,7 +150,7 @@ def sync_skills(project_path: Path) -> None:
 
     # Sync each platform
     generator = SkillGenerator()
-    stats = {"platforms": 0, "skills": 0, "hooks": 0}
+    stats = {"platforms": 0, "skills": 0, "agents": 0, "hooks": 0}
     synced_adapters: list[AgentAdapter] = []
 
     for platform_name in platforms:
@@ -136,17 +170,31 @@ def sync_skills(project_path: Path) -> None:
         ensure_dir(skills_dir)
 
         # Generate skills for all jobs
+        # Use agent mode if the adapter supports it (generates single agent file per job)
+        # Otherwise fall back to legacy meta-skill + step skills pattern
+        use_agent_mode = adapter.supports_agent_mode
         all_skill_paths: list[Path] = []
         if jobs:
-            console.print("  [dim]•[/dim] Generating skills...")
+            # Clean up old step skill files when using agent mode
+            if use_agent_mode:
+                for job in jobs:
+                    _cleanup_old_step_skills(skills_dir, job, adapter)
+
+            mode_label = "agents" if use_agent_mode else "skills"
+            console.print(f"  [dim]•[/dim] Generating {mode_label}...")
             for job in jobs:
                 try:
-                    job_paths = generator.generate_all_skills(
-                        job, adapter, platform_dir, project_root=project_path
+                    job_paths = generator.generate_all(
+                        job, adapter, platform_dir, project_root=project_path,
+                        use_agent_mode=use_agent_mode
                     )
                     all_skill_paths.extend(job_paths)
-                    stats["skills"] += len(job_paths)
-                    console.print(f"    [green]✓[/green] {job.name} ({len(job_paths)} skills)")
+                    if use_agent_mode:
+                        stats["agents"] += 1
+                        console.print(f"    [green]✓[/green] {job.name} (1 agent)")
+                    else:
+                        stats["skills"] += len(job_paths)
+                        console.print(f"    [green]✓[/green] {job.name} ({len(job_paths)} skills)")
                 except Exception as e:
                     console.print(f"    [red]✗[/red] Failed for {job.name}: {e}")
 
@@ -196,7 +244,10 @@ def sync_skills(project_path: Path) -> None:
     table.add_column("Count", style="green")
 
     table.add_row("Platforms synced", str(stats["platforms"]))
-    table.add_row("Total skills", str(stats["skills"]))
+    if stats["agents"] > 0:
+        table.add_row("Total agents", str(stats["agents"]))
+    if stats["skills"] > 0:
+        table.add_row("Total skills", str(stats["skills"]))
     if stats["hooks"] > 0:
         table.add_row("Hooks synced", str(stats["hooks"]))
 
@@ -204,8 +255,9 @@ def sync_skills(project_path: Path) -> None:
     console.print()
 
     # Show reload instructions for each synced platform
-    if synced_adapters and stats["skills"] > 0:
-        console.print("[bold]To use the new skills:[/bold]")
+    if synced_adapters and (stats["skills"] > 0 or stats["agents"] > 0):
+        label = "agents" if stats["agents"] > 0 else "skills"
+        console.print(f"[bold]To use the new {label}:[/bold]")
         for adapter in synced_adapters:
             console.print(f"  [cyan]{adapter.display_name}:[/cyan] {adapter.reload_instructions}")
         console.print()

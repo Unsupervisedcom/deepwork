@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Agent-based architecture for Claude Code skill generation
+  - New `agent-job.md.jinja` template generates single agent file per job with all steps embedded as skills
+  - Jobs now generate one agent file (e.g., `.claude/skills/job_name/SKILL.md`) instead of separate meta-skill + step skill files
+  - Added `supports_agent_mode` flag to adapters (enabled for Claude, disabled for Gemini)
+  - Added `generate_agent()` and `generate_all()` methods to SkillGenerator
+  - Sync command now cleans up old step skill directories when using agent mode
 - Explicit workflow definitions in job.yml for distinguishing multi-step workflows from standalone skills
   - New `workflows` section in job.yml with `name`, `summary`, and ordered `steps` array
   - Workflows are shown separately from standalone skills in generated meta-skills
@@ -16,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Backward compatible: jobs without `workflows` section use dependency-based detection
 
 ### Changed
+- **Claude Code skill structure changed**: Jobs now generate a single agent file instead of separate meta-skill + step skill files
+  - Before: `.claude/skills/job_name/SKILL.md` (meta) + `.claude/skills/job_name.step_id/SKILL.md` (steps)
+  - After: `.claude/skills/job_name/SKILL.md` (agent with all steps embedded)
+  - Gemini CLI continues to use the legacy multi-file structure
 - Skill templates now show workflow-aware progress (e.g., "new_job step 2/3 complete")
 - Meta-skill template reorganized to show "Workflows" and "Standalone Skills" sections separately
 - Updated `deepwork_jobs` standard job to v1.0.0 with explicit `new_job` workflow
