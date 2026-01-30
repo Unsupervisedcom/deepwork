@@ -192,40 +192,7 @@ When defining steps, identify any that require specialized tools:
 
 **Browser Automation**: If any step involves web scraping, form filling, interactive browsing, UI testing, or research requiring website visits, ask the user what browser tools they have available. For Claude Code users, **Claude in Chrome** (Anthropic's browser extension) has been tested with DeepWork and is recommended for new users. Don't assume a default—confirm the tool before designing browser-dependent steps.
 
-### Step 2.5: Consider Multiple Workflows
-
-A job can define **multiple workflows** when different parts of the work need to happen at different points in time. Most jobs have a single workflow, but consider multiple workflows when:
-
-- **Human review/approval gates**: Some steps produce output that needs human review before proceeding. Split into separate workflows so users can run the second part after review.
-- **Setup/teardown patterns**: Provisioning resources and later destroying them are distinct operations.
-- **Phased execution**: Steps that naturally happen days or weeks apart.
-
-**Examples:**
-
-| Job | Workflows | Reason |
-|-----|-----------|--------|
-| Twitter Ad Campaign | `analyze_and_propose` → `setup_approved_ads` | Human reviews proposed ads before setup |
-| Customer Environment | `provision` → `teardown` | Distinct operations at different times |
-| Quarterly Report | `gather_data` → `finalize_report` | Data gathering happens throughout quarter |
-
-**Format:**
-
-```yaml
-workflows:
-  - name: analyze_and_propose
-    summary: "Analyze trends and propose ad content"
-    steps:
-      - analyze_trends
-      - generate_proposals
-      - build_report
-
-  - name: setup_approved_ads
-    summary: "Create approved ads on platform"
-    steps:
-      - setup_ads
-```
-
-If the job has only one workflow (most common), you can omit the `workflows` section entirely.
+**Multiple Workflows**: Most jobs have a single workflow, but consider defining multiple workflows when different parts need to happen at different points in time—for example, an analysis workflow that produces a report for human review, then a separate execution workflow to act on approved items. Other examples: `provision` + `teardown` for environment management, or `gather_data` + `finalize_report` for phased work. If the job needs multiple workflows, define them in a `workflows` section in job.yml.
 
 ### Step 3: Validate the Workflow
 
