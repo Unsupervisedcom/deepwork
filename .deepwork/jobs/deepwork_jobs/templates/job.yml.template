@@ -16,6 +16,23 @@ description: |
   - Who the intended users are
   - Any important context about the workflow]
 
+# Optional: Define multiple workflows using different combinations of steps
+# If omitted, all steps form a single implicit workflow
+workflows:
+  - name: [workflow_name]
+    summary: "[Brief description of this workflow variant]"
+    steps:
+      - [step_id_1]
+      - [step_id_2]
+      - [step_id_3]
+
+  # Additional workflow example (optional - include only if multiple workflows needed)
+  # - name: [another_workflow]
+  #   summary: "[Description of this alternative workflow]"
+  #   steps:
+  #     - [step_id_1]
+  #     - [step_id_3]  # Can skip steps or use different combinations
+
 changelog:
   - version: "1.0.0"
     changes: "Initial job creation"

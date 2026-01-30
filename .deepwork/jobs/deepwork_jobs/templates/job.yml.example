@@ -1,6 +1,7 @@
 # Example: Competitive Research Job
 #
 # This is a complete example of a job.yml file for reference.
+# It demonstrates multiple workflows using the same set of steps.
 
 name: competitive_research
 version: "1.0.0"
@@ -9,6 +10,34 @@ description: |
   A comprehensive workflow for analyzing competitors in your market segment.
   Helps product teams understand the competitive landscape through systematic
   identification, research, comparison, and positioning recommendations.
+
+  This job provides three workflows:
+  - full_analysis: Complete end-to-end competitive analysis
+  - quick_summary: Rapid analysis skipping deep research
+  - refresh_research: Update research on existing competitors
+
+# Multiple workflows allow different paths through the same steps
+workflows:
+  - name: full_analysis
+    summary: "Complete competitive analysis with all steps"
+    steps:
+      - identify_competitors
+      - research_competitors
+      - comparative_analysis
+      - positioning_recommendations
+
+  - name: quick_summary
+    summary: "Rapid analysis skipping deep research"
+    steps:
+      - identify_competitors
+      - positioning_recommendations
+
+  - name: refresh_research
+    summary: "Update research on existing competitors"
+    steps:
+      - research_competitors
+      - comparative_analysis
+      - positioning_recommendations
 
 changelog:
   - version: "1.0.0"
