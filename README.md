@@ -195,17 +195,25 @@ Send [@tylerwillis](https://x.com/tylerwillis) a message on X.
 <summary><strong>Advanced: Directory Structure</strong></summary>
 
 ```
+# Local (project-specific)
 your-project/
 ├── .deepwork/
 │   ├── config.yml          # Platform configuration
 │   ├── rules/              # Automated rules
-│   └── jobs/               # Job definitions
+│   └── jobs/               # Local job definitions
 │       └── job_name/
 │           ├── job.yml     # Job metadata
 │           └── steps/      # Step instructions
 ├── .claude/                # Generated Claude skills
 │   └── skills/
 └── deepwork-output/        # Job outputs (gitignored)
+
+# Global (available across all projects)
+~/.deepwork/
+└── jobs/                   # Global job definitions
+    └── job_name/
+        ├── job.yml         # Job metadata
+        └── steps/          # Step instructions
 ```
 
 </details>
@@ -252,6 +260,48 @@ When source files change, corresponding test files should also change.
 ```
 
 See [Architecture](doc/architecture.md) for full rules documentation.
+
+</details>
+
+<details>
+<summary><strong>Advanced: Global Jobs</strong></summary>
+
+DeepWork supports both local and global jobs:
+
+- **Local jobs** (default) - Stored in `.deepwork/jobs/` in your project. Available only in that project.
+- **Global jobs** - Stored in `~/.deepwork/jobs/` on your system. Available across all projects with DeepWork installed.
+
+### When to use global jobs
+
+Use global jobs for workflows that apply across many projects:
+- Generic documentation tasks
+- Code review processes
+- Git commit summaries
+- General research workflows
+
+### Creating a global job
+
+When defining a new job with `/deepwork_jobs`, you'll be asked whether to create it locally or globally.
+
+You can also create global jobs directly:
+
+```bash
+.deepwork/jobs/deepwork_jobs/make_new_job.sh my_job --global
+```
+
+### Porting jobs between local and global
+
+Move existing jobs between local and global locations:
+
+```bash
+# Move a job to global (available in all projects)
+deepwork port my_job --to global
+
+# Move a job to local (available only in this project)
+deepwork port my_job --to local
+```
+
+After porting, run `deepwork sync` to regenerate skills.
 
 </details>
 

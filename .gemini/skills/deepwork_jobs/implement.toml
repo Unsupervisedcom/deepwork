@@ -34,23 +34,29 @@ Read the `job.yml` specification file and create all the necessary files to make
 
 ### Step 1: Create Directory Structure Using Script
 
+**Important**: If the user chose **global** scope during the define step, add the `--global` flag when running the script.
+
 Run the `make_new_job.sh` script to create the standard directory structure:
 
 ```bash
+# For local jobs (default)
 .deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
+
+# For global jobs (if user chose global scope)
+.deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name] --global
 ```
 
 This creates:
-- `.deepwork/jobs/[job_name]/` - Main job directory
-- `.deepwork/jobs/[job_name]/steps/` - Step instruction files
-- `.deepwork/jobs/[job_name]/hooks/` - Custom validation scripts (with .gitkeep)
-- `.deepwork/jobs/[job_name]/templates/` - Example file formats (with .gitkeep)
-- `.deepwork/jobs/[job_name]/AGENTS.md` - Job management guidance
+- `[location]/[job_name]/` - Main job directory (either `.deepwork/jobs/` or `~/.deepwork/jobs/`)
+- `[location]/[job_name]/steps/` - Step instruction files
+- `[location]/[job_name]/hooks/` - Custom validation scripts (with .gitkeep)
+- `[location]/[job_name]/templates/` - Example file formats (with .gitkeep)
+- `[location]/[job_name]/AGENTS.md` - Job management guidance
 
 **Note**: If the directory already exists (e.g., job.yml was created by define step), you can skip this step or manually create the additional directories:
 ```bash
-mkdir -p .deepwork/jobs/[job_name]/hooks .deepwork/jobs/[job_name]/templates
-touch .deepwork/jobs/[job_name]/hooks/.gitkeep .deepwork/jobs/[job_name]/templates/.gitkeep
+mkdir -p [location]/[job_name]/hooks [location]/[job_name]/templates
+touch [location]/[job_name]/hooks/.gitkeep [location]/[job_name]/templates/.gitkeep
 ```
 
 ### Step 2: Read and Validate the Specification
