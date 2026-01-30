@@ -15,7 +15,7 @@ The job library provides:
 Each job in this library follows the same structure as the `.deepwork/jobs` subfolders in your local project:
 
 ```
-job_library/
+library/jobs/
 ├── [job-name]/
 │   ├── job.yml              # Job definition (name, steps, dependencies)
 │   └── steps/
@@ -37,6 +37,10 @@ The job definition file contains:
 - `version`: Semantic version (e.g., "1.0.0")
 - `summary`: Brief description (under 200 characters)
 - `description`: Detailed explanation of the job's purpose
+- `workflows`: Named sequences of steps (optional)
+  - `name`: Workflow identifier
+  - `summary`: What the workflow accomplishes
+  - `steps`: Ordered list of step IDs to execute
 - `steps`: Array of step definitions with:
   - `id`: Step identifier
   - `name`: Human-readable step name
@@ -45,6 +49,7 @@ The job definition file contains:
   - `inputs`: What the step requires
   - `outputs`: What the step produces
   - `dependencies`: Other steps that must complete first
+  - `quality_criteria`: Measurable criteria for step completion
 
 ### steps/
 

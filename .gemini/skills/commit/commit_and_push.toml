@@ -48,14 +48,27 @@ Check the list of changed files against what was modified during this session, e
    - Are there any unexpected deleted files?
    - Do the line counts seem reasonable for the changes you made?
 
-   If changes match expectations, proceed to commit.
+   If changes match expectations, proceed to the next step.
 
    If there are unexpected changes:
    - Investigate why (e.g., lint auto-fixes, generated files)
    - If they're legitimate side effects of your work, include them
    - If they're unrelated or shouldn't be committed, use `git restore` to discard them
 
-3. **Stage all appropriate changes**
+3. **Update CHANGELOG.md if needed**
+
+   If your changes include new features, bug fixes, or other notable changes:
+   - Add entries to the `## [Unreleased]` section of CHANGELOG.md
+   - Use the appropriate subsection: `### Added`, `### Changed`, `### Fixed`, or `### Removed`
+   - Write concise descriptions that explain the user-facing impact
+
+   **CRITICAL: NEVER modify version numbers**
+   - Do NOT change the version in `pyproject.toml`
+   - Do NOT change version headers in CHANGELOG.md (e.g., `## [0.4.2]`)
+   - Do NOT rename the `## [Unreleased]` section
+   - Version updates are handled by the release workflow, not commits
+
+4. **Stage all appropriate changes**
    ```bash
    git add -A
    ```
@@ -73,8 +86,9 @@ Check the list of changed files against what was modified during this session, e
    - The style of recent commits
    - Conventional commit format if the project uses it
 
+   **IMPORTANT:** Use the commit job script (not `git commit` directly):
    ```bash
-   git commit -m "commit message here"
+   .claude/hooks/commit_job_git_commit.sh -m "commit message here"
    ```
 
 7. **Push to remote**
@@ -88,12 +102,11 @@ Check the list of changed files against what was modified during this session, e
 
 ## Quality Criteria
 
-- Changed files list was reviewed by the agent
-- Files match what was modified during this session (or unexpected changes were investigated and handled)
-- Commit message follows project conventions
-- Commit was created successfully
+- Changed files were verified against expectations
+- CHANGELOG.md was updated with entries in [Unreleased] section (if changes warrant documentation)
+- Version numbers were NOT modified (pyproject.toml version and CHANGELOG version headers unchanged)
+- Commit was created with appropriate message
 - Changes were pushed to remote
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
 
@@ -104,7 +117,7 @@ This is the final step of the commit workflow. The agent verifies that the chang
 
 A workflow for preparing and committing code changes with quality checks.
 
-This job starts with a code review to catch issues early, runs tests until
+The **full** workflow starts with a code review to catch issues early, runs tests until
 they pass, formats and lints code with ruff, then reviews changed files
 before committing and pushing. The review and lint steps use sub-agents
 to reduce context usage.
@@ -129,6 +142,16 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 **Required outputs**:
 - `changes_committed`
 
+## Quality Validation (Manual)
+
+**NOTE**: Gemini CLI does not support automated validation. Manually verify criteria before completing.
+
+**Criteria (all must be satisfied)**:
+1. Changed files were verified against expectations
+2. CHANGELOG.md was updated with entries in [Unreleased] section (if changes warrant documentation)
+3. Version numbers were NOT modified (pyproject.toml version and CHANGELOG version headers unchanged)
+4. Commit was created with appropriate message
+5. Changes were pushed to remote
 ## On Completion
 
 1. Verify outputs are created

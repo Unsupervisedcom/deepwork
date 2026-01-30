@@ -1,0 +1,131 @@
+name: manual_tests
+version: "1.4.0"
+summary: "Runs all manual hook/rule tests using sub-agents. Use when validating that DeepWork rules fire correctly."
+description: |
+  A workflow for running manual tests that validate DeepWork rules/hooks fire correctly.
+
+  The **run_all** workflow tests that rules fire when they should AND do not fire when they shouldn't.
+  Each test is run in a SUB-AGENT (not the main agent) because:
+  1. Sub-agents run in isolated contexts where file changes can be detected
+  2. The Stop hook automatically evaluates rules when each sub-agent completes
+  3. The main agent can observe whether hooks fired without triggering them manually
+
+  CRITICAL: All tests MUST run in sub-agents. The main agent MUST NOT make the file
+  edits itself - it spawns sub-agents to make edits, then observes whether the hooks
+  fired automatically when those sub-agents returned.
+
+  Sub-agent configuration:
+  - All sub-agents should use `model: "haiku"` to minimize cost and latency
+  - All sub-agents should use `max_turns: 5` to prevent hanging indefinitely
+
+  Steps:
+  1. reset - Ensure clean environment before testing (clears queue, reverts files)
+  2. run_not_fire_tests - Run all "should NOT fire" tests in PARALLEL sub-agents (6 tests)
+  3. run_fire_tests - Run all "should fire" tests in SERIAL sub-agents with resets between (6 tests)
+  4. infinite_block_tests - Run infinite block tests in SERIAL (4 tests - both fire and not-fire)
+
+  Reset procedure (see steps/reset.md):
+  - Reset runs FIRST to ensure a clean environment before any tests
+  - Each step also calls reset internally when needed (between tests, after completion)
+  - Reset reverts git changes, removes created files, and clears the rules queue
+
+  Test types covered:
+  - Trigger/Safety mode
+  - Set mode (bidirectional)
+  - Pair mode (directional)
+  - Command action
+  - Multi safety
+  - Infinite block (prompt and command) - in dedicated step
+  - Created mode (new files only)
+
+workflows:
+  - name: run_all
+    summary: "Run all manual tests: reset, NOT-fire tests, fire tests, and infinite block tests"
+    steps:
+      - reset
+      - run_not_fire_tests
+      - run_fire_tests
+      - infinite_block_tests
+
+changelog:
+  - version: "1.4.0"
+    changes: "Added workflows section to explicitly define the run_all test workflow sequence"
+  - version: "1.3.0"
+    changes: "Add model/max_turns config for sub-agents; move infinite block tests to dedicated serial step; add reset step that runs first; verify queue empty for 'should NOT fire' tests"
+  - version: "1.2.1"
+    changes: "Fixed incomplete revert - now uses git reset HEAD to unstage files (rules_check stages with git add -A)"
+  - version: "1.2.0"
+    changes: "Added early termination on 2 test failures; emphasized mandatory file revert and queue clear after each step"
+  - version: "1.1.0"
+    changes: "Added rules queue clearing between tests to prevent anti-infinite-loop mechanism from blocking tests"
+  - version: "1.0.0"
+    changes: "Initial job creation - tests run in sub-agents to observe automatic hook firing"
+
+steps:
+  - id: reset
+    name: "Reset Manual Tests Environment"
+    description: "Runs FIRST to ensure clean environment. Also called internally by other steps when they need to revert changes and clear the queue."
+    instructions_file: steps/reset.md
+    inputs: []
+    outputs:
+      - clean_environment
+    dependencies: []
+    quality_criteria:
+      - "**Environment Clean**: Git changes reverted, created files removed, and rules queue cleared"
+
+  - id: run_not_fire_tests
+    name: "Run Should-NOT-Fire Tests"
+    description: "Runs all 6 'should NOT fire' tests in parallel sub-agents. Use to verify rules don't fire when safety conditions are met."
+    instructions_file: steps/run_not_fire_tests.md
+    inputs:
+      - file: clean_environment
+        from_step: reset
+    outputs:
+      - not_fire_results
+    dependencies:
+      - reset
+    quality_criteria:
+      - "**Sub-Agents Used**: Did the main agent spawn sub-agents (using the Task tool) to make the file edits? The main agent must NOT edit the test files directly."
+      - "**Sub-Agent Config**: Did all sub-agents use `model: \"haiku\"` and `max_turns: 5`?"
+      - "**Parallel Execution**: Were all 6 sub-agents launched in parallel (in a single message with multiple Task tool calls)?"
+      - "**Hooks Observed**: Did the main agent observe that no blocking hooks fired when the sub-agents returned? The hooks fire AUTOMATICALLY - the agent must NOT manually run the rules_check command."
+      - "**Queue Verified Empty**: After all sub-agents completed, was the rules queue checked and confirmed empty (no entries = rules did not fire)?"
+      - "**Early Termination**: If 2 tests failed, did testing halt immediately with results reported?"
+      - "**Reset Performed**: Was the reset step called internally after tests completed (or after early termination)?"
+
+  - id: run_fire_tests
+    name: "Run Should-Fire Tests"
+    description: "Runs all 6 'should fire' tests serially with resets between each. Use after NOT-fire tests to verify rules fire correctly."
+    instructions_file: steps/run_fire_tests.md
+    inputs:
+      - file: not_fire_results
+        from_step: run_not_fire_tests
+    outputs:
+      - fire_results
+    dependencies:
+      - run_not_fire_tests
+    quality_criteria:
+      - "**Sub-Agents Used**: Did the main agent spawn a sub-agent (using the Task tool) for EACH test? The main agent must NOT edit the test files directly."
+      - "**Sub-Agent Config**: Did all sub-agents use `model: \"haiku\"` and `max_turns: 5`?"
+      - "**Serial Execution**: Were sub-agents launched ONE AT A TIME (not in parallel) to prevent cross-contamination?"
+      - "**Hooks Fired Automatically**: Did the main agent observe the blocking hooks firing automatically when each sub-agent returned? The agent must NOT manually run the rules_check command."
+      - "**Reset Between Tests**: Was the reset step called internally after each test to revert files and prevent cross-contamination?"
+      - "**Early Termination**: If 2 tests failed, did testing halt immediately with results reported?"
+      - "**Results Recorded**: Did the main agent track pass/fail status for each test case?"
+
+  - id: infinite_block_tests
+    name: "Run Infinite Block Tests"
+    description: "Runs all 4 infinite block tests serially. Tests both 'should fire' (no promise) and 'should NOT fire' (with promise) scenarios."
+    instructions_file: steps/infinite_block_tests.md
+    inputs:
+      - file: fire_results
+        from_step: run_fire_tests
+    outputs:
+      - infinite_block_results
+    dependencies:
+      - run_fire_tests
+    quality_criteria:
+      - "**Sub-Agents Used**: Each test run via Task tool with `model: \"haiku\"` and `max_turns: 5`"
+      - "**Serial Execution**: Sub-agents launched ONE AT A TIME with reset between each"
+      - "**Promise Tests**: Completed WITHOUT blocking (promise bypassed the rule)"
+      - "**No-Promise Tests**: Hook fired AND sub-agent returned in reasonable time (not hung)"

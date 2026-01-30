@@ -8,7 +8,7 @@ from rich.console import Console
 
 from deepwork.core.adapters import AgentAdapter
 from deepwork.core.detector import PlatformDetector
-from deepwork.utils.fs import ensure_dir
+from deepwork.utils.fs import ensure_dir, fix_permissions
 from deepwork.utils.git import is_git_repo
 from deepwork.utils.yaml_utils import load_yaml, save_yaml
 
@@ -52,6 +52,8 @@ def _inject_standard_job(job_name: str, jobs_dir: Path, project_path: Path) -> N
             shutil.rmtree(target_dir)
 
         shutil.copytree(standard_jobs_dir, target_dir)
+        # Fix permissions - source may have restrictive permissions (e.g., read-only)
+        fix_permissions(target_dir)
         console.print(
             f"  [green]✓[/green] Installed {job_name} ({target_dir.relative_to(project_path)})"
         )
@@ -63,6 +65,8 @@ def _inject_standard_job(job_name: str, jobs_dir: Path, project_path: Path) -> N
             for doc_spec_file in doc_specs_source.glob("*.md"):
                 target_doc_spec = doc_specs_target / doc_spec_file.name
                 shutil.copy(doc_spec_file, target_doc_spec)
+                # Fix permissions for copied doc spec
+                fix_permissions(target_doc_spec)
                 console.print(
                     f"  [green]✓[/green] Installed doc spec {doc_spec_file.name} ({target_doc_spec.relative_to(project_path)})"
                 )
@@ -102,26 +106,47 @@ def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
     """
     Create .gitignore file in .deepwork/ directory.
 
-    This ensures that temporary files like .last_work_tree are not committed.
+    This ensures that runtime artifacts are not committed while keeping
+    the tmp directory structure in version control.
 
     Args:
         deepwork_dir: Path to .deepwork directory
     """
     gitignore_path = deepwork_dir / ".gitignore"
-    gitignore_content = """# DeepWork temporary files
-# These files are used for rules evaluation during sessions
+    gitignore_content = """# DeepWork runtime artifacts
+# These files are generated during sessions and should not be committed
 .last_work_tree
+.last_head_ref
+
+# Temporary files (but keep the directory via .gitkeep)
+tmp/*
+!tmp/.gitkeep
 """
 
-    # Only write if it doesn't exist or doesn't contain the entry
-    if gitignore_path.exists():
-        existing_content = gitignore_path.read_text()
-        if ".last_work_tree" not in existing_content:
-            # Append to existing
-            with open(gitignore_path, "a") as f:
-                f.write("\n" + gitignore_content)
-    else:
-        gitignore_path.write_text(gitignore_content)
+    # Always overwrite to ensure correct content
+    gitignore_path.write_text(gitignore_content)
+
+
+def _create_tmp_directory(deepwork_dir: Path) -> None:
+    """
+    Create the .deepwork/tmp directory with a .gitkeep file.
+
+    This ensures the tmp directory exists in version control, which is required
+    for file permissions to work correctly when Claude Code starts fresh.
+
+    Args:
+        deepwork_dir: Path to .deepwork directory
+    """
+    tmp_dir = deepwork_dir / "tmp"
+    ensure_dir(tmp_dir)
+
+    gitkeep_file = tmp_dir / ".gitkeep"
+    if not gitkeep_file.exists():
+        gitkeep_file.write_text(
+            "# This file ensures the .deepwork/tmp directory exists in version control.\n"
+            "# The tmp directory is used for temporary files during DeepWork operations.\n"
+            "# Do not delete this file.\n"
+        )
 
 
 def _create_rules_directory(project_path: Path) -> bool:
@@ -153,6 +178,8 @@ def _create_rules_directory(project_path: Path) -> bool:
         for example_file in example_rules_dir.glob("*.md.example"):
             dest_file = rules_dir / example_file.name
             shutil.copy(example_file, dest_file)
+            # Fix permissions for copied rule template
+            fix_permissions(dest_file)
 
     # Create a README file explaining the rules system
     readme_content = """# DeepWork Rules
@@ -333,7 +360,11 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     _create_deepwork_gitignore(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/.gitignore")
 
-    # Step 3d: Create rules directory with v2 templates
+    # Step 3d: Create tmp directory with .gitkeep file for version control
+    _create_tmp_directory(deepwork_dir)
+    console.print("  [green]✓[/green] Created .deepwork/tmp/.gitkeep")
+
+    # Step 3e: Create rules directory with v2 templates
     if _create_rules_directory(project_path):
         console.print("  [green]✓[/green] Created .deepwork/rules/ with example templates")
     else:
@@ -392,5 +423,5 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     console.print()
     console.print("[bold]Next steps:[/bold]")
     console.print("  1. Start your agent CLI (ex. [cyan]claude[/cyan] or [cyan]gemini[/cyan])")
-    console.print("  2. Define your first job using the command [cyan]/deepwork_jobs.define[/cyan]")
+    console.print("  2. Define your first job using the command [cyan]/deepwork_jobs[/cyan]")
     console.print()

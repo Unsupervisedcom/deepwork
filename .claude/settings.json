@@ -94,10 +94,68 @@
       "Bash(node:*)",
       "Bash(npm:*)",
       "Bash(npx:*)",
-      "Edit(./**)"
+      "Edit(./**)",
+      "Read(./.deepwork/tmp/**)",
+      "Edit(./.deepwork/tmp/**)",
+      "Write(./.deepwork/tmp/**)",
+      "Skill(commit)",
+      "Skill(commit.review)",
+      "Skill(commit.test)",
+      "Skill(commit.lint)",
+      "Skill(commit.commit_and_push)",
+      "Skill(deepwork_jobs)",
+      "Skill(deepwork_jobs.define)",
+      "Skill(deepwork_jobs.review_job_spec)",
+      "Skill(deepwork_jobs.implement)",
+      "Skill(deepwork_jobs.learn)",
+      "Skill(add_platform)",
+      "Skill(add_platform.research)",
+      "Skill(add_platform.add_capabilities)",
+      "Skill(add_platform.implement)",
+      "Skill(add_platform.verify)",
+      "Skill(update)",
+      "Skill(update.job)",
+      "Skill(manual_tests)",
+      "Skill(manual_tests.run_not_fire_tests)",
+      "Skill(manual_tests.run_fire_tests)",
+      "Skill(deepwork_rules)",
+      "Skill(deepwork_rules.define)",
+      "Bash(deepwork rules clear_queue)",
+      "Bash(rm -rf .deepwork/tmp/rules/queue/*.json)",
+      "Skill(manual_tests.reset)",
+      "Skill(manual_tests.infinite_block_tests)",
+      "Read(./.deepwork/**)",
+      "Edit(./.deepwork/**)",
+      "Write(./.deepwork/**)",
+      "Bash(deepwork:*)",
+      "Bash(.claude/hooks/commit_job_git_commit.sh:*)",
+      "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
+      "WebSearch"
     ]
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/block_bash_with_instructions.sh"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "src/deepwork/hooks/check_version.sh"
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "matcher": "",
@@ -115,7 +173,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -m deepwork.hooks.rules_check"
+            "command": "deepwork hook rules_check"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "deepwork hook rules_check"
           }
         ]
       }

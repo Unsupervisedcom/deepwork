@@ -6,6 +6,16 @@ It uses the wrapper system for cross-platform compatibility.
 
 Rule files are loaded from .deepwork/rules/ directory as frontmatter markdown files.
 
+Usage (via shell wrapper - recommended):
+    claude_hook.sh rules_check
+    gemini_hook.sh rules_check
+
+Or directly via deepwork CLI:
+    deepwork hook rules_check
+
+Or with platform environment variable:
+    DEEPWORK_HOOK_PLATFORM=claude deepwork hook rules_check
+
 CALL SITES
 ----------
 This module is invoked as a hook by the AI coding assistant platforms:
@@ -18,13 +28,6 @@ This module is invoked as a hook by the AI coding assistant platforms:
 2. Gemini CLI (via gemini_hook.sh):
    - Configured in GEMINI_SETTINGS_DIR/settings.json under hooks
    - Runs after each agent response to evaluate rules
-
-3. Direct invocation (for testing):
-   - DEEPWORK_HOOK_PLATFORM=claude python -m deepwork.hooks.rules_check
-   - DEEPWORK_HOOK_PLATFORM=gemini python -m deepwork.hooks.rules_check
-
-The shell wrappers (claude_hook.sh, gemini_hook.sh) set the DEEPWORK_HOOK_PLATFORM
-environment variable and pipe the hook input JSON to this module.
 
 RELATED FILES
 -------------
@@ -276,6 +279,16 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
             ):
                 continue
 
+            # For COMMAND rules with FAILED status, don't re-run the command.
+            # The agent has already seen the error. If they provide a promise,
+            # the after-loop logic will update the status to SKIPPED.
+            if (
+                existing
+                and existing.status == QueueEntryStatus.FAILED
+                and rule.action_type == ActionType.COMMAND
+            ):
+                continue
+
             # Create queue entry if new
             if not existing:
                 queue.create_entry(
@@ -326,6 +339,26 @@ def rules_check_hook(hook_input: HookInput) -> HookOutput:
             elif rule.action_type == ActionType.PROMPT:
                 # Collect for prompt output
                 prompt_results.append(result)
+
+    # Handle FAILED queue entries that have been promised
+    # (These rules weren't in results because evaluate_rules skips promised rules,
+    # but we need to update their queue status to SKIPPED)
+    if promised_rules:
+        promised_lower = {name.lower() for name in promised_rules}
+        for entry in queue.get_all_entries():
+            if (
+                entry.status == QueueEntryStatus.FAILED
+                and entry.rule_name.lower() in promised_lower
+            ):
+                queue.update_status(
+                    entry.trigger_hash,
+                    QueueEntryStatus.SKIPPED,
+                    ActionResult(
+                        type="command",
+                        output="Acknowledged via promise tag",
+                        exit_code=None,
+                    ),
+                )
 
     # Build response
     messages: list[str] = []

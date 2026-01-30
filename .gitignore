@@ -66,6 +66,12 @@ dmypy.json
 *~
 .DS_Store
 
+# direnv
+.direnv/
+
+# Nix build output
+result
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
@@ -82,9 +88,4 @@ dmypy.json
 # Temporary files
 *.tmp
 .temp/
-tmp/
-
-# DeepWork runtime artifacts
-.deepwork/.last_work_tree
-.deepwork/.last_head_ref
-.deepwork/tmp/
+/tmp/

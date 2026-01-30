@@ -7,26 +7,18 @@ hooks:
     - hooks:
         - type: command
           command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"
-        - type: prompt
-          prompt: |
-            Verify the implementation meets ALL criteria:
-            1. Platform adapter class is added to src/deepwork/adapters.py
-            2. Templates exist in src/deepwork/templates/<platform>/ with appropriate command structure
-            3. Tests exist for all new functionality
-            4. Test coverage is 100% for new code (run: uv run pytest --cov)
-            5. All tests pass
-            6. README.md is updated with:
-               - New platform listed in supported platforms
-               - Installation instructions for the platform
-               - Any platform-specific notes
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+  SubagentStop:
+    - hooks:
+        - type: command
+          command: ".deepwork/jobs/add_platform/hooks/run_tests.sh"
 
 ---
 
 # add_platform.implement
 
-**Step 3/4** in **add_platform** workflow
+**Step 3/4** in **integrate** workflow
+
+> Full workflow to integrate a new AI platform into DeepWork
 
 > Adds a new AI platform to DeepWork with adapter, templates, and tests. Use when integrating Cursor, Windsurf, or other AI coding tools.
 
@@ -272,7 +264,7 @@ The templates use Jinja2 and should produce files that match exactly what the pl
 
 A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
 
-This job guides you through four phases:
+The **integrate** workflow guides you through four phases:
 1. **Research**: Capture the platform's CLI configuration and hooks system documentation
 2. **Add Capabilities**: Update the job schema and adapters with any new hook events
 3. **Implement**: Create the platform adapter, templates, tests (100% coverage), and README updates
@@ -317,19 +309,11 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
 
-## Quality Validation
-
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
 **Validation script**: `.deepwork/jobs/add_platform/hooks/run_tests.sh` (runs automatically)
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
-
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 3/4 complete, outputs: templates/, tests/, README.md"
+2. Inform user: "integrate step 3/4 complete, outputs: templates/, tests/, README.md"
 3. **Continue workflow**: Use Skill tool to invoke `/add_platform.verify`
 
 ---

@@ -5,30 +5,69 @@ All notable changes to DeepWork will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.0] - 2026-01-20
-
-### Changed
-- **BREAKING**: Renamed `document_type` to `doc_spec` throughout the codebase
-  - Job.yml field: `document_type` → `doc_spec` (e.g., `outputs: [{file: "report.md", doc_spec: ".deepwork/doc_specs/report.md"}]`)
-  - Class: `DocumentTypeDefinition` → `DocSpec` (backward compat alias provided)
-  - Methods: `has_document_type()` → `has_doc_spec()`, `validate_document_type_references()` → `validate_doc_spec_references()`
-  - Template variables: `has_document_type` → `has_doc_spec`, `document_type` → `doc_spec`
-  - Internal: `_load_document_type()` → `_load_doc_spec()`, `_doc_type_cache` → `_doc_spec_cache`
+## [Unreleased]
 
 ### Added
-- Comprehensive tests for generator doc spec integration (9 new tests)
-  - `test_load_doc_spec_returns_parsed_spec` - Verifies doc spec loading
-  - `test_load_doc_spec_caches_result` - Verifies caching behavior
-  - `test_load_doc_spec_returns_none_for_missing_file` - Graceful handling of missing files
-  - `test_generate_step_skill_with_doc_spec` - End-to-end skill generation with doc spec
-  - `test_build_step_context_includes_doc_spec_info` - Context building verification
+- Explicit workflow definitions in job.yml for distinguishing multi-step workflows from standalone skills
+  - New `workflows` section in job.yml with `name`, `summary`, and ordered `steps` array
+  - Workflows are shown separately from standalone skills in generated meta-skills
+  - Step skills now display workflow context (e.g., "Step 2/3 in new_job workflow")
+  - Standalone skills are clearly marked as "can be run anytime"
+  - Backward compatible: jobs without `workflows` section use dependency-based detection
 
-### Migration Guide
-- Update job.yml files: Change `document_type:` to `doc_spec:` in output definitions
-- Update any code importing `DocumentTypeDefinition`: Use `DocSpec` instead (alias still works)
-- Run `deepwork install` to regenerate skills with updated terminology
+### Changed
+- Skill templates now show workflow-aware progress (e.g., "new_job step 2/3 complete")
+- Meta-skill template reorganized to show "Workflows" and "Standalone Skills" sections separately
+- Updated `deepwork_jobs` standard job to v1.0.0 with explicit `new_job` workflow
+- SessionStart hook now skips non-initial sessions (resume, compact/clear) by checking the `source` field in stdin JSON, reducing noise and redundant checks
 
-## [0.4.0] - 2026-01-20
+### Fixed
+- Fixed skill template generating malformed YAML frontmatter with fields concatenated on single lines
+  - Removed over-aggressive `{%-` whitespace stripping from Jinja template
+  - Fields like `user-invocable` and `hooks` now render on proper separate lines
+  - Affects `src/deepwork/templates/claude/skill-job-step.md.jinja`
+
+### Removed
+
+## [0.5.1] - 2026-01-24
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+## [0.5.0] - 2026-01-24
+
+### Added
+- Installer now auto-adds permission for `make_new_job.sh` script, allowing Claude to run job creation without manual configuration
+- Manual release workflow (`create-release.yml`) that automates version releases:
+  - Takes version number as input, validates format
+  - Updates CHANGELOG.md: converts Unreleased section to new version with date
+  - Adds fresh Unreleased section with placeholder categories
+  - Updates pyproject.toml version and runs uv sync for lock file
+  - Commits changes directly to main, creates tag, and publishes GitHub release
+
+### Changed
+- Commit job now requires changelog entries go to `[Unreleased]` section and explicitly prohibits modifying version numbers
+
+### Fixed
+
+### Removed
+
+## [0.4.2] - 2026-01-24
+
+### Changed
+- Added closing tag comments to jinja templates for improved readability
+
+## [0.4.1] - 2026-01-23
+
+### Changed
+- Disabled prompt-based stop hooks in Claude templates due to upstream bug ([#20221](https://github.com/anthropics/claude-code/issues/20221))
+- Quality validation now uses sub-agent review pattern instead of prompt hooks
+
+## [0.4.0] - 2026-01-23
 
 ### Added
 - Doc specs (document specifications) as a first-class feature for formalizing document quality criteria
@@ -51,11 +90,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `OutputSpec` dataclass in parser for structured output handling
 - Comprehensive doc spec documentation in `doc/doc-specs.md`
 - New test fixtures for doc spec validation and parsing
+- Comprehensive tests for generator doc spec integration (9 new tests)
+  - `test_load_doc_spec_returns_parsed_spec` - Verifies doc spec loading
+  - `test_load_doc_spec_caches_result` - Verifies caching behavior
+  - `test_load_doc_spec_returns_none_for_missing_file` - Graceful handling of missing files
+  - `test_generate_step_skill_with_doc_spec` - End-to-end skill generation with doc spec
+  - `test_build_step_context_includes_doc_spec_info` - Context building verification
 
 ### Changed
+- **BREAKING**: Renamed `document_type` to `doc_spec` throughout the codebase
+  - Job.yml field: `document_type` → `doc_spec` (e.g., `outputs: [{file: "report.md", doc_spec: ".deepwork/doc_specs/report.md"}]`)
+  - Class: `DocumentTypeDefinition` → `DocSpec` (backward compat alias provided)
+  - Methods: `has_document_type()` → `has_doc_spec()`, `validate_document_type_references()` → `validate_doc_spec_references()`
+  - Template variables: `has_document_type` → `has_doc_spec`, `document_type` → `doc_spec`
+  - Internal: `_load_document_type()` → `_load_doc_spec()`, `_doc_type_cache` → `_doc_spec_cache`
 - `Step.outputs` changed from `list[str]` to `list[OutputSpec]` for richer output metadata
 - `SkillGenerator.generate_all_skills()` now accepts `project_root` parameter for doc spec loading
 - Updated `deepwork_jobs` to v0.6.0 with doc spec-related quality criteria
+
+### Fixed
+- Fixed COMMAND rules promise handling to properly update queue status
+  - When an agent provides a promise tag for a FAILED command rule, the queue entry is now correctly updated to SKIPPED status
+  - Previously, FAILED queue entries remained in FAILED state even after being acknowledged via promise
+  - This ensures the rules queue accurately reflects rule state throughout the workflow
+- Fixed quality criteria validation logic in skill template (#111)
+  - Changed promise condition from AND to OR: promise OR all criteria met now passes
+  - Changed failure condition from OR to AND: requires both criteria NOT met AND promise missing to fail
+  - This corrects the logic so the promise mechanism properly serves as a bypass for quality criteria
+
+### Migration Guide
+- Update job.yml files: Change `document_type:` to `doc_spec:` in output definitions
+- Update any code importing `DocumentTypeDefinition`: Use `DocSpec` instead (alias still works)
+- Run `deepwork install` to regenerate skills with updated terminology
 
 ## [0.3.1] - 2026-01-20
 
@@ -164,8 +230,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[0.5.0]: https://github.com/anthropics/deepwork/releases/tag/0.5.0
-[0.4.0]: https://github.com/anthropics/deepwork/releases/tag/0.4.0
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.5.1...HEAD
+[0.5.1]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.5.1
+[0.5.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.5.0
+[0.4.2]: https://github.com/anthropics/deepwork/compare/0.4.1...0.4.2
+[0.4.1]: https://github.com/anthropics/deepwork/compare/0.4.0...0.4.1
+[0.4.0]: https://github.com/anthropics/deepwork/compare/0.3.1...0.4.0
 [0.3.1]: https://github.com/anthropics/deepwork/releases/tag/0.3.1
 [0.3.0]: https://github.com/anthropics/deepwork/releases/tag/0.3.0
 [0.1.1]: https://github.com/anthropics/deepwork/releases/tag/0.1.1

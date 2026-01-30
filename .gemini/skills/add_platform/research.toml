@@ -212,7 +212,7 @@ Take time to be thorough - incomplete documentation will slow down subsequent st
 
 A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
 
-This job guides you through four phases:
+The **integrate** workflow guides you through four phases:
 1. **Research**: Capture the platform's CLI configuration and hooks system documentation
 2. **Add Capabilities**: Update the job schema and adapters with any new hook events
 3. **Implement**: Create the platform adapter, templates, tests (100% coverage), and README updates

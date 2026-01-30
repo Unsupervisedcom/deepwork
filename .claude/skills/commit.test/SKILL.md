@@ -2,23 +2,14 @@
 name: commit.test
 description: "Pulls latest code and runs tests until all pass. Use after code review passes to verify changes work correctly."
 user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the tests are passing:
-            1. Latest code was pulled from the branch
-            2. All tests completed successfully
-            3. No test failures or errors remain
-            4. Test output shows passing status
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
 ---
 
 # commit.test
 
-**Step 2/4** in **commit** workflow
+**Step 2/4** in **full** workflow
+
+> Full commit workflow: review, test, lint, and commit
 
 > Reviews code, runs tests, lints, and commits changes. Use when ready to commit work with quality checks.
 
@@ -77,9 +68,7 @@ Execute the test suite for the project and iteratively fix any failures until al
 ## Quality Criteria
 
 - Latest code was pulled from the branch
-- Test command was correctly identified or used from input
-- All tests are now passing
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+- All tests are passing
 
 ## Context
 
@@ -90,7 +79,7 @@ This step runs after code review. Tests must pass before proceeding to lint and 
 
 A workflow for preparing and committing code changes with quality checks.
 
-This job starts with a code review to catch issues early, runs tests until
+The **full** workflow starts with a code review to catch issues early, runs tests until
 they pass, formats and lints code with ruff, then reviews changed files
 before committing and pushing. The review and lint steps use sub-agents
 to reduce context usage.
@@ -101,11 +90,6 @@ Steps:
 3. lint - Format and lint code with ruff (runs in sub-agent)
 4. commit_and_push - Review changes and commit/push
 
-
-## Required Inputs
-
-**User Parameters** - Gather from user before starting:
-- **test_command**: Test command to run (optional - will auto-detect if not provided)
 
 
 ## Work Branch
@@ -129,16 +113,24 @@ Use branch format: `deepwork/commit-[instance]-YYYYMMDD`
 
 ## Quality Validation
 
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
+**Before completing this step, you MUST have your work reviewed against the quality criteria below.**
 
+Use a sub-agent (Haiku model) to review your work against these criteria:
 
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
+**Criteria (all must be satisfied)**:
+1. Latest code was pulled from the branch
+2. All tests are passing
+**Review Process**:
+1. Once you believe your work is complete, spawn a sub-agent using Haiku to review your work against the quality criteria above
+2. The sub-agent should examine your outputs and verify each criterion is met
+3. If the sub-agent identifies valid issues, fix them
+4. Have the sub-agent review again until all valid feedback has been addressed
+5. Only mark the step complete when the sub-agent confirms all criteria are satisfied
 
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 2/4 complete, outputs: tests_passing"
+2. Inform user: "full step 2/4 complete, outputs: tests_passing"
 3. **Continue workflow**: Use Skill tool to invoke `/commit.lint`
 
 ---

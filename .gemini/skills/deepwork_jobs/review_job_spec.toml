@@ -237,11 +237,11 @@ The validated `job.yml` file at `.deepwork/jobs/[job_name]/job.yml` that passes 
 Core commands for managing DeepWork jobs. These commands help you define new multi-step
 workflows and learn from running them.
 
-The `define` command guides you through an interactive process to create a new job by
+The `new_job` workflow guides you through defining and implementing a new job by
 asking structured questions about your workflow, understanding each step's inputs and outputs,
-and generating all necessary files.
+reviewing the specification, and generating all necessary files.
 
-The `learn` command reflects on conversations where DeepWork jobs were run, identifies
+The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
 confusion or inefficiencies, and improves job instructions. It also captures bespoke
 learnings specific to the current run into AGENTS.md files in the working folder.
 

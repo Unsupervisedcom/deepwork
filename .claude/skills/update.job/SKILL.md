@@ -2,17 +2,6 @@
 name: update.job
 description: "Edits standard job source files in src/ and runs deepwork install to sync changes. Use when updating job.yml or step instructions."
 user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the update process completed successfully:
-            1. Changes were made in src/deepwork/standard_jobs/[job_name]/ (NOT in .deepwork/jobs/)
-            2. `deepwork install --platform claude` was run
-            3. Files in .deepwork/jobs/ match the source files
-            4. Command files in .claude/commands/ were regenerated
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
 ---
 
@@ -143,14 +132,6 @@ Use branch format: `deepwork/update-[instance]-YYYYMMDD`
 - Do NOT produce partial outputs; complete all required outputs before finishing
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
-
-## Quality Validation
-
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
 
 ## On Completion
 

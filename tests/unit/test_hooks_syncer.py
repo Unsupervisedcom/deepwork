@@ -43,7 +43,7 @@ class TestHookEntry:
         )
 
         cmd = entry.get_command(temp_dir)
-        assert cmd == "python -m deepwork.hooks.rules_check"
+        assert cmd == "deepwork hook rules_check"
 
 
 class TestJobHooks:
@@ -224,6 +224,57 @@ class TestMergeHooksForPlatform:
         # Should only have one entry
         assert len(result["Stop"]) == 1
 
+    def test_duplicates_stop_hooks_to_subagent_stop(self, temp_dir: Path) -> None:
+        """Test that Stop hooks are also registered for SubagentStop event.
+
+        Claude Code has separate Stop and SubagentStop events. When a Stop hook
+        is defined, it should also be registered for SubagentStop so the hook
+        triggers for both the main agent and subagents.
+        """
+        job_dir = temp_dir / ".deepwork" / "jobs" / "job1"
+        job_dir.mkdir(parents=True)
+
+        job_hooks_list = [
+            JobHooks(
+                job_name="job1",
+                job_dir=job_dir,
+                hooks={"Stop": [HookSpec(script="hook.sh")]},
+            ),
+        ]
+
+        result = merge_hooks_for_platform(job_hooks_list, temp_dir)
+
+        # Should have both Stop and SubagentStop events
+        assert "Stop" in result
+        assert "SubagentStop" in result
+        assert len(result["Stop"]) == 1
+        assert len(result["SubagentStop"]) == 1
+
+        # Both should have the same hook command
+        stop_cmd = result["Stop"][0]["hooks"][0]["command"]
+        subagent_stop_cmd = result["SubagentStop"][0]["hooks"][0]["command"]
+        assert stop_cmd == subagent_stop_cmd == ".deepwork/jobs/job1/hooks/hook.sh"
+
+    def test_does_not_duplicate_subagent_stop_if_no_stop(self, temp_dir: Path) -> None:
+        """Test that SubagentStop is not created if there are no Stop hooks."""
+        job_dir = temp_dir / ".deepwork" / "jobs" / "job1"
+        job_dir.mkdir(parents=True)
+
+        job_hooks_list = [
+            JobHooks(
+                job_name="job1",
+                job_dir=job_dir,
+                hooks={"UserPromptSubmit": [HookSpec(script="capture.sh")]},
+            ),
+        ]
+
+        result = merge_hooks_for_platform(job_hooks_list, temp_dir)
+
+        # Should only have UserPromptSubmit, not SubagentStop
+        assert "UserPromptSubmit" in result
+        assert "SubagentStop" not in result
+        assert "Stop" not in result
+
 
 class TestSyncHooksToPlatform:
     """Tests for sync_hooks_to_platform function using adapters."""
@@ -249,7 +300,8 @@ class TestSyncHooksToPlatform:
 
         count = sync_hooks_to_platform(temp_dir, adapter, job_hooks_list)
 
-        assert count == 1
+        # Count is 2 because Stop hooks are also registered for SubagentStop
+        assert count == 2
 
         # Verify settings.json was created
         settings_file = temp_dir / ".claude" / "settings.json"
@@ -260,6 +312,7 @@ class TestSyncHooksToPlatform:
 
         assert "hooks" in settings
         assert "Stop" in settings["hooks"]
+        assert "SubagentStop" in settings["hooks"]
 
     def test_returns_zero_for_empty_hooks(self, temp_dir: Path) -> None:
         """Test returns 0 when no hooks to sync."""

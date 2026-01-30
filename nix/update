@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Update all Nix dependencies (claude-code package and flake inputs)
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+cd "$REPO_ROOT"
+
+echo "Updating claude-code package..."
+"$SCRIPT_DIR/claude-code/update.sh"
+
+echo ""
+echo "Updating flake inputs..."
+nix flake update
+
+echo ""
+echo "Done! Run 'nix develop' to reload the environment."

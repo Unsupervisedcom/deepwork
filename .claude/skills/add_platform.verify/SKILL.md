@@ -2,26 +2,14 @@
 name: add_platform.verify
 description: "Sets up platform directories and verifies deepwork install works correctly. Use after implementation to confirm integration."
 user-invocable: false
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: |
-            Verify the installation meets ALL criteria:
-            1. Platform-specific directories/files are added to the deepwork repo as needed
-            2. Running `deepwork install --platform <platform>` completes without errors
-            3. Expected command files are created in the platform's command directory
-            4. Command file content matches the templates and job definitions
-            5. Established DeepWork jobs (deepwork_jobs, deepwork_rules) are installed correctly
-            6. The platform can be used alongside existing platforms without conflicts
-
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
 ---
 
 # add_platform.verify
 
-**Step 4/4** in **add_platform** workflow
+**Step 4/4** in **integrate** workflow
+
+> Full workflow to integrate a new AI platform into DeepWork
 
 > Adds a new AI platform to DeepWork with adapter, templates, and tests. Use when integrating Cursor, Windsurf, or other AI coding tools.
 
@@ -151,7 +139,7 @@ Take time to verify each aspect - finding issues now is much better than having 
 
 A workflow for adding support for a new AI platform (like Cursor, Windsurf, etc.) to DeepWork.
 
-This job guides you through four phases:
+The **integrate** workflow guides you through four phases:
 1. **Research**: Capture the platform's CLI configuration and hooks system documentation
 2. **Add Capabilities**: Update the job schema and adapters with any new hook events
 3. **Implement**: Create the platform adapter, templates, tests (100% coverage), and README updates
@@ -192,19 +180,11 @@ Use branch format: `deepwork/add_platform-[instance]-YYYYMMDD`
 - Do NOT proceed without required inputs; ask the user if any are missing
 - Do NOT modify files outside the scope of this step's defined outputs
 
-## Quality Validation
-
-Stop hooks will automatically validate your work. The loop continues until all criteria pass.
-
-
-
-**To complete**: Include `<promise>✓ Quality Criteria Met</promise>` in your final response only after verifying ALL criteria are satisfied.
-
 ## On Completion
 
 1. Verify outputs are created
-2. Inform user: "Step 4/4 complete, outputs: verification_checklist.md"
-3. **Workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
+2. Inform user: "integrate step 4/4 complete, outputs: verification_checklist.md"
+3. **integrate workflow complete**: All steps finished. Consider creating a PR to merge the work branch.
 
 ---
 

@@ -1,7 +1,41 @@
 """Filesystem utilities for safe file operations."""
 
 import shutil
+import stat
 from pathlib import Path
+
+
+def fix_permissions(path: Path | str) -> None:
+    """
+    Fix file permissions after copying to ensure files are user-writable.
+
+    This is needed because shutil.copytree/copy preserve source permissions,
+    and if the source was installed with restrictive permissions (e.g., read-only),
+    the copied files would also be read-only.
+
+    For directories: Sets rwx for user (0o700 minimum)
+    For files: Sets rw for user (0o600 minimum), preserves executable bit
+
+    Args:
+        path: File or directory path to fix permissions for
+    """
+    path_obj = Path(path)
+
+    if path_obj.is_file():
+        # Get current permissions
+        current_mode = path_obj.stat().st_mode
+        # Ensure user can read and write, preserve executable bit
+        new_mode = current_mode | stat.S_IRUSR | stat.S_IWUSR
+        path_obj.chmod(new_mode)
+    elif path_obj.is_dir():
+        # Fix directory permissions first (need execute to traverse)
+        current_mode = path_obj.stat().st_mode
+        new_mode = current_mode | stat.S_IRWXU  # rwx for user
+        path_obj.chmod(new_mode)
+
+        # Recursively fix all contents
+        for item in path_obj.iterdir():
+            fix_permissions(item)
 
 
 def ensure_dir(path: Path | str) -> Path:
@@ -94,6 +128,8 @@ def copy_dir(src: Path | str, dst: Path | str, ignore_patterns: list[str] | None
         ignore_func = _ignore
 
     shutil.copytree(src_path, dst_path, ignore=ignore_func, dirs_exist_ok=True)
+    # Fix permissions - source may have restrictive permissions (e.g., read-only)
+    fix_permissions(dst_path)
 
 
 def find_files(directory: Path | str, pattern: str) -> list[Path]:

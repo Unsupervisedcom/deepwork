@@ -51,7 +51,8 @@ class TestInstallCommand:
         # Verify meta-skill content
         meta_skill = (claude_dir / "deepwork_jobs" / "SKILL.md").read_text()
         assert "# deepwork_jobs" in meta_skill
-        assert "Available Steps" in meta_skill
+        # deepwork_jobs has workflows defined, so it shows "Workflows" instead of "Available Steps"
+        assert "Workflows" in meta_skill or "Available Steps" in meta_skill
 
         # Verify step skill content
         define_skill = (claude_dir / "deepwork_jobs.define" / "SKILL.md").read_text()

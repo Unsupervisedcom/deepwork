@@ -35,8 +35,10 @@ class HookEntry:
             Command string to execute
         """
         if self.module:
-            # Python module - run directly with python -m
-            return f"python -m {self.module}"
+            # Python module - use deepwork hook CLI for portability
+            # Extract hook name from module path (e.g., "deepwork.hooks.rules_check" -> "rules_check")
+            hook_name = self.module.rsplit(".", 1)[-1]
+            return f"deepwork hook {hook_name}"
         elif self.script:
             # Script path is: .deepwork/jobs/{job_name}/hooks/{script}
             script_path = self.job_dir / "hooks" / self.script
@@ -186,6 +188,17 @@ def merge_hooks_for_platform(
                 # Check if this hook is already present (avoid duplicates)
                 if not _hook_already_present(merged[event], command):
                     merged[event].append(hook_config)
+
+    # Claude Code has separate Stop and SubagentStop events. When a Stop hook
+    # is defined, also register it for SubagentStop so it triggers for both
+    # the main agent and subagents.
+    if "Stop" in merged:
+        if "SubagentStop" not in merged:
+            merged["SubagentStop"] = []
+        for hook_config in merged["Stop"]:
+            command = hook_config.get("hooks", [{}])[0].get("command", "")
+            if not _hook_already_present(merged["SubagentStop"], command):
+                merged["SubagentStop"].append(hook_config)
 
     return merged
 

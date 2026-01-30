@@ -241,6 +241,25 @@ class AgentAdapter(ABC):
         """
         pass
 
+    def sync_permissions(self, project_path: Path) -> int:
+        """
+        Sync required permissions to platform settings.
+
+        This method adds any permissions that DeepWork requires to function
+        properly (e.g., access to .deepwork/tmp/ directory).
+
+        Args:
+            project_path: Path to project root
+
+        Returns:
+            Number of permissions added
+
+        Raises:
+            AdapterError: If sync fails
+        """
+        # Default implementation does nothing - subclasses can override
+        return 0
+
 
 def _hook_already_present(hooks: list[dict[str, Any]], script_path: str) -> bool:
     """Check if a hook with the given script path is already in the list."""
@@ -343,6 +362,199 @@ class ClaudeAdapter(AgentAdapter):
         # Count total hooks
         total = sum(len(hooks_list) for hooks_list in hooks.values())
         return total
+
+    def _load_settings(self, project_path: Path) -> dict[str, Any]:
+        """
+        Load settings.json from the project.
+
+        Args:
+            project_path: Path to project root
+
+        Returns:
+            Settings dictionary (empty dict if file doesn't exist)
+
+        Raises:
+            AdapterError: If file exists but cannot be read
+        """
+        settings_file = project_path / self.config_dir / "settings.json"
+        if settings_file.exists():
+            try:
+                with open(settings_file, encoding="utf-8") as f:
+                    result: dict[str, Any] = json.load(f)
+                    return result
+            except (json.JSONDecodeError, OSError) as e:
+                raise AdapterError(f"Failed to read settings.json: {e}") from e
+        return {}
+
+    def _save_settings(self, project_path: Path, settings: dict[str, Any]) -> None:
+        """
+        Save settings.json to the project.
+
+        Args:
+            project_path: Path to project root
+            settings: Settings dictionary to save
+
+        Raises:
+            AdapterError: If file cannot be written
+        """
+        settings_file = project_path / self.config_dir / "settings.json"
+        try:
+            settings_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(settings_file, "w", encoding="utf-8") as f:
+                json.dump(settings, f, indent=2)
+        except OSError as e:
+            raise AdapterError(f"Failed to write settings.json: {e}") from e
+
+    def add_permission(
+        self, project_path: Path, permission: str, settings: dict[str, Any] | None = None
+    ) -> bool:
+        """
+        Add a single permission to settings.json allow list.
+
+        Args:
+            project_path: Path to project root
+            permission: The permission string to add (e.g., "Read(./.deepwork/tmp/**)")
+            settings: Optional pre-loaded settings dict. If provided, modifies in-place
+                     and does NOT save to disk (caller is responsible for saving).
+                     If None, loads settings, adds permission, and saves.
+
+        Returns:
+            True if permission was added, False if already present
+
+        Raises:
+            AdapterError: If settings cannot be read/written
+        """
+        save_after = settings is None
+        if settings is None:
+            settings = self._load_settings(project_path)
+
+        # Ensure permissions structure exists
+        if "permissions" not in settings:
+            settings["permissions"] = {}
+        if "allow" not in settings["permissions"]:
+            settings["permissions"]["allow"] = []
+
+        # Add permission if not already present
+        allow_list = settings["permissions"]["allow"]
+        if permission not in allow_list:
+            allow_list.append(permission)
+            if save_after:
+                self._save_settings(project_path, settings)
+            return True
+        return False
+
+    def _get_settings_template_path(self) -> Path:
+        """Get the path to the settings.json template for this adapter."""
+        return Path(__file__).parent.parent / "templates" / self.name / "settings.json"
+
+    def _load_required_permissions(self) -> list[str]:
+        """Load required permissions from the settings template file."""
+        settings_template = self._get_settings_template_path()
+        with open(settings_template, encoding="utf-8") as f:
+            template_settings = json.load(f)
+        result: list[str] = template_settings["permissions"]["allow"]
+        return result
+
+    def sync_permissions(self, project_path: Path) -> int:
+        """
+        Sync required permissions to Claude Code settings.json.
+
+        Loads permissions from the settings template file at
+        templates/claude/settings.json and merges them into the
+        project's .claude/settings.json.
+
+        Args:
+            project_path: Path to project root
+
+        Returns:
+            Number of permissions added
+
+        Raises:
+            AdapterError: If sync fails
+        """
+        required_permissions = self._load_required_permissions()
+
+        # Load settings once, add all permissions, then save once
+        settings = self._load_settings(project_path)
+        added_count = 0
+
+        for permission in required_permissions:
+            if self.add_permission(project_path, permission, settings):
+                added_count += 1
+
+        # Save if any permissions were added
+        if added_count > 0:
+            self._save_settings(project_path, settings)
+
+        return added_count
+
+    def add_skill_permissions(self, project_path: Path, skill_paths: list[Path]) -> int:
+        """
+        Add Skill permissions for generated skills to settings.json.
+
+        This allows Claude to invoke the skills without permission prompts.
+        Uses the Skill(name) permission syntax.
+
+        Note: Skill permissions are an emerging Claude Code feature and
+        behavior may vary between versions.
+
+        Args:
+            project_path: Path to project root
+            skill_paths: List of paths to generated skill files
+
+        Returns:
+            Number of permissions added
+
+        Raises:
+            AdapterError: If sync fails
+        """
+        if not skill_paths:
+            return 0
+
+        # Load settings once
+        settings = self._load_settings(project_path)
+        added_count = 0
+
+        for skill_path in skill_paths:
+            # Extract skill name from path
+            # Path format: .claude/skills/job_name/SKILL.md -> job_name
+            # Path format: .claude/skills/job_name.step_id/SKILL.md -> job_name.step_id
+            skill_name = self._extract_skill_name(skill_path)
+            if skill_name:
+                permission = f"Skill({skill_name})"
+                if self.add_permission(project_path, permission, settings):
+                    added_count += 1
+
+        # Save if any permissions were added
+        if added_count > 0:
+            self._save_settings(project_path, settings)
+
+        return added_count
+
+    def _extract_skill_name(self, skill_path: Path) -> str | None:
+        """
+        Extract skill name from a skill file path.
+
+        Args:
+            skill_path: Path to skill file (e.g., .claude/skills/job_name/SKILL.md)
+
+        Returns:
+            Skill name (e.g., "job_name") or None if cannot extract
+        """
+        # Handle both absolute and relative paths
+        parts = skill_path.parts
+
+        # Find 'skills' directory and get the next part
+        try:
+            skills_idx = parts.index("skills")
+            if skills_idx + 1 < len(parts):
+                # The skill name is the directory after 'skills'
+                # e.g., skills/job_name/SKILL.md -> job_name
+                return parts[skills_idx + 1]
+        except ValueError:
+            pass
+
+        return None
 
 
 class GeminiAdapter(AgentAdapter):

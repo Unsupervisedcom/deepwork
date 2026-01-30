@@ -1,10 +1,10 @@
 """End-to-end tests for DeepWork with Claude Code integration.
 
-These tests validate that DeepWork-generated commands work correctly
+These tests validate that DeepWork-generated skills work correctly
 with Claude Code. The tests can run in two modes:
 
-1. **Generation-only mode** (default): Tests command generation and structure
-2. **Full e2e mode**: Actually executes commands with Claude Code
+1. **Generation-only mode** (default): Tests skill generation and structure
+2. **Full e2e mode**: Actually executes skills with Claude Code
 
 Set ANTHROPIC_API_KEY and DEEPWORK_E2E_FULL=true to run full e2e tests.
 """
@@ -55,11 +55,11 @@ def run_full_e2e() -> bool:
     )
 
 
-class TestCommandGenerationE2E:
-    """End-to-end tests for command generation."""
+class TestSkillGenerationE2E:
+    """End-to-end tests for skill generation."""
 
-    def test_generate_fruits_commands_in_temp_project(self) -> None:
-        """Test generating fruits commands in a realistic project structure."""
+    def test_generate_fruits_skills_in_temp_project(self) -> None:
+        """Test generating fruits skills in a realistic project structure."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_dir = Path(tmpdir)
 
@@ -182,8 +182,8 @@ class TestClaudeCodeExecution:
     """
 
     @pytest.fixture
-    def project_with_commands(self) -> Path:
-        """Create a test project with generated commands."""
+    def project_with_skills(self) -> Path:
+        """Create a test project with generated skills."""
         tmpdir = tempfile.mkdtemp()
         project_dir = Path(tmpdir)
 
@@ -231,99 +231,44 @@ class TestClaudeCodeExecution:
         # Cleanup
         shutil.rmtree(tmpdir, ignore_errors=True)
 
-    def test_identify_step_execution(self, project_with_commands: Path) -> None:
-        """Test executing the identify step with Claude Code."""
-        # Run Claude Code with the identify command
+    def test_fruits_workflow_execution(self, project_with_skills: Path) -> None:
+        """Test executing the complete fruits workflow with Claude Code.
+
+        Invokes /fruits once, which automatically runs all steps (identify + classify).
+        """
+        # Run Claude Code with the fruits skill - this executes the full workflow
         result = subprocess.run(
-            [
-                "claude",
-                "--yes",
-                "--print",
-                f"/fruits.identify raw_items: {TEST_INPUT}",
-            ],
-            cwd=project_with_commands,
+            ["claude", "--print", "/fruits"],
+            input=f"raw_items: {TEST_INPUT}",
+            cwd=project_with_skills,
             capture_output=True,
             text=True,
-            timeout=120,
+            timeout=300,  # 5 minutes for full workflow
         )
 
         assert result.returncode == 0, f"Claude Code failed: {result.stderr}"
 
-        # Check output file was created
-        output_file = project_with_commands / "identified_fruits.md"
-        assert output_file.exists(), "identified_fruits.md was not created"
+        # Verify identify step output was created
+        identify_output = project_with_skills / "identified_fruits.md"
+        assert identify_output.exists(), "identified_fruits.md was not created"
 
-        # Validate content
-        content = output_file.read_text().lower()
+        # Validate identify output content
+        identify_content = identify_output.read_text().lower()
         for fruit in EXPECTED_FRUITS:
-            assert fruit in content, f"Expected fruit '{fruit}' not found in output"
+            assert fruit in identify_content, (
+                f"Expected fruit '{fruit}' not found in identified_fruits.md"
+            )
 
-    def test_classify_step_execution(self, project_with_commands: Path) -> None:
-        """Test executing the classify step with Claude Code."""
-        # First, create the input file (simulate identify step output)
-        identify_output = project_with_commands / "identified_fruits.md"
-        identify_output.write_text(
-            "# Identified Fruits\n\n- apple\n- banana\n- orange\n- mango\n- grape\n"
-        )
+        # Verify classify step output was created
+        classify_output = project_with_skills / "classified_fruits.md"
+        assert classify_output.exists(), "classified_fruits.md was not created"
 
-        # Run Claude Code with the classify command
-        result = subprocess.run(
-            ["claude", "--yes", "--print", "/fruits.classify"],
-            cwd=project_with_commands,
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-
-        assert result.returncode == 0, f"Claude Code failed: {result.stderr}"
-
-        # Check output file was created
-        output_file = project_with_commands / "classified_fruits.md"
-        assert output_file.exists(), "classified_fruits.md was not created"
-
-        # Validate content has category structure
-        content = output_file.read_text().lower()
-        # Should have at least one category mentioned
+        # Validate classify output has category structure
+        classify_content = classify_output.read_text().lower()
         categories = ["citrus", "tropical", "pome", "berries", "grape"]
-        has_category = any(cat in content for cat in categories)
-        assert has_category, f"No fruit categories found in output: {content[:500]}"
-
-    def test_full_workflow_execution(self, project_with_commands: Path) -> None:
-        """Test executing the complete fruits workflow with Claude Code."""
-        # Run identify step
-        result1 = subprocess.run(
-            [
-                "claude",
-                "--yes",
-                "--print",
-                f"/fruits.identify raw_items: {TEST_INPUT}",
-            ],
-            cwd=project_with_commands,
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        assert result1.returncode == 0, f"Identify step failed: {result1.stderr}"
-
-        # Verify identify output exists
-        identify_output = project_with_commands / "identified_fruits.md"
-        assert identify_output.exists(), "Identify step did not create output"
-
-        # Run classify step
-        result2 = subprocess.run(
-            ["claude", "--yes", "--print", "/fruits.classify"],
-            cwd=project_with_commands,
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        assert result2.returncode == 0, f"Classify step failed: {result2.stderr}"
-
-        # Verify classify output exists
-        classify_output = project_with_commands / "classified_fruits.md"
-        assert classify_output.exists(), "Classify step did not create output"
+        has_category = any(cat in classify_content for cat in categories)
+        assert has_category, f"No fruit categories found in output: {classify_content[:500]}"
 
         # Validate final output quality
-        content = classify_output.read_text()
-        assert len(content) > 100, "Output seems too short"
-        assert "##" in content, "Output lacks markdown structure"
+        assert len(classify_content) > 100, "Output seems too short"
+        assert "##" in classify_output.read_text(), "Output lacks markdown structure"
