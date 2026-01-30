@@ -142,23 +142,28 @@ class TestCollectJobHooks:
 
     def test_collects_hooks_from_multiple_jobs(self, temp_dir: Path) -> None:
         """Test collecting hooks from multiple job directories."""
-        jobs_dir = temp_dir / "jobs"
+        project_path = temp_dir / "project"
+        project_path.mkdir()
+        jobs_dir = project_path / ".deepwork" / "jobs"
 
         # Create first job with hooks
         job1_dir = jobs_dir / "job1"
         (job1_dir / "hooks").mkdir(parents=True)
         (job1_dir / "hooks" / "global_hooks.yml").write_text("Stop:\n  - hook1.sh\n")
+        (job1_dir / "job.yml").write_text("name: job1\nversion: 1.0.0\n")
 
         # Create second job with hooks
         job2_dir = jobs_dir / "job2"
         (job2_dir / "hooks").mkdir(parents=True)
         (job2_dir / "hooks" / "global_hooks.yml").write_text("Stop:\n  - hook2.sh\n")
+        (job2_dir / "job.yml").write_text("name: job2\nversion: 1.0.0\n")
 
-        # Create job without hooks
+        # Create job without hooks (but with job.yml)
         job3_dir = jobs_dir / "job3"
         job3_dir.mkdir(parents=True)
+        (job3_dir / "job.yml").write_text("name: job3\nversion: 1.0.0\n")
 
-        result = collect_job_hooks(jobs_dir)
+        result = collect_job_hooks(project_path)
 
         assert len(result) == 2
         job_names = {jh.job_name for jh in result}
@@ -166,8 +171,8 @@ class TestCollectJobHooks:
 
     def test_returns_empty_for_nonexistent_dir(self, temp_dir: Path) -> None:
         """Test returns empty list when jobs dir doesn't exist."""
-        jobs_dir = temp_dir / "nonexistent"
-        result = collect_job_hooks(jobs_dir)
+        project_path = temp_dir / "nonexistent"
+        result = collect_job_hooks(project_path)
         assert result == []
 
 
