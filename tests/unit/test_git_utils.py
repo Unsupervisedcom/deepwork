@@ -8,7 +8,7 @@ They ensure the git_utils module behaves correctly with respect to:
 
 1. INTERFACE: All comparators implement a common interface
 2. FACTORY: get_comparator() returns the correct comparator type
-3. CREATED FILES: CompareToPrompt.get_created_files() uses file-based comparison
+3. CREATED FILES: CompareToPrompt.get_created_files() detects truly new files
 4. CHANGED FILES: get_changed_files() captures all changes since baseline
 
 WARNING: These tests represent contractual requirements for the rules_check hook.
@@ -18,7 +18,8 @@ not trigger correctly. If a test fails, fix the IMPLEMENTATION, not the test.
 Requirements tested:
   - REQ-001: All comparators MUST implement GitComparator interface
   - REQ-002: get_comparator() MUST return correct comparator for each mode
-  - REQ-003: CompareToPrompt.get_created_files() MUST use .last_work_tree
+  - REQ-003: CompareToPrompt.get_created_files() MUST correctly detect new files
+            (uses tree-based comparison when available, falls back to .last_work_tree)
   - REQ-004: Created files are those NOT present in baseline
 
 ================================================================================
@@ -33,6 +34,8 @@ from deepwork.core.git_utils import (
     CompareToDefaultTip,
     CompareToPrompt,
     GitComparator,
+    _create_tree_from_working_dir,
+    _diff_trees,
     _get_all_changes_vs_ref,
     _parse_file_list,
     get_comparator,
@@ -178,18 +181,21 @@ class TestGetComparatorFactory:
 
 
 # =============================================================================
-# REQ-003: CompareToPrompt.get_created_files() MUST use .last_work_tree
+# REQ-003: CompareToPrompt.get_created_files() MUST correctly detect new files
 # =============================================================================
 #
 # CRITICAL REQUIREMENT: The get_created_files() method for CompareToPrompt
-# MUST always use file-based comparison (.last_work_tree), NOT git-based
-# comparison (.last_head_ref).
+# MUST accurately detect files that were created AFTER the prompt was submitted.
 #
-# Rationale:
-#   .last_work_tree contains the actual list of files that existed at prompt
-#   time, INCLUDING uncommitted files. Using git-based detection (via
-#   .last_head_ref) would incorrectly flag uncommitted files from before the
-#   prompt as "created" because they wouldn't exist in the git commit.
+# PRIMARY METHOD: Tree-based comparison using .last_tree_hash
+#   - Uses Git plumbing (git write-tree / git diff-tree) for accurate comparison
+#   - Captures the complete working directory state at prompt time
+#   - Handles all edge cases: modified, new, deleted, staged, unstaged
+#
+# FALLBACK METHOD: File-list comparison using .last_work_tree
+#   - Used when .last_tree_hash doesn't exist (backwards compatibility)
+#   - Contains list of files that existed at prompt time
+#   - MUST NOT use .last_head_ref (would miss uncommitted files)
 #
 # This is essential for:
 #   - Rules that trigger on newly created files only
@@ -207,13 +213,16 @@ class TestCreatedFilesDetection:
     WARNING: DO NOT MODIFY THESE TESTS
     ============================================================================
 
-    These tests verify that get_created_files() uses file-based comparison
-    (.last_work_tree) instead of git-based comparison. This is critical for
-    correctly identifying files created during the current session.
+    These tests verify that get_created_files() correctly identifies files
+    created after the prompt was submitted.
 
-    A bug was previously introduced where .last_head_ref was preferred over
-    .last_work_tree for created file detection, causing pre-existing uncommitted
-    files to be incorrectly flagged as "created".
+    PRIMARY: Uses tree-based comparison (.last_tree_hash) when available
+    FALLBACK: Uses file-list comparison (.last_work_tree) for backwards compat
+
+    The fallback tests below verify the file-based comparison works correctly
+    when no tree hash exists. This is critical for correctly identifying files
+    created during the current session without false positives for pre-existing
+    uncommitted files.
     """
 
     def test_get_created_files_uses_work_tree_not_head_ref(self, temp_dir: Path) -> None:
@@ -221,6 +230,7 @@ class TestCreatedFilesDetection:
         REQ-003: get_created_files() MUST use .last_work_tree, NOT .last_head_ref.
 
         This test simulates a scenario where:
+        - .last_tree_hash does NOT exist (so fallback to file-based comparison)
         - .last_head_ref exists (pointing to a git commit)
         - .last_work_tree exists (with a list of files including uncommitted ones)
         - An uncommitted file (existing_uncommitted.py) was present at prompt time
@@ -242,6 +252,8 @@ class TestCreatedFilesDetection:
                 return_value={"existing_uncommitted.py", "new_file.py"},
             ),
             patch("deepwork.core.git_utils._get_untracked_files", return_value=set()),
+            # No tree hash - tests fallback to file-based comparison
+            patch.object(CompareToPrompt, "BASELINE_TREE_PATH", temp_dir / "nonexistent"),
             patch.object(CompareToPrompt, "BASELINE_REF_PATH", ref_file),
             patch.object(CompareToPrompt, "BASELINE_WORK_TREE_PATH", work_tree_file),
         ):
@@ -301,7 +313,9 @@ class TestCreatedFilesDefinition:
                 return_value={"existing.py", "new.py"},
             ),
             patch("deepwork.core.git_utils._get_untracked_files", return_value=set()),
-            patch.object(CompareToPrompt, "BASELINE_REF_PATH", temp_dir / "nonexistent"),
+            # No tree hash - tests fallback to file-based comparison
+            patch.object(CompareToPrompt, "BASELINE_TREE_PATH", temp_dir / "nonexistent"),
+            patch.object(CompareToPrompt, "BASELINE_REF_PATH", temp_dir / "nonexistent2"),
             patch.object(CompareToPrompt, "BASELINE_WORK_TREE_PATH", work_tree_file),
         ):
             comparator = CompareToPrompt()
@@ -328,11 +342,13 @@ class TestCreatedFilesDefinition:
                 "deepwork.core.git_utils._get_untracked_files",
                 return_value={"file2.py"},
             ),
-            patch.object(CompareToPrompt, "BASELINE_REF_PATH", temp_dir / "nonexistent"),
+            # No tree hash or any baseline files
+            patch.object(CompareToPrompt, "BASELINE_TREE_PATH", temp_dir / "nonexistent"),
+            patch.object(CompareToPrompt, "BASELINE_REF_PATH", temp_dir / "nonexistent2"),
             patch.object(
                 CompareToPrompt,
                 "BASELINE_WORK_TREE_PATH",
-                temp_dir / "nonexistent2",
+                temp_dir / "nonexistent3",
             ),
         ):
             comparator = CompareToPrompt()
@@ -406,6 +422,88 @@ class TestGetAllChangesVsRef:
         with patch("deepwork.core.git_utils._run_git") as mock_run:
             mock_run.return_value = MagicMock(stdout="")
             result = _get_all_changes_vs_ref("abc123")
+            assert result == set()
+
+
+class TestCreateTreeFromWorkingDir:
+    """Tests for _create_tree_from_working_dir helper function.
+
+    This function creates a tree object from the current working directory
+    using a temporary index to avoid touching the actual staging area.
+    """
+
+    def test_returns_tree_hash_on_success(self) -> None:
+        with patch("deepwork.core.git_utils.subprocess.run") as mock_run:
+            # git add -A succeeds, git write-tree returns hash
+            mock_run.side_effect = [
+                MagicMock(returncode=0),  # git add -A
+                MagicMock(stdout="abc123def456\n", returncode=0),  # git write-tree
+            ]
+            result = _create_tree_from_working_dir()
+            assert result == "abc123def456"
+
+    def test_returns_none_on_write_tree_failure(self) -> None:
+        with patch("deepwork.core.git_utils.subprocess.run") as mock_run:
+            mock_run.side_effect = [
+                MagicMock(returncode=0),  # git add -A
+                subprocess.CalledProcessError(1, "git write-tree"),
+            ]
+            result = _create_tree_from_working_dir()
+            assert result is None
+
+    def test_uses_temporary_index_file(self) -> None:
+        import os
+
+        original_env = os.environ.get("GIT_INDEX_FILE")
+
+        with patch("deepwork.core.git_utils.subprocess.run") as mock_run:
+            captured_env = {}
+
+            def capture_env(*args, **kwargs):
+                captured_env["GIT_INDEX_FILE"] = os.environ.get("GIT_INDEX_FILE")
+                if args[0][1] == "write-tree":
+                    return MagicMock(stdout="abc123\n", returncode=0)
+                return MagicMock(returncode=0)
+
+            mock_run.side_effect = capture_env
+            _create_tree_from_working_dir()
+
+            # Should have used a temp index file during execution
+            assert captured_env.get("GIT_INDEX_FILE") is not None
+            assert captured_env["GIT_INDEX_FILE"] != original_env
+
+        # Should restore original env after execution
+        assert os.environ.get("GIT_INDEX_FILE") == original_env
+
+
+class TestDiffTrees:
+    """Tests for _diff_trees helper function.
+
+    This function compares two tree objects using git diff-tree.
+    """
+
+    def test_returns_changed_files(self) -> None:
+        with patch("deepwork.core.git_utils._run_git") as mock_run:
+            mock_run.return_value = MagicMock(stdout="file1.py\nfile2.py\n")
+            result = _diff_trees("tree_a", "tree_b")
+            assert result == {"file1.py", "file2.py"}
+            mock_run.assert_called_once_with(
+                "diff-tree", "--name-only", "-r", "tree_a", "tree_b"
+            )
+
+    def test_applies_diff_filter(self) -> None:
+        with patch("deepwork.core.git_utils._run_git") as mock_run:
+            mock_run.return_value = MagicMock(stdout="new_file.py\n")
+            result = _diff_trees("tree_a", "tree_b", diff_filter="A")
+            assert result == {"new_file.py"}
+            mock_run.assert_called_once_with(
+                "diff-tree", "--name-only", "-r", "--diff-filter=A", "tree_a", "tree_b"
+            )
+
+    def test_returns_empty_set_for_identical_trees(self) -> None:
+        with patch("deepwork.core.git_utils._run_git") as mock_run:
+            mock_run.return_value = MagicMock(stdout="")
+            result = _diff_trees("same_tree", "same_tree")
             assert result == set()
 
 
@@ -492,27 +590,119 @@ class TestCompareToPromptImplementation:
     """Implementation tests for CompareToPrompt comparator."""
 
     def test_get_baseline_ref_returns_prompt_when_no_baseline_file(self, temp_dir: Path) -> None:
-        with patch.object(
-            CompareToPrompt,
-            "BASELINE_WORK_TREE_PATH",
-            temp_dir / "nonexistent",
+        with (
+            patch.object(CompareToPrompt, "BASELINE_TREE_PATH", temp_dir / "nonexistent"),
+            patch.object(CompareToPrompt, "BASELINE_WORK_TREE_PATH", temp_dir / "nonexistent2"),
         ):
             comparator = CompareToPrompt()
             assert comparator.get_baseline_ref() == "prompt"
 
-    def test_get_baseline_ref_returns_mtime_when_baseline_exists(self, temp_dir: Path) -> None:
+    def test_get_baseline_ref_returns_tree_hash_when_tree_exists(self, temp_dir: Path) -> None:
+        tree_file = temp_dir / ".last_tree_hash"
+        tree_file.write_text("abc123def456789012")
+
+        with (
+            patch.object(CompareToPrompt, "BASELINE_TREE_PATH", tree_file),
+            patch.object(CompareToPrompt, "BASELINE_WORK_TREE_PATH", temp_dir / "nonexistent"),
+        ):
+            comparator = CompareToPrompt()
+            ref = comparator.get_baseline_ref()
+            # Should return short hash (first 12 chars)
+            assert ref == "abc123def456"
+
+    def test_get_baseline_ref_falls_back_to_mtime_when_no_tree(self, temp_dir: Path) -> None:
         baseline_file = temp_dir / ".last_work_tree"
         baseline_file.write_text("file1.py\nfile2.py")
 
-        with patch.object(CompareToPrompt, "BASELINE_WORK_TREE_PATH", baseline_file):
+        with (
+            patch.object(CompareToPrompt, "BASELINE_TREE_PATH", temp_dir / "nonexistent"),
+            patch.object(CompareToPrompt, "BASELINE_WORK_TREE_PATH", baseline_file),
+        ):
             comparator = CompareToPrompt()
             ref = comparator.get_baseline_ref()
-            # Should be a numeric timestamp string
+            # Should be a numeric timestamp string (fallback)
             assert ref.isdigit()
 
-    def test_get_changed_files_with_no_baseline_ref(self, temp_dir: Path) -> None:
-        """When no baseline ref exists, returns staged changes and untracked files."""
+    # -------------------------------------------------------------------------
+    # Tree-based comparison tests (primary path)
+    # -------------------------------------------------------------------------
+
+    def test_get_changed_files_uses_tree_comparison_when_available(self, temp_dir: Path) -> None:
+        """When tree hash exists, uses git diff-tree for comparison."""
+        tree_file = temp_dir / ".last_tree_hash"
+        tree_file.write_text("baseline_tree_abc123")
+
         with (
+            patch.object(CompareToPrompt, "BASELINE_TREE_PATH", tree_file),
+            patch(
+                "deepwork.core.git_utils._create_tree_from_working_dir",
+                return_value="current_tree_def456",
+            ),
+            patch(
+                "deepwork.core.git_utils._diff_trees",
+                return_value={"changed.py", "new.py"},
+            ) as mock_diff,
+        ):
+            comparator = CompareToPrompt()
+            changed = comparator.get_changed_files()
+
+            # Should use tree-based comparison
+            mock_diff.assert_called_once_with("baseline_tree_abc123", "current_tree_def456")
+            assert changed == ["changed.py", "new.py"]
+
+    def test_get_created_files_uses_tree_comparison_when_available(self, temp_dir: Path) -> None:
+        """When tree hash exists, uses git diff-tree with filter=A for created files."""
+        tree_file = temp_dir / ".last_tree_hash"
+        tree_file.write_text("baseline_tree_abc123")
+
+        with (
+            patch.object(CompareToPrompt, "BASELINE_TREE_PATH", tree_file),
+            patch(
+                "deepwork.core.git_utils._create_tree_from_working_dir",
+                return_value="current_tree_def456",
+            ),
+            patch(
+                "deepwork.core.git_utils._diff_trees",
+                return_value={"new.py"},
+            ) as mock_diff,
+        ):
+            comparator = CompareToPrompt()
+            created = comparator.get_created_files()
+
+            # Should use tree-based comparison with diff_filter=A
+            mock_diff.assert_called_once_with(
+                "baseline_tree_abc123", "current_tree_def456", diff_filter="A"
+            )
+            assert created == ["new.py"]
+
+    # -------------------------------------------------------------------------
+    # Fallback behavior tests (when tree hash not available)
+    # -------------------------------------------------------------------------
+
+    def test_get_changed_files_falls_back_to_ref_when_no_tree(self, temp_dir: Path) -> None:
+        """When no tree hash, falls back to .last_head_ref comparison."""
+        ref_file = temp_dir / ".last_head_ref"
+        ref_file.write_text("abc123")
+
+        with (
+            patch.object(CompareToPrompt, "BASELINE_TREE_PATH", temp_dir / "nonexistent"),
+            patch.object(CompareToPrompt, "BASELINE_REF_PATH", ref_file),
+            patch("deepwork.core.git_utils._stage_all_changes"),
+            patch(
+                "deepwork.core.git_utils._get_all_changes_vs_ref",
+                return_value={"committed.py", "staged.py"},
+            ),
+        ):
+            comparator = CompareToPrompt()
+            changed = comparator.get_changed_files()
+            assert "committed.py" in changed
+            assert "staged.py" in changed
+
+    def test_get_changed_files_with_no_baseline_files(self, temp_dir: Path) -> None:
+        """When no baseline files exist, returns staged changes and untracked files."""
+        with (
+            patch.object(CompareToPrompt, "BASELINE_TREE_PATH", temp_dir / "nonexistent"),
+            patch.object(CompareToPrompt, "BASELINE_REF_PATH", temp_dir / "nonexistent2"),
             patch("deepwork.core.git_utils._stage_all_changes"),
             patch(
                 "deepwork.core.git_utils._get_all_changes_vs_ref",
@@ -522,35 +712,11 @@ class TestCompareToPromptImplementation:
                 "deepwork.core.git_utils._get_untracked_files",
                 return_value={"untracked.py"},
             ),
-            patch.object(
-                CompareToPrompt,
-                "BASELINE_REF_PATH",
-                temp_dir / "nonexistent",
-            ),
         ):
             comparator = CompareToPrompt()
             changed = comparator.get_changed_files()
             assert "staged.py" in changed
             assert "untracked.py" in changed
-
-    def test_get_changed_files_with_baseline_ref(self, temp_dir: Path) -> None:
-        """When baseline ref exists, returns all changes vs that ref."""
-        ref_file = temp_dir / ".last_head_ref"
-        ref_file.write_text("abc123")
-
-        with (
-            patch("deepwork.core.git_utils._stage_all_changes"),
-            patch(
-                "deepwork.core.git_utils._get_all_changes_vs_ref",
-                return_value={"committed.py", "staged.py"},
-            ),
-            patch.object(CompareToPrompt, "BASELINE_REF_PATH", ref_file),
-        ):
-            comparator = CompareToPrompt()
-            changed = comparator.get_changed_files()
-            assert "committed.py" in changed
-            assert "staged.py" in changed
-
 
 class TestRefBasedComparatorIntegration:
     """Integration tests for RefBasedComparator."""
@@ -573,21 +739,56 @@ class TestRefBasedComparatorIntegration:
 class TestCompareToPromptIntegration:
     """Integration tests for CompareToPrompt with file system."""
 
-    def test_full_workflow_with_baseline_files(self, temp_dir: Path) -> None:
-        """Test complete workflow with baseline files (mocked git operations)."""
-        # Setup baseline files
+    def test_full_workflow_with_tree_hash(self, temp_dir: Path) -> None:
+        """Test complete workflow with tree-based comparison (primary path)."""
         deepwork_dir = temp_dir / ".deepwork"
         deepwork_dir.mkdir()
 
-        # Write baseline files
+        # Write tree hash file (primary method)
+        tree_file = deepwork_dir / ".last_tree_hash"
+        tree_file.write_text("baseline_tree_abc123")
+
+        with (
+            patch.object(CompareToPrompt, "BASELINE_TREE_PATH", tree_file),
+            patch(
+                "deepwork.core.git_utils._create_tree_from_working_dir",
+                return_value="current_tree_def456",
+            ),
+            patch(
+                "deepwork.core.git_utils._diff_trees",
+                side_effect=lambda a, b, diff_filter=None: (
+                    {"new_file.py"} if diff_filter == "A" else {"new_file.py", "modified.py"}
+                ),
+            ),
+        ):
+            comparator = CompareToPrompt()
+
+            changed = comparator.get_changed_files()
+            created = comparator.get_created_files()
+
+            # new_file.py should be in both changed and created
+            assert "new_file.py" in changed
+            assert "modified.py" in changed
+            assert "new_file.py" in created
+            # modified.py was modified, not created
+            assert "modified.py" not in created
+
+    def test_full_workflow_with_fallback_files(self, temp_dir: Path) -> None:
+        """Test complete workflow with fallback to file-based comparison."""
+        deepwork_dir = temp_dir / ".deepwork"
+        deepwork_dir.mkdir()
+
+        # Write legacy baseline files (no tree hash)
         ref_file = deepwork_dir / ".last_head_ref"
         ref_file.write_text("abc123")
 
         work_tree_file = deepwork_dir / ".last_work_tree"
         work_tree_file.write_text("README.md\n")
 
-        # Mock git operations to simulate a new file being created and committed
+        # Mock git operations to simulate a new file being created
         with (
+            # No tree hash - forces fallback
+            patch.object(CompareToPrompt, "BASELINE_TREE_PATH", temp_dir / "nonexistent"),
             patch.object(CompareToPrompt, "BASELINE_REF_PATH", ref_file),
             patch.object(CompareToPrompt, "BASELINE_WORK_TREE_PATH", work_tree_file),
             patch("deepwork.core.git_utils._stage_all_changes"),

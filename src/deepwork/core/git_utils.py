@@ -13,11 +13,57 @@ Usage:
     changed_files = comparator.get_changed_files()
     created_files = comparator.get_created_files()
     baseline_ref = comparator.get_baseline_ref()
+
+=============================================================================
+GIT PLUMBING APPROACH FOR "COMPARE TO PROMPT"
+=============================================================================
+
+The CompareToPrompt comparator uses Git "plumbing" commands with a temporary
+index to safely capture and compare working directory snapshots.
+
+HOW IT WORKS:
+
+1. At prompt submission time (capture_prompt_work_tree.sh):
+   - Create a temporary index file (GIT_INDEX_FILE env var)
+   - Stage all files to this temp index (git add -A)
+   - Write the index to a tree object (git write-tree) -> returns SHA hash
+   - Save the tree hash to .deepwork/.last_tree_hash
+
+2. At comparison time (CompareToPrompt class):
+   - Create another temporary index for the current state
+   - Stage all current files and write to a tree object
+   - Compare the two trees using "git diff-tree"
+
+WHY THIS IS ROBUST:
+- FAST: Git is optimized for tree comparisons
+- SAFE: Does not touch HEAD, current Index, or Stashes
+- COMPLETE: Handles modified, new (untracked), and deleted files
+- CLEAN: Respects .gitignore automatically
+
+WHAT WE CAN DETECT:
+| Scenario              | Handled? | Explanation                                |
+|-----------------------|----------|-------------------------------------------|
+| Modified files        | ✅ Yes   | Git detects content hash changed          |
+| New untracked files   | ✅ Yes   | git add -A captures them in temp index    |
+| Deleted files         | ✅ Yes   | Tree comparison shows them as missing     |
+| Staged vs Unstaged    | ✅ Yes   | We look at disk state, ignore staging     |
+| Ignored files         | ❌ No    | git add respects .gitignore (by design)   |
+
+KEY GIT PLUMBING CONCEPTS:
+- GIT_INDEX_FILE: By setting this env var, Git uses a different index file.
+  This lets us stage files without affecting the user's actual staging area.
+- git write-tree: Plumbing command that writes the current index state to
+  Git's object database as a tree object. Returns the SHA hash.
+- git diff-tree: Compares two tree objects and reports differences.
+  Much more reliable than comparing file lists manually.
+=============================================================================
 """
 
 from __future__ import annotations
 
+import os
 import subprocess
+import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -74,6 +120,108 @@ def _get_untracked_files() -> set[str]:
 def _stage_all_changes() -> None:
     """Stage all changes including untracked files."""
     _run_git("add", "-A")
+
+
+# =============================================================================
+# GIT PLUMBING HELPERS FOR TREE-BASED COMPARISON
+# =============================================================================
+
+
+def _create_tree_from_working_dir() -> str | None:
+    """Create a tree object representing the current working directory state.
+
+    This function uses Git plumbing commands with a temporary index to create
+    a tree object without affecting the actual staging area.
+
+    HOW IT WORKS:
+    1. Create a temporary file to act as a separate git index
+    2. Set GIT_INDEX_FILE to use this temp index instead of .git/index
+    3. Stage all files (git add -A) to the temp index
+    4. Write the temp index to a tree object (git write-tree)
+    5. Clean up the temp index file
+
+    WHY A TEMPORARY INDEX:
+    - We need to capture the ENTIRE working directory state (including untracked)
+    - git add -A stages everything, but we don't want to mess with the user's
+      actual staging area
+    - By setting GIT_INDEX_FILE, Git uses our temp file instead of .git/index
+
+    Returns:
+        The SHA hash of the tree object, or None if creation failed.
+    """
+    temp_index = None
+    original_env = os.environ.get("GIT_INDEX_FILE")
+
+    try:
+        # Create a temporary file for the index
+        fd, temp_index = tempfile.mkstemp(prefix="deepwork_index_")
+        os.close(fd)
+
+        # Tell Git to use our temp index instead of .git/index
+        os.environ["GIT_INDEX_FILE"] = temp_index
+
+        # Stage everything to the temp index
+        # -A handles new files, deletions, and modifications
+        # Respects .gitignore automatically
+        subprocess.run(
+            ["git", "add", "-A"],
+            capture_output=True,
+            text=True,
+            check=False,  # Don't fail if no files to add
+        )
+
+        # Write the index to a tree object and get the SHA hash
+        result = subprocess.run(
+            ["git", "write-tree"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        return result.stdout.strip() or None
+
+    except subprocess.CalledProcessError:
+        return None
+
+    finally:
+        # Restore the original GIT_INDEX_FILE environment
+        if original_env is None:
+            os.environ.pop("GIT_INDEX_FILE", None)
+        else:
+            os.environ["GIT_INDEX_FILE"] = original_env
+
+        # Clean up the temp index file
+        if temp_index and os.path.exists(temp_index):
+            os.unlink(temp_index)
+
+
+def _diff_trees(
+    tree_a: str, tree_b: str, diff_filter: str | None = None
+) -> set[str]:
+    """Compare two tree objects and return the files that differ.
+
+    Uses git diff-tree to compare tree objects. This is Git's native way to
+    compare directory snapshots and is highly optimized.
+
+    Args:
+        tree_a: SHA hash of the first tree (baseline/before)
+        tree_b: SHA hash of the second tree (current/after)
+        diff_filter: Optional filter for diff types:
+            - "A" = Added files only (new in tree_b)
+            - "D" = Deleted files only (removed from tree_b)
+            - "M" = Modified files only
+            - None = All changed files
+
+    Returns:
+        Set of file paths that differ between the trees.
+    """
+    args = ["diff-tree", "--name-only", "-r"]
+    if diff_filter:
+        args.append(f"--diff-filter={diff_filter}")
+    args.extend([tree_a, tree_b])
+
+    result = _run_git(*args)
+    return _parse_file_list(result.stdout)
 
 
 def _get_all_changes_vs_ref(ref: str, diff_filter: str | None = None) -> set[str]:
@@ -213,30 +361,83 @@ class CompareToDefaultTip(RefBasedComparator):
 class CompareToPrompt(GitComparator):
     """Compare changes against the state when a prompt was submitted.
 
-    Uses baseline files captured at prompt submission time to detect
-    what changed during the agent's response.
+    ==========================================================================
+    GIT PLUMBING APPROACH FOR ACCURATE CHANGE DETECTION
+    ==========================================================================
+
+    This comparator uses Git plumbing commands with temporary indexes to create
+    and compare tree objects. This is the most robust way to detect what changed
+    during an agent response because:
+
+    1. COMPLETE: Captures ALL changes including untracked files
+    2. SAFE: Uses temporary index, doesn't touch actual staging area
+    3. ACCURATE: git diff-tree is Git's native tree comparison
+    4. HANDLES COMMITS: Works even if changes were committed during response
+
+    HOW IT WORKS:
+
+    At prompt submission (capture_prompt_work_tree.sh):
+    1. Create temporary index file
+    2. Set GIT_INDEX_FILE to temp index
+    3. git add -A (stage everything to temp index)
+    4. git write-tree -> returns tree SHA hash
+    5. Save hash to .deepwork/.last_tree_hash
+
+    At comparison time (this class):
+    1. Create another tree for current state (_create_tree_from_working_dir)
+    2. Compare trees with git diff-tree (_diff_trees)
+    3. Return the differences
+
+    FALLBACK BEHAVIOR:
+    If .last_tree_hash is missing (e.g., old capture script), falls back to:
+    - .last_head_ref for get_changed_files() (compares commits)
+    - .last_work_tree for get_created_files() (compares file lists)
+    ==========================================================================
     """
 
+    # Primary: Tree hash for robust git-plumbing comparison
+    BASELINE_TREE_PATH = Path(".deepwork/.last_tree_hash")
+    # Legacy fallbacks for backwards compatibility
     BASELINE_REF_PATH = Path(".deepwork/.last_head_ref")
     BASELINE_WORK_TREE_PATH = Path(".deepwork/.last_work_tree")
 
     def get_baseline_ref(self) -> str:
+        """Return the baseline tree hash or fallback identifier."""
+        if self.BASELINE_TREE_PATH.exists():
+            tree_hash = self.BASELINE_TREE_PATH.read_text().strip()
+            if tree_hash:
+                return tree_hash[:12]  # Short hash for display
         if self.BASELINE_WORK_TREE_PATH.exists():
             return str(int(self.BASELINE_WORK_TREE_PATH.stat().st_mtime))
         return "prompt"
 
     def get_changed_files(self) -> list[str]:
-        try:
-            _stage_all_changes()
+        """Get files that changed since the prompt was submitted.
 
+        Uses git diff-tree to compare the baseline tree (captured at prompt time)
+        against the current working directory tree. This accurately captures:
+        - Modified files
+        - New files (including previously untracked)
+        - Deleted files
+        - Files that were committed during the response
+        """
+        try:
+            # Try tree-based comparison first (most robust)
+            if self.BASELINE_TREE_PATH.exists():
+                baseline_tree = self.BASELINE_TREE_PATH.read_text().strip()
+                if baseline_tree:
+                    current_tree = _create_tree_from_working_dir()
+                    if current_tree:
+                        return sorted(_diff_trees(baseline_tree, current_tree))
+
+            # Fallback to ref-based comparison
+            _stage_all_changes()
             if self.BASELINE_REF_PATH.exists():
                 baseline_ref = self.BASELINE_REF_PATH.read_text().strip()
                 if baseline_ref:
-                    # Use simplified approach: after staging, index vs ref captures all changes
                     return sorted(_get_all_changes_vs_ref(baseline_ref))
 
-            # No baseline ref - return files that differ from HEAD plus any untracked.
-            # The _get_untracked_files() call is defensive in case staging failed.
+            # Last resort: compare against HEAD
             return sorted(_get_all_changes_vs_ref("HEAD") | _get_untracked_files())
 
         except (subprocess.CalledProcessError, OSError):
@@ -245,25 +446,32 @@ class CompareToPrompt(GitComparator):
     def get_created_files(self) -> list[str]:
         """Get files created since the prompt was submitted.
 
-        Unlike get_changed_files(), this method always uses .last_work_tree
-        for comparison (not .last_head_ref) because .last_work_tree contains
-        the actual list of files that existed at prompt time, including
-        uncommitted files. Using git-based detection would incorrectly flag
-        uncommitted files from before the prompt as "created".
+        Uses git diff-tree with --diff-filter=A to find files that were added
+        (exist in current tree but not in baseline tree). This accurately
+        detects truly new files even if:
+        - They were untracked before and are now tracked
+        - They were committed during the response
+        - The staging area was in an unusual state
         """
         try:
-            _stage_all_changes()
+            # Try tree-based comparison first (most robust)
+            if self.BASELINE_TREE_PATH.exists():
+                baseline_tree = self.BASELINE_TREE_PATH.read_text().strip()
+                if baseline_tree:
+                    current_tree = _create_tree_from_working_dir()
+                    if current_tree:
+                        # diff-filter=A returns files Added in current tree
+                        return sorted(_diff_trees(baseline_tree, current_tree, diff_filter="A"))
 
-            # Get files that differ from HEAD (modified/added/deleted) plus any untracked.
-            # The _get_untracked_files() call is defensive in case staging failed.
+            # Fallback to file-list comparison for backwards compatibility
+            # This handles cases where .last_tree_hash doesn't exist yet
+            _stage_all_changes()
             current_files = _get_all_changes_vs_ref("HEAD") | _get_untracked_files()
 
             if self.BASELINE_WORK_TREE_PATH.exists():
-                # Compare against the file list captured at prompt time
                 baseline_files = _parse_file_list(self.BASELINE_WORK_TREE_PATH.read_text())
                 return sorted(current_files - baseline_files)
             else:
-                # No baseline means all current files are "new" to this prompt
                 return sorted(current_files)
 
         except (subprocess.CalledProcessError, OSError):
