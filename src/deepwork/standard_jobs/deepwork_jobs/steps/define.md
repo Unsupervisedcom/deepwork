@@ -61,10 +61,15 @@ When creating a doc spec, gather the following information:
    - How often is it produced? (frequency)
 
 3. **Quality Criteria** (3-5 criteria, each with name and description)
+
+   **Important**: Doc spec quality criteria define requirements for the **output document itself**, not the process of creating it. Focus on what the finished document must contain or achieve.
+
    Examples for a spending report:
    - **Visualization**: Must include charts showing spend breakdown by service
    - **Variance Analysis**: Must compare current month against previous with percentages
    - **Action Items**: Must include recommended cost optimization actions
+
+   **Note**: When a doc spec is created for a step's output, the step should generally NOT have separate `quality_criteria` in the job.yml. The doc spec's criteria cover output quality. Only add step-level quality_criteria if there are essential process requirements (e.g., "must use specific tool"), and minimize these when possible.
 
 4. **Document Structure**
    - What sections should it have?
@@ -76,7 +81,7 @@ Create the doc spec file at `.deepwork/doc_specs/[doc_spec_name].md`:
 
 **Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/doc_spec.md.template` for the standard structure.
 
-**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/doc_spec.md.example` for a fully worked example.
+**Complete example**: See `.deepwork/doc_specs/job_spec.md` for a fully worked example (the doc spec for job.yml files).
 
 After creating the doc spec, proceed to Step 2 with the doc spec reference for the final step's output.
 
@@ -385,13 +390,3 @@ After creating the file:
 2. Recommend that they review the job.yml file
 3. Tell them to run `/deepwork_jobs.review_job_spec` next
 
-## Quality Criteria
-
-- Asked structured questions to fully understand user requirements
-- User fully understands what job they're creating
-- All steps have clear inputs and outputs
-- Dependencies make logical sense
-- Summary is concise and descriptive
-- Description provides rich context for future refinement
-- Specification is valid YAML and follows the schema
-- Ready for implementation step
