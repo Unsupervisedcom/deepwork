@@ -216,11 +216,10 @@ jobs:
 
           2. Step: classify
              Name: Classify Fruits
-             Description: Organize identified fruits into categories (citrus, tropical, berries, etc.)
-             Input: identified_fruits.md (file from step identify)
-             Output: classified_fruits.md
+             Description: Organize identified fruits into categories (citrus, tropical, berries, etc.). 
+             **CRITICAL**: must put the classified fruit list in `classified_fruits.md` in the project base folder.
 
-          Please create this job now. Do not ask questions.
+          Create this job now. Do not ask questions.
           PROMPT_EOF
 
           # Verify the job.yml was created
