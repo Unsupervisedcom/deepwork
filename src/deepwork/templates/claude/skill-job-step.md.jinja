@@ -44,6 +44,9 @@ Template Variables:
         - path: string (for script)
         - content: string (for prompt)
     - hooks: dict|null - All hooks by event name (Stop, PreToolUse, etc.)
+
+  Agent Delegation:
+    - agent: string|null - Agent type (e.g., "general-purpose"). When set, adds context: fork
 #}
 ---
 name: {{ job_name }}.{{ step_id }}
@@ -51,6 +54,10 @@ description: "{{ step_description }}"
 {% if not exposed %}
 user-invocable: false
 {% endif %}{#- if not exposed #}
+{% if agent %}
+context: fork
+agent: {{ agent }}
+{% endif %}{#- if agent #}
 {#
   NOTE: Prompt-based stop hooks do not currently work in Claude Code.
   See: https://github.com/anthropics/claude-code/issues/20221

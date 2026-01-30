@@ -142,6 +142,9 @@ class Step:
     # Declarative quality criteria rendered with standard evaluation framing
     quality_criteria: list[str] = field(default_factory=list)
 
+    # Agent type for this step (e.g., "general-purpose"). When set, skill uses context: fork
+    agent: str | None = None
+
     @property
     def stop_hooks(self) -> list[HookAction]:
         """
@@ -180,6 +183,7 @@ class Step:
             hooks=hooks,
             exposed=data.get("exposed", False),
             quality_criteria=data.get("quality_criteria", []),
+            agent=data.get("agent"),
         )
 
 

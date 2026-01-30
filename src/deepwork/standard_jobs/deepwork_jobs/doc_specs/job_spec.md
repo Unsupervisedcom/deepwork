@@ -122,6 +122,19 @@ steps:
     exposed: true                 # Makes step available without running dependencies
 ```
 
+### Agent Delegation
+
+When a step should be executed by a specific agent type, use the `agent` field. This automatically sets `context: fork` in the generated skill.
+
+```yaml
+steps:
+  - id: research_step
+    agent: general-purpose        # Delegates to the general-purpose agent
+```
+
+Available agent types:
+- `general-purpose` - Standard agent for multi-step tasks
+
 ### Quality Hooks
 
 ```yaml
