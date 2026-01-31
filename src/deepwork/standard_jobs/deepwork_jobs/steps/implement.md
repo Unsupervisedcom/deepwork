@@ -8,31 +8,52 @@ Generate the DeepWork job directory structure and instruction files for each ste
 
 Read the `job.yml` specification file and create all the necessary files to make the job functional, including directory structure and step instruction files. Then sync the commands to make them available.
 
-### Step 1: Create Directory Structure Using Script
+### Step 1: Determine Installation Scope
 
-Run the `make_new_job.sh` script to create the standard directory structure:
+**Ask the user where they want to install this job using structured questions:**
 
+Present two options:
+1. **Local** - Install in this project only (`.deepwork/jobs/`)
+2. **Global** - Install for all projects in your user config (`~/.config/deepwork/jobs/`)
+
+**Guidance for users:**
+- Choose **local** if the job is specific to this project or you want to version control it
+- Choose **global** if the job is reusable across multiple projects (e.g., a general "code review" or "documentation" workflow)
+
+### Step 2: Create Directory Structure Using Script
+
+Run the `make_new_job.sh` script to create the standard directory structure with the chosen scope:
+
+**For local installation:**
 ```bash
-.deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
+.deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name] --scope local
+```
+
+**For global installation:**
+```bash
+.deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name] --scope global
 ```
 
 This creates:
-- `.deepwork/jobs/[job_name]/` - Main job directory
-- `.deepwork/jobs/[job_name]/steps/` - Step instruction files
-- `.deepwork/jobs/[job_name]/hooks/` - Custom validation scripts (with .gitkeep)
-- `.deepwork/jobs/[job_name]/templates/` - Example file formats (with .gitkeep)
-- `.deepwork/jobs/[job_name]/AGENTS.md` - Job management guidance
+- `[scope_path]/[job_name]/` - Main job directory
+- `[scope_path]/[job_name]/steps/` - Step instruction files
+- `[scope_path]/[job_name]/hooks/` - Custom validation scripts (with .gitkeep)
+- `[scope_path]/[job_name]/templates/` - Example file formats (with .gitkeep)
+- `[scope_path]/[job_name]/AGENTS.md` - Job management guidance
 
-**Note**: If the directory already exists (e.g., job.yml was created by define step), you can skip this step or manually create the additional directories:
-```bash
-mkdir -p .deepwork/jobs/[job_name]/hooks .deepwork/jobs/[job_name]/templates
-touch .deepwork/jobs/[job_name]/hooks/.gitkeep .deepwork/jobs/[job_name]/templates/.gitkeep
-```
+Where `[scope_path]` is:
+- `.deepwork/jobs` for local scope
+- `~/.config/deepwork/jobs` (or `$XDG_CONFIG_HOME/deepwork/jobs`) for global scope
 
-### Step 2: Read and Validate the Specification
+**Note**: If the directory already exists (e.g., job.yml was created by define step), you can skip this step or manually create the additional directories in the appropriate scope location.
+
+### Step 3: Read and Validate the Specification
 
 1. **Locate the job.yml file**
-   - Read `.deepwork/jobs/[job_name]/job.yml` from the review_job_spec step
+   - Read the job.yml from the review_job_spec step
+   - The file location depends on the chosen scope:
+     - Local: `.deepwork/jobs/[job_name]/job.yml`
+     - Global: `~/.config/deepwork/jobs/[job_name]/job.yml` (or `$XDG_CONFIG_HOME/deepwork/jobs/[job_name]/job.yml`)
    - Parse the YAML content
 
 2. **Validate the specification**
@@ -46,9 +67,11 @@ touch .deepwork/jobs/[job_name]/hooks/.gitkeep .deepwork/jobs/[job_name]/templat
    - List of all steps with their details
    - Understand the workflow structure
 
-### Step 3: Generate Step Instruction Files
+### Step 4: Generate Step Instruction Files
 
-For each step in the job.yml, create a comprehensive instruction file at `.deepwork/jobs/[job_name]/steps/[step_id].md`.
+For each step in the job.yml, create a comprehensive instruction file at the appropriate scope location:
+- Local: `.deepwork/jobs/[job_name]/steps/[step_id].md`
+- Global: `~/.config/deepwork/jobs/[job_name]/steps/[step_id].md`
 
 **Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.template` for the standard structure.
 

@@ -37,31 +37,58 @@ validate_job_name() {
 # Main script
 main() {
     if [[ $# -lt 1 ]]; then
-        echo "Usage: $0 <job_name>"
+        echo "Usage: $0 <job_name> [--scope local|global]"
         echo ""
         echo "Creates the directory structure for a new DeepWork job."
         echo ""
         echo "Arguments:"
         echo "  job_name    Name of the job (lowercase, underscores allowed)"
+        echo "  --scope     Installation scope: 'local' (project) or 'global' (XDG config)"
+        echo "              Default: local"
         echo ""
-        echo "Example:"
+        echo "Examples:"
         echo "  $0 competitive_research"
+        echo "  $0 competitive_research --scope global"
         exit 1
     fi
 
     local job_name="$1"
+    local scope="local"
+    
+    # Parse optional --scope argument
+    if [[ $# -ge 2 ]] && [[ "$2" == "--scope" ]]; then
+        if [[ $# -ge 3 ]]; then
+            scope="$3"
+            if [[ "$scope" != "local" && "$scope" != "global" ]]; then
+                error "Invalid scope '$scope'. Must be 'local' or 'global'."
+            fi
+        else
+            error "--scope requires a value (local or global)"
+        fi
+    fi
+    
     validate_job_name "$job_name"
 
-    # Determine the base path - look for .deepwork directory
+    # Determine the base path based on scope
     local base_path
-    if [[ -d ".deepwork/jobs" ]]; then
-        base_path=".deepwork/jobs"
-    elif [[ -d "../.deepwork/jobs" ]]; then
-        base_path="../.deepwork/jobs"
-    else
-        # Create from current directory
-        base_path=".deepwork/jobs"
+    if [[ "$scope" == "global" ]]; then
+        # Use XDG config directory for global jobs
+        local xdg_config="${XDG_CONFIG_HOME:-$HOME/.config}"
+        base_path="${xdg_config}/deepwork/jobs"
         mkdir -p "$base_path"
+        info "Creating global job in $base_path"
+    else
+        # Local scope - look for .deepwork directory
+        if [[ -d ".deepwork/jobs" ]]; then
+            base_path=".deepwork/jobs"
+        elif [[ -d "../.deepwork/jobs" ]]; then
+            base_path="../.deepwork/jobs"
+        else
+            # Create from current directory
+            base_path=".deepwork/jobs"
+            mkdir -p "$base_path"
+        fi
+        info "Creating local job in $base_path"
     fi
 
     local job_path="${base_path}/${job_name}"

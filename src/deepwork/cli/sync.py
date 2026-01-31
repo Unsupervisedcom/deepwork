@@ -80,19 +80,38 @@ def sync_skills(project_path: Path) -> None:
 
     console.print("[bold cyan]Syncing DeepWork Skills[/bold cyan]\n")
 
-    # Discover jobs
-    jobs_dir = deepwork_dir / "jobs"
-    if not jobs_dir.exists():
-        job_dirs = []
-    else:
-        job_dirs = [d for d in jobs_dir.iterdir() if d.is_dir() and (d / "job.yml").exists()]
+    # Discover jobs from both local and global locations
+    from deepwork.utils.job_location import discover_all_jobs_dirs
 
-    console.print(f"[yellow]→[/yellow] Found {len(job_dirs)} job(s) to sync")
+    all_job_dirs: list[Path] = []
+    locations = discover_all_jobs_dirs(project_path)
+
+    for scope, jobs_dir in locations:
+        if not jobs_dir.exists():
+            continue
+
+        scope_name = scope.value  # Use the enum value directly
+        job_dirs_in_scope = [
+            d for d in jobs_dir.iterdir() if d.is_dir() and (d / "job.yml").exists()
+        ]
+
+        if job_dirs_in_scope:
+            console.print(
+                f"[yellow]→[/yellow] Found {len(job_dirs_in_scope)} job(s) in {scope_name} scope ({jobs_dir})"
+            )
+            all_job_dirs.extend(job_dirs_in_scope)
+
+    if not all_job_dirs:
+        console.print("[yellow]→[/yellow] No jobs found to sync")
+    else:
+        console.print(
+            f"[yellow]→[/yellow] Total: {len(all_job_dirs)} job(s) across all scopes"
+        )
 
     # Parse all jobs
     jobs = []
     failed_jobs: list[tuple[str, str]] = []
-    for job_dir in job_dirs:
+    for job_dir in all_job_dirs:
         try:
             job_def = parse_job_definition(job_dir)
             jobs.append(job_def)
@@ -109,10 +128,17 @@ def sync_skills(project_path: Path) -> None:
             console.print(f"  • {job_name}: {error}")
         raise SyncError(f"Failed to parse {len(failed_jobs)} job(s)")
 
-    # Collect hooks from all jobs
-    job_hooks_list = collect_job_hooks(jobs_dir)
-    if job_hooks_list:
-        console.print(f"[yellow]→[/yellow] Found {len(job_hooks_list)} job(s) with hooks")
+    # Collect hooks from all job directories (both local and global)
+    from deepwork.core.hooks_syncer import JobHooks
+
+    all_job_hooks: list[JobHooks] = []
+    for _scope, jobs_dir in locations:
+        if jobs_dir.exists():
+            hooks = collect_job_hooks(jobs_dir)
+            all_job_hooks.extend(hooks)
+
+    if all_job_hooks:
+        console.print(f"[yellow]→[/yellow] Found {len(all_job_hooks)} job(s) with hooks")
 
     # Sync each platform
     generator = SkillGenerator()
@@ -150,10 +176,10 @@ def sync_skills(project_path: Path) -> None:
                     console.print(f"    [red]✗[/red] Failed for {job.name}: {e}")
 
         # Sync hooks to platform settings
-        if job_hooks_list:
+        if all_job_hooks:
             console.print("  [dim]•[/dim] Syncing hooks...")
             try:
-                hooks_count = sync_hooks_to_platform(project_path, adapter, job_hooks_list)
+                hooks_count = sync_hooks_to_platform(project_path, adapter, all_job_hooks)
                 stats["hooks"] += hooks_count
                 if hooks_count > 0:
                     console.print(f"    [green]✓[/green] Synced {hooks_count} hook(s)")
