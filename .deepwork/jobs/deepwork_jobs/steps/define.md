@@ -61,10 +61,15 @@ When creating a doc spec, gather the following information:
    - How often is it produced? (frequency)
 
 3. **Quality Criteria** (3-5 criteria, each with name and description)
+
+   **Important**: Doc spec quality criteria define requirements for the **output document itself**, not the process of creating it. Focus on what the finished document must contain or achieve.
+
    Examples for a spending report:
    - **Visualization**: Must include charts showing spend breakdown by service
    - **Variance Analysis**: Must compare current month against previous with percentages
    - **Action Items**: Must include recommended cost optimization actions
+
+   **Note**: When a doc spec is created for a step's output, the step should generally NOT have separate `quality_criteria` in the job.yml. The doc spec's criteria cover output quality. Only add step-level quality_criteria if there are essential process requirements (e.g., "must use specific tool"), and minimize these when possible.
 
 4. **Document Structure**
    - What sections should it have?
@@ -76,7 +81,7 @@ Create the doc spec file at `.deepwork/doc_specs/[doc_spec_name].md`:
 
 **Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/doc_spec.md.template` for the standard structure.
 
-**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/doc_spec.md.example` for a fully worked example.
+**Complete example**: See `.deepwork/doc_specs/job_spec.md` for a fully worked example (the doc spec for job.yml files).
 
 After creating the doc spec, proceed to Step 2 with the doc spec reference for the final step's output.
 
@@ -101,9 +106,62 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Where should each output be saved? (filename/path)
    - Should outputs be organized in subdirectories? (e.g., `reports/`, `data/`, `drafts/`)
    - Will other steps need this output?
-
-   **Important**: Output paths should always be within the main repository directory structure, not in dot-directories like `.deepwork/`. Dot-directories are for configuration and job definitions, not for job outputs. Use paths like `research/competitors/report.md` rather than `.deepwork/outputs/report.md`.
    - **Does this output have a doc spec?** If a doc spec was created in Step 1.6/1.7, reference it for the appropriate output
+
+   #### Work Product Storage Guidelines
+
+   **Key principle**: Job outputs belong in the main repository directory structure, not in dot-directories. The `.deepwork/` directory is for job definitions and configuration only.
+
+   **Why this matters**:
+   - **Version control**: Work products in the main repo are tracked by git and visible in PRs
+   - **Discoverability**: Team members can find outputs without knowing about DeepWork internals
+   - **Tooling compatibility**: IDEs, search tools, and CI/CD work naturally with standard paths
+   - **Glob patterns**: Well-structured paths enable powerful file matching (e.g., `competitive_research/**/*.md`)
+
+   **Good output path patterns**:
+   ```
+   competitive_research/competitors_list.md
+   competitive_research/acme_corp/research.md
+   operations/reports/2026-01/spending_analysis.md
+   docs/api/endpoints.md
+   ```
+
+   **Avoid these patterns**:
+   ```
+   .deepwork/outputs/report.md          # Hidden in dot-directory
+   output.md                            # Too generic, no context
+   research.md                          # Unclear which research
+   temp/draft.md                        # Transient-sounding paths
+   ```
+
+   **Organizing multi-file outputs**:
+   - Use the job name as a top-level folder when outputs are job-specific
+   - Use parameterized paths for per-entity outputs: `competitive_research/[competitor_name]/`
+   - Match existing project conventions when extending a codebase
+
+   **When to include dates in paths**:
+   - **Include date** for periodic outputs where each version is retained (e.g., monthly reports, quarterly reviews, weekly summaries). These accumulate over time and historical versions remain useful.
+     ```
+     operations/reports/2026-01/spending_analysis.md              # Monthly report - keep history
+     hr/employees/[employee_name]/quarterly_reviews/2026-Q1.pdf   # Per-employee quarterly review
+     ```
+   - **Omit date** for current-state outputs that represent the latest understanding and get updated in place. Previous versions live in git history, not separate files.
+     ```
+     competitive_research/acme_corp/swot.md  # Current SWOT - updated over time
+     docs/architecture/overview.md           # Living document
+     ```
+
+   **Supporting materials and intermediate outputs**:
+   - Content generated in earlier steps to support the final output (research notes, data extracts, drafts) should be placed in a `_dataroom` folder that is a peer to the final output
+   - Name the dataroom folder by replacing the file extension with `_dataroom`
+     ```
+     operations/reports/2026-01/spending_analysis.md           # Final output
+     operations/reports/2026-01/spending_analysis_dataroom/    # Supporting materials
+         raw_data.csv
+         vendor_breakdown.md
+         notes.md
+     ```
+   - This keeps supporting materials organized and discoverable without cluttering the main output location
 
 4. **Step Dependencies**
    - Which previous steps must complete before this one?
@@ -113,6 +171,19 @@ For each major phase they mentioned, ask structured questions to gather details:
    - What are the key activities in this step?
    - Are there any quality checks or validation needed?
    - What makes a good vs. bad output for this step?
+
+6. **Agent Delegation** (optional)
+   - Should this step be executed by a specific agent type?
+   - Use the `agent` field when the step should run in a forked context with a specific agent
+   - When `agent` is set, the generated skill automatically includes `context: fork`
+   - Available agent types:
+     - `general-purpose` - Standard agent for multi-step tasks
+
+   ```yaml
+   steps:
+     - id: research_step
+       agent: general-purpose  # Delegates to the general-purpose agent
+   ```
 
 **Note**: You're gathering this information to understand what instructions will be needed, but you won't create the instruction files yet - that happens in the `implement` step.
 
@@ -385,13 +456,3 @@ After creating the file:
 2. Recommend that they review the job.yml file
 3. Tell them to run `/deepwork_jobs.review_job_spec` next
 
-## Quality Criteria
-
-- Asked structured questions to fully understand user requirements
-- User fully understands what job they're creating
-- All steps have clear inputs and outputs
-- Dependencies make logical sense
-- Summary is concise and descriptive
-- Description provides rich context for future refinement
-- Specification is valid YAML and follows the schema
-- Ready for implementation step

@@ -142,6 +142,9 @@ class Step:
     # Declarative quality criteria rendered with standard evaluation framing
     quality_criteria: list[str] = field(default_factory=list)
 
+    # Agent type for this step (e.g., "general-purpose"). When set, skill uses context: fork
+    agent: str | None = None
+
     @property
     def stop_hooks(self) -> list[HookAction]:
         """
@@ -180,7 +183,38 @@ class Step:
             hooks=hooks,
             exposed=data.get("exposed", False),
             quality_criteria=data.get("quality_criteria", []),
+            agent=data.get("agent"),
         )
+
+
+@dataclass
+class WorkflowStepEntry:
+    """Represents a single entry in a workflow's step list.
+
+    Each entry can be either:
+    - A single step (sequential execution)
+    - A list of steps (concurrent execution)
+    """
+
+    step_ids: list[str]  # Single step has one ID, concurrent group has multiple
+    is_concurrent: bool = False
+
+    @property
+    def first_step(self) -> str:
+        """Get the first step ID in this entry."""
+        return self.step_ids[0] if self.step_ids else ""
+
+    def all_step_ids(self) -> list[str]:
+        """Get all step IDs in this entry."""
+        return self.step_ids
+
+    @classmethod
+    def from_data(cls, data: str | list[str]) -> "WorkflowStepEntry":
+        """Create WorkflowStepEntry from YAML data (string or list)."""
+        if isinstance(data, str):
+            return cls(step_ids=[data], is_concurrent=False)
+        else:
+            return cls(step_ids=list(data), is_concurrent=True)
 
 
 @dataclass
@@ -189,15 +223,38 @@ class Workflow:
 
     name: str
     summary: str
-    steps: list[str]  # List of step IDs in order
+    step_entries: list[WorkflowStepEntry]  # List of step entries (sequential or concurrent)
+
+    @property
+    def steps(self) -> list[str]:
+        """Get flattened list of all step IDs for backward compatibility."""
+        result: list[str] = []
+        for entry in self.step_entries:
+            result.extend(entry.step_ids)
+        return result
+
+    def get_step_entry_for_step(self, step_id: str) -> WorkflowStepEntry | None:
+        """Get the workflow step entry containing the given step ID."""
+        for entry in self.step_entries:
+            if step_id in entry.step_ids:
+                return entry
+        return None
+
+    def get_entry_index_for_step(self, step_id: str) -> int | None:
+        """Get the index of the entry containing the given step ID."""
+        for i, entry in enumerate(self.step_entries):
+            if step_id in entry.step_ids:
+                return i
+        return None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Workflow":
         """Create Workflow from dictionary."""
+        step_entries = [WorkflowStepEntry.from_data(s) for s in data["steps"]]
         return cls(
             name=data["name"],
             summary=data["summary"],
-            steps=data["steps"],
+            step_entries=step_entries,
         )
 
 
@@ -400,6 +457,57 @@ class JobDefinition:
         try:
             index = workflow.steps.index(step_id)
             return (index + 1, len(workflow.steps))
+        except ValueError:
+            return None
+
+    def get_step_entry_position_in_workflow(
+        self, step_id: str
+    ) -> tuple[int, int, WorkflowStepEntry] | None:
+        """
+        Get the entry-based position of a step within its workflow.
+
+        For concurrent step groups, multiple steps share the same entry position.
+
+        Args:
+            step_id: Step ID to look up
+
+        Returns:
+            Tuple of (1-based entry position, total entries, WorkflowStepEntry),
+            or None if standalone
+        """
+        workflow = self.get_workflow_for_step(step_id)
+        if not workflow:
+            return None
+
+        entry_index = workflow.get_entry_index_for_step(step_id)
+        if entry_index is None:
+            return None
+
+        entry = workflow.step_entries[entry_index]
+        return (entry_index + 1, len(workflow.step_entries), entry)
+
+    def get_concurrent_step_info(self, step_id: str) -> tuple[int, int] | None:
+        """
+        Get information about a step's position within a concurrent group.
+
+        Args:
+            step_id: Step ID to look up
+
+        Returns:
+            Tuple of (1-based position in group, total in group) if step is in
+            a concurrent group, None if step is not in a concurrent group
+        """
+        workflow = self.get_workflow_for_step(step_id)
+        if not workflow:
+            return None
+
+        entry = workflow.get_step_entry_for_step(step_id)
+        if entry is None or not entry.is_concurrent:
+            return None
+
+        try:
+            index = entry.step_ids.index(step_id)
+            return (index + 1, len(entry.step_ids))
         except ValueError:
             return None
 

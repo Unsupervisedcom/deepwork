@@ -117,7 +117,6 @@ def sync_skills(project_path: Path) -> None:
     # Sync each platform
     generator = SkillGenerator()
     stats = {"platforms": 0, "skills": 0, "hooks": 0}
-    synced_adapters: list[AgentAdapter] = []
 
     for platform_name in platforms:
         try:
@@ -184,7 +183,6 @@ def sync_skills(project_path: Path) -> None:
                 console.print(f"    [red]✗[/red] Failed to sync skill permissions: {e}")
 
         stats["platforms"] += 1
-        synced_adapters.append(adapter)
 
     # Summary
     console.print()
@@ -202,10 +200,3 @@ def sync_skills(project_path: Path) -> None:
 
     console.print(table)
     console.print()
-
-    # Show reload instructions for each synced platform
-    if synced_adapters and stats["skills"] > 0:
-        console.print("[bold]To use the new skills:[/bold]")
-        for adapter in synced_adapters:
-            console.print(f"  [cyan]{adapter.display_name}:[/cyan] {adapter.reload_instructions}")
-        console.print()

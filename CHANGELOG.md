@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Concurrent steps support in workflow definitions
+  - Workflows can now specify nested arrays of step IDs to indicate steps that can run in parallel
+  - Example: `steps: [setup, [task_a, task_b, task_c], finalize]` runs task_a/b/c concurrently
+  - Single-item arrays indicate a step with multiple parallel instances (e.g., `[fetch_campaign_data]` runs for each campaign)
+  - New `WorkflowStepEntry` dataclass in parser for sequential/concurrent step groups
+  - Meta-skill template renders concurrent steps as "Background Task 1/2/3" with clear instructions
+  - Added `get_step_entry_position_in_workflow()` and `get_concurrent_step_info()` methods to JobDefinition
+  - Full backward compatibility: existing workflows with simple step arrays continue to work
+- Agent delegation field for job.yml steps
+  - New `agent` field on steps allows specifying an agent type (e.g., `agent: general-purpose`)
+  - When `agent` is set, generated Claude Code skills automatically include `context: fork` and `agent:` in frontmatter
+  - Enables steps to delegate execution to specific agent types
+  - Updated `deepwork_jobs.define` step instructions with agent delegation guidance
+  - Updated `job_spec.md` doc spec with "Agent Delegation" section
 - Explicit workflow definitions in job.yml for distinguishing multi-step workflows from standalone skills
   - New `workflows` section in job.yml with `name`, `summary`, and ordered `steps` array
   - Workflows are shown separately from standalone skills in generated meta-skills

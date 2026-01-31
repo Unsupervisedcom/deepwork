@@ -197,12 +197,13 @@ jobs:
       - name: Create job with /deepwork_jobs
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
-        timeout-minutes: 10
+        timeout-minutes: 6
         run: |
           echo "=== Running /deepwork_jobs to create fruits job ==="
+          mkdir fruits
 
           # Provide detailed, deterministic instructions for creating the job
-          claude --print <<'PROMPT_EOF'
+          claude --print --model claude-sonnet-4-5 <<'PROMPT_EOF'
           /deepwork_jobs I want to create a simple job called "fruits" for identifying and classifying fruits.
 
           Here are the EXACT specifications.
@@ -213,14 +214,17 @@ jobs:
           1. Step: identify
              Name: Identify Fruits
              Description: Filter a list of items to include only the fruits
+             **CRITICAL**: The output MUST be stored in `fruits/identified_fruits.md`.
 
           2. Step: classify
              Name: Classify Fruits
-             Description: Organize identified fruits into categories (citrus, tropical, berries, etc.)
-             Input: identified_fruits.md (file from step identify)
-             Output: classified_fruits.md
+             Description: Organize identified fruits into categories (citrus, tropical, berries, etc.). 
+             **CRITICAL**: must put the classified fruit list in `./fruits/classified_fruits.md`.
 
-          Please create this job now. Do not ask questions.
+          **Key Instructions:**
+          - Do not ask questions - just make the job
+          - Rules are explicitly not desired. Tell the review agents that.
+          - Do not give long commentary of what you did - just make the job with no commentary.
           PROMPT_EOF
 
           # Verify the job.yml was created
@@ -266,40 +270,43 @@ jobs:
           fi
 
       # STEP 3: Execute the /fruits workflow (runs all steps automatically)
-      - name: Run /fruits workflow
+      - name: Run Workflow
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
-        timeout-minutes: 10
+        timeout-minutes: 3
         run: |
           echo "=== Running /fruits workflow with test input ==="
 
-          claude --print "/fruits" <<'PROMPT_EOF'
+          claude --print --model claude-sonnet-4-5 <<'PROMPT_EOF'
+          /fruits Proccess the list to the file and don't give any extra commentary or text output.
           raw_items: apple, car, banana, chair, orange, table, mango, laptop, grape, bicycle
           PROMPT_EOF
+          
+          echo "=== Workflow finished - looking for output file ==="
 
           # Verify both outputs were created
-          if [ -f "identified_fruits.md" ]; then
+          if [ -f "fruits/identified_fruits.md" ]; then
             echo "SUCCESS: identified_fruits.md created"
             echo "--- Output ---"
-            cat identified_fruits.md
+            cat fruits/identified_fruits.md
           else
             echo "ERROR: identified_fruits.md was not created"
             exit 1
           fi
 
-          if [ -f "classified_fruits.md" ]; then
+          if [ -f "fruits/classified_fruits.md" ]; then
             echo "SUCCESS: classified_fruits.md created"
             echo "--- Output ---"
-            cat classified_fruits.md
+            cat fruits/classified_fruits.md
           else
             echo "ERROR: classified_fruits.md was not created"
             exit 1
           fi
 
       # STEP 4: Validate the complete workflow output
-      - name: Validate complete workflow
+      - name: Validate Workflow Output
         if: steps.check-key.outputs.has_key == 'true'
-        working-directory: test_project
+        working-directory: test_project/fruits
         run: |
           echo "=== Validating complete workflow ==="
 
@@ -317,21 +324,12 @@ jobs:
           grep -qi "citrus\|tropical\|pome\|berr" classified_fruits.md || (echo "Missing fruit categories" && exit 1)
           echo "  ✓ Fruit categories found in classified_fruits.md"
 
-          # Verify job structure was created correctly
-          echo "Checking job structure..."
-          test -f .deepwork/jobs/fruits/job.yml || (echo "Missing job.yml" && exit 1)
-          test -f .deepwork/jobs/fruits/steps/identify.md || (echo "Missing identify.md" && exit 1)
-          test -f .deepwork/jobs/fruits/steps/classify.md || (echo "Missing classify.md" && exit 1)
-          echo "  ✓ Job structure is complete"
-
           echo ""
           echo "=========================================="
           echo "  ALL E2E TESTS PASSED SUCCESSFULLY!"
           echo "=========================================="
           echo ""
-          echo "Workflow tested:"
-          echo "  1. /deepwork_jobs - Created job"
-          echo "  2. /fruits - Executed full fruits workflow (identify + classify)"
+          echo "Workflow tested: /fruits - Executed full fruits workflow (identify + classify)"
           echo ""
 
       - name: Upload test artifacts

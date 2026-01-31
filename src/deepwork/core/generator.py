@@ -311,6 +311,7 @@ class SkillGenerator:
             "hooks": hooks,  # New: all hooks by platform event name
             "stop_hooks": stop_hooks,  # Backward compat: after_agent hooks only
             "quality_criteria": step.quality_criteria,  # Declarative criteria with framing
+            "agent": step.agent,  # Agent type (e.g., "general-purpose") - triggers context: fork
         }
 
         # Add workflow context if step is part of a workflow
@@ -363,14 +364,38 @@ class SkillGenerator:
 
             steps_info.append(step_info)
 
-        # Build workflow info
+        # Build workflow info with concurrent step support
         workflows_info = []
         for workflow in job.workflows:
+            # Build step entries with concurrency info
+            step_entries_info = []
+            for entry in workflow.step_entries:
+                entry_info: dict[str, Any] = {
+                    "is_concurrent": entry.is_concurrent,
+                    "step_ids": entry.step_ids,
+                }
+                if entry.is_concurrent:
+                    # Add detailed step info for each concurrent step
+                    concurrent_steps = []
+                    for i, step_id in enumerate(entry.step_ids):
+                        step = job.get_step(step_id)
+                        concurrent_steps.append(
+                            {
+                                "id": step_id,
+                                "name": step.name if step else step_id,
+                                "description": step.description if step else "",
+                                "task_number": i + 1,
+                            }
+                        )
+                    entry_info["concurrent_steps"] = concurrent_steps
+                step_entries_info.append(entry_info)
+
             workflows_info.append(
                 {
                     "name": workflow.name,
                     "summary": workflow.summary,
-                    "steps": workflow.steps,
+                    "steps": workflow.steps,  # Flattened for backward compat
+                    "step_entries": step_entries_info,  # New: with concurrency info
                     "first_step": workflow.steps[0] if workflow.steps else None,
                 }
             )
