@@ -40,6 +40,10 @@ else
     fi
     # Generate package-lock.json from package.json
     cp "$TMPDIR/src/package.json" "$TMPDIR/package.json"
+    # Preserve any npm configuration from the tarball when generating the lockfile
+    if [[ -f "$TMPDIR/src/.npmrc" ]]; then
+        cp "$TMPDIR/src/.npmrc" "$TMPDIR/.npmrc"
+    fi
     (cd "$TMPDIR" && npm install --package-lock-only --ignore-scripts) || {
         echo "Error: Failed to generate package-lock.json"
         exit 1

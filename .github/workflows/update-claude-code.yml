@@ -33,7 +33,13 @@ jobs:
         run: |
           # On PRs, run the update script to test it works
           # but don't commit or create PRs with the changes
-          ./nix/claude-code/update.sh || echo "::warning::Update script execution test failed"
+          set +e
+          ./nix/claude-code/update.sh
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "::warning::Update script execution test failed (exit code: $status)"
+            exit "$status"
+          fi
 
       - name: Update claude-code package (production)
         if: github.event_name != 'pull_request'
