@@ -132,7 +132,11 @@
       "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
       "WebSearch",
       "Skill(test_global_job)",
-      "Skill(test_global_job.test_step)"
+      "Skill(test_global_job.test_step)",
+      "Skill(job_porter)",
+      "Skill(job_porter.list_jobs)",
+      "Skill(job_porter.port_job)",
+      "Skill(job_porter.explain_scopes)"
     ]
   },
   "hooks": {

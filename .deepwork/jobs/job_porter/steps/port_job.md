@@ -1,0 +1,137 @@
+# Port a Job
+
+## Objective
+
+Safely move a DeepWork job between local (project-specific) and global (system-wide) locations.
+
+## Task
+
+Guide the user through porting a job, asking structured questions to understand their needs and ensuring the operation is safe.
+
+### Step 1: Understand the Request
+
+Ask structured questions to determine what the user wants to do:
+
+1. **Which job do you want to port?**
+   - List available jobs from both locations (use the list_jobs step logic)
+   - Get the exact job name from the user
+
+2. **Where do you want to port it?**
+   - **Local** - Make it available only in this project (`.deepwork/jobs/`)
+   - **Global** - Make it available across all projects (`~/.deepwork/jobs/`)
+
+Store the job name as `{job_name}` and destination as `{destination}` (either "local" or "global").
+
+### Step 2: Validate the Job Exists
+
+Check if the job exists in either location:
+
+```bash
+job_name="{job_name}"
+
+# Check local
+if [ -d ".deepwork/jobs/$job_name" ]; then
+  current_location="local"
+  echo "✓ Found '$job_name' in local location"
+elif [ -d "$HOME/.deepwork/jobs/$job_name" ]; then
+  current_location="global"
+  echo "✓ Found '$job_name' in global location"
+else
+  echo "✗ Job '$job_name' not found in local or global locations"
+  exit 1
+fi
+```
+
+### Step 3: Check if Already at Destination
+
+Verify the job isn't already in the target location:
+
+```bash
+destination="{destination}"
+
+if [ "$current_location" = "$destination" ]; then
+  echo "⚠️  Job '$job_name' is already in $destination location"
+  echo "No action needed."
+  exit 0
+fi
+```
+
+### Step 4: Run the Port Command
+
+Execute the deepwork port command:
+
+```bash
+deepwork port "$job_name" --to "$destination"
+```
+
+### Step 5: Verify the Port
+
+Confirm the job was moved successfully:
+
+```bash
+if [ "$destination" = "local" ]; then
+  if [ -d ".deepwork/jobs/$job_name" ]; then
+    echo "✓ Job successfully ported to local location"
+    echo "  Location: .deepwork/jobs/$job_name"
+  else
+    echo "✗ Port failed - job not found at destination"
+    exit 1
+  fi
+elif [ "$destination" = "global" ]; then
+  if [ -d "$HOME/.deepwork/jobs/$job_name" ]; then
+    echo "✓ Job successfully ported to global location"
+    echo "  Location: ~/.deepwork/jobs/$job_name"
+  else
+    echo "✗ Port failed - job not found at destination"
+    exit 1
+  fi
+fi
+```
+
+### Step 6: Sync Skills
+
+After porting, regenerate the skills for all platforms:
+
+```bash
+echo ""
+echo "Syncing skills to reflect the change..."
+deepwork sync
+```
+
+### Step 7: Provide Confirmation
+
+Create a summary output file with the results:
+
+```bash
+{
+  echo "# Job Port Complete"
+  echo ""
+  echo "**Job**: $job_name"
+  echo "**From**: $current_location"
+  echo "**To**: $destination"
+  echo "**Date**: $(date)"
+  echo ""
+  echo "## Next Steps"
+  echo ""
+  if [ "$destination" = "global" ]; then
+    echo "The job is now available in all projects with DeepWork installed."
+    echo "You can use it by running the skill in any project."
+  else
+    echo "The job is now available only in this project."
+    echo "To use it in other projects, you'll need to port it to global or recreate it."
+  fi
+} > port_result.txt
+
+echo ""
+echo "Summary saved to port_result.txt"
+```
+
+## Quality Criteria
+
+- **Job validated**: Confirmed the job exists before attempting to port
+- **Destination verified**: Checked the job isn't already at the destination
+- **Port command executed**: Used `deepwork port` to move the job
+- **Success confirmed**: Verified the job exists at the new location
+- **Skills synced**: Ran `deepwork sync` to regenerate skills
+- **Summary created**: `port_result.txt` contains complete details of the operation
+- **Clear guidance**: User understands what happened and what to do next
