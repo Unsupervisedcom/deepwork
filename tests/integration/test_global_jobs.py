@@ -66,10 +66,15 @@ steps:
         assert "global_test_job" in result.output
         assert "Loaded global_test_job v1.0.0" in result.output
 
-    def test_sync_prefers_local_over_global_for_duplicates(
+    def test_sync_loads_both_local_and_global_jobs_with_same_name(
         self, mock_claude_project: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """Test that local jobs take precedence over global jobs with the same name."""
+        """Test that sync loads both local and global jobs even when they have the same name.
+
+        Note: Both jobs are loaded because they are in physically different directories.
+        This is different from duplicate detection - DeepWork allows the same job name
+        in different scopes, treating them as separate jobs.
+        """
         # Set up temporary global directory
         global_config = tmp_path / "config"
         monkeypatch.setenv("XDG_CONFIG_HOME", str(global_config))
@@ -119,12 +124,18 @@ steps:
         )
 
         assert result.exit_code == 0
-        # Should load both jobs (they are in different directories, so no conflict)
-        # But the local one is listed first
+        # Both jobs should be loaded (they are in different physical directories)
         output_lines = result.output.split("\n")
-        duplicate_lines = [line for line in output_lines if "duplicate_job" in line]
-        # Should see exactly 2 references (one for each scope's discovery + one for loading each)
-        assert len(duplicate_lines) >= 2
+
+        # Check that we found jobs in both scopes
+        assert any("local scope" in line for line in output_lines)
+        assert any("global scope" in line for line in output_lines)
+
+        # Should see duplicate_job loaded twice (once from each location)
+        duplicate_loaded_lines = [
+            line for line in output_lines if "Loaded duplicate_job" in line
+        ]
+        assert len(duplicate_loaded_lines) == 2, "Should load duplicate_job from both locations"
 
     def test_global_jobs_dir_respects_xdg_config_home(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path

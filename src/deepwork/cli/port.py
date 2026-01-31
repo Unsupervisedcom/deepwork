@@ -163,7 +163,16 @@ def _port_job(project_path: Path) -> None:
     console.print()
     console.print("[bold]Next steps:[/bold]")
     console.print("  1. Run [cyan]deepwork sync[/cyan] to regenerate skills")
-    console.print(
-        f"  2. The job is now available in {dest_name} ({dest_job_path.relative_to(project_path) if dest_scope == JobScope.LOCAL else dest_job_path})"
-    )
+
+    # Display the destination path safely
+    if dest_scope == JobScope.LOCAL:
+        try:
+            relative_path = dest_job_path.relative_to(project_path)
+            console.print(f"  2. The job is now available in {dest_name} ({relative_path})")
+        except ValueError:
+            # Fallback if path is not relative
+            console.print(f"  2. The job is now available in {dest_name} ({dest_job_path})")
+    else:
+        console.print(f"  2. The job is now available in {dest_name} ({dest_job_path})")
+
     console.print()
