@@ -58,7 +58,7 @@ class TestMakeNewJobUsage:
         script_path = jobs_scripts_dir / "make_new_job.sh"
         stdout, stderr, code = run_make_new_job(script_path, project_dir)
 
-        assert "Example:" in stdout, "Should show example usage"
+        assert "Examples:" in stdout, "Should show example usage"
 
 
 class TestMakeNewJobNameValidation:
