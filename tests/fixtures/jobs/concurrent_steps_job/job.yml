@@ -1,0 +1,89 @@
+name: concurrent_workflow
+version: "1.0.0"
+summary: "Workflow with concurrent steps for testing"
+description: |
+  A test workflow that demonstrates concurrent step execution.
+  Some steps run sequentially while others run in parallel.
+
+workflows:
+  - name: full_analysis
+    summary: "Complete analysis workflow with parallel research phase"
+    steps:
+      - setup
+      - [research_web, research_docs, research_interviews]
+      - compile_results
+      - final_review
+
+steps:
+  - id: setup
+    name: "Setup"
+    description: "Initialize the analysis environment"
+    instructions_file: steps/setup.md
+    outputs:
+      - setup_complete.md
+
+  - id: research_web
+    name: "Web Research"
+    description: "Research information from web sources"
+    instructions_file: steps/research_web.md
+    inputs:
+      - file: setup_complete.md
+        from_step: setup
+    outputs:
+      - web_research.md
+    dependencies:
+      - setup
+
+  - id: research_docs
+    name: "Document Research"
+    description: "Research information from internal documents"
+    instructions_file: steps/research_docs.md
+    inputs:
+      - file: setup_complete.md
+        from_step: setup
+    outputs:
+      - docs_research.md
+    dependencies:
+      - setup
+
+  - id: research_interviews
+    name: "Interview Research"
+    description: "Research information from stakeholder interviews"
+    instructions_file: steps/research_interviews.md
+    inputs:
+      - file: setup_complete.md
+        from_step: setup
+    outputs:
+      - interviews_research.md
+    dependencies:
+      - setup
+
+  - id: compile_results
+    name: "Compile Results"
+    description: "Compile all research into a unified report"
+    instructions_file: steps/compile_results.md
+    inputs:
+      - file: web_research.md
+        from_step: research_web
+      - file: docs_research.md
+        from_step: research_docs
+      - file: interviews_research.md
+        from_step: research_interviews
+    outputs:
+      - compiled_results.md
+    dependencies:
+      - research_web
+      - research_docs
+      - research_interviews
+
+  - id: final_review
+    name: "Final Review"
+    description: "Review and finalize the analysis"
+    instructions_file: steps/final_review.md
+    inputs:
+      - file: compiled_results.md
+        from_step: compile_results
+    outputs:
+      - final_report.md
+    dependencies:
+      - compile_results

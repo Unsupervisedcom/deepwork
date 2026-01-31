@@ -46,6 +46,30 @@ HOOK_ACTION_SCHEMA: dict[str, Any] = {
     ],
 }
 
+# Schema for a single step reference (step ID)
+STEP_ID_SCHEMA: dict[str, Any] = {
+    "type": "string",
+    "pattern": "^[a-z][a-z0-9_]*$",
+}
+
+# Schema for a concurrent step group (array of step IDs that can run in parallel)
+# minItems=1 allows single-item arrays to indicate a step with multiple parallel instances
+# (e.g., [fetch_campaign_data] means run this step for each campaign in parallel)
+CONCURRENT_STEPS_SCHEMA: dict[str, Any] = {
+    "type": "array",
+    "minItems": 1,
+    "description": "Array of step IDs that can be executed concurrently, or single step with multiple instances",
+    "items": STEP_ID_SCHEMA,
+}
+
+# Schema for a workflow step entry (either single step or concurrent group)
+WORKFLOW_STEP_ENTRY_SCHEMA: dict[str, Any] = {
+    "oneOf": [
+        STEP_ID_SCHEMA,
+        CONCURRENT_STEPS_SCHEMA,
+    ],
+}
+
 # Schema for a workflow definition
 WORKFLOW_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -65,11 +89,8 @@ WORKFLOW_SCHEMA: dict[str, Any] = {
         "steps": {
             "type": "array",
             "minItems": 1,
-            "description": "Ordered list of step IDs that comprise this workflow",
-            "items": {
-                "type": "string",
-                "pattern": "^[a-z][a-z0-9_]*$",
-            },
+            "description": "Ordered list of step entries. Each entry is either a step ID (string) or an array of step IDs for concurrent execution.",
+            "items": WORKFLOW_STEP_ENTRY_SCHEMA,
         },
     },
     "additionalProperties": False,
