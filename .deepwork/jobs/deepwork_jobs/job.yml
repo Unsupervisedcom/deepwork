@@ -1,5 +1,5 @@
 name: deepwork_jobs
-version: "1.0.0"
+version: "1.1.0"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs."
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -22,6 +22,8 @@ workflows:
       - implement
 
 changelog:
+  - version: "1.1.0"
+    changes: "Added expert delegation to all steps via agent: experts; cleaned up and simplified step instructions; removed inline quality_criteria from job.yml (handled by doc specs and step instructions)"
   - version: "1.0.0"
     changes: "Added workflows section to distinguish new_job workflow (define→review_job_spec→implement) from standalone learn skill"
   - version: "0.1.0"
@@ -48,7 +50,7 @@ steps:
     name: "Define Job Specification"
     description: "Creates a job.yml specification by gathering workflow requirements through structured questions. Use when starting a new multi-step workflow."
     instructions_file: steps/define.md
-    agent: deepwork-jobs
+    agent: experts
     inputs:
       - name: job_purpose
         description: "What complex task or workflow are you trying to accomplish?"
@@ -61,7 +63,7 @@ steps:
     name: "Review Job Specification"
     description: "Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification."
     instructions_file: steps/review_job_spec.md
-    agent: deepwork-jobs
+    agent: experts
     inputs:
       - file: job.yml
         from_step: define
@@ -75,7 +77,7 @@ steps:
     name: "Implement Job Steps"
     description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes."
     instructions_file: steps/implement.md
-    agent: deepwork-jobs
+    agent: experts
     inputs:
       - file: job.yml
         from_step: review_job_spec
@@ -88,7 +90,7 @@ steps:
     name: "Learn from Job Execution"
     description: "Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it."
     instructions_file: steps/learn.md
-    agent: deepwork-jobs
+    agent: experts
     exposed: true
     inputs:
       - name: job_name

@@ -3,7 +3,7 @@ name: deepwork_jobs.implement
 description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes."
 user-invocable: false
 context: fork
-agent: deepwork-jobs
+agent: experts
 
 ---
 
@@ -28,65 +28,105 @@ Before proceeding, confirm these steps are complete:
 
 ## Objective
 
-Generate the step instruction files for each step based on the validated `job.yml` specification, then sync to create the slash commands.
+Generate the DeepWork job directory structure and instruction files for each step based on the validated `job.yml` specification.
 
 ## Task
 
-Read the job.yml and create comprehensive instruction files for each step.
+Read the `job.yml` specification and create all necessary files to make the job functional, then sync the commands.
 
-### Process
+### Step 1: Create Directory Structure
 
-1. **Create directory structure** (if needed)
-   ```bash
-   .deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
-   ```
+Run the `make_new_job.sh` script:
 
-2. **Read and validate the specification**
-   - Read `.deepwork/jobs/[job_name]/job.yml`
-   - Extract job name, description, and step details
-   - Understand the workflow structure
+```bash
+.deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
+```
 
-3. **Generate step instruction files**
-   - Create `.deepwork/jobs/[job_name]/steps/[step_id].md` for each step
-   - Use templates in `.deepwork/jobs/deepwork_jobs/templates/` as reference
-   - Each file must include: Objective, Task, Process, Output Format, Quality Criteria
+This creates:
+- `.deepwork/jobs/[job_name]/` - Main job directory
+- `.deepwork/jobs/[job_name]/steps/` - Step instruction files
+- `.deepwork/jobs/[job_name]/hooks/` - Custom validation scripts
+- `.deepwork/jobs/[job_name]/templates/` - Example file formats
+- `.deepwork/jobs/[job_name]/AGENTS.md` - Job management guidance
 
-4. **Sync skills**
-   ```bash
-   deepwork sync
-   ```
+**Note**: If directory exists from define step, skip or just create missing subdirectories.
 
-5. **Consider rules for the new job**
-   - Think about whether rules would help maintain quality
-   - If relevant, explain and offer to run `/deepwork_rules.define`
+### Step 2: Read and Validate the Specification
 
-### Instruction File Guidelines
+1. Read `.deepwork/jobs/[job_name]/job.yml`
+2. Validate: name, version, summary, description, steps are present
+3. Check dependencies reference existing steps, no circular dependencies
+4. Verify file inputs match dependencies
 
-- **Be specific** - tailor to each step's purpose, not generic advice
-- **Provide examples** - show what good output looks like
-- **Include quality criteria** - how to verify the step is complete
-- **Use "ask structured questions"** - for steps that gather user input
-- **Align with hooks** - if step has hooks, match the validation criteria
+### Step 3: Generate Step Instruction Files
 
-### Templates Available
+For each step in job.yml, create `.deepwork/jobs/[job_name]/steps/[step_id].md`.
 
-- `job.yml.template` - Job specification structure
-- `step_instruction.md.template` - Step instruction file structure
-- `agents.md.template` - AGENTS.md file structure
-- Examples: `job.yml.example`, `step_instruction.md.example`
+**Reference**: See `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.template` for structure.
+
+**Guidelines**:
+
+1. **Use the job description** - It provides crucial context
+2. **Be specific** - Tailor instructions to the step's purpose, not generic
+3. **Provide examples** - Show what good output looks like
+4. **Explain the "why"** - Help understand the step's role in the workflow
+5. **Ask structured questions** - Steps with user inputs MUST explicitly tell the agent to "ask structured questions"
+6. **Align with hooks** - If step has `stop_hooks`, ensure quality criteria match the hooks
+
+Each instruction file should include:
+- **Objective** - What this step accomplishes
+- **Task** - Detailed process
+- **Output Format** - Examples of expected outputs
+- **Quality Criteria** - How to verify completion
+
+### Step 4: Verify job.yml Location
+
+Ensure `job.yml` is at `.deepwork/jobs/[job_name]/job.yml`.
+
+### Step 5: Sync Skills
+
+Run:
+
+```bash
+deepwork sync
+```
+
+This generates skills in `.claude/skills/` (or appropriate platform directory).
+
+### Step 6: Consider Rules
+
+After implementing, consider whether **rules** would help this job's domain.
+
+**What are rules?** Automated guardrails that trigger when certain files change, ensuring:
+- Documentation stays in sync
+- Team guidelines are followed
+- Quality standards are maintained
+
+**When to suggest rules:**
+- Does this job produce outputs that other files depend on?
+- Are there docs that should update when outputs change?
+- Could changes impact other parts of the project?
+
+**Examples**:
+| Job Type | Potential Rule |
+|----------|----------------|
+| API Design | "Update API docs when endpoint definitions change" |
+| Competitive Research | "Update strategy docs when competitor analysis changes" |
+| Feature Development | "Update changelog when feature files change" |
+
+If you identify helpful rules, explain what they would do and offer: "Would you like me to create this rule? I can run `/deepwork_rules.define` to set it up."
+
+**Note**: Not every job needs rules. Only suggest when genuinely helpful.
 
 ## Completion Checklist
 
+- [ ] job.yml in correct location
 - [ ] All step instruction files created (not stubs)
 - [ ] Instructions are specific and actionable
 - [ ] Output examples provided
-- [ ] Quality criteria defined
+- [ ] Quality criteria defined for each step
 - [ ] `deepwork sync` executed successfully
-- [ ] Rules considered (suggest if genuinely helpful)
-
-## Output
-
-Complete instruction files in `.deepwork/jobs/[job_name]/steps/` and synced skills in `.claude/skills/`.
+- [ ] Considered relevant rules for this job
 
 
 ### Job Context

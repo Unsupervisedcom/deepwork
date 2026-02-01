@@ -54,37 +54,7 @@ deepwork_jobs/
 - Bump minor version (0.x.0) for new features or structural changes
 - Always update changelog when bumping version
 
-## Learnings
-
-### AskUserQuestion Tool Does Not Exist (2026-02-01)
-
-**Issue**: The step instructions and expert documentation referenced a tool called
-`AskUserQuestion` that does not exist in Claude Code's toolset.
-
-**Symptom**: When running the define step, the agent would output all questions as
-a plain text list instead of asking them interactively one at a time.
-
-**Root Cause**: The phrase "ask structured questions" was documented as triggering
-the `AskUserQuestion` tool, but this was aspirational - the tool was never
-implemented in Claude Code.
-
-**Fix Applied**:
-- Removed all references to `AskUserQuestion` tool
-- Updated instructions to say "ask questions one at a time"
-- Clarified that questions should be presented individually with waits for responses
-
-**Files Changed**:
-- `src/deepwork/standard_jobs/deepwork_jobs/steps/define.md`
-- `src/deepwork/standard_jobs/deepwork_rules/steps/define.md`
-- `src/deepwork/standard/experts/deepwork_jobs/topics/step_instructions.md`
-- `library/jobs/spec_driven_development/steps/*.md` (multiple files)
-
-**Lesson**: Do not reference tools in instructions unless they actually exist.
-When specifying interactive behavior, be explicit about the expected pattern
-(one question at a time, wait for response) rather than referencing hypothetical
-tooling.
-
 ## Last Updated
 
-- Date: 2026-02-01
-- From conversation about: Learning why define step output questions as plain text
+- Date: 2026-01-15
+- From conversation about: Adding make_new_job.sh script and templates directory

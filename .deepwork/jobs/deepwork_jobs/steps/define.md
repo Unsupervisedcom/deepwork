@@ -2,51 +2,102 @@
 
 ## Objective
 
-Create a `job.yml` specification file that defines the structure of a new DeepWork job by understanding the user's workflow requirements through interactive questions.
+Create a `job.yml` specification file that defines a new DeepWork job by understanding the user's workflow requirements through interactive questioning.
 
 ## Task
 
 Guide the user through defining a job specification by asking structured questions. The output is **only** the `job.yml` file - step instruction files are created in the `implement` step.
 
-### Process
+### Phase 1: Understand the Job Purpose
 
-1. **Understand the job purpose**
-   - Ask structured questions about the overall goal, domain, and frequency
-   - Understand what success looks like and who the audience is
-   - Identify the major phases of the workflow
+Ask structured questions to understand the workflow:
 
-2. **Detect document-oriented workflows**
-   - Look for patterns: "report", "summary", "monthly", "for stakeholders"
-   - If detected, offer to create a doc spec for consistent quality
-   - Use `.deepwork/doc_specs/job_spec.md` as a reference example
+1. **Overall goal** - What complex task are they trying to accomplish? What domain (research, marketing, development, reporting)?
 
-3. **Define each step**
-   - For each phase, gather: purpose, inputs, outputs, dependencies
-   - Ask about output file paths and organization
-   - Consider whether steps need agent delegation
+2. **Success criteria** - What's the final deliverable? Who is the audience? What quality matters most?
 
-4. **Validate the workflow**
-   - Summarize the complete workflow
-   - Check for gaps in inputs/outputs between steps
-   - Confirm job name, summary, and version
+3. **Major phases** - What are the distinct stages from start to finish? Any dependencies between phases?
 
-5. **Create the job specification**
-   - Run `make_new_job.sh` to create directory structure:
-     ```bash
-     .deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
-     ```
-   - Create `job.yml` at `.deepwork/jobs/[job_name]/job.yml`
+### Phase 2: Detect Document-Oriented Workflows
 
-### Key Guidelines
+Check for document-focused patterns in the user's description:
+- Keywords: "report", "summary", "document", "monthly", "quarterly", "for stakeholders"
+- Final deliverable is a specific document type
+- Recurring documents with consistent structure
 
-- **Use `AskUserQuestion` tool for all questions** - Never output questions as plain text. Always use the AskUserQuestion tool to gather user input with structured options. Ask questions one at a time, wait for the response, then ask the next.
-- **Work products go in main repo**, not `.deepwork/` (for discoverability)
-- **Use dates in paths** for periodic outputs that accumulate
-- **Use `_dataroom` folders** for supporting materials
-- Reference templates in `.deepwork/jobs/deepwork_jobs/templates/`
+**If detected**, offer to create a doc spec:
+1. Inform the user: "This workflow produces a specific document type. I recommend defining a doc spec first."
+2. Ask if they want to create a doc spec, use existing one, or skip
+
+**If creating a doc spec**, gather:
+- Document name and purpose
+- Target audience and frequency
+- Quality criteria (3-5, focused on the output document itself)
+- Document structure (sections, required elements)
+
+Create at `.deepwork/doc_specs/[doc_spec_name].md`. Reference `.deepwork/doc_specs/job_spec.md` for an example.
+
+### Phase 3: Define Each Step
+
+For each major phase, gather:
+
+1. **Purpose** - What does this step accomplish? What are inputs and outputs?
+
+2. **Inputs**:
+   - User-provided parameters (e.g., topic, target audience)?
+   - Files from previous steps?
+
+3. **Outputs**:
+   - What files does this step produce?
+   - Format (markdown, YAML, JSON)?
+   - Where to save? (Use meaningful paths like `competitive_research/analysis.md`, not `.deepwork/outputs/`)
+   - Does this output have a doc spec?
+
+4. **Dependencies** - Which previous steps must complete first?
+
+5. **Process** - Key activities? Quality checks needed?
+
+6. **Agent Delegation** - Should this step run via a specific agent? Use `agent: experts` for domain-specific expertise.
+
+#### Output Path Guidelines
+
+- Place outputs in main repo, not dot-directories
+- Use job name as top-level folder for job-specific outputs
+- Include dates for periodic outputs that accumulate (monthly reports)
+- Omit dates for current-state outputs that get updated in place
+- Use `_dataroom` folders for supporting materials
+
+### Phase 4: Validate the Workflow
+
+After gathering all step information:
+
+1. **Review the flow** - Summarize the complete workflow, show how outputs feed into next steps
+2. **Check for gaps** - Undefined inputs? Unused outputs? Circular dependencies?
+3. **Confirm details** - Job name (lowercase_underscores), summary (max 200 chars), description (detailed), version (1.0.0)
+
+### Phase 5: Create the Job
+
+Create the directory structure:
+
+```bash
+.deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
+```
+
+Create `job.yml` at `.deepwork/jobs/[job_name]/job.yml`.
+
+**Reference**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.template` for structure and `.deepwork/jobs/deepwork_jobs/templates/job.yml.example` for a complete example.
+
+**Validation rules**:
+- Job name: lowercase, underscores, no spaces
+- Version: semantic versioning (1.0.0)
+- Summary: under 200 characters
+- Step IDs: unique, lowercase with underscores
+- Dependencies must reference existing steps
+- File inputs with `from_step` must be in dependencies
+- At least one output per step
 
 ## Output
 
-Create `.deepwork/jobs/[job_name]/job.yml` following the doc spec at `.deepwork/doc_specs/job_spec.md`.
+**File**: `.deepwork/jobs/[job_name]/job.yml`
 
 After creating the file, tell the user to run `/deepwork_jobs.review_job_spec` next.
