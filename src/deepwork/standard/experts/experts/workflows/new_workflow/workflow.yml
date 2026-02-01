@@ -1,0 +1,58 @@
+name: new_workflow
+version: "1.0.0"
+summary: "Create a new multi-step DeepWork workflow with spec definition, review, and implementation"
+
+description: |
+  Guide the user through creating a new DeepWork workflow by:
+  1. Understanding their workflow requirements through interactive questioning
+  2. Creating a validated workflow.yml specification
+  3. Reviewing the spec against quality criteria
+  4. Generating step instruction files and syncing skills
+
+steps:
+  - id: define
+    name: "Define Workflow Specification"
+    description: "Create a workflow.yml by gathering requirements through structured questions"
+    instructions_file: steps/define.md
+    inputs:
+      - name: workflow_purpose
+        description: "What complex task are you trying to accomplish?"
+    outputs:
+      - ".deepwork/experts/{expert_name}/workflows/{workflow_name}/workflow.yml"
+    exposed: true
+
+  - id: review_workflow_spec
+    name: "Review Workflow Specification"
+    description: "Review workflow.yml against quality criteria using a sub-agent for unbiased validation"
+    instructions_file: steps/review_workflow_spec.md
+    inputs:
+      - file: ".deepwork/experts/{expert_name}/workflows/{workflow_name}/workflow.yml"
+        from_step: define
+    outputs:
+      - ".deepwork/experts/{expert_name}/workflows/{workflow_name}/workflow.yml"
+    dependencies:
+      - define
+    agent: general-purpose
+    quality_criteria:
+      - "Workflow name is lowercase with underscores, no spaces or special characters"
+      - "Version follows X.Y.Z format (e.g., 1.0.0)"
+      - "Summary is under 200 characters and clearly describes the workflow"
+      - "Description is multi-line and explains problem, process, outcomes, and users"
+      - "Each step has id, name, description, instructions_file, outputs"
+      - "Step IDs are unique within the expert (across all workflows)"
+      - "Dependencies reference existing step IDs with no circular references"
+      - "File inputs with from_step reference a step in the dependencies array"
+      - "Outputs are valid filenames or paths"
+
+  - id: implement
+    name: "Implement Workflow Steps"
+    description: "Generate step instruction files and sync skills from the validated workflow.yml"
+    instructions_file: steps/implement.md
+    inputs:
+      - file: ".deepwork/experts/{expert_name}/workflows/{workflow_name}/workflow.yml"
+        from_step: review_workflow_spec
+    outputs:
+      - ".deepwork/experts/{expert_name}/workflows/{workflow_name}/steps/"
+    dependencies:
+      - review_workflow_spec
+    exposed: true

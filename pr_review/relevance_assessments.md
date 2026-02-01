@@ -1,7 +1,7 @@
 # PR Relevance Assessment
 
-**PR**: #192 - feat: Add experts system for auto-improving domain knowledge
-**Branch**: expert_support
+**PR**: #197 - Merge jobs into experts workflows
+**Branch**: total_shift
 **Date**: 2026-02-01
 
 ## Changed Files
@@ -19,6 +19,10 @@
 - .claude/skills/deepwork_rules.define/SKILL.md
 - .claude/skills/deepwork_rules/SKILL.md
 - .claude/skills/manual_tests/SKILL.md
+- .claude/skills/review_pr.check_relevance/SKILL.md
+- .claude/skills/review_pr.deep_review/SKILL.md
+- .claude/skills/review_pr.improve_and_rereview/SKILL.md
+- .claude/skills/review_pr/SKILL.md
 - .claude/skills/update/SKILL.md
 - .deepwork/experts/deepwork_jobs/expert.yml
 - .deepwork/experts/deepwork_jobs/learnings/.gitkeep
@@ -30,7 +34,9 @@
 - .deepwork/experts/deepwork_jobs/topics/step_instructions.md
 - .deepwork/experts/experts/expert.yml
 - .deepwork/experts/experts/learnings/.gitkeep
+- .deepwork/experts/experts/learnings/expert_prompts_must_emphasize_domain_focus.md
 - .deepwork/experts/experts/learnings/keep_experts_focused.md
+- .deepwork/experts/experts/learnings/review_pr_efficiency_improvements.md
 - .deepwork/experts/experts/topics/discovery_descriptions.md
 - .deepwork/experts/experts/topics/expert_design_patterns.md
 - .deepwork/jobs/deepwork_jobs/job.yml
@@ -39,11 +45,19 @@
 - .deepwork/jobs/deepwork_jobs/steps/learn.md
 - .deepwork/jobs/deepwork_jobs/steps/review_job_spec.md
 - .deepwork/jobs/deepwork_rules/steps/define.md
+- .deepwork/jobs/review_pr/job.yml
+- .deepwork/jobs/review_pr/steps/check_relevance.md
+- .deepwork/jobs/review_pr/steps/deep_review.md
+- .deepwork/jobs/review_pr/steps/improve_and_rereview.md
 - .gemini/skills/deepwork_jobs/define.toml
 - .gemini/skills/deepwork_jobs/implement.toml
 - .gemini/skills/deepwork_jobs/learn.toml
 - .gemini/skills/deepwork_jobs/review_job_spec.toml
 - .gemini/skills/deepwork_rules/define.toml
+- .gemini/skills/review_pr/check_relevance.toml
+- .gemini/skills/review_pr/deep_review.toml
+- .gemini/skills/review_pr/improve_and_rereview.toml
+- .gemini/skills/review_pr/index.toml
 - CHANGELOG.md
 - README.md
 - doc/architecture.md
@@ -71,7 +85,9 @@
 - src/deepwork/standard/experts/deepwork_jobs/topics/step_instructions.md
 - src/deepwork/standard/experts/experts/expert.yml
 - src/deepwork/standard/experts/experts/learnings/.gitkeep
+- src/deepwork/standard/experts/experts/learnings/expert_prompts_must_emphasize_domain_focus.md
 - src/deepwork/standard/experts/experts/learnings/keep_experts_focused.md
+- src/deepwork/standard/experts/experts/learnings/review_pr_efficiency_improvements.md
 - src/deepwork/standard/experts/experts/topics/discovery_descriptions.md
 - src/deepwork/standard/experts/experts/topics/expert_design_patterns.md
 - src/deepwork/standard_jobs/deepwork_jobs/job.yml
@@ -80,6 +96,10 @@
 - src/deepwork/standard_jobs/deepwork_jobs/steps/learn.md
 - src/deepwork/standard_jobs/deepwork_jobs/steps/review_job_spec.md
 - src/deepwork/standard_jobs/deepwork_rules/steps/define.md
+- src/deepwork/standard_jobs/review_pr/job.yml
+- src/deepwork/standard_jobs/review_pr/steps/check_relevance.md
+- src/deepwork/standard_jobs/review_pr/steps/deep_review.md
+- src/deepwork/standard_jobs/review_pr/steps/improve_and_rereview.md
 - src/deepwork/templates/claude/agent-expert.md.jinja
 - src/deepwork/templates/claude/skill-job-meta.md.jinja
 - tests/integration/test_experts_sync.py
@@ -91,45 +111,45 @@
 
 ## Expert Assessments
 
-### deepwork-jobs
+### deepwork-rules
 **Status**: RELEVANT
-**Justification**: This PR directly implements the experts system that integrates with the jobs framework. The changes include the core expert.yml schema, CLI commands, agent generation templates, and standard experts - all of which interact with and extend the existing jobs system.
+**Justification**: This PR modifies the `deepwork_rules.define` step instruction file, which directly governs how file-change rules are created. While the change is minor (updating guidance on how to ask questions), it affects the user experience when defining new rules.
 **Relevant files**:
-- `.deepwork/experts/*/expert.yml` - Expert definition files
-- `.deepwork/experts/*/topics/*.md` - Topic files
-- `.deepwork/experts/*/learnings/*.md` - Learning files
-- `src/deepwork/standard/experts/*/` - Standard expert source files
-- `src/deepwork/schemas/expert_schema.py` - Expert schema definition
-- `src/deepwork/core/experts_parser.py` - Expert parsing logic
-- `src/deepwork/core/experts_generator.py` - Agent generation from experts
-- `src/deepwork/cli/experts.py` - CLI commands (topics, learnings)
-- `src/deepwork/templates/claude/agent-expert.md.jinja` - Agent template
-- `doc/experts_requirements.md` - Requirements documentation
-- Tests: `tests/unit/test_expert_schema.py`, `tests/unit/test_experts_*.py`, `tests/integration/test_experts_sync.py`
+- `src/deepwork/standard_jobs/deepwork_rules/steps/define.md`
+- `.claude/skills/deepwork_rules.define/SKILL.md`
+- `.claude/skills/deepwork_rules/SKILL.md`
+- `.deepwork/jobs/deepwork_rules/steps/define.md`
 
 ### experts
 **Status**: RELEVANT
-**Justification**: This PR directly implements the experts system that this expert is documented to be an expert on. The changes add the core experts framework including expert.yml schema, CLI commands, agent generation, and the standard experts - all of which fall squarely within this domain of expertise.
+**Justification**: This PR directly implements the experts system that is core to this domain. It introduces the expert.yml schema, topics and learnings structure, workflow integration, skill generation from experts, and CLI commands for managing experts - all fundamental concepts of the DeepWork experts framework.
 **Relevant files**:
-- `src/deepwork/schemas/expert_schema.py` - Expert schema definition
-- `src/deepwork/core/experts_parser.py` - Expert parsing logic
-- `src/deepwork/core/experts_generator.py` - Agent generation from experts
-- `src/deepwork/standard/experts/experts/expert.yml` - Experts expert definition
-- `src/deepwork/standard/experts/experts/topics/*.md` - Topic files
-- `src/deepwork/standard/experts/experts/learnings/*.md` - Learning files
-- `src/deepwork/standard/experts/deepwork_jobs/expert.yml` - DeepWork Jobs expert
-- `src/deepwork/standard/experts/deepwork_jobs/topics/*.md` - Topic files
-- `src/deepwork/standard/experts/deepwork_jobs/learnings/*.md` - Learning files
-- `src/deepwork/cli/experts.py` - CLI commands
-- `src/deepwork/cli/main.py` - experts-related changes
-- `src/deepwork/cli/install.py` - experts handling
-- `src/deepwork/cli/sync.py` - experts sync
-- `src/deepwork/templates/claude/agent-expert.md.jinja` - Agent template
-- `doc/experts_requirements.md` - Requirements documentation
-- `doc/architecture.md` - experts-related sections
-- Tests: `tests/unit/test_expert_schema.py`, `tests/unit/test_experts_cli.py`, `tests/unit/test_experts_generator.py`, `tests/unit/test_experts_parser.py`, `tests/integration/test_experts_sync.py`
+- `src/deepwork/standard/experts/experts/expert.yml`
+- `src/deepwork/standard/experts/deepwork_jobs/expert.yml`
+- `.deepwork/experts/*/expert.yml`
+- `src/deepwork/schemas/expert_schema.py`
+- `src/deepwork/standard/experts/experts/topics/*.md`
+- `src/deepwork/standard/experts/experts/learnings/*.md`
+- `src/deepwork/standard/experts/deepwork_jobs/topics/*.md`
+- `src/deepwork/standard/experts/deepwork_jobs/learnings/*.md`
+- `src/deepwork/core/experts_parser.py`
+- `src/deepwork/core/experts_generator.py`
+- `src/deepwork/cli/experts.py`
+- `src/deepwork/cli/sync.py`
+- `src/deepwork/cli/install.py`
+- `src/deepwork/templates/claude/agent-expert.md.jinja`
+- `.claude/agents/dwe_experts.md`
+- `.claude/agents/dwe_deepwork-jobs.md`
+- `.claude/skills/*/SKILL.md`
+- `tests/unit/test_expert_schema.py`
+- `tests/unit/test_experts_cli.py`
+- `tests/unit/test_experts_generator.py`
+- `tests/unit/test_experts_parser.py`
+- `tests/integration/test_experts_sync.py`
+- `doc/experts_requirements.md`
+- `doc/architecture.md`
 
 ## Summary
 
-**Relevant experts**: deepwork-jobs, experts
-**Next step**: Run `/review_pr.deep_review` with these experts
+**Relevant experts**: deepwork-rules, experts
+**Next step**: Run `/experts.deep_review` with these experts

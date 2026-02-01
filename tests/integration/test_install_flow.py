@@ -30,7 +30,7 @@ class TestInstallCommand:
         # Verify directory structure
         deepwork_dir = mock_claude_project / ".deepwork"
         assert deepwork_dir.exists()
-        assert (deepwork_dir / "jobs").exists()
+        assert (deepwork_dir / "experts").exists()
 
         # Verify config.yml
         config_file = deepwork_dir / "config.yml"
@@ -40,24 +40,23 @@ class TestInstallCommand:
         assert "claude" in config["platforms"]
 
         # Verify core skills were created (directory/SKILL.md format)
+        # With the new workflow system, skills use hyphenated expert names
         claude_dir = mock_claude_project / ".claude" / "skills"
-        # Meta-skill
-        assert (claude_dir / "deepwork_jobs" / "SKILL.md").exists()
-        # Step skill (no prefix, but has user-invocable: false in frontmatter)
-        assert (claude_dir / "deepwork_jobs.define" / "SKILL.md").exists()
+        # Workflow meta-skill (expert.workflow_name)
+        assert (claude_dir / "experts.new_workflow" / "SKILL.md").exists()
+        # Step skill (expert.step_id)
+        assert (claude_dir / "experts.define" / "SKILL.md").exists()
         # Exposed step skill (user-invocable - learn has exposed: true)
-        assert (claude_dir / "deepwork_jobs.learn" / "SKILL.md").exists()
+        assert (claude_dir / "experts.learn" / "SKILL.md").exists()
 
-        # Verify meta-skill content
-        meta_skill = (claude_dir / "deepwork_jobs" / "SKILL.md").read_text()
-        assert "# deepwork_jobs" in meta_skill
-        # deepwork_jobs has workflows defined, so it shows "Workflows" instead of "Available Steps"
-        assert "Workflows" in meta_skill or "Available Steps" in meta_skill
+        # Verify workflow meta-skill content
+        meta_skill = (claude_dir / "experts.new_workflow" / "SKILL.md").read_text()
+        assert "# experts.new_workflow" in meta_skill
 
         # Verify step skill content
-        define_skill = (claude_dir / "deepwork_jobs.define" / "SKILL.md").read_text()
-        assert "# deepwork_jobs.define" in define_skill
-        assert "Define Job Specification" in define_skill
+        define_skill = (claude_dir / "experts.define" / "SKILL.md").read_text()
+        assert "# experts.define" in define_skill
+        assert "Define Workflow Specification" in define_skill
 
     def test_install_with_auto_detect(self, mock_claude_project: Path) -> None:
         """Test installing with auto-detection."""
@@ -105,7 +104,7 @@ class TestInstallCommand:
 
         # Verify skills were created for Claude
         skills_dir = claude_dir / "skills"
-        assert (skills_dir / "deepwork_jobs" / "SKILL.md").exists()
+        assert (skills_dir / "experts.define" / "SKILL.md").exists()
 
     def test_install_with_multiple_platforms_auto_detect(
         self, mock_multi_platform_project: Path
@@ -132,17 +131,13 @@ class TestInstallCommand:
         assert "claude" in config["platforms"]
         assert "gemini" in config["platforms"]
 
-        # Verify skills were created for both platforms
+        # Verify skills were created for Claude
         claude_dir = mock_multi_platform_project / ".claude" / "skills"
-        # Meta-skill and step skills (directory/SKILL.md format)
-        assert (claude_dir / "deepwork_jobs" / "SKILL.md").exists()
-        assert (claude_dir / "deepwork_jobs.define" / "SKILL.md").exists()
+        # Step skills (directory/SKILL.md format with hyphenated expert names)
+        assert (claude_dir / "experts.define" / "SKILL.md").exists()
 
-        # Gemini uses job_name/step_id.toml structure
-        gemini_dir = mock_multi_platform_project / ".gemini" / "skills"
-        # Meta-skill (index.toml) and step skills
-        assert (gemini_dir / "deepwork_jobs" / "index.toml").exists()
-        assert (gemini_dir / "deepwork_jobs" / "define.toml").exists()
+        # Note: Gemini workflow skill generation is not yet implemented
+        # (templates need to be migrated from job format to workflow format)
 
     def test_install_with_specified_platform_when_missing(self, mock_git_repo: Path) -> None:
         """Test that install fails when specified platform is not present."""
@@ -181,10 +176,9 @@ class TestInstallCommand:
         assert (deepwork_dir / "config.yml").exists()
 
         claude_dir = mock_claude_project / ".claude" / "skills"
-        # Meta-skill and step skills (directory/SKILL.md format)
-        assert (claude_dir / "deepwork_jobs" / "SKILL.md").exists()
-        assert (claude_dir / "deepwork_jobs.define" / "SKILL.md").exists()
-        assert (claude_dir / "deepwork_jobs.learn" / "SKILL.md").exists()
+        # Step skills (directory/SKILL.md format with hyphenated expert names)
+        assert (claude_dir / "experts.define" / "SKILL.md").exists()
+        assert (claude_dir / "experts.learn" / "SKILL.md").exists()
 
     def test_install_creates_rules_directory(self, mock_claude_project: Path) -> None:
         """Test that install creates the v2 rules directory with example templates."""

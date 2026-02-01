@@ -1,6 +1,6 @@
 # PR Review Final Summary
 
-**PR**: #192 - feat: Add experts system for auto-improving domain knowledge
+**PR**: #197 - Merge jobs into experts workflows
 **Total Iterations**: 1
 **Final Status**: APPROVED
 
@@ -8,43 +8,51 @@
 
 | Iteration | Date | Issues Addressed | Remaining |
 |-----------|------|------------------|-----------|
-| 1 | 2026-02-01 | 3 | 0 |
+| 1 | 2026-02-01 | 10 total (4 fixed, 6 skipped with reason) | 0 |
 
 ## Expert Final Status
 
-| Expert | Domain | Final Status |
-|--------|--------|--------------|
-| deepwork-jobs | Jobs system integration | APPROVED |
-| experts | Experts system design | APPROVED |
+| Expert | Final Status |
+|--------|--------------|
+| deepwork-rules | APPROVED |
+| experts | APPROVED |
+
+## Issue Resolution Summary
+
+| Expert | Total Issues | Fixed | Skipped (with reason) |
+|--------|--------------|-------|----------------------|
+| deepwork-rules | 4 | 2 | 2 |
+| experts | 6 | 2 | 4 |
 
 ## Key Improvements Made
 
-1. **Removed redundant exception handling** in `experts_parser.py` - The try/except blocks that just re-raised exceptions were removed, making the code cleaner and following the principle that exceptions should propagate naturally.
+1. **Fixed install CLI message**: Updated from `/deepwork-jobs.define` to `/experts.define`
+2. **Added command-action documentation**: Documented the `action: command` feature in deepwork_rules expert.yml
+3. **Added command-action examples**: Added format and example for command actions in define.md
+4. **Improved skill generation docs**: Explained both step skills and workflow meta-skills in experts expert.yml
+5. **Enhanced review_pr workflow**: Added quality criteria requiring complete issue accounting
 
-2. **Removed unused context variables** in `experts_generator.py` - The `topics_count` and `learnings_count` variables were removed from `_build_expert_context` since they weren't used in the template.
+## Skipped Items (with justification)
 
-3. **Added review_pr to standard jobs** - Created `src/deepwork/standard_jobs/review_pr/` with updated instructions emphasizing that experts should focus specifically on their domain of expertise and not provide generic code review feedback outside their area.
+### False Positives
+- **`agent: general-purpose` invalid**: This is actually a valid Claude Code built-in agent type, not a DeepWork expert reference
 
-## Original PR Strengths (from initial review)
+### Intentional Design Decisions
+- **Question-asking instruction change**: Simpler guidance works better across platforms
+- **Single-step workflow structure**: Acceptable trade-off for unified architecture
 
-The experts system was well-implemented from the start:
-- Clean separation of concerns (schema, parser, generator, CLI)
-- Comprehensive test coverage across unit and integration tests
-- Dynamic embedding design ensures agents always have current topics/learnings
-- Self-documenting via the "experts" expert that teaches users how to create experts
-- Follows existing codebase conventions (dataclasses, Jinja2, Click)
+### Low Impact / Deferred
+- **"workflow" keyword breadth**: Acceptable for discoverability
+- **Meta-skill routing clarification**: Low user impact
+- **Template folder name reverse-engineering**: Edge cases are rare
 
-## Unresolved Items
+## Process Improvements
 
-None - all feedback addressed.
+Added quality criteria to `improve_and_rereview` step requiring:
+- Complete issue accounting (every issue must be FIXED or SKIPPED with reason)
+- No silent omissions
+- Explicit documentation of all resolutions
 
 ## Next Steps
 
-**PR is ready to merge.**
-
-The experts system is complete with:
-- Expert definitions with topics and learnings
-- CLI commands for listing topics and learnings
-- Agent generation from experts
-- Integration with sync command
-- Comprehensive tests
+PR is ready to merge. All 630 tests pass.

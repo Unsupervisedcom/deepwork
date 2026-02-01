@@ -1,0 +1,69 @@
+# Example: Competitive Research Workflow
+#
+# This is a complete example of a workflow.yml file for reference.
+
+name: competitive_research
+version: "1.0.0"
+summary: "Systematic competitive analysis workflow"
+description: |
+  A comprehensive workflow for analyzing competitors in your market segment.
+  Helps product teams understand the competitive landscape through systematic
+  identification, research, comparison, and positioning recommendations.
+
+changelog:
+  - version: "1.0.0"
+    changes: "Initial workflow creation"
+
+steps:
+  - id: identify_competitors
+    name: "Identify Competitors"
+    description: "Identify 5-7 key competitors in the target market"
+    instructions_file: steps/identify_competitors.md
+    inputs:
+      - name: market_segment
+        description: "The market segment to analyze"
+      - name: product_category
+        description: "The product category"
+    outputs:
+      - competitors_list.md
+    dependencies: []
+
+  - id: research_competitors
+    name: "Research Competitors"
+    description: "Deep dive research on each identified competitor"
+    instructions_file: steps/research_competitors.md
+    inputs:
+      - file: competitors_list.md
+        from_step: identify_competitors
+    outputs:
+      - research_notes.md
+    dependencies:
+      - identify_competitors
+    quality_criteria:
+      - "Each competitor has at least 3 data points"
+      - "Sources are cited"
+      - "Information is current (within last year)"
+
+  - id: comparative_analysis
+    name: "Comparative Analysis"
+    description: "Create side-by-side comparison matrix"
+    instructions_file: steps/comparative_analysis.md
+    inputs:
+      - file: research_notes.md
+        from_step: research_competitors
+    outputs:
+      - comparison_matrix.md
+    dependencies:
+      - research_competitors
+
+  - id: positioning_recommendations
+    name: "Positioning Recommendations"
+    description: "Strategic positioning recommendations based on analysis"
+    instructions_file: steps/positioning_recommendations.md
+    inputs:
+      - file: comparison_matrix.md
+        from_step: comparative_analysis
+    outputs:
+      - positioning_report.md
+    dependencies:
+      - comparative_analysis

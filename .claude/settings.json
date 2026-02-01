@@ -137,7 +137,17 @@
       "Skill(review_pr)",
       "Skill(review_pr.check_relevance)",
       "Skill(review_pr.deep_review)",
-      "Skill(review_pr.improve_and_rereview)"
+      "Skill(review_pr.improve_and_rereview)",
+      "Skill(deepwork-rules.define)",
+      "Skill(experts.learn)",
+      "Skill(experts.review_pr)",
+      "Skill(experts.check_relevance)",
+      "Skill(experts.deep_review)",
+      "Skill(experts.improve_and_rereview)",
+      "Skill(experts.new_workflow)",
+      "Skill(experts.define)",
+      "Skill(experts.review_workflow_spec)",
+      "Skill(experts.implement)"
     ]
   },
   "hooks": {
@@ -170,6 +180,15 @@
           {
             "type": "command",
             "command": ".deepwork/jobs/deepwork_rules/hooks/user_prompt_submit.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".deepwork/experts/deepwork_rules/hooks/user_prompt_submit.sh"
           }
         ]
       }

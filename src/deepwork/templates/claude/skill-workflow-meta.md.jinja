@@ -1,0 +1,90 @@
+{#
+Template: skill-workflow-meta.md.jinja
+Purpose: Generates the workflow overview skill file for Claude Code
+
+Template Variables:
+  - expert_name: string - Expert identifier (e.g., "deepwork-jobs")
+  - workflow_name: string - Workflow identifier (e.g., "new_job")
+  - workflow_version: string - Workflow version (e.g., "1.0.0")
+  - workflow_summary: string - Short one-line summary of the workflow
+  - workflow_description: string|null - Full description (optional)
+  - total_steps: int - Number of steps in the workflow
+  - first_step: string - First step ID to start workflow
+  - execution_entries: list - Array of execution order entries:
+      - is_concurrent: bool - True if steps can run in parallel
+      - step_ids: list[string] - Step IDs in this entry
+      - concurrent_steps: list|null - Details for concurrent steps (if is_concurrent)
+  - steps: list - Array of step objects:
+      - id: string - Step identifier
+      - name: string - Human-readable step name
+      - description: string - What the step does
+      - command_name: string - Slash command (e.g., "expert-name.step_id")
+      - dependencies: list[string]|null - Required prior steps
+      - exposed: bool - True if user-invocable
+#}
+---
+name: {{ expert_name }}.{{ workflow_name }}
+description: "{{ workflow_summary }}"
+---
+
+# {{ expert_name }}.{{ workflow_name }}
+
+{{ workflow_summary }}
+
+> **CRITICAL**: Always invoke steps using the Skill tool. Never copy/paste step instructions directly.
+
+{% if workflow_description %}
+{{ workflow_description }}
+{% endif %}
+
+## Steps in Order
+
+{% for entry in execution_entries %}
+{% if entry.is_concurrent %}
+{{ loop.index }}. **Concurrent Steps** - Execute the following tasks in parallel:
+{% for task in entry.concurrent_steps %}
+   - **Background Task {{ task.task_number }}**: {{ task.id }} - {{ task.description }}
+{% endfor %}
+{% else %}
+{% set step_id = entry.step_ids[0] %}
+{% set step = steps | selectattr("id", "equalto", step_id) | first %}
+{{ loop.index }}. **{{ step_id }}** - {{ step.description if step else "Unknown step" }}
+{% endif %}
+{% endfor %}
+
+**Start workflow**: `/{{ expert_name }}.{{ first_step }}`
+
+## Execution Instructions
+
+### Step 1: Analyze Intent
+
+Parse any text following `/{{ expert_name }}.{{ workflow_name }}` to determine user intent:
+{% for step in steps %}
+- "{{ step.id }}" or related terms → run step `{{ step.command_name }}`
+{% endfor %}
+- No specific step mentioned → start at first step `{{ expert_name }}.{{ first_step }}`
+
+### Step 2: Invoke Starting Step
+
+Use the Skill tool to invoke the identified starting step:
+```
+Skill tool: {{ expert_name }}.{{ first_step }}
+```
+
+### Step 3: Continue Workflow Automatically
+
+After each step completes:
+1. Check if there's a next step in the workflow sequence
+2. Invoke the next step using the Skill tool
+3. Repeat until workflow is complete or user intervenes
+
+## Guardrails
+
+- Do NOT copy/paste step instructions directly; always use the Skill tool to invoke steps
+- Do NOT skip steps in a workflow unless the user explicitly requests it
+- Do NOT proceed to the next step if the current step's outputs are incomplete
+- Do NOT make assumptions about user intent; ask for clarification when ambiguous
+
+## Context Files
+
+- Workflow definition: `.deepwork/experts/{{ expert_name | replace('-', '_') }}/workflows/{{ workflow_name }}/workflow.yml`

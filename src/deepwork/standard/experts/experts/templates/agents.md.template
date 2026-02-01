@@ -1,0 +1,32 @@
+# Project Context for [Workflow Name]
+
+## Codebase Structure
+
+<!-- Reference files rather than duplicating content -->
+- Project structure: See `README.md` for overview
+- API documentation: See `docs/api.md`
+- Configuration: See `config/README.md`
+
+## Conventions
+
+### Naming Conventions
+- [Convention]: See example in `path/to/example.ext:LINE`
+
+### File Organization
+- [Pattern]: Reference `path/to/pattern/`
+
+## Workflow-Specific Context
+
+### [Workflow Name]
+
+#### [Step Name]
+- [Learning]: Reference `relevant/file.ext`
+- [Context]: [Brief explanation with file reference]
+
+## Known Issues and Workarounds
+
+- [Issue]: [Workaround with file reference if applicable]
+
+## Last Updated
+- Date: [YYYY-MM-DD]
+- From conversation about: [Brief description]

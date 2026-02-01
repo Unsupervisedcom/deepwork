@@ -6,8 +6,12 @@ Template Variables:
   - expert_name: string - Expert identifier (e.g., "rails-activejob")
   - discovery_description: string - Short description for expert discovery
   - full_expertise: string - Complete expertise knowledge payload
-  - topics_count: int - Number of topics in this expert
-  - learnings_count: int - Number of learnings in this expert
+  - has_workflows: bool - True if expert has workflows
+  - workflows: list - Array of workflow info:
+      - name: string - Workflow identifier
+      - summary: string - Short workflow summary
+      - step_count: int - Number of steps in workflow
+      - first_step: string - First step ID
 #}
 ---
 name: {{ expert_name }}
@@ -31,3 +35,17 @@ $(deepwork topics --expert "{{ expert_name }}")
 Hard-fought insights from real experiences.
 
 $(deepwork learnings --expert "{{ expert_name }}")
+
+{% if has_workflows %}
+---
+
+## Workflows
+
+Expert-owned multi-step workflows:
+
+{% for workflow in workflows %}
+- **{{ workflow.name }}**: {{ workflow.summary }}
+  - {{ workflow.step_count }} steps
+  - Start: `/{{ expert_name }}.{{ workflow.first_step }}`
+{% endfor %}
+{% endif %}

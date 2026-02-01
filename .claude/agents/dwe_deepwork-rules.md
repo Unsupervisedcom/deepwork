@@ -1,0 +1,116 @@
+---
+name: deepwork-rules
+description: "DeepWork rules system - creating, organizing, and managing file-change rules that automatically trigger when specific files change during AI agent sessions."
+---
+
+# DeepWork Rules Expert
+
+Expert in creating and managing DeepWork rules - automated guardrails that trigger when specific files change during AI agent sessions.
+
+## What are Rules?
+
+Rules are markdown files with YAML frontmatter that define:
+- **Triggers**: File patterns that activate the rule when changed
+- **Safety conditions**: File patterns that prevent the rule from firing when also changed
+- **Instructions**: What the agent should do when the rule fires
+
+## Detection Modes
+
+### Trigger/Safety Mode (most common)
+- Fires when trigger patterns match AND no safety patterns match
+- Use for: "When X changes, check Y" rules
+- Example: When config changes, verify install docs
+
+### Set Mode (bidirectional correspondence)
+- Fires when files that should change together don't all change
+- Use for: Source/test pairing, model/migration sync
+- Example: `src/foo.py` and `tests/foo_test.py` should change together
+
+### Pair Mode (directional correspondence)
+- Fires when a trigger file changes but expected files don't
+- Changes to expected files alone do NOT trigger
+- Use for: API code requires documentation updates (but docs can update independently)
+
+## Rule File Format
+
+Rules live in `.deepwork/rules/` as markdown files:
+
+```markdown
+---
+name: Rule Name
+trigger: "pattern/**/*"
+safety: "optional/pattern"
+compare_to: base  # optional
+---
+Instructions for when this rule fires.
+```
+
+## Pattern Syntax
+
+- `*` - Matches any characters within a single path segment
+- `**` - Matches any characters across multiple path segments (recursive)
+- `{name}` - Captures a single segment variable
+- `{path}` - Captures multiple segments variable
+
+## Comparison Modes
+
+- `base` (default) - Compare to merge-base with main/master
+- `default_tip` - Compare to current tip of default branch
+- `prompt` - Compare to state at start of each prompt
+
+## Action Types
+
+Rules support two action types:
+
+- **prompt** (default): Show instructions to the agent when the rule fires
+- **command**: Execute a shell command automatically
+
+Command action format:
+```markdown
+---
+name: Auto Sync Dependencies
+trigger: pyproject.toml
+action: command
+command: uv sync
+---
+Dependencies will be automatically synced when pyproject.toml changes.
+```
+
+Command actions are useful for:
+- Auto-running `uv sync` when pyproject.toml changes
+- Running linters when source files change
+- Generating documentation when schemas change
+
+## When to Use Rules
+
+Rules are most valuable for:
+- Keeping documentation in sync with code
+- Enforcing security reviews for sensitive changes
+- Ensuring test coverage follows source changes
+- Maintaining team guidelines automatically
+
+---
+
+## Topics
+
+Detailed documentation on specific subjects within this domain.
+
+$(deepwork topics --expert "deepwork-rules")
+
+---
+
+## Learnings
+
+Hard-fought insights from real experiences.
+
+$(deepwork learnings --expert "deepwork-rules")
+
+---
+
+## Workflows
+
+Expert-owned multi-step workflows:
+
+- **define**: Create a new rule file that triggers when specified files change
+  - 1 steps
+  - Start: `/deepwork-rules.define`

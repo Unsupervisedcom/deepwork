@@ -62,7 +62,8 @@ def rules_hooks_dir() -> Path:
         Path(__file__).parent.parent.parent
         / "src"
         / "deepwork"
-        / "standard_jobs"
+        / "standard"
+        / "experts"
         / "deepwork_rules"
         / "hooks"
     )
@@ -78,14 +79,6 @@ def hooks_dir() -> Path:
 def src_dir() -> Path:
     """Return the path to the src directory for PYTHONPATH."""
     return Path(__file__).parent.parent.parent / "src"
-
-
-@pytest.fixture
-def jobs_scripts_dir() -> Path:
-    """Return the path to the jobs scripts directory."""
-    return (
-        Path(__file__).parent.parent.parent / "src" / "deepwork" / "standard_jobs" / "deepwork_jobs"
-    )
 
 
 def run_shell_script(

@@ -19,10 +19,6 @@ def project_with_experts(tmp_path: Path) -> Path:
     config = {"version": "0.1.0", "platforms": ["claude"]}
     save_yaml(deepwork_dir / "config.yml", config)
 
-    # Create jobs directory (empty - no jobs to sync)
-    jobs_dir = deepwork_dir / "jobs"
-    jobs_dir.mkdir()
-
     # Create experts directory with an expert
     experts_dir = deepwork_dir / "experts"
     experts_dir.mkdir()
@@ -153,7 +149,6 @@ class TestExpertSyncMultiple:
         deepwork_dir = tmp_path / ".deepwork"
         deepwork_dir.mkdir()
         save_yaml(deepwork_dir / "config.yml", {"version": "0.1.0", "platforms": ["claude"]})
-        (deepwork_dir / "jobs").mkdir()
 
         experts_dir = deepwork_dir / "experts"
         experts_dir.mkdir()
@@ -187,7 +182,6 @@ class TestExpertSyncNoExperts:
         deepwork_dir = tmp_path / ".deepwork"
         deepwork_dir.mkdir()
         save_yaml(deepwork_dir / "config.yml", {"version": "0.1.0", "platforms": ["claude"]})
-        (deepwork_dir / "jobs").mkdir()
         (tmp_path / ".claude").mkdir()
 
         # Should not raise
@@ -205,7 +199,6 @@ class TestExpertSyncNoExperts:
         deepwork_dir = tmp_path / ".deepwork"
         deepwork_dir.mkdir()
         save_yaml(deepwork_dir / "config.yml", {"version": "0.1.0", "platforms": ["claude"]})
-        (deepwork_dir / "jobs").mkdir()
         (deepwork_dir / "experts").mkdir()  # Empty experts dir
         (tmp_path / ".claude").mkdir()
 
@@ -213,23 +206,30 @@ class TestExpertSyncNoExperts:
         sync_skills(tmp_path)
 
 
-class TestExpertSyncWithJobs:
-    """Tests for syncing experts alongside jobs."""
+class TestExpertSyncWithWorkflows:
+    """Tests for syncing experts with workflows."""
 
-    def test_sync_experts_and_jobs_together(self, tmp_path: Path) -> None:
-        """Test that sync handles both experts and jobs."""
+    def test_sync_expert_with_workflow(self, tmp_path: Path) -> None:
+        """Test that sync handles experts with workflows."""
         # Create project structure
         deepwork_dir = tmp_path / ".deepwork"
         deepwork_dir.mkdir()
         save_yaml(deepwork_dir / "config.yml", {"version": "0.1.0", "platforms": ["claude"]})
 
-        # Create a job
-        job_dir = deepwork_dir / "jobs" / "test_job"
-        job_dir.mkdir(parents=True)
-        (job_dir / "job.yml").write_text(
-            """name: test_job
-version: 1.0.0
-summary: A test job
+        # Create an expert with a workflow
+        expert_dir = deepwork_dir / "experts" / "test_expert"
+        expert_dir.mkdir(parents=True)
+        (expert_dir / "expert.yml").write_text(
+            "discovery_description: Test expert\nfull_expertise: Expert content."
+        )
+
+        # Create a workflow
+        workflow_dir = expert_dir / "workflows" / "test_workflow"
+        workflow_dir.mkdir(parents=True)
+        (workflow_dir / "workflow.yml").write_text(
+            """name: test_workflow
+version: "1.0.0"
+summary: A test workflow
 steps:
   - id: step_one
     name: Step One
@@ -239,28 +239,22 @@ steps:
       - output.md
 """
         )
-        steps_dir = job_dir / "steps"
+        steps_dir = workflow_dir / "steps"
         steps_dir.mkdir()
         (steps_dir / "step_one.md").write_text("Do the first step.")
-
-        # Create an expert
-        expert_dir = deepwork_dir / "experts" / "test_expert"
-        expert_dir.mkdir(parents=True)
-        (expert_dir / "expert.yml").write_text(
-            "discovery_description: Test expert\nfull_expertise: Expert content."
-        )
 
         (tmp_path / ".claude").mkdir()
 
         # Run sync
         sync_skills(tmp_path)
 
-        # Check both job skills and expert agents were created
+        # Check workflow skills were created
         skills_dir = tmp_path / ".claude" / "skills"
         assert skills_dir.exists()
-        # Job should have created skills
-        assert any(skills_dir.iterdir())
+        # Workflow should have created skills with format: expert.step_id
+        assert (skills_dir / "test-expert.step_one" / "SKILL.md").exists()
 
+        # Check expert agent was created
         agents_dir = tmp_path / ".claude" / "agents"
         assert agents_dir.exists()
         assert (agents_dir / "dwe_test-expert.md").exists()

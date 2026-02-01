@@ -1,4 +1,4 @@
-"""Hooks syncer for DeepWork - collects and syncs hooks from jobs to platform settings."""
+"""Hooks syncer for DeepWork - collects and syncs hooks from experts to platform settings."""
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,8 +19,8 @@ class HooksSyncError(Exception):
 class HookEntry:
     """Represents a single hook entry for a lifecycle event."""
 
-    job_name: str  # Job that provides this hook
-    job_dir: Path  # Full path to job directory
+    expert_name: str  # Expert that provides this hook
+    expert_dir: Path  # Full path to expert directory
     script: str | None = None  # Script filename (if script-based hook)
     module: str | None = None  # Python module (if module-based hook)
 
@@ -40,8 +40,8 @@ class HookEntry:
             hook_name = self.module.rsplit(".", 1)[-1]
             return f"deepwork hook {hook_name}"
         elif self.script:
-            # Script path is: .deepwork/jobs/{job_name}/hooks/{script}
-            script_path = self.job_dir / "hooks" / self.script
+            # Script path is: .deepwork/experts/{expert_name}/hooks/{script}
+            script_path = self.expert_dir / "hooks" / self.script
             try:
                 return str(script_path.relative_to(project_path))
             except ValueError:
@@ -60,25 +60,25 @@ class HookSpec:
 
 
 @dataclass
-class JobHooks:
-    """Hooks configuration for a job."""
+class ExpertHooks:
+    """Hooks configuration for an expert."""
 
-    job_name: str
-    job_dir: Path
+    expert_name: str
+    expert_dir: Path
     hooks: dict[str, list[HookSpec]] = field(default_factory=dict)  # event -> [HookSpec]
 
     @classmethod
-    def from_job_dir(cls, job_dir: Path) -> "JobHooks | None":
+    def from_expert_dir(cls, expert_dir: Path) -> "ExpertHooks | None":
         """
-        Load hooks configuration from a job directory.
+        Load hooks configuration from an expert directory.
 
         Args:
-            job_dir: Path to job directory containing hooks/global_hooks.yml
+            expert_dir: Path to expert directory containing hooks/global_hooks.yml
 
         Returns:
-            JobHooks instance or None if no hooks defined
+            ExpertHooks instance or None if no hooks defined
         """
-        hooks_file = job_dir / "hooks" / "global_hooks.yml"
+        hooks_file = expert_dir / "hooks" / "global_hooks.yml"
         if not hooks_file.exists():
             return None
 
@@ -113,46 +113,50 @@ class JobHooks:
             return None
 
         return cls(
-            job_name=job_dir.name,
-            job_dir=job_dir,
+            expert_name=expert_dir.name,
+            expert_dir=expert_dir,
             hooks=hooks,
         )
 
 
-def collect_job_hooks(jobs_dir: Path) -> list[JobHooks]:
+def collect_expert_hooks(experts_dir: Path) -> list[ExpertHooks]:
     """
-    Collect hooks from all jobs in the jobs directory.
+    Collect hooks from all experts in the experts directory.
 
     Args:
-        jobs_dir: Path to .deepwork/jobs directory
+        experts_dir: Path to .deepwork/experts directory
 
     Returns:
-        List of JobHooks for all jobs with hooks defined
+        List of ExpertHooks for all experts with hooks defined
     """
-    if not jobs_dir.exists():
+    if not experts_dir.exists():
         return []
 
-    job_hooks_list = []
-    for job_dir in jobs_dir.iterdir():
-        if not job_dir.is_dir():
+    expert_hooks_list = []
+    for expert_dir in experts_dir.iterdir():
+        if not expert_dir.is_dir():
             continue
 
-        job_hooks = JobHooks.from_job_dir(job_dir)
-        if job_hooks:
-            job_hooks_list.append(job_hooks)
+        # Check if this is a valid expert (has expert.yml)
+        if not (expert_dir / "expert.yml").exists():
+            continue
 
-    return job_hooks_list
+        expert_hooks = ExpertHooks.from_expert_dir(expert_dir)
+        if expert_hooks:
+            expert_hooks_list.append(expert_hooks)
+
+    return expert_hooks_list
 
 
 def merge_hooks_for_platform(
-    job_hooks_list: list[JobHooks],
+    expert_hooks_list: list[ExpertHooks],
     project_path: Path,
 ) -> dict[str, list[dict[str, Any]]]:
     """
-    Merge hooks from multiple jobs into a single configuration.
+    Merge hooks from multiple experts into a single configuration.
 
     Args:
-        job_hooks_list: List of JobHooks from different jobs
+        expert_hooks_list: List of ExpertHooks from different experts
         project_path: Path to project root for relative path calculation
 
     Returns:
@@ -160,15 +164,15 @@ def merge_hooks_for_platform(
     """
     merged: dict[str, list[dict[str, Any]]] = {}
 
-    for job_hooks in job_hooks_list:
-        for event, hook_specs in job_hooks.hooks.items():
+    for expert_hooks in expert_hooks_list:
+        for event, hook_specs in expert_hooks.hooks.items():
             if event not in merged:
                 merged[event] = []
 
             for spec in hook_specs:
                 entry = HookEntry(
-                    job_name=job_hooks.job_name,
-                    job_dir=job_hooks.job_dir,
+                    expert_name=expert_hooks.expert_name,
+                    expert_dir=expert_hooks.expert_dir,
                     script=spec.script,
                     module=spec.module,
                 )
@@ -196,19 +200,20 @@ def merge_hooks_for_platform(
         if "SubagentStop" not in merged:
             merged["SubagentStop"] = []
         for hook_config in merged["Stop"]:
-            command = hook_config.get("hooks", [{}])[0].get("command", "")
-            if not _hook_already_present(merged["SubagentStop"], command):
+            hooks_list = hook_config.get("hooks", [])
+            command = hooks_list[0].get("command", "") if hooks_list else ""
+            if command and not _hook_already_present(merged["SubagentStop"], command):
                 merged["SubagentStop"].append(hook_config)
 
     return merged
 
 
-def _hook_already_present(hooks: list[dict[str, Any]], script_path: str) -> bool:
-    """Check if a hook with the given script path is already in the list."""
+def _hook_already_present(hooks: list[dict[str, Any]], command: str) -> bool:
+    """Check if a hook with the given command is already in the list."""
     for hook in hooks:
         hook_list = hook.get("hooks", [])
         for h in hook_list:
-            if h.get("command") == script_path:
+            if h.get("command") == command:
                 return True
     return False
 
@@ -216,15 +221,15 @@ def _hook_already_present(hooks: list[dict[str, Any]], script_path: str) -> bool
 def sync_hooks_to_platform(
     project_path: Path,
     adapter: AgentAdapter,
-    job_hooks_list: list[JobHooks],
+    expert_hooks_list: list[ExpertHooks],
 ) -> int:
     """
-    Sync hooks from jobs to a specific platform's settings.
+    Sync hooks from experts to a specific platform's settings.
 
     Args:
         project_path: Path to project root
         adapter: Agent adapter for the target platform
-        job_hooks_list: List of JobHooks from jobs
+        expert_hooks_list: List of ExpertHooks from experts
 
     Returns:
         Number of hooks synced
@@ -232,8 +237,8 @@ def sync_hooks_to_platform(
     Raises:
         HooksSyncError: If sync fails
     """
-    # Merge hooks from all jobs
-    merged_hooks = merge_hooks_for_platform(job_hooks_list, project_path)
+    # Merge hooks from all experts
+    merged_hooks = merge_hooks_for_platform(expert_hooks_list, project_path)
 
     if not merged_hooks:
         return 0

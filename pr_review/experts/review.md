@@ -1,178 +1,117 @@
-# experts Expert Review
+# experts Review
 
-**PR**: #192 - feat: Add experts system for auto-improving domain knowledge
+**PR**: #197
 **Date**: 2026-02-01
 **Reviewer**: experts expert
 
 ## Summary
 
-This PR implements a well-structured experts system for DeepWork that enables auto-improving domain knowledge repositories. The architecture is clean and follows established patterns in the codebase: JSON schemas for validation, dataclasses for structured data, Jinja2 templates for generation, and Click CLI commands for interaction.
+This PR merges the jobs system into the experts framework, creating a unified architecture where workflows are now owned by experts rather than being standalone entities. The change represents a significant restructuring:
 
-The implementation demonstrates thoughtful design decisions: folder name to expert name conversion (underscores/spaces to dashes), frontmatter-based markdown parsing for topics and learnings, sorted outputs by recency, and dynamic command embedding in generated agents (`$(deepwork topics ...)`) for always-current content. The test coverage is comprehensive with unit tests for schemas, parser, and generator, plus integration tests for the sync workflow.
+1. **Terminology shift**: "job" -> "workflow", "job.yml" -> "workflow.yml"
+2. **Structural change**: Workflows now live inside expert directories (`.deepwork/experts/[expert]/workflows/[workflow]/`) rather than separately (`.deepwork/jobs/[job]/`)
+3. **Schema evolution**: `job_schema.py` renamed to `workflow_schema.py`, with appropriate field updates
+4. **Skill naming**: Skills now use `expert-name.step-id` format instead of `job-name.step-id`
+
+The overall architecture is sound - embedding workflows within experts creates a cohesive domain knowledge + action system. The expert.yml schema remains minimal (just `discovery_description` and `full_expertise`), while workflow.yml carries the complex step definitions. Topics and learnings continue to follow the documented frontmatter patterns.
 
 ## Issues Found
 
 ### Issue 1
-- **File**: `src/deepwork/schemas/expert_schema.py`
-- **Line(s)**: 11-20, 30-48, 58-73
+- **File**: `src/deepwork/cli/install.py`
+- **Line(s)**: 438-439
 - **Severity**: Minor
-- **Issue**: The `discovery_description` has guidance to be "1-3 sentences" and `full_expertise` should be "~5 pages max", but there are no maxLength constraints in the schema to enforce or warn about this.
-- **Suggestion**: Consider adding `maxLength` constraints or at least documenting the expected limits as schema comments. This would help users understand expectations without causing validation failures.
+- **Issue**: The "Next steps" output message still references the old naming convention `/deepwork-jobs.define`. This should be updated to reflect the new workflow naming under the experts system.
+- **Suggestion**: Update line 438 to say `"/experts.define"` or `"/experts.new_workflow"` to match the new skill naming convention.
 
 ### Issue 2
-- **File**: `src/deepwork/core/experts_parser.py`
-- **Line(s)**: 374-379, 384-389
-- **Severity**: Minor
-- **Issue**: The `except ExpertParseError: raise` pattern is redundant - it catches and immediately re-raises. This works but is unnecessary code.
-- **Suggestion**: Remove the try/except blocks entirely since `parse_topic_file` and `parse_learning_file` already raise `ExpertParseError` with appropriate messages.
+- **File**: `src/deepwork/standard/experts/experts/workflows/new_workflow/workflow.yml`
+- **Line(s)**: 35
+- **Severity**: Major
+- **Issue**: The `review_workflow_spec` step has `agent: general-purpose`, but `general-purpose` is not a defined expert. According to the step delegation topic, valid agent values should reference actual experts. Using `general-purpose` will cause the skill generation to include `agent: general-purpose` in the frontmatter, which will fail at runtime when Claude Code tries to load a non-existent expert agent.
+- **Suggestion**: Either remove the `agent` field from this step (letting it run in the main context) or set it to `experts` if the expert knowledge is needed. The `quality_criteria` field alone triggers sub-agent validation without requiring expert context.
 
 ### Issue 3
-- **File**: `src/deepwork/schemas/expert_schema.py`
-- **Line(s)**: 46
-- **Severity**: Minor
-- **Issue**: The date pattern `r"^\d{4}-\d{2}-\d{2}$"` allows invalid dates like "2025-13-45" or "2025-00-00". While PyYAML would fail to parse these as dates, if passed as strings they would pass schema validation.
-- **Suggestion**: This is acceptable for now since the schema is primarily for structure validation, but consider adding a note or using ISO 8601 date validation if stricter validation is needed.
+- **File**: `src/deepwork/standard/experts/experts/topics/workflow_yml_schema.md`
+- **Line(s)**: 10
+- **Severity**: Suggestion
+- **Issue**: The topic has "workflow" as a keyword, but according to the keyword guidelines, topics should avoid broad domain terms. Since this is a topic within the "experts" expert which is about the experts system (including workflows), "workflow" is arguably too broad.
+- **Suggestion**: Consider removing "workflow" and using more specific keywords like "workflow.yml", "specification", "required fields".
 
 ### Issue 4
-- **File**: `src/deepwork/cli/experts.py`
-- **Line(s)**: 111, 113-114, 148, 150-151
-- **Severity**: Suggestion
-- **Issue**: Success output uses `print()` while errors use `console.print()` with Rich formatting. This is intentional for `$(command)` embedding, but the comment explaining this could be more prominent.
-- **Suggestion**: The comment "Print raw output (no Rich formatting) for use in $(command) embedding" is good. Consider adding a similar note to the docstring for clarity.
+- **File**: `src/deepwork/standard/experts/experts/expert.yml`
+- **Line(s)**: 232-234
+- **Severity**: Minor
+- **Issue**: The Skill Generation section documents step skills but doesn't mention workflow meta-skills which also get generated (`expert-name.workflow-name/SKILL.md`).
+- **Suggestion**: Add a line clarifying workflow meta-skill naming: "Workflow meta-skill: `.claude/skills/[expert-name].[workflow-name]/SKILL.md`"
 
 ### Issue 5
-- **File**: `src/deepwork/templates/claude/agent-expert.md.jinja`
-- **Line(s)**: 14
-- **Severity**: Minor
-- **Issue**: The description escaping `replace('"', '\\"') | replace('\n', ' ')` handles quotes and newlines, but doesn't handle other YAML special characters like colons, leading special characters, or backslashes that could break YAML parsing.
-- **Suggestion**: Consider using a YAML-safe escaping approach or test with edge cases containing `: `, `#`, `[`, `{`, etc. in discovery descriptions.
+- **File**: `src/deepwork/standard/experts/experts/expert.yml`
+- **Line(s)**: 299-305
+- **Severity**: Suggestion
+- **Issue**: The "Common Patterns" section references `/experts.define` and `/experts.implement` but could be confusing since there are multiple workflows.
+- **Suggestion**: Add clarification that `/experts` without a step suffix invokes the `new_workflow` meta-skill.
 
 ### Issue 6
-- **File**: `src/deepwork/core/experts_generator.py`
-- **Line(s)**: 80-90
+- **File**: `src/deepwork/templates/claude/skill-workflow-meta.md.jinja`
+- **Line(s)**: 90
 - **Severity**: Minor
-- **Issue**: The `get_agent_filename` method directly uses `expert_name` in the filename without validating it's filesystem-safe. While the folder name conversion should produce safe names, an expert with unusual characters could cause issues.
-- **Suggestion**: Add validation or sanitization to ensure the expert name produces a valid filename, or document the assumption that folder names are already safe.
-
-### Issue 7
-- **File**: `src/deepwork/templates/claude/agent-expert.md.jinja`
-- **Line(s)**: 25, 33
-- **Severity**: Suggestion
-- **Issue**: The dynamic embedding uses CLI commands that output formatted lists (name + keywords/summary), but the full topic/learning body content is not directly accessible to the agent without the agent reading the files.
-- **Suggestion**: This is by design (dynamic loading), but consider documenting that agents should use the Read tool to access full topic/learning content when needed.
+- **Issue**: The template uses `expert_name | replace('-', '_')` to convert back to folder naming. This transformation works for simple cases but could break with edge cases.
+- **Suggestion**: Consider having the generator pass the original folder name to the template.
 
 ## Code Suggestions
 
-### Suggestion 1: Simplify redundant exception handling in parser
+### Suggestion 1: Fix outdated install message
 
-**File**: `src/deepwork/core/experts_parser.py`
+**File**: `src/deepwork/cli/install.py`
 
 Before:
 ```python
-for topic_file in topics_dir.glob("*.md"):
-    try:
-        topic = parse_topic_file(topic_file)
-        topics.append(topic)
-    except ExpertParseError:
-        raise
-
-# Parse learnings
-learnings: list[Learning] = []
-learnings_dir = expert_dir_path / "learnings"
-if learnings_dir.exists() and learnings_dir.is_dir():
-    for learning_file in learnings_dir.glob("*.md"):
-        try:
-            learning = parse_learning_file(learning_file)
-            learnings.append(learning)
-        except ExpertParseError:
-            raise
+    console.print("[bold]Next steps:[/bold]")
+    console.print("  1. Start your agent CLI (ex. [cyan]claude[/cyan] or [cyan]gemini[/cyan])")
+    console.print("  2. Define your first workflow using [cyan]/deepwork-jobs.define[/cyan]")
 ```
 
 After:
 ```python
-for topic_file in topics_dir.glob("*.md"):
-    topic = parse_topic_file(topic_file)
-    topics.append(topic)
-
-# Parse learnings
-learnings: list[Learning] = []
-learnings_dir = expert_dir_path / "learnings"
-if learnings_dir.exists() and learnings_dir.is_dir():
-    for learning_file in learnings_dir.glob("*.md"):
-        learning = parse_learning_file(learning_file)
-        learnings.append(learning)
+    console.print("[bold]Next steps:[/bold]")
+    console.print("  1. Start your agent CLI (ex. [cyan]claude[/cyan] or [cyan]gemini[/cyan])")
+    console.print("  2. Define your first workflow using [cyan]/experts.define[/cyan]")
 ```
 
-### Suggestion 2: Add docstring clarification for raw output in CLI
+**Rationale**: The skill naming has changed from `deepwork-jobs.step` to `experts.step` as workflows are now owned by experts.
 
-**File**: `src/deepwork/cli/experts.py`
+### Suggestion 2: Fix invalid agent reference in workflow
+
+**File**: `src/deepwork/standard/experts/experts/workflows/new_workflow/workflow.yml`
 
 Before:
-```python
-def topics(expert: str, path: Path) -> None:
-    """
-    List topics for an expert.
-
-    Returns a Markdown list of topics with names, file paths as links,
-    and keywords, sorted by most-recently-updated.
-
-    Example:
-        deepwork topics --expert "rails-activejob"
-    """
+```yaml
+  - id: review_workflow_spec
+    name: "Review Workflow Specification"
+    description: "Review workflow.yml against quality criteria using a sub-agent for unbiased validation"
+    instructions_file: steps/review_workflow_spec.md
+    ...
+    agent: general-purpose
+    quality_criteria:
+      - "Workflow name is lowercase with underscores, no spaces or special characters"
 ```
 
 After:
-```python
-def topics(expert: str, path: Path) -> None:
-    """
-    List topics for an expert.
-
-    Returns a Markdown list of topics with names, file paths as links,
-    and keywords, sorted by most-recently-updated.
-
-    Note: Output is printed without Rich formatting to support
-    $(deepwork topics ...) command embedding in agent files.
-
-    Example:
-        deepwork topics --expert "rails-activejob"
-    """
+```yaml
+  - id: review_workflow_spec
+    name: "Review Workflow Specification"
+    description: "Review workflow.yml against quality criteria using a sub-agent for unbiased validation"
+    instructions_file: steps/review_workflow_spec.md
+    ...
+    quality_criteria:
+      - "Workflow name is lowercase with underscores, no spaces or special characters"
 ```
 
-### Suggestion 3: Consider adding schema version field for future evolution
-
-**File**: `src/deepwork/schemas/expert_schema.py`
-
-Consider adding an optional `version` field to enable schema evolution:
-
-```python
-EXPERT_SCHEMA: dict[str, Any] = {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "required": ["discovery_description", "full_expertise"],
-    "properties": {
-        "version": {
-            "type": "string",
-            "pattern": r"^\d+\.\d+\.\d+$",
-            "description": "Schema version for forward compatibility",
-        },
-        "discovery_description": {
-            # ... existing
-        },
-        # ...
-    },
-    "additionalProperties": False,
-}
-```
+**Rationale**: `general-purpose` is not a valid expert name. The `quality_criteria` field alone triggers sub-agent validation without requiring expert context, which achieves the stated goal of "unbiased validation."
 
 ## Approval Status
 
-**APPROVED**: No blocking issues
+**CHANGES_REQUESTED**
 
-The implementation is well-designed and follows the established patterns in the DeepWork codebase. The minor issues identified are suggestions for improvement rather than problems that need to be fixed before merging. The test coverage is thorough and the documentation (both in code and in the experts expert.yml) is comprehensive.
-
-Key strengths:
-- Clean separation of concerns (schema, parser, generator, CLI)
-- Comprehensive test coverage across unit and integration tests
-- Dynamic embedding design ensures agents always have current topics/learnings
-- Self-documenting via the "experts" expert that teaches users how to create experts
-- Follows existing codebase conventions (dataclasses, Jinja2, Click)
+The invalid `agent: general-purpose` reference in the new_workflow workflow.yml is a blocking issue that will cause runtime failures when the generated skill tries to load a non-existent expert. This must be fixed before merging.

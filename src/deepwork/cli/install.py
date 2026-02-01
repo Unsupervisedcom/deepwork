@@ -21,92 +21,12 @@ class InstallError(Exception):
     pass
 
 
-def _inject_standard_job(job_name: str, jobs_dir: Path, project_path: Path) -> None:
-    """
-    Inject a standard job definition into the project.
-
-    Args:
-        job_name: Name of the standard job to inject
-        jobs_dir: Path to .deepwork/jobs directory
-        project_path: Path to project root (for relative path display)
-
-    Raises:
-        InstallError: If injection fails
-    """
-    # Find the standard jobs directory
-    standard_jobs_dir = Path(__file__).parent.parent / "standard_jobs" / job_name
-
-    if not standard_jobs_dir.exists():
-        raise InstallError(
-            f"Standard job '{job_name}' not found at {standard_jobs_dir}. "
-            "DeepWork installation may be corrupted."
-        )
-
-    # Target directory
-    target_dir = jobs_dir / job_name
-
-    # Copy the entire directory
-    try:
-        if target_dir.exists():
-            # Remove existing if present (for reinstall/upgrade)
-            shutil.rmtree(target_dir)
-
-        shutil.copytree(standard_jobs_dir, target_dir)
-        # Fix permissions - source may have restrictive permissions (e.g., read-only)
-        fix_permissions(target_dir)
-        console.print(
-            f"  [green]✓[/green] Installed {job_name} ({target_dir.relative_to(project_path)})"
-        )
-
-        # Copy any doc specs from the standard job to .deepwork/doc_specs/
-        doc_specs_source = standard_jobs_dir / "doc_specs"
-        doc_specs_target = project_path / ".deepwork" / "doc_specs"
-        if doc_specs_source.exists():
-            for doc_spec_file in doc_specs_source.glob("*.md"):
-                target_doc_spec = doc_specs_target / doc_spec_file.name
-                shutil.copy(doc_spec_file, target_doc_spec)
-                # Fix permissions for copied doc spec
-                fix_permissions(target_doc_spec)
-                console.print(
-                    f"  [green]✓[/green] Installed doc spec {doc_spec_file.name} ({target_doc_spec.relative_to(project_path)})"
-                )
-    except Exception as e:
-        raise InstallError(f"Failed to install {job_name}: {e}") from e
-
-
-def _inject_deepwork_jobs(jobs_dir: Path, project_path: Path) -> None:
-    """
-    Inject the deepwork_jobs job definition into the project.
-
-    Args:
-        jobs_dir: Path to .deepwork/jobs directory
-        project_path: Path to project root (for relative path display)
-
-    Raises:
-        InstallError: If injection fails
-    """
-    _inject_standard_job("deepwork_jobs", jobs_dir, project_path)
-
-
-def _inject_deepwork_rules(jobs_dir: Path, project_path: Path) -> None:
-    """
-    Inject the deepwork_rules job definition into the project.
-
-    Args:
-        jobs_dir: Path to .deepwork/jobs directory
-        project_path: Path to project root (for relative path display)
-
-    Raises:
-        InstallError: If injection fails
-    """
-    _inject_standard_job("deepwork_rules", jobs_dir, project_path)
-
-
 def _inject_standard_experts(experts_dir: Path, project_path: Path) -> int:
     """
     Inject standard expert definitions into the project.
 
     Copies all experts from src/deepwork/standard/experts/ to .deepwork/experts/.
+    Experts now contain their own workflows as subdirectories.
 
     Args:
         experts_dir: Path to .deepwork/experts directory
@@ -147,10 +67,39 @@ def _inject_standard_experts(experts_dir: Path, project_path: Path) -> int:
             shutil.copytree(expert_source_dir, target_dir)
             # Fix permissions - source may have restrictive permissions
             fix_permissions(target_dir)
-            console.print(
-                f"  [green]✓[/green] Installed expert: {expert_name} ({target_dir.relative_to(project_path)})"
-            )
+
+            # Count workflows in this expert
+            workflows_dir = target_dir / "workflows"
+            workflow_count = 0
+            if workflows_dir.exists():
+                workflow_count = len(
+                    [
+                        d
+                        for d in workflows_dir.iterdir()
+                        if d.is_dir() and (d / "workflow.yml").exists()
+                    ]
+                )
+
+            if workflow_count > 0:
+                console.print(
+                    f"  [green]✓[/green] Installed expert: {expert_name} "
+                    f"({workflow_count} workflow(s))"
+                )
+            else:
+                console.print(f"  [green]✓[/green] Installed expert: {expert_name}")
             installed_count += 1
+
+            # Copy any doc specs from the expert to .deepwork/doc_specs/
+            doc_specs_source = expert_source_dir / "doc_specs"
+            doc_specs_target = project_path / ".deepwork" / "doc_specs"
+            if doc_specs_source.exists():
+                for doc_spec_file in doc_specs_source.glob("*.md"):
+                    target_doc_spec = doc_specs_target / doc_spec_file.name
+                    shutil.copy(doc_spec_file, target_doc_spec)
+                    # Fix permissions for copied doc spec
+                    fix_permissions(target_doc_spec)
+                    console.print(f"  [green]✓[/green] Installed doc spec {doc_spec_file.name}")
+
         except Exception as e:
             raise InstallError(f"Failed to install expert {expert_name}: {e}") from e
 
@@ -206,7 +155,7 @@ def _create_tmp_directory(deepwork_dir: Path) -> None:
 
 def _create_rules_directory(project_path: Path) -> bool:
     """
-    Create the v2 rules directory structure with example templates.
+    Create the rules directory structure with example templates.
 
     Creates .deepwork/rules/ with example rule files that users can customize.
     Only creates the directory if it doesn't already exist.
@@ -225,8 +174,10 @@ def _create_rules_directory(project_path: Path) -> bool:
     # Create the rules directory
     ensure_dir(rules_dir)
 
-    # Copy example rule templates from the deepwork_rules standard job
-    example_rules_dir = Path(__file__).parent.parent / "standard_jobs" / "deepwork_rules" / "rules"
+    # Copy example rule templates from the deepwork_rules expert
+    example_rules_dir = (
+        Path(__file__).parent.parent / "standard" / "experts" / "deepwork_rules" / "rules"
+    )
 
     if example_rules_dir.exists():
         # Copy all .example files
@@ -279,7 +230,7 @@ See `doc/rules_syntax.md` in the DeepWork repository for full syntax documentati
 
 ## Creating Rules Interactively
 
-Use `/deepwork_rules.define` to create new rules with guidance.
+Use `/deepwork-rules.define` to create new rules with guidance.
 """
     readme_path = rules_dir / "README.md"
     readme_path.write_text(readme_content)
@@ -399,21 +350,14 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     # Step 3: Create .deepwork/ directory structure
     console.print("[yellow]→[/yellow] Creating DeepWork directory structure...")
     deepwork_dir = project_path / ".deepwork"
-    jobs_dir = deepwork_dir / "jobs"
     doc_specs_dir = deepwork_dir / "doc_specs"
     experts_dir = deepwork_dir / "experts"
     ensure_dir(deepwork_dir)
-    ensure_dir(jobs_dir)
     ensure_dir(doc_specs_dir)
     ensure_dir(experts_dir)
     console.print(f"  [green]✓[/green] Created {deepwork_dir.relative_to(project_path)}/")
 
-    # Step 3b: Inject standard jobs (core job definitions)
-    console.print("[yellow]→[/yellow] Installing core job definitions...")
-    _inject_deepwork_jobs(jobs_dir, project_path)
-    _inject_deepwork_rules(jobs_dir, project_path)
-
-    # Step 3b-2: Inject standard experts
+    # Step 3b: Inject standard experts (which include their workflows)
     console.print("[yellow]→[/yellow] Installing standard experts...")
     experts_count = _inject_standard_experts(experts_dir, project_path)
     if experts_count == 0:
@@ -427,7 +371,7 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     _create_tmp_directory(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/tmp/.gitkeep")
 
-    # Step 3e: Create rules directory with v2 templates
+    # Step 3e: Create rules directory with templates
     if _create_rules_directory(project_path):
         console.print("  [green]✓[/green] Created .deepwork/rules/ with example templates")
     else:
@@ -446,15 +390,14 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
 
     # Initialize config structure
     if "version" not in config_data:
-        config_data["version"] = "0.1.0"
+        config_data["version"] = "0.2.0"
 
     if "platforms" not in config_data:
         config_data["platforms"] = []
 
     # Add each platform if not already present
     added_platforms: list[str] = []
-    for i, platform in enumerate(platforms_to_add):
-        adapter = detected_adapters[i]
+    for platform, adapter in zip(platforms_to_add, detected_adapters, strict=True):
         if platform not in config_data["platforms"]:
             config_data["platforms"].append(platform)
             added_platforms.append(adapter.display_name)
@@ -486,5 +429,5 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     console.print()
     console.print("[bold]Next steps:[/bold]")
     console.print("  1. Start your agent CLI (ex. [cyan]claude[/cyan] or [cyan]gemini[/cyan])")
-    console.print("  2. Define your first job using the command [cyan]/deepwork_jobs[/cyan]")
+    console.print("  2. Define your first workflow using [cyan]/experts.define[/cyan]")
     console.print()

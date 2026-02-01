@@ -13,9 +13,7 @@ from deepwork.core.experts_parser import (
     discover_experts,
     parse_expert_definition,
 )
-from deepwork.core.generator import SkillGenerator
-from deepwork.core.hooks_syncer import collect_job_hooks, sync_hooks_to_platform
-from deepwork.core.parser import parse_job_definition
+from deepwork.core.hooks_syncer import collect_expert_hooks, sync_hooks_to_platform
 from deepwork.utils.fs import ensure_dir
 from deepwork.utils.yaml_utils import load_yaml
 
@@ -39,8 +37,8 @@ def sync(path: Path) -> None:
     """
     Sync DeepWork skills to all configured platforms.
 
-    Regenerates all skills for job steps and core skills based on
-    the current job definitions in .deepwork/jobs/.
+    Regenerates all skills for workflows and expert agents based on
+    the current expert definitions in .deepwork/experts/.
     """
     try:
         sync_skills(path)
@@ -86,65 +84,47 @@ def sync_skills(project_path: Path) -> None:
 
     console.print("[bold cyan]Syncing DeepWork Skills[/bold cyan]\n")
 
-    # Discover jobs
-    jobs_dir = deepwork_dir / "jobs"
-    if not jobs_dir.exists():
-        job_dirs = []
-    else:
-        job_dirs = [d for d in jobs_dir.iterdir() if d.is_dir() and (d / "job.yml").exists()]
-
-    console.print(f"[yellow]→[/yellow] Found {len(job_dirs)} job(s) to sync")
-
-    # Parse all jobs
-    jobs = []
-    failed_jobs: list[tuple[str, str]] = []
-    for job_dir in job_dirs:
-        try:
-            job_def = parse_job_definition(job_dir)
-            jobs.append(job_def)
-            console.print(f"  [green]✓[/green] Loaded {job_def.name} v{job_def.version}")
-        except Exception as e:
-            console.print(f"  [red]✗[/red] Failed to load {job_dir.name}: {e}")
-            failed_jobs.append((job_dir.name, str(e)))
-
-    # Fail early if any jobs failed to parse
-    if failed_jobs:
-        console.print()
-        console.print("[bold red]Sync aborted due to job parsing errors:[/bold red]")
-        for job_name, error in failed_jobs:
-            console.print(f"  • {job_name}: {error}")
-        raise SyncError(f"Failed to parse {len(failed_jobs)} job(s)")
-
-    # Collect hooks from all jobs
-    job_hooks_list = collect_job_hooks(jobs_dir)
-    if job_hooks_list:
-        console.print(f"[yellow]→[/yellow] Found {len(job_hooks_list)} job(s) with hooks")
-
-    # Discover and parse experts
+    # Discover and parse experts (experts include their workflows)
     experts_dir = deepwork_dir / "experts"
     expert_dirs = discover_experts(experts_dir)
     console.print(f"[yellow]→[/yellow] Found {len(expert_dirs)} expert(s) to sync")
 
     experts = []
     failed_experts: list[tuple[str, str]] = []
+    total_workflows = 0
     for expert_dir in expert_dirs:
         try:
             expert_def = parse_expert_definition(expert_dir)
             experts.append(expert_def)
-            console.print(f"  [green]✓[/green] Loaded {expert_def.name}")
+            workflow_count = len(expert_def.workflows)
+            total_workflows += workflow_count
+            if workflow_count > 0:
+                console.print(
+                    f"  [green]✓[/green] Loaded {expert_def.name} ({workflow_count} workflow(s))"
+                )
+            else:
+                console.print(f"  [green]✓[/green] Loaded {expert_def.name}")
         except ExpertParseError as e:
             console.print(f"  [red]✗[/red] Failed to load {expert_dir.name}: {e}")
             failed_experts.append((expert_dir.name, str(e)))
 
-    # Warn but don't fail for expert parsing errors (experts are optional)
+    # Fail early if any experts failed to parse
     if failed_experts:
         console.print()
-        console.print("[yellow]Warning: Some experts failed to parse:[/yellow]")
+        console.print("[bold red]Sync aborted due to expert parsing errors:[/bold red]")
         for expert_name, error in failed_experts:
             console.print(f"  • {expert_name}: {error}")
+        raise SyncError(f"Failed to parse {len(failed_experts)} expert(s)")
+
+    if total_workflows > 0:
+        console.print(f"[yellow]→[/yellow] Found {total_workflows} workflow(s) across all experts")
+
+    # Collect hooks from all experts (via their workflows)
+    expert_hooks_list = collect_expert_hooks(experts_dir)
+    if expert_hooks_list:
+        console.print(f"[yellow]→[/yellow] Found {len(expert_hooks_list)} expert(s) with hooks")
 
     # Sync each platform
-    generator = SkillGenerator()
     expert_generator = ExpertGenerator()
     stats = {"platforms": 0, "skills": 0, "hooks": 0, "agents": 0}
 
@@ -164,22 +144,8 @@ def sync_skills(project_path: Path) -> None:
         # Create skills directory
         ensure_dir(skills_dir)
 
-        # Generate skills for all jobs
-        all_skill_paths: list[Path] = []
-        if jobs:
-            console.print("  [dim]•[/dim] Generating skills...")
-            for job in jobs:
-                try:
-                    job_paths = generator.generate_all_skills(
-                        job, adapter, platform_dir, project_root=project_path
-                    )
-                    all_skill_paths.extend(job_paths)
-                    stats["skills"] += len(job_paths)
-                    console.print(f"    [green]✓[/green] {job.name} ({len(job_paths)} skills)")
-                except Exception as e:
-                    console.print(f"    [red]✗[/red] Failed for {job.name}: {e}")
-
         # Generate expert agents (only for Claude currently - agents live in .claude/agents/)
+        all_skill_paths: list[Path] = []
         if experts and adapter.name == "claude":
             console.print("  [dim]•[/dim] Generating expert agents...")
             for expert in experts:
@@ -192,11 +158,29 @@ def sync_skills(project_path: Path) -> None:
                 except Exception as e:
                     console.print(f"    [red]✗[/red] Failed for {expert.name}: {e}")
 
+        # Generate workflow skills for all experts
+        if experts:
+            console.print("  [dim]•[/dim] Generating workflow skills...")
+            for expert in experts:
+                if not expert.workflows:
+                    continue
+                try:
+                    expert_skill_paths = expert_generator.generate_all_expert_skills(
+                        expert, adapter, platform_dir, project_root=project_path
+                    )
+                    all_skill_paths.extend(expert_skill_paths)
+                    stats["skills"] += len(expert_skill_paths)
+                    console.print(
+                        f"    [green]✓[/green] {expert.name} ({len(expert_skill_paths)} skills)"
+                    )
+                except Exception as e:
+                    console.print(f"    [red]✗[/red] Failed for {expert.name}: {e}")
+
         # Sync hooks to platform settings
-        if job_hooks_list:
+        if expert_hooks_list:
             console.print("  [dim]•[/dim] Syncing hooks...")
             try:
-                hooks_count = sync_hooks_to_platform(project_path, adapter, job_hooks_list)
+                hooks_count = sync_hooks_to_platform(project_path, adapter, expert_hooks_list)
                 stats["hooks"] += hooks_count
                 if hooks_count > 0:
                     console.print(f"    [green]✓[/green] Synced {hooks_count} hook(s)")
@@ -237,9 +221,9 @@ def sync_skills(project_path: Path) -> None:
     table.add_column("Count", style="green")
 
     table.add_row("Platforms synced", str(stats["platforms"]))
-    table.add_row("Total skills", str(stats["skills"]))
     if stats["agents"] > 0:
         table.add_row("Expert agents", str(stats["agents"]))
+    table.add_row("Total skills", str(stats["skills"]))
     if stats["hooks"] > 0:
         table.add_row("Hooks synced", str(stats["hooks"]))
 

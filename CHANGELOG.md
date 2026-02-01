@@ -8,25 +8,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- New `review_pr` standard job for expert-driven PR review
-  - Three-step workflow: check_relevance, deep_review, improve_and_rereview
-  - Uses inline bash completion `$(gh pr diff)` for efficient token usage
-  - Experts focus only on their domain of expertise for specialized feedback
-  - Iterative improvement cycles until all experts approve or max 3 iterations
-- Concurrent steps support in workflow definitions
-  - Workflows can now specify nested arrays of step IDs to indicate steps that can run in parallel
-  - Example: `steps: [setup, [task_a, task_b, task_c], finalize]` runs task_a/b/c concurrently
-  - Single-item arrays indicate a step with multiple parallel instances (e.g., `[fetch_campaign_data]` runs for each campaign)
-  - New `WorkflowStepEntry` dataclass in parser for sequential/concurrent step groups
-  - Meta-skill template renders concurrent steps as "Background Task 1/2/3" with clear instructions
-  - Added `get_step_entry_position_in_workflow()` and `get_concurrent_step_info()` methods to JobDefinition
-  - Full backward compatibility: existing workflows with simple step arrays continue to work
+- New `deepwork-rules` expert with `define` workflow for creating file-triggered rules
+  - Includes documentation on action types (prompt and command)
+  - Example command action format with `action: command` and `command:` fields
+- Quality criteria for `improve_and_rereview` step requiring complete issue accounting
+  - Every issue must be explicitly FIXED or SKIPPED with documented justification
+  - Prevents silent omissions in PR review feedback
 
 ### Changed
+- **BREAKING**: Merged jobs into experts as workflows
+  - Standalone `job.yml` files replaced by `workflow.yml` files inside expert directories
+  - Structure changed: `.deepwork/experts/[name]/workflows/[workflow]/workflow.yml`
+  - `deepwork_jobs` expert merged into `experts` expert (includes `new_workflow`, `learn`, `review_pr` workflows)
+  - `deepwork_rules` job became `deepwork-rules` expert with `define` workflow
+  - `review_pr` job moved into `experts` expert as `review_pr` workflow
+  - Skill naming now uses expert name: `/experts.define`, `/experts.review_pr`, `/deepwork-rules.define`
+- Renamed schema: `job_schema.py` → `workflow_schema.py`
+- Renamed templates: `skill-job-*.md.jinja` → `skill-workflow-*.md.jinja`
+- Updated install CLI "Next steps" message from `/deepwork-jobs.define` to `/experts.define`
+- Improved skill generation documentation explaining step skills vs workflow meta-skills
 
 ### Fixed
+- Path traversal security: Added validation to prevent `..` in `script` and `prompt_file` paths
+- Fixed potential IndexError in hooks_syncer when Stop hook configuration is empty
 
 ### Removed
+- Deleted standalone `src/deepwork/core/parser.py` and `src/deepwork/core/generator.py` (merged into experts modules)
+- Deleted `src/deepwork/standard_jobs/` directory (jobs now live inside experts)
+- Deleted `deepwork_jobs` expert (merged into `experts` expert)
+- Removed legacy job-related tests that are no longer applicable
 
 ## [0.6.0] - 2026-01-30
 

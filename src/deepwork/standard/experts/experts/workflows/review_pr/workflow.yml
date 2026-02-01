@@ -1,0 +1,44 @@
+name: review_pr
+version: "1.0.0"
+summary: "Coordinate expert-driven PR review with iterative improvement cycles"
+
+description: |
+  Orchestrate a comprehensive PR review using domain experts:
+  1. Check which experts have relevant expertise for the PR changes
+  2. Have relevant experts perform deep code review
+  3. Iteratively improve the PR based on feedback until all experts approve
+
+steps:
+  - id: check_relevance
+    name: "Check Expert Relevance"
+    description: "Invoke all experts in parallel to assess if PR changes are relevant to their domain"
+    instructions_file: steps/check_relevance.md
+    outputs:
+      - "pr_review/relevance_assessments.md"
+    exposed: true
+
+  - id: deep_review
+    name: "Deep Expert Review"
+    description: "Invoke only relevant experts to perform detailed code review"
+    instructions_file: steps/deep_review.md
+    inputs:
+      - file: "pr_review/relevance_assessments.md"
+        from_step: check_relevance
+    outputs:
+      - "pr_review/{expert_name}/review.md"
+      - "pr_review/review_summary.md"
+    dependencies:
+      - check_relevance
+
+  - id: improve_and_rereview
+    name: "Improve and Re-Review"
+    description: "Apply expert feedback and re-run reviews until no further feedback or 3 iterations"
+    instructions_file: steps/improve_and_rereview.md
+    inputs:
+      - file: "pr_review/{expert_name}/review.md"
+        from_step: deep_review
+    outputs:
+      - "pr_review/iteration_{n}/summary.md"
+      - "pr_review/final_summary.md"
+    dependencies:
+      - deep_review

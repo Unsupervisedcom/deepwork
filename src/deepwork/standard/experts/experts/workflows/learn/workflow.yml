@@ -1,0 +1,21 @@
+name: learn
+version: "1.0.0"
+summary: "Analyze conversation history to improve workflow instructions and capture learnings"
+
+description: |
+  Reflect on the conversation to identify learnings from DeepWork workflow executions,
+  improve workflow instructions with generalizable insights, and capture run-specific
+  learnings in AGENTS.md files.
+
+steps:
+  - id: learn
+    name: "Learn from Workflow Execution"
+    description: "Analyze conversation to extract learnings and improve instructions"
+    instructions_file: steps/learn.md
+    inputs:
+      - name: expert_name
+        description: "Name of the expert whose workflow to learn from (optional - will scan conversation if not provided)"
+    outputs:
+      - ".deepwork/experts/{expert_name}/workflows/{workflow_name}/steps/"
+      - "AGENTS.md"
+    exposed: true

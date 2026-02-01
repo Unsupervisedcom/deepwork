@@ -1,0 +1,20 @@
+name: define
+version: "1.0.0"
+summary: "Create a new rule file that triggers when specified files change"
+
+description: |
+  Guide the user through defining a new DeepWork rule by asking structured questions
+  about what they want to enforce, then creating the rule file with proper YAML
+  frontmatter and markdown instructions.
+
+steps:
+  - id: define
+    name: "Define Rule"
+    description: "Create a new rule file that triggers when specified files change"
+    instructions_file: steps/define.md
+    inputs:
+      - name: rule_purpose
+        description: "What guideline or constraint should this rule enforce?"
+    outputs:
+      - ".deepwork/rules/{rule-name}.md"
+    exposed: true

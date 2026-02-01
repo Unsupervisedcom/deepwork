@@ -1,12 +1,12 @@
 discovery_description: |
-  DeepWork experts system - creating, organizing, and evolving domain knowledge
-  collections that auto-improve through topics and learnings.
+  DeepWork experts system - creating domain knowledge collections with topics, learnings,
+  and multi-step workflows. Covers expert.yml, workflow.yml schema, skill generation, and CLI commands.
 
 full_expertise: |
   # DeepWork Experts System
 
   You are an expert on the DeepWork experts system - the framework for building
-  auto-improving collections of domain knowledge.
+  auto-improving collections of domain knowledge with embedded workflows.
 
   ## Core Concepts
 
@@ -16,19 +16,7 @@ full_expertise: |
   - **Core expertise**: Foundational knowledge captured in expert.yml
   - **Topics**: Detailed documentation on specific subjects
   - **Learnings**: Hard-fought insights from real experiences
-
-  ## When to Create an Expert
-
-  Create an expert when:
-  - You have recurring work in a specific domain
-  - Knowledge is scattered and needs consolidation
-  - You want to capture learnings that would otherwise be lost
-  - A domain has enough depth to warrant structured documentation
-
-  Do NOT create an expert for:
-  - One-off tasks with no future relevance
-  - Domains too broad to be actionable (e.g., "Programming")
-  - Topics better served by external documentation
+  - **Workflows**: Multi-step task sequences that can be invoked as skills
 
   ## Expert Structure
 
@@ -40,8 +28,13 @@ full_expertise: |
       ├── expert.yml
       ├── topics/
       │   └── retry_handling.md
-      └── learnings/
-          └── job_errors_not_going_to_sentry.md
+      ├── learnings/
+      │   └── job_errors_not_going_to_sentry.md
+      └── workflows/
+          └── debug_jobs/
+              ├── workflow.yml
+              └── steps/
+                  └── analyze.md
   ```
 
   The **expert name** derives from the folder name with spaces/underscores becoming
@@ -134,24 +127,140 @@ full_expertise: |
   The generalizable insight for future reference...
   ```
 
-  ### summarized_result guidelines
-  - 1-3 sentences capturing the key finding
-  - Should be useful even without reading the full body
-  - Focus on the "what" not the "how"
+  ## Workflows
+
+  **Workflows** are multi-step task sequences embedded within experts. Each workflow
+  becomes a set of slash commands that users can invoke.
+
+  ### Workflow Structure
+
+  Workflows live in `workflows/[workflow_name]/`:
+
+  ```
+  workflows/
+  └── new_job/
+      ├── workflow.yml
+      └── steps/
+          ├── define.md
+          └── implement.md
+  ```
+
+  ### The workflow.yml Schema
+
+  Required fields:
+  - `name`: lowercase with underscores, must match folder name
+  - `version`: semantic versioning X.Y.Z (e.g., `1.0.0`)
+  - `summary`: concise description under 200 characters
+  - `steps`: array of step definitions
+
+  Optional fields:
+  - `description`: detailed multi-line explanation
+  - `execution_order`: explicit step ordering with concurrent support
+  - `changelog`: version history
+
+  ### Step Definition Fields
+
+  Each step requires:
+  - `id`: unique identifier within the expert (across all workflows)
+  - `name`: human-readable name
+  - `description`: what this step accomplishes
+  - `instructions_file`: path to step markdown (e.g., `steps/define.md`)
+  - `outputs`: array of output files
+
+  Optional step fields:
+  - `inputs`: user parameters or file inputs from previous steps
+  - `dependencies`: array of step IDs this step requires
+  - `exposed`: boolean, if true skill appears in user menus (default: false)
+  - `quality_criteria`: array of criteria strings for validation
+  - `agent`: agent type for delegation (e.g., `general-purpose`)
+  - `hooks`: lifecycle hooks for validation
+
+  ### Input Types
+
+  **User inputs** - parameters gathered from the user:
+  ```yaml
+  inputs:
+    - name: market_segment
+      description: "Target market segment for research"
+  ```
+
+  **File inputs** - outputs from previous steps:
+  ```yaml
+  inputs:
+    - file: competitors_list.md
+      from_step: identify_competitors
+  ```
+
+  ### Concurrent Execution
+
+  Steps can run in parallel using execution_order:
+  ```yaml
+  execution_order:
+    - define
+    - [research_a, research_b]  # concurrent
+    - synthesize
+  ```
+
+  ### Lifecycle Hooks
+
+  Hooks trigger at specific points:
+  - `after_agent`: runs after agent finishes (quality validation)
+  - `before_tool`: runs before tool use
+  - `before_prompt`: runs when user submits prompt
+
+  Hook action types:
+  ```yaml
+  hooks:
+    after_agent:
+      - script: hooks/run_tests.sh
+  ```
+
+  Note: Claude Code currently only supports script hooks.
+
+  ## Skill Generation
+
+  Running `deepwork sync` generates skills from expert definitions:
+
+  1. Parses all experts in `.deepwork/experts/`
+  2. For each workflow, generates step skills and a workflow meta-skill
+  3. Writes to platform directories (e.g., `.claude/skills/`)
+
+  **Two types of skills are generated:**
+
+  1. **Step skills** - One per step, contains the actual instructions
+     - Naming: `{expert-name}.{step-id}`
+     - Example: `experts.define`, `rails-activejob.analyze`
+     - Path: `.claude/skills/[expert-name].[step-id]/SKILL.md`
+
+  2. **Workflow meta-skills** - One per workflow, orchestrates the steps
+     - Naming: `{expert-name}.{workflow-name}`
+     - Example: `experts.new_workflow`, `experts.review_pr`
+     - Path: `.claude/skills/[expert-name].[workflow-name]/SKILL.md`
+     - Purpose: Entry point that routes to the first step and auto-continues through the workflow
 
   ## CLI Commands
 
-  ### Listing topics
+  **Install DeepWork**:
+  ```bash
+  deepwork install --platform claude
+  ```
+  Creates `.deepwork/` structure, copies standard experts, runs sync.
+
+  **Sync skills**:
+  ```bash
+  deepwork sync
+  ```
+  Regenerates all skills from expert definitions.
+
+  **List topics**:
   ```bash
   deepwork topics --expert "expert-name"
   ```
-  Returns markdown list with links, keywords, sorted by last_updated.
 
-  ### Listing learnings
+  **List learnings**:
   ```bash
   deepwork learnings --expert "expert-name"
   ```
-  Returns markdown list with links, summaries, sorted by last_updated.
 
   ## How Experts Become Agents
 
@@ -167,6 +276,46 @@ full_expertise: |
   $(deepwork learnings --expert "expert-name")
   ```
 
+  ## Standard Experts
+
+  DeepWork ships with standard experts that are auto-installed:
+
+  - `experts`: This expert - creating and managing experts with workflows
+    - `new_job` workflow: Define, review, and implement new workflows
+    - `learn` workflow: Extract learnings from workflow executions
+    - `review_pr` workflow: Expert-driven PR review
+
+  - `deepwork_rules`: Create file-change trigger rules
+    - `define` workflow: Interactive rule creation
+
+  ## Writing Step Instructions
+
+  Step instruction files should include:
+
+  1. **Objective**: Clear statement of what this step accomplishes
+  2. **Task**: Detailed process with numbered steps
+  3. **Inputs section**: What to gather/read before starting
+  4. **Output format**: Examples of expected outputs
+  5. **Quality criteria**: How to verify the step is complete
+
+  Use the phrase "ask structured questions" when gathering user input -
+  this triggers proper tooling for interactive prompts.
+
+  ## Common Patterns
+
+  **Creating a new workflow**:
+  1. Run `/experts.define` (or just `/experts`)
+  2. Answer structured questions about your workflow
+  3. Review generated workflow.yml
+  4. Run `/experts.implement` to generate step files
+  5. Run `deepwork sync` to create skills
+
+  **Adding a step to existing workflow**:
+  1. Edit `.deepwork/experts/[expert]/workflows/[workflow]/workflow.yml`
+  2. Add step definition with required fields
+  3. Create instructions file in `steps/`
+  4. Run `deepwork sync`
+
   ## Evolution Strategy
 
   Experts should evolve through use:
@@ -181,14 +330,11 @@ full_expertise: |
   ### Expert folders
   - Use lowercase with underscores: `rails_activejob`, `social_marketing`
   - Be specific enough to be useful: `react_hooks` not just `react`
-  - Avoid redundant words: `activejob` not `activejob_expert`
 
-  ### Topic files
-  - Use lowercase with underscores: `retry_handling.md`
-  - Name describes the subject: `queue_configuration.md`
-  - Filenames are organizational only - the `name` frontmatter is displayed
+  ### Workflow folders
+  - Use lowercase with underscores: `new_job`, `review_pr`
+  - Name describes the workflow's purpose
 
-  ### Learning files
-  - Use lowercase with underscores: `job_errors_not_going_to_sentry.md`
-  - Name captures the problem or discovery
-  - Can be longer/descriptive since they're not referenced programmatically
+  ### Step IDs
+  - Must be unique within the expert (across all workflows)
+  - Use lowercase with underscores: `define`, `implement`
