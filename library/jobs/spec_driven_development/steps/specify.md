@@ -8,7 +8,7 @@ Create a functional specification (`spec.md`) that defines what the feature shou
 
 Guide the user through creating a comprehensive specification by asking structured questions about their feature requirements, user needs, and success criteria.
 
-**Important**: Use the AskUserQuestion tool to ask structured questions when gathering information from the user.
+**Important**: Ask questions one at a time - present a question, wait for the user's response, then ask the next. Do not output all questions as a list.
 
 **Key Principle**: This step focuses entirely on the **"what"** and **"why"** - never the **"how"**. Technology choices and implementation details belong in the planning step.
 
@@ -212,10 +212,7 @@ User: Users need accounts to save their preferences and access their data across
 
 Claude: That makes sense. Who are the primary users of this authentication system?
 
-[Uses AskUserQuestion with options: New users signing up, Returning users logging in,
-Admins managing users, All of the above]
-
-User: All of the above
+User: New users signing up, returning users logging in, and admins managing users.
 
 Claude: Let's create user stories for each. Starting with new users signing up:
 

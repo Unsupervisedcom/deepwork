@@ -8,7 +8,7 @@ Create a foundational governance document (`constitution.md`) that establishes p
 
 Guide the user through defining their project's constitution by asking structured questions about their development priorities, quality standards, and governance preferences.
 
-**Important**: Use the AskUserQuestion tool to ask structured questions when gathering information from the user.
+**Important**: Ask questions one at a time - present a question, wait for the user's response, then ask the next. Do not output all questions as a list.
 
 **Critical**: This step captures principles and standards, not implementation code. The constitution describes what technologies and patterns to use, not how to code them. Do not include code examples - those belong only in the implement step.
 

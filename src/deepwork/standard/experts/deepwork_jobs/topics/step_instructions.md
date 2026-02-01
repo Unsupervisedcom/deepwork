@@ -71,7 +71,7 @@ Before proceeding, gather the following from the user:
 - **market_segment**: Target market for analysis
 - **product_category**: Specific product/service category
 
-Use the AskUserQuestion tool to collect these inputs.
+Ask questions one at a time and wait for responses.
 ```
 
 ### 4. Output Format
@@ -111,16 +111,16 @@ Define how to verify the step is complete:
 
 ### "Ask structured questions"
 
-When gathering user input, always use this phrase:
+When gathering user input, use this phrase and ask questions one at a time:
 
 ```markdown
-Ask structured questions to understand the user's requirements:
-1. What is your target market?
-2. Who are your main competitors?
+Ask structured questions to understand the user's requirements.
+Start with: What is your target market?
 ```
 
-This phrase triggers the AskUserQuestion tool which provides a better
-user experience with clear options.
+**Important**: Present one question, wait for the response, then ask the next.
+Do not output all questions as a numbered list - this results in poor UX
+where the user must scroll through and answer multiple questions at once.
 
 ### "Use the Skill tool to invoke"
 

@@ -67,7 +67,7 @@ After each step completes:
 
 ### Handling Ambiguous Intent
 
-If user intent is unclear, use AskUserQuestion to clarify:
+If user intent is unclear, ask which option they want:
 - Present available steps as numbered options
 - Let user select the starting point
 

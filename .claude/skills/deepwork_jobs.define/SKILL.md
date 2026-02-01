@@ -61,7 +61,7 @@ Guide the user through defining a job specification by asking structured questio
 
 ### Key Guidelines
 
-- **Ask structured questions** using the AskUserQuestion tool
+- **Use `AskUserQuestion` tool for all questions** - Never output questions as plain text. Always use the AskUserQuestion tool to gather user input with structured options. Ask questions one at a time, wait for the response, then ask the next.
 - **Work products go in main repo**, not `.deepwork/` (for discoverability)
 - **Use dates in paths** for periodic outputs that accumulate
 - **Use `_dataroom` folders** for supporting materials
