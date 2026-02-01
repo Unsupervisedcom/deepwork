@@ -170,9 +170,7 @@ class TestTopicsCommand:
             "discovery_description: Empty expert\nfull_expertise: Nothing here."
         )
 
-        result = runner.invoke(
-            topics, ["--expert", "empty-expert", "--path", str(tmp_path)]
-        )
+        result = runner.invoke(topics, ["--expert", "empty-expert", "--path", str(tmp_path)])
 
         assert result.exit_code == 0
         assert "No topics yet" in result.output
@@ -240,9 +238,7 @@ class TestLearningsCommand:
             "discovery_description: Empty expert\nfull_expertise: Nothing here."
         )
 
-        result = runner.invoke(
-            learnings, ["--expert", "empty-expert", "--path", str(tmp_path)]
-        )
+        result = runner.invoke(learnings, ["--expert", "empty-expert", "--path", str(tmp_path)])
 
         assert result.exit_code == 0
         assert "No learnings yet" in result.output
@@ -251,9 +247,7 @@ class TestLearningsCommand:
 class TestExpertNameResolution:
     """Tests for expert name resolution (dashes vs underscores)."""
 
-    def test_expert_with_underscores_resolved(
-        self, runner: CliRunner, tmp_path: Path
-    ) -> None:
+    def test_expert_with_underscores_resolved(self, runner: CliRunner, tmp_path: Path) -> None:
         """Test that expert-name resolves to expert_name folder."""
         # Create expert with underscore folder name
         experts_dir = tmp_path / ".deepwork" / "experts" / "rails_activejob"
@@ -268,16 +262,12 @@ class TestExpertNameResolution:
         (topics_dir / "test.md").write_text("---\nname: Test\n---\nContent")
 
         # Query with dashes
-        result = runner.invoke(
-            topics, ["--expert", "rails-activejob", "--path", str(tmp_path)]
-        )
+        result = runner.invoke(topics, ["--expert", "rails-activejob", "--path", str(tmp_path)])
 
         assert result.exit_code == 0
         assert "Test" in result.output
 
-    def test_available_experts_shown_on_error(
-        self, runner: CliRunner, tmp_path: Path
-    ) -> None:
+    def test_available_experts_shown_on_error(self, runner: CliRunner, tmp_path: Path) -> None:
         """Test that available experts are listed when expert not found."""
         # Create some experts
         experts_dir = tmp_path / ".deepwork" / "experts"
@@ -291,9 +281,7 @@ class TestExpertNameResolution:
             )
 
         # Query nonexistent expert
-        result = runner.invoke(
-            topics, ["--expert", "nonexistent", "--path", str(tmp_path)]
-        )
+        result = runner.invoke(topics, ["--expert", "nonexistent", "--path", str(tmp_path)])
 
         assert result.exit_code != 0
         assert "expert-a" in result.output.lower() or "expert_a" in result.output.lower()

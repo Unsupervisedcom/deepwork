@@ -12,8 +12,6 @@ from deepwork.utils.fs import safe_write
 class ExpertGeneratorError(Exception):
     """Exception raised for expert agent generation errors."""
 
-    pass
-
 
 class ExpertGenerator:
     """Generates agent files from expert definitions."""
@@ -73,8 +71,6 @@ class ExpertGenerator:
             "expert_name": expert.name,
             "discovery_description": expert.discovery_description,
             "full_expertise": expert.full_expertise,
-            "topics_count": len(expert.topics),
-            "learnings_count": len(expert.learnings),
         }
 
     def get_agent_filename(self, expert_name: str) -> str:

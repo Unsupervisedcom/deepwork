@@ -188,9 +188,7 @@ def sync_skills(project_path: Path) -> None:
                         expert, adapter, platform_dir
                     )
                     stats["agents"] += 1
-                    console.print(
-                        f"    [green]✓[/green] {expert.name} ({agent_path.name})"
-                    )
+                    console.print(f"    [green]✓[/green] {expert.name} ({agent_path.name})")
                 except Exception as e:
                     console.print(f"    [red]✗[/red] Failed for {expert.name}: {e}")
 

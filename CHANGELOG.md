@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- New `review_pr` standard job for expert-driven PR review
+  - Three-step workflow: check_relevance, deep_review, improve_and_rereview
+  - Uses inline bash completion `$(gh pr diff)` for efficient token usage
+  - Experts focus only on their domain of expertise for specialized feedback
+  - Iterative improvement cycles until all experts approve or max 3 iterations
 - Concurrent steps support in workflow definitions
   - Workflows can now specify nested arrays of step IDs to indicate steps that can run in parallel
   - Example: `steps: [setup, [task_a, task_b, task_c], finalize]` runs task_a/b/c concurrently

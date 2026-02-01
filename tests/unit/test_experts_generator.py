@@ -73,15 +73,27 @@ class TestGenerateExpertAgent:
             full_expertise="You are an expert on Rails ActiveJob.\n\n## Key Concepts\n\n- Queues\n- Retries",
             expert_dir=expert_dir,
             topics=[
-                Topic(name="Retry Handling", keywords=["retry"], source_file=expert_dir / "topics/retry.md"),
+                Topic(
+                    name="Retry Handling",
+                    keywords=["retry"],
+                    source_file=expert_dir / "topics/retry.md",
+                ),
             ],
             learnings=[
-                Learning(name="Sentry Issue", summarized_result="Fixed it", source_file=expert_dir / "learnings/sentry.md"),
+                Learning(
+                    name="Sentry Issue",
+                    summarized_result="Fixed it",
+                    source_file=expert_dir / "learnings/sentry.md",
+                ),
             ],
         )
 
     def test_generate_expert_agent_creates_file(
-        self, generator: ExpertGenerator, claude_adapter: ClaudeAdapter, sample_expert: ExpertDefinition, tmp_path: Path
+        self,
+        generator: ExpertGenerator,
+        claude_adapter: ClaudeAdapter,
+        sample_expert: ExpertDefinition,
+        tmp_path: Path,
     ) -> None:
         """Test that generating an expert agent creates the file."""
         output_dir = tmp_path / ".claude"
@@ -94,7 +106,11 @@ class TestGenerateExpertAgent:
         assert agent_path.parent.name == "agents"
 
     def test_generate_expert_agent_content(
-        self, generator: ExpertGenerator, claude_adapter: ClaudeAdapter, sample_expert: ExpertDefinition, tmp_path: Path
+        self,
+        generator: ExpertGenerator,
+        claude_adapter: ClaudeAdapter,
+        sample_expert: ExpertDefinition,
+        tmp_path: Path,
     ) -> None:
         """Test the content of generated expert agent file."""
         output_dir = tmp_path / ".claude"
@@ -116,7 +132,11 @@ class TestGenerateExpertAgent:
         assert '$(deepwork learnings --expert "rails-activejob")' in content
 
     def test_generate_expert_agent_creates_agents_dir(
-        self, generator: ExpertGenerator, claude_adapter: ClaudeAdapter, sample_expert: ExpertDefinition, tmp_path: Path
+        self,
+        generator: ExpertGenerator,
+        claude_adapter: ClaudeAdapter,
+        sample_expert: ExpertDefinition,
+        tmp_path: Path,
     ) -> None:
         """Test that generating creates the agents directory if needed."""
         output_dir = tmp_path / ".claude"
@@ -148,7 +168,9 @@ class TestGenerateExpertAgent:
             expert_dir=tmp_path / "expert_two",
         )
 
-        agent_paths = generator.generate_all_expert_agents([expert1, expert2], claude_adapter, output_dir)
+        agent_paths = generator.generate_all_expert_agents(
+            [expert1, expert2], claude_adapter, output_dir
+        )
 
         assert len(agent_paths) == 2
         assert all(p.exists() for p in agent_paths)
@@ -225,7 +247,7 @@ class TestExpertAgentTemplate:
         content = agent_path.read_text()
 
         # Should escape quotes in description
-        assert r'\"quotes\"' in content or "quotes" in content
+        assert r"\"quotes\"" in content or "quotes" in content
 
     def test_template_truncates_long_description(
         self, generator: ExpertGenerator, claude_adapter: ClaudeAdapter, tmp_path: Path

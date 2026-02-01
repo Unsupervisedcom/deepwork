@@ -70,13 +70,11 @@ def _find_expert_dir(expert_name: str, project_path: Path) -> Path:
     if available_experts:
         available_str = ", ".join(sorted(available_experts))
         raise ExpertNotFoundError(
-            f"Expert '{expert_name}' not found.\n"
-            f"Available experts: {available_str}"
+            f"Expert '{expert_name}' not found.\nAvailable experts: {available_str}"
         )
     else:
         raise ExpertNotFoundError(
-            f"Expert '{expert_name}' not found.\n"
-            "No experts have been defined yet."
+            f"Expert '{expert_name}' not found.\nNo experts have been defined yet."
         )
 
 

@@ -18,8 +18,6 @@ from deepwork.utils.yaml_utils import YAMLError, load_yaml, load_yaml_from_strin
 class ExpertParseError(Exception):
     """Exception raised for expert parsing errors."""
 
-    pass
-
 
 def _folder_name_to_expert_name(folder_name: str) -> str:
     """
@@ -371,22 +369,16 @@ def parse_expert_definition(expert_dir: Path | str) -> ExpertDefinition:
     topics_dir = expert_dir_path / "topics"
     if topics_dir.exists() and topics_dir.is_dir():
         for topic_file in topics_dir.glob("*.md"):
-            try:
-                topic = parse_topic_file(topic_file)
-                topics.append(topic)
-            except ExpertParseError:
-                raise
+            topic = parse_topic_file(topic_file)
+            topics.append(topic)
 
     # Parse learnings
     learnings: list[Learning] = []
     learnings_dir = expert_dir_path / "learnings"
     if learnings_dir.exists() and learnings_dir.is_dir():
         for learning_file in learnings_dir.glob("*.md"):
-            try:
-                learning = parse_learning_file(learning_file)
-                learnings.append(learning)
-            except ExpertParseError:
-                raise
+            learning = parse_learning_file(learning_file)
+            learnings.append(learning)
 
     return ExpertDefinition.from_dict(expert_data, expert_dir_path, topics, learnings)
 
