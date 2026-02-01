@@ -86,11 +86,38 @@ steps:
     quality_criteria:
       - "All competitors have descriptions"
       - "Sources are cited"
-    agent: general-purpose  # delegate to agent type
+    agent: deepwork-jobs    # delegate to expert (see Agent Delegation)
     hooks:
       after_agent:
         - script: hooks/validate.sh
 ```
+
+### Agent Delegation (The `agent` Field)
+
+The `agent` field specifies which expert should execute this step. When set:
+1. The generated skill includes `context: fork` (runs in isolated context)
+2. The generated skill includes `agent: [expert-name]` (loads that expert's knowledge)
+3. The step runs with all the expert's topics, learnings, and domain knowledge available
+
+**This is how you make a step "run via" an expert.**
+
+```yaml
+steps:
+  - id: define
+    name: "Define Job Specification"
+    description: "Creates a job.yml specification..."
+    instructions_file: steps/define.md
+    agent: deepwork-jobs    # Runs with deepwork-jobs expert loaded
+    outputs:
+      - job.yml
+```
+
+Common agent values:
+- `deepwork-jobs` - Expert for DeepWork job creation and management
+- `deepwork-rules` - Expert for DeepWork rule creation
+- Custom experts you've defined in `.deepwork/experts/`
+
+See the **Step Delegation** topic for detailed examples and patterns.
 
 ## Output Formats
 

@@ -1,5 +1,5 @@
 name: deepwork_jobs
-version: "1.0.0"
+version: "1.1.0"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs."
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -22,32 +22,35 @@ workflows:
       - implement
 
 changelog:
+  - version: "1.1.0"
+    changes: "Simplified step instructions to leverage deepwork-jobs expert; cleaned up redundant content; improved clarity and conciseness"
   - version: "1.0.0"
     changes: "Added workflows section to distinguish new_job workflow (define→review_job_spec→implement) from standalone learn skill"
-  - version: "0.1.0"
-    changes: "Initial version"
-  - version: "0.2.0"
-    changes: "Replaced refine command with learn command for conversation-driven improvement"
-  - version: "0.3.0"
-    changes: "Added make_new_job.sh script and templates directory; updated instructions to reference templates instead of inline examples"
-  - version: "0.4.0"
-    changes: "Removed implementation_summary and learning_summary outputs; simplified step outputs"
-  - version: "0.5.0"
-    changes: "Standardized on 'ask structured questions' phrasing for user input; Updated quality criteria hooks to verify phrase usage; Added guidance in implement.md to use phrase in generated instructions"
-  - version: "0.6.0"
-    changes: "Added doc spec support; define.md now detects document-oriented workflows and guides doc spec creation; learn.md now identifies and applies doc spec-related improvements"
-  - version: "0.7.0"
-    changes: "Added job.yml doc spec; define step now outputs job.yml with doc_spec reference for quality validation"
-  - version: "0.8.0"
-    changes: "Added review_job_spec step between define and implement for doc spec-based quality validation using sub-agent review"
   - version: "0.9.0"
     changes: "Improved skill descriptions with third-person voice and 'Use when...' triggers for better discoverability"
+  - version: "0.8.0"
+    changes: "Added review_job_spec step between define and implement for doc spec-based quality validation using sub-agent review"
+  - version: "0.7.0"
+    changes: "Added job.yml doc spec; define step now outputs job.yml with doc_spec reference for quality validation"
+  - version: "0.6.0"
+    changes: "Added doc spec support; define.md now detects document-oriented workflows and guides doc spec creation"
+  - version: "0.5.0"
+    changes: "Standardized on 'ask structured questions' phrasing for user input"
+  - version: "0.4.0"
+    changes: "Removed implementation_summary and learning_summary outputs; simplified step outputs"
+  - version: "0.3.0"
+    changes: "Added make_new_job.sh script and templates directory"
+  - version: "0.2.0"
+    changes: "Replaced refine command with learn command for conversation-driven improvement"
+  - version: "0.1.0"
+    changes: "Initial version"
 
 steps:
   - id: define
     name: "Define Job Specification"
     description: "Creates a job.yml specification by gathering workflow requirements through structured questions. Use when starting a new multi-step workflow."
     instructions_file: steps/define.md
+    agent: deepwork-jobs
     inputs:
       - name: job_purpose
         description: "What complex task or workflow are you trying to accomplish?"
@@ -59,6 +62,7 @@ steps:
     name: "Review Job Specification"
     description: "Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification."
     instructions_file: steps/review_job_spec.md
+    agent: deepwork-jobs
     inputs:
       - file: job.yml
         from_step: define
@@ -77,6 +81,7 @@ steps:
     name: "Implement Job Steps"
     description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes."
     instructions_file: steps/implement.md
+    agent: deepwork-jobs
     inputs:
       - file: job.yml
         from_step: review_job_spec
@@ -99,6 +104,7 @@ steps:
     name: "Learn from Job Execution"
     description: "Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it."
     instructions_file: steps/learn.md
+    agent: deepwork-jobs
     exposed: true
     inputs:
       - name: job_name
