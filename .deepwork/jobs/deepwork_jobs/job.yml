@@ -1,5 +1,5 @@
 name: deepwork_jobs
-version: "1.1.0"
+version: "1.0.0"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs."
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -22,28 +22,26 @@ workflows:
       - implement
 
 changelog:
-  - version: "1.1.0"
-    changes: "Simplified step instructions to leverage deepwork-jobs expert; cleaned up redundant content; improved clarity and conciseness"
   - version: "1.0.0"
     changes: "Added workflows section to distinguish new_job workflow (define→review_job_spec→implement) from standalone learn skill"
-  - version: "0.9.0"
-    changes: "Improved skill descriptions with third-person voice and 'Use when...' triggers for better discoverability"
-  - version: "0.8.0"
-    changes: "Added review_job_spec step between define and implement for doc spec-based quality validation using sub-agent review"
-  - version: "0.7.0"
-    changes: "Added job.yml doc spec; define step now outputs job.yml with doc_spec reference for quality validation"
-  - version: "0.6.0"
-    changes: "Added doc spec support; define.md now detects document-oriented workflows and guides doc spec creation"
-  - version: "0.5.0"
-    changes: "Standardized on 'ask structured questions' phrasing for user input"
-  - version: "0.4.0"
-    changes: "Removed implementation_summary and learning_summary outputs; simplified step outputs"
-  - version: "0.3.0"
-    changes: "Added make_new_job.sh script and templates directory"
-  - version: "0.2.0"
-    changes: "Replaced refine command with learn command for conversation-driven improvement"
   - version: "0.1.0"
     changes: "Initial version"
+  - version: "0.2.0"
+    changes: "Replaced refine command with learn command for conversation-driven improvement"
+  - version: "0.3.0"
+    changes: "Added make_new_job.sh script and templates directory; updated instructions to reference templates instead of inline examples"
+  - version: "0.4.0"
+    changes: "Removed implementation_summary and learning_summary outputs; simplified step outputs"
+  - version: "0.5.0"
+    changes: "Standardized on 'ask structured questions' phrasing for user input; Updated quality criteria hooks to verify phrase usage; Added guidance in implement.md to use phrase in generated instructions"
+  - version: "0.6.0"
+    changes: "Added doc spec support; define.md now detects document-oriented workflows and guides doc spec creation; learn.md now identifies and applies doc spec-related improvements"
+  - version: "0.7.0"
+    changes: "Added job.yml doc spec; define step now outputs job.yml with doc_spec reference for quality validation"
+  - version: "0.8.0"
+    changes: "Added review_job_spec step between define and implement for doc spec-based quality validation using sub-agent review"
+  - version: "0.9.0"
+    changes: "Improved skill descriptions with third-person voice and 'Use when...' triggers for better discoverability"
 
 steps:
   - id: define
@@ -58,6 +56,7 @@ steps:
       - file: job.yml
         doc_spec: .deepwork/doc_specs/job_spec.md
     dependencies: []
+
   - id: review_job_spec
     name: "Review Job Specification"
     description: "Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification."
@@ -71,11 +70,6 @@ steps:
         doc_spec: .deepwork/doc_specs/job_spec.md
     dependencies:
       - define
-    quality_criteria:
-      - "**Sub-Agent Used**: Was a sub-agent spawned to provide unbiased review?"
-      - "**All doc spec Criteria Evaluated**: Did the sub-agent assess all 9 quality criteria?"
-      - "**Findings Addressed**: Were all failed criteria addressed by the main agent?"
-      - "**Validation Loop Complete**: Did the review-fix cycle continue until all criteria passed?"
 
   - id: implement
     name: "Implement Job Steps"
@@ -89,16 +83,6 @@ steps:
       - steps/
     dependencies:
       - review_job_spec
-    quality_criteria:
-      - "**Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?"
-      - "**Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?"
-      - "**Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?"
-      - "**Output Examples**: Does each instruction file show what good output looks like?"
-      - "**Quality Criteria**: Does each instruction file define quality criteria for its outputs?"
-      - "**Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase \"ask structured questions\"?"
-      - "**Sync Complete**: Has `deepwork sync` been run successfully?"
-      - "**Commands Available**: Are the slash-commands generated in `.claude/commands/`?"
-      - "**Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to run `/deepwork_rules.define`? Not every job needs rules - only suggest when genuinely helpful."
 
   - id: learn
     name: "Learn from Job Execution"
@@ -112,16 +96,3 @@ steps:
     outputs:
       - AGENTS.md
     dependencies: []
-    quality_criteria:
-      - "**Conversation Analyzed**: Did the agent review the conversation for DeepWork job executions?"
-      - "**Confusion Identified**: Did the agent identify points of confusion, errors, or inefficiencies?"
-      - "**Instructions Improved**: Were job instructions updated to address identified issues?"
-      - "**Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?"
-      - "**Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?"
-      - "**doc spec Reviewed (if applicable)**: For jobs with doc spec outputs, were doc spec-related learnings identified?"
-      - "**doc spec Updated (if applicable)**: Were doc spec files updated with improved quality criteria or structure?"
-      - "**Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?"
-      - "**File References Used**: Do AGENTS.md entries reference other files where appropriate?"
-      - "**Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?"
-      - "**Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?"
-      - "**Sync Complete**: Has `deepwork sync` been run if instructions were modified?"
