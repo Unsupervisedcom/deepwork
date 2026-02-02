@@ -55,7 +55,7 @@ The placeholder `[docs_folder]` appears throughout this job and must be replaced
 This job has been updated to be compatible with DeepWork v0.5.0 schema validation. The following fixes were applied:
 
 1. **exposed vs hidden**: Changed `hidden: true` to `exposed: false` on all steps (v0.5.0 uses `exposed` property)
-2. **Output file paths**: Changed `directory: src/` to `file: src/` in implement step (only `file` is valid)
+2. **Output file paths**: Changed `directory:` property to simple string paths in implement step (only `file` and `doc_spec` are valid output properties)
 3. **Output descriptions**: Removed `description` fields from output objects (outputs only accept `{file}` or `{file, doc_spec}`)
 4. **Input validation**: Changed plan step's architecture.md input from `{file, description}` to `{name, description}` (inputs must be either `{name, description}` for user parameters or `{file, from_step}` for file references)
 5. **Explicit dependencies**: Added all transitive dependencies to steps' `dependencies` arrays (DeepWork requires every `from_step` reference to be explicitly listed in dependencies)

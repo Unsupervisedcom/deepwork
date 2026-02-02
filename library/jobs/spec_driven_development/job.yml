@@ -168,6 +168,7 @@ steps:
       - file: "[docs_folder]/architecture.md"
         from_step: plan
     outputs:
+      # Implementation directories for source code and tests
       - src/
       - tests/
     dependencies:
