@@ -82,8 +82,8 @@ templates/
 │   ├── skill-workflow-step.md.jinja
 │   └── agent-expert.md.jinja
 └── gemini/
-    ├── skill-job-meta.toml.jinja
-    └── skill-job-step.toml.jinja
+    ├── skill-workflow-meta.toml.jinja
+    └── skill-workflow-step.toml.jinja
 ```
 
 ## Platform Differences

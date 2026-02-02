@@ -1,6 +1,6 @@
 ---
 name: Skill Template Best Practices
-trigger: src/deepwork/templates/**/skill-job*.jinja
+trigger: src/deepwork/templates/**/skill-workflow*.jinja
 compare_to: prompt
 ---
 Skill template files are being modified. Ensure the generated skills follow these best practices:

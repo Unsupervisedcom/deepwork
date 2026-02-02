@@ -1,21 +1,23 @@
 {#
-Template: skill-job-meta.toml.jinja
-Purpose: Generates the job overview skill file for Gemini CLI
+Template: skill-workflow-meta.toml.jinja
+Purpose: Generates the workflow overview skill file for Gemini CLI
 
 Template Variables:
-  - job_name: string - Job identifier (e.g., "competitive_research")
-  - job_summary: string - Short one-line summary of the job
-  - job_description: string|null - Full description (optional)
-  - total_steps: int - Number of steps in the job
+  - expert_name: string - Expert identifier (e.g., "deepwork-jobs")
+  - workflow_name: string - Workflow identifier (e.g., "new_workflow")
+  - workflow_summary: string - Short one-line summary of the workflow
+  - workflow_description: string|null - Full description (optional)
+  - total_steps: int - Number of steps in the workflow
   - steps: list - Array of step objects:
       - id: string - Step identifier
       - name: string - Human-readable step name
       - description: string - What the step does
-      - command_name: string - Slash command (e.g., "job_name:step_id")
+      - command_name: string - Slash command (e.g., "expert_name:step_id")
       - dependencies: list[string]|null - Required prior steps
+      - exposed: bool - True if user-invocable
 
 Note: Gemini uses TOML format with description + prompt fields.
-      Commands use colon separator (/job_name:step_id) not period.
+      Commands use colon separator (/expert_name:step_id) not period.
 #}
 # {{ job_name }}
 #

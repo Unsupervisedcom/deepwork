@@ -33,8 +33,6 @@ class ExpertGenerator:
 
     # Template filenames
     EXPERT_AGENT_TEMPLATE = "agent-expert.md.jinja"
-    WORKFLOW_META_TEMPLATE = "skill-workflow-meta.md.jinja"
-    WORKFLOW_STEP_TEMPLATE = "skill-workflow-step.md.jinja"
 
     def __init__(self, templates_dir: Path | str | None = None):
         """
@@ -387,7 +385,8 @@ class ExpertGenerator:
             "exposed": step.exposed,
             "hooks": hooks,
             "quality_criteria": step.quality_criteria,
-            "agent": step.agent,
+            # Use the expert's name as the agent - each expert becomes its own agent
+            "agent": expert.name,
         }
 
     def _build_workflow_meta_context(
@@ -532,10 +531,10 @@ class ExpertGenerator:
         # Load and render template
         env = self._get_jinja_env(adapter)
         try:
-            template = env.get_template(self.WORKFLOW_META_TEMPLATE)
+            template = env.get_template(adapter.meta_skill_template)
         except TemplateNotFound as e:
             raise WorkflowGeneratorError(
-                f"Workflow meta-skill template not found: {self.WORKFLOW_META_TEMPLATE}"
+                f"Workflow meta-skill template not found: {adapter.meta_skill_template}"
             ) from e
 
         try:
@@ -598,10 +597,10 @@ class ExpertGenerator:
         # Load and render template
         env = self._get_jinja_env(adapter)
         try:
-            template = env.get_template(self.WORKFLOW_STEP_TEMPLATE)
+            template = env.get_template(adapter.skill_template)
         except TemplateNotFound as e:
             raise WorkflowGeneratorError(
-                f"Workflow step template not found: {self.WORKFLOW_STEP_TEMPLATE}"
+                f"Workflow step template not found: {adapter.skill_template}"
             ) from e
 
         try:

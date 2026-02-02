@@ -20,7 +20,7 @@ class SkillLifecycleHook(str, Enum):
 
     These represent hook points in the AI agent's skill execution lifecycle.
     Each adapter maps these generic names to platform-specific event names.
-    The enum values are the generic names used in job.yml files.
+    The enum values are the generic names used in workflow.yml files.
     """
 
     # Triggered after the agent finishes responding (before returning to user)
@@ -55,8 +55,8 @@ class AgentAdapter(ABC):
     display_name: ClassVar[str]
     config_dir: ClassVar[str]
     skills_dir: ClassVar[str] = "skills"
-    skill_template: ClassVar[str] = "skill-job-step.md.jinja"
-    meta_skill_template: ClassVar[str] = "skill-job-meta.md.jinja"
+    skill_template: ClassVar[str] = "skill-workflow-step.md.jinja"
+    meta_skill_template: ClassVar[str] = "skill-workflow-meta.md.jinja"
 
     # Mapping from generic SkillLifecycleHook to platform-specific event names.
     # Subclasses should override this to provide platform-specific mappings.
@@ -563,8 +563,8 @@ class GeminiAdapter(AgentAdapter):
     name = "gemini"
     display_name = "Gemini CLI"
     config_dir = ".gemini"
-    skill_template = "skill-job-step.toml.jinja"
-    meta_skill_template = "skill-job-meta.toml.jinja"
+    skill_template = "skill-workflow-step.toml.jinja"
+    meta_skill_template = "skill-workflow-meta.toml.jinja"
 
     # Gemini CLI does NOT support skill-level hooks
     # Hooks are global/project-level in settings.json, not per-skill

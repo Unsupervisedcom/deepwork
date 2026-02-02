@@ -374,7 +374,7 @@ class TestGeminiAdapter:
         assert GeminiAdapter.display_name == "Gemini CLI"
         assert GeminiAdapter.config_dir == ".gemini"
         assert GeminiAdapter.skills_dir == "skills"
-        assert GeminiAdapter.skill_template == "skill-job-step.toml.jinja"
+        assert GeminiAdapter.skill_template == "skill-workflow-step.toml.jinja"
 
     def test_init_with_project_root(self, temp_dir: Path) -> None:
         """Test initialization with project root."""
