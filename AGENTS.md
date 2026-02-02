@@ -38,6 +38,14 @@ When creating or modifying jobs in this repository, you MUST understand which ty
 - These are templates/examples for users to adopt
 - Should be well-documented and self-contained
 
+**Schema compatibility notes**:
+When importing jobs from external sources, ensure compatibility with DeepWork v0.5.0 schema:
+1. Use `exposed: false` instead of `hidden: true` for non-menu steps
+2. Use `file:` not `directory:` in outputs (only `file` and `doc_spec` are valid output properties)
+3. Remove `description:` from output objects (outputs only accept `{file}` or `{file, doc_spec}`)
+4. Inputs must be either `{name, description}` (user parameter) or `{file, from_step}` (file reference)
+5. Add all transitive dependencies explicitly (every `from_step` must be in the step's `dependencies` array)
+
 ### 3. Bespoke/Repo Jobs (`.deepwork/jobs/`)
 
 **What they are**: Jobs that are ONLY for this specific repository (the DeepWork repo itself). These are not distributed to users and exist only for internal development workflows.

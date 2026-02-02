@@ -33,7 +33,7 @@ changelog:
 steps:
   - id: constitution
     name: "Establish Constitution"
-    hidden: true
+    exposed: false
     description: "Creates foundational governance principles and development guidelines for the project. Use when starting a new project or establishing standards."
     instructions_file: steps/constitution.md
     inputs:
@@ -51,7 +51,7 @@ steps:
 
   - id: specify
     name: "Create Specification"
-    hidden: true
+    exposed: false
     description: "Defines functional requirements as user stories without technology choices. Use when starting to design a new feature."
     instructions_file: steps/specify.md
     inputs:
@@ -76,7 +76,7 @@ steps:
 
   - id: clarify
     name: "Clarify Specification"
-    hidden: true
+    exposed: false
     description: "Resolves ambiguities and gaps in the specification through structured questioning. Use after specification to ensure completeness."
     instructions_file: steps/clarify.md
     inputs:
@@ -96,7 +96,7 @@ steps:
 
   - id: plan
     name: "Generate Technical Plan"
-    hidden: true
+    exposed: false
     description: "Creates technical implementation strategy including architecture and technology choices. Use after specification is clarified."
     instructions_file: steps/plan.md
     inputs:
@@ -104,17 +104,17 @@ steps:
         from_step: clarify
       - file: "[docs_folder]/constitution.md"
         from_step: constitution
-      - file: "[docs_folder]/architecture.md"
-        description: "Existing project architecture document (if present)"
+      - name: architecture_doc
+        description: "Existing project architecture document path (if present), e.g., '[docs_folder]/architecture.md'"
     outputs:
       - file: specs/[feature-name]/plan.md
       - file: specs/[feature-name]/data-model.md
       - file: specs/[feature-name]/api-spec.json
       - file: specs/[feature-name]/research.md
       - file: "[docs_folder]/architecture.md"
-        description: "Updated project architecture document"
     dependencies:
       - clarify
+      - constitution
     quality_criteria:
       - "**Architecture Defined**: Is the high-level architecture clearly described?"
       - "**Technology Justified**: Are technology choices explained with rationale?"
@@ -128,7 +128,7 @@ steps:
 
   - id: tasks
     name: "Generate Task Breakdown"
-    hidden: true
+    exposed: false
     description: "Converts the implementation plan into actionable, ordered development tasks. Use after plan is validated."
     instructions_file: steps/tasks.md
     inputs:
@@ -142,6 +142,7 @@ steps:
       - file: specs/[feature-name]/tasks.md
     dependencies:
       - plan
+      - clarify
     quality_criteria:
       - "**User Story Organization**: Are tasks organized by user story?"
       - "**Dependencies Sequenced**: Are task dependencies correctly ordered?"
@@ -154,7 +155,7 @@ steps:
 
   - id: implement
     name: "Execute Implementation"
-    hidden: true
+    exposed: false
     description: "Generates code and assets by executing the task breakdown. Use when ready to build the feature."
     instructions_file: steps/implement.md
     inputs:
@@ -167,12 +168,12 @@ steps:
       - file: "[docs_folder]/architecture.md"
         from_step: plan
     outputs:
-      - directory: src/
-        description: "Implementation source files as specified in tasks"
-      - directory: tests/
-        description: "Test files as specified in tasks"
+      - file: src/
+      - file: tests/
     dependencies:
       - tasks
+      - plan
+      - clarify
     quality_criteria:
       - "**Prerequisites Met**: Were all spec/plan/tasks artifacts validated before starting?"
       - "**Task Order Followed**: Were tasks executed in dependency order?"
