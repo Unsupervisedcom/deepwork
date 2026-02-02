@@ -130,7 +130,14 @@
       "Bash(deepwork:*)",
       "Bash(.claude/hooks/commit_job_git_commit.sh:*)",
       "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
-      "WebSearch"
+      "WebSearch",
+      "Skill(spec_driven_development)",
+      "Skill(spec_driven_development.constitution)",
+      "Skill(spec_driven_development.specify)",
+      "Skill(spec_driven_development.clarify)",
+      "Skill(spec_driven_development.plan)",
+      "Skill(spec_driven_development.tasks)",
+      "Skill(spec_driven_development.implement)"
     ]
   },
   "hooks": {
