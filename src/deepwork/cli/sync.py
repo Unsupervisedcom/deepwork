@@ -145,19 +145,9 @@ def sync_skills(project_path: Path) -> None:
         except Exception as e:
             console.print(f"    [red]✗[/red] Failed to generate /deepwork skill: {e}")
 
-        # Generate skills for all jobs
-        if jobs:
-            console.print("  [dim]•[/dim] Generating job skills...")
-            for job in jobs:
-                try:
-                    job_paths = generator.generate_all_skills(
-                        job, adapter, platform_dir, project_root=project_path
-                    )
-                    all_skill_paths.extend(job_paths)
-                    stats["skills"] += len(job_paths)
-                    console.print(f"    [green]✓[/green] {job.name} ({len(job_paths)} skills)")
-                except Exception as e:
-                    console.print(f"    [red]✗[/red] Failed for {job.name}: {e}")
+        # NOTE: Job skills (meta-skills and step skills) are no longer generated.
+        # The MCP server now handles workflow orchestration directly.
+        # Only the /deepwork skill is installed as the entry point.
 
         # Sync hooks to platform settings
         if job_hooks_list:

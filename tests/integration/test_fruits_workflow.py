@@ -154,7 +154,7 @@ class TestFruitsWorkflow:
         assert "classified_fruits.md" in content
 
         # Check workflow complete (last step)
-        assert "Workflow complete" in content
+        assert "workflow complete" in content.lower()
 
     def test_fruits_dependency_validation(self, fixtures_dir: Path) -> None:
         """Test that dependency validation passes for fruits job."""
