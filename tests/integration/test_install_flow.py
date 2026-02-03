@@ -186,63 +186,6 @@ class TestInstallCommand:
         assert (claude_dir / "deepwork_jobs.define" / "SKILL.md").exists()
         assert (claude_dir / "deepwork_jobs.learn" / "SKILL.md").exists()
 
-    def test_install_creates_rules_directory(self, mock_claude_project: Path) -> None:
-        """Test that install creates the v2 rules directory with example templates."""
-        runner = CliRunner()
-
-        result = runner.invoke(
-            cli,
-            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
-            catch_exceptions=False,
-        )
-
-        assert result.exit_code == 0
-        assert ".deepwork/rules/ with example templates" in result.output
-
-        # Verify rules directory was created
-        rules_dir = mock_claude_project / ".deepwork" / "rules"
-        assert rules_dir.exists()
-
-        # Verify README was created
-        readme_file = rules_dir / "README.md"
-        assert readme_file.exists()
-        content = readme_file.read_text()
-        assert "DeepWork Rules" in content
-        assert "YAML frontmatter" in content
-
-        # Verify example templates were copied
-        example_files = list(rules_dir.glob("*.md.example"))
-        assert len(example_files) >= 1  # At least one example template
-
-    def test_install_preserves_existing_rules_directory(self, mock_claude_project: Path) -> None:
-        """Test that install doesn't overwrite existing rules directory."""
-        runner = CliRunner()
-
-        # Create a custom rules directory before install
-        rules_dir = mock_claude_project / ".deepwork" / "rules"
-        rules_dir.mkdir(parents=True)
-        custom_rule = rules_dir / "my-custom-rule.md"
-        custom_content = """---
-name: My Custom Rule
-trigger: "src/**/*"
----
-Custom instructions here.
-"""
-        custom_rule.write_text(custom_content)
-
-        result = runner.invoke(
-            cli,
-            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
-            catch_exceptions=False,
-        )
-
-        assert result.exit_code == 0
-        assert ".deepwork/rules/ already exists" in result.output
-
-        # Verify original content is preserved
-        assert custom_rule.read_text() == custom_content
-
-
 class TestCLIEntryPoint:
     """Tests for CLI entry point."""
 

@@ -126,66 +126,6 @@ This will:
 - Generate skills for each step
 - Make the skills available in `.claude/skills/` (or appropriate platform directory)
 
-### Step 6: Consider Rules for the New Job
-
-After implementing the job, consider whether there are **rules** that would help enforce quality or consistency when working with this job's domain.
-
-**What are rules?**
-
-Rules are automated guardrails stored as markdown files in `.deepwork/rules/` that trigger when certain files change during an AI session. They help ensure:
-- Documentation stays in sync with code
-- Team guidelines are followed
-- Architectural decisions are respected
-- Quality standards are maintained
-
-**When to suggest rules:**
-
-Think about the job you just implemented and ask:
-- Does this job produce outputs that other files depend on?
-- Are there documentation files that should be updated when this job's outputs change?
-- Are there quality checks or reviews that should happen when certain files in this domain change?
-- Could changes to the job's output files impact other parts of the project?
-
-**Examples of rules that might make sense:**
-
-| Job Type | Potential Rule |
-|----------|----------------|
-| API Design | "Update API docs when endpoint definitions change" |
-| Database Schema | "Review migrations when schema files change" |
-| Competitive Research | "Update strategy docs when competitor analysis changes" |
-| Feature Development | "Update changelog when feature files change" |
-| Configuration Management | "Update install guide when config files change" |
-
-**How to offer rule creation:**
-
-If you identify one or more rules that would benefit the user, explain:
-1. **What the rule would do** - What triggers it and what action it prompts
-2. **Why it would help** - How it prevents common mistakes or keeps things in sync
-3. **What files it would watch** - The trigger patterns
-
-Then ask the user:
-
-> "Would you like me to create this rule for you? I can run `/deepwork_rules.define` to set it up."
-
-If the user agrees, invoke the `/deepwork_rules.define` command to guide them through creating the rule.
-
-**Example dialogue:**
-
-```
-Based on the competitive_research job you just created, I noticed that when
-competitor analysis files change, it would be helpful to remind you to update
-your strategy documentation.
-
-I'd suggest a rule like:
-- **Name**: "Update strategy when competitor analysis changes"
-- **Trigger**: `**/positioning_report.md`
-- **Action**: Prompt to review and update `docs/strategy.md`
-
-Would you like me to create this rule? I can run `/deepwork_rules.define` to set it up.
-```
-
-**Note:** Not every job needs rules. Only suggest them when they would genuinely help maintain consistency or quality. Don't force rules where they don't make sense.
-
 ## Example Implementation
 
 For a complete worked example showing a job.yml and corresponding step instruction file, see:
@@ -217,8 +157,6 @@ Before marking this step complete, ensure:
 - [ ] Each instruction file is complete and actionable
 - [ ] `deepwork sync` executed successfully
 - [ ] Skills generated in platform directory
-- [ ] Considered whether rules would benefit this job (Step 6)
-- [ ] If rules suggested, offered to run `/deepwork_rules.define`
 
 ## Quality Criteria
 
@@ -230,4 +168,3 @@ Before marking this step complete, ensure:
 - Steps with user inputs explicitly use "ask structured questions" phrasing
 - Sync completed successfully
 - Skills available for use
-- Thoughtfully considered relevant rules for the job domain

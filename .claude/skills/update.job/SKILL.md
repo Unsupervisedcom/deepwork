@@ -9,7 +9,7 @@ user-invocable: false
 
 **Standalone skill** - can be run anytime
 
-> Updates DeepWork standard jobs in src/ and syncs to installed locations. Use when modifying deepwork_jobs or deepwork_rules.
+> Updates DeepWork standard jobs in src/ and syncs to installed locations. Use when modifying deepwork_jobs.
 
 
 ## Instructions
@@ -94,7 +94,7 @@ ls -la .claude/commands/[job_name].*.md
 ### Job Context
 
 A workflow for maintaining standard jobs bundled with DeepWork. Standard jobs
-(like `deepwork_jobs` and `deepwork_rules`) are source-controlled in
+(like `deepwork_jobs`) are source-controlled in
 `src/deepwork/standard_jobs/` and must be edited there—never in `.deepwork/jobs/`
 or `.claude/commands/` directly.
 

@@ -47,40 +47,26 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── generator.py    # Command file generation
 │       │   ├── parser.py       # Job definition parsing
 │       │   ├── doc_spec_parser.py   # Doc spec parsing
-│       │   ├── rules_parser.py     # Rule definition parsing
-│       │   ├── pattern_matcher.py  # Variable pattern matching for rules
-│       │   ├── rules_queue.py      # Rule state queue system
-│       │   ├── command_executor.py # Command action execution
 │       │   └── hooks_syncer.py     # Hook syncing to platforms
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── __init__.py
 │       │   ├── wrapper.py           # Cross-platform input/output normalization
 │       │   ├── claude_hook.sh       # Shell wrapper for Claude Code
-│       │   ├── gemini_hook.sh       # Shell wrapper for Gemini CLI
-│       │   └── rules_check.py       # Cross-platform rule evaluation hook
+│       │   └── gemini_hook.sh       # Shell wrapper for Gemini CLI
 │       ├── templates/          # Skill templates for each platform
 │       │   ├── claude/
 │       │   │   └── skill-job-step.md.jinja
 │       │   ├── gemini/
 │       │   └── copilot/
 │       ├── standard_jobs/      # Built-in job definitions
-│       │   ├── deepwork_jobs/
-│       │   │   ├── job.yml
-│       │   │   ├── steps/
-│       │   │   └── templates/
-│       │   │       └── doc_spec.md.template
-│       │   └── deepwork_rules/   # Rule management job
+│       │   └── deepwork_jobs/
 │       │       ├── job.yml
 │       │       ├── steps/
-│       │       │   └── define.md
-│       │       └── hooks/         # Hook scripts
-│       │           ├── global_hooks.yml
-│       │           ├── user_prompt_submit.sh
-│       │           └── capture_prompt_work_tree.sh
+│       │       └── templates/
+│       │           └── doc_spec.md.template
 │       ├── schemas/            # Definition schemas
 │       │   ├── job_schema.py
-│       │   ├── doc_spec_schema.py   # Doc spec schema definition
-│       │   └── rules_schema.py
+│       │   └── doc_spec_schema.py   # Doc spec schema definition
 │       └── utils/
 │           ├── fs.py
 │           ├── git.py
@@ -124,11 +110,6 @@ def install(platform: str):
 
     # Inject core job definitions
     inject_deepwork_jobs(".deepwork/jobs/")
-
-    # Create rules directory with example templates (if not exists)
-    if not exists(".deepwork/rules/"):
-        create_directory(".deepwork/rules/")
-        copy_example_rules(".deepwork/rules/")
 
     # Update config (supports multiple platforms)
     config = load_yaml(".deepwork/config.yml") or {}
@@ -288,7 +269,6 @@ my-project/                     # User's project (target)
 │       ├── deepwork_jobs.define.md         # Core DeepWork skills
 │       ├── deepwork_jobs.implement.md
 │       ├── deepwork_jobs.refine.md
-│       ├── deepwork_rules.define.md        # Rule management
 │       ├── competitive_research.identify_competitors.md
 │       └── ...
 ├── .deepwork/                  # DeepWork configuration
@@ -296,24 +276,11 @@ my-project/                     # User's project (target)
 │   ├── .gitignore              # Ignores tmp/ directory
 │   ├── doc_specs/                   # Doc specs (document specifications)
 │   │   └── monthly_aws_report.md
-│   ├── rules/                  # Rule definitions (v2 format)
-│   │   ├── source-test-pairing.md
-│   │   ├── format-python.md
-│   │   └── api-docs.md
 │   ├── tmp/                    # Temporary state (gitignored)
-│   │   └── rules/queue/        # Rule evaluation queue
 │   └── jobs/                   # Job definitions
 │       ├── deepwork_jobs/      # Core job for managing jobs
 │       │   ├── job.yml
 │       │   └── steps/
-│       ├── deepwork_rules/     # Rule management job
-│       │   ├── job.yml
-│       │   ├── steps/
-│       │   │   └── define.md
-│       │   └── hooks/          # Hook scripts (installed from standard_jobs)
-│       │       ├── global_hooks.yml
-│       │       ├── user_prompt_submit.sh
-│       │       └── capture_prompt_work_tree.sh
 │       ├── competitive_research/
 │       │   ├── job.yml         # Job metadata
 │       │   └── steps/
@@ -1033,203 +1000,6 @@ Github Actions are used for all CI/CD tasks.
 
 ---
 
-## Rules
-
-Rules are automated enforcement mechanisms that trigger based on file changes during an AI agent session. They help ensure that:
-- Documentation stays in sync with code changes
-- Security reviews happen when sensitive code is modified
-- Team guidelines are followed automatically
-- File correspondences are maintained (e.g., source/test pairing)
-
-### Rules System v2 (Frontmatter Markdown)
-
-Rules are defined as individual markdown files in `.deepwork/rules/`:
-
-```
-.deepwork/rules/
-├── source-test-pairing.md
-├── format-python.md
-└── api-docs.md
-```
-
-Each rule file uses YAML frontmatter with a markdown body for instructions:
-
-```markdown
----
-name: Source/Test Pairing
-set:
-  - src/{path}.py
-  - tests/{path}_test.py
-compare_to: base
----
-When source files change, corresponding test files should also change.
-Please create or update tests for the modified source files.
-```
-
-### Detection Modes
-
-Rules support three detection modes:
-
-**1. Trigger/Safety (default)** - Fire when trigger matches but safety doesn't:
-```yaml
----
-name: Update install guide
-trigger: "app/config/**/*"
-safety: "docs/install_guide.md"
-compare_to: base
----
-```
-
-**2. Set (bidirectional)** - Enforce file correspondence in both directions:
-```yaml
----
-name: Source/Test Pairing
-set:
-  - src/{path}.py
-  - tests/{path}_test.py
-compare_to: base
----
-```
-Uses variable patterns like `{path}` (multi-segment) and `{name}` (single-segment) for matching.
-
-**3. Pair (directional)** - Trigger requires corresponding files, but not vice versa:
-```yaml
----
-name: API Documentation
-pair:
-  trigger: src/api/{name}.py
-  expects: docs/api/{name}.md
-compare_to: base
----
-```
-
-### Action Types
-
-**1. Prompt (default)** - Show instructions to the agent:
-```yaml
----
-name: Security Review
-trigger: "src/auth/**/*"
-compare_to: base
----
-Please check for hardcoded credentials and validate input.
-```
-
-**2. Command** - Run an idempotent command:
-```yaml
----
-name: Format Python
-trigger: "**/*.py"
-action:
-  command: "ruff format {file}"
-  run_for: each_match  # or "all_matches"
-compare_to: prompt
----
-```
-
-### Rule Evaluation Flow
-
-1. **Session Start**: When a Claude Code session begins, the baseline git state is captured
-2. **Agent Works**: The AI agent performs tasks, potentially modifying files
-3. **Session Stop**: When the agent finishes (after_agent event):
-   - Changed files are detected based on `compare_to` setting (base, default_tip, or prompt)
-   - Each rule is evaluated based on its detection mode
-   - Queue entries are created in `.deepwork/tmp/rules/queue/` for deduplication
-   - For command actions: commands are executed, results tracked
-   - For prompt actions: if rule fires and not already promised, agent is prompted
-4. **Promise Tags**: Agents can mark rules as addressed by including `<promise>✓ Rule Name</promise>` in their response
-
-### Queue System
-
-Rule state is tracked in `.deepwork/tmp/rules/queue/` with files named `{hash}.{status}.json`:
-- `queued` - Detected, awaiting evaluation
-- `passed` - Rule satisfied (promise found or command succeeded)
-- `failed` - Rule not satisfied
-- `skipped` - Safety pattern matched
-
-This prevents re-prompting for the same rule violation within a session.
-
-### Hook Integration
-
-The v2 rules system uses the cross-platform hook wrapper:
-
-```
-src/deepwork/hooks/
-├── wrapper.py           # Cross-platform input/output normalization
-├── rules_check.py       # Rule evaluation hook (v2)
-├── claude_hook.sh       # Claude Code shell wrapper
-└── gemini_hook.sh       # Gemini CLI shell wrapper
-```
-
-Hooks are called via the shell wrappers:
-```bash
-claude_hook.sh deepwork.hooks.rules_check
-```
-
-The hooks are installed to `.claude/settings.json` during `deepwork sync`:
-
-```json
-{
-  "hooks": {
-    "Stop": [
-      {"matcher": "", "hooks": [{"type": "command", "command": "deepwork hook rules_check"}]}
-    ]
-  }
-}
-```
-
-### Cross-Platform Hook Wrapper System
-
-The `hooks/` module provides a wrapper system that allows writing hooks once in Python and running them on multiple platforms. This normalizes the differences between Claude Code and Gemini CLI hook systems.
-
-**Architecture:**
-```
-┌─────────────────┐     ┌─────────────────┐
-│  Claude Code    │     │   Gemini CLI    │
-│  (Stop event)   │     │ (AfterAgent)    │
-└────────┬────────┘     └────────┬────────┘
-         │                       │
-         ▼                       ▼
-┌─────────────────┐     ┌─────────────────┐
-│ claude_hook.sh  │     │ gemini_hook.sh  │
-│ (shell wrapper) │     │ (shell wrapper) │
-└────────┬────────┘     └────────┬────────┘
-         │                       │
-         └───────────┬───────────┘
-                     ▼
-           ┌─────────────────┐
-           │   wrapper.py    │
-           │ (normalization) │
-           └────────┬────────┘
-                    ▼
-           ┌─────────────────┐
-           │  Python Hook    │
-           │ (common logic)  │
-           └─────────────────┘
-```
-
-**Key normalizations:**
-- Event names: `Stop` ↔ `AfterAgent`, `PreToolUse` ↔ `BeforeTool`, `UserPromptSubmit` ↔ `BeforeAgent`
-- Tool names: `Write` ↔ `write_file`, `Bash` ↔ `shell`, `Read` ↔ `read_file`
-- Decision values: `block` → `deny` for Gemini CLI
-- Environment variables: `CLAUDE_PROJECT_DIR` ↔ `GEMINI_PROJECT_DIR`
-
-**Usage:**
-```python
-from deepwork.hooks.wrapper import HookInput, HookOutput, run_hook, Platform
-
-def my_hook(input: HookInput) -> HookOutput:
-    if input.event == NormalizedEvent.AFTER_AGENT:
-        return HookOutput(decision="block", reason="Complete X first")
-    return HookOutput()
-
-# Called via: claude_hook.sh mymodule or gemini_hook.sh mymodule
-```
-
-See `doc/platforms/` for detailed platform-specific hook documentation.
-
----
-
 ## Doc Specs (Document Specifications)
 
 Doc specs formalize document specifications for job outputs. They enable consistent document structure and automated quality validation.
@@ -1309,38 +1079,6 @@ The `/deepwork_jobs.learn` command:
 2. Updates doc spec files with improvements
 
 See `doc/doc-specs.md` for complete documentation.
-
----
-
-### Rule Schema
-
-Rules are validated against a JSON Schema:
-
-```yaml
-- name: string          # Required: Friendly name for the rule
-  trigger: string|array # Required: Glob pattern(s) for triggering files
-  safety: string|array  # Optional: Glob pattern(s) for safety files
-  instructions: string  # Required (unless instructions_file): What to do
-  instructions_file: string  # Alternative: Path to instructions file
-```
-
-### Defining Rules
-
-Use the `/deepwork_rules.define` command to interactively create rules:
-
-```
-User: /deepwork_rules.define
-
-Claude: I'll help you define a new rule. What guideline or constraint
-        should this rule enforce?
-
-User: When API code changes, the API documentation should be updated
-
-Claude: Got it. Let me ask a few questions...
-        [Interactive dialog to define trigger, safety, and instructions]
-
-Claude: Created rule "API documentation update" in .deepwork/rules/api-documentation.md
-```
 
 ---
 
