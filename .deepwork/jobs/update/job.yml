@@ -1,9 +1,9 @@
 name: update
 version: "1.3.0"
-summary: "Updates DeepWork standard jobs in src/ and syncs to installed locations. Use when modifying deepwork_jobs or deepwork_rules."
+summary: "Updates DeepWork standard jobs in src/ and syncs to installed locations. Use when modifying deepwork_jobs."
 description: |
   A workflow for maintaining standard jobs bundled with DeepWork. Standard jobs
-  (like `deepwork_jobs` and `deepwork_rules`) are source-controlled in
+  (like `deepwork_jobs`) are source-controlled in
   `src/deepwork/standard_jobs/` and must be edited there—never in `.deepwork/jobs/`
   or `.claude/commands/` directly.
 

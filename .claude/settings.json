@@ -115,15 +115,6 @@
       "Skill(add_platform.verify)",
       "Skill(update)",
       "Skill(update.job)",
-      "Skill(manual_tests)",
-      "Skill(manual_tests.run_not_fire_tests)",
-      "Skill(manual_tests.run_fire_tests)",
-      "Skill(deepwork_rules)",
-      "Skill(deepwork_rules.define)",
-      "Bash(deepwork rules clear_queue)",
-      "Bash(rm -rf .deepwork/tmp/rules/queue/*.json)",
-      "Skill(manual_tests.reset)",
-      "Skill(manual_tests.infinite_block_tests)",
       "Read(./.deepwork/**)",
       "Edit(./.deepwork/**)",
       "Write(./.deepwork/**)",
@@ -152,39 +143,6 @@
           {
             "type": "command",
             "command": "src/deepwork/hooks/check_version.sh"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".deepwork/jobs/deepwork_rules/hooks/user_prompt_submit.sh"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "deepwork hook rules_check"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "deepwork hook rules_check"
           }
         ]
       }

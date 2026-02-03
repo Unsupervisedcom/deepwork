@@ -88,20 +88,6 @@ def _inject_deepwork_jobs(jobs_dir: Path, project_path: Path) -> None:
     _inject_standard_job("deepwork_jobs", jobs_dir, project_path)
 
 
-def _inject_deepwork_rules(jobs_dir: Path, project_path: Path) -> None:
-    """
-    Inject the deepwork_rules job definition into the project.
-
-    Args:
-        jobs_dir: Path to .deepwork/jobs directory
-        project_path: Path to project root (for relative path display)
-
-    Raises:
-        InstallError: If injection fails
-    """
-    _inject_standard_job("deepwork_rules", jobs_dir, project_path)
-
-
 def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
     """
     Create .gitignore file in .deepwork/ directory.
@@ -147,89 +133,6 @@ def _create_tmp_directory(deepwork_dir: Path) -> None:
             "# The tmp directory is used for temporary files during DeepWork operations.\n"
             "# Do not delete this file.\n"
         )
-
-
-def _create_rules_directory(project_path: Path) -> bool:
-    """
-    Create the v2 rules directory structure with example templates.
-
-    Creates .deepwork/rules/ with example rule files that users can customize.
-    Only creates the directory if it doesn't already exist.
-
-    Args:
-        project_path: Path to the project root
-
-    Returns:
-        True if the directory was created, False if it already existed
-    """
-    rules_dir = project_path / ".deepwork" / "rules"
-
-    if rules_dir.exists():
-        return False
-
-    # Create the rules directory
-    ensure_dir(rules_dir)
-
-    # Copy example rule templates from the deepwork_rules standard job
-    example_rules_dir = Path(__file__).parent.parent / "standard_jobs" / "deepwork_rules" / "rules"
-
-    if example_rules_dir.exists():
-        # Copy all .example files
-        for example_file in example_rules_dir.glob("*.md.example"):
-            dest_file = rules_dir / example_file.name
-            shutil.copy(example_file, dest_file)
-            # Fix permissions for copied rule template
-            fix_permissions(dest_file)
-
-    # Create a README file explaining the rules system
-    readme_content = """# DeepWork Rules
-
-Rules are automated guardrails that trigger when specific files change during
-AI agent sessions. They help ensure documentation stays current, security reviews
-happen, and team guidelines are followed.
-
-## Getting Started
-
-1. Copy an example file and rename it (remove the `.example` suffix):
-   ```
-   cp readme-documentation.md.example readme-documentation.md
-   ```
-
-2. Edit the file to match your project's patterns
-
-3. The rule will automatically trigger when matching files change
-
-## Rule Format
-
-Rules use YAML frontmatter in markdown files:
-
-```markdown
----
-name: Rule Name
-trigger: "pattern/**/*"
-safety: "optional/pattern"
----
-Instructions in markdown here.
-```
-
-## Detection Modes
-
-- **trigger/safety**: Fire when trigger matches, unless safety also matches
-- **set**: Bidirectional file correspondence (e.g., source + test)
-- **pair**: Directional correspondence (e.g., API code -> docs)
-
-## Documentation
-
-See `doc/rules_syntax.md` in the DeepWork repository for full syntax documentation.
-
-## Creating Rules Interactively
-
-Use `/deepwork_rules.define` to create new rules with guidance.
-"""
-    readme_path = rules_dir / "README.md"
-    readme_path.write_text(readme_content)
-
-    return True
 
 
 class DynamicChoice(click.Choice):
@@ -354,7 +257,6 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     # Step 3b: Inject standard jobs (core job definitions)
     console.print("[yellow]→[/yellow] Installing core job definitions...")
     _inject_deepwork_jobs(jobs_dir, project_path)
-    _inject_deepwork_rules(jobs_dir, project_path)
 
     # Step 3c: Create .gitignore for temporary files
     _create_deepwork_gitignore(deepwork_dir)
@@ -363,12 +265,6 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     # Step 3d: Create tmp directory with .gitkeep file for version control
     _create_tmp_directory(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/tmp/.gitkeep")
-
-    # Step 3e: Create rules directory with v2 templates
-    if _create_rules_directory(project_path):
-        console.print("  [green]✓[/green] Created .deepwork/rules/ with example templates")
-    else:
-        console.print("  [dim]•[/dim] .deepwork/rules/ already exists")
 
     # Step 4: Load or create config.yml
     console.print("[yellow]→[/yellow] Updating configuration...")

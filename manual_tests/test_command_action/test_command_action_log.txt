@@ -1,3 +1,0 @@
-# Command Action Log
-# Lines below are added automatically when test_command_action.txt is edited
-# ---

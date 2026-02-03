@@ -39,11 +39,11 @@ class TestHookEntry:
         entry = HookEntry(
             job_name="test_job",
             job_dir=job_dir,
-            module="deepwork.hooks.rules_check",
+            module="deepwork.hooks.my_hook",
         )
 
         cmd = entry.get_command(temp_dir)
-        assert cmd == "deepwork hook rules_check"
+        assert cmd == "deepwork hook my_hook"
 
 
 class TestJobHooks:
@@ -62,7 +62,7 @@ class TestJobHooks:
 UserPromptSubmit:
   - capture.sh
 Stop:
-  - rules_check.sh
+  - validate.sh
   - cleanup.sh
 """
         )
@@ -74,7 +74,7 @@ Stop:
         assert len(result.hooks["UserPromptSubmit"]) == 1
         assert result.hooks["UserPromptSubmit"][0].script == "capture.sh"
         assert len(result.hooks["Stop"]) == 2
-        assert result.hooks["Stop"][0].script == "rules_check.sh"
+        assert result.hooks["Stop"][0].script == "validate.sh"
         assert result.hooks["Stop"][1].script == "cleanup.sh"
 
     def test_from_job_dir_with_module_hooks(self, temp_dir: Path) -> None:
@@ -90,7 +90,7 @@ Stop:
 UserPromptSubmit:
   - capture.sh
 Stop:
-  - module: deepwork.hooks.rules_check
+  - module: deepwork.hooks.validate
 """
         )
 
@@ -98,7 +98,7 @@ Stop:
 
         assert result is not None
         assert result.hooks["UserPromptSubmit"][0].script == "capture.sh"
-        assert result.hooks["Stop"][0].module == "deepwork.hooks.rules_check"
+        assert result.hooks["Stop"][0].module == "deepwork.hooks.validate"
         assert result.hooks["Stop"][0].script is None
 
     def test_from_job_dir_no_hooks_file(self, temp_dir: Path) -> None:
