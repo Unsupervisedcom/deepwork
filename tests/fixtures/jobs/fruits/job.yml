@@ -15,6 +15,13 @@ changelog:
   - version: "1.0.0"
     changes: "Initial version for CI testing"
 
+workflows:
+  - name: full
+    summary: "Run the complete fruits identification and classification"
+    steps:
+      - identify
+      - classify
+
 steps:
   - id: identify
     name: "Identify Fruits"
