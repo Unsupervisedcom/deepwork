@@ -126,17 +126,6 @@
     ]
   },
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/block_bash_with_instructions.sh"
-          }
-        ]
-      }
-    ],
     "SessionStart": [
       {
         "matcher": "",

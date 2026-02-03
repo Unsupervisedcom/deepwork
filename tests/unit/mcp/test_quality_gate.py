@@ -36,37 +36,45 @@ class TestQualityGate:
         assert gate.command == "claude -p --output-format json"
         assert gate.timeout == 120
 
-    def test_build_review_prompt(self, quality_gate: QualityGate, project_root: Path) -> None:
-        """Test building review prompt."""
+    def test_build_instructions(self, quality_gate: QualityGate) -> None:
+        """Test building system instructions."""
+        instructions = quality_gate._build_instructions(
+            quality_criteria=["Output must exist", "Output must be valid"],
+        )
+
+        assert "Output must exist" in instructions
+        assert "Output must be valid" in instructions
+        assert "quality gate reviewer" in instructions.lower()
+        assert "passed" in instructions  # JSON format mentioned
+        assert "feedback" in instructions  # JSON format mentioned
+
+    def test_build_payload(self, quality_gate: QualityGate, project_root: Path) -> None:
+        """Test building payload with file contents."""
         # Create test output file
         output_file = project_root / "output.md"
         output_file.write_text("Test content")
 
-        prompt = quality_gate._build_review_prompt(
-            step_instructions="Do something",
-            quality_criteria=["Output must exist", "Output must be valid"],
+        payload = quality_gate._build_payload(
             outputs=["output.md"],
             project_root=project_root,
         )
 
-        assert "Do something" in prompt
-        assert "Output must exist" in prompt
-        assert "Output must be valid" in prompt
-        assert "Test content" in prompt
-        assert "output.md" in prompt
+        assert "Test content" in payload
+        assert "output.md" in payload
+        # Check for the new separator format (20 dashes)
+        assert "--------------------" in payload
 
-    def test_build_review_prompt_missing_file(
+    def test_build_payload_missing_file(
         self, quality_gate: QualityGate, project_root: Path
     ) -> None:
-        """Test building prompt with missing file."""
-        prompt = quality_gate._build_review_prompt(
-            step_instructions="Do something",
-            quality_criteria=["Criteria"],
+        """Test building payload with missing file."""
+        payload = quality_gate._build_payload(
             outputs=["nonexistent.md"],
             project_root=project_root,
         )
 
-        assert "File not found" in prompt
+        assert "File not found" in payload
+        assert "nonexistent.md" in payload
 
     def test_parse_response_valid_json(self, quality_gate: QualityGate) -> None:
         """Test parsing valid JSON response."""
@@ -120,7 +128,6 @@ class TestQualityGate:
     def test_evaluate_no_criteria(self, quality_gate: QualityGate, project_root: Path) -> None:
         """Test evaluation with no criteria auto-passes."""
         result = quality_gate.evaluate(
-            step_instructions="Do something",
             quality_criteria=[],
             outputs=["output.md"],
             project_root=project_root,
@@ -138,7 +145,6 @@ class TestMockQualityGate:
         gate = MockQualityGate()
 
         result = gate.evaluate(
-            step_instructions="Do something",
             quality_criteria=["Criterion 1"],
             outputs=["output.md"],
             project_root=project_root,
@@ -152,7 +158,6 @@ class TestMockQualityGate:
         gate = MockQualityGate(should_pass=False, feedback="Mock failure")
 
         result = gate.evaluate(
-            step_instructions="Do something",
             quality_criteria=["Criterion 1"],
             outputs=["output.md"],
             project_root=project_root,
@@ -166,18 +171,16 @@ class TestMockQualityGate:
         gate = MockQualityGate()
 
         gate.evaluate(
-            step_instructions="Instruction 1",
             quality_criteria=["Criterion 1"],
             outputs=["output1.md"],
             project_root=project_root,
         )
         gate.evaluate(
-            step_instructions="Instruction 2",
             quality_criteria=["Criterion 2"],
             outputs=["output2.md"],
             project_root=project_root,
         )
 
         assert len(gate.evaluations) == 2
-        assert gate.evaluations[0]["step_instructions"] == "Instruction 1"
-        assert gate.evaluations[1]["step_instructions"] == "Instruction 2"
+        assert gate.evaluations[0]["quality_criteria"] == ["Criterion 1"]
+        assert gate.evaluations[1]["quality_criteria"] == ["Criterion 2"]

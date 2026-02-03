@@ -284,6 +284,14 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     if "platforms" not in config_data:
         config_data["platforms"] = []
 
+    # Initialize quality_gate config with defaults
+    if "quality_gate" not in config_data:
+        config_data["quality_gate"] = {
+            "agent_review_command": "claude -p --output-format json",
+            "default_timeout": 120,
+            "default_max_attempts": 3,
+        }
+
     # Add each platform if not already present
     added_platforms: list[str] = []
     for i, platform in enumerate(platforms_to_add):

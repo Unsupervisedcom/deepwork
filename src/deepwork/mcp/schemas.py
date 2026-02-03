@@ -94,6 +94,10 @@ class FinishedStepInput(BaseModel):
 
     outputs: list[str] = Field(description="List of output file paths created")
     notes: str | None = Field(default=None, description="Optional notes about work done")
+    quality_review_override_reason: str | None = Field(
+        default=None,
+        description="If provided, skips the quality gate review. Must explain why the review is being bypassed.",
+    )
 
 
 # =============================================================================

@@ -308,3 +308,37 @@ class TestWorkflowTools:
         # Third attempt should raise error
         with pytest.raises(ToolError, match="Quality gate failed after.*attempts"):
             tools.finished_step(FinishedStepInput(outputs=["output1.md"]))
+
+    def test_finished_step_quality_gate_override(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test finished_step skips quality gate when override reason provided."""
+        # Create tools with failing quality gate
+        failing_gate = MockQualityGate(should_pass=False, feedback="Would fail")
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+            quality_gate=failing_gate,
+        )
+
+        # Start workflow
+        start_input = StartWorkflowInput(
+            goal="Complete task",
+            job_name="test_job",
+            workflow_name="main",
+        )
+        tools.start_workflow(start_input)
+
+        # Create output and finish step with override reason
+        (project_root / "output1.md").write_text("Output that would fail quality check")
+        response = tools.finished_step(
+            FinishedStepInput(
+                outputs=["output1.md"],
+                quality_review_override_reason="Manual review completed offline",
+            )
+        )
+
+        # Should advance to next step despite failing quality gate config
+        assert response.status == StepStatus.NEXT_STEP
+        # Quality gate should not have been called
+        assert len(failing_gate.evaluations) == 0
