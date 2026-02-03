@@ -119,11 +119,16 @@ def _serve_mcp(
     # Validate project has DeepWork installed
     _load_config(project_path)
 
-    # Load quality gate from config if not specified
+    # Load quality gate settings from config if not specified via CLI
+    config = _load_config(project_path)
+    qg_config = config.get("quality_gate", {})
+
     if quality_gate_command is None:
-        config = _load_config(project_path)
-        qg_config = config.get("quality_gate", {})
         quality_gate_command = qg_config.get("agent_review_command")
+
+    # Get timeout and max_attempts from config (with defaults)
+    quality_gate_timeout = qg_config.get("default_timeout", 120)
+    quality_gate_max_attempts = qg_config.get("default_max_attempts", 3)
 
     # Create and run server
     from deepwork.mcp.server import create_server
@@ -131,6 +136,8 @@ def _serve_mcp(
     server = create_server(
         project_root=project_path,
         quality_gate_command=quality_gate_command,
+        quality_gate_timeout=quality_gate_timeout,
+        quality_gate_max_attempts=quality_gate_max_attempts,
     )
 
     if transport == "stdio":

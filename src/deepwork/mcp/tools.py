@@ -44,6 +44,7 @@ class WorkflowTools:
         project_root: Path,
         state_manager: StateManager,
         quality_gate: QualityGate | None = None,
+        max_quality_attempts: int = 3,
     ):
         """Initialize workflow tools.
 
@@ -51,11 +52,13 @@ class WorkflowTools:
             project_root: Path to project root
             state_manager: State manager instance
             quality_gate: Optional quality gate for step validation
+            max_quality_attempts: Maximum attempts before failing quality gate
         """
         self.project_root = project_root
         self.jobs_dir = project_root / ".deepwork" / "jobs"
         self.state_manager = state_manager
         self.quality_gate = quality_gate
+        self.max_quality_attempts = max_quality_attempts
 
     def _load_all_jobs(self) -> list[JobDefinition]:
         """Load all job definitions from the jobs directory.
@@ -292,13 +295,15 @@ class WorkflowTools:
         if current_step is None:
             raise ToolError(f"Current step not found: {current_step_id}")
 
-        # Run quality gate if available and step has criteria
-        if self.quality_gate and current_step.quality_criteria:
+        # Run quality gate if available and step has criteria (unless overridden)
+        if (
+            self.quality_gate
+            and current_step.quality_criteria
+            and not input_data.quality_review_override_reason
+        ):
             attempts = self.state_manager.record_quality_attempt(current_step_id)
 
-            instructions = self._get_step_instructions(job, current_step_id)
             result = self.quality_gate.evaluate(
-                step_instructions=instructions,
                 quality_criteria=current_step.quality_criteria,
                 outputs=input_data.outputs,
                 project_root=self.project_root,
@@ -306,10 +311,9 @@ class WorkflowTools:
 
             if not result.passed:
                 # Check max attempts
-                max_attempts = 3  # Could be configurable
-                if attempts >= max_attempts:
+                if attempts >= self.max_quality_attempts:
                     raise ToolError(
-                        f"Quality gate failed after {max_attempts} attempts. "
+                        f"Quality gate failed after {self.max_quality_attempts} attempts. "
                         f"Feedback: {result.feedback}"
                     )
 

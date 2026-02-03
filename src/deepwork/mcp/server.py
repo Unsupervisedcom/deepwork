@@ -26,12 +26,16 @@ from deepwork.mcp.tools import WorkflowTools
 def create_server(
     project_root: Path | str,
     quality_gate_command: str | None = None,
+    quality_gate_timeout: int = 120,
+    quality_gate_max_attempts: int = 3,
 ) -> FastMCP:
     """Create and configure the MCP server.
 
     Args:
         project_root: Path to the project root
         quality_gate_command: Optional command for quality gate agent
+        quality_gate_timeout: Timeout in seconds for quality gate (default: 120)
+        quality_gate_max_attempts: Max attempts before failing quality gate (default: 3)
 
     Returns:
         Configured FastMCP server instance
@@ -43,12 +47,16 @@ def create_server(
 
     quality_gate: QualityGate | None = None
     if quality_gate_command:
-        quality_gate = QualityGate(command=quality_gate_command)
+        quality_gate = QualityGate(
+            command=quality_gate_command,
+            timeout=quality_gate_timeout,
+        )
 
     tools = WorkflowTools(
         project_root=project_path,
         state_manager=state_manager,
         quality_gate=quality_gate,
+        max_quality_attempts=quality_gate_max_attempts,
     )
 
     # Create MCP server
@@ -104,15 +112,21 @@ def create_server(
             "'next_step' with instructions for the next step, or "
             "'workflow_complete' when finished. "
             "Required: outputs (list of file paths created). "
-            "Optional: notes about work done."
+            "Optional: notes about work done. "
+            "Optional: quality_review_override_reason to skip quality review (must explain why)."
         )
     )
     def finished_step(
         outputs: list[str],
         notes: str | None = None,
+        quality_review_override_reason: str | None = None,
     ) -> dict[str, Any]:
         """Report step completion and get next instructions."""
-        input_data = FinishedStepInput(outputs=outputs, notes=notes)
+        input_data = FinishedStepInput(
+            outputs=outputs,
+            notes=notes,
+            quality_review_override_reason=quality_review_override_reason,
+        )
         response = tools.finished_step(input_data)
         return response.model_dump()
 
