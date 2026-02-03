@@ -121,7 +121,8 @@
       "Bash(deepwork:*)",
       "Bash(.claude/hooks/commit_job_git_commit.sh:*)",
       "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
-      "WebSearch"
+      "WebSearch",
+      "Skill(deepwork)"
     ]
   },
   "hooks": {
@@ -147,5 +148,16 @@
         ]
       }
     ]
+  },
+  "mcpServers": {
+    "deepwork": {
+      "command": "deepwork",
+      "args": [
+        "serve",
+        "--path",
+        "."
+      ],
+      "transport": "stdio"
+    }
   }
 }

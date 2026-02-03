@@ -256,6 +256,22 @@ class AgentAdapter(ABC):
         # Default implementation does nothing - subclasses can override
         return 0
 
+    def register_mcp_server(self, project_path: Path) -> bool:
+        """
+        Register the DeepWork MCP server with the platform.
+
+        Args:
+            project_path: Path to project root
+
+        Returns:
+            True if server was registered, False if already registered
+
+        Raises:
+            AdapterError: If registration fails
+        """
+        # Default implementation does nothing - subclasses can override
+        return False
+
 
 def _hook_already_present(hooks: list[dict[str, Any]], script_path: str) -> bool:
     """Check if a hook with the given script path is already in the list."""
@@ -545,6 +561,50 @@ class ClaudeAdapter(AgentAdapter):
             pass
 
         return None
+
+    def register_mcp_server(self, project_path: Path) -> bool:
+        """
+        Register the DeepWork MCP server in Claude Code settings.json.
+
+        Adds the mcpServers configuration for DeepWork:
+        {
+          "mcpServers": {
+            "deepwork": {
+              "command": "deepwork",
+              "args": ["serve", "--path", "."],
+              "transport": "stdio"
+            }
+          }
+        }
+
+        Args:
+            project_path: Path to project root
+
+        Returns:
+            True if server was registered, False if already registered
+
+        Raises:
+            AdapterError: If registration fails
+        """
+        settings = self._load_settings(project_path)
+
+        # Initialize mcpServers if not present
+        if "mcpServers" not in settings:
+            settings["mcpServers"] = {}
+
+        # Check if already registered
+        if "deepwork" in settings["mcpServers"]:
+            return False
+
+        # Register the DeepWork MCP server
+        settings["mcpServers"]["deepwork"] = {
+            "command": "deepwork",
+            "args": ["serve", "--path", "."],
+            "transport": "stdio",
+        }
+
+        self._save_settings(project_path, settings)
+        return True
 
 
 class GeminiAdapter(AgentAdapter):

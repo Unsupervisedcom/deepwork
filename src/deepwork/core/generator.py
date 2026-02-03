@@ -575,3 +575,61 @@ class SkillGenerator:
             skill_paths.append(skill_path)
 
         return skill_paths
+
+    def generate_deepwork_skill(
+        self,
+        adapter: AgentAdapter,
+        output_dir: Path | str,
+    ) -> Path:
+        """
+        Generate the global /deepwork skill that instructs agents to use MCP tools.
+
+        This is a single skill that provides the main entry point for DeepWork,
+        directing agents to use the MCP server's tools for workflow management.
+
+        Args:
+            adapter: Agent adapter for the target platform
+            output_dir: Directory to write skill file to
+
+        Returns:
+            Path to generated skill file
+
+        Raises:
+            GeneratorError: If generation fails
+        """
+        output_dir = Path(output_dir)
+
+        # Create skills subdirectory if needed
+        skills_dir = output_dir / adapter.skills_dir
+        skills_dir.mkdir(parents=True, exist_ok=True)
+
+        # Load and render template
+        env = self._get_jinja_env(adapter)
+        template_name = "skill-deepwork.md.jinja"
+
+        try:
+            template = env.get_template(template_name)
+        except TemplateNotFound as e:
+            raise GeneratorError(f"DeepWork skill template not found: {e}") from e
+
+        try:
+            rendered = template.render()
+        except Exception as e:
+            raise GeneratorError(f"DeepWork skill template rendering failed: {e}") from e
+
+        # Write skill file
+        # Use the adapter's convention for naming
+        if adapter.name == "gemini":
+            skill_filename = "deepwork/index.toml"
+        else:
+            skill_filename = "deepwork/SKILL.md"
+
+        skill_path = skills_dir / skill_filename
+        skill_path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            safe_write(skill_path, rendered)
+        except Exception as e:
+            raise GeneratorError(f"Failed to write DeepWork skill file: {e}") from e
+
+        return skill_path

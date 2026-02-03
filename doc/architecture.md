@@ -18,11 +18,12 @@ DeepWork is a framework for enabling AI agents to perform complex, multi-step wo
 
 ## Architecture Overview
 
-This document is organized into three major sections:
+This document is organized into four major sections:
 
 1. **[DeepWork Tool Architecture](#part-1-deepwork-tool-architecture)** - The DeepWork repository/codebase itself and how it works
 2. **[Target Project Architecture](#part-2-target-project-architecture)** - What a project looks like after DeepWork is installed
 3. **[Runtime Execution Model](#part-3-runtime-execution-model)** - How AI agents execute jobs using the installed skills
+4. **[MCP Server Architecture](#part-4-mcp-server-architecture)** - The MCP server for checkpoint-based workflow execution
 
 ---
 
@@ -40,7 +41,8 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── __init__.py
 │       │   ├── main.py         # CLI entry point
 │       │   ├── install.py      # Install command
-│       │   └── sync.py         # Sync command
+│       │   ├── sync.py         # Sync command
+│       │   └── serve.py        # MCP server command
 │       ├── core/
 │       │   ├── adapters.py     # Agent adapters for AI platforms
 │       │   ├── detector.py     # AI platform detection
@@ -48,6 +50,13 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── parser.py       # Job definition parsing
 │       │   ├── doc_spec_parser.py   # Doc spec parsing
 │       │   └── hooks_syncer.py     # Hook syncing to platforms
+│       ├── mcp/                # MCP server module
+│       │   ├── __init__.py
+│       │   ├── server.py       # FastMCP server definition
+│       │   ├── tools.py        # MCP tool implementations
+│       │   ├── state.py        # Workflow session state management
+│       │   ├── schemas.py      # Pydantic models for I/O
+│       │   └── quality_gate.py # Quality gate with review agent
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── __init__.py
 │       │   ├── wrapper.py           # Cross-platform input/output normalization
@@ -55,7 +64,8 @@ deepwork/                       # DeepWork tool repository
 │       │   └── gemini_hook.sh       # Shell wrapper for Gemini CLI
 │       ├── templates/          # Skill templates for each platform
 │       │   ├── claude/
-│       │   │   └── skill-job-step.md.jinja
+│       │   │   ├── skill-job-step.md.jinja
+│       │   │   └── skill-deepwork.md.jinja  # MCP entry point skill
 │       │   ├── gemini/
 │       │   └── copilot/
 │       ├── standard_jobs/      # Built-in job definitions
@@ -1122,6 +1132,225 @@ See `doc/doc-specs.md` for complete documentation.
 
 ---
 
+---
+
+# Part 4: MCP Server Architecture
+
+DeepWork includes an MCP (Model Context Protocol) server that provides an alternative execution model. Instead of relying solely on skill files with embedded instructions, the MCP server guides agents through workflows via checkpoint calls with quality gate enforcement.
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Claude Code / AI Agent                     │
+│  /deepwork skill → instructs to use MCP tools               │
+└─────────────────────────────────────────────────────────────┘
+                              │ MCP Protocol (stdio)
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   DeepWork MCP Server                        │
+│  Tools: get_workflows | start_workflow | finished_step      │
+│  State: session tracking, step progress, outputs            │
+│  Quality Gate: invokes review agent for validation          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│              .deepwork/jobs/[job_name]/job.yml              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## MCP Server Components
+
+### Server (`server.py`)
+
+The FastMCP server definition that:
+- Creates and configures the MCP server instance
+- Registers the three workflow tools
+- Provides server instructions for agents
+
+### Tools (`tools.py`)
+
+Implements the three MCP tools:
+
+#### 1. `get_workflows`
+Lists all available workflows from `.deepwork/jobs/`.
+
+**Parameters**: None
+
+**Returns**: List of jobs with their workflows, steps, and summaries
+
+#### 2. `start_workflow`
+Begins a new workflow session.
+
+**Parameters**:
+- `goal: str` - What the user wants to accomplish
+- `job_name: str` - Name of the job
+- `workflow_name: str` - Name of the workflow within the job
+- `instance_id: str | None` - Optional identifier (e.g., "acme", "q1-2026")
+
+**Returns**: Session ID, branch name, first step instructions
+
+#### 3. `finished_step`
+Reports step completion and gets next instructions.
+
+**Parameters**:
+- `outputs: list[str]` - List of output file paths created
+- `notes: str | None` - Optional notes about work done
+
+**Returns**:
+- `status: "needs_work" | "next_step" | "workflow_complete"`
+- If `needs_work`: feedback from quality gate, failed criteria
+- If `next_step`: next step instructions
+- If `workflow_complete`: summary of all outputs
+
+### State Management (`state.py`)
+
+Manages workflow session state persisted to `.deepwork/tmp/session_[id].json`:
+
+```python
+class StateManager:
+    def create_session(...) -> WorkflowSession
+    def load_session(session_id) -> WorkflowSession
+    def start_step(step_id) -> None
+    def complete_step(step_id, outputs, notes) -> None
+    def advance_to_step(step_id, entry_index) -> None
+    def complete_workflow() -> None
+```
+
+Session state includes:
+- Session ID and timestamps
+- Job/workflow/instance identification
+- Current step and entry index
+- Per-step progress (started_at, completed_at, outputs, quality_attempts)
+
+### Quality Gate (`quality_gate.py`)
+
+Evaluates step outputs against quality criteria:
+
+```python
+class QualityGate:
+    def evaluate(
+        step_instructions: str,
+        quality_criteria: list[str],
+        outputs: list[str],
+        project_root: Path,
+    ) -> QualityGateResult
+```
+
+The quality gate:
+1. Builds a review prompt with step instructions, criteria, and output contents
+2. Invokes a review agent via subprocess (configurable command)
+3. Parses the structured JSON response
+4. Returns pass/fail with per-criterion feedback
+
+### Schemas (`schemas.py`)
+
+Pydantic models for all tool inputs and outputs:
+- `StartWorkflowInput`, `FinishedStepInput`
+- `GetWorkflowsResponse`, `StartWorkflowResponse`, `FinishedStepResponse`
+- `WorkflowSession`, `StepProgress`
+- `QualityGateResult`, `QualityCriteriaResult`
+
+## MCP Server Registration
+
+When `deepwork install` runs, it registers the MCP server in platform settings:
+
+```json
+// .claude/settings.json
+{
+  "mcpServers": {
+    "deepwork": {
+      "command": "deepwork",
+      "args": ["serve", "--path", "."],
+      "transport": "stdio"
+    }
+  }
+}
+```
+
+## The `/deepwork` Skill
+
+A single skill (`.claude/skills/deepwork/SKILL.md`) instructs agents to use MCP tools:
+
+```markdown
+# DeepWork Workflow Manager
+
+Execute multi-step workflows with quality gate checkpoints.
+
+## Quick Start
+1. Discover workflows: Call `get_workflows`
+2. Start a workflow: Call `start_workflow` with your goal
+3. Execute steps: Follow the instructions returned
+4. Checkpoint: Call `finished_step` with your outputs
+5. Iterate or continue: Handle needs_work, next_step, or workflow_complete
+```
+
+## MCP Execution Flow
+
+1. **User invokes `/deepwork`**
+   - Agent calls `get_workflows` to discover available workflows
+   - Parses user intent to identify target workflow
+
+2. **Agent calls `start_workflow`**
+   - MCP server creates session, generates branch name
+   - Returns first step instructions and expected outputs
+
+3. **Agent executes step**
+   - Follows step instructions
+   - Creates output files
+
+4. **Agent calls `finished_step`**
+   - MCP server evaluates outputs against quality criteria (if configured)
+   - If `needs_work`: returns feedback for agent to fix issues
+   - If `next_step`: returns next step instructions
+   - If `workflow_complete`: workflow finished
+
+5. **Loop continues until workflow complete**
+
+## Quality Gate Configuration
+
+Configure in `.deepwork/config.yml`:
+
+```yaml
+version: 0.2.0
+platforms:
+  - claude
+
+quality_gate:
+  agent_review_command: "claude -p --output-format json"
+  timeout: 120
+  max_attempts: 3
+```
+
+## Serve Command
+
+Start the MCP server manually:
+
+```bash
+# Basic usage
+deepwork serve
+
+# With quality gate
+deepwork serve --quality-gate "claude -p --output-format json"
+
+# For a specific project
+deepwork serve --path /path/to/project
+
+# SSE transport (for remote)
+deepwork serve --transport sse --port 8000
+```
+
+## Benefits of MCP Approach
+
+1. **Centralized state**: Session state persisted and visible in `.deepwork/tmp/`
+2. **Quality gates**: Automated validation before proceeding
+3. **Structured checkpoints**: Clear handoff points between steps
+4. **Resumability**: Sessions can be loaded and resumed
+5. **Observability**: All state changes logged and inspectable
+
+---
+
 ## References
 
 - [Spec-Kit Repository](https://github.com/github/spec-kit)
@@ -1130,4 +1359,6 @@ See `doc/doc-specs.md` for complete documentation.
 - [Git Workflows](https://www.atlassian.com/git/tutorials/comparing-workflows)
 - [JSON Schema](https://json-schema.org/)
 - [Jinja2 Documentation](https://jinja.palletsprojects.com/)
+- [Model Context Protocol](https://modelcontextprotocol.io/)
+- [FastMCP Documentation](https://github.com/jlowin/fastmcp)
 

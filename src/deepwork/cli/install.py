@@ -298,7 +298,15 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     save_yaml(config_file, config_data)
     console.print(f"  [green]✓[/green] Updated {config_file.relative_to(project_path)}")
 
-    # Step 5: Run sync to generate skills
+    # Step 5: Register MCP server for each platform
+    console.print("[yellow]→[/yellow] Registering MCP server...")
+    for adapter in detected_adapters:
+        if adapter.register_mcp_server(project_path):
+            console.print(f"  [green]✓[/green] Registered MCP server for {adapter.display_name}")
+        else:
+            console.print(f"  [dim]•[/dim] MCP server already registered for {adapter.display_name}")
+
+    # Step 6: Run sync to generate skills
     console.print()
     console.print("[yellow]→[/yellow] Running sync to generate skills...")
     console.print()

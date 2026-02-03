@@ -134,10 +134,20 @@ def sync_skills(project_path: Path) -> None:
         # Create skills directory
         ensure_dir(skills_dir)
 
-        # Generate skills for all jobs
+        # Generate the global /deepwork skill (MCP entry point)
+        console.print("  [dim]•[/dim] Generating /deepwork skill...")
         all_skill_paths: list[Path] = []
+        try:
+            deepwork_skill_path = generator.generate_deepwork_skill(adapter, platform_dir)
+            all_skill_paths.append(deepwork_skill_path)
+            stats["skills"] += 1
+            console.print("    [green]✓[/green] deepwork (MCP entry point)")
+        except Exception as e:
+            console.print(f"    [red]✗[/red] Failed to generate /deepwork skill: {e}")
+
+        # Generate skills for all jobs
         if jobs:
-            console.print("  [dim]•[/dim] Generating skills...")
+            console.print("  [dim]•[/dim] Generating job skills...")
             for job in jobs:
                 try:
                     job_paths = generator.generate_all_skills(
