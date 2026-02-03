@@ -26,6 +26,9 @@ dependencies = [
     "click>=8.1.0",
     "rich>=13.0.0",
     "jsonschema>=4.17.0",
+    "fastmcp>=2.0",
+    "pydantic>=2.0",
+    "mcp>=1.0.0",
 ]
 
 [project.optional-dependencies]

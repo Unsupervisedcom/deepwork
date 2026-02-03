@@ -1,0 +1,359 @@
+"""Tests for MCP schemas."""
+
+
+from deepwork.mcp.schemas import (
+    FinishedStepInput,
+    FinishedStepResponse,
+    JobInfo,
+    QualityCriteriaResult,
+    QualityGateResult,
+    StartWorkflowInput,
+    StartWorkflowResponse,
+    StepInfo,
+    StepProgress,
+    StepStatus,
+    WorkflowInfo,
+    WorkflowSession,
+    WorkflowStepEntryInfo,
+)
+
+
+class TestStepStatus:
+    """Tests for StepStatus enum."""
+
+    def test_enum_values(self) -> None:
+        """Test that enum has expected values."""
+        assert StepStatus.NEEDS_WORK == "needs_work"
+        assert StepStatus.NEXT_STEP == "next_step"
+        assert StepStatus.WORKFLOW_COMPLETE == "workflow_complete"
+
+
+class TestStepInfo:
+    """Tests for StepInfo model."""
+
+    def test_basic_step(self) -> None:
+        """Test creating basic step info."""
+        step = StepInfo(
+            id="step1",
+            name="First Step",
+            description="Does something",
+        )
+
+        assert step.id == "step1"
+        assert step.name == "First Step"
+        assert step.description == "Does something"
+        assert step.dependencies == []
+
+    def test_step_with_dependencies(self) -> None:
+        """Test step with dependencies."""
+        step = StepInfo(
+            id="step2",
+            name="Second Step",
+            description="Depends on step1",
+            dependencies=["step1"],
+        )
+
+        assert step.dependencies == ["step1"]
+
+
+class TestWorkflowStepEntryInfo:
+    """Tests for WorkflowStepEntryInfo model."""
+
+    def test_sequential_entry(self) -> None:
+        """Test sequential step entry."""
+        entry = WorkflowStepEntryInfo(step_ids=["step1"])
+
+        assert entry.step_ids == ["step1"]
+        assert entry.is_concurrent is False
+
+    def test_concurrent_entry(self) -> None:
+        """Test concurrent step entry."""
+        entry = WorkflowStepEntryInfo(
+            step_ids=["step1", "step2"],
+            is_concurrent=True,
+        )
+
+        assert entry.step_ids == ["step1", "step2"]
+        assert entry.is_concurrent is True
+
+
+class TestWorkflowInfo:
+    """Tests for WorkflowInfo model."""
+
+    def test_basic_workflow(self) -> None:
+        """Test basic workflow info."""
+        workflow = WorkflowInfo(
+            name="test_workflow",
+            summary="A test workflow",
+            steps=["step1", "step2"],
+            step_entries=[
+                WorkflowStepEntryInfo(step_ids=["step1"]),
+                WorkflowStepEntryInfo(step_ids=["step2"]),
+            ],
+            first_step="step1",
+        )
+
+        assert workflow.name == "test_workflow"
+        assert workflow.first_step == "step1"
+        assert len(workflow.steps) == 2
+
+
+class TestJobInfo:
+    """Tests for JobInfo model."""
+
+    def test_basic_job(self) -> None:
+        """Test basic job info."""
+        job = JobInfo(
+            name="test_job",
+            summary="A test job",
+        )
+
+        assert job.name == "test_job"
+        assert job.summary == "A test job"
+        assert job.description is None
+        assert job.workflows == []
+        assert job.standalone_steps == []
+
+
+class TestStartWorkflowInput:
+    """Tests for StartWorkflowInput model."""
+
+    def test_required_fields(self) -> None:
+        """Test required fields only."""
+        input_data = StartWorkflowInput(
+            goal="Complete a task",
+            job_name="test_job",
+            workflow_name="main",
+        )
+
+        assert input_data.goal == "Complete a task"
+        assert input_data.job_name == "test_job"
+        assert input_data.workflow_name == "main"
+        assert input_data.instance_id is None
+
+    def test_with_instance_id(self) -> None:
+        """Test with optional instance_id."""
+        input_data = StartWorkflowInput(
+            goal="Complete a task",
+            job_name="test_job",
+            workflow_name="main",
+            instance_id="acme",
+        )
+
+        assert input_data.instance_id == "acme"
+
+
+class TestFinishedStepInput:
+    """Tests for FinishedStepInput model."""
+
+    def test_with_outputs(self) -> None:
+        """Test with outputs only."""
+        input_data = FinishedStepInput(outputs=["output1.md", "output2.md"])
+
+        assert input_data.outputs == ["output1.md", "output2.md"]
+        assert input_data.notes is None
+
+    def test_with_notes(self) -> None:
+        """Test with notes."""
+        input_data = FinishedStepInput(
+            outputs=["output.md"],
+            notes="Completed successfully",
+        )
+
+        assert input_data.notes == "Completed successfully"
+
+
+class TestQualityCriteriaResult:
+    """Tests for QualityCriteriaResult model."""
+
+    def test_passed_criterion(self) -> None:
+        """Test passed criterion."""
+        result = QualityCriteriaResult(
+            criterion="Output must be valid",
+            passed=True,
+        )
+
+        assert result.passed is True
+        assert result.feedback is None
+
+    def test_failed_criterion(self) -> None:
+        """Test failed criterion with feedback."""
+        result = QualityCriteriaResult(
+            criterion="Output must be valid",
+            passed=False,
+            feedback="Output was incomplete",
+        )
+
+        assert result.passed is False
+        assert result.feedback == "Output was incomplete"
+
+
+class TestQualityGateResult:
+    """Tests for QualityGateResult model."""
+
+    def test_passed_gate(self) -> None:
+        """Test passed quality gate."""
+        result = QualityGateResult(
+            passed=True,
+            feedback="All criteria met",
+            criteria_results=[
+                QualityCriteriaResult(criterion="Test 1", passed=True),
+            ],
+        )
+
+        assert result.passed is True
+        assert len(result.criteria_results) == 1
+
+    def test_failed_gate(self) -> None:
+        """Test failed quality gate."""
+        result = QualityGateResult(
+            passed=False,
+            feedback="Some criteria failed",
+            criteria_results=[
+                QualityCriteriaResult(criterion="Test 1", passed=True),
+                QualityCriteriaResult(
+                    criterion="Test 2",
+                    passed=False,
+                    feedback="Failed check",
+                ),
+            ],
+        )
+
+        assert result.passed is False
+        assert len(result.criteria_results) == 2
+
+
+class TestStartWorkflowResponse:
+    """Tests for StartWorkflowResponse model."""
+
+    def test_basic_response(self) -> None:
+        """Test basic response."""
+        response = StartWorkflowResponse(
+            session_id="abc123",
+            branch_name="deepwork/test-main-20240101",
+            current_step_id="step1",
+            step_instructions="Do something",
+            step_outputs=["output.md"],
+        )
+
+        assert response.session_id == "abc123"
+        assert response.branch_name == "deepwork/test-main-20240101"
+        assert response.current_step_id == "step1"
+        assert response.quality_criteria == []
+
+
+class TestFinishedStepResponse:
+    """Tests for FinishedStepResponse model."""
+
+    def test_needs_work_status(self) -> None:
+        """Test needs_work response."""
+        response = FinishedStepResponse(
+            status=StepStatus.NEEDS_WORK,
+            feedback="Fix the issues",
+            failed_criteria=[
+                QualityCriteriaResult(criterion="Test", passed=False, feedback="Failed"),
+            ],
+        )
+
+        assert response.status == StepStatus.NEEDS_WORK
+        assert response.feedback is not None
+        assert response.next_step_id is None
+
+    def test_next_step_status(self) -> None:
+        """Test next_step response."""
+        response = FinishedStepResponse(
+            status=StepStatus.NEXT_STEP,
+            next_step_id="step2",
+            step_instructions="Next step instructions",
+            step_outputs=["output2.md"],
+        )
+
+        assert response.status == StepStatus.NEXT_STEP
+        assert response.next_step_id == "step2"
+        assert response.summary is None
+
+    def test_workflow_complete_status(self) -> None:
+        """Test workflow_complete response."""
+        response = FinishedStepResponse(
+            status=StepStatus.WORKFLOW_COMPLETE,
+            summary="Workflow completed!",
+            all_outputs=["output1.md", "output2.md"],
+        )
+
+        assert response.status == StepStatus.WORKFLOW_COMPLETE
+        assert response.summary is not None
+        assert response.all_outputs is not None
+
+
+class TestStepProgress:
+    """Tests for StepProgress model."""
+
+    def test_new_step(self) -> None:
+        """Test new step progress."""
+        progress = StepProgress(step_id="step1")
+
+        assert progress.step_id == "step1"
+        assert progress.started_at is None
+        assert progress.completed_at is None
+        assert progress.outputs == []
+        assert progress.quality_attempts == 0
+
+
+class TestWorkflowSession:
+    """Tests for WorkflowSession model."""
+
+    def test_basic_session(self) -> None:
+        """Test basic session creation."""
+        session = WorkflowSession(
+            session_id="abc123",
+            job_name="test_job",
+            workflow_name="main",
+            goal="Complete the task",
+            branch_name="deepwork/test-main-20240101",
+            current_step_id="step1",
+            started_at="2024-01-01T00:00:00Z",
+        )
+
+        assert session.session_id == "abc123"
+        assert session.job_name == "test_job"
+        assert session.status == "active"
+        assert session.completed_at is None
+
+    def test_to_dict(self) -> None:
+        """Test converting session to dict."""
+        session = WorkflowSession(
+            session_id="abc123",
+            job_name="test_job",
+            workflow_name="main",
+            goal="Complete the task",
+            branch_name="deepwork/test-main-20240101",
+            current_step_id="step1",
+            started_at="2024-01-01T00:00:00Z",
+        )
+
+        data = session.to_dict()
+
+        assert isinstance(data, dict)
+        assert data["session_id"] == "abc123"
+        assert data["job_name"] == "test_job"
+
+    def test_from_dict(self) -> None:
+        """Test creating session from dict."""
+        data = {
+            "session_id": "abc123",
+            "job_name": "test_job",
+            "workflow_name": "main",
+            "goal": "Complete the task",
+            "branch_name": "deepwork/test-main-20240101",
+            "current_step_id": "step1",
+            "current_entry_index": 0,
+            "step_progress": {},
+            "started_at": "2024-01-01T00:00:00Z",
+            "completed_at": None,
+            "status": "active",
+        }
+
+        session = WorkflowSession.from_dict(data)
+
+        assert session.session_id == "abc123"
+        assert session.job_name == "test_job"
