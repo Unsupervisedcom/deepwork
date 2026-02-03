@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import sys
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
@@ -564,46 +566,72 @@ class ClaudeAdapter(AgentAdapter):
 
     def register_mcp_server(self, project_path: Path) -> bool:
         """
-        Register the DeepWork MCP server in Claude Code settings.json.
+        Register the DeepWork MCP server in .mcp.json at project root.
 
-        Adds the mcpServers configuration for DeepWork:
-        {
-          "mcpServers": {
-            "deepwork": {
-              "command": "deepwork",
-              "args": ["serve", "--path", "."],
-              "transport": "stdio"
-            }
-          }
-        }
+        Claude Code reads MCP server configurations from .mcp.json (project scope),
+        not from settings.json. This method detects the full path to the deepwork
+        executable to ensure the MCP server can be invoked regardless of PATH
+        configuration when Claude Code starts.
 
         Args:
             project_path: Path to project root
 
         Returns:
-            True if server was registered, False if already registered
+            True if server was registered or updated, False if no changes needed
 
         Raises:
             AdapterError: If registration fails
         """
-        settings = self._load_settings(project_path)
+        mcp_file = project_path / ".mcp.json"
+
+        # Load existing .mcp.json or create new
+        existing_config: dict[str, Any] = {}
+        if mcp_file.exists():
+            try:
+                with open(mcp_file, encoding="utf-8") as f:
+                    existing_config = json.load(f)
+            except (json.JSONDecodeError, OSError) as e:
+                raise AdapterError(f"Failed to read .mcp.json: {e}") from e
 
         # Initialize mcpServers if not present
-        if "mcpServers" not in settings:
-            settings["mcpServers"] = {}
+        if "mcpServers" not in existing_config:
+            existing_config["mcpServers"] = {}
 
-        # Check if already registered
-        if "deepwork" in settings["mcpServers"]:
+        # Build the new MCP server config
+        deepwork_path = shutil.which("deepwork")
+
+        if deepwork_path:
+            # Use the absolute path to deepwork
+            new_server_config = {
+                "command": deepwork_path,
+                "args": ["serve", "--path", "."],
+            }
+        else:
+            # Fallback: use Python module invocation
+            # This works when deepwork is installed in the current Python environment
+            new_server_config = {
+                "command": sys.executable,
+                "args": ["-m", "deepwork.cli.main", "serve", "--path", "."],
+            }
+
+        # Check if already registered with same config
+        existing_server = existing_config["mcpServers"].get("deepwork", {})
+        if (
+            existing_server.get("command") == new_server_config["command"]
+            and existing_server.get("args") == new_server_config["args"]
+        ):
             return False
 
-        # Register the DeepWork MCP server
-        settings["mcpServers"]["deepwork"] = {
-            "command": "deepwork",
-            "args": ["serve", "--path", "."],
-            "transport": "stdio",
-        }
+        # Register or update the DeepWork MCP server
+        existing_config["mcpServers"]["deepwork"] = new_server_config
 
-        self._save_settings(project_path, settings)
+        # Write .mcp.json
+        try:
+            with open(mcp_file, "w", encoding="utf-8") as f:
+                json.dump(existing_config, f, indent=2)
+        except OSError as e:
+            raise AdapterError(f"Failed to write .mcp.json: {e}") from e
+
         return True
 
 
