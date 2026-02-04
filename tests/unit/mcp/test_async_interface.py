@@ -29,6 +29,7 @@ class TestAsyncInterfaceRegression:
             "record_quality_attempt",
             "advance_to_step",
             "complete_workflow",
+            "abort_workflow",
             "list_sessions",
             "find_active_sessions_for_workflow",
             "delete_session",
@@ -50,11 +51,21 @@ class TestAsyncInterfaceRegression:
             "StateManager._lock must be an asyncio.Lock for async concurrency safety"
         )
 
+    def test_state_manager_has_session_stack(self, tmp_path: Path) -> None:
+        """Verify StateManager uses a session stack for nested workflows."""
+        manager = StateManager(tmp_path)
+
+        assert hasattr(manager, "_session_stack"), "StateManager must have _session_stack attribute"
+        assert isinstance(manager._session_stack, list), (
+            "StateManager._session_stack must be a list for nested workflow support"
+        )
+
     def test_workflow_tools_async_methods(self) -> None:
         """Verify WorkflowTools methods that must be async remain async."""
         async_methods = [
             "start_workflow",
             "finished_step",
+            "abort_workflow",
         ]
 
         for method_name in async_methods:
