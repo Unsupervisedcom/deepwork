@@ -60,10 +60,8 @@ fi
 # nothing else will work.
 
 check_deepwork_installed() {
-    # Run 'deepwork rules clear_queue' instead of just '--version' for double utility:
-    # 1. Verifies that the 'deepwork' command is installed and directly invokable
-    # 2. Clears any stale rules from the queue, ensuring a clean slate for the session
-    if ! deepwork rules clear_queue >/dev/null 2>&1; then
+    # Run 'deepwork --version' to verify the command is installed and directly invokable
+    if ! deepwork --version >/dev/null 2>&1; then
         return 1
     fi
     return 0
@@ -79,10 +77,12 @@ print_deepwork_error() {
   ERROR: The 'deepwork' command is not available or cannot be directly invoked.
 
   DeepWork must be installed such that running 'deepwork' directly works.
-  For example, running 'deepwork rules clear_queue' should succeed.
+  For example, running 'deepwork --version' should succeed.
 
   IMPORTANT: Do NOT use 'uv run deepwork' or similar wrappers.
   The command must be directly invokable as just 'deepwork'.
+
+  To verify: 'deepwork --version' should succeed.
 
   ------------------------------------------------------------------------
   |                                                                      |
