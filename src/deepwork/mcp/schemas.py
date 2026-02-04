@@ -70,9 +70,6 @@ class JobInfo(BaseModel):
     summary: str = Field(description="Short summary of the job")
     description: str | None = Field(default=None, description="Full description")
     workflows: list[WorkflowInfo] = Field(default_factory=list)
-    standalone_steps: list[StepInfo] = Field(
-        default_factory=list, description="Steps not in any workflow"
-    )
 
 
 # =============================================================================

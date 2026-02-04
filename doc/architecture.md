@@ -64,7 +64,6 @@ deepwork/                       # DeepWork tool repository
 │       │   └── gemini_hook.sh       # Shell wrapper for Gemini CLI
 │       ├── templates/          # Skill templates for each platform
 │       │   ├── claude/
-│       │   │   ├── skill-job-step.md.jinja
 │       │   │   └── skill-deepwork.md.jinja  # MCP entry point skill
 │       │   ├── gemini/
 │       │   └── copilot/
@@ -214,52 +213,35 @@ class PlatformDetector:
 
 ### 4. Skill Generator (`generator.py`)
 
-Generates AI-platform-specific skill files from job definitions.
+Generates AI-platform-specific skill files. The generator has been simplified to focus
+on generating only the MCP entry point skill (`/deepwork`), as workflow orchestration
+is now handled by the MCP server rather than individual step skills.
 
-This component is called by the `sync` command to regenerate all skills:
-1. Reads the job definition from `.deepwork/jobs/[job-name]/job.yml`
-2. Loads platform-specific templates
-3. Generates skill files for each step in the job
-4. Writes skills to the AI platform's skills directory
+This component is called by the `sync` command to regenerate the DeepWork skill:
+1. Loads the platform-specific template (`skill-deepwork.md.jinja`)
+2. Generates the `/deepwork` skill file that directs agents to use MCP tools
+3. Writes the skill to the AI platform's skills directory
 
 **Example Generation Flow**:
 ```python
 class SkillGenerator:
-    def generate_all_skills(self, job: JobDefinition,
-                            platform: PlatformConfig,
-                            output_dir: Path) -> list[Path]:
-        """Generate skill files for all steps in a job."""
-        skill_paths = []
+    def generate_deepwork_skill(self, adapter: AgentAdapter,
+                                output_dir: Path) -> Path:
+        """Generate the global /deepwork skill for MCP entry point."""
+        skills_dir = output_dir / adapter.skills_dir
+        skills_dir.mkdir(parents=True, exist_ok=True)
 
-        for step_index, step in enumerate(job.steps):
-            # Load step instructions
-            instructions = read_file(job.job_dir / step.instructions_file)
+        # Load and render template
+        env = self._get_jinja_env(adapter)
+        template = env.get_template("skill-deepwork.md.jinja")
+        rendered = template.render()
 
-            # Build template context
-            context = {
-                "job_name": job.name,
-                "step_id": step.id,
-                "step_name": step.name,
-                "step_number": step_index + 1,
-                "total_steps": len(job.steps),
-                "instructions_content": instructions,
-                "user_inputs": [inp for inp in step.inputs if inp.is_user_input()],
-                "file_inputs": [inp for inp in step.inputs if inp.is_file_input()],
-                "outputs": step.outputs,
-                "dependencies": step.dependencies,
-                "exposed": step.exposed,
-            }
+        # Write skill file
+        skill_path = skills_dir / "deepwork/SKILL.md"
+        skill_path.parent.mkdir(parents=True, exist_ok=True)
+        safe_write(skill_path, rendered)
 
-            # Render template
-            template = env.get_template("skill-job-step.md.jinja")
-            rendered = template.render(**context)
-
-            # Write to platform's skills directory
-            skill_path = output_dir / platform.config_dir / platform.skills_dir / f"{job.name}.{step.id}.md"
-            write_file(skill_path, rendered)
-            skill_paths.append(skill_path)
-
-        return skill_paths
+        return skill_path
 ```
 
 ---

@@ -22,7 +22,6 @@ from deepwork.mcp.schemas import (
     JobInfo,
     StartWorkflowInput,
     StartWorkflowResponse,
-    StepInfo,
     StepStatus,
     WorkflowInfo,
 )
@@ -91,32 +90,15 @@ class WorkflowTools:
             job: Parsed job definition
 
         Returns:
-            JobInfo with workflow and step details
+            JobInfo with workflow details
         """
         # Convert workflows
-        workflows = []
-        workflow_step_ids: set[str] = set()
-
-        for wf in job.workflows:
-            workflow_step_ids.update(wf.steps)
-
-            workflows.append(
-                WorkflowInfo(
-                    name=wf.name,
-                    summary=wf.summary,
-                )
+        workflows = [
+            WorkflowInfo(
+                name=wf.name,
+                summary=wf.summary,
             )
-
-        # Find standalone steps (not in any workflow)
-        standalone_steps = [
-            StepInfo(
-                id=step.id,
-                name=step.name,
-                description=step.description,
-                dependencies=step.dependencies,
-            )
-            for step in job.steps
-            if step.id not in workflow_step_ids
+            for wf in job.workflows
         ]
 
         return JobInfo(
@@ -124,7 +106,6 @@ class WorkflowTools:
             summary=job.summary,
             description=job.description,
             workflows=workflows,
-            standalone_steps=standalone_steps,
         )
 
     def _get_job(self, job_name: str) -> JobDefinition:

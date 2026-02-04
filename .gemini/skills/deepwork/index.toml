@@ -1,15 +1,7 @@
-{#
-Template: skill-deepwork.md.jinja
-Purpose: Generates the main /deepwork skill that instructs agents to use MCP tools
-
-This template is used to create the entry-point skill for DeepWork.
-Instead of containing step instructions, it directs agents to use the
-DeepWork MCP server tools.
-#}
----
-name: deepwork
-description: "Start or continue DeepWork workflows using MCP tools"
----
++++
+name = "deepwork"
+description = "Start or continue DeepWork workflows using MCP tools"
++++
 
 # DeepWork Workflow Manager
 

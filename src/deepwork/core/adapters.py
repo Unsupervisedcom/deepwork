@@ -57,8 +57,6 @@ class AgentAdapter(ABC):
     display_name: ClassVar[str]
     config_dir: ClassVar[str]
     skills_dir: ClassVar[str] = "skills"
-    skill_template: ClassVar[str] = "skill-job-step.md.jinja"
-    meta_skill_template: ClassVar[str] = "skill-job-meta.md.jinja"
 
     # Mapping from generic SkillLifecycleHook to platform-specific event names.
     # Subclasses should override this to provide platform-specific mappings.
@@ -149,38 +147,6 @@ class AgentAdapter(ABC):
         if not root:
             raise AdapterError("No project root specified")
         return root / self.config_dir / self.skills_dir
-
-    def get_meta_skill_filename(self, job_name: str) -> str:
-        """
-        Get the filename for a job's meta-skill.
-
-        The meta-skill is the primary user interface for a job.
-        Can be overridden for different file formats.
-
-        Args:
-            job_name: Name of the job
-
-        Returns:
-            Meta-skill filename (e.g., "job_name/SKILL.md" for Claude)
-        """
-        return f"{job_name}/SKILL.md"
-
-    def get_step_skill_filename(self, job_name: str, step_id: str, exposed: bool = False) -> str:
-        """
-        Get the filename for a step skill.
-
-        All step skills use the same filename format. The exposed parameter
-        is used for template context (user-invocable frontmatter setting).
-
-        Args:
-            job_name: Name of the job
-            step_id: ID of the step
-            exposed: If True, skill is user-invocable (for template context). Default: False.
-
-        Returns:
-            Skill filename (e.g., "job_name.step_id/SKILL.md" for Claude)
-        """
-        return f"{job_name}.{step_id}/SKILL.md"
 
     def detect(self, project_root: Path | None = None) -> bool:
         """
@@ -651,46 +617,10 @@ class GeminiAdapter(AgentAdapter):
     name = "gemini"
     display_name = "Gemini CLI"
     config_dir = ".gemini"
-    skill_template = "skill-job-step.toml.jinja"
-    meta_skill_template = "skill-job-meta.toml.jinja"
 
     # Gemini CLI does NOT support skill-level hooks
     # Hooks are global/project-level in settings.json, not per-skill
     hook_name_mapping: ClassVar[dict[SkillLifecycleHook, str]] = {}
-
-    def get_meta_skill_filename(self, job_name: str) -> str:
-        """
-        Get the filename for a Gemini job's meta-skill.
-
-        Gemini uses TOML files and colon namespacing via subdirectories.
-        For job "my_job", creates: my_job/index.toml
-
-        Args:
-            job_name: Name of the job
-
-        Returns:
-            Meta-skill filename path (e.g., "my_job/index.toml")
-        """
-        return f"{job_name}/index.toml"
-
-    def get_step_skill_filename(self, job_name: str, step_id: str, exposed: bool = False) -> str:
-        """
-        Get the filename for a Gemini step skill.
-
-        Gemini uses TOML files and colon namespacing via subdirectories.
-        All step skills use the same filename format. The exposed parameter
-        is used for template context (user-invocable setting).
-        For job "my_job" and step "step_one", creates: my_job/step_one.toml
-
-        Args:
-            job_name: Name of the job
-            step_id: ID of the step
-            exposed: If True, skill is user-invocable (for template context). Default: False.
-
-        Returns:
-            Skill filename path (e.g., "my_job/step_one.toml")
-        """
-        return f"{job_name}/{step_id}.toml"
 
     def sync_hooks(self, project_path: Path, hooks: dict[str, list[dict[str, Any]]]) -> int:
         """

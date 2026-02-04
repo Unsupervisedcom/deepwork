@@ -36,19 +36,11 @@ interface JobInfo {
   summary: string;           // Short summary of the job
   description: string | null; // Full description (optional)
   workflows: WorkflowInfo[];  // Named workflows in the job
-  standalone_steps: StepInfo[]; // Steps not in any workflow
 }
 
 interface WorkflowInfo {
   name: string;              // Workflow identifier
   summary: string;           // Short description
-}
-
-interface StepInfo {
-  id: string;                // Step identifier
-  name: string;              // Human-readable step name
-  description: string;       // What the step does
-  dependencies: string[];    // Required prior steps
 }
 
 interface ActiveStepInfo {

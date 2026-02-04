@@ -1,5 +1,6 @@
 """Job definition parser."""
 
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -7,6 +8,8 @@ from typing import Any
 from deepwork.schemas.job_schema import JOB_SCHEMA, LIFECYCLE_HOOK_EVENTS
 from deepwork.utils.validation import ValidationError, validate_against_schema
 from deepwork.utils.yaml_utils import YAMLError, load_yaml
+
+logger = logging.getLogger("deepwork.parser")
 
 
 class ParseError(Exception):
@@ -543,6 +546,33 @@ class JobDefinition:
                     )
                 seen_steps.add(step_id)
 
+    def warn_orphaned_steps(self) -> list[str]:
+        """
+        Check for steps not included in any workflow and emit warnings.
+
+        Returns:
+            List of orphaned step IDs
+        """
+        # Collect all step IDs referenced in workflows
+        workflow_step_ids: set[str] = set()
+        for workflow in self.workflows:
+            workflow_step_ids.update(workflow.steps)
+
+        # Find orphaned steps
+        orphaned_steps = [
+            step.id for step in self.steps if step.id not in workflow_step_ids
+        ]
+
+        if orphaned_steps:
+            logger.warning(
+                "Job '%s' has steps not included in any workflow: %s. "
+                "These steps are not accessible via the MCP interface.",
+                self.name,
+                ", ".join(orphaned_steps),
+            )
+
+        return orphaned_steps
+
     @classmethod
     def from_dict(cls, data: dict[str, Any], job_dir: Path) -> "JobDefinition":
         """
@@ -614,5 +644,8 @@ def parse_job_definition(job_dir: Path | str) -> JobDefinition:
     job_def.validate_dependencies()
     job_def.validate_file_inputs()
     job_def.validate_workflows()
+
+    # Warn about orphaned steps (not in any workflow)
+    job_def.warn_orphaned_steps()
 
     return job_def
