@@ -9,8 +9,6 @@ import asyncio
 import inspect
 from pathlib import Path
 
-import pytest
-
 from deepwork.mcp.quality_gate import MockQualityGate, QualityGate
 from deepwork.mcp.state import StateManager
 from deepwork.mcp.tools import WorkflowTools
@@ -91,14 +89,12 @@ class TestAsyncInterfaceRegression:
 
     def test_mock_quality_gate_async_methods(self) -> None:
         """Verify MockQualityGate maintains async interface."""
-        method = getattr(MockQualityGate, "evaluate")
+        method = MockQualityGate.evaluate
         assert inspect.iscoroutinefunction(method), (
             "MockQualityGate.evaluate must be async to match QualityGate interface"
         )
 
-    async def test_concurrent_state_operations_are_serialized(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_concurrent_state_operations_are_serialized(self, tmp_path: Path) -> None:
         """Test that concurrent state operations don't corrupt state.
 
         This test verifies that the async lock properly serializes access
@@ -111,7 +107,7 @@ class TestAsyncInterfaceRegression:
         manager = StateManager(tmp_path)
 
         # Create initial session
-        session = await manager.create_session(
+        await manager.create_session(
             job_name="test_job",
             workflow_name="main",
             goal="Test goal",

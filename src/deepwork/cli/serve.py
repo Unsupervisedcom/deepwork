@@ -30,10 +30,7 @@ def _load_config(project_path: Path) -> dict:
     """
     config_file = project_path / ".deepwork" / "config.yml"
     if not config_file.exists():
-        raise ServeError(
-            f"DeepWork not installed in {project_path}. "
-            "Run 'deepwork install' first."
-        )
+        raise ServeError(f"DeepWork not installed in {project_path}. Run 'deepwork install' first.")
 
     config = load_yaml(config_file)
     if config is None:

@@ -17,7 +17,6 @@ import jsonschema
 
 from deepwork.mcp.schemas import QualityCriteriaResult, QualityGateResult
 
-
 # JSON Schema for quality gate response validation
 QUALITY_GATE_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -264,12 +263,12 @@ You must respond with JSON in this exact structure:
                     process.communicate(input=payload.encode()),
                     timeout=self.timeout,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 process.kill()
                 await process.wait()
                 raise QualityGateError(
                     f"Review agent timed out after {self.timeout} seconds"
-                )
+                ) from None
 
             if process.returncode != 0:
                 raise QualityGateError(
@@ -280,9 +279,7 @@ You must respond with JSON in this exact structure:
             return self._parse_response(stdout.decode())
 
         except FileNotFoundError as e:
-            raise QualityGateError(
-                f"Review agent command not found: {base_cmd[0]}"
-            ) from e
+            raise QualityGateError(f"Review agent command not found: {base_cmd[0]}") from e
 
 
 class MockQualityGate(QualityGate):
@@ -310,10 +307,12 @@ class MockQualityGate(QualityGate):
         project_root: Path,
     ) -> QualityGateResult:
         """Mock evaluation - records call and returns configured result."""
-        self.evaluations.append({
-            "quality_criteria": quality_criteria,
-            "outputs": outputs,
-        })
+        self.evaluations.append(
+            {
+                "quality_criteria": quality_criteria,
+                "outputs": outputs,
+            }
+        )
 
         criteria_results = [
             QualityCriteriaResult(
