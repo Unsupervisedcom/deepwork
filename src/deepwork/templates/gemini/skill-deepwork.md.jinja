@@ -30,7 +30,8 @@ Execute multi-step workflows with quality gate checkpoints.
 ## Intent Parsing
 
 When the user invokes `/deepwork`, parse their intent:
-
-- **Explicit workflow**: `/deepwork new_job` → start the `new_job` workflow
-- **General request**: `/deepwork I want to create a new workflow` → infer best match from available workflows
-- **No context**: `/deepwork` alone → call `get_workflows` and ask user to choose
+1. **ALWAYS**: Call `get_workflows` to discover available workflows
+2. Based on the available flows and what the user said in their request, proceed:
+    - **Explicit workflow**: `/deepwork <a workflow name>` → start the `<a workflow name>` workflow
+    - **General request**: `/deepwork <a request>` → infer best match from available workflows
+    - **No context**: `/deepwork` alone → ask user to choose from available workflows
