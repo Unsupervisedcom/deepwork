@@ -6,10 +6,13 @@ and recovery.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
+
+import aiofiles
 
 from deepwork.mcp.schemas import StepProgress, WorkflowSession
 
@@ -27,6 +30,9 @@ class StateManager:
     - Transparency: Users can inspect session state
     - Recovery: Sessions survive server restarts
     - Debugging: State history is preserved
+
+    This implementation is async-safe and uses a lock to prevent
+    concurrent access issues.
     """
 
     def __init__(self, project_root: Path):
@@ -38,6 +44,7 @@ class StateManager:
         self.project_root = project_root
         self.sessions_dir = project_root / ".deepwork" / "tmp"
         self._active_session: WorkflowSession | None = None
+        self._lock = asyncio.Lock()
 
     def _ensure_sessions_dir(self) -> None:
         """Ensure the sessions directory exists."""
@@ -62,7 +69,7 @@ class StateManager:
         instance = instance_id or date_str
         return f"deepwork/{job_name}-{workflow_name}-{instance}"
 
-    def create_session(
+    async def create_session(
         self,
         job_name: str,
         workflow_name: str,
@@ -82,38 +89,45 @@ class StateManager:
         Returns:
             New WorkflowSession
         """
-        self._ensure_sessions_dir()
+        async with self._lock:
+            self._ensure_sessions_dir()
 
-        session_id = self._generate_session_id()
-        branch_name = self._generate_branch_name(job_name, workflow_name, instance_id)
-        now = datetime.now(UTC).isoformat()
+            session_id = self._generate_session_id()
+            branch_name = self._generate_branch_name(job_name, workflow_name, instance_id)
+            now = datetime.now(UTC).isoformat()
 
-        session = WorkflowSession(
-            session_id=session_id,
-            job_name=job_name,
-            workflow_name=workflow_name,
-            instance_id=instance_id,
-            goal=goal,
-            branch_name=branch_name,
-            current_step_id=first_step_id,
-            current_entry_index=0,
-            step_progress={},
-            started_at=now,
-            status="active",
-        )
+            session = WorkflowSession(
+                session_id=session_id,
+                job_name=job_name,
+                workflow_name=workflow_name,
+                instance_id=instance_id,
+                goal=goal,
+                branch_name=branch_name,
+                current_step_id=first_step_id,
+                current_entry_index=0,
+                step_progress={},
+                started_at=now,
+                status="active",
+            )
 
-        self._save_session(session)
-        self._active_session = session
-        return session
+            await self._save_session_unlocked(session)
+            self._active_session = session
+            return session
 
-    def _save_session(self, session: WorkflowSession) -> None:
-        """Save session to file."""
+    async def _save_session_unlocked(self, session: WorkflowSession) -> None:
+        """Save session to file (must be called with lock held)."""
         self._ensure_sessions_dir()
         session_file = self._session_file(session.session_id)
-        with open(session_file, "w", encoding="utf-8") as f:
-            json.dump(session.to_dict(), f, indent=2)
+        content = json.dumps(session.to_dict(), indent=2)
+        async with aiofiles.open(session_file, "w", encoding="utf-8") as f:
+            await f.write(content)
 
-    def load_session(self, session_id: str) -> WorkflowSession:
+    async def _save_session(self, session: WorkflowSession) -> None:
+        """Save session to file with lock."""
+        async with self._lock:
+            await self._save_session_unlocked(session)
+
+    async def load_session(self, session_id: str) -> WorkflowSession:
         """Load a session from file.
 
         Args:
@@ -125,16 +139,18 @@ class StateManager:
         Raises:
             StateError: If session not found
         """
-        session_file = self._session_file(session_id)
-        if not session_file.exists():
-            raise StateError(f"Session not found: {session_id}")
+        async with self._lock:
+            session_file = self._session_file(session_id)
+            if not session_file.exists():
+                raise StateError(f"Session not found: {session_id}")
 
-        with open(session_file, encoding="utf-8") as f:
-            data = json.load(f)
+            async with aiofiles.open(session_file, encoding="utf-8") as f:
+                content = await f.read()
+                data = json.loads(content)
 
-        session = WorkflowSession.from_dict(data)
-        self._active_session = session
-        return session
+            session = WorkflowSession.from_dict(data)
+            self._active_session = session
+            return session
 
     def get_active_session(self) -> WorkflowSession | None:
         """Get the currently active session.
@@ -159,7 +175,7 @@ class StateManager:
             )
         return self._active_session
 
-    def start_step(self, step_id: str) -> None:
+    async def start_step(self, step_id: str) -> None:
         """Mark a step as started.
 
         Args:
@@ -168,21 +184,22 @@ class StateManager:
         Raises:
             StateError: If no active session
         """
-        session = self.require_active_session()
-        now = datetime.now(UTC).isoformat()
+        async with self._lock:
+            session = self.require_active_session()
+            now = datetime.now(UTC).isoformat()
 
-        if step_id not in session.step_progress:
-            session.step_progress[step_id] = StepProgress(
-                step_id=step_id,
-                started_at=now,
-            )
-        else:
-            session.step_progress[step_id].started_at = now
+            if step_id not in session.step_progress:
+                session.step_progress[step_id] = StepProgress(
+                    step_id=step_id,
+                    started_at=now,
+                )
+            else:
+                session.step_progress[step_id].started_at = now
 
-        session.current_step_id = step_id
-        self._save_session(session)
+            session.current_step_id = step_id
+            await self._save_session_unlocked(session)
 
-    def complete_step(
+    async def complete_step(
         self, step_id: str, outputs: list[str], notes: str | None = None
     ) -> None:
         """Mark a step as completed.
@@ -195,23 +212,24 @@ class StateManager:
         Raises:
             StateError: If no active session
         """
-        session = self.require_active_session()
-        now = datetime.now(UTC).isoformat()
+        async with self._lock:
+            session = self.require_active_session()
+            now = datetime.now(UTC).isoformat()
 
-        if step_id not in session.step_progress:
-            session.step_progress[step_id] = StepProgress(
-                step_id=step_id,
-                started_at=now,
-            )
+            if step_id not in session.step_progress:
+                session.step_progress[step_id] = StepProgress(
+                    step_id=step_id,
+                    started_at=now,
+                )
 
-        progress = session.step_progress[step_id]
-        progress.completed_at = now
-        progress.outputs = outputs
-        progress.notes = notes
+            progress = session.step_progress[step_id]
+            progress.completed_at = now
+            progress.outputs = outputs
+            progress.notes = notes
 
-        self._save_session(session)
+            await self._save_session_unlocked(session)
 
-    def record_quality_attempt(self, step_id: str) -> int:
+    async def record_quality_attempt(self, step_id: str) -> int:
         """Record a quality gate attempt for a step.
 
         Args:
@@ -223,17 +241,18 @@ class StateManager:
         Raises:
             StateError: If no active session
         """
-        session = self.require_active_session()
+        async with self._lock:
+            session = self.require_active_session()
 
-        if step_id not in session.step_progress:
-            session.step_progress[step_id] = StepProgress(step_id=step_id)
+            if step_id not in session.step_progress:
+                session.step_progress[step_id] = StepProgress(step_id=step_id)
 
-        session.step_progress[step_id].quality_attempts += 1
-        self._save_session(session)
+            session.step_progress[step_id].quality_attempts += 1
+            await self._save_session_unlocked(session)
 
-        return session.step_progress[step_id].quality_attempts
+            return session.step_progress[step_id].quality_attempts
 
-    def advance_to_step(self, step_id: str, entry_index: int) -> None:
+    async def advance_to_step(self, step_id: str, entry_index: int) -> None:
         """Advance the session to a new step.
 
         Args:
@@ -243,22 +262,24 @@ class StateManager:
         Raises:
             StateError: If no active session
         """
-        session = self.require_active_session()
-        session.current_step_id = step_id
-        session.current_entry_index = entry_index
-        self._save_session(session)
+        async with self._lock:
+            session = self.require_active_session()
+            session.current_step_id = step_id
+            session.current_entry_index = entry_index
+            await self._save_session_unlocked(session)
 
-    def complete_workflow(self) -> None:
+    async def complete_workflow(self) -> None:
         """Mark the workflow as complete.
 
         Raises:
             StateError: If no active session
         """
-        session = self.require_active_session()
-        now = datetime.now(UTC).isoformat()
-        session.completed_at = now
-        session.status = "completed"
-        self._save_session(session)
+        async with self._lock:
+            session = self.require_active_session()
+            now = datetime.now(UTC).isoformat()
+            session.completed_at = now
+            session.status = "completed"
+            await self._save_session_unlocked(session)
 
     def get_all_outputs(self) -> list[str]:
         """Get all outputs from all completed steps.
@@ -275,7 +296,7 @@ class StateManager:
             outputs.extend(progress.outputs)
         return outputs
 
-    def list_sessions(self) -> list[WorkflowSession]:
+    async def list_sessions(self) -> list[WorkflowSession]:
         """List all saved sessions.
 
         Returns:
@@ -287,8 +308,9 @@ class StateManager:
         sessions = []
         for session_file in self.sessions_dir.glob("session_*.json"):
             try:
-                with open(session_file, encoding="utf-8") as f:
-                    data = json.load(f)
+                async with aiofiles.open(session_file, encoding="utf-8") as f:
+                    content = await f.read()
+                    data = json.loads(content)
                 sessions.append(WorkflowSession.from_dict(data))
             except (json.JSONDecodeError, ValueError):
                 # Skip corrupted files
@@ -296,7 +318,7 @@ class StateManager:
 
         return sorted(sessions, key=lambda s: s.started_at, reverse=True)
 
-    def find_active_sessions_for_workflow(
+    async def find_active_sessions_for_workflow(
         self, job_name: str, workflow_name: str
     ) -> list[WorkflowSession]:
         """Find active sessions for a specific workflow.
@@ -308,23 +330,25 @@ class StateManager:
         Returns:
             List of active sessions matching the criteria
         """
+        all_sessions = await self.list_sessions()
         return [
             s
-            for s in self.list_sessions()
+            for s in all_sessions
             if s.job_name == job_name
             and s.workflow_name == workflow_name
             and s.status == "active"
         ]
 
-    def delete_session(self, session_id: str) -> None:
+    async def delete_session(self, session_id: str) -> None:
         """Delete a session file.
 
         Args:
             session_id: Session ID to delete
         """
-        session_file = self._session_file(session_id)
-        if session_file.exists():
-            session_file.unlink()
+        async with self._lock:
+            session_file = self._session_file(session_id)
+            if session_file.exists():
+                session_file.unlink()
 
-        if self._active_session and self._active_session.session_id == session_id:
-            self._active_session = None
+            if self._active_session and self._active_session.session_id == session_id:
+                self._active_session = None

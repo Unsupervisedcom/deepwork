@@ -52,9 +52,9 @@ class TestStateManager:
         # Should be a date like 20240101
         assert len(branch.split("-")[-1]) == 8
 
-    def test_create_session(self, state_manager: StateManager) -> None:
+    async def test_create_session(self, state_manager: StateManager) -> None:
         """Test creating a new session."""
-        session = state_manager.create_session(
+        session = await state_manager.create_session(
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
@@ -74,10 +74,10 @@ class TestStateManager:
         session_file = state_manager._session_file(session.session_id)
         assert session_file.exists()
 
-    def test_load_session(self, state_manager: StateManager) -> None:
+    async def test_load_session(self, state_manager: StateManager) -> None:
         """Test loading an existing session."""
         # Create a session first
-        created_session = state_manager.create_session(
+        created_session = await state_manager.create_session(
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
@@ -86,24 +86,24 @@ class TestStateManager:
 
         # Create a new state manager and load the session
         new_manager = StateManager(state_manager.project_root)
-        loaded_session = new_manager.load_session(created_session.session_id)
+        loaded_session = await new_manager.load_session(created_session.session_id)
 
         assert loaded_session.session_id == created_session.session_id
         assert loaded_session.job_name == "test_job"
         assert loaded_session.goal == "Complete the task"
 
-    def test_load_session_not_found(self, state_manager: StateManager) -> None:
+    async def test_load_session_not_found(self, state_manager: StateManager) -> None:
         """Test loading non-existent session."""
         with pytest.raises(StateError, match="Session not found"):
-            state_manager.load_session("nonexistent")
+            await state_manager.load_session("nonexistent")
 
-    def test_get_active_session(self, state_manager: StateManager) -> None:
+    async def test_get_active_session(self, state_manager: StateManager) -> None:
         """Test getting active session."""
         # No active session initially
         assert state_manager.get_active_session() is None
 
         # Create session
-        session = state_manager.create_session(
+        session = await state_manager.create_session(
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
@@ -117,16 +117,16 @@ class TestStateManager:
         with pytest.raises(StateError, match="No active workflow session"):
             state_manager.require_active_session()
 
-    def test_start_step(self, state_manager: StateManager) -> None:
+    async def test_start_step(self, state_manager: StateManager) -> None:
         """Test marking a step as started."""
-        state_manager.create_session(
+        await state_manager.create_session(
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
             first_step_id="step1",
         )
 
-        state_manager.start_step("step2")
+        await state_manager.start_step("step2")
         session = state_manager.get_active_session()
 
         assert session is not None
@@ -134,16 +134,16 @@ class TestStateManager:
         assert "step2" in session.step_progress
         assert session.step_progress["step2"].started_at is not None
 
-    def test_complete_step(self, state_manager: StateManager) -> None:
+    async def test_complete_step(self, state_manager: StateManager) -> None:
         """Test marking a step as completed."""
-        state_manager.create_session(
+        await state_manager.create_session(
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
             first_step_id="step1",
         )
 
-        state_manager.complete_step(
+        await state_manager.complete_step(
             step_id="step1",
             outputs=["output1.md", "output2.md"],
             notes="Done!",
@@ -157,9 +157,9 @@ class TestStateManager:
         assert progress.outputs == ["output1.md", "output2.md"]
         assert progress.notes == "Done!"
 
-    def test_record_quality_attempt(self, state_manager: StateManager) -> None:
+    async def test_record_quality_attempt(self, state_manager: StateManager) -> None:
         """Test recording quality gate attempts."""
-        state_manager.create_session(
+        await state_manager.create_session(
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
@@ -167,56 +167,56 @@ class TestStateManager:
         )
 
         # First attempt
-        attempts = state_manager.record_quality_attempt("step1")
+        attempts = await state_manager.record_quality_attempt("step1")
         assert attempts == 1
 
         # Second attempt
-        attempts = state_manager.record_quality_attempt("step1")
+        attempts = await state_manager.record_quality_attempt("step1")
         assert attempts == 2
 
-    def test_advance_to_step(self, state_manager: StateManager) -> None:
+    async def test_advance_to_step(self, state_manager: StateManager) -> None:
         """Test advancing to a new step."""
-        state_manager.create_session(
+        await state_manager.create_session(
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
             first_step_id="step1",
         )
 
-        state_manager.advance_to_step("step2", 1)
+        await state_manager.advance_to_step("step2", 1)
         session = state_manager.get_active_session()
 
         assert session is not None
         assert session.current_step_id == "step2"
         assert session.current_entry_index == 1
 
-    def test_complete_workflow(self, state_manager: StateManager) -> None:
+    async def test_complete_workflow(self, state_manager: StateManager) -> None:
         """Test marking workflow as complete."""
-        state_manager.create_session(
+        await state_manager.create_session(
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
             first_step_id="step1",
         )
 
-        state_manager.complete_workflow()
+        await state_manager.complete_workflow()
         session = state_manager.get_active_session()
 
         assert session is not None
         assert session.status == "completed"
         assert session.completed_at is not None
 
-    def test_get_all_outputs(self, state_manager: StateManager) -> None:
+    async def test_get_all_outputs(self, state_manager: StateManager) -> None:
         """Test getting all outputs from completed steps."""
-        state_manager.create_session(
+        await state_manager.create_session(
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
             first_step_id="step1",
         )
 
-        state_manager.complete_step("step1", ["output1.md"])
-        state_manager.complete_step("step2", ["output2.md", "output3.md"])
+        await state_manager.complete_step("step1", ["output1.md"])
+        await state_manager.complete_step("step2", ["output2.md", "output3.md"])
 
         outputs = state_manager.get_all_outputs()
 
@@ -225,53 +225,53 @@ class TestStateManager:
         assert "output3.md" in outputs
         assert len(outputs) == 3
 
-    def test_list_sessions(self, state_manager: StateManager) -> None:
+    async def test_list_sessions(self, state_manager: StateManager) -> None:
         """Test listing all sessions."""
         # Create multiple sessions
-        state_manager.create_session(
+        await state_manager.create_session(
             job_name="job1",
             workflow_name="main",
             goal="Goal 1",
             first_step_id="step1",
         )
-        state_manager.create_session(
+        await state_manager.create_session(
             job_name="job2",
             workflow_name="main",
             goal="Goal 2",
             first_step_id="step1",
         )
 
-        sessions = state_manager.list_sessions()
+        sessions = await state_manager.list_sessions()
 
         assert len(sessions) == 2
         job_names = {s.job_name for s in sessions}
         assert "job1" in job_names
         assert "job2" in job_names
 
-    def test_find_active_sessions_for_workflow(self, state_manager: StateManager) -> None:
+    async def test_find_active_sessions_for_workflow(self, state_manager: StateManager) -> None:
         """Test finding active sessions for a workflow."""
         # Create sessions for different workflows
-        state_manager.create_session(
+        await state_manager.create_session(
             job_name="test_job",
             workflow_name="main",
             goal="Goal 1",
             first_step_id="step1",
         )
-        state_manager.create_session(
+        await state_manager.create_session(
             job_name="test_job",
             workflow_name="other",
             goal="Goal 2",
             first_step_id="step1",
         )
 
-        sessions = state_manager.find_active_sessions_for_workflow("test_job", "main")
+        sessions = await state_manager.find_active_sessions_for_workflow("test_job", "main")
 
         assert len(sessions) == 1
         assert sessions[0].workflow_name == "main"
 
-    def test_delete_session(self, state_manager: StateManager) -> None:
+    async def test_delete_session(self, state_manager: StateManager) -> None:
         """Test deleting a session."""
-        session = state_manager.create_session(
+        session = await state_manager.create_session(
             job_name="test_job",
             workflow_name="main",
             goal="Goal",
@@ -281,7 +281,7 @@ class TestStateManager:
         session_file = state_manager._session_file(session.session_id)
         assert session_file.exists()
 
-        state_manager.delete_session(session.session_id)
+        await state_manager.delete_session(session.session_id)
 
         assert not session_file.exists()
         assert state_manager.get_active_session() is None

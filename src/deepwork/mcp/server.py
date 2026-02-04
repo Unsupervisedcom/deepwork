@@ -97,7 +97,7 @@ def create_server(
             "Optional: instance_id for naming (e.g., 'acme', 'q1-2026')."
         )
     )
-    def start_workflow(
+    async def start_workflow(
         goal: str,
         job_name: str,
         workflow_name: str,
@@ -110,7 +110,7 @@ def create_server(
             workflow_name=workflow_name,
             instance_id=instance_id,
         )
-        response = tools.start_workflow(input_data)
+        response = await tools.start_workflow(input_data)
         return response.model_dump()
 
     @mcp.tool(
@@ -126,7 +126,7 @@ def create_server(
             "Optional: quality_review_override_reason to skip quality review (must explain why)."
         )
     )
-    def finished_step(
+    async def finished_step(
         outputs: list[str],
         notes: str | None = None,
         quality_review_override_reason: str | None = None,
@@ -137,7 +137,7 @@ def create_server(
             notes=notes,
             quality_review_override_reason=quality_review_override_reason,
         )
-        response = tools.finished_step(input_data)
+        response = await tools.finished_step(input_data)
         return response.model_dump()
 
     return mcp

@@ -214,7 +214,7 @@ class TestMCPWorkflowTools:
         assert full_workflow.name == "full"
         assert full_workflow.summary is not None
 
-    def test_start_workflow_creates_session(self, project_with_job: Path) -> None:
+    async def test_start_workflow_creates_session(self, project_with_job: Path) -> None:
         """Test that start_workflow creates a new workflow session."""
         state_manager = StateManager(project_with_job)
         tools = WorkflowTools(project_with_job, state_manager)
@@ -236,7 +236,7 @@ class TestMCPWorkflowTools:
             instance_id="test-instance",
         )
 
-        response = tools.start_workflow(input_data)
+        response = await tools.start_workflow(input_data)
 
         # Should return session info
         assert response.begin_step.session_id is not None
@@ -249,7 +249,7 @@ class TestMCPWorkflowTools:
         assert response.begin_step.step_instructions is not None
         assert len(response.begin_step.step_instructions) > 0
 
-    def test_workflow_step_progression(self, project_with_job: Path) -> None:
+    async def test_workflow_step_progression(self, project_with_job: Path) -> None:
         """Test that finished_step progresses through workflow steps."""
         state_manager = StateManager(project_with_job)
         tools = WorkflowTools(project_with_job, state_manager)
@@ -269,7 +269,7 @@ class TestMCPWorkflowTools:
             job_name="fruits",
             workflow_name=workflow_name,
         )
-        start_response = tools.start_workflow(start_input)
+        start_response = await tools.start_workflow(start_input)
 
         # Create mock output file for first step
         output_file = project_with_job / "identified_fruits.md"
@@ -280,7 +280,7 @@ class TestMCPWorkflowTools:
             outputs=[str(output_file)],
             notes="Identified fruits from test input",
         )
-        finish_response = tools.finished_step(finish_input)
+        finish_response = await tools.finished_step(finish_input)
 
         # Should either advance to next step or complete
         assert finish_response.status in ["next_step", "workflow_complete", "needs_work"]
