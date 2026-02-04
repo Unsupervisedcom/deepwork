@@ -106,7 +106,6 @@ class TestJobInfo:
         assert job.summary == "A test job"
         assert job.description is None
         assert job.workflows == []
-        assert job.standalone_steps == []
 
 
 class TestStartWorkflowInput:
