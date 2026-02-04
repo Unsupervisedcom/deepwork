@@ -16,13 +16,14 @@ description: |
 
 workflows:
   - name: new_job
-    summary: "Create a new DeepWork job from scratch through definition, review, and implementation"
+    summary: "Create a new DeepWork job from scratch through definition and implementation"
     steps:
       - define
-      - review_job_spec
       - implement
 
 changelog:
+  - version: "1.1.0"
+    changes: "Removed review_job_spec step from new_job workflow; implement now follows directly from define"
   - version: "1.0.0"
     changes: "Added workflows section to distinguish new_job workflow (define→review_job_spec→implement) from standalone learn skill"
   - version: "0.1.0"
@@ -56,35 +57,17 @@ steps:
       - file: job.yml
         doc_spec: .deepwork/doc_specs/job_spec.md
     dependencies: []
-  - id: review_job_spec
-    name: "Review Job Specification"
-    description: "Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification."
-    instructions_file: steps/review_job_spec.md
+  - id: implement
+    name: "Implement Job Steps"
+    description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after defining a job."
+    instructions_file: steps/implement.md
     inputs:
       - file: job.yml
         from_step: define
     outputs:
-      - file: job.yml
-        doc_spec: .deepwork/doc_specs/job_spec.md
-    dependencies:
-      - define
-    quality_criteria:
-      - "**Sub-Agent Used**: Was a sub-agent spawned to provide unbiased review?"
-      - "**All doc spec Criteria Evaluated**: Did the sub-agent assess all 9 quality criteria?"
-      - "**Findings Addressed**: Were all failed criteria addressed by the main agent?"
-      - "**Validation Loop Complete**: Did the review-fix cycle continue until all criteria passed?"
-
-  - id: implement
-    name: "Implement Job Steps"
-    description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes."
-    instructions_file: steps/implement.md
-    inputs:
-      - file: job.yml
-        from_step: review_job_spec
-    outputs:
       - steps/
     dependencies:
-      - review_job_spec
+      - define
     quality_criteria:
       - "**Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?"
       - "**Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?"

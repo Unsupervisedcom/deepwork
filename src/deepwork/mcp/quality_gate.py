@@ -6,12 +6,13 @@ step outputs against quality criteria.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import shlex
-import subprocess
 from pathlib import Path
 from typing import Any
 
+import aiofiles
 import jsonschema
 
 from deepwork.mcp.schemas import QualityCriteriaResult, QualityGateResult
@@ -111,7 +112,7 @@ You must respond with JSON in this exact structure:
 - Provide specific, actionable feedback for failed criteria
 - The overall "passed" should be true only if ALL criteria pass"""
 
-    def _build_payload(
+    async def _build_payload(
         self,
         outputs: list[str],
         project_root: Path,
@@ -133,7 +134,8 @@ You must respond with JSON in this exact structure:
 
             if full_path.exists():
                 try:
-                    content = full_path.read_text(encoding="utf-8")
+                    async with aiofiles.open(full_path, encoding="utf-8") as f:
+                        content = await f.read()
                     output_sections.append(f"{header}\n{content}")
                 except Exception as e:
                     output_sections.append(f"{header}\n[Error reading file: {e}]")
@@ -210,7 +212,7 @@ You must respond with JSON in this exact structure:
                 f"Response was: {response_text[:500]}..."
             ) from e
 
-    def evaluate(
+    async def evaluate(
         self,
         quality_criteria: list[str],
         outputs: list[str],
@@ -239,7 +241,7 @@ You must respond with JSON in this exact structure:
 
         # Build system instructions and payload separately
         instructions = self._build_instructions(quality_criteria)
-        payload = self._build_payload(outputs, project_root)
+        payload = await self._build_payload(outputs, project_root)
 
         # Build command with system prompt flag
         # Parse the base command properly to handle quoted arguments
@@ -248,28 +250,35 @@ You must respond with JSON in this exact structure:
         full_cmd = base_cmd + ["-s", instructions]
 
         try:
-            # Run review agent with system prompt and payload
-            result = subprocess.run(
-                full_cmd,
-                input=payload,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout,
+            # Run review agent with system prompt and payload using async subprocess
+            process = await asyncio.create_subprocess_exec(
+                *full_cmd,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
                 cwd=str(project_root),
             )
 
-            if result.returncode != 0:
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(input=payload.encode()),
+                    timeout=self.timeout,
+                )
+            except asyncio.TimeoutError:
+                process.kill()
+                await process.wait()
                 raise QualityGateError(
-                    f"Review agent failed with exit code {result.returncode}:\n"
-                    f"stderr: {result.stderr}"
+                    f"Review agent timed out after {self.timeout} seconds"
                 )
 
-            return self._parse_response(result.stdout)
+            if process.returncode != 0:
+                raise QualityGateError(
+                    f"Review agent failed with exit code {process.returncode}:\n"
+                    f"stderr: {stderr.decode()}"
+                )
 
-        except subprocess.TimeoutExpired as e:
-            raise QualityGateError(
-                f"Review agent timed out after {self.timeout} seconds"
-            ) from e
+            return self._parse_response(stdout.decode())
+
         except FileNotFoundError as e:
             raise QualityGateError(
                 f"Review agent command not found: {base_cmd[0]}"
@@ -292,9 +301,9 @@ class MockQualityGate(QualityGate):
         super().__init__()
         self.should_pass = should_pass
         self.feedback = feedback
-        self.evaluations: list[dict] = []
+        self.evaluations: list[dict[str, Any]] = []
 
-    def evaluate(
+    async def evaluate(
         self,
         quality_criteria: list[str],
         outputs: list[str],

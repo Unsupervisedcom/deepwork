@@ -130,7 +130,7 @@ class TestWorkflowTools:
 
         assert len(response.jobs) == 0
 
-    def test_start_workflow(self, tools: WorkflowTools) -> None:
+    async def test_start_workflow(self, tools: WorkflowTools) -> None:
         """Test starting a workflow."""
         input_data = StartWorkflowInput(
             goal="Complete the test job",
@@ -139,7 +139,7 @@ class TestWorkflowTools:
             instance_id="test-instance",
         )
 
-        response = tools.start_workflow(input_data)
+        response = await tools.start_workflow(input_data)
 
         assert response.begin_step.session_id is not None
         assert "test-instance" in response.begin_step.branch_name
@@ -148,7 +148,7 @@ class TestWorkflowTools:
         assert "output1.md" in response.begin_step.step_expected_outputs
         assert "Output must be valid" in response.begin_step.step_quality_criteria
 
-    def test_start_workflow_invalid_job(self, tools: WorkflowTools) -> None:
+    async def test_start_workflow_invalid_job(self, tools: WorkflowTools) -> None:
         """Test starting workflow with invalid job."""
         input_data = StartWorkflowInput(
             goal="Complete task",
@@ -157,9 +157,9 @@ class TestWorkflowTools:
         )
 
         with pytest.raises(ToolError, match="Job not found"):
-            tools.start_workflow(input_data)
+            await tools.start_workflow(input_data)
 
-    def test_start_workflow_invalid_workflow(self, tools: WorkflowTools) -> None:
+    async def test_start_workflow_invalid_workflow(self, tools: WorkflowTools) -> None:
         """Test starting workflow with invalid workflow name."""
         input_data = StartWorkflowInput(
             goal="Complete task",
@@ -168,16 +168,16 @@ class TestWorkflowTools:
         )
 
         with pytest.raises(ToolError, match="Workflow.*not found"):
-            tools.start_workflow(input_data)
+            await tools.start_workflow(input_data)
 
-    def test_finished_step_no_session(self, tools: WorkflowTools) -> None:
+    async def test_finished_step_no_session(self, tools: WorkflowTools) -> None:
         """Test finished_step without active session."""
         input_data = FinishedStepInput(outputs=["output1.md"])
 
         with pytest.raises(StateError, match="No active workflow session"):
-            tools.finished_step(input_data)
+            await tools.finished_step(input_data)
 
-    def test_finished_step_advances_to_next(
+    async def test_finished_step_advances_to_next(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
         """Test finished_step advances to next step."""
@@ -187,7 +187,7 @@ class TestWorkflowTools:
             job_name="test_job",
             workflow_name="main",
         )
-        tools.start_workflow(start_input)
+        await tools.start_workflow(start_input)
 
         # Create output file
         (project_root / "output1.md").write_text("Test output")
@@ -197,7 +197,7 @@ class TestWorkflowTools:
             outputs=["output1.md"],
             notes="Completed step 1",
         )
-        response = tools.finished_step(finish_input)
+        response = await tools.finished_step(finish_input)
 
         assert response.status == StepStatus.NEXT_STEP
         assert response.begin_step is not None
@@ -205,7 +205,7 @@ class TestWorkflowTools:
         assert response.begin_step.step_instructions is not None
         assert "Step 2" in response.begin_step.step_instructions
 
-    def test_finished_step_completes_workflow(
+    async def test_finished_step_completes_workflow(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
         """Test finished_step completes workflow on last step."""
@@ -215,15 +215,15 @@ class TestWorkflowTools:
             job_name="test_job",
             workflow_name="main",
         )
-        tools.start_workflow(start_input)
+        await tools.start_workflow(start_input)
 
         # Complete first step
         (project_root / "output1.md").write_text("Output 1")
-        tools.finished_step(FinishedStepInput(outputs=["output1.md"]))
+        await tools.finished_step(FinishedStepInput(outputs=["output1.md"]))
 
         # Complete second (last) step
         (project_root / "output2.md").write_text("Output 2")
-        response = tools.finished_step(FinishedStepInput(outputs=["output2.md"]))
+        response = await tools.finished_step(FinishedStepInput(outputs=["output2.md"]))
 
         assert response.status == StepStatus.WORKFLOW_COMPLETE
         assert response.summary is not None
@@ -231,7 +231,7 @@ class TestWorkflowTools:
         assert "output1.md" in response.all_outputs
         assert "output2.md" in response.all_outputs
 
-    def test_finished_step_with_quality_gate_pass(
+    async def test_finished_step_with_quality_gate_pass(
         self, tools_with_quality: WorkflowTools, project_root: Path
     ) -> None:
         """Test finished_step passes quality gate."""
@@ -241,18 +241,18 @@ class TestWorkflowTools:
             job_name="test_job",
             workflow_name="main",
         )
-        tools_with_quality.start_workflow(start_input)
+        await tools_with_quality.start_workflow(start_input)
 
         # Create output and finish step
         (project_root / "output1.md").write_text("Valid output")
-        response = tools_with_quality.finished_step(
+        response = await tools_with_quality.finished_step(
             FinishedStepInput(outputs=["output1.md"])
         )
 
         # Should advance to next step
         assert response.status == StepStatus.NEXT_STEP
 
-    def test_finished_step_with_quality_gate_fail(
+    async def test_finished_step_with_quality_gate_fail(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
         """Test finished_step fails quality gate."""
@@ -269,17 +269,17 @@ class TestWorkflowTools:
             job_name="test_job",
             workflow_name="main",
         )
-        tools.start_workflow(start_input)
+        await tools.start_workflow(start_input)
 
         # Create output and finish step
         (project_root / "output1.md").write_text("Invalid output")
-        response = tools.finished_step(FinishedStepInput(outputs=["output1.md"]))
+        response = await tools.finished_step(FinishedStepInput(outputs=["output1.md"]))
 
         assert response.status == StepStatus.NEEDS_WORK
         assert response.feedback == "Needs improvement"
         assert response.failed_criteria is not None
 
-    def test_finished_step_quality_gate_max_attempts(
+    async def test_finished_step_quality_gate_max_attempts(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
         """Test finished_step fails after max quality gate attempts."""
@@ -295,21 +295,21 @@ class TestWorkflowTools:
             job_name="test_job",
             workflow_name="main",
         )
-        tools.start_workflow(start_input)
+        await tools.start_workflow(start_input)
 
         # Create output
         (project_root / "output1.md").write_text("Bad output")
 
         # Try multiple times (max is 3)
         for _ in range(2):
-            response = tools.finished_step(FinishedStepInput(outputs=["output1.md"]))
+            response = await tools.finished_step(FinishedStepInput(outputs=["output1.md"]))
             assert response.status == StepStatus.NEEDS_WORK
 
         # Third attempt should raise error
         with pytest.raises(ToolError, match="Quality gate failed after.*attempts"):
-            tools.finished_step(FinishedStepInput(outputs=["output1.md"]))
+            await tools.finished_step(FinishedStepInput(outputs=["output1.md"]))
 
-    def test_finished_step_quality_gate_override(
+    async def test_finished_step_quality_gate_override(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
         """Test finished_step skips quality gate when override reason provided."""
@@ -327,11 +327,11 @@ class TestWorkflowTools:
             job_name="test_job",
             workflow_name="main",
         )
-        tools.start_workflow(start_input)
+        await tools.start_workflow(start_input)
 
         # Create output and finish step with override reason
         (project_root / "output1.md").write_text("Output that would fail quality check")
-        response = tools.finished_step(
+        response = await tools.finished_step(
             FinishedStepInput(
                 outputs=["output1.md"],
                 quality_review_override_reason="Manual review completed offline",

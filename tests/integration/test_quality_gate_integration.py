@@ -37,7 +37,7 @@ def mock_agent_command() -> str:
 class TestQualityGateIntegration:
     """Integration tests that run real subprocesses."""
 
-    def test_subprocess_returns_pass(
+    async def test_subprocess_returns_pass(
         self, project_root: Path, mock_agent_command: str
     ) -> None:
         """Test that a passing response is correctly detected."""
@@ -48,7 +48,7 @@ class TestQualityGateIntegration:
         os.environ["REVIEW_RESULT"] = "pass"
 
         try:
-            result = gate.evaluate(
+            result = await gate.evaluate(
                 quality_criteria=["Output must exist", "Output must be valid"],
                 outputs=["output.md"],
                 project_root=project_root,
@@ -62,7 +62,7 @@ class TestQualityGateIntegration:
             else:
                 os.environ.pop("REVIEW_RESULT", None)
 
-    def test_subprocess_returns_fail(
+    async def test_subprocess_returns_fail(
         self, project_root: Path, mock_agent_command: str
     ) -> None:
         """Test that a failing response is correctly detected."""
@@ -73,7 +73,7 @@ class TestQualityGateIntegration:
         os.environ["REVIEW_RESULT"] = "fail"
 
         try:
-            result = gate.evaluate(
+            result = await gate.evaluate(
                 quality_criteria=["Output must exist"],
                 outputs=["output.md"],
                 project_root=project_root,
@@ -89,7 +89,7 @@ class TestQualityGateIntegration:
             else:
                 os.environ.pop("REVIEW_RESULT", None)
 
-    def test_subprocess_malformed_response_raises_error(
+    async def test_subprocess_malformed_response_raises_error(
         self, project_root: Path, mock_agent_command: str
     ) -> None:
         """Test that malformed JSON raises an error."""
@@ -100,7 +100,7 @@ class TestQualityGateIntegration:
 
         try:
             with pytest.raises(QualityGateError, match="Failed to parse"):
-                gate.evaluate(
+                await gate.evaluate(
                     quality_criteria=["Criterion 1"],
                     outputs=["output.md"],
                     project_root=project_root,
@@ -111,7 +111,7 @@ class TestQualityGateIntegration:
             else:
                 os.environ.pop("REVIEW_RESULT", None)
 
-    def test_subprocess_nonzero_exit_raises_error(
+    async def test_subprocess_nonzero_exit_raises_error(
         self, project_root: Path, mock_agent_command: str
     ) -> None:
         """Test that non-zero exit code raises an error."""
@@ -122,7 +122,7 @@ class TestQualityGateIntegration:
 
         try:
             with pytest.raises(QualityGateError, match="failed with exit code"):
-                gate.evaluate(
+                await gate.evaluate(
                     quality_criteria=["Criterion 1"],
                     outputs=["output.md"],
                     project_root=project_root,
@@ -133,7 +133,7 @@ class TestQualityGateIntegration:
             else:
                 os.environ.pop("REVIEW_RESULT", None)
 
-    def test_subprocess_timeout(
+    async def test_subprocess_timeout(
         self, project_root: Path, mock_agent_command: str
     ) -> None:
         """Test that subprocess timeout is handled correctly."""
@@ -144,7 +144,7 @@ class TestQualityGateIntegration:
 
         try:
             with pytest.raises(QualityGateError, match="timed out"):
-                gate.evaluate(
+                await gate.evaluate(
                     quality_criteria=["Criterion 1"],
                     outputs=["output.md"],
                     project_root=project_root,
@@ -155,18 +155,18 @@ class TestQualityGateIntegration:
             else:
                 os.environ.pop("REVIEW_RESULT", None)
 
-    def test_subprocess_command_not_found(self, project_root: Path) -> None:
+    async def test_subprocess_command_not_found(self, project_root: Path) -> None:
         """Test that missing command is handled correctly."""
         gate = QualityGate(command="nonexistent_command_12345", timeout=30)
 
         with pytest.raises(QualityGateError, match="command not found"):
-            gate.evaluate(
+            await gate.evaluate(
                 quality_criteria=["Criterion 1"],
                 outputs=["output.md"],
                 project_root=project_root,
             )
 
-    def test_auto_mode_detects_force_pass_marker(
+    async def test_auto_mode_detects_force_pass_marker(
         self, project_root: Path, mock_agent_command: str
     ) -> None:
         """Test that FORCE_PASS marker in content causes pass."""
@@ -181,7 +181,7 @@ class TestQualityGateIntegration:
         os.environ.pop("REVIEW_RESULT", None)
 
         try:
-            result = gate.evaluate(
+            result = await gate.evaluate(
                 quality_criteria=["Criterion 1"],
                 outputs=["marker_output.md"],
                 project_root=project_root,
@@ -192,7 +192,7 @@ class TestQualityGateIntegration:
             if env_backup is not None:
                 os.environ["REVIEW_RESULT"] = env_backup
 
-    def test_auto_mode_detects_force_fail_marker(
+    async def test_auto_mode_detects_force_fail_marker(
         self, project_root: Path, mock_agent_command: str
     ) -> None:
         """Test that FORCE_FAIL marker in content causes fail."""
@@ -207,7 +207,7 @@ class TestQualityGateIntegration:
         os.environ.pop("REVIEW_RESULT", None)
 
         try:
-            result = gate.evaluate(
+            result = await gate.evaluate(
                 quality_criteria=["Criterion 1"],
                 outputs=["marker_output.md"],
                 project_root=project_root,
@@ -218,7 +218,7 @@ class TestQualityGateIntegration:
             if env_backup is not None:
                 os.environ["REVIEW_RESULT"] = env_backup
 
-    def test_missing_output_file_causes_fail(
+    async def test_missing_output_file_causes_fail(
         self, project_root: Path, mock_agent_command: str
     ) -> None:
         """Test that missing output file is detected as failure."""
@@ -229,7 +229,7 @@ class TestQualityGateIntegration:
         os.environ.pop("REVIEW_RESULT", None)
 
         try:
-            result = gate.evaluate(
+            result = await gate.evaluate(
                 quality_criteria=["Output files must exist"],
                 outputs=["nonexistent_file.md"],
                 project_root=project_root,
@@ -447,12 +447,12 @@ class TestQualityGateSchemaValidation:
 class TestQualityGateEdgeCases:
     """Test edge cases and potential failure scenarios."""
 
-    def test_empty_quality_criteria_auto_passes(self, project_root: Path) -> None:
+    async def test_empty_quality_criteria_auto_passes(self, project_root: Path) -> None:
         """Test that no criteria means auto-pass (no subprocess called)."""
         gate = QualityGate(command="nonexistent_command", timeout=30)
 
         # Even with a command that doesn't exist, empty criteria should auto-pass
-        result = gate.evaluate(
+        result = await gate.evaluate(
             quality_criteria=[],  # No criteria
             outputs=["output.md"],
             project_root=project_root,
@@ -461,7 +461,7 @@ class TestQualityGateEdgeCases:
         assert result.passed is True
         assert "auto-passing" in result.feedback.lower()
 
-    def test_multiple_output_files(
+    async def test_multiple_output_files(
         self, project_root: Path, mock_agent_command: str
     ) -> None:
         """Test evaluation with multiple output files."""
@@ -476,7 +476,7 @@ class TestQualityGateEdgeCases:
         os.environ["REVIEW_RESULT"] = "pass"
 
         try:
-            result = gate.evaluate(
+            result = await gate.evaluate(
                 quality_criteria=["All outputs must exist"],
                 outputs=["output1.md", "output2.md", "output3.md"],
                 project_root=project_root,
@@ -489,7 +489,7 @@ class TestQualityGateEdgeCases:
             else:
                 os.environ.pop("REVIEW_RESULT", None)
 
-    def test_large_output_file(
+    async def test_large_output_file(
         self, project_root: Path, mock_agent_command: str
     ) -> None:
         """Test evaluation with a large output file."""
@@ -503,7 +503,7 @@ class TestQualityGateEdgeCases:
         os.environ["REVIEW_RESULT"] = "pass"
 
         try:
-            result = gate.evaluate(
+            result = await gate.evaluate(
                 quality_criteria=["Output must be complete"],
                 outputs=["large_output.md"],
                 project_root=project_root,
@@ -516,7 +516,7 @@ class TestQualityGateEdgeCases:
             else:
                 os.environ.pop("REVIEW_RESULT", None)
 
-    def test_unicode_in_output(
+    async def test_unicode_in_output(
         self, project_root: Path, mock_agent_command: str
     ) -> None:
         """Test evaluation with unicode content."""
@@ -530,7 +530,7 @@ class TestQualityGateEdgeCases:
         os.environ["REVIEW_RESULT"] = "pass"
 
         try:
-            result = gate.evaluate(
+            result = await gate.evaluate(
                 quality_criteria=["Content must be valid"],
                 outputs=["unicode_output.md"],
                 project_root=project_root,

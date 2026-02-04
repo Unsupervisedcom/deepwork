@@ -29,6 +29,7 @@ dependencies = [
     "fastmcp>=2.0",
     "pydantic>=2.0",
     "mcp>=1.0.0",
+    "aiofiles>=24.0.0",
 ]
 
 [project.optional-dependencies]
@@ -36,9 +37,11 @@ dev = [
     "pytest>=7.0",
     "pytest-mock>=3.10",
     "pytest-cov>=4.0",
+    "pytest-asyncio>=0.24.0",
     "ruff>=0.1.0",
     "mypy>=1.0",
     "types-PyYAML",
+    "types-aiofiles",
 ]
 
 [project.scripts]
@@ -68,6 +71,8 @@ addopts = [
     "--strict-config",
     "--showlocals",
 ]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
 source = ["deepwork"]

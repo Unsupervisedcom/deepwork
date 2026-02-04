@@ -209,7 +209,7 @@ class WorkflowTools:
 
         return GetWorkflowsResponse(jobs=job_infos)
 
-    def start_workflow(self, input_data: StartWorkflowInput) -> StartWorkflowResponse:
+    async def start_workflow(self, input_data: StartWorkflowInput) -> StartWorkflowResponse:
         """Start a new workflow session.
 
         Args:
@@ -234,7 +234,7 @@ class WorkflowTools:
             raise ToolError(f"First step not found: {first_step_id}")
 
         # Create session
-        session = self.state_manager.create_session(
+        session = await self.state_manager.create_session(
             job_name=input_data.job_name,
             workflow_name=input_data.workflow_name,
             goal=input_data.goal,
@@ -243,7 +243,7 @@ class WorkflowTools:
         )
 
         # Mark first step as started
-        self.state_manager.start_step(first_step_id)
+        await self.state_manager.start_step(first_step_id)
 
         # Get step instructions
         instructions = self._get_step_instructions(job, first_step_id)
@@ -262,7 +262,7 @@ class WorkflowTools:
             )
         )
 
-    def finished_step(self, input_data: FinishedStepInput) -> FinishedStepResponse:
+    async def finished_step(self, input_data: FinishedStepInput) -> FinishedStepResponse:
         """Report step completion and get next instructions.
 
         Args:
@@ -292,9 +292,9 @@ class WorkflowTools:
             and current_step.quality_criteria
             and not input_data.quality_review_override_reason
         ):
-            attempts = self.state_manager.record_quality_attempt(current_step_id)
+            attempts = await self.state_manager.record_quality_attempt(current_step_id)
 
-            result = self.quality_gate.evaluate(
+            result = await self.quality_gate.evaluate(
                 quality_criteria=current_step.quality_criteria,
                 outputs=input_data.outputs,
                 project_root=self.project_root,
@@ -319,7 +319,7 @@ class WorkflowTools:
                 )
 
         # Mark step as completed
-        self.state_manager.complete_step(
+        await self.state_manager.complete_step(
             step_id=current_step_id,
             outputs=input_data.outputs,
             notes=input_data.notes,
@@ -331,7 +331,7 @@ class WorkflowTools:
 
         if next_entry_index >= len(workflow.step_entries):
             # Workflow complete
-            self.state_manager.complete_workflow()
+            await self.state_manager.complete_workflow()
             all_outputs = self.state_manager.get_all_outputs()
 
             return FinishedStepResponse(
@@ -352,8 +352,8 @@ class WorkflowTools:
             raise ToolError(f"Next step not found: {next_step_id}")
 
         # Advance session
-        self.state_manager.advance_to_step(next_step_id, next_entry_index)
-        self.state_manager.start_step(next_step_id)
+        await self.state_manager.advance_to_step(next_step_id, next_entry_index)
+        await self.state_manager.start_step(next_step_id)
 
         # Get instructions
         instructions = self._get_step_instructions(job, next_step_id)

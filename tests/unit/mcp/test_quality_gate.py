@@ -48,13 +48,13 @@ class TestQualityGate:
         assert "passed" in instructions  # JSON format mentioned
         assert "feedback" in instructions  # JSON format mentioned
 
-    def test_build_payload(self, quality_gate: QualityGate, project_root: Path) -> None:
+    async def test_build_payload(self, quality_gate: QualityGate, project_root: Path) -> None:
         """Test building payload with file contents."""
         # Create test output file
         output_file = project_root / "output.md"
         output_file.write_text("Test content")
 
-        payload = quality_gate._build_payload(
+        payload = await quality_gate._build_payload(
             outputs=["output.md"],
             project_root=project_root,
         )
@@ -64,11 +64,11 @@ class TestQualityGate:
         # Check for the new separator format (20 dashes)
         assert "--------------------" in payload
 
-    def test_build_payload_missing_file(
+    async def test_build_payload_missing_file(
         self, quality_gate: QualityGate, project_root: Path
     ) -> None:
         """Test building payload with missing file."""
-        payload = quality_gate._build_payload(
+        payload = await quality_gate._build_payload(
             outputs=["nonexistent.md"],
             project_root=project_root,
         )
@@ -125,9 +125,11 @@ class TestQualityGate:
         with pytest.raises(QualityGateError, match="Failed to parse"):
             quality_gate._parse_response(response)
 
-    def test_evaluate_no_criteria(self, quality_gate: QualityGate, project_root: Path) -> None:
+    async def test_evaluate_no_criteria(
+        self, quality_gate: QualityGate, project_root: Path
+    ) -> None:
         """Test evaluation with no criteria auto-passes."""
-        result = quality_gate.evaluate(
+        result = await quality_gate.evaluate(
             quality_criteria=[],
             outputs=["output.md"],
             project_root=project_root,
@@ -140,11 +142,11 @@ class TestQualityGate:
 class TestMockQualityGate:
     """Tests for MockQualityGate class."""
 
-    def test_mock_passes_by_default(self, project_root: Path) -> None:
+    async def test_mock_passes_by_default(self, project_root: Path) -> None:
         """Test mock gate passes by default."""
         gate = MockQualityGate()
 
-        result = gate.evaluate(
+        result = await gate.evaluate(
             quality_criteria=["Criterion 1"],
             outputs=["output.md"],
             project_root=project_root,
@@ -153,11 +155,11 @@ class TestMockQualityGate:
         assert result.passed is True
         assert len(gate.evaluations) == 1
 
-    def test_mock_can_fail(self, project_root: Path) -> None:
+    async def test_mock_can_fail(self, project_root: Path) -> None:
         """Test mock gate can be configured to fail."""
         gate = MockQualityGate(should_pass=False, feedback="Mock failure")
 
-        result = gate.evaluate(
+        result = await gate.evaluate(
             quality_criteria=["Criterion 1"],
             outputs=["output.md"],
             project_root=project_root,
@@ -166,16 +168,16 @@ class TestMockQualityGate:
         assert result.passed is False
         assert result.feedback == "Mock failure"
 
-    def test_mock_records_evaluations(self, project_root: Path) -> None:
+    async def test_mock_records_evaluations(self, project_root: Path) -> None:
         """Test mock gate records evaluations."""
         gate = MockQualityGate()
 
-        gate.evaluate(
+        await gate.evaluate(
             quality_criteria=["Criterion 1"],
             outputs=["output1.md"],
             project_root=project_root,
         )
-        gate.evaluate(
+        await gate.evaluate(
             quality_criteria=["Criterion 2"],
             outputs=["output2.md"],
             project_root=project_root,
