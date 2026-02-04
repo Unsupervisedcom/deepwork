@@ -5,6 +5,10 @@ management tools to AI agents.
 
 Usage:
     deepwork serve --path /path/to/project
+
+IMPORTANT: If you modify any tool signatures, parameters, or return types in this
+file, you MUST also update the documentation in doc/mcp_interface.md to keep it
+in sync with the implementation.
 """
 
 from __future__ import annotations
@@ -65,7 +69,13 @@ def create_server(
         instructions=_get_server_instructions(),
     )
 
-    # Register tools
+    # =========================================================================
+    # MCP Tool Registrations
+    # =========================================================================
+    # IMPORTANT: When modifying these tool signatures (parameters, return types,
+    # descriptions), update doc/mcp_interface.md to keep documentation in sync.
+    # =========================================================================
+
     @mcp.tool(
         description=(
             "List all available DeepWork workflows. "

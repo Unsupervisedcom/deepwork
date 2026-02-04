@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: competitive_research
 version: "0.1.0"
 summary: "Systematic competitive analysis workflow"

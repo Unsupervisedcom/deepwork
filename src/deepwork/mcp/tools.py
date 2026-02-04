@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from deepwork.core.parser import JobDefinition, ParseError, Workflow, parse_job_definition
 from deepwork.mcp.schemas import (
+    ActiveStepInfo,
     FinishedStepInput,
     FinishedStepResponse,
     GetWorkflowsResponse,
@@ -22,7 +23,6 @@ from deepwork.mcp.schemas import (
     StepInfo,
     StepStatus,
     WorkflowInfo,
-    WorkflowStepEntryInfo,
 )
 from deepwork.mcp.state import StateManager
 
@@ -98,21 +98,10 @@ class WorkflowTools:
         for wf in job.workflows:
             workflow_step_ids.update(wf.steps)
 
-            step_entries = [
-                WorkflowStepEntryInfo(
-                    step_ids=entry.step_ids,
-                    is_concurrent=entry.is_concurrent,
-                )
-                for entry in wf.step_entries
-            ]
-
             workflows.append(
                 WorkflowInfo(
                     name=wf.name,
                     summary=wf.summary,
-                    steps=wf.steps,
-                    step_entries=step_entries,
-                    first_step=wf.steps[0] if wf.steps else "",
                 )
             )
 
@@ -263,12 +252,14 @@ class WorkflowTools:
         step_outputs = [out.file for out in first_step.outputs]
 
         return StartWorkflowResponse(
-            session_id=session.session_id,
-            branch_name=session.branch_name,
-            current_step_id=first_step_id,
-            step_instructions=instructions,
-            step_outputs=step_outputs,
-            quality_criteria=first_step.quality_criteria,
+            begin_step=ActiveStepInfo(
+                session_id=session.session_id,
+                branch_name=session.branch_name,
+                step_id=first_step_id,
+                step_expected_outputs=step_outputs,
+                step_quality_criteria=first_step.quality_criteria,
+                step_instructions=instructions,
+            )
         )
 
     def finished_step(self, input_data: FinishedStepInput) -> FinishedStepResponse:
@@ -368,15 +359,6 @@ class WorkflowTools:
         instructions = self._get_step_instructions(job, next_step_id)
         step_outputs = [out.file for out in next_step.outputs]
 
-        # Build response with concurrent step info if applicable
-        response = FinishedStepResponse(
-            status=StepStatus.NEXT_STEP,
-            next_step_id=next_step_id,
-            step_instructions=instructions,
-            step_outputs=step_outputs,
-            quality_criteria=next_step.quality_criteria,
-        )
-
         # Add info about concurrent steps if this is a concurrent entry
         if next_entry.is_concurrent and len(next_entry.step_ids) > 1:
             concurrent_info = (
@@ -384,6 +366,19 @@ class WorkflowTools:
                 f"steps that can run in parallel: {', '.join(next_entry.step_ids)}\n"
                 f"Use the Task tool to execute them concurrently."
             )
-            response.step_instructions = instructions + concurrent_info
+            instructions = instructions + concurrent_info
 
-        return response
+        # Reload session to get current state after advance
+        session = self.state_manager.require_active_session()
+
+        return FinishedStepResponse(
+            status=StepStatus.NEXT_STEP,
+            begin_step=ActiveStepInfo(
+                session_id=session.session_id,
+                branch_name=session.branch_name,
+                step_id=next_step_id,
+                step_expected_outputs=step_outputs,
+                step_quality_criteria=next_step.quality_criteria,
+                step_instructions=instructions,
+            ),
+        )

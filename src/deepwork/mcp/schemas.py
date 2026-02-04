@@ -1,4 +1,10 @@
-"""Pydantic models for MCP tool inputs and outputs."""
+"""Pydantic models for MCP tool inputs and outputs.
+
+IMPORTANT: If you modify any models in this file that affect the MCP tool
+interfaces (input models, output models, or their fields), you MUST also
+update the documentation in doc/mcp_interface.md to keep it in sync with
+the implementation.
+"""
 
 from enum import Enum
 from typing import Any
@@ -20,6 +26,8 @@ class StepStatus(str, Enum):
 
 # =============================================================================
 # Workflow Info Models
+# NOTE: These models are returned by get_workflows tool.
+#       Update doc/mcp_interface.md when modifying.
 # =============================================================================
 
 
@@ -53,11 +61,6 @@ class WorkflowInfo(BaseModel):
 
     name: str = Field(description="Workflow identifier")
     summary: str = Field(description="Short description of workflow")
-    steps: list[str] = Field(description="Flattened list of step IDs in order")
-    step_entries: list[WorkflowStepEntryInfo] = Field(
-        description="Step entries (sequential or concurrent)"
-    )
-    first_step: str = Field(description="First step ID to start workflow")
 
 
 class JobInfo(BaseModel):
@@ -74,6 +77,8 @@ class JobInfo(BaseModel):
 
 # =============================================================================
 # Tool Input Models
+# NOTE: Changes to these models affect MCP tool parameters.
+#       Update doc/mcp_interface.md when modifying.
 # =============================================================================
 
 
@@ -125,7 +130,22 @@ class QualityGateResult(BaseModel):
 
 # =============================================================================
 # Tool Output Models
+# NOTE: Changes to these models affect MCP tool return types.
+#       Update doc/mcp_interface.md when modifying.
 # =============================================================================
+
+
+class ActiveStepInfo(BaseModel):
+    """Information about the step to begin working on."""
+
+    session_id: str = Field(description="Unique session identifier")
+    branch_name: str = Field(description="Git branch for this workflow instance")
+    step_id: str = Field(description="ID of the current step")
+    step_expected_outputs: list[str] = Field(description="Expected output files for this step")
+    step_quality_criteria: list[str] = Field(
+        default_factory=list, description="Criteria for step completion"
+    )
+    step_instructions: str = Field(description="Instructions for the step")
 
 
 class GetWorkflowsResponse(BaseModel):
@@ -137,14 +157,7 @@ class GetWorkflowsResponse(BaseModel):
 class StartWorkflowResponse(BaseModel):
     """Response from start_workflow tool."""
 
-    session_id: str = Field(description="Unique session identifier")
-    branch_name: str = Field(description="Git branch for this workflow instance")
-    current_step_id: str = Field(description="ID of the current step")
-    step_instructions: str = Field(description="Instructions for the first step")
-    step_outputs: list[str] = Field(description="Expected output files for this step")
-    quality_criteria: list[str] = Field(
-        default_factory=list, description="Criteria for step completion"
-    )
+    begin_step: ActiveStepInfo = Field(description="Information about the first step to begin")
 
 
 class FinishedStepResponse(BaseModel):
@@ -159,15 +172,8 @@ class FinishedStepResponse(BaseModel):
     )
 
     # For next_step status
-    next_step_id: str | None = Field(default=None, description="ID of next step")
-    step_instructions: str | None = Field(
-        default=None, description="Instructions for next step"
-    )
-    step_outputs: list[str] | None = Field(
-        default=None, description="Expected outputs for next step"
-    )
-    quality_criteria: list[str] | None = Field(
-        default=None, description="Criteria for next step"
+    begin_step: ActiveStepInfo | None = Field(
+        default=None, description="Information about the next step to begin"
     )
 
     # For workflow_complete status

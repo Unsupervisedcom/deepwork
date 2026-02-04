@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: update
 version: "1.3.0"
 summary: "Updates DeepWork standard jobs in src/ and syncs to installed locations. Use when modifying deepwork_jobs."

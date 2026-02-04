@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: fruits
 version: "1.0.0"
 summary: "Identify and classify fruits from a mixed list of items"

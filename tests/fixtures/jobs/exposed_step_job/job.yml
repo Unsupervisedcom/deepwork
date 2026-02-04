@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: exposed_job
 version: "0.1.0"
 summary: "A job with exposed and hidden steps for testing"

@@ -212,10 +212,7 @@ class TestMCPWorkflowTools:
         assert len(fruits_job.workflows) >= 1
         full_workflow = fruits_job.workflows[0]
         assert full_workflow.name == "full"
-
-        # Workflow should contain the steps
-        assert "identify" in full_workflow.steps
-        assert "classify" in full_workflow.steps
+        assert full_workflow.summary is not None
 
     def test_start_workflow_creates_session(self, project_with_job: Path) -> None:
         """Test that start_workflow creates a new workflow session."""
@@ -242,15 +239,15 @@ class TestMCPWorkflowTools:
         response = tools.start_workflow(input_data)
 
         # Should return session info
-        assert response.session_id is not None
-        assert response.branch_name is not None
-        assert "deepwork" in response.branch_name.lower()
-        assert "fruits" in response.branch_name.lower()
+        assert response.begin_step.session_id is not None
+        assert response.begin_step.branch_name is not None
+        assert "deepwork" in response.begin_step.branch_name.lower()
+        assert "fruits" in response.begin_step.branch_name.lower()
 
         # Should return first step instructions
-        assert response.current_step_id is not None
-        assert response.step_instructions is not None
-        assert len(response.step_instructions) > 0
+        assert response.begin_step.step_id is not None
+        assert response.begin_step.step_instructions is not None
+        assert len(response.begin_step.step_instructions) > 0
 
     def test_workflow_step_progression(self, project_with_job: Path) -> None:
         """Test that finished_step progresses through workflow steps."""
@@ -290,8 +287,9 @@ class TestMCPWorkflowTools:
 
         if finish_response.status == "next_step":
             # Should have instructions for next step
-            assert finish_response.step_instructions is not None
-            assert finish_response.next_step_id is not None
+            assert finish_response.begin_step is not None
+            assert finish_response.begin_step.step_instructions is not None
+            assert finish_response.begin_step.step_id is not None
 
 
 @pytest.mark.skipif(

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: deepwork_jobs
 version: "1.0.0"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs."

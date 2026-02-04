@@ -21,6 +21,39 @@ class InstallError(Exception):
     pass
 
 
+def _install_schemas(schemas_dir: Path, project_path: Path) -> None:
+    """
+    Install JSON schemas to the project's .deepwork/schemas directory.
+
+    Args:
+        schemas_dir: Path to .deepwork/schemas directory
+        project_path: Path to project root (for relative path display)
+
+    Raises:
+        InstallError: If installation fails
+    """
+    # Find the source schemas directory
+    source_schemas_dir = Path(__file__).parent.parent / "schemas"
+
+    if not source_schemas_dir.exists():
+        raise InstallError(
+            f"Schemas directory not found at {source_schemas_dir}. "
+            "DeepWork installation may be corrupted."
+        )
+
+    # Copy JSON schema files
+    try:
+        for schema_file in source_schemas_dir.glob("*.json"):
+            target_file = schemas_dir / schema_file.name
+            shutil.copy(schema_file, target_file)
+            fix_permissions(target_file)
+            console.print(
+                f"  [green]✓[/green] Installed schema {schema_file.name} ({target_file.relative_to(project_path)})"
+            )
+    except Exception as e:
+        raise InstallError(f"Failed to install schemas: {e}") from e
+
+
 def _inject_standard_job(job_name: str, jobs_dir: Path, project_path: Path) -> None:
     """
     Inject a standard job definition into the project.
@@ -249,20 +282,26 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     deepwork_dir = project_path / ".deepwork"
     jobs_dir = deepwork_dir / "jobs"
     doc_specs_dir = deepwork_dir / "doc_specs"
+    schemas_dir = deepwork_dir / "schemas"
     ensure_dir(deepwork_dir)
     ensure_dir(jobs_dir)
     ensure_dir(doc_specs_dir)
+    ensure_dir(schemas_dir)
     console.print(f"  [green]✓[/green] Created {deepwork_dir.relative_to(project_path)}/")
 
-    # Step 3b: Inject standard jobs (core job definitions)
+    # Step 3b: Install schemas
+    console.print("[yellow]→[/yellow] Installing schemas...")
+    _install_schemas(schemas_dir, project_path)
+
+    # Step 3c: Inject standard jobs (core job definitions)
     console.print("[yellow]→[/yellow] Installing core job definitions...")
     _inject_deepwork_jobs(jobs_dir, project_path)
 
-    # Step 3c: Create .gitignore for temporary files
+    # Step 3d: Create .gitignore for temporary files
     _create_deepwork_gitignore(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/.gitignore")
 
-    # Step 3d: Create tmp directory with .gitkeep file for version control
+    # Step 3e: Create tmp directory with .gitkeep file for version control
     _create_tmp_directory(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/tmp/.gitkeep")
 

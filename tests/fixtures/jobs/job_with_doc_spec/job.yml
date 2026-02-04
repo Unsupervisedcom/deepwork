@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: job_with_doc_spec
 version: "1.0.0"
 summary: "Job with doc spec output for testing"
