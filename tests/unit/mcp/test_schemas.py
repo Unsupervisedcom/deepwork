@@ -2,6 +2,7 @@
 
 
 from deepwork.mcp.schemas import (
+    ActiveStepInfo,
     FinishedStepInput,
     FinishedStepResponse,
     JobInfo,
@@ -85,17 +86,10 @@ class TestWorkflowInfo:
         workflow = WorkflowInfo(
             name="test_workflow",
             summary="A test workflow",
-            steps=["step1", "step2"],
-            step_entries=[
-                WorkflowStepEntryInfo(step_ids=["step1"]),
-                WorkflowStepEntryInfo(step_ids=["step2"]),
-            ],
-            first_step="step1",
         )
 
         assert workflow.name == "test_workflow"
-        assert workflow.first_step == "step1"
-        assert len(workflow.steps) == 2
+        assert workflow.summary == "A test workflow"
 
 
 class TestJobInfo:
@@ -223,23 +217,59 @@ class TestQualityGateResult:
         assert len(result.criteria_results) == 2
 
 
+class TestActiveStepInfo:
+    """Tests for ActiveStepInfo model."""
+
+    def test_basic_step_info(self) -> None:
+        """Test basic active step info."""
+        step_info = ActiveStepInfo(
+            session_id="abc123",
+            branch_name="deepwork/test-main-20240101",
+            step_id="step1",
+            step_expected_outputs=["output.md"],
+            step_quality_criteria=["Must be complete"],
+            step_instructions="Do something",
+        )
+
+        assert step_info.session_id == "abc123"
+        assert step_info.branch_name == "deepwork/test-main-20240101"
+        assert step_info.step_id == "step1"
+        assert step_info.step_expected_outputs == ["output.md"]
+        assert step_info.step_quality_criteria == ["Must be complete"]
+        assert step_info.step_instructions == "Do something"
+
+    def test_default_quality_criteria(self) -> None:
+        """Test default empty quality criteria."""
+        step_info = ActiveStepInfo(
+            session_id="abc123",
+            branch_name="deepwork/test-main-20240101",
+            step_id="step1",
+            step_expected_outputs=["output.md"],
+            step_instructions="Do something",
+        )
+
+        assert step_info.step_quality_criteria == []
+
+
 class TestStartWorkflowResponse:
     """Tests for StartWorkflowResponse model."""
 
     def test_basic_response(self) -> None:
         """Test basic response."""
         response = StartWorkflowResponse(
-            session_id="abc123",
-            branch_name="deepwork/test-main-20240101",
-            current_step_id="step1",
-            step_instructions="Do something",
-            step_outputs=["output.md"],
+            begin_step=ActiveStepInfo(
+                session_id="abc123",
+                branch_name="deepwork/test-main-20240101",
+                step_id="step1",
+                step_expected_outputs=["output.md"],
+                step_instructions="Do something",
+            )
         )
 
-        assert response.session_id == "abc123"
-        assert response.branch_name == "deepwork/test-main-20240101"
-        assert response.current_step_id == "step1"
-        assert response.quality_criteria == []
+        assert response.begin_step.session_id == "abc123"
+        assert response.begin_step.branch_name == "deepwork/test-main-20240101"
+        assert response.begin_step.step_id == "step1"
+        assert response.begin_step.step_quality_criteria == []
 
 
 class TestFinishedStepResponse:
@@ -257,19 +287,24 @@ class TestFinishedStepResponse:
 
         assert response.status == StepStatus.NEEDS_WORK
         assert response.feedback is not None
-        assert response.next_step_id is None
+        assert response.begin_step is None
 
     def test_next_step_status(self) -> None:
         """Test next_step response."""
         response = FinishedStepResponse(
             status=StepStatus.NEXT_STEP,
-            next_step_id="step2",
-            step_instructions="Next step instructions",
-            step_outputs=["output2.md"],
+            begin_step=ActiveStepInfo(
+                session_id="abc123",
+                branch_name="deepwork/test-main-20240101",
+                step_id="step2",
+                step_expected_outputs=["output2.md"],
+                step_instructions="Next step instructions",
+            ),
         )
 
         assert response.status == StepStatus.NEXT_STEP
-        assert response.next_step_id == "step2"
+        assert response.begin_step is not None
+        assert response.begin_step.step_id == "step2"
         assert response.summary is None
 
     def test_workflow_complete_status(self) -> None:

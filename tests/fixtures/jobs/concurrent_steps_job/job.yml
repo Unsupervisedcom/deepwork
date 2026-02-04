@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: concurrent_workflow
 version: "1.0.0"
 summary: "Workflow with concurrent steps for testing"

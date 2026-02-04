@@ -112,8 +112,7 @@ class TestWorkflowTools:
         assert job.summary == "A test job"
         assert len(job.workflows) == 1
         assert job.workflows[0].name == "main"
-        assert job.workflows[0].steps == ["step1", "step2"]
-        assert job.workflows[0].first_step == "step1"
+        assert job.workflows[0].summary == "Main workflow"
 
     def test_get_workflows_empty(self, tmp_path: Path) -> None:
         """Test getting workflows when no jobs exist."""
@@ -142,12 +141,12 @@ class TestWorkflowTools:
 
         response = tools.start_workflow(input_data)
 
-        assert response.session_id is not None
-        assert "test-instance" in response.branch_name
-        assert response.current_step_id == "step1"
-        assert "Step 1" in response.step_instructions
-        assert "output1.md" in response.step_outputs
-        assert "Output must be valid" in response.quality_criteria
+        assert response.begin_step.session_id is not None
+        assert "test-instance" in response.begin_step.branch_name
+        assert response.begin_step.step_id == "step1"
+        assert "Step 1" in response.begin_step.step_instructions
+        assert "output1.md" in response.begin_step.step_expected_outputs
+        assert "Output must be valid" in response.begin_step.step_quality_criteria
 
     def test_start_workflow_invalid_job(self, tools: WorkflowTools) -> None:
         """Test starting workflow with invalid job."""
@@ -201,9 +200,10 @@ class TestWorkflowTools:
         response = tools.finished_step(finish_input)
 
         assert response.status == StepStatus.NEXT_STEP
-        assert response.next_step_id == "step2"
-        assert response.step_instructions is not None
-        assert "Step 2" in response.step_instructions
+        assert response.begin_step is not None
+        assert response.begin_step.step_id == "step2"
+        assert response.begin_step.step_instructions is not None
+        assert "Step 2" in response.begin_step.step_instructions
 
     def test_finished_step_completes_workflow(
         self, tools: WorkflowTools, project_root: Path

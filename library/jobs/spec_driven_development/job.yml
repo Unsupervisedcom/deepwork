@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: spec_driven_development
 version: "1.0.0"
 summary: "Spec-driven development workflow that turns specifications into working implementations through structured planning."
