@@ -124,12 +124,15 @@ def create_server(
         instance_id: str | None = None,
     ) -> dict[str, Any]:
         """Start a workflow and get first step instructions."""
-        _log_tool_call("start_workflow", {
-            "goal": goal,
-            "job_name": job_name,
-            "workflow_name": workflow_name,
-            "instance_id": instance_id,
-        })
+        _log_tool_call(
+            "start_workflow",
+            {
+                "goal": goal,
+                "job_name": job_name,
+                "workflow_name": workflow_name,
+                "instance_id": instance_id,
+            },
+        )
         input_data = StartWorkflowInput(
             goal=goal,
             job_name=job_name,
@@ -158,11 +161,14 @@ def create_server(
         quality_review_override_reason: str | None = None,
     ) -> dict[str, Any]:
         """Report step completion and get next instructions."""
-        _log_tool_call("finished_step", {
-            "outputs": outputs,
-            "notes": notes,
-            "quality_review_override_reason": quality_review_override_reason,
-        })
+        _log_tool_call(
+            "finished_step",
+            {
+                "outputs": outputs,
+                "notes": notes,
+                "quality_review_override_reason": quality_review_override_reason,
+            },
+        )
         input_data = FinishedStepInput(
             outputs=outputs,
             notes=notes,

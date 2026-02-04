@@ -14,7 +14,6 @@ import pytest
 
 from deepwork.mcp.quality_gate import QualityGate, QualityGateError
 
-
 # Path to our mock review agent script
 MOCK_AGENT_PATH = Path(__file__).parent.parent / "fixtures" / "mock_review_agent.py"
 
@@ -133,9 +132,7 @@ class TestQualityGateIntegration:
             else:
                 os.environ.pop("REVIEW_RESULT", None)
 
-    async def test_subprocess_timeout(
-        self, project_root: Path, mock_agent_command: str
-    ) -> None:
+    async def test_subprocess_timeout(self, project_root: Path, mock_agent_command: str) -> None:
         """Test that subprocess timeout is handled correctly."""
         gate = QualityGate(command=mock_agent_command, timeout=1)  # 1 second timeout
 
@@ -249,7 +246,7 @@ class TestQualityGateResponseParsing:
         """Test parsing JSON wrapped in markdown code block."""
         gate = QualityGate()
 
-        response = '''Here's my evaluation:
+        response = """Here's my evaluation:
 
 ```json
 {
@@ -261,7 +258,7 @@ class TestQualityGateResponseParsing:
 }
 ```
 
-Hope that helps!'''
+Hope that helps!"""
 
         result = gate._parse_response(response)
 
@@ -272,13 +269,13 @@ Hope that helps!'''
         """Test parsing JSON in plain code block (no json tag)."""
         gate = QualityGate()
 
-        response = '''```
+        response = """```
 {
     "passed": false,
     "feedback": "Issues found",
     "criteria_results": []
 }
-```'''
+```"""
 
         result = gate._parse_response(response)
 
@@ -318,10 +315,8 @@ Hope that helps!'''
             ('{"passed": null, "feedback": "test", "criteria_results": []}', "null"),
         ]
 
-        for response, case_name in test_cases:
-            with pytest.raises(
-                QualityGateError, match="failed schema validation"
-            ):
+        for response, _case_name in test_cases:
+            with pytest.raises(QualityGateError, match="failed schema validation"):
                 gate._parse_response(response)
 
     def test_parse_without_schema_validation_is_lenient(self) -> None:
@@ -340,7 +335,7 @@ Hope that helps!'''
         """Test that criteria results are properly parsed."""
         gate = QualityGate()
 
-        response = '''```json
+        response = """```json
 {
     "passed": false,
     "feedback": "Two criteria failed",
@@ -350,7 +345,7 @@ Hope that helps!'''
         {"criterion": "Third check", "passed": false, "feedback": "Wrong format"}
     ]
 }
-```'''
+```"""
 
         result = gate._parse_response(response)
 
@@ -382,7 +377,7 @@ class TestQualityGateSchemaValidation:
         """Test that valid response passes schema validation."""
         gate = QualityGate()
 
-        response = '''```json
+        response = """```json
 {
     "passed": true,
     "feedback": "All criteria met",
@@ -391,7 +386,7 @@ class TestQualityGateSchemaValidation:
         {"criterion": "Test 2", "passed": true}
     ]
 }
-```'''
+```"""
 
         result = gate._parse_response(response)
 
@@ -423,9 +418,9 @@ class TestQualityGateSchemaValidation:
         gate = QualityGate()
 
         # criteria_results item missing required 'criterion' field
-        response = '''{"passed": true, "feedback": "test", "criteria_results": [
+        response = """{"passed": true, "feedback": "test", "criteria_results": [
             {"passed": true, "feedback": null}
-        ]}'''
+        ]}"""
 
         with pytest.raises(QualityGateError, match="failed schema validation"):
             gate._parse_response(response)
@@ -461,9 +456,7 @@ class TestQualityGateEdgeCases:
         assert result.passed is True
         assert "auto-passing" in result.feedback.lower()
 
-    async def test_multiple_output_files(
-        self, project_root: Path, mock_agent_command: str
-    ) -> None:
+    async def test_multiple_output_files(self, project_root: Path, mock_agent_command: str) -> None:
         """Test evaluation with multiple output files."""
         gate = QualityGate(command=mock_agent_command, timeout=30)
 
@@ -489,9 +482,7 @@ class TestQualityGateEdgeCases:
             else:
                 os.environ.pop("REVIEW_RESULT", None)
 
-    async def test_large_output_file(
-        self, project_root: Path, mock_agent_command: str
-    ) -> None:
+    async def test_large_output_file(self, project_root: Path, mock_agent_command: str) -> None:
         """Test evaluation with a large output file."""
         gate = QualityGate(command=mock_agent_command, timeout=30)
 
@@ -516,9 +507,7 @@ class TestQualityGateEdgeCases:
             else:
                 os.environ.pop("REVIEW_RESULT", None)
 
-    async def test_unicode_in_output(
-        self, project_root: Path, mock_agent_command: str
-    ) -> None:
+    async def test_unicode_in_output(self, project_root: Path, mock_agent_command: str) -> None:
         """Test evaluation with unicode content."""
         gate = QualityGate(command=mock_agent_command, timeout=30)
 

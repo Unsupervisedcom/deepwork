@@ -51,9 +51,7 @@ class WorkflowStepEntryInfo(BaseModel):
     """Information about a workflow step entry (sequential or concurrent)."""
 
     step_ids: list[str] = Field(description="Step ID(s) in this entry")
-    is_concurrent: bool = Field(
-        default=False, description="True if steps run in parallel"
-    )
+    is_concurrent: bool = Field(default=False, description="True if steps run in parallel")
 
 
 class WorkflowInfo(BaseModel):
@@ -105,9 +103,7 @@ class FinishedStepInput(BaseModel):
 class AbortWorkflowInput(BaseModel):
     """Input for abort_workflow tool."""
 
-    explanation: str = Field(
-        description="Explanation of why the workflow is being aborted"
-    )
+    explanation: str = Field(description="Explanation of why the workflow is being aborted")
 
 
 # =============================================================================
@@ -192,12 +188,8 @@ class FinishedStepResponse(BaseModel):
     )
 
     # For workflow_complete status
-    summary: str | None = Field(
-        default=None, description="Summary of completed workflow"
-    )
-    all_outputs: list[str] | None = Field(
-        default=None, description="All outputs from all steps"
-    )
+    summary: str | None = Field(default=None, description="Summary of completed workflow")
+    all_outputs: list[str] | None = Field(default=None, description="All outputs from all steps")
 
     # Stack info (included in all responses)
     stack: list[StackEntry] = Field(
@@ -208,7 +200,9 @@ class FinishedStepResponse(BaseModel):
 class AbortWorkflowResponse(BaseModel):
     """Response from abort_workflow tool."""
 
-    aborted_workflow: str = Field(description="The workflow that was aborted (job_name/workflow_name)")
+    aborted_workflow: str = Field(
+        description="The workflow that was aborted (job_name/workflow_name)"
+    )
     aborted_step: str = Field(description="The step that was active when aborted")
     explanation: str = Field(description="The explanation provided for aborting")
     stack: list[StackEntry] = Field(
@@ -217,9 +211,7 @@ class AbortWorkflowResponse(BaseModel):
     resumed_workflow: str | None = Field(
         default=None, description="The workflow now active (if any)"
     )
-    resumed_step: str | None = Field(
-        default=None, description="The step now active (if any)"
-    )
+    resumed_step: str | None = Field(default=None, description="The step now active (if any)")
 
 
 # =============================================================================
@@ -232,9 +224,7 @@ class StepProgress(BaseModel):
 
     step_id: str = Field(description="Step identifier")
     started_at: str | None = Field(default=None, description="ISO timestamp when started")
-    completed_at: str | None = Field(
-        default=None, description="ISO timestamp when completed"
-    )
+    completed_at: str | None = Field(default=None, description="ISO timestamp when completed")
     outputs: list[str] = Field(default_factory=list, description="Output files created")
     notes: str | None = Field(default=None, description="Notes from agent")
     quality_attempts: int = Field(default=0, description="Number of quality gate attempts")
@@ -257,9 +247,7 @@ class WorkflowSession(BaseModel):
         default_factory=dict, description="Progress for each step"
     )
     started_at: str = Field(description="ISO timestamp when session started")
-    completed_at: str | None = Field(
-        default=None, description="ISO timestamp when completed"
-    )
+    completed_at: str | None = Field(default=None, description="ISO timestamp when completed")
     status: str = Field(default="active", description="Session status: active, completed, aborted")
     abort_reason: str | None = Field(
         default=None, description="Explanation if workflow was aborted"

@@ -559,9 +559,7 @@ class JobDefinition:
             workflow_step_ids.update(workflow.steps)
 
         # Find orphaned steps
-        orphaned_steps = [
-            step.id for step in self.steps if step.id not in workflow_step_ids
-        ]
+        orphaned_steps = [step.id for step in self.steps if step.id not in workflow_step_ids]
 
         if orphaned_steps:
             logger.warning(

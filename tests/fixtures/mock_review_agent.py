@@ -48,9 +48,7 @@ def main() -> int:
         response = {
             "passed": True,
             "feedback": "All criteria met",
-            "criteria_results": [
-                {"criterion": "Criterion 1", "passed": True, "feedback": None}
-            ],
+            "criteria_results": [{"criterion": "Criterion 1", "passed": True, "feedback": None}],
         }
         print(json.dumps(response))
         return 0
@@ -102,42 +100,52 @@ def main() -> int:
 
     # Check if outputs contain expected patterns
     if "File not found" in prompt:
-        criteria_results.append({
-            "criterion": "Output files must exist",
-            "passed": False,
-            "feedback": "One or more output files were not found",
-        })
+        criteria_results.append(
+            {
+                "criterion": "Output files must exist",
+                "passed": False,
+                "feedback": "One or more output files were not found",
+            }
+        )
         all_passed = False
     elif "Test content" in prompt or "output.md" in prompt:
-        criteria_results.append({
-            "criterion": "Output files must exist",
-            "passed": True,
-            "feedback": None,
-        })
+        criteria_results.append(
+            {
+                "criterion": "Output files must exist",
+                "passed": True,
+                "feedback": None,
+            }
+        )
 
     # Look for "must contain" type criteria
     if "must contain" in prompt.lower():
         if "expected content" in prompt.lower():
-            criteria_results.append({
-                "criterion": "Output must contain expected content",
-                "passed": True,
-                "feedback": None,
-            })
+            criteria_results.append(
+                {
+                    "criterion": "Output must contain expected content",
+                    "passed": True,
+                    "feedback": None,
+                }
+            )
         else:
-            criteria_results.append({
-                "criterion": "Output must contain expected content",
-                "passed": False,
-                "feedback": "Expected content not found in output",
-            })
+            criteria_results.append(
+                {
+                    "criterion": "Output must contain expected content",
+                    "passed": False,
+                    "feedback": "Expected content not found in output",
+                }
+            )
             all_passed = False
 
     if not criteria_results:
         # If no specific criteria matched, default based on whether outputs exist
-        criteria_results.append({
-            "criterion": "General quality check",
-            "passed": True,
-            "feedback": None,
-        })
+        criteria_results.append(
+            {
+                "criterion": "General quality check",
+                "passed": True,
+                "feedback": None,
+            }
+        )
 
     response = {
         "passed": all_passed,

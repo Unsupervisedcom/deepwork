@@ -168,6 +168,7 @@ class TestInstallCommand:
         # MCP entry point skill
         assert (claude_dir / "deepwork" / "SKILL.md").exists()
 
+
 class TestCLIEntryPoint:
     """Tests for CLI entry point."""
 

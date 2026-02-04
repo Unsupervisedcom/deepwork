@@ -245,9 +245,7 @@ class TestWorkflowTools:
 
         # Create output and finish step
         (project_root / "output1.md").write_text("Valid output")
-        response = await tools_with_quality.finished_step(
-            FinishedStepInput(outputs=["output1.md"])
-        )
+        response = await tools_with_quality.finished_step(FinishedStepInput(outputs=["output1.md"]))
 
         # Should advance to next step
         assert response.status == StepStatus.NEXT_STEP

@@ -182,9 +182,7 @@ class StateManager:
             StateError: If no active session
         """
         if not self._session_stack:
-            raise StateError(
-                "No active workflow session. Use start_workflow to begin a workflow."
-            )
+            raise StateError("No active workflow session. Use start_workflow to begin a workflow.")
         return self._session_stack[-1]
 
     async def start_step(self, step_id: str) -> None:
@@ -302,7 +300,9 @@ class StateManager:
             # Return new active session (if any)
             return self._session_stack[-1] if self._session_stack else None
 
-    async def abort_workflow(self, explanation: str) -> tuple[WorkflowSession, WorkflowSession | None]:
+    async def abort_workflow(
+        self, explanation: str
+    ) -> tuple[WorkflowSession, WorkflowSession | None]:
         """Abort the current workflow and pop from stack.
 
         Args:
@@ -404,9 +404,7 @@ class StateManager:
         return [
             s
             for s in all_sessions
-            if s.job_name == job_name
-            and s.workflow_name == workflow_name
-            and s.status == "active"
+            if s.job_name == job_name and s.workflow_name == workflow_name and s.status == "active"
         ]
 
     async def delete_session(self, session_id: str) -> None:
@@ -421,6 +419,4 @@ class StateManager:
                 session_file.unlink()
 
             # Remove from stack if present
-            self._session_stack = [
-                s for s in self._session_stack if s.session_id != session_id
-            ]
+            self._session_stack = [s for s in self._session_stack if s.session_id != session_id]

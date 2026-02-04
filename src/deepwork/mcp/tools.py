@@ -171,9 +171,7 @@ class WorkflowTools:
 
         instructions_path = job.job_dir / step.instructions_file
         if not instructions_path.exists():
-            raise ToolError(
-                f"Instructions file not found: {step.instructions_file}"
-            )
+            raise ToolError(f"Instructions file not found: {step.instructions_file}")
 
         return instructions_path.read_text(encoding="utf-8")
 
@@ -293,9 +291,7 @@ class WorkflowTools:
                     )
 
                 # Return needs_work status
-                failed_criteria = [
-                    cr for cr in result.criteria_results if not cr.passed
-                ]
+                failed_criteria = [cr for cr in result.criteria_results if not cr.passed]
                 return FinishedStepResponse(
                     status=StepStatus.NEEDS_WORK,
                     feedback=result.feedback,

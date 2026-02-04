@@ -19,7 +19,6 @@ import pytest
 
 from deepwork.core.adapters import ClaudeAdapter
 from deepwork.core.generator import SkillGenerator
-from deepwork.core.parser import parse_job_definition
 from deepwork.mcp.state import StateManager
 from deepwork.mcp.tools import WorkflowTools
 
@@ -269,7 +268,7 @@ class TestMCPWorkflowTools:
             job_name="fruits",
             workflow_name=workflow_name,
         )
-        start_response = await tools.start_workflow(start_input)
+        await tools.start_workflow(start_input)
 
         # Create mock output file for first step
         output_file = project_with_job / "identified_fruits.md"
