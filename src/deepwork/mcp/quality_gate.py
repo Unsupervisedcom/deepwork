@@ -64,7 +64,7 @@ class QualityGate:
         """Initialize quality gate.
 
         Args:
-            command: Base command to invoke review agent (system prompt added via -s flag)
+            command: Base command to invoke review agent (system prompt added via --system-prompt flag)
             timeout: Timeout in seconds for review agent
         """
         self.command = command
@@ -163,18 +163,32 @@ You must respond with JSON in this exact structure:
         """
         # Try to extract JSON from the response
         try:
+            # First, try to parse as JSON to check if it's a wrapper object
+            # from --output-format json (contains type, result, etc.)
+            json_text = response_text.strip()
+            try:
+                wrapper = json.loads(json_text)
+                # Check if this is a Claude CLI wrapper object
+                if isinstance(wrapper, dict) and "type" in wrapper and "result" in wrapper:
+                    # Extract the actual result content
+                    json_text = wrapper.get("result", "")
+                    if not json_text:
+                        raise QualityGateError(
+                            "Review agent returned empty result in wrapper object"
+                        )
+            except json.JSONDecodeError:
+                # Not valid JSON at the top level, continue with normal parsing
+                pass
+
             # Look for JSON in code blocks
-            if "```json" in response_text:
-                start = response_text.index("```json") + 7
-                end = response_text.index("```", start)
-                json_text = response_text[start:end].strip()
-            elif "```" in response_text:
-                start = response_text.index("```") + 3
-                end = response_text.index("```", start)
-                json_text = response_text[start:end].strip()
-            else:
-                # Assume entire response is JSON
-                json_text = response_text.strip()
+            if "```json" in json_text:
+                start = json_text.index("```json") + 7
+                end = json_text.index("```", start)
+                json_text = json_text[start:end].strip()
+            elif "```" in json_text:
+                start = json_text.index("```") + 3
+                end = json_text.index("```", start)
+                json_text = json_text[start:end].strip()
 
             data = json.loads(json_text)
 
@@ -242,11 +256,18 @@ You must respond with JSON in this exact structure:
         instructions = self._build_instructions(quality_criteria)
         payload = await self._build_payload(outputs, project_root)
 
-        # Build command with system prompt flag
+        # Build command with system prompt flag and JSON schema
         # Parse the base command properly to handle quoted arguments
         base_cmd = shlex.split(self.command)
-        # Add system prompt via -s flag
-        full_cmd = base_cmd + ["-s", instructions]
+        schema_json = json.dumps(QUALITY_GATE_RESPONSE_SCHEMA)
+        full_cmd = base_cmd + [
+            # Add system prompt via --system-prompt flag
+            "--system-prompt",
+            instructions,
+            # Add JSON schema to enforce structured output
+            "--json-schema",
+            schema_json,
+        ]
 
         try:
             # Run review agent with system prompt and payload using async subprocess

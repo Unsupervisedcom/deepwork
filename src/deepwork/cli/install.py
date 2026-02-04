@@ -363,18 +363,28 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     from deepwork.cli.sync import sync_skills
 
     try:
-        sync_skills(project_path)
+        sync_result = sync_skills(project_path)
     except Exception as e:
         raise InstallError(f"Failed to sync skills: {e}") from e
 
-    # Success message
+    # Success or warning message
     console.print()
     platform_names = ", ".join(a.display_name for a in detected_adapters)
-    console.print(
-        f"[bold green]✓ DeepWork installed successfully for {platform_names}![/bold green]"
-    )
-    console.print()
-    console.print("[bold]Next steps:[/bold]")
-    console.print("  1. Start your agent CLI (ex. [cyan]claude[/cyan] or [cyan]gemini[/cyan])")
-    console.print("  2. Define your first job using the command [cyan]/deepwork_jobs[/cyan]")
+
+    if sync_result.has_warnings:
+        console.print(
+            "[bold yellow]⚠ You should repair your DeepWork install[/bold yellow]"
+        )
+        console.print()
+        console.print("[bold]To fix issues:[/bold]")
+        console.print("  1. Start your agent CLI (ex. [cyan]claude[/cyan] or [cyan]gemini[/cyan])")
+        console.print("  2. Run [cyan]/deepwork repair[/cyan]")
+    else:
+        console.print(
+            f"[bold green]✓ DeepWork installed successfully for {platform_names}![/bold green]"
+        )
+        console.print()
+        console.print("[bold]Next steps:[/bold]")
+        console.print("  1. Start your agent CLI (ex. [cyan]claude[/cyan] or [cyan]gemini[/cyan])")
+        console.print("  2. Define your first job using the command [cyan]/deepwork_jobs[/cyan]")
     console.print()

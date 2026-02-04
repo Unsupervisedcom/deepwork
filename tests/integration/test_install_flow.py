@@ -168,6 +168,37 @@ class TestInstallCommand:
         # MCP entry point skill
         assert (claude_dir / "deepwork" / "SKILL.md").exists()
 
+    def test_install_shows_repair_message_when_job_fails_to_parse(
+        self, mock_claude_project: Path
+    ) -> None:
+        """Test that install shows repair message when there are warnings."""
+        runner = CliRunner()
+
+        # First do a normal install
+        result1 = runner.invoke(
+            cli,
+            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            catch_exceptions=False,
+        )
+        assert result1.exit_code == 0
+        assert "DeepWork installed successfully" in result1.output
+
+        # Create a malformed job definition
+        jobs_dir = mock_claude_project / ".deepwork" / "jobs" / "broken_job"
+        jobs_dir.mkdir(parents=True, exist_ok=True)
+        (jobs_dir / "job.yml").write_text("invalid: yaml: content: [")
+
+        # Reinstall - should show repair message due to parsing warning
+        result2 = runner.invoke(
+            cli,
+            ["install", "--platform", "claude", "--path", str(mock_claude_project)],
+            catch_exceptions=False,
+        )
+        assert result2.exit_code == 0
+        assert "You should repair your DeepWork install" in result2.output
+        assert "/deepwork repair" in result2.output
+        assert "DeepWork installed successfully" not in result2.output
+
 
 class TestCLIEntryPoint:
     """Tests for CLI entry point."""
