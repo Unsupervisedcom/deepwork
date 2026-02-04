@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING
 
 from deepwork.core.parser import JobDefinition, ParseError, Workflow, parse_job_definition
 from deepwork.mcp.schemas import (
+    AbortWorkflowInput,
+    AbortWorkflowResponse,
     ActiveStepInfo,
     FinishedStepInput,
     FinishedStepResponse,
@@ -259,7 +261,8 @@ class WorkflowTools:
                 step_expected_outputs=step_outputs,
                 step_quality_criteria=first_step.quality_criteria,
                 step_instructions=instructions,
-            )
+            ),
+            stack=self.state_manager.get_stack(),
         )
 
     async def finished_step(self, input_data: FinishedStepInput) -> FinishedStepResponse:
@@ -316,6 +319,7 @@ class WorkflowTools:
                     status=StepStatus.NEEDS_WORK,
                     feedback=result.feedback,
                     failed_criteria=failed_criteria,
+                    stack=self.state_manager.get_stack(),
                 )
 
         # Mark step as completed
@@ -330,14 +334,15 @@ class WorkflowTools:
         next_entry_index = current_entry_index + 1
 
         if next_entry_index >= len(workflow.step_entries):
-            # Workflow complete
-            await self.state_manager.complete_workflow()
+            # Workflow complete - get outputs before completing (which pops from stack)
             all_outputs = self.state_manager.get_all_outputs()
+            await self.state_manager.complete_workflow()
 
             return FinishedStepResponse(
                 status=StepStatus.WORKFLOW_COMPLETE,
                 summary=f"Workflow '{workflow.name}' completed successfully!",
                 all_outputs=all_outputs,
+                stack=self.state_manager.get_stack(),
             )
 
         # Get next step
@@ -381,4 +386,32 @@ class WorkflowTools:
                 step_quality_criteria=next_step.quality_criteria,
                 step_instructions=instructions,
             ),
+            stack=self.state_manager.get_stack(),
+        )
+
+    async def abort_workflow(self, input_data: AbortWorkflowInput) -> AbortWorkflowResponse:
+        """Abort the current workflow and return to the previous one.
+
+        Args:
+            input_data: AbortWorkflowInput with explanation
+
+        Returns:
+            AbortWorkflowResponse with abort info and new stack state
+
+        Raises:
+            StateError: If no active session
+        """
+        aborted_session, new_active = await self.state_manager.abort_workflow(
+            input_data.explanation
+        )
+
+        return AbortWorkflowResponse(
+            aborted_workflow=f"{aborted_session.job_name}/{aborted_session.workflow_name}",
+            aborted_step=aborted_session.current_step_id,
+            explanation=input_data.explanation,
+            stack=self.state_manager.get_stack(),
+            resumed_workflow=(
+                f"{new_active.job_name}/{new_active.workflow_name}" if new_active else None
+            ),
+            resumed_step=new_active.current_step_id if new_active else None,
         )

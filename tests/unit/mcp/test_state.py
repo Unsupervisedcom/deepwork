@@ -29,7 +29,8 @@ class TestStateManager:
         """Test StateManager initialization."""
         assert state_manager.project_root == project_root
         assert state_manager.sessions_dir == project_root / ".deepwork" / "tmp"
-        assert state_manager._active_session is None
+        assert state_manager._session_stack == []
+        assert state_manager.get_stack_depth() == 0
 
     def test_generate_session_id(self, state_manager: StateManager) -> None:
         """Test session ID generation."""
@@ -191,20 +192,27 @@ class TestStateManager:
         assert session.current_entry_index == 1
 
     async def test_complete_workflow(self, state_manager: StateManager) -> None:
-        """Test marking workflow as complete."""
-        await state_manager.create_session(
+        """Test marking workflow as complete pops from stack."""
+        session = await state_manager.create_session(
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
             first_step_id="step1",
         )
+        session_id = session.session_id
 
-        await state_manager.complete_workflow()
-        session = state_manager.get_active_session()
+        # Complete workflow - should pop from stack
+        new_active = await state_manager.complete_workflow()
 
-        assert session is not None
-        assert session.status == "completed"
-        assert session.completed_at is not None
+        # No active session after completion
+        assert new_active is None
+        assert state_manager.get_active_session() is None
+        assert state_manager.get_stack_depth() == 0
+
+        # But completed session should be persisted to disk
+        loaded = await state_manager.load_session(session_id)
+        assert loaded.status == "completed"
+        assert loaded.completed_at is not None
 
     async def test_get_all_outputs(self, state_manager: StateManager) -> None:
         """Test getting all outputs from completed steps."""
@@ -284,4 +292,146 @@ class TestStateManager:
         await state_manager.delete_session(session.session_id)
 
         assert not session_file.exists()
+        assert state_manager.get_active_session() is None
+
+
+class TestStateManagerStack:
+    """Tests for stack-based workflow nesting."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project root with .deepwork directory."""
+        deepwork_dir = tmp_path / ".deepwork"
+        deepwork_dir.mkdir()
+        (deepwork_dir / "tmp").mkdir()
+        return tmp_path
+
+    @pytest.fixture
+    def state_manager(self, project_root: Path) -> StateManager:
+        """Create a StateManager instance."""
+        return StateManager(project_root)
+
+    async def test_nested_workflows_stack(self, state_manager: StateManager) -> None:
+        """Test that starting workflows pushes onto the stack."""
+        # Start first workflow
+        session1 = await state_manager.create_session(
+            job_name="job1",
+            workflow_name="workflow1",
+            goal="Goal 1",
+            first_step_id="step1",
+        )
+
+        assert state_manager.get_stack_depth() == 1
+        assert state_manager.get_active_session() == session1
+
+        # Start nested workflow
+        session2 = await state_manager.create_session(
+            job_name="job2",
+            workflow_name="workflow2",
+            goal="Goal 2",
+            first_step_id="stepA",
+        )
+
+        assert state_manager.get_stack_depth() == 2
+        assert state_manager.get_active_session() == session2
+
+        # Start another nested workflow
+        session3 = await state_manager.create_session(
+            job_name="job3",
+            workflow_name="workflow3",
+            goal="Goal 3",
+            first_step_id="stepX",
+        )
+
+        assert state_manager.get_stack_depth() == 3
+        assert state_manager.get_active_session() == session3
+
+    async def test_complete_workflow_pops_stack(self, state_manager: StateManager) -> None:
+        """Test that completing a workflow pops from stack and resumes parent."""
+        # Start two nested workflows
+        session1 = await state_manager.create_session(
+            job_name="job1",
+            workflow_name="workflow1",
+            goal="Goal 1",
+            first_step_id="step1",
+        )
+        await state_manager.create_session(
+            job_name="job2",
+            workflow_name="workflow2",
+            goal="Goal 2",
+            first_step_id="stepA",
+        )
+
+        assert state_manager.get_stack_depth() == 2
+
+        # Complete inner workflow
+        resumed = await state_manager.complete_workflow()
+
+        assert state_manager.get_stack_depth() == 1
+        assert resumed == session1
+        assert state_manager.get_active_session() == session1
+
+    async def test_get_stack(self, state_manager: StateManager) -> None:
+        """Test get_stack returns workflow/step info."""
+        await state_manager.create_session(
+            job_name="job1",
+            workflow_name="wf1",
+            goal="Goal 1",
+            first_step_id="step1",
+        )
+        await state_manager.create_session(
+            job_name="job2",
+            workflow_name="wf2",
+            goal="Goal 2",
+            first_step_id="stepA",
+        )
+
+        stack = state_manager.get_stack()
+
+        assert len(stack) == 2
+        assert stack[0].workflow == "job1/wf1"
+        assert stack[0].step == "step1"
+        assert stack[1].workflow == "job2/wf2"
+        assert stack[1].step == "stepA"
+
+    async def test_abort_workflow(self, state_manager: StateManager) -> None:
+        """Test abort_workflow marks as aborted and pops from stack."""
+        session1 = await state_manager.create_session(
+            job_name="job1",
+            workflow_name="wf1",
+            goal="Goal 1",
+            first_step_id="step1",
+        )
+        session2 = await state_manager.create_session(
+            job_name="job2",
+            workflow_name="wf2",
+            goal="Goal 2",
+            first_step_id="stepA",
+        )
+
+        # Abort inner workflow
+        aborted, resumed = await state_manager.abort_workflow("Something went wrong")
+
+        assert aborted.session_id == session2.session_id
+        assert aborted.status == "aborted"
+        assert aborted.abort_reason == "Something went wrong"
+        assert resumed == session1
+        assert state_manager.get_stack_depth() == 1
+        assert state_manager.get_active_session() == session1
+
+    async def test_abort_workflow_no_parent(self, state_manager: StateManager) -> None:
+        """Test abort_workflow with no parent workflow."""
+        session = await state_manager.create_session(
+            job_name="job1",
+            workflow_name="wf1",
+            goal="Goal 1",
+            first_step_id="step1",
+        )
+
+        aborted, resumed = await state_manager.abort_workflow("Cancelled")
+
+        assert aborted.session_id == session.session_id
+        assert aborted.status == "aborted"
+        assert resumed is None
+        assert state_manager.get_stack_depth() == 0
         assert state_manager.get_active_session() is None

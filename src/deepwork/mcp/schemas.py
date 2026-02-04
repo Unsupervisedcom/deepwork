@@ -105,6 +105,14 @@ class FinishedStepInput(BaseModel):
     )
 
 
+class AbortWorkflowInput(BaseModel):
+    """Input for abort_workflow tool."""
+
+    explanation: str = Field(
+        description="Explanation of why the workflow is being aborted"
+    )
+
+
 # =============================================================================
 # Quality Gate Models
 # =============================================================================
@@ -154,10 +162,20 @@ class GetWorkflowsResponse(BaseModel):
     jobs: list[JobInfo] = Field(description="List of all jobs with their workflows")
 
 
+class StackEntry(BaseModel):
+    """An entry in the workflow stack."""
+
+    workflow: str = Field(description="Workflow identifier (job_name/workflow_name)")
+    step: str = Field(description="Current step ID in this workflow")
+
+
 class StartWorkflowResponse(BaseModel):
     """Response from start_workflow tool."""
 
     begin_step: ActiveStepInfo = Field(description="Information about the first step to begin")
+    stack: list[StackEntry] = Field(
+        default_factory=list, description="Current workflow stack after starting"
+    )
 
 
 class FinishedStepResponse(BaseModel):
@@ -182,6 +200,28 @@ class FinishedStepResponse(BaseModel):
     )
     all_outputs: list[str] | None = Field(
         default=None, description="All outputs from all steps"
+    )
+
+    # Stack info (included in all responses)
+    stack: list[StackEntry] = Field(
+        default_factory=list, description="Current workflow stack after this operation"
+    )
+
+
+class AbortWorkflowResponse(BaseModel):
+    """Response from abort_workflow tool."""
+
+    aborted_workflow: str = Field(description="The workflow that was aborted (job_name/workflow_name)")
+    aborted_step: str = Field(description="The step that was active when aborted")
+    explanation: str = Field(description="The explanation provided for aborting")
+    stack: list[StackEntry] = Field(
+        default_factory=list, description="Current workflow stack after abort"
+    )
+    resumed_workflow: str | None = Field(
+        default=None, description="The workflow now active (if any)"
+    )
+    resumed_step: str | None = Field(
+        default=None, description="The step now active (if any)"
     )
 
 
@@ -223,7 +263,10 @@ class WorkflowSession(BaseModel):
     completed_at: str | None = Field(
         default=None, description="ISO timestamp when completed"
     )
-    status: str = Field(default="active", description="Session status")
+    status: str = Field(default="active", description="Session status: active, completed, aborted")
+    abort_reason: str | None = Field(
+        default=None, description="Explanation if workflow was aborted"
+    )
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""

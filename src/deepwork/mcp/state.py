@@ -2,6 +2,10 @@
 
 State is persisted to `.deepwork/tmp/session_[id].json` for transparency
 and recovery.
+
+Supports nested workflows via a session stack - when a step starts a new
+workflow, it's pushed onto the stack. When a workflow completes or is
+aborted, it's popped from the stack.
 """
 
 from __future__ import annotations
@@ -14,7 +18,7 @@ from pathlib import Path
 
 import aiofiles
 
-from deepwork.mcp.schemas import StepProgress, WorkflowSession
+from deepwork.mcp.schemas import StackEntry, StepProgress, WorkflowSession
 
 
 class StateError(Exception):
@@ -24,7 +28,7 @@ class StateError(Exception):
 
 
 class StateManager:
-    """Manages workflow session state.
+    """Manages workflow session state with stack-based nesting support.
 
     Sessions are persisted to `.deepwork/tmp/` as JSON files for:
     - Transparency: Users can inspect session state
@@ -33,6 +37,10 @@ class StateManager:
 
     This implementation is async-safe and uses a lock to prevent
     concurrent access issues.
+
+    Supports nested workflows via a session stack - starting a new workflow
+    while one is active pushes onto the stack. Completing or aborting pops
+    from the stack.
     """
 
     def __init__(self, project_root: Path):
@@ -43,7 +51,7 @@ class StateManager:
         """
         self.project_root = project_root
         self.sessions_dir = project_root / ".deepwork" / "tmp"
-        self._active_session: WorkflowSession | None = None
+        self._session_stack: list[WorkflowSession] = []
         self._lock = asyncio.Lock()
 
     def _ensure_sessions_dir(self) -> None:
@@ -111,7 +119,7 @@ class StateManager:
             )
 
             await self._save_session_unlocked(session)
-            self._active_session = session
+            self._session_stack.append(session)
             return session
 
     async def _save_session_unlocked(self, session: WorkflowSession) -> None:
@@ -149,19 +157,23 @@ class StateManager:
                 data = json.loads(content)
 
             session = WorkflowSession.from_dict(data)
-            self._active_session = session
+            # Replace top of stack or push if empty
+            if self._session_stack:
+                self._session_stack[-1] = session
+            else:
+                self._session_stack.append(session)
             return session
 
     def get_active_session(self) -> WorkflowSession | None:
-        """Get the currently active session.
+        """Get the currently active session (top of stack).
 
         Returns:
             Active session or None if no session active
         """
-        return self._active_session
+        return self._session_stack[-1] if self._session_stack else None
 
     def require_active_session(self) -> WorkflowSession:
-        """Get active session or raise error.
+        """Get active session (top of stack) or raise error.
 
         Returns:
             Active session
@@ -169,11 +181,11 @@ class StateManager:
         Raises:
             StateError: If no active session
         """
-        if self._active_session is None:
+        if not self._session_stack:
             raise StateError(
                 "No active workflow session. Use start_workflow to begin a workflow."
             )
-        return self._active_session
+        return self._session_stack[-1]
 
     async def start_step(self, step_id: str) -> None:
         """Mark a step as started.
@@ -268,8 +280,11 @@ class StateManager:
             session.current_entry_index = entry_index
             await self._save_session_unlocked(session)
 
-    async def complete_workflow(self) -> None:
-        """Mark the workflow as complete.
+    async def complete_workflow(self) -> WorkflowSession | None:
+        """Mark the workflow as complete and pop from stack.
+
+        Returns:
+            The new active session after popping, or None if stack is empty
 
         Raises:
             StateError: If no active session
@@ -280,6 +295,39 @@ class StateManager:
             session.completed_at = now
             session.status = "completed"
             await self._save_session_unlocked(session)
+
+            # Pop completed session from stack
+            self._session_stack.pop()
+
+            # Return new active session (if any)
+            return self._session_stack[-1] if self._session_stack else None
+
+    async def abort_workflow(self, explanation: str) -> tuple[WorkflowSession, WorkflowSession | None]:
+        """Abort the current workflow and pop from stack.
+
+        Args:
+            explanation: Reason for aborting the workflow
+
+        Returns:
+            Tuple of (aborted session, new active session or None)
+
+        Raises:
+            StateError: If no active session
+        """
+        async with self._lock:
+            session = self.require_active_session()
+            now = datetime.now(UTC).isoformat()
+            session.completed_at = now
+            session.status = "aborted"
+            session.abort_reason = explanation
+            await self._save_session_unlocked(session)
+
+            # Pop aborted session from stack
+            self._session_stack.pop()
+
+            # Return aborted session and new active session (if any)
+            new_active = self._session_stack[-1] if self._session_stack else None
+            return session, new_active
 
     def get_all_outputs(self) -> list[str]:
         """Get all outputs from all completed steps.
@@ -295,6 +343,28 @@ class StateManager:
         for progress in session.step_progress.values():
             outputs.extend(progress.outputs)
         return outputs
+
+    def get_stack(self) -> list[StackEntry]:
+        """Get the current workflow stack as StackEntry objects.
+
+        Returns:
+            List of StackEntry with workflow and step info, bottom to top
+        """
+        return [
+            StackEntry(
+                workflow=f"{s.job_name}/{s.workflow_name}",
+                step=s.current_step_id,
+            )
+            for s in self._session_stack
+        ]
+
+    def get_stack_depth(self) -> int:
+        """Get the current stack depth.
+
+        Returns:
+            Number of active workflow sessions on the stack
+        """
+        return len(self._session_stack)
 
     async def list_sessions(self) -> list[WorkflowSession]:
         """List all saved sessions.
@@ -350,5 +420,7 @@ class StateManager:
             if session_file.exists():
                 session_file.unlink()
 
-            if self._active_session and self._active_session.session_id == session_id:
-                self._active_session = None
+            # Remove from stack if present
+            self._session_stack = [
+                s for s in self._session_stack if s.session_id != session_id
+            ]
