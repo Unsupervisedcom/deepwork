@@ -103,18 +103,11 @@
       "Skill(commit.test)",
       "Skill(commit.lint)",
       "Skill(commit.commit_and_push)",
-      "Skill(deepwork_jobs)",
-      "Skill(deepwork_jobs.define)",
-      "Skill(deepwork_jobs.review_job_spec)",
-      "Skill(deepwork_jobs.implement)",
-      "Skill(deepwork_jobs.learn)",
       "Skill(add_platform)",
       "Skill(add_platform.research)",
       "Skill(add_platform.add_capabilities)",
       "Skill(add_platform.implement)",
       "Skill(add_platform.verify)",
-      "Skill(update)",
-      "Skill(update.job)",
       "Read(./.deepwork/**)",
       "Edit(./.deepwork/**)",
       "Write(./.deepwork/**)",
@@ -122,7 +115,11 @@
       "Bash(.claude/hooks/commit_job_git_commit.sh:*)",
       "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
       "WebSearch",
-      "Skill(deepwork)"
+      "Skill(deepwork)",
+      "mcp__deepwork__get_workflows",
+      "mcp__deepwork__start_workflow",
+      "mcp__deepwork__finished_step",
+      "mcp__deepwork__abort_workflow"
     ]
   },
   "hooks": {

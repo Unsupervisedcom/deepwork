@@ -8,30 +8,60 @@ Remove obsolete files and folders from prior DeepWork versions. This final step 
 
 Identify and clean up deprecated files and folders, then create a comprehensive summary document.
 
-### Step 1: Handle Old Skills Folder
+### Step 1: Remove Legacy Job Skill Folders
 
-Check if `.claude/skills/` exists. This folder was used by the old skill-based system and is no longer needed.
+Old DeepWork versions created individual skill folders for each job and step. These need to be removed while preserving the main `deepwork` skill folder.
 
-```bash
-ls -la .claude/skills/ 2>/dev/null || echo "No skills folder (good!)"
-```
+**Process:**
 
-**If it exists:**
-1. Count the contents: `ls .claude/skills/ | wc -l`
-2. Ask the user whether to:
-   - **Delete** the folder entirely (recommended if migrated to MCP)
-   - **Back up** to `.claude/skills.backup/` before deleting
-   - **Keep** if they have custom skills not yet migrated
+1. **List all jobs** in `.deepwork/jobs/`:
+   ```bash
+   ls .deepwork/jobs/
+   ```
 
-**Old skill structure to recognize:**
+2. **For each job**, kick off a sub-agent to find and remove legacy skill folders. The sub-agent should:
+   - Search in both `.claude/skills/` and `.gemini/skills/`
+   - Find folders matching:
+     - `{job_name}/` - folder named exactly like the job
+     - `{job_name}.*/` - folders starting with the job name followed by a period (e.g., `my_job.step1/`, `my_job.step2/`)
+   - Remove each matching folder
+   - Report what was removed
+
+   **Example commands for a job named `competitive_research`:**
+   ```bash
+   # Find and remove from .claude/skills/
+   rm -rf .claude/skills/competitive_research/ 2>/dev/null
+   rm -rf .claude/skills/competitive_research.*/ 2>/dev/null
+
+   # Find and remove from .gemini/skills/
+   rm -rf .gemini/skills/competitive_research/ 2>/dev/null
+   rm -rf .gemini/skills/competitive_research.*/ 2>/dev/null
+   ```
+
+3. **Run sub-agents in parallel** - one for each job to speed up the process.
+
+4. **Verify the `deepwork` skill folder remains:**
+   ```bash
+   ls -d .claude/skills/deepwork/ 2>/dev/null || echo "ERROR: deepwork skill missing!"
+   ls -d .gemini/skills/deepwork/ 2>/dev/null || echo "WARNING: gemini deepwork skill missing (may not have been installed)"
+   ```
+
+   **CRITICAL:** The `deepwork` skill folder in `.claude/skills/deepwork/` MUST still exist after cleanup. If it is missing, something went wrong - do NOT proceed and investigate what happened.
+
+**What this removes:**
 ```
 .claude/skills/
-├── job_name/
-│   └── SKILL.md
-├── job_name.step_name/
-│   └── SKILL.md
-└── ...
+├── competitive_research/     <- REMOVE (legacy job folder)
+├── competitive_research.discover/  <- REMOVE (legacy step folder)
+├── competitive_research.analyze/   <- REMOVE (legacy step folder)
+├── deepwork/                 <- KEEP (current MCP entry point)
+└── some_other_job/           <- REMOVE (legacy job folder)
 ```
+
+**Do NOT remove:**
+- `.claude/skills/deepwork/` - This is the current MCP-based skill entry point
+- `.gemini/skills/deepwork/` - Same for Gemini
+- Any skill folders that don't match job names in `.deepwork/jobs/`
 
 ### Step 2: Clean Temp Files
 
@@ -166,7 +196,8 @@ Create a `repair_summary.md` file documenting all changes made during this workf
 
 ## Errata Cleanup (errata step)
 
-- [ ] Handled `.claude/skills/` folder: [deleted/backed up/kept]
+- [ ] Removed legacy job skill folders from `.claude/skills/` and `.gemini/skills/`
+- [ ] Verified `deepwork` skill folder still exists
 - [ ] Cleaned `.deepwork/tmp/`: removed X files
 - [ ] Reviewed `.deepwork/rules/`: [action taken]
 - [ ] Updated `.deepwork/config.yml` version format
@@ -187,7 +218,8 @@ Create a `repair_summary.md` file documenting all changes made during this workf
 
 ## Quality Criteria
 
-- `.claude/skills/` folder is handled (removed, backed up, or documented why kept)
+- Legacy job skill folders are removed from `.claude/skills/` and `.gemini/skills/` (folders matching job names or `jobname.*` patterns)
+- The `deepwork` skill folder in `.claude/skills/deepwork/` still exists after cleanup
 - `.deepwork/tmp/` contents are cleaned appropriately
 - `.deepwork/rules/` folder is backed up and removed (DeepWork Rules fully deprecated)
 - `.deepwork/tmp/rules/` folder is removed
@@ -225,8 +257,11 @@ Create a `repair_summary.md` file documenting all changes made during this workf
 
 ## Errata Cleanup
 
-- Backed up `.claude/skills/` to `.claude/skills.backup/` (174 files)
-- Deleted `.claude/skills/` folder
+- Removed legacy skill folders for 3 jobs:
+  - `competitive_research/` and 4 step folders from `.claude/skills/`
+  - `deepwork_jobs/` and 5 step folders from `.claude/skills/`
+  - `monthly_reporting/` and 2 step folders from `.claude/skills/`
+- Verified `deepwork` skill folder still present in `.claude/skills/`
 - Cleaned `.deepwork/tmp/rules/queue/` (12 old JSON files)
 - Kept `.deepwork/rules/` (contains active example rules)
 - Updated `.deepwork/config.yml` version to "1.0"

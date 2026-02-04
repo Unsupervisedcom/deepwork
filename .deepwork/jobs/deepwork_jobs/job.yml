@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: deepwork_jobs
-version: "1.2.0"
+version: "1.2.1"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, testing, or improving DeepWork jobs."
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -32,7 +32,14 @@ workflows:
       - fix_jobs
       - errata
 
+  - name: learn
+    summary: "Analyze conversation history to improve job instructions and capture learnings"
+    steps:
+      - learn
+
 changelog:
+  - version: "1.2.1"
+    changes: "Removed deprecated exposed field from learn step; added learn workflow to make step accessible via MCP"
   - version: "1.2.0"
     changes: "Added repair workflow with fix_settings, fix_jobs, and errata steps for migrating old DeepWork configurations to current format"
   - version: "1.1.0"
@@ -144,7 +151,6 @@ steps:
     name: "Learn from Job Execution"
     description: "Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it."
     instructions_file: steps/learn.md
-    exposed: true
     inputs:
       - name: job_name
         description: "Name of the job that was run (optional - will auto-detect from conversation)"
@@ -198,7 +204,7 @@ steps:
       - "**Exposed Field Addressed**: Are `exposed: true` fields removed or noted as deprecated?"
       - "**Stop Hooks Migrated**: Are `stop_hooks` migrated to `hooks.after_agent` format?"
       - "**Removed Steps Cleaned**: Are references to removed steps (like `review_job_spec`) updated?"
-      - "**Orphaned Steps Fixed**: Are steps not in any workflow either added to workflows or removed?"
+      - "**Orphaned Steps Fixed**: For jobs with no workflows, is there a single workflow (named after the job) containing all steps? For jobs with existing workflows, does each orphan get its own workflow (named after the step)?"
       - "**Valid YAML**: Do all job.yml files pass schema validation?"
       - "**Sync Complete**: Has `deepwork sync` been run to regenerate commands?"
 
@@ -215,7 +221,8 @@ steps:
       - fix_settings
       - fix_jobs
     quality_criteria:
-      - "**Old Skills Folder Handled**: Is `.claude/skills/` folder removed or backed up?"
+      - "**Legacy Job Skills Removed**: Are legacy skill folders for each job removed from `.claude/skills/` and `.gemini/skills/`?"
+      - "**Deepwork Skill Preserved**: Does the `deepwork` skill folder still exist in `.claude/skills/deepwork/`?"
       - "**Temp Files Cleaned**: Are `.deepwork/tmp/` contents cleaned appropriately?"
       - "**Rules Folder Removed**: Is `.deepwork/rules/` folder backed up and removed (fully deprecated)?"
       - "**Rules Job Removed**: Is `.deepwork/jobs/deepwork_rules/` removed if present?"

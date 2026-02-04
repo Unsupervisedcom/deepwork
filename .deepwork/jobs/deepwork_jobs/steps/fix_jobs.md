@@ -94,22 +94,44 @@ Run the following to see warnings:
 deepwork sync 2>&1 | grep -i "warning"
 ```
 
-**For each orphaned step, ask the user which action to take:**
+**How to handle orphaned steps depends on whether the job has ANY workflows defined:**
 
-1. **Add to a workflow** - Create a new single-step workflow for it:
-   ```yaml
-   workflows:
-     - name: standalone_step_name
-       summary: "Runs the step_name step"
-       steps:
-         - step_name
-   ```
+#### Case A: Job has NO workflows defined
 
-2. **Remove the step entirely** - Delete the step from `steps:` array and its instruction file
+If the job has no `workflows:` section at all (or it's empty), create a **single workflow with the same name as the job** containing all steps in their defined order:
 
-3. **Keep as-is (deprecated)** - The step will remain inaccessible but preserved in the job definition
+```yaml
+# For a job named "my_job" with steps: step_a, step_b, step_c
+workflows:
+  - name: my_job  # Same name as the job
+    summary: "Runs the complete my_job workflow"
+    steps:
+      - step_a
+      - step_b
+      - step_c
+```
 
-**Do not automatically decide** - Always confirm with the user which option they prefer for each orphaned step.
+This preserves the original intent of the job as a sequential workflow.
+
+#### Case B: Job has SOME workflows defined
+
+If the job already has one or more workflows defined, but some steps are not included in any of them, create a **separate single-step workflow for each orphaned step** with the same name as the step:
+
+```yaml
+# Existing workflows stay as-is, add new ones for orphans
+workflows:
+  - name: existing_workflow
+    summary: "..."
+    steps: [...]
+
+  # Add for each orphaned step:
+  - name: orphaned_step_name  # Same name as the step
+    summary: "Runs the orphaned_step_name step"
+    steps:
+      - orphaned_step_name
+```
+
+This ensures all steps remain accessible via the MCP interface while preserving the existing workflow structure.
 
 ### Step 6: Validate Against Schema
 
@@ -150,7 +172,8 @@ Verify no errors or warnings appear.
 - All `exposed: true` fields are removed or noted
 - All `stop_hooks` are migrated to `hooks.after_agent` format
 - References to removed steps (like `review_job_spec`) are updated
-- Orphaned steps are either added to workflows or removed
+- Jobs with no workflows get a single workflow (same name as job) containing all steps
+- Jobs with existing workflows get individual workflows for each orphaned step (same name as step)
 - All job.yml files pass schema validation
 - `deepwork sync` runs without errors
 - When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
@@ -173,7 +196,9 @@ Error: Workflow 'new_job' references non-existent step 'review_job_spec'
 ```
 Warning: Job 'my_job' has steps not included in any workflow: standalone_step
 ```
-**Fix:** Either add the step to a workflow or remove it from the job.
+**Fix:**
+- If the job has NO workflows: Create one workflow named `my_job` with all steps in order
+- If the job has SOME workflows: Add a `standalone_step` workflow containing just that step
 
 ## Jobs to Check
 
