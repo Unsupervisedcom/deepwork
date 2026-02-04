@@ -7,11 +7,13 @@ Triage email, give feedback to your team, make tutorials/documentation, QA your 
 brew tap unsupervisedcom/deepwork && brew install deepwork
 ```
 
-Then in your project folder:
+Then in your project folder (must be a Git repository):
 ```bash
 deepwork install
 claude
 ```
+
+> **Note:** DeepWork requires a Git repository. If your folder isn't already a repo, run `git init` first.
 
 Now inside claude, define your first job using the `/deepwork_jobs` command. Ex.
 ```
@@ -81,11 +83,13 @@ brew tap unsupervisedcom/deepwork
 brew install deepwork
 ```
 
-Then in any project folder:
+Then in any project folder (must be a Git repository):
 
 ```bash
 deepwork install
 ```
+
+> **Note:** If your folder isn't a Git repo yet, run `git init` first.
 
 **After install, load Claude.** Then verify you see this command: `/deepwork_jobs`
 
