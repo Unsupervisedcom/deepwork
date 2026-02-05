@@ -91,7 +91,7 @@ deepwork --help
 nix run github:Unsupervisedcom/deepwork -- --help
 
 # Run a specific command
-nix run github:Unsupervisedcom/deepwork -- install --platform claude
+nix run github:Unsupervisedcom/deepwork -- install
 ```
 
 ### Building the Package

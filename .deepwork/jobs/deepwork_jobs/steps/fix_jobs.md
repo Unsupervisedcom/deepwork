@@ -203,6 +203,6 @@ For each job in `.deepwork/jobs/`, check:
 
 ## Important Notes
 
-1. **Don't modify standard jobs directly** - If `deepwork_jobs` is out of date, run `deepwork install --platform claude` to get the latest version
+1. **Don't modify standard jobs directly** - If `deepwork_jobs` is out of date, run `deepwork install` to get the latest version
 2. **Preserve custom logic** - When migrating hooks, preserve the prompt content
 3. **Test after changes** - Validate YAML syntax after each job fix to catch errors early

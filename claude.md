@@ -83,8 +83,7 @@ When running in Claude Code on the web (not local installations), the `deepwork`
 pip install -e .
 
 # Then run commands normally
-deepwork install --platform claude
-deepwork sync
+deepwork install
 ```
 
 **Note**: In web environments, you may also need to install dependencies like `jsonschema`, `pyyaml`, `gitpython`, `jinja2`, and `click` if they're not already available.
@@ -211,7 +210,7 @@ Instead, follow this workflow:
    - `steps/*.md` - Step instruction files
    - `hooks/*` - Any hook scripts
 
-2. **Run `deepwork install --platform claude`** to sync changes to `.deepwork/jobs/` and `.claude/skills/`
+2. **Run `deepwork install`** to sync changes to `.deepwork/jobs/` and `.claude/skills/`
 
 3. **Verify** the changes propagated correctly to all locations
 

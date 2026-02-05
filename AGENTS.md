@@ -18,7 +18,7 @@ When creating or modifying jobs in this repository, you MUST understand which ty
 **Editing rules**:
 - Source of truth is ALWAYS in `src/deepwork/standard_jobs/`
 - NEVER edit the installed copies in `.deepwork/jobs/` directly
-- After editing, run `deepwork install --platform claude` to sync
+- After editing, run `deepwork install` to sync
 
 ### 2. Library Jobs (`library/jobs/`)
 

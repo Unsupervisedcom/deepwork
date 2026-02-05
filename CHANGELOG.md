@@ -8,46 +8,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+## [0.7.0] - 2026-02-05
+
+### Added
 - **MCP Server Architecture** - New Model Context Protocol server for checkpoint-based workflow execution
-  - `deepwork serve` command starts the MCP server with stdio or SSE transport
-  - Three MCP tools: `get_workflows`, `start_workflow`, `finished_step`
-  - Session state persisted to `.deepwork/tmp/session_[id].json` for resumability
-  - Quality gate evaluates step outputs against quality criteria using Claude Code subprocess
-  - Nested workflow support with stack-based execution model
-  - `abort_workflow` tool for canceling workflows and returning to parent
-  - Comprehensive Pydantic schemas for all tool inputs/outputs in `src/deepwork/mcp/schemas.py`
-  - Documentation in `doc/mcp_interface.md` and `doc/architecture.md` Part 4
-- New `deepwork_jobs` steps for MCP-based workflow management
-  - `iterate` - Quick iteration on existing jobs without full define/implement cycle
-  - `errata` - Document known issues and quirks discovered during job execution
-  - `test` - Run manual tests to validate job behavior
-  - `fix_jobs` - Repair malformed job.yml files
-  - `fix_settings` - Repair platform settings files
+- Improved `deepwork_jobs` steps for workflow management
 - JSON Schema for job.yml validation (`src/deepwork/schemas/job.schema.json`)
 - Reference documentation for calling Claude in print mode (`doc/reference/calling_claude_in_print_mode.md`)
 - Migrated to uv2nix for reproducible Python builds in flake.nix
 
 ### Changed
 - **BREAKING**: Simplified skill generation to single `/deepwork` entry point skill
-  - The generator now produces only `skill-deepwork.md.jinja` that directs agents to MCP tools
-  - Removed individual step skill generation (`skill-job-step.md.jinja`, `skill-job-meta.md.jinja`)
-  - Workflow orchestration moved from skill files to MCP server
 - **BREAKING**: Workflow execution now happens through MCP tool calls instead of slash commands
-  - Agents call `start_workflow` → execute step → `finished_step` → repeat
-  - Quality gates enforce output requirements before proceeding
 - Streamlined `deepwork_jobs.define` and `deepwork_jobs.implement` for MCP workflow
 - Updated `deepwork_jobs.learn` with simplified instructions
 - Simplified adapter templates - removed complex skill templates
 - MCP server registered in `.claude/settings.json` during install
 
 ### Removed
-- **BREAKING**: Entire rules system removed
-  - Removed `rules_parser.py`, `rules_queue.py`, `pattern_matcher.py`, `rules_check.py`
-  - Removed `.deepwork/rules/` directory and all rule definition files
-  - Removed `command_executor.py` for command action execution
-  - Removed `deepwork_rules` standard job and `/deepwork_rules.define` skill
-  - Removed rules-related hooks (`user_prompt_submit.sh`, `capture_prompt_work_tree.sh`)
-  - Removed rules documentation (`doc/rules_syntax.md`, `doc/rules_system_design.md`)
+- **BREAKING**: Rules system removed
+- **BREAKING**: Removed per-step skill generation templates and logic
 - Removed per-step skill generation templates and logic
 - Removed `commit` job from library (was example job)
 - Removed `manual_tests/` directory and `manual_tests` job
@@ -56,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed Gemini per-step skill templates (`.gemini/skills/` now only has entry point)
 
 ### Migration Guide
-- Run `deepwork install --platform claude` to get the new MCP server configuration
+- Run `deepwork install` to get the new MCP server configuration
 - Workflows are now executed via `/deepwork` which uses MCP tools internally
 - Rules system is completely removed - consider implementing validation logic in quality criteria instead
 - Existing job definitions still work but are executed through MCP checkpoints
