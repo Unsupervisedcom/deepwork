@@ -1213,7 +1213,6 @@ Evaluates step outputs against quality criteria:
 ```python
 class QualityGate:
     def evaluate(
-        step_instructions: str,
         quality_criteria: list[str],
         outputs: list[str],
         project_root: Path,
@@ -1221,10 +1220,11 @@ class QualityGate:
 ```
 
 The quality gate:
-1. Builds a review prompt with step instructions, criteria, and output contents
-2. Invokes a review agent via subprocess (configurable command)
-3. Parses the structured JSON response
-4. Returns pass/fail with per-criterion feedback
+1. Builds a review prompt with criteria and output file contents
+2. Invokes Claude Code via subprocess with proper flag ordering (see `doc/reference/calling_claude_in_print_mode.md`)
+3. Uses `--json-schema` for structured output conformance
+4. Parses the `structured_output` field from the JSON response
+5. Returns pass/fail with per-criterion feedback
 
 ### Schemas (`schemas.py`)
 
@@ -1290,19 +1290,16 @@ Execute multi-step workflows with quality gate checkpoints.
 
 5. **Loop continues until workflow complete**
 
-## Quality Gate Configuration
+## Quality Gate
 
-Configure in `.deepwork/config.yml`:
+Quality gate is enabled by default and uses Claude Code to evaluate step outputs
+against quality criteria. The command is constructed internally with proper flag
+ordering (see `doc/reference/calling_claude_in_print_mode.md`).
 
-```yaml
-version: 0.2.0
-platforms:
-  - claude
+To disable quality gate:
 
-quality_gate:
-  agent_review_command: "claude -p --output-format json"
-  timeout: 120
-  max_attempts: 3
+```bash
+deepwork serve --no-quality-gate
 ```
 
 ## Serve Command
@@ -1310,11 +1307,11 @@ quality_gate:
 Start the MCP server manually:
 
 ```bash
-# Basic usage
+# Basic usage (quality gate enabled by default)
 deepwork serve
 
-# With quality gate
-deepwork serve --quality-gate "claude -p --output-format json"
+# With quality gate disabled
+deepwork serve --no-quality-gate
 
 # For a specific project
 deepwork serve --path /path/to/project

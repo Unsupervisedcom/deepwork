@@ -34,7 +34,7 @@ logger = logging.getLogger("deepwork.mcp")
 
 def create_server(
     project_root: Path | str,
-    quality_gate_command: str | None = None,
+    enable_quality_gate: bool = True,
     quality_gate_timeout: int = 120,
     quality_gate_max_attempts: int = 3,
 ) -> FastMCP:
@@ -42,7 +42,7 @@ def create_server(
 
     Args:
         project_root: Path to the project root
-        quality_gate_command: Optional command for quality gate agent
+        enable_quality_gate: Whether to enable quality gate evaluation (default: True)
         quality_gate_timeout: Timeout in seconds for quality gate (default: 120)
         quality_gate_max_attempts: Max attempts before failing quality gate (default: 3)
 
@@ -55,9 +55,8 @@ def create_server(
     state_manager = StateManager(project_path)
 
     quality_gate: QualityGate | None = None
-    if quality_gate_command:
+    if enable_quality_gate:
         quality_gate = QualityGate(
-            command=quality_gate_command,
             timeout=quality_gate_timeout,
         )
 

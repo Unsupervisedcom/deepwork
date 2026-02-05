@@ -47,10 +47,10 @@ def _load_config(project_path: Path) -> dict:
     help="Path to project directory (default: current directory)",
 )
 @click.option(
-    "--quality-gate",
-    type=str,
-    default=None,
-    help="Command for quality gate agent (e.g., 'claude -p --output-format json')",
+    "--no-quality-gate",
+    is_flag=True,
+    default=False,
+    help="Disable quality gate evaluation",
 )
 @click.option(
     "--transport",
@@ -66,7 +66,7 @@ def _load_config(project_path: Path) -> dict:
 )
 def serve(
     path: Path,
-    quality_gate: str | None,
+    no_quality_gate: bool,
     transport: str,
     port: int,
 ) -> None:
@@ -75,19 +75,22 @@ def serve(
     Exposes workflow management tools to AI agents via MCP protocol.
     By default uses stdio transport for local integration with Claude Code.
 
+    Quality gate is enabled by default and uses Claude Code to evaluate
+    step outputs against quality criteria.
+
     Examples:
 
         # Start server for current directory
         deepwork serve
 
-        # Start with quality gate enabled
-        deepwork serve --quality-gate "claude -p --output-format json"
+        # Start with quality gate disabled
+        deepwork serve --no-quality-gate
 
         # Start for a specific project
         deepwork serve --path /path/to/project
     """
     try:
-        _serve_mcp(path, quality_gate, transport, port)
+        _serve_mcp(path, not no_quality_gate, transport, port)
     except ServeError as e:
         console.print(f"[red]Error:[/red] {e}")
         raise click.Abort() from e
@@ -98,7 +101,7 @@ def serve(
 
 def _serve_mcp(
     project_path: Path,
-    quality_gate_command: str | None,
+    enable_quality_gate: bool,
     transport: str,
     port: int,
 ) -> None:
@@ -106,7 +109,7 @@ def _serve_mcp(
 
     Args:
         project_path: Path to project directory
-        quality_gate_command: Optional quality gate command
+        enable_quality_gate: Whether to enable quality gate evaluation
         transport: Transport protocol (stdio or sse)
         port: Port for SSE transport
 
@@ -116,25 +119,12 @@ def _serve_mcp(
     # Validate project has DeepWork installed
     _load_config(project_path)
 
-    # Load quality gate settings from config if not specified via CLI
-    config = _load_config(project_path)
-    qg_config = config.get("quality_gate", {})
-
-    if quality_gate_command is None:
-        quality_gate_command = qg_config.get("agent_review_command")
-
-    # Get timeout and max_attempts from config (with defaults)
-    quality_gate_timeout = qg_config.get("default_timeout", 120)
-    quality_gate_max_attempts = qg_config.get("default_max_attempts", 3)
-
     # Create and run server
     from deepwork.mcp.server import create_server
 
     server = create_server(
         project_root=project_path,
-        quality_gate_command=quality_gate_command,
-        quality_gate_timeout=quality_gate_timeout,
-        quality_gate_max_attempts=quality_gate_max_attempts,
+        enable_quality_gate=enable_quality_gate,
     )
 
     if transport == "stdio":

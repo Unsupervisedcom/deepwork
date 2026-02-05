@@ -172,6 +172,7 @@ my-project/
 - `doc/architecture.md` - Comprehensive architecture documentation
 - `README.md` - High-level project overview
 - `shell.nix` - Development environment setup
+- `doc/reference/calling_claude_in_print_mode.md` - When invoking Claude Code as a subprocess (e.g., with `--print` or `-p`), read this for correct flag ordering, structured output with JSON schemas, and common gotchas
 
 ## Development Guidelines
 

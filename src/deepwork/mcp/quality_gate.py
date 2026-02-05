@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import shlex
 from pathlib import Path
 from typing import Any
 
@@ -54,21 +53,26 @@ class QualityGate:
 
     Uses a subprocess to invoke a review agent (e.g., Claude CLI) that
     evaluates outputs and returns structured feedback.
+
+    See doc/reference/calling_claude_in_print_mode.md for details on
+    proper CLI invocation with structured output.
     """
 
     def __init__(
         self,
-        command: str = "claude -p --output-format json",
         timeout: int = 120,
+        *,
+        _test_command: list[str] | None = None,
     ):
         """Initialize quality gate.
 
         Args:
-            command: Base command to invoke review agent (system prompt added via --system-prompt flag)
             timeout: Timeout in seconds for review agent
+            _test_command: Internal testing only - override the subprocess command.
+                          When set, skips adding --json-schema flag (test mock handles it).
         """
-        self.command = command
         self.timeout = timeout
+        self._test_command = _test_command
 
     def _build_instructions(self, quality_criteria: list[str]) -> str:
         """Build the system instructions for the review agent.
@@ -146,62 +150,37 @@ You must respond with JSON in this exact structure:
 
         return "\n\n".join(output_sections)
 
-    def _parse_response(
-        self, response_text: str, validate_schema: bool = True
-    ) -> QualityGateResult:
+    def _parse_response(self, response_text: str) -> QualityGateResult:
         """Parse the review agent's response.
 
+        When using --print --output-format json --json-schema, Claude CLI returns
+        a wrapper object with the structured output in the 'structured_output' field.
+
         Args:
-            response_text: Raw response from review agent
-            validate_schema: Whether to validate against JSON schema (default True)
+            response_text: Raw response from review agent (JSON wrapper)
 
         Returns:
             Parsed QualityGateResult
 
         Raises:
-            QualityGateError: If response cannot be parsed or fails schema validation
+            QualityGateError: If response cannot be parsed
         """
-        # Try to extract JSON from the response
         try:
-            # First, try to parse as JSON to check if it's a wrapper object
-            # from --output-format json (contains type, result, etc.)
-            json_text = response_text.strip()
-            try:
-                wrapper = json.loads(json_text)
-                # Check if this is a Claude CLI wrapper object
-                if isinstance(wrapper, dict) and "type" in wrapper and "result" in wrapper:
-                    # Extract the actual result content
-                    json_text = wrapper.get("result", "")
-                    if not json_text:
-                        raise QualityGateError(
-                            "Review agent returned empty result in wrapper object"
-                        )
-            except json.JSONDecodeError:
-                # Not valid JSON at the top level, continue with normal parsing
-                pass
+            wrapper = json.loads(response_text.strip())
 
-            # Look for JSON in code blocks
-            if "```json" in json_text:
-                start = json_text.index("```json") + 7
-                end = json_text.index("```", start)
-                json_text = json_text[start:end].strip()
-            elif "```" in json_text:
-                start = json_text.index("```") + 3
-                end = json_text.index("```", start)
-                json_text = json_text[start:end].strip()
+            # Check for errors in the wrapper
+            if wrapper.get("is_error"):
+                raise QualityGateError(
+                    f"Review agent returned error: {wrapper.get('result', 'Unknown error')}"
+                )
 
-            data = json.loads(json_text)
-
-            # Validate against JSON schema if enabled
-            if validate_schema:
-                try:
-                    jsonschema.validate(data, QUALITY_GATE_RESPONSE_SCHEMA)
-                except jsonschema.ValidationError as ve:
-                    raise QualityGateError(
-                        f"Quality gate response failed schema validation: {ve.message}\n"
-                        f"Path: {list(ve.absolute_path)}\n"
-                        f"Response was: {json_text[:500]}..."
-                    ) from ve
+            # Extract structured_output - this is where --json-schema puts the result
+            data = wrapper.get("structured_output")
+            if data is None:
+                raise QualityGateError(
+                    "Review agent response missing 'structured_output' field. "
+                    f"Response was: {response_text[:500]}..."
+                )
 
             # Parse criteria results
             criteria_results = [
@@ -219,9 +198,14 @@ You must respond with JSON in this exact structure:
                 criteria_results=criteria_results,
             )
 
-        except (json.JSONDecodeError, ValueError, KeyError) as e:
+        except json.JSONDecodeError as e:
             raise QualityGateError(
-                f"Failed to parse review agent response: {e}\n"
+                f"Failed to parse review agent response as JSON: {e}\n"
+                f"Response was: {response_text[:500]}..."
+            ) from e
+        except (ValueError, KeyError) as e:
+            raise QualityGateError(
+                f"Failed to extract quality gate result: {e}\n"
                 f"Response was: {response_text[:500]}..."
             ) from e
 
@@ -256,21 +240,34 @@ You must respond with JSON in this exact structure:
         instructions = self._build_instructions(quality_criteria)
         payload = await self._build_payload(outputs, project_root)
 
-        # Build command with system prompt flag and JSON schema
-        # Parse the base command properly to handle quoted arguments
-        base_cmd = shlex.split(self.command)
-        schema_json = json.dumps(QUALITY_GATE_RESPONSE_SCHEMA)
-        full_cmd = base_cmd + [
-            # Add system prompt via --system-prompt flag
-            "--system-prompt",
-            instructions,
-            # Add JSON schema to enforce structured output
-            "--json-schema",
-            schema_json,
-        ]
+        # Build command with proper flag ordering for Claude CLI
+        # See doc/reference/calling_claude_in_print_mode.md for details
+        #
+        # Key insight: flags must come BEFORE `-p --` because:
+        # - `-p` expects a prompt argument immediately after
+        # - `--` marks the end of flags, everything after is the prompt
+        # - When piping via stdin, we use `-p --` to read from stdin
+        if self._test_command:
+            # Testing mode: use provided command, add system prompt only
+            full_cmd = self._test_command + ["--system-prompt", instructions]
+        else:
+            # Production mode: use Claude CLI with proper flags
+            schema_json = json.dumps(QUALITY_GATE_RESPONSE_SCHEMA)
+            full_cmd = [
+                "claude",
+                "--print",  # Non-interactive mode
+                "--output-format",
+                "json",  # JSON output wrapper
+                "--system-prompt",
+                instructions,
+                "--json-schema",
+                schema_json,  # Structured output - result in 'structured_output' field
+                "-p",
+                "--",  # Read prompt from stdin
+            ]
 
         try:
-            # Run review agent with system prompt and payload using async subprocess
+            # Run review agent with payload piped via stdin
             process = await asyncio.create_subprocess_exec(
                 *full_cmd,
                 stdin=asyncio.subprocess.PIPE,
@@ -300,7 +297,7 @@ You must respond with JSON in this exact structure:
             return self._parse_response(stdout.decode())
 
         except FileNotFoundError as e:
-            raise QualityGateError(f"Review agent command not found: {base_cmd[0]}") from e
+            raise QualityGateError("Review agent command not found: claude") from e
 
 
 class MockQualityGate(QualityGate):

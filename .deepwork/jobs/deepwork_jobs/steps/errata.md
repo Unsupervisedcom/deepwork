@@ -2,11 +2,11 @@
 
 ## Objective
 
-Remove obsolete files and folders from prior DeepWork versions. This final step cleans up artifacts that are no longer used by the MCP-based system, creating a summary of all changes made during the repair workflow.
+Remove obsolete files and folders from prior DeepWork versions. This final step cleans up artifacts that are no longer used by the MCP-based system.
 
 ## Task
 
-Identify and clean up deprecated files and folders, then create a comprehensive summary document.
+Identify and clean up deprecated files and folders.
 
 ### Step 1: Remove Legacy Job Skill Folders
 
@@ -166,56 +166,6 @@ git status
 - No new untracked files should appear (unless intentionally created)
 - Backup files (`.backup`) should be in `.gitignore` or cleaned up
 
-### Step 7: Create Repair Summary
-
-Create a `repair_summary.md` file documenting all changes made during this workflow:
-
-```markdown
-# DeepWork Repair Summary
-
-**Date:** [current date]
-**Project:** [project name]
-
-## Settings Fixes (fix_settings step)
-
-- [ ] Removed X `Skill(...)` permission entries
-- [ ] Consolidated Y duplicate hooks
-- [ ] Removed Z hardcoded paths
-- [ ] Removed deprecated `deepwork hook` commands
-
-## Job Fixes (fix_jobs step)
-
-### [job_name]
-- [ ] Removed `exposed` field from steps: [list]
-- [ ] Migrated `stop_hooks` to `hooks.after_agent`
-- [ ] Updated workflow to remove `review_job_spec`
-- [ ] Version bumped to X.Y.Z
-
-### [another_job]
-- [ ] ...
-
-## Errata Cleanup (errata step)
-
-- [ ] Removed legacy job skill folders from `.claude/skills/` and `.gemini/skills/`
-- [ ] Verified `deepwork` skill folder still exists
-- [ ] Cleaned `.deepwork/tmp/`: removed X files
-- [ ] Reviewed `.deepwork/rules/`: [action taken]
-- [ ] Updated `.deepwork/config.yml` version format
-
-## Files Changed
-
-```
-[list of all files modified/deleted]
-```
-
-## Recommended Next Steps
-
-1. Review changes with `git diff`
-2. Test that `deepwork sync` runs without errors
-3. Commit changes with message: "chore: migrate to DeepWork MCP format"
-4. Delete backup files after confirming everything works
-```
-
 ## Quality Criteria
 
 - Legacy job skill folders are removed from `.claude/skills/` and `.gemini/skills/` (folders matching job names or `jobname.*` patterns)
@@ -225,58 +175,11 @@ Create a `repair_summary.md` file documenting all changes made during this workf
 - `.deepwork/tmp/rules/` folder is removed
 - `.deepwork/jobs/deepwork_rules/` folder is removed if present
 - `.deepwork/config.yml` uses current version format
-- A `repair_summary.md` file is created documenting all changes
 - Git status shows clean changes ready to commit
 - When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
-
-## Example Summary Output
-
-```markdown
-# DeepWork Repair Summary
-
-**Date:** 2024-02-04
-**Project:** internal-agentspace
-
-## Settings Fixes
-
-- Removed 87 `Skill(...)` permission entries
-- Consolidated 2 duplicate `UserPromptSubmit` hooks into 1
-- Removed hardcoded path: `/Users/tyler/.local/pipx/venvs/deepwork/bin/python`
-- Removed 3 deprecated `deepwork hook rules_check` commands
-
-## Job Fixes
-
-### deepwork_jobs
-- Updated from old version (workflow includes `review_job_spec`)
-- Reinstalled with `deepwork install --platform claude`
-
-### competitive_research
-- Removed `exposed: true` from `discover_competitors` step
-- Migrated 1 `stop_hooks` to `hooks.after_agent`
-- Version bumped to 1.0.1
-
-## Errata Cleanup
-
-- Removed legacy skill folders for 3 jobs:
-  - `competitive_research/` and 4 step folders from `.claude/skills/`
-  - `deepwork_jobs/` and 5 step folders from `.claude/skills/`
-  - `monthly_reporting/` and 2 step folders from `.claude/skills/`
-- Verified `deepwork` skill folder still present in `.claude/skills/`
-- Cleaned `.deepwork/tmp/rules/queue/` (12 old JSON files)
-- Kept `.deepwork/rules/` (contains active example rules)
-- Updated `.deepwork/config.yml` version to "1.0"
-
-## Recommended Next Steps
-
-1. `git add -A && git diff --staged`
-2. `deepwork sync` (verify no errors)
-3. `git commit -m "chore: migrate to DeepWork MCP format"`
-4. After testing: `rm -rf .claude/skills.backup/`
-```
 
 ## Important Notes
 
 1. **Always back up before deleting** - User data is irreplaceable
 2. **Ask before destructive actions** - When in doubt, ask the user
-3. **Document everything** - The summary is valuable for understanding what changed
-4. **Don't auto-commit** - Let the user review and commit changes themselves
+3. **Don't auto-commit** - Let the user review and commit changes themselves

@@ -174,13 +174,11 @@ The MCP server is configured via `.deepwork/config.yml`:
 version: "1.0"
 platforms:
   - claude
-
-# Quality gate configuration (optional)
-quality_gate:
-  agent_review_command: "claude --print"  # Command to run quality gate agent
-  default_timeout: 120                     # Timeout in seconds
-  default_max_attempts: 3                  # Max attempts before failing
 ```
+
+Quality gate is enabled by default and uses Claude Code to evaluate step outputs
+against quality criteria. See `doc/reference/calling_claude_in_print_mode.md` for
+details on how Claude CLI is invoked.
 
 ---
 
@@ -191,7 +189,7 @@ deepwork serve [OPTIONS]
 
 Options:
   --path PATH        Project root directory (default: current directory)
-  --quality-gate CMD Command for quality gate agent (overrides config)
+  --no-quality-gate  Disable quality gate evaluation
   --transport TYPE   Transport type: stdio or sse (default: stdio)
   --port PORT        Port for SSE transport (default: 8000)
 ```
