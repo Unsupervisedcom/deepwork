@@ -222,4 +222,5 @@ steps:
       - "**Rules Job Removed**: Is `.deepwork/jobs/deepwork_rules/` removed if present?"
       - "**Config Version Updated**: Is `.deepwork/config.yml` using current version format?"
       - "**Summary Provided**: Is a repair_summary.md file created documenting all changes made?"
+      - "**DeepWork Re-installed**: Was `deepwork install` run after cleanup, and does it complete without errors?"
       - "**Git Status Clean**: Are changes ready to be committed (no untracked garbage files)?"

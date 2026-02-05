@@ -134,7 +134,23 @@ Check for and remove other obsolete files:
 | `.claude/commands/` | Generated commands | Keep (current system) |
 | `.claude/settings.local.json` | Local overrides | Keep (user settings) |
 
-### Step 6: Verify Git Status
+### Step 6: Re-install DeepWork
+
+After all cleanup is complete, re-run `deepwork install` to ensure configurations are current and consistent:
+
+```bash
+deepwork install
+```
+
+**Then verify:**
+1. Check that `.deepwork/config.yml` is valid and up to date
+2. Check that `.claude/skills/deepwork/` exists and contains the expected skill entry point
+3. Check that all jobs in `.deepwork/jobs/` have valid `job.yml` files
+4. Run `deepwork install` a second time and confirm the output is clean (no errors or warnings)
+
+If any issues are found, fix them before proceeding. The goal is a clean, working DeepWork installation with no residual problems from the repair process.
+
+### Step 7: Verify Git Status
 
 Check that the cleanup hasn't left untracked garbage:
 

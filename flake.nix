@@ -4,6 +4,9 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    # Claude Code with pre-built native binaries (hourly updates)
+    claude-code-nix.url = "github:sadjow/claude-code-nix";
+
     pyproject-nix = {
       url = "github:pyproject-nix/pyproject.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -23,7 +26,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, pyproject-nix, uv2nix, pyproject-build-systems, ... }:
+  outputs = { self, nixpkgs, claude-code-nix, pyproject-nix, uv2nix, pyproject-build-systems, ... }:
     let
       inherit (nixpkgs) lib;
 
@@ -64,9 +67,6 @@
             config.allowUnfree = true;
           };
 
-          # Local claude-code package (update via nix/claude-code/update.sh)
-          claude-code = pkgs.callPackage ./nix/claude-code/package.nix { };
-
           # Python set with editable overlay for development
           pythonSet = pythonSets.${system}.overrideScope editableOverlay;
 
@@ -80,7 +80,7 @@
               pkgs.uv
               pkgs.git
               pkgs.jq
-              claude-code
+              claude-code-nix.packages.${system}.default
               pkgs.gh
             ];
 
@@ -97,9 +97,6 @@
               unset PYTHONPATH
               export REPO_ROOT=$(git rev-parse --show-toplevel)
 
-              # Add nix/ scripts to PATH (for 'update' command)
-              export PATH="$PWD/nix:$PATH"
-
               # Only show welcome message in interactive shells
               if [[ $- == *i* ]]; then
                 echo ""
@@ -113,9 +110,8 @@
                 echo "  pytest             Run tests"
                 echo "  ruff check src/    Lint code"
                 echo "  mypy src/          Type check"
-                echo "  claude-code        Claude Code CLI"
+                echo "  claude             Claude Code CLI"
                 echo "  gh                 GitHub CLI"
-                echo "  update             Update claude-code and flake inputs"
                 echo ""
               fi
             '';
