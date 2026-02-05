@@ -26,7 +26,7 @@ def project_root(tmp_path: Path) -> Path:
 @pytest.fixture
 def quality_gate() -> QualityGate:
     """Create a QualityGate instance."""
-    return QualityGate(command="echo test", timeout=10)
+    return QualityGate(timeout=10)
 
 
 @pytest.fixture
@@ -44,30 +44,38 @@ def create_mock_subprocess(
     """Create a mock subprocess executor that captures commands.
 
     ############################################################################
-    # CRITICAL: DO NOT MODIFY THE RESPONSE FORMAT WITHOUT UNDERSTANDING THIS!
+    # CRITICAL: UNDERSTAND THE RESPONSE FORMAT BEFORE MODIFYING!
     #
-    # This mock returns the quality gate response JSON DIRECTLY, without the
-    # Claude CLI wrapper object. This is INTENTIONAL and tests that the
-    # _parse_response method can handle BOTH:
+    # This mock returns responses in the EXACT format produced by Claude CLI
+    # when using `--print --output-format json --json-schema`. The response
+    # is a wrapper object with the structured output in `structured_output`:
     #
-    # 1. Direct JSON (what this mock returns) - for backwards compatibility
-    # 2. Wrapper objects from `claude -p --output-format json` which look like:
-    #    {"type": "result", "result": "<actual JSON>", ...}
+    # {
+    #     "type": "result",
+    #     "subtype": "success",
+    #     "is_error": false,
+    #     "structured_output": {
+    #         "passed": true,
+    #         "feedback": "...",
+    #         "criteria_results": [...]
+    #     }
+    # }
     #
-    # The REAL Claude CLI with `--output-format json` returns a wrapper object.
-    # The quality_gate.py code handles this by checking for the wrapper format
-    # and extracting the "result" field before parsing.
+    # KEY POINTS:
+    # 1. The `--json-schema` flag enforces structured output conformance
+    # 2. The actual quality gate response is in `structured_output`, NOT `result`
+    # 3. The `result` field (if present) contains text output, not our schema
     #
-    # If you're seeing schema validation errors in production, it's because
-    # the code expects to unwrap the response first. See test_parse_response_wrapper_object
-    # for the wrapper format test.
+    # See doc/reference/calling_claude_in_print_mode.md for full details on
+    # how Claude CLI handles --json-schema and the output format.
     #
-    # DO NOT "fix" this mock by adding a wrapper - that would break the test's
-    # purpose of verifying direct JSON handling still works.
+    # If you're seeing parse errors, check that quality_gate.py is looking
+    # for `structured_output` (not `result`) in the wrapper.
     ############################################################################
 
     Args:
-        response: The JSON response to return. Defaults to a passing quality gate response.
+        response: The quality gate response to return in structured_output.
+                  Defaults to a passing quality gate response.
         returncode: The return code for the process.
 
     Returns:
@@ -86,8 +94,14 @@ def create_mock_subprocess(
         mock_process.returncode = returncode
 
         async def mock_communicate(input: bytes = b"") -> tuple[bytes, bytes]:  # noqa: ARG001
-            # Returns direct JSON without CLI wrapper - see docstring above
-            return json.dumps(response).encode(), b""
+            # Returns Claude CLI wrapper with structured_output field
+            wrapper = {
+                "type": "result",
+                "subtype": "success",
+                "is_error": False,
+                "structured_output": response,
+            }
+            return json.dumps(wrapper).encode(), b""
 
         mock_process.communicate = mock_communicate
         return mock_process
@@ -119,16 +133,14 @@ class TestQualityGate:
 
     def test_init(self) -> None:
         """Test QualityGate initialization."""
-        gate = QualityGate(command="claude -p", timeout=60)
+        gate = QualityGate(timeout=60)
 
-        assert gate.command == "claude -p"
         assert gate.timeout == 60
 
     def test_init_defaults(self) -> None:
         """Test QualityGate default values."""
         gate = QualityGate()
 
-        assert gate.command == "claude -p --output-format json"
         assert gate.timeout == 120
 
     def test_build_instructions(self, quality_gate: QualityGate) -> None:
@@ -172,20 +184,20 @@ class TestQualityGate:
         assert "nonexistent.md" in payload
 
     def test_parse_response_valid_json(self, quality_gate: QualityGate) -> None:
-        """Test parsing valid JSON response."""
-        response = """
-        Here's my evaluation:
-
-        ```json
-        {
-            "passed": true,
-            "feedback": "All good",
-            "criteria_results": [
-                {"criterion": "Test 1", "passed": true, "feedback": null}
-            ]
-        }
-        ```
-        """
+        """Test parsing valid JSON response with structured_output."""
+        # Claude CLI returns wrapper with structured_output field when using --json-schema
+        response = json.dumps({
+            "type": "result",
+            "subtype": "success",
+            "is_error": False,
+            "structured_output": {
+                "passed": True,
+                "feedback": "All good",
+                "criteria_results": [
+                    {"criterion": "Test 1", "passed": True, "feedback": None}
+                ]
+            }
+        })
 
         result = quality_gate._parse_response(response)
 
@@ -195,17 +207,18 @@ class TestQualityGate:
 
     def test_parse_response_failed(self, quality_gate: QualityGate) -> None:
         """Test parsing failed evaluation response."""
-        response = """
-        ```json
-        {
-            "passed": false,
-            "feedback": "Issues found",
-            "criteria_results": [
-                {"criterion": "Test 1", "passed": false, "feedback": "Failed"}
-            ]
-        }
-        ```
-        """
+        response = json.dumps({
+            "type": "result",
+            "subtype": "success",
+            "is_error": False,
+            "structured_output": {
+                "passed": False,
+                "feedback": "Issues found",
+                "criteria_results": [
+                    {"criterion": "Test 1", "passed": False, "feedback": "Failed"}
+                ]
+            }
+        })
 
         result = quality_gate._parse_response(response)
 
@@ -220,39 +233,29 @@ class TestQualityGate:
         with pytest.raises(QualityGateError, match="Failed to parse"):
             quality_gate._parse_response(response)
 
-    def test_parse_response_wrapper_object(self, quality_gate: QualityGate) -> None:
-        """Test parsing response wrapped in Claude CLI --output-format json wrapper."""
-        # This is what claude -p --output-format json returns
+    def test_parse_response_missing_structured_output(self, quality_gate: QualityGate) -> None:
+        """Test parsing response missing structured_output field raises error."""
+        # Old format with 'result' field instead of 'structured_output'
         wrapper_response = json.dumps({
             "type": "result",
             "subtype": "success",
             "is_error": False,
-            "duration_ms": 1234,
-            "result": json.dumps({
-                "passed": True,
-                "feedback": "All criteria met",
-                "criteria_results": [
-                    {"criterion": "Test 1", "passed": True, "feedback": None}
-                ]
-            }),
-            "session_id": "test-session",
+            "result": "Some text response",
         })
 
-        result = quality_gate._parse_response(wrapper_response)
+        with pytest.raises(QualityGateError, match="missing 'structured_output'"):
+            quality_gate._parse_response(wrapper_response)
 
-        assert result.passed is True
-        assert result.feedback == "All criteria met"
-        assert len(result.criteria_results) == 1
-
-    def test_parse_response_wrapper_empty_result(self, quality_gate: QualityGate) -> None:
-        """Test parsing wrapper object with empty result raises error."""
+    def test_parse_response_error_in_wrapper(self, quality_gate: QualityGate) -> None:
+        """Test parsing response with is_error=True raises error."""
         wrapper_response = json.dumps({
             "type": "result",
-            "subtype": "success",
-            "result": "",
+            "subtype": "error",
+            "is_error": True,
+            "result": "Something went wrong",
         })
 
-        with pytest.raises(QualityGateError, match="empty result"):
+        with pytest.raises(QualityGateError, match="returned error"):
             quality_gate._parse_response(wrapper_response)
 
     async def test_evaluate_no_criteria(
@@ -267,6 +270,34 @@ class TestQualityGate:
 
         assert result.passed is True
         assert "auto-passing" in result.feedback.lower()
+
+    def test_parse_criteria_results_structure(self, quality_gate: QualityGate) -> None:
+        """Test that criteria results are properly parsed with multiple entries."""
+        response = json.dumps({
+            "type": "result",
+            "subtype": "success",
+            "is_error": False,
+            "structured_output": {
+                "passed": False,
+                "feedback": "Two criteria failed",
+                "criteria_results": [
+                    {"criterion": "First check", "passed": True, "feedback": None},
+                    {"criterion": "Second check", "passed": False, "feedback": "Missing data"},
+                    {"criterion": "Third check", "passed": False, "feedback": "Wrong format"},
+                ],
+            },
+        })
+
+        result = quality_gate._parse_response(response)
+
+        assert result.passed is False
+        assert len(result.criteria_results) == 3
+        assert result.criteria_results[0].passed is True
+        assert result.criteria_results[0].feedback is None
+        assert result.criteria_results[1].passed is False
+        assert result.criteria_results[1].feedback == "Missing data"
+        assert result.criteria_results[2].passed is False
+        assert result.criteria_results[2].feedback == "Wrong format"
 
 
 class TestQualityGateCommandConstruction:
@@ -294,7 +325,7 @@ class TestQualityGateCommandConstruction:
         self, output_file: Path, project_root: Path
     ) -> None:
         """Test that the command includes --json-schema with the correct schema."""
-        gate = QualityGate(command="claude -p --output-format json", timeout=10)
+        gate = QualityGate(timeout=10)
 
         with patched_subprocess() as captured_cmd:
             await gate.evaluate(
@@ -314,7 +345,7 @@ class TestQualityGateCommandConstruction:
         self, output_file: Path, project_root: Path
     ) -> None:
         """Test that the command includes --system-prompt with quality criteria."""
-        gate = QualityGate(command="claude -p", timeout=10)
+        gate = QualityGate(timeout=10)
 
         with patched_subprocess() as captured_cmd:
             await gate.evaluate(
@@ -326,6 +357,40 @@ class TestQualityGateCommandConstruction:
         system_prompt = self.get_command_arg(captured_cmd, "--system-prompt")
         assert "Output must exist" in system_prompt
         assert "Output must be valid" in system_prompt
+
+    async def test_command_has_correct_flag_ordering(
+        self, output_file: Path, project_root: Path
+    ) -> None:
+        """Test that flags come before -p -- for proper CLI invocation.
+
+        See doc/reference/calling_claude_in_print_mode.md for details on
+        why flag ordering matters.
+        """
+        gate = QualityGate(timeout=10)
+
+        with patched_subprocess() as captured_cmd:
+            await gate.evaluate(
+                quality_criteria=["Test criterion"],
+                outputs=[output_file.name],
+                project_root=project_root,
+            )
+
+        # Verify command structure
+        assert captured_cmd[0] == "claude"
+        assert "--print" in captured_cmd
+        assert "--output-format" in captured_cmd
+        assert "-p" in captured_cmd
+        assert "--" in captured_cmd
+
+        # Verify -p -- comes last (after all other flags)
+        p_index = captured_cmd.index("-p")
+        dash_dash_index = captured_cmd.index("--")
+        json_schema_index = captured_cmd.index("--json-schema")
+        system_prompt_index = captured_cmd.index("--system-prompt")
+
+        assert json_schema_index < p_index, "Flags must come before -p"
+        assert system_prompt_index < p_index, "Flags must come before -p"
+        assert dash_dash_index == p_index + 1, "-- must immediately follow -p"
 
     async def test_schema_is_valid_json(self) -> None:
         """Test that QUALITY_GATE_RESPONSE_SCHEMA is valid JSON."""

@@ -2,8 +2,29 @@
 """Mock review agent for integration testing.
 
 This script simulates a review agent that reads a prompt from stdin
-and returns a JSON response. The behavior is controlled by environment
-variables or by keywords in the input prompt.
+and returns a JSON response in Claude CLI wrapper format. The behavior
+is controlled by environment variables or by keywords in the input prompt.
+
+############################################################################
+# CRITICAL: OUTPUT FORMAT
+#
+# This mock returns responses in the same wrapper format as Claude CLI
+# when using `--print --output-format json --json-schema`. The quality gate
+# response is in the `structured_output` field:
+#
+# {
+#     "type": "result",
+#     "subtype": "success",
+#     "is_error": false,
+#     "structured_output": {
+#         "passed": true/false,
+#         "feedback": "...",
+#         "criteria_results": [...]
+#     }
+# }
+#
+# See doc/reference/calling_claude_in_print_mode.md for details.
+############################################################################
 
 Behavior modes:
 - REVIEW_RESULT=pass: Always return passed=true
@@ -19,6 +40,23 @@ import json
 import os
 import sys
 import time
+
+
+def wrap_response(quality_result: dict) -> dict:
+    """Wrap a quality gate result in Claude CLI output format.
+
+    Args:
+        quality_result: The quality gate result with passed, feedback, criteria_results
+
+    Returns:
+        Wrapper object matching Claude CLI --output-format json --json-schema output
+    """
+    return {
+        "type": "result",
+        "subtype": "success",
+        "is_error": False,
+        "structured_output": quality_result,
+    }
 
 
 def main() -> int:
@@ -45,16 +83,16 @@ def main() -> int:
         return 0
 
     if mode == "pass":
-        response = {
+        response = wrap_response({
             "passed": True,
             "feedback": "All criteria met",
             "criteria_results": [{"criterion": "Criterion 1", "passed": True, "feedback": None}],
-        }
+        })
         print(json.dumps(response))
         return 0
 
     if mode == "fail":
-        response = {
+        response = wrap_response({
             "passed": False,
             "feedback": "Quality criteria not met",
             "criteria_results": [
@@ -64,22 +102,22 @@ def main() -> int:
                     "feedback": "Did not meet requirements",
                 }
             ],
-        }
+        })
         print(json.dumps(response))
         return 0
 
     # Auto mode: parse prompt for markers
     if "FORCE_PASS" in prompt:
-        response = {
+        response = wrap_response({
             "passed": True,
             "feedback": "Forced pass via marker",
             "criteria_results": [],
-        }
+        })
         print(json.dumps(response))
         return 0
 
     if "FORCE_FAIL" in prompt:
-        response = {
+        response = wrap_response({
             "passed": False,
             "feedback": "Forced fail via marker",
             "criteria_results": [
@@ -89,7 +127,7 @@ def main() -> int:
                     "feedback": "Failed due to FORCE_FAIL marker",
                 }
             ],
-        }
+        })
         print(json.dumps(response))
         return 0
 
@@ -147,13 +185,13 @@ def main() -> int:
             }
         )
 
-    response = {
+    quality_result = {
         "passed": all_passed,
         "feedback": "All criteria met" if all_passed else "Some criteria failed",
         "criteria_results": criteria_results,
     }
 
-    print(json.dumps(response))
+    print(json.dumps(wrap_response(quality_result)))
     return 0
 
 

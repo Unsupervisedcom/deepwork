@@ -2,7 +2,3 @@ version: 0.1.0
 platforms:
 - claude
 - gemini
-quality_gate:
-  agent_review_command: claude -p --output-format json
-  default_timeout: 120
-  default_max_attempts: 3
