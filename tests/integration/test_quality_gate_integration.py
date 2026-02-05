@@ -66,9 +66,7 @@ class TestRealClaudeIntegration:
     actual Claude Code CLI. If you mock them, you defeat their entire purpose.
     """
 
-    async def test_real_claude_evaluates_passing_criteria(
-        self, project_root: Path
-    ) -> None:
+    async def test_real_claude_evaluates_passing_criteria(self, project_root: Path) -> None:
         """Test that real Claude CLI correctly evaluates passing criteria.
 
         ⚠️  THIS TEST MUST USE THE REAL CLAUDE CLI - DO NOT MOCK ⚠️
@@ -106,13 +104,9 @@ class TestRealClaudeIntegration:
         if not result.passed:
             # If it failed, at least verify we got proper feedback
             assert len(result.criteria_results) > 0
-            pytest.skip(
-                f"Model returned fail (may be model variability): {result.feedback}"
-            )
+            pytest.skip(f"Model returned fail (may be model variability): {result.feedback}")
 
-    async def test_real_claude_evaluates_failing_criteria(
-        self, project_root: Path
-    ) -> None:
+    async def test_real_claude_evaluates_failing_criteria(self, project_root: Path) -> None:
         """Test that real Claude CLI correctly identifies missing criteria.
 
         ⚠️  THIS TEST MUST USE THE REAL CLAUDE CLI - DO NOT MOCK ⚠️

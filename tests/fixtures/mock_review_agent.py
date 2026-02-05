@@ -83,51 +83,61 @@ def main() -> int:
         return 0
 
     if mode == "pass":
-        response = wrap_response({
-            "passed": True,
-            "feedback": "All criteria met",
-            "criteria_results": [{"criterion": "Criterion 1", "passed": True, "feedback": None}],
-        })
+        response = wrap_response(
+            {
+                "passed": True,
+                "feedback": "All criteria met",
+                "criteria_results": [
+                    {"criterion": "Criterion 1", "passed": True, "feedback": None}
+                ],
+            }
+        )
         print(json.dumps(response))
         return 0
 
     if mode == "fail":
-        response = wrap_response({
-            "passed": False,
-            "feedback": "Quality criteria not met",
-            "criteria_results": [
-                {
-                    "criterion": "Criterion 1",
-                    "passed": False,
-                    "feedback": "Did not meet requirements",
-                }
-            ],
-        })
+        response = wrap_response(
+            {
+                "passed": False,
+                "feedback": "Quality criteria not met",
+                "criteria_results": [
+                    {
+                        "criterion": "Criterion 1",
+                        "passed": False,
+                        "feedback": "Did not meet requirements",
+                    }
+                ],
+            }
+        )
         print(json.dumps(response))
         return 0
 
     # Auto mode: parse prompt for markers
     if "FORCE_PASS" in prompt:
-        response = wrap_response({
-            "passed": True,
-            "feedback": "Forced pass via marker",
-            "criteria_results": [],
-        })
+        response = wrap_response(
+            {
+                "passed": True,
+                "feedback": "Forced pass via marker",
+                "criteria_results": [],
+            }
+        )
         print(json.dumps(response))
         return 0
 
     if "FORCE_FAIL" in prompt:
-        response = wrap_response({
-            "passed": False,
-            "feedback": "Forced fail via marker",
-            "criteria_results": [
-                {
-                    "criterion": "Test criterion",
-                    "passed": False,
-                    "feedback": "Failed due to FORCE_FAIL marker",
-                }
-            ],
-        })
+        response = wrap_response(
+            {
+                "passed": False,
+                "feedback": "Forced fail via marker",
+                "criteria_results": [
+                    {
+                        "criterion": "Test criterion",
+                        "passed": False,
+                        "feedback": "Failed due to FORCE_FAIL marker",
+                    }
+                ],
+            }
+        )
         print(json.dumps(response))
         return 0
 

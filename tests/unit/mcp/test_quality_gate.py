@@ -186,18 +186,18 @@ class TestQualityGate:
     def test_parse_response_valid_json(self, quality_gate: QualityGate) -> None:
         """Test parsing valid JSON response with structured_output."""
         # Claude CLI returns wrapper with structured_output field when using --json-schema
-        response = json.dumps({
-            "type": "result",
-            "subtype": "success",
-            "is_error": False,
-            "structured_output": {
-                "passed": True,
-                "feedback": "All good",
-                "criteria_results": [
-                    {"criterion": "Test 1", "passed": True, "feedback": None}
-                ]
+        response = json.dumps(
+            {
+                "type": "result",
+                "subtype": "success",
+                "is_error": False,
+                "structured_output": {
+                    "passed": True,
+                    "feedback": "All good",
+                    "criteria_results": [{"criterion": "Test 1", "passed": True, "feedback": None}],
+                },
             }
-        })
+        )
 
         result = quality_gate._parse_response(response)
 
@@ -207,18 +207,20 @@ class TestQualityGate:
 
     def test_parse_response_failed(self, quality_gate: QualityGate) -> None:
         """Test parsing failed evaluation response."""
-        response = json.dumps({
-            "type": "result",
-            "subtype": "success",
-            "is_error": False,
-            "structured_output": {
-                "passed": False,
-                "feedback": "Issues found",
-                "criteria_results": [
-                    {"criterion": "Test 1", "passed": False, "feedback": "Failed"}
-                ]
+        response = json.dumps(
+            {
+                "type": "result",
+                "subtype": "success",
+                "is_error": False,
+                "structured_output": {
+                    "passed": False,
+                    "feedback": "Issues found",
+                    "criteria_results": [
+                        {"criterion": "Test 1", "passed": False, "feedback": "Failed"}
+                    ],
+                },
             }
-        })
+        )
 
         result = quality_gate._parse_response(response)
 
@@ -236,24 +238,28 @@ class TestQualityGate:
     def test_parse_response_missing_structured_output(self, quality_gate: QualityGate) -> None:
         """Test parsing response missing structured_output field raises error."""
         # Old format with 'result' field instead of 'structured_output'
-        wrapper_response = json.dumps({
-            "type": "result",
-            "subtype": "success",
-            "is_error": False,
-            "result": "Some text response",
-        })
+        wrapper_response = json.dumps(
+            {
+                "type": "result",
+                "subtype": "success",
+                "is_error": False,
+                "result": "Some text response",
+            }
+        )
 
         with pytest.raises(QualityGateError, match="missing 'structured_output'"):
             quality_gate._parse_response(wrapper_response)
 
     def test_parse_response_error_in_wrapper(self, quality_gate: QualityGate) -> None:
         """Test parsing response with is_error=True raises error."""
-        wrapper_response = json.dumps({
-            "type": "result",
-            "subtype": "error",
-            "is_error": True,
-            "result": "Something went wrong",
-        })
+        wrapper_response = json.dumps(
+            {
+                "type": "result",
+                "subtype": "error",
+                "is_error": True,
+                "result": "Something went wrong",
+            }
+        )
 
         with pytest.raises(QualityGateError, match="returned error"):
             quality_gate._parse_response(wrapper_response)
@@ -273,20 +279,22 @@ class TestQualityGate:
 
     def test_parse_criteria_results_structure(self, quality_gate: QualityGate) -> None:
         """Test that criteria results are properly parsed with multiple entries."""
-        response = json.dumps({
-            "type": "result",
-            "subtype": "success",
-            "is_error": False,
-            "structured_output": {
-                "passed": False,
-                "feedback": "Two criteria failed",
-                "criteria_results": [
-                    {"criterion": "First check", "passed": True, "feedback": None},
-                    {"criterion": "Second check", "passed": False, "feedback": "Missing data"},
-                    {"criterion": "Third check", "passed": False, "feedback": "Wrong format"},
-                ],
-            },
-        })
+        response = json.dumps(
+            {
+                "type": "result",
+                "subtype": "success",
+                "is_error": False,
+                "structured_output": {
+                    "passed": False,
+                    "feedback": "Two criteria failed",
+                    "criteria_results": [
+                        {"criterion": "First check", "passed": True, "feedback": None},
+                        {"criterion": "Second check", "passed": False, "feedback": "Missing data"},
+                        {"criterion": "Third check", "passed": False, "feedback": "Wrong format"},
+                    ],
+                },
+            }
+        )
 
         result = quality_gate._parse_response(response)
 
@@ -337,8 +345,7 @@ class TestQualityGateCommandConstruction:
         schema_json = self.get_command_arg(captured_cmd, "--json-schema")
         parsed_schema = json.loads(schema_json)
         assert parsed_schema == QUALITY_GATE_RESPONSE_SCHEMA, (
-            f"Schema mismatch. Expected:\n{QUALITY_GATE_RESPONSE_SCHEMA}\n"
-            f"Got:\n{parsed_schema}"
+            f"Schema mismatch. Expected:\n{QUALITY_GATE_RESPONSE_SCHEMA}\nGot:\n{parsed_schema}"
         )
 
     async def test_command_includes_system_prompt(
