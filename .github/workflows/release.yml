@@ -58,7 +58,8 @@ jobs:
 
   update-homebrew:
     needs: publish
-    if: github.event_name == 'release'
+    # Only update homebrew for stable releases, not prereleases (alpha, beta, rc)
+    if: github.event_name == 'release' && !github.event.release.prerelease
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Homebrew formula update
