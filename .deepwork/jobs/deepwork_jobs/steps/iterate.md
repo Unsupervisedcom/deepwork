@@ -122,15 +122,7 @@ After making improvements:
        changes: "Improved [step] instructions based on test run: added examples, clarified criteria, updated tool recommendations"
    ```
 
-### Step 7: Sync Changes
-
-Run `deepwork sync` to apply the changes:
-
-```bash
-deepwork sync
-```
-
-### Step 8: Provide Recap
+### Step 7: Provide Recap
 
 Summarize the improvements made:
 
@@ -175,7 +167,6 @@ Future runs should produce reports with better visual design and clearer summari
 - Quality criteria were updated to match user expectations
 - Alternative tools were considered where relevant
 - Job version and changelog were updated
-- `deepwork sync` was run to apply changes
 - A clear recap of improvements was provided
 - When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
 
@@ -219,9 +210,7 @@ I identified the following issues from the test run:
 - Version bumped to 1.0.1
 - Added changelog: "Improved visual design guidance and audience-appropriate writing based on test feedback"
 
-Running `deepwork sync`...
-
-Done! The workflow has been updated.
+Done! The workflow has been updated. Changes are immediately available through the MCP server.
 
 ### Expected Impact
 

@@ -91,15 +91,11 @@ steps:
     dependencies:
       - define
     quality_criteria:
-      - "**Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?"
       - "**Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?"
       - "**Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?"
       - "**Output Examples**: Does each instruction file show what good output looks like?"
       - "**Quality Criteria**: Does each instruction file define quality criteria for its outputs?"
       - "**Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase \"ask structured questions\"?"
-      - "**Sync Complete**: Has `deepwork sync` been run successfully?"
-      - "**Commands Available**: Are the slash-commands generated in `.claude/commands/`?"
-      - "**Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to run `/deepwork_rules.define`? Not every job needs rules - only suggest when genuinely helpful."
 
   - id: test
     name: "Test the New Workflow"
@@ -117,7 +113,7 @@ steps:
       - implement
     quality_criteria:
       - "**User Informed**: Did the agent explain the workflow is ready and ask what to test it on?"
-      - "**Workflow Invoked**: Was the new workflow actually run on the user's test case?"
+      - "**Workflow Invoked**: Was the new workflow actually run on the user's test case via MCP?"
       - "**Output Critiqued**: Did the agent identify up to 3 top issues with the output?"
       - "**User Feedback Gathered**: Did the agent ask the user about each issue and gather additional feedback?"
       - "**Corrections Made**: Were all requested corrections applied to the output?"
@@ -144,7 +140,6 @@ steps:
       - "**Instructions Improved**: Were step instructions updated to address identified problems?"
       - "**Quality Criteria Updated**: Were quality criteria adjusted to better match user expectations?"
       - "**Tool Usage Considered**: Did the agent consider if different tools would improve the workflow?"
-      - "**Sync Complete**: Has `deepwork sync` been run to apply changes?"
       - "**Recap Provided**: Did the agent summarize what was improved and why?"
 
   - id: learn
@@ -169,7 +164,6 @@ steps:
       - "**File References Used**: Do AGENTS.md entries reference other files where appropriate?"
       - "**Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?"
       - "**Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?"
-      - "**Sync Complete**: Has `deepwork sync` been run if instructions were modified?"
 
   - id: fix_settings
     name: "Fix Settings Files"
@@ -205,8 +199,7 @@ steps:
       - "**Stop Hooks Migrated**: Are `stop_hooks` migrated to `hooks.after_agent` format?"
       - "**Removed Steps Cleaned**: Are references to removed steps (like `review_job_spec`) updated?"
       - "**Orphaned Steps Fixed**: For jobs with no workflows, is there a single workflow (named after the job) containing all steps? For jobs with existing workflows, does each orphan get its own workflow (named after the step)?"
-      - "**Valid YAML**: Do all job.yml files pass schema validation?"
-      - "**Sync Complete**: Has `deepwork sync` been run to regenerate commands?"
+      - "**Valid YAML**: Are all job.yml files valid YAML?"
 
   - id: errata
     name: "Clean Up Errata"
