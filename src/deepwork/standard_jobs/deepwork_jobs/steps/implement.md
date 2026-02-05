@@ -113,19 +113,6 @@ See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for det
 
 Verify that `job.yml` is in the correct location at `.deepwork/jobs/[job_name]/job.yml`. The define step should have created it. If for some reason it's not there, you may need to create or move it.
 
-### Step 5: Sync Skills
-
-Run `deepwork sync` to generate the skills for this job:
-
-```bash
-deepwork sync
-```
-
-This will:
-- Parse the job definition
-- Generate skills for each step
-- Make the skills available in `.claude/skills/` (or appropriate platform directory)
-
 ## Example Implementation
 
 For a complete worked example showing a job.yml and corresponding step instruction file, see:
@@ -141,22 +128,12 @@ For a complete worked example showing a job.yml and corresponding step instructi
 5. **Use context** - The job description provides valuable context for each step
 6. **Be specific** - Tailor instructions to the specific step, not generic advice
 
-## Validation Before Sync
-
-Before running `deepwork sync`, verify:
-- All directories exist
-- `job.yml` is in place
-- All step instruction files exist (one per step)
-- No file system errors
-
 ## Completion Checklist
 
 Before marking this step complete, ensure:
-- [ ] job.yml validated and copied to job directory
+- [ ] job.yml validated and in job directory
 - [ ] All step instruction files created
 - [ ] Each instruction file is complete and actionable
-- [ ] `deepwork sync` executed successfully
-- [ ] Skills generated in platform directory
 
 ## Quality Criteria
 
@@ -166,5 +143,3 @@ Before marking this step complete, ensure:
 - Output examples are provided in each instruction file
 - Quality criteria defined for each step
 - Steps with user inputs explicitly use "ask structured questions" phrasing
-- Sync completed successfully
-- Skills available for use

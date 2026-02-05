@@ -87,12 +87,7 @@ steps:
 
 ### Step 5: Fix Orphaned Steps
 
-Steps not included in any workflow cannot be invoked via the MCP interface. The parser will emit warnings for these.
-
-Run the following to see warnings:
-```bash
-deepwork sync 2>&1 | grep -i "warning"
-```
+Steps not included in any workflow cannot be invoked via the MCP interface.
 
 **How to handle orphaned steps depends on whether the job has ANY workflows defined:**
 
@@ -133,17 +128,7 @@ workflows:
 
 This ensures all steps remain accessible via the MCP interface while preserving the existing workflow structure.
 
-### Step 6: Validate Against Schema
-
-After making changes, validate each job.yml:
-
-```bash
-deepwork sync
-```
-
-Fix any schema validation errors that appear.
-
-### Step 7: Update Version Numbers
+### Step 6: Update Version Numbers
 
 If you made significant changes to a job, bump its version number:
 
@@ -157,16 +142,6 @@ changelog:
     changes: "Migrated to current DeepWork format; removed deprecated fields"
 ```
 
-### Step 8: Run Sync
-
-After all fixes, regenerate commands:
-
-```bash
-deepwork sync
-```
-
-Verify no errors or warnings appear.
-
 ## Quality Criteria
 
 - All `exposed: true` fields are removed or noted
@@ -174,8 +149,7 @@ Verify no errors or warnings appear.
 - References to removed steps (like `review_job_spec`) are updated
 - Jobs with no workflows get a single workflow (same name as job) containing all steps
 - Jobs with existing workflows get individual workflows for each orphaned step (same name as step)
-- All job.yml files pass schema validation
-- `deepwork sync` runs without errors
+- All job.yml files are valid YAML
 - When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
 
 ## Common Issues and Fixes
@@ -217,4 +191,4 @@ For each job in `.deepwork/jobs/`, check:
 
 1. **Don't modify standard jobs directly** - If `deepwork_jobs` is out of date, run `deepwork install --platform claude` to get the latest version
 2. **Preserve custom logic** - When migrating hooks, preserve the prompt content
-3. **Test after changes** - Run `deepwork sync` after each job fix to catch errors early
+3. **Test after changes** - Validate YAML syntax after each job fix to catch errors early
