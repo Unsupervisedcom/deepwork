@@ -132,6 +132,9 @@ class WorkflowTools:
     def _get_workflow(self, job: JobDefinition, workflow_name: str) -> Workflow:
         """Get a specific workflow from a job.
 
+        If the workflow name doesn't match any workflow but the job has exactly
+        one workflow, that workflow is returned automatically.
+
         Args:
             job: Job definition
             workflow_name: Workflow name to find
@@ -140,11 +143,15 @@ class WorkflowTools:
             Workflow
 
         Raises:
-            ToolError: If workflow not found
+            ToolError: If workflow not found and job has multiple workflows
         """
         for wf in job.workflows:
             if wf.name == workflow_name:
                 return wf
+
+        # Auto-select if there's only one workflow
+        if len(job.workflows) == 1:
+            return job.workflows[0]
 
         available = [wf.name for wf in job.workflows]
         raise ToolError(
@@ -214,10 +221,10 @@ class WorkflowTools:
         if first_step is None:
             raise ToolError(f"First step not found: {first_step_id}")
 
-        # Create session
+        # Create session (use resolved workflow name in case it was auto-selected)
         session = await self.state_manager.create_session(
             job_name=input_data.job_name,
-            workflow_name=input_data.workflow_name,
+            workflow_name=workflow.name,
             goal=input_data.goal,
             first_step_id=first_step_id,
             instance_id=input_data.instance_id,

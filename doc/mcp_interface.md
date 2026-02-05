@@ -65,7 +65,7 @@ Start a new workflow session. Creates a git branch, initializes state tracking, 
 |-----------|------|----------|-------------|
 | `goal` | `string` | Yes | What the user wants to accomplish |
 | `job_name` | `string` | Yes | Name of the job |
-| `workflow_name` | `string` | Yes | Name of the workflow within the job |
+| `workflow_name` | `string` | Yes | Name of the workflow within the job. If the name doesn't match but the job has only one workflow, that workflow is selected automatically. If the job has multiple workflows, an error is returned listing the available workflow names. |
 | `instance_id` | `string \| null` | No | Optional identifier for naming (e.g., 'acme', 'q1-2026') |
 
 #### Returns

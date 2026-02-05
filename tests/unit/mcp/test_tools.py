@@ -159,15 +159,74 @@ class TestWorkflowTools:
         with pytest.raises(ToolError, match="Job not found"):
             await tools.start_workflow(input_data)
 
-    async def test_start_workflow_invalid_workflow(self, tools: WorkflowTools) -> None:
-        """Test starting workflow with invalid workflow name."""
+    async def test_start_workflow_auto_selects_single_workflow(
+        self, tools: WorkflowTools
+    ) -> None:
+        """Test that a wrong workflow name auto-selects when job has one workflow."""
         input_data = StartWorkflowInput(
             goal="Complete task",
             job_name="test_job",
             workflow_name="nonexistent",
         )
 
-        with pytest.raises(ToolError, match="Workflow.*not found"):
+        # Should succeed by auto-selecting the only workflow ("main")
+        response = await tools.start_workflow(input_data)
+        assert response.begin_step.step_id == "step1"
+
+    async def test_start_workflow_invalid_workflow_multiple(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test that a wrong workflow name errors when job has multiple workflows."""
+        # Create a job with two workflows
+        job_dir = project_root / ".deepwork" / "jobs" / "multi_wf_job"
+        job_dir.mkdir()
+        (job_dir / "job.yml").write_text(
+            """
+name: multi_wf_job
+version: "1.0.0"
+summary: A job with multiple workflows
+description: Test job with multiple workflows
+
+steps:
+  - id: step_a
+    name: Step A
+    description: Step A
+    instructions_file: steps/step_a.md
+    outputs:
+      - output_a.md
+  - id: step_b
+    name: Step B
+    description: Step B
+    instructions_file: steps/step_b.md
+    outputs:
+      - output_b.md
+
+workflows:
+  - name: alpha
+    summary: Alpha workflow
+    steps:
+      - step_a
+  - name: beta
+    summary: Beta workflow
+    steps:
+      - step_b
+"""
+        )
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step_a.md").write_text("# Step A")
+        (steps_dir / "step_b.md").write_text("# Step B")
+
+        tools = WorkflowTools(
+            project_root=project_root, state_manager=state_manager
+        )
+        input_data = StartWorkflowInput(
+            goal="Complete task",
+            job_name="multi_wf_job",
+            workflow_name="nonexistent",
+        )
+
+        with pytest.raises(ToolError, match="Workflow.*not found.*alpha.*beta"):
             await tools.start_workflow(input_data)
 
     async def test_finished_step_no_session(self, tools: WorkflowTools) -> None:

@@ -7,6 +7,7 @@ Thank you for your interest in contributing to DeepWork! This guide will help yo
 - [Prerequisites](#prerequisites)
 - [Development Setup](#development-setup)
 - [Installing DeepWork Locally](#installing-deepwork-locally)
+- [Installing Pre-Release Versions](#installing-pre-release-versions)
 - [Testing Your Local Installation](#testing-your-local-installation)
 - [Running Tests](#running-tests)
 - [Code Quality](#code-quality)
@@ -238,6 +239,32 @@ which deepwork  # Should point to .venv/bin/deepwork
 
 # Check version
 deepwork --version
+```
+
+## Installing Pre-Release Versions
+
+DeepWork uses pre-release versions (e.g., `0.7.0a1`) during development. By default, `uv` and `pip` skip pre-release versions, so you need to opt in explicitly.
+
+### With uv
+
+```bash
+# Install the latest pre-release from PyPI
+uv pip install --prerelease=allow deepwork
+
+# Or pin to a specific pre-release
+uv pip install --prerelease=allow "deepwork==0.7.0a1"
+```
+
+### With pip
+
+```bash
+pip install --pre deepwork
+```
+
+### With uv tool install (global CLI)
+
+```bash
+uv tool install --prerelease=allow deepwork
 ```
 
 ## Testing Your Local Installation
