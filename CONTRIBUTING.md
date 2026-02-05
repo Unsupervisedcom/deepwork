@@ -259,7 +259,7 @@ Since you installed DeepWork in editable mode, the `deepwork` command uses your 
 
 ```bash
 # Run the install command
-deepwork install --platform claude
+deepwork install
 
 # Verify installation
 ls -la .deepwork/
@@ -273,7 +273,7 @@ Any changes you make to the DeepWork source code will be immediately reflected:
 ```bash
 # Make changes in ~/deepwork/src/deepwork/...
 # Then test in your test project
-deepwork install --platform claude
+deepwork install
 
 # Or test the CLI directly
 deepwork --help
@@ -306,7 +306,7 @@ nix run github:Unsupervisedcom/deepwork/feature-branch-name -- --help
 nix develop github:Unsupervisedcom/deepwork/feature-branch-name
 
 # Run a specific command from a feature branch
-nix develop github:Unsupervisedcom/deepwork/feature-branch-name --command deepwork install --platform claude
+nix develop github:Unsupervisedcom/deepwork/feature-branch-name --command deepwork install
 
 # Test against a specific commit
 nix run github:Unsupervisedcom/deepwork/abc1234 -- --version
@@ -321,7 +321,7 @@ For example, to test a branch named `feat/new-parser`:
 
 ```bash
 # Quick test of the CLI
-nix run github:Unsupervisedcom/deepwork/feat/new-parser -- install --platform claude --dry-run
+nix run github:Unsupervisedcom/deepwork/feat/new-parser -- install --dry-run
 
 # Or enter a full development shell to run tests and run a specific test
 nix develop github:Unsupervisedcom/deepwork/feat/new-parser --command pytest tests/unit/core/test_parser.py -v
@@ -466,7 +466,7 @@ mypy src/
 ```bash
 # Create or use a test project
 cd ~/test-project/
-deepwork install --platform claude
+deepwork install
 
 # Verify your changes work as expected
 ```
