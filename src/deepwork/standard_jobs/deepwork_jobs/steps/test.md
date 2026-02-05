@@ -28,10 +28,7 @@ Please describe a specific case you want to run through the workflow - ideally s
 
 1. **Compact the conversation history** - Before invoking the workflow, use the `/compact` command to summarize the conversation so far. This ensures the workflow starts with clean context focused on the test case.
 
-2. **Invoke the new workflow** - Run the first step of the newly created workflow using its slash command:
-   ```
-   /[job_name].[first_step_id]
-   ```
+2. **Start the new workflow** - Begin executing the first step of the newly created workflow.
 
 3. **Complete the full workflow** - Continue through all steps of the workflow until it produces its final output.
 
@@ -121,7 +118,7 @@ Claude: Great, let me compact the conversation and run the workflow on your Janu
 
 /compact
 
-/monthly_report.gather_data
+[Starting the monthly_report workflow...]
 
 [... workflow runs through all steps ...]
 
