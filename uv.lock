@@ -453,7 +453,7 @@ wheels = [
 
 [[package]]
 name = "deepwork"
-version = "0.7.0"
+version = "0.7.0a2"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
