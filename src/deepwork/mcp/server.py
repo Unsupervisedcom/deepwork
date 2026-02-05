@@ -19,6 +19,7 @@ from typing import Any
 
 from fastmcp import FastMCP
 
+from deepwork.mcp.claude_cli import ClaudeCLI
 from deepwork.mcp.quality_gate import QualityGate
 from deepwork.mcp.schemas import (
     AbortWorkflowInput,
@@ -56,9 +57,8 @@ def create_server(
 
     quality_gate: QualityGate | None = None
     if enable_quality_gate:
-        quality_gate = QualityGate(
-            timeout=quality_gate_timeout,
-        )
+        cli = ClaudeCLI(timeout=quality_gate_timeout)
+        quality_gate = QualityGate(cli=cli)
 
     tools = WorkflowTools(
         project_root=project_path,

@@ -1,18 +1,17 @@
 """Quality gate for evaluating step outputs.
 
-The quality gate invokes a review agent (via subprocess) to evaluate
+The quality gate invokes a review agent (via ClaudeCLI) to evaluate
 step outputs against quality criteria.
 """
 
 from __future__ import annotations
 
-import asyncio
-import json
 from pathlib import Path
 from typing import Any
 
 import aiofiles
 
+from deepwork.mcp.claude_cli import ClaudeCLI
 from deepwork.mcp.schemas import QualityCriteriaResult, QualityGateResult
 
 # JSON Schema for quality gate response validation
@@ -50,28 +49,17 @@ class QualityGateError(Exception):
 class QualityGate:
     """Evaluates step outputs against quality criteria.
 
-    Uses a subprocess to invoke a review agent (e.g., Claude CLI) that
-    evaluates outputs and returns structured feedback.
-
-    See doc/reference/calling_claude_in_print_mode.md for details on
-    proper CLI invocation with structured output.
+    Uses ClaudeCLI to invoke a review agent that evaluates outputs
+    and returns structured feedback.
     """
 
-    def __init__(
-        self,
-        timeout: int = 120,
-        *,
-        _test_command: list[str] | None = None,
-    ):
+    def __init__(self, cli: ClaudeCLI | None = None):
         """Initialize quality gate.
 
         Args:
-            timeout: Timeout in seconds for review agent
-            _test_command: Internal testing only - override the subprocess command.
-                          When set, skips adding --json-schema flag (test mock handles it).
+            cli: ClaudeCLI instance. If not provided, a default one is created.
         """
-        self.timeout = timeout
-        self._test_command = _test_command
+        self._cli = cli or ClaudeCLI()
 
     def _build_instructions(self, quality_criteria: list[str]) -> str:
         """Build the system instructions for the review agent.
@@ -149,39 +137,19 @@ You must respond with JSON in this exact structure:
 
         return "\n\n".join(output_sections)
 
-    def _parse_response(self, response_text: str) -> QualityGateResult:
-        """Parse the review agent's response.
-
-        When using --print --output-format json --json-schema, Claude CLI returns
-        a wrapper object with the structured output in the 'structured_output' field.
+    def _parse_result(self, data: dict[str, Any]) -> QualityGateResult:
+        """Parse the structured output into a QualityGateResult.
 
         Args:
-            response_text: Raw response from review agent (JSON wrapper)
+            data: The structured_output dict from ClaudeCLI
 
         Returns:
             Parsed QualityGateResult
 
         Raises:
-            QualityGateError: If response cannot be parsed
+            QualityGateError: If data cannot be interpreted
         """
         try:
-            wrapper = json.loads(response_text.strip())
-
-            # Check for errors in the wrapper
-            if wrapper.get("is_error"):
-                raise QualityGateError(
-                    f"Review agent returned error: {wrapper.get('result', 'Unknown error')}"
-                )
-
-            # Extract structured_output - this is where --json-schema puts the result
-            data = wrapper.get("structured_output")
-            if data is None:
-                raise QualityGateError(
-                    "Review agent response missing 'structured_output' field. "
-                    f"Response was: {response_text[:500]}..."
-                )
-
-            # Parse criteria results
             criteria_results = [
                 QualityCriteriaResult(
                     criterion=cr.get("criterion", ""),
@@ -197,15 +165,10 @@ You must respond with JSON in this exact structure:
                 criteria_results=criteria_results,
             )
 
-        except json.JSONDecodeError as e:
-            raise QualityGateError(
-                f"Failed to parse review agent response as JSON: {e}\n"
-                f"Response was: {response_text[:500]}..."
-            ) from e
         except (ValueError, KeyError) as e:
             raise QualityGateError(
-                f"Failed to extract quality gate result: {e}\n"
-                f"Response was: {response_text[:500]}..."
+                f"Failed to interpret quality gate result: {e}\n"
+                f"Data was: {data}"
             ) from e
 
     async def evaluate(
@@ -235,68 +198,22 @@ You must respond with JSON in this exact structure:
                 criteria_results=[],
             )
 
-        # Build system instructions and payload separately
         instructions = self._build_instructions(quality_criteria)
         payload = await self._build_payload(outputs, project_root)
 
-        # Build command with proper flag ordering for Claude CLI
-        # See doc/reference/calling_claude_in_print_mode.md for details
-        #
-        # Key insight: flags must come BEFORE `-p --` because:
-        # - `-p` expects a prompt argument immediately after
-        # - `--` marks the end of flags, everything after is the prompt
-        # - When piping via stdin, we use `-p --` to read from stdin
-        if self._test_command:
-            # Testing mode: use provided command, add system prompt only
-            full_cmd = self._test_command + ["--system-prompt", instructions]
-        else:
-            # Production mode: use Claude CLI with proper flags
-            schema_json = json.dumps(QUALITY_GATE_RESPONSE_SCHEMA)
-            full_cmd = [
-                "claude",
-                "--print",  # Non-interactive mode
-                "--output-format",
-                "json",  # JSON output wrapper
-                "--system-prompt",
-                instructions,
-                "--json-schema",
-                schema_json,  # Structured output - result in 'structured_output' field
-                "-p",
-                "--",  # Read prompt from stdin
-            ]
+        from deepwork.mcp.claude_cli import ClaudeCLIError
 
         try:
-            # Run review agent with payload piped via stdin
-            process = await asyncio.create_subprocess_exec(
-                *full_cmd,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=str(project_root),
+            data = await self._cli.run(
+                prompt=payload,
+                system_prompt=instructions,
+                json_schema=QUALITY_GATE_RESPONSE_SCHEMA,
+                cwd=project_root,
             )
+        except ClaudeCLIError as e:
+            raise QualityGateError(str(e)) from e
 
-            try:
-                stdout, stderr = await asyncio.wait_for(
-                    process.communicate(input=payload.encode()),
-                    timeout=self.timeout,
-                )
-            except TimeoutError:
-                process.kill()
-                await process.wait()
-                raise QualityGateError(
-                    f"Review agent timed out after {self.timeout} seconds"
-                ) from None
-
-            if process.returncode != 0:
-                raise QualityGateError(
-                    f"Review agent failed with exit code {process.returncode}:\n"
-                    f"stderr: {stderr.decode()}"
-                )
-
-            return self._parse_response(stdout.decode())
-
-        except FileNotFoundError as e:
-            raise QualityGateError("Review agent command not found: claude") from e
+        return self._parse_result(data)
 
 
 class MockQualityGate(QualityGate):

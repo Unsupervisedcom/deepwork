@@ -9,6 +9,7 @@ import asyncio
 import inspect
 from pathlib import Path
 
+from deepwork.mcp.claude_cli import ClaudeCLI
 from deepwork.mcp.quality_gate import MockQualityGate, QualityGate
 from deepwork.mcp.state import StateManager
 from deepwork.mcp.tools import WorkflowTools
@@ -72,6 +73,14 @@ class TestAsyncInterfaceRegression:
                 f"WorkflowTools.{method_name} must be async (coroutine function). "
                 f"This is required for non-blocking MCP tool execution."
             )
+
+    def test_claude_cli_async_methods(self) -> None:
+        """Verify ClaudeCLI methods that must be async remain async."""
+        method = getattr(ClaudeCLI, "run")
+        assert inspect.iscoroutinefunction(method), (
+            "ClaudeCLI.run must be async (coroutine function). "
+            "This is required for non-blocking subprocess execution."
+        )
 
     def test_quality_gate_async_methods(self) -> None:
         """Verify QualityGate methods that must be async remain async."""

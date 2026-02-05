@@ -28,6 +28,7 @@ from pathlib import Path
 
 import pytest
 
+from deepwork.mcp.claude_cli import ClaudeCLI
 from deepwork.mcp.quality_gate import QualityGate
 
 # Skip marker for tests that require real Claude CLI
@@ -82,7 +83,7 @@ class TestRealClaudeIntegration:
         )
 
         # ⚠️  NO _test_command - this uses the REAL Claude CLI
-        gate = QualityGate(timeout=120)
+        gate = QualityGate(cli=ClaudeCLI(timeout=120))
 
         result = await gate.evaluate(
             quality_criteria=[
@@ -116,7 +117,7 @@ class TestRealClaudeIntegration:
         output_file.write_text("Just some random text without any structure.")
 
         # ⚠️  NO _test_command - this uses the REAL Claude CLI
-        gate = QualityGate(timeout=120)
+        gate = QualityGate(cli=ClaudeCLI(timeout=120))
 
         result = await gate.evaluate(
             quality_criteria=[
