@@ -90,29 +90,10 @@ find .deepwork/tmp -type d -empty -delete 2>/dev/null
 
 ### Step 3: Remove Rules Folder (Fully Deprecated)
 
-DeepWork Rules have been completely removed from the system. The `.deepwork/rules/` folder should be deleted.
+DeepWork Rules have been completely removed from the system. Delete the `.deepwork/rules/` folder and all related items:
 
 ```bash
-ls -la .deepwork/rules/ 2>/dev/null || echo "No rules folder (good!)"
-```
-
-**If the folder exists:**
-
-1. **Back up the folder** (in case user wants to reference old rules):
-   ```bash
-   mv .deepwork/rules/ .deepwork/rules.backup/
-   ```
-
-2. **Inform the user** that DeepWork Rules are deprecated and the folder has been backed up
-
-3. **After user confirms** the backup is acceptable, the backup can be deleted later
-
-**Also remove these related items if present:**
-- `.deepwork/tmp/rules/` folder and all contents
-- `.deepwork/jobs/deepwork_rules/` folder (the old rules job)
-- Any `deepwork_rules` job that may have been installed
-
-```bash
+rm -rf .deepwork/rules/ 2>/dev/null
 rm -rf .deepwork/tmp/rules/ 2>/dev/null
 rm -rf .deepwork/jobs/deepwork_rules/ 2>/dev/null
 ```
@@ -171,7 +152,7 @@ git status
 - Legacy job skill folders are removed from `.claude/skills/` and `.gemini/skills/` (folders matching job names or `jobname.*` patterns)
 - The `deepwork` skill folder in `.claude/skills/deepwork/` still exists after cleanup
 - `.deepwork/tmp/` contents are cleaned appropriately
-- `.deepwork/rules/` folder is backed up and removed (DeepWork Rules fully deprecated)
+- `.deepwork/rules/` folder is removed (DeepWork Rules fully deprecated)
 - `.deepwork/tmp/rules/` folder is removed
 - `.deepwork/jobs/deepwork_rules/` folder is removed if present
 - `.deepwork/config.yml` uses current version format
