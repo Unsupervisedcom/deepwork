@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import json
-import shutil
-import sys
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
@@ -535,9 +533,8 @@ class ClaudeAdapter(AgentAdapter):
         Register the DeepWork MCP server in .mcp.json at project root.
 
         Claude Code reads MCP server configurations from .mcp.json (project scope),
-        not from settings.json. This method detects the full path to the deepwork
-        executable to ensure the MCP server can be invoked regardless of PATH
-        configuration when Claude Code starts.
+        not from settings.json. This method assumes the `deepwork` command is
+        available in the user's PATH.
 
         Args:
             project_path: Path to project root
@@ -564,21 +561,11 @@ class ClaudeAdapter(AgentAdapter):
             existing_config["mcpServers"] = {}
 
         # Build the new MCP server config
-        deepwork_path = shutil.which("deepwork")
-
-        if deepwork_path:
-            # Use the absolute path to deepwork
-            new_server_config = {
-                "command": deepwork_path,
-                "args": ["serve", "--path", "."],
-            }
-        else:
-            # Fallback: use Python module invocation
-            # This works when deepwork is installed in the current Python environment
-            new_server_config = {
-                "command": sys.executable,
-                "args": ["-m", "deepwork.cli.main", "serve", "--path", "."],
-            }
+        # Assume deepwork is available in PATH
+        new_server_config = {
+            "command": "deepwork",
+            "args": ["serve", "--path", "."],
+        }
 
         # Check if already registered with same config
         existing_server = existing_config["mcpServers"].get("deepwork", {})

@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "deepwork": {
-      "command": "/Users/noah/Documents/GitHub/deep-work/.venv/bin/deepwork",
+      "command": "deepwork",
       "args": [
         "serve",
         "--path",
