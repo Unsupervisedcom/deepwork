@@ -150,8 +150,7 @@
         },
         "outputs": {
           "type": "array",
-          "minItems": 1,
-          "description": "List of output files/directories produced by this step",
+          "description": "List of output files/directories produced by this step. May be empty for cleanup or validation steps.",
           "items": {
             "$ref": "#/$defs/stepOutput"
           }

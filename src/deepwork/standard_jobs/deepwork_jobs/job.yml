@@ -206,11 +206,10 @@ steps:
     name: "Clean Up Errata"
     description: "Removes obsolete files and folders from prior DeepWork versions, including old skill directories, temp files, and deprecated configurations."
     instructions_file: steps/errata.md
+    outputs: []
     inputs:
       - file: .deepwork/jobs/
         from_step: fix_jobs
-    outputs:
-      - repair_summary.md
     dependencies:
       - fix_settings
       - fix_jobs
@@ -221,6 +220,5 @@ steps:
       - "**Rules Folder Removed**: Is `.deepwork/rules/` folder backed up and removed (fully deprecated)?"
       - "**Rules Job Removed**: Is `.deepwork/jobs/deepwork_rules/` removed if present?"
       - "**Config Version Updated**: Is `.deepwork/config.yml` using current version format?"
-      - "**Summary Provided**: Is a repair_summary.md file created documenting all changes made?"
       - "**DeepWork Re-installed**: Was `deepwork install` run after cleanup, and does it complete without errors?"
       - "**Git Status Clean**: Are changes ready to be committed (no untracked garbage files)?"
