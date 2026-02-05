@@ -126,18 +126,6 @@ python -c "import json; json.load(open('.claude/settings.json'))"
 
 If there are syntax errors, fix them before proceeding.
 
-## Quality Criteria
-
-- DeepWork job `Skill(...)` permissions are removed (only those matching `.deepwork/jobs/`)
-- Non-DeepWork skills are preserved (skills not matching any job in `.deepwork/jobs/`)
-- All DeepWork Rules hooks and permissions are removed
-- Duplicate hook entries are consolidated
-- Hardcoded user-specific paths are removed
-- Deprecated `deepwork hook` commands are removed
-- The settings.json file is valid JSON
-- A backup was created before modifications
-- When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
-
 ## Example Before/After
 
 ### Before (with gunk):
@@ -184,5 +172,6 @@ If there are syntax errors, fix them before proceeding.
 ## Important Notes
 
 1. **Don't remove non-DeepWork permissions** - Keep permissions like `WebSearch`, `Read(...)`, `Bash(...)` that aren't related to old DeepWork skills
-2. **Be conservative** - If unsure whether something is legacy, ask the user
-3. **Document changes** - Note what was removed for the final summary
+2. **Preserve `make_new_job.sh`** - Keep any `Bash(...)` permission referencing `make_new_job.sh` (e.g., `Bash(.deepwork/jobs/deepwork_jobs/scripts/make_new_job.sh *)`) - this is a current DeepWork script
+3. **Be conservative** - If unsure whether something is legacy, ask the user
+4. **Document changes** - Note what was removed for the final summary

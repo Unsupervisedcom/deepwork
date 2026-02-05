@@ -172,6 +172,8 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Are there any quality checks or validation needed?
    - What makes a good vs. bad output for this step?
 
+   **Important**: Quality criteria belong in the `quality_criteria` field of job.yml, NOT in the step details. When skills are generated, quality criteria are automatically included in the output. Do not duplicate them in step instructions or details—this causes redundancy and confusion.
+
 6. **Agent Delegation** (optional)
    - Should this step be executed by a specific agent type?
    - Use the `agent` field when the step should run in a forked context with a specific agent

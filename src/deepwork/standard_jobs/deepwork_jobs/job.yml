@@ -176,6 +176,7 @@ steps:
     quality_criteria:
       - "**DeepWork Skills Removed**: Are `Skill(...)` entries matching jobs in `.deepwork/jobs/` removed?"
       - "**Non-DeepWork Skills Preserved**: Are skills NOT matching DeepWork jobs left intact?"
+      - "**make_new_job.sh Preserved**: Is the `Bash(...)` permission for `make_new_job.sh` preserved (if present)?"
       - "**Rules Hooks Removed**: Are all DeepWork Rules hooks and permissions removed?"
       - "**Duplicate Hooks Removed**: Are duplicate hook entries consolidated or removed?"
       - "**Hardcoded Paths Removed**: Are user-specific hardcoded paths (like `/Users/*/...`) removed?"

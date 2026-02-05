@@ -88,17 +88,6 @@ The feedback loop should continue until the user explicitly indicates satisfacti
 
 If the user provides more feedback, address it and ask again. Don't assume satisfaction without explicit confirmation.
 
-## Quality Criteria
-
-- User was informed the workflow is ready and asked what to test it on
-- The new workflow was actually invoked and run to completion
-- Output was critiqued and up to 3 top issues were identified
-- Each identified issue was presented to the user with a specific question
-- Confirmed corrections were applied
-- User was asked for additional feedback after corrections
-- Iteration continued until user confirmed satisfaction
-- When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
-
 ## Example Dialog
 
 ```
