@@ -165,7 +165,9 @@ def sync_skills(project_path: Path) -> SyncResult:
         console.print("[bold yellow]Warning: Some jobs failed to parse:[/bold yellow]")
         for job_name, error in failed_jobs:
             console.print(f"  • {job_name}: {error}")
-        console.print("[dim]The /deepwork skill is installed. Fix the job errors and run 'deepwork sync' again.[/dim]")
+        console.print(
+            "[dim]The /deepwork skill is installed. Fix the job errors and run 'deepwork sync' again.[/dim]"
+        )
 
     # Collect hooks from jobs (hooks collection is independent of job.yml parsing)
     job_hooks_list = collect_job_hooks(jobs_dir)
@@ -174,7 +176,9 @@ def sync_skills(project_path: Path) -> SyncResult:
 
     # Sync hooks and permissions for each platform
     for adapter in platform_adapters:
-        console.print(f"\n[yellow]→[/yellow] Syncing hooks and permissions to {adapter.display_name}...")
+        console.print(
+            f"\n[yellow]→[/yellow] Syncing hooks and permissions to {adapter.display_name}..."
+        )
 
         # NOTE: Job skills (meta-skills and step skills) are no longer generated.
         # The MCP server now handles workflow orchestration directly.

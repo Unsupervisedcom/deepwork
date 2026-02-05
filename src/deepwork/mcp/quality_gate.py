@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any
 
 import aiofiles
-import jsonschema
 
 from deepwork.mcp.schemas import QualityCriteriaResult, QualityGateResult
 

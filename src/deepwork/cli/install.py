@@ -364,9 +364,7 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     platform_names = ", ".join(a.display_name for a in detected_adapters)
 
     if sync_result.has_warnings:
-        console.print(
-            "[bold yellow]⚠ You should repair your DeepWork install[/bold yellow]"
-        )
+        console.print("[bold yellow]⚠ You should repair your DeepWork install[/bold yellow]")
         console.print()
         console.print("[bold]To fix issues:[/bold]")
         console.print("  1. Start your agent CLI (ex. [cyan]claude[/cyan] or [cyan]gemini[/cyan])")
