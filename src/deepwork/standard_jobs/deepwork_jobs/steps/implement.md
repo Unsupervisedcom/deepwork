@@ -120,11 +120,3 @@ Before marking this step complete, ensure:
 ## Note: Workflow Availability
 
 Once the job.yml and step instruction files are created, the workflow is immediately available through the DeepWork MCP server. The MCP server reads job definitions directly from `.deepwork/jobs/` - no separate sync or installation step is required.
-
-## Quality Criteria
-
-- All instruction files are complete (not stubs)
-- Instructions are specific and actionable
-- Output examples are provided in each instruction file
-- Quality criteria defined for each step
-- Steps with user inputs explicitly use "ask structured questions" phrasing

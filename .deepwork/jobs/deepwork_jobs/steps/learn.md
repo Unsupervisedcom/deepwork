@@ -251,20 +251,6 @@ When adding entries to AGENTS.md, prefer these patterns:
 - Configuration requires these fields: name, version, ...
 ```
 
-## Quality Criteria
-
-- Conversation has been analyzed for job executions
-- Points of confusion and inefficiency are identified
-- Learnings are correctly classified (generalizable vs bespoke)
-- Job instructions updated for generalizable improvements
-- Instructions are concise - no redundancy or unnecessary verbosity
-- Shared/lengthy content extracted into referenced files where appropriate
-- AGENTS.md created/updated with bespoke learnings
-- File references used instead of duplicating content
-- AGENTS.md is in the correct folder (the deepest common folder for the topic)
-- Job version and changelog updated if instructions were modified
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
-
 ## Example Dialog
 
 ```

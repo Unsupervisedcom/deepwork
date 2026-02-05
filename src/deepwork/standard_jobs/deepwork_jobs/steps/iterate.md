@@ -159,17 +159,6 @@ Example recap format:
 Future runs should produce reports with better visual design and clearer summaries, reducing the need for post-generation corrections.
 ```
 
-## Quality Criteria
-
-- Conversation history from test step was analyzed for issues
-- Process inefficiencies were identified and addressed
-- Step instructions were updated to improve clarity
-- Quality criteria were updated to match user expectations
-- Alternative tools were considered where relevant
-- Job version and changelog were updated
-- A clear recap of improvements was provided
-- When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
-
 ## Example Dialog
 
 ```

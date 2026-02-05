@@ -18,6 +18,30 @@ ls -la .deepwork/jobs/
 
 For each job directory, you'll need to check and potentially fix the `job.yml` file.
 
+### Step 1.5: Process Jobs in Parallel
+
+**For each job** (except `deepwork_jobs` which should be updated via `deepwork install`), kick off a sub-agent to audit and repair that job's `job.yml` file. The sub-agent should:
+
+1. Read the job's `job.yml` file
+2. Check for and fix all issues described in Steps 2-6 below
+3. Validate the YAML is still valid after changes
+4. Report what was changed
+
+**Run sub-agents in parallel** - one for each job to speed up the process.
+
+**Example prompt for sub-agent:**
+```
+Audit and repair the job at `.deepwork/jobs/[job_name]/job.yml`:
+1. Remove any `exposed: true` fields from steps
+2. Migrate `stop_hooks` to `hooks.after_agent` format
+3. Remove references to deleted steps (like `review_job_spec`)
+4. Fix orphaned steps by adding them to workflows
+5. Bump version and add changelog entry if changes were made
+6. Validate YAML syntax
+
+Report what changes were made.
+```
+
 ### Step 2: Remove `exposed` Field
 
 The `exposed` field on steps no longer has any effect in MCP-based DeepWork. Steps are now only accessible through workflows.
@@ -141,16 +165,6 @@ changelog:
   - version: "1.0.1"
     changes: "Migrated to current DeepWork format; removed deprecated fields"
 ```
-
-## Quality Criteria
-
-- All `exposed: true` fields are removed or noted
-- All `stop_hooks` are migrated to `hooks.after_agent` format
-- References to removed steps (like `review_job_spec`) are updated
-- Jobs with no workflows get a single workflow (same name as job) containing all steps
-- Jobs with existing workflows get individual workflows for each orphaned step (same name as step)
-- All job.yml files are valid YAML
-- When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
 
 ## Common Issues and Fixes
 

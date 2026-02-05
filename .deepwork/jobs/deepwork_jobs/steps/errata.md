@@ -147,18 +147,6 @@ git status
 - No new untracked files should appear (unless intentionally created)
 - Backup files (`.backup`) should be in `.gitignore` or cleaned up
 
-## Quality Criteria
-
-- Legacy job skill folders are removed from `.claude/skills/` and `.gemini/skills/` (folders matching job names or `jobname.*` patterns)
-- The `deepwork` skill folder in `.claude/skills/deepwork/` still exists after cleanup
-- `.deepwork/tmp/` contents are cleaned appropriately
-- `.deepwork/rules/` folder is removed (DeepWork Rules fully deprecated)
-- `.deepwork/tmp/rules/` folder is removed
-- `.deepwork/jobs/deepwork_rules/` folder is removed if present
-- `.deepwork/config.yml` uses current version format
-- Git status shows clean changes ready to commit
-- When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
-
 ## Important Notes
 
 1. **Always back up before deleting** - User data is irreplaceable
