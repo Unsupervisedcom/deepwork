@@ -225,49 +225,53 @@ After gathering information about all steps:
    - Job description (detailed multi-line explanation)
    - Version number (start with 1.0.0)
 
-### Step 4: Define Quality Validation (Stop Hooks)
+### Step 4: Define Quality Validation Hooks
 
-For each step, consider whether it would benefit from **quality validation loops**. Stop hooks allow the AI agent to iteratively refine its work until quality criteria are met.
+For each step, consider whether it would benefit from **quality validation loops**. Quality hooks allow the AI agent to iteratively refine its work until quality criteria are met.
 
 **Ask structured questions about quality validation:**
 - "Are there specific quality criteria that must be met for this step?"
 - "Would you like the agent to validate its work before completing?"
 - "What would make you send the work back for revision?"
 
-**Stop hooks are particularly valuable for:**
+**Quality hooks are particularly valuable for:**
 - Steps with complex outputs that need multiple checks
 - Steps where quality is critical (final deliverables)
 - Steps with subjective quality criteria that benefit from AI self-review
 
-**Three types of stop hooks are supported:**
+**Three types of hooks are supported:**
 
 1. **Inline Prompt** (`prompt`) - Best for simple quality criteria
    ```yaml
-   stop_hooks:
-     - prompt: |
-         Verify the output meets these criteria:
-         1. Contains at least 5 competitors
-         2. Each competitor has a description
-         3. Selection rationale is clear
+   hooks:
+     after_agent:
+       - prompt: |
+           Verify the output meets these criteria:
+           1. Contains at least 5 competitors
+           2. Each competitor has a description
+           3. Selection rationale is clear
    ```
 
 2. **Prompt File** (`prompt_file`) - For detailed/reusable criteria
    ```yaml
-   stop_hooks:
-     - prompt_file: hooks/quality_check.md
+   hooks:
+     after_agent:
+       - prompt_file: hooks/quality_check.md
    ```
 
 3. **Script** (`script`) - For programmatic validation (tests, linting)
    ```yaml
-   stop_hooks:
-     - script: hooks/run_tests.sh
+   hooks:
+     after_agent:
+       - script: hooks/run_tests.sh
    ```
 
 **Multiple hooks can be combined:**
 ```yaml
-stop_hooks:
-  - script: hooks/lint_output.sh
-  - prompt: "Verify the content is comprehensive and well-organized"
+hooks:
+  after_agent:
+    - script: hooks/lint_output.sh
+    - prompt: "Verify the content is comprehensive and well-organized"
 ```
 
 **Encourage prompt-based hooks** - They leverage the AI's ability to understand context and make nuanced quality judgments. Script hooks are best for objective checks (syntax, format, tests).
@@ -414,7 +418,7 @@ Claude: Great! Creating the job.yml specification now...
 - .deepwork/jobs/competitive_research/job.yml
 
 **Next step:**
-Run `/deepwork_jobs.implement` to generate step instruction files and sync commands.
+Implement the job to generate step instruction files.
 ```
 
 ## Important Guidelines
@@ -454,5 +458,5 @@ The complete YAML specification file (example shown in Step 5 above).
 After creating the file:
 1. Inform the user that the specification is complete
 2. Recommend that they review the job.yml file
-3. Tell them to run `/deepwork_jobs.implement` next to generate step instructions
+3. Tell them the next step is to implement the job (generate step instruction files)
 

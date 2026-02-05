@@ -91,7 +91,6 @@ steps:
     dependencies:
       - define
     quality_criteria:
-      - "**Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?"
       - "**Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?"
       - "**Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?"
       - "**Output Examples**: Does each instruction file show what good output looks like?"
@@ -114,7 +113,7 @@ steps:
       - implement
     quality_criteria:
       - "**User Informed**: Did the agent explain the workflow is ready and ask what to test it on?"
-      - "**Workflow Invoked**: Was the new workflow actually run on the user's test case?"
+      - "**Workflow Invoked**: Was the new workflow actually run on the user's test case via MCP?"
       - "**Output Critiqued**: Did the agent identify up to 3 top issues with the output?"
       - "**User Feedback Gathered**: Did the agent ask the user about each issue and gather additional feedback?"
       - "**Corrections Made**: Were all requested corrections applied to the output?"

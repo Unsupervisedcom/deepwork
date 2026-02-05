@@ -2,34 +2,13 @@
 
 ## Objective
 
-Generate the DeepWork job directory structure and instruction files for each step based on the `job.yml` specification from the define step.
+Generate step instruction files for each step based on the `job.yml` specification from the define step.
 
 ## Task
 
-Read the `job.yml` specification file and create all the necessary files to make the job functional, including directory structure and step instruction files. Then sync the commands to make them available.
+Read the `job.yml` specification file created by the define step and generate comprehensive instruction files for each step. The define step has already created the job directory structure.
 
-### Step 1: Create Directory Structure Using Script
-
-Run the `make_new_job.sh` script to create the standard directory structure:
-
-```bash
-.deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
-```
-
-This creates:
-- `.deepwork/jobs/[job_name]/` - Main job directory
-- `.deepwork/jobs/[job_name]/steps/` - Step instruction files
-- `.deepwork/jobs/[job_name]/hooks/` - Custom validation scripts (with .gitkeep)
-- `.deepwork/jobs/[job_name]/templates/` - Example file formats (with .gitkeep)
-- `.deepwork/jobs/[job_name]/AGENTS.md` - Job management guidance
-
-**Note**: If the directory already exists (e.g., job.yml was created by define step), you can skip this step or manually create the additional directories:
-```bash
-mkdir -p .deepwork/jobs/[job_name]/hooks .deepwork/jobs/[job_name]/templates
-touch .deepwork/jobs/[job_name]/hooks/.gitkeep .deepwork/jobs/[job_name]/templates/.gitkeep
-```
-
-### Step 2: Read and Validate the Specification
+### Step 1: Read and Validate the Specification
 
 1. **Locate the job.yml file**
    - Read `.deepwork/jobs/[job_name]/job.yml` from the define step
@@ -46,7 +25,7 @@ touch .deepwork/jobs/[job_name]/hooks/.gitkeep .deepwork/jobs/[job_name]/templat
    - List of all steps with their details
    - Understand the workflow structure
 
-### Step 3: Generate Step Instruction Files
+### Step 2: Generate Step Instruction Files
 
 For each step in the job.yml, create a comprehensive instruction file at `.deepwork/jobs/[job_name]/steps/[step_id].md`.
 
@@ -71,11 +50,11 @@ For each step in the job.yml, create a comprehensive instruction file at `.deepw
 6. **Align with stop hooks** - If the step has `stop_hooks` defined, ensure the quality criteria in the instruction file match the validation criteria in the hooks
 7. **Ask structured questions** - When a step has user inputs, the instructions MUST explicitly tell the agent to "ask structured questions" using the AskUserQuestion tool to gather that information. Never use generic phrasing like "ask the user" - always use "ask structured questions"
 
-### Handling Stop Hooks
+### Handling Quality Hooks
 
-If a step in the job.yml has `stop_hooks` defined, the generated instruction file should:
+If a step in the job.yml has `hooks.after_agent` defined, the generated instruction file should:
 
-1. **Mirror the quality criteria** - The "Quality Criteria" section should match what the stop hooks will validate
+1. **Mirror the quality criteria** - The "Quality Criteria" section should match what the hooks will validate
 2. **Be explicit about success** - Help the agent understand when the step is truly complete
 3. **Include the promise pattern** - Mention that `<promise>✓ Quality Criteria Met</promise>` should be included when criteria are met
 
@@ -83,12 +62,13 @@ If a step in the job.yml has `stop_hooks` defined, the generated instruction fil
 ```yaml
 - id: research_competitors
   name: "Research Competitors"
-  stop_hooks:
-    - prompt: |
-        Verify the research meets criteria:
-        1. Each competitor has at least 3 data points
-        2. Sources are cited
-        3. Information is current (within last year)
+  hooks:
+    after_agent:
+      - prompt: |
+          Verify the research meets criteria:
+          1. Each competitor has at least 3 data points
+          2. Sources are cited
+          3. Information is current (within last year)
 ```
 
 **The instruction file should include:**
@@ -109,9 +89,11 @@ Step instructions can include additional `.md` files in the `steps/` directory f
 
 See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for detailed documentation and examples.
 
-### Step 4: Verify job.yml Location
+### Step 3: Verify Files
 
-Verify that `job.yml` is in the correct location at `.deepwork/jobs/[job_name]/job.yml`. The define step should have created it. If for some reason it's not there, you may need to create or move it.
+Verify that all files are in their correct locations:
+- `job.yml` at `.deepwork/jobs/[job_name]/job.yml` (created by define step)
+- Step instruction files at `.deepwork/jobs/[job_name]/steps/[step_id].md`
 
 ## Example Implementation
 
@@ -135,9 +117,12 @@ Before marking this step complete, ensure:
 - [ ] All step instruction files created
 - [ ] Each instruction file is complete and actionable
 
+## Note: Workflow Availability
+
+Once the job.yml and step instruction files are created, the workflow is immediately available through the DeepWork MCP server. The MCP server reads job definitions directly from `.deepwork/jobs/` - no separate sync or installation step is required.
+
 ## Quality Criteria
 
-- Job directory structure is correct
 - All instruction files are complete (not stubs)
 - Instructions are specific and actionable
 - Output examples are provided in each instruction file

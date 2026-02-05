@@ -233,13 +233,6 @@ If instruction files were modified:
      changes: "Improved [step] instructions based on execution learnings: [brief description]"
    ```
 
-### Step 7: Sync Skills
-
-**Run deepwork sync** (if instructions were modified)
-```bash
-deepwork sync
-```
-
 ## File Reference Patterns
 
 When adding entries to AGENTS.md, prefer these patterns:
@@ -269,12 +262,13 @@ When adding entries to AGENTS.md, prefer these patterns:
 - AGENTS.md created/updated with bespoke learnings
 - File references used instead of duplicating content
 - AGENTS.md is in the correct folder (the deepest common folder for the topic)
+- Job version and changelog updated if instructions were modified
 - When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
 
 ## Example Dialog
 
 ```
-User: /deepwork_jobs.learn
+User: [Invokes the learn workflow via MCP]
 
 Claude: I'll analyze this conversation for learnings from DeepWork job executions.
 
@@ -323,8 +317,6 @@ I found the following job executions:
    ```
 
 3. Updated job.yml version to 1.0.1 with changelog entry
-
-4. Ran `deepwork sync`
 
 **Summary**
 

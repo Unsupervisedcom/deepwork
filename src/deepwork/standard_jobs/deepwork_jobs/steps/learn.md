@@ -268,7 +268,7 @@ When adding entries to AGENTS.md, prefer these patterns:
 ## Example Dialog
 
 ```
-User: /deepwork_jobs.learn
+User: [Invokes the learn workflow via MCP]
 
 Claude: I'll analyze this conversation for learnings from DeepWork job executions.
 

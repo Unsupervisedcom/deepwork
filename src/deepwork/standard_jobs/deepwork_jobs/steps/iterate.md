@@ -210,9 +210,7 @@ I identified the following issues from the test run:
 - Version bumped to 1.0.1
 - Added changelog: "Improved visual design guidance and audience-appropriate writing based on test feedback"
 
-Running `deepwork sync`...
-
-Done! The workflow has been updated.
+Done! The workflow has been updated. Changes are immediately available through the MCP server.
 
 ### Expected Impact
 

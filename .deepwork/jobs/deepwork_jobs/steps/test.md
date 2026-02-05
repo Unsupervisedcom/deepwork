@@ -26,14 +26,11 @@ Please describe a specific case you want to run through the workflow - ideally s
 
 ### Step 2: Prepare and Run the Workflow
 
-1. **Compact the conversation history** - Before invoking the workflow, use the `/compact` command to summarize the conversation so far. This ensures the workflow starts with clean context focused on the test case.
+1. **Prepare clean context** - Before invoking the workflow, consider compacting the conversation history (e.g., using `/compact` in Claude Code) to ensure the workflow starts with clean context focused on the test case.
 
-2. **Invoke the new workflow** - Run the first step of the newly created workflow using its slash command:
-   ```
-   /[job_name].[first_step_id]
-   ```
+2. **Start the new workflow** - Use `start_workflow` through the DeepWork MCP server with the job name and workflow name to begin executing the workflow.
 
-3. **Complete the full workflow** - Continue through all steps of the workflow until it produces its final output.
+3. **Complete the full workflow** - Continue through all steps of the workflow until it produces its final output. Use `finished_step` to progress through each step.
 
 4. **Note any issues during execution** - Pay attention to:
    - Confusion or ambiguity in instructions
@@ -94,7 +91,6 @@ If the user provides more feedback, address it and ask again. Don't assume satis
 ## Quality Criteria
 
 - User was informed the workflow is ready and asked what to test it on
-- Conversation was compacted before running the workflow
 - The new workflow was actually invoked and run to completion
 - Output was critiqued and up to 3 top issues were identified
 - Each identified issue was presented to the user with a specific question
@@ -117,11 +113,9 @@ What would you like to use it on for the first test run? Please describe a speci
 
 User: Let's do the January 2026 engineering report, focusing on deployment frequency and incident response times.
 
-Claude: Great, let me compact the conversation and run the workflow on your January 2026 engineering report.
+Claude: Great, let me run the workflow on your January 2026 engineering report.
 
-/compact
-
-/monthly_report.gather_data
+[Starting the monthly_report workflow via MCP...]
 
 [... workflow runs through all steps ...]
 
