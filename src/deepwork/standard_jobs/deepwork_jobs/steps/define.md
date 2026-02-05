@@ -31,60 +31,6 @@ Start by asking structured questions to understand what the user wants to accomp
    - What are the distinct stages from start to finish?
    - Are there any dependencies between phases?
 
-### Step 1.5: Detect Document-Oriented Workflows
-
-**Check for document-focused patterns** in the user's description:
-- Keywords: "report", "summary", "document", "create", "monthly", "quarterly", "for stakeholders", "for leadership"
-- Final deliverable is a specific document (e.g., "AWS spending report", "competitive analysis", "sprint summary")
-- Recurring documents with consistent structure
-
-**If a document-oriented workflow is detected:**
-
-1. Inform the user: "This workflow produces a specific document type. I recommend defining a doc spec first to ensure consistent quality."
-
-2. Ask structured questions to understand if they want to:
-   - Create a doc spec for this document
-   - Use an existing doc spec (if any exist in `.deepwork/doc_specs/`)
-   - Skip doc spec and proceed with simple outputs
-
-### Step 1.6: Define the Doc Spec (if needed)
-
-When creating a doc spec, gather the following information:
-
-1. **Document Identity**
-   - What is the document called? (e.g., "Monthly AWS Spending Report")
-   - Brief description of its purpose
-   - Where should these documents be stored? (path patterns like `finance/aws-reports/*.md`)
-
-2. **Audience and Context**
-   - Who reads this document? (target audience)
-   - How often is it produced? (frequency)
-
-3. **Quality Criteria** (3-5 criteria, each with name and description)
-
-   **Important**: Doc spec quality criteria define requirements for the **output document itself**, not the process of creating it. Focus on what the finished document must contain or achieve.
-
-   Examples for a spending report:
-   - **Visualization**: Must include charts showing spend breakdown by service
-   - **Variance Analysis**: Must compare current month against previous with percentages
-   - **Action Items**: Must include recommended cost optimization actions
-
-   **Note**: When a doc spec is created for a step's output, the step should generally NOT have separate `quality_criteria` in the job.yml. The doc spec's criteria cover output quality. Only add step-level quality_criteria if there are essential process requirements (e.g., "must use specific tool"), and minimize these when possible.
-
-4. **Document Structure**
-   - What sections should it have?
-   - Any required elements (tables, charts, summaries)?
-
-### Step 1.7: Create the doc spec File (if needed)
-
-Create the doc spec file at `.deepwork/doc_specs/[doc_spec_name].md`:
-
-**Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/doc_spec.md.template` for the standard structure.
-
-**Complete example**: See `.deepwork/doc_specs/job_spec.md` for a fully worked example (the doc spec for job.yml files).
-
-After creating the doc spec, proceed to Step 2 with the doc spec reference for the final step's output.
-
 ### Step 2: Define Each Step
 
 For each major phase they mentioned, ask structured questions to gather details:
@@ -106,8 +52,6 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Where should each output be saved? (filename/path)
    - Should outputs be organized in subdirectories? (e.g., `reports/`, `data/`, `drafts/`)
    - Will other steps need this output?
-   - **Does this output have a doc spec?** If a doc spec was created in Step 1.6/1.7, reference it for the appropriate output
-
    #### Work Product Storage Guidelines
 
    **Key principle**: Job outputs belong in the main repository directory structure, not in dot-directories. The `.deepwork/` directory is for job definitions and configuration only.
@@ -188,18 +132,6 @@ For each major phase they mentioned, ask structured questions to gather details:
    ```
 
 **Note**: You're gathering this information to understand what instructions will be needed, but you won't create the instruction files yet - that happens in the `implement` step.
-
-#### Doc Spec-Aware Output Format
-
-When a step produces a document with a doc spec reference, use this format in job.yml:
-
-```yaml
-outputs:
-  - file: reports/monthly_spending.md
-    doc_spec: .deepwork/doc_specs/monthly_aws_report.md
-```
-
-The doc spec's quality criteria will automatically be included in the generated skill, ensuring consistent document quality.
 
 ### Capability Considerations
 
@@ -298,8 +230,6 @@ This creates:
 **Then create the job.yml file** at `.deepwork/jobs/[job_name]/job.yml`
 
 (Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`)
-
-**Doc Spec**: See `.deepwork/doc_specs/job_spec.md` for the complete specification with quality criteria.
 
 **Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.template` for the standard structure.
 

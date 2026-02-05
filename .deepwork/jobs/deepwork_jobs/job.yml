@@ -58,12 +58,6 @@ changelog:
     changes: "Removed implementation_summary and learning_summary outputs; simplified step outputs"
   - version: "0.5.0"
     changes: "Standardized on 'ask structured questions' phrasing for user input; Updated quality criteria hooks to verify phrase usage; Added guidance in implement.md to use phrase in generated instructions"
-  - version: "0.6.0"
-    changes: "Added doc spec support; define.md now detects document-oriented workflows and guides doc spec creation; learn.md now identifies and applies doc spec-related improvements"
-  - version: "0.7.0"
-    changes: "Added job.yml doc spec; define step now outputs job.yml with doc_spec reference for quality validation"
-  - version: "0.8.0"
-    changes: "Added review_job_spec step between define and implement for doc spec-based quality validation using sub-agent review"
   - version: "0.9.0"
     changes: "Improved skill descriptions with third-person voice and 'Use when...' triggers for better discoverability"
 
@@ -76,8 +70,7 @@ steps:
       - name: job_purpose
         description: "What complex task or workflow are you trying to accomplish?"
     outputs:
-      - file: job.yml
-        doc_spec: .deepwork/doc_specs/job_spec.md
+      - job.yml
     dependencies: []
   - id: implement
     name: "Implement Job Steps"
@@ -158,8 +151,6 @@ steps:
       - "**Instructions Improved**: Were job instructions updated to address identified issues?"
       - "**Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?"
       - "**Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?"
-      - "**doc spec Reviewed (if applicable)**: For jobs with doc spec outputs, were doc spec-related learnings identified?"
-      - "**doc spec Updated (if applicable)**: Were doc spec files updated with improved quality criteria or structure?"
       - "**Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?"
       - "**File References Used**: Do AGENTS.md entries reference other files where appropriate?"
       - "**Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?"
