@@ -37,24 +37,38 @@ validate_job_name() {
 # Main script
 main() {
     if [[ $# -lt 1 ]]; then
-        echo "Usage: $0 <job_name>"
+        echo "Usage: $0 <job_name> [--global]"
         echo ""
         echo "Creates the directory structure for a new DeepWork job."
         echo ""
         echo "Arguments:"
         echo "  job_name    Name of the job (lowercase, underscores allowed)"
+        echo "  --global    Create the job in global location (~/.deepwork/jobs)"
         echo ""
         echo "Example:"
         echo "  $0 competitive_research"
+        echo "  $0 competitive_research --global"
         exit 1
     fi
 
     local job_name="$1"
+    local is_global=false
+    
+    # Check for --global flag
+    if [[ $# -gt 1 && "$2" == "--global" ]]; then
+        is_global=true
+    fi
+    
     validate_job_name "$job_name"
 
-    # Determine the base path - look for .deepwork directory
+    # Determine the base path
     local base_path
-    if [[ -d ".deepwork/jobs" ]]; then
+    if [[ "$is_global" == true ]]; then
+        # Create in global location
+        base_path="$HOME/.deepwork/jobs"
+        mkdir -p "$base_path"
+        info "Creating global job in $base_path"
+    elif [[ -d ".deepwork/jobs" ]]; then
         base_path=".deepwork/jobs"
     elif [[ -d "../.deepwork/jobs" ]]; then
         base_path="../.deepwork/jobs"

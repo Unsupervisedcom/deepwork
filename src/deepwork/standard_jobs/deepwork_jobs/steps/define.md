@@ -12,6 +12,17 @@ Guide the user through defining a job specification by asking structured questio
 
 The output of this step is **only** the `job.yml` file - a complete specification of the workflow. The actual step instruction files will be created in the next step (`implement`).
 
+### Step 0.5: Determine Job Scope (Local or Global)
+
+Before starting the workflow definition, ask the user where they want this job to be installed:
+
+**Ask structured questions:**
+- "Where would you like this job to be installed?"
+  - **Local** - Available only in this project (stored in `.deepwork/jobs/`)
+  - **Global** - Available across all projects with DeepWork installed (stored in `~/.deepwork/jobs/`)
+
+**Store this decision** to use later when creating the job directory. Most users will want local jobs (project-specific workflows), but global jobs are useful for workflows that apply across many projects (e.g., generic documentation tasks, code review processes).
+
 ### Step 1: Understand the Job Purpose
 
 Start by asking structured questions to understand what the user wants to accomplish:

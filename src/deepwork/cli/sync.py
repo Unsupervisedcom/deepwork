@@ -11,6 +11,7 @@ from deepwork.core.generator import SkillGenerator
 from deepwork.core.hooks_syncer import collect_job_hooks, sync_hooks_to_platform
 from deepwork.core.parser import parse_job_definition
 from deepwork.utils.fs import ensure_dir
+from deepwork.utils.paths import discover_all_jobs_dirs
 from deepwork.utils.yaml_utils import load_yaml
 
 console = Console()
@@ -80,14 +81,19 @@ def sync_skills(project_path: Path) -> None:
 
     console.print("[bold cyan]Syncing DeepWork Skills[/bold cyan]\n")
 
-    # Discover jobs
-    jobs_dir = deepwork_dir / "jobs"
-    if not jobs_dir.exists():
-        job_dirs = []
-    else:
-        job_dirs = [d for d in jobs_dir.iterdir() if d.is_dir() and (d / "job.yml").exists()]
+    # Discover jobs from both local and global locations
+    job_dirs_with_location = discover_all_jobs_dirs(project_path)
+    job_dirs = [job_dir for job_dir, _ in job_dirs_with_location]
 
+    # Report discovered jobs by location
+    local_count = sum(1 for _, loc in job_dirs_with_location if loc == "local")
+    global_count = sum(1 for _, loc in job_dirs_with_location if loc == "global")
+    
     console.print(f"[yellow]→[/yellow] Found {len(job_dirs)} job(s) to sync")
+    if local_count > 0:
+        console.print(f"  [dim]•[/dim] {local_count} local job(s)")
+    if global_count > 0:
+        console.print(f"  [dim]•[/dim] {global_count} global job(s)")
 
     # Parse all jobs
     jobs = []
@@ -109,8 +115,8 @@ def sync_skills(project_path: Path) -> None:
             console.print(f"  • {job_name}: {error}")
         raise SyncError(f"Failed to parse {len(failed_jobs)} job(s)")
 
-    # Collect hooks from all jobs
-    job_hooks_list = collect_job_hooks(jobs_dir)
+    # Collect hooks from all jobs (both local and global)
+    job_hooks_list = collect_job_hooks(project_path)
     if job_hooks_list:
         console.print(f"[yellow]→[/yellow] Found {len(job_hooks_list)} job(s) with hooks")
 

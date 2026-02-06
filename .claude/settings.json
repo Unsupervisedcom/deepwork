@@ -130,7 +130,13 @@
       "Bash(deepwork:*)",
       "Bash(.claude/hooks/commit_job_git_commit.sh:*)",
       "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
-      "WebSearch"
+      "WebSearch",
+      "Skill(test_global_job)",
+      "Skill(test_global_job.test_step)",
+      "Skill(job_porter)",
+      "Skill(job_porter.list_jobs)",
+      "Skill(job_porter.port_job)",
+      "Skill(job_porter.explain_scopes)"
     ]
   },
   "hooks": {

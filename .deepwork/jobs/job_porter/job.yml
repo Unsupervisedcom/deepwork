@@ -1,0 +1,46 @@
+name: job_porter
+version: 1.0.0
+summary: Helps users port DeepWork jobs between local and global locations
+description: |
+  This job assists users in managing job scope by porting jobs between local 
+  project-specific locations (.deepwork/jobs/) and global system-wide locations 
+  (~/.deepwork/jobs/). It guides users through discovering available jobs, 
+  understanding the differences between local and global scope, and safely 
+  migrating jobs between scopes.
+
+changelog:
+  - version: 1.0.0
+    changes: Initial version - port jobs between local and global scopes
+
+steps:
+  - id: list_jobs
+    name: List Available Jobs
+    description: Shows all available jobs in both local and global locations with their current scope
+    instructions_file: steps/list_jobs.md
+    exposed: true
+    outputs:
+      - jobs_list.txt
+    dependencies: []
+
+  - id: port_job
+    name: Port a Job
+    description: Moves a job between local and global scope with safety validation
+    instructions_file: steps/port_job.md
+    exposed: true
+    inputs:
+      - name: job_name
+        description: Name of the job to port
+      - name: destination
+        description: Target scope (local or global)
+    outputs:
+      - port_result.txt
+    dependencies: []
+
+  - id: explain_scopes
+    name: Explain Job Scopes
+    description: Provides detailed explanation of local vs global jobs and when to use each
+    instructions_file: steps/explain_scopes.md
+    exposed: true
+    outputs:
+      - scope_guide.md
+    dependencies: []
