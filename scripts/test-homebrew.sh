@@ -42,6 +42,9 @@ echo "    SHA256:  $SHA256"
 TAP_NAME="local/deepwork-test"
 TAP_DIR="$(brew --repository)/Library/Taps/local/homebrew-deepwork-test"
 
+echo "==> Cleaning up previous installation..."
+brew uninstall deepwork 2>/dev/null || true
+
 echo "==> Setting up local tap..."
 brew untap "$TAP_NAME" 2>/dev/null || true
 brew tap-new --no-git "$TAP_NAME"
@@ -51,7 +54,6 @@ sed -e "s|url \"https://.*\"|url \"file://$TARBALL_PATH\"|" \
     "$HOMEBREW_TAP/Formula/deepwork.rb" > "$TAP_DIR/Formula/deepwork.rb"
 
 echo "==> Installing from local build..."
-brew uninstall deepwork 2>/dev/null || true
 brew install --verbose "$TAP_NAME/deepwork"
 
 echo "==> Running brew test..."
