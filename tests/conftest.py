@@ -36,14 +36,6 @@ def mock_claude_project(mock_git_repo: Path) -> Path:
 
 
 @pytest.fixture
-def mock_gemini_project(mock_git_repo: Path) -> Path:
-    """Create a mock project with Gemini CLI setup."""
-    gemini_dir = mock_git_repo / ".gemini"
-    gemini_dir.mkdir(exist_ok=True)
-    return mock_git_repo
-
-
-@pytest.fixture
 def mock_multi_platform_project(mock_git_repo: Path) -> Path:
     """Create a mock project with multiple AI platforms setup."""
     claude_dir = mock_git_repo / ".claude"

@@ -82,14 +82,6 @@ steps:
 
 ## Optional Fields
 
-### Exposed Steps
-
-```yaml
-steps:
-  - id: learn
-    exposed: true                 # Makes step available without running dependencies
-```
-
 ### Agent Delegation
 
 When a step should be executed by a specific agent type, use the `agent` field. This automatically sets `context: fork` in the generated skill.
@@ -120,17 +112,6 @@ steps:
         - prompt_file: hooks/quality_check.md
         # Script for programmatic validation:
         - script: hooks/run_tests.sh
-```
-
-### Stop Hooks (Legacy)
-
-```yaml
-steps:
-  - id: step_id
-    stop_hooks:
-      - prompt: "Validation prompt..."
-      - prompt_file: hooks/check.md
-      - script: hooks/validate.sh
 ```
 
 ## Validation Rules

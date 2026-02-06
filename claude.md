@@ -43,8 +43,7 @@ deepwork/
 │   │   ├── gemini/
 │   │   └── copilot/
 │   ├── standard_jobs/    # Built-in job definitions (auto-installed)
-│   │   ├── deepwork_jobs/
-│   │   └── deepwork_rules/
+│   │   └── deepwork_jobs/
 │   ├── schemas/          # Job definition schemas
 │   └── utils/            # Utilities (fs, git, yaml, validation)
 ├── library/jobs/         # Reusable example jobs (not auto-installed)
@@ -84,8 +83,7 @@ When running in Claude Code on the web (not local installations), the `deepwork`
 pip install -e .
 
 # Then run commands normally
-deepwork install --platform claude
-deepwork sync
+deepwork install
 ```
 
 **Note**: In web environments, you may also need to install dependencies like `jsonschema`, `pyyaml`, `gitpython`, `jinja2`, and `click` if they're not already available.
@@ -173,6 +171,7 @@ my-project/
 - `doc/architecture.md` - Comprehensive architecture documentation
 - `README.md` - High-level project overview
 - `shell.nix` - Development environment setup
+- `doc/reference/calling_claude_in_print_mode.md` - When invoking Claude Code as a subprocess (e.g., with `--print` or `-p`), read this for correct flag ordering, structured output with JSON schemas, and common gotchas
 
 ## Development Guidelines
 
@@ -196,7 +195,7 @@ my-project/
 
 ### Editing Standard Jobs
 
-**Standard jobs** (like `deepwork_jobs` and `deepwork_rules`) are bundled with DeepWork and installed to user projects. They exist in THREE locations:
+**Standard jobs** (like `deepwork_jobs`) are bundled with DeepWork and installed to user projects. They exist in THREE locations:
 
 1. **Source of truth**: `src/deepwork/standard_jobs/[job_name]/` - The canonical source files
 2. **Installed copy**: `.deepwork/jobs/[job_name]/` - Installed by `deepwork install`
@@ -211,13 +210,13 @@ Instead, follow this workflow:
    - `steps/*.md` - Step instruction files
    - `hooks/*` - Any hook scripts
 
-2. **Run `deepwork install --platform claude`** to sync changes to `.deepwork/jobs/` and `.claude/skills/`
+2. **Run `deepwork install`** to sync changes to `.deepwork/jobs/` and `.claude/skills/`
 
 3. **Verify** the changes propagated correctly to all locations
 
 ### How to Identify Job Types
 
-- **Standard jobs**: Exist in `src/deepwork/standard_jobs/` (currently: `deepwork_jobs`, `deepwork_rules`)
+- **Standard jobs**: Exist in `src/deepwork/standard_jobs/` (currently: `deepwork_jobs`)
 - **Library jobs**: Exist in `library/jobs/`
 - **Bespoke jobs**: Exist ONLY in `.deepwork/jobs/` with no corresponding standard_jobs entry
 

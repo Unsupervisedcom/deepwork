@@ -15,50 +15,7 @@ The hook system provides:
    - Output denormalization (decision values, JSON structure)
    - Cross-platform compatibility
 
-3. **Hook implementations**:
-   - `rules_check.py` - Evaluates DeepWork rules on `after_agent` events
-
 ## Usage
-
-### Registering Hooks
-
-#### Claude Code (`.claude/settings.json`)
-
-```json
-{
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "path/to/claude_hook.sh deepwork.hooks.rules_check"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-#### Gemini CLI (`.gemini/settings.json`)
-
-```json
-{
-  "hooks": {
-    "AfterAgent": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "path/to/gemini_hook.sh deepwork.hooks.rules_check"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
 
 ### Writing Custom Hooks
 
@@ -178,4 +135,3 @@ pytest tests/shell_script_tests/test_hook_wrappers.py -v
 | `wrapper.py` | Cross-platform input/output normalization |
 | `claude_hook.sh` | Shell wrapper for Claude Code |
 | `gemini_hook.sh` | Shell wrapper for Gemini CLI |
-| `rules_check.py` | Cross-platform rule evaluation hook |

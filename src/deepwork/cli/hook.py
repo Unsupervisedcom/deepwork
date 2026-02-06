@@ -5,7 +5,6 @@ instead of `python -m deepwork.hooks.*`, which works regardless of how
 deepwork was installed (flake, pipx, uv, etc.).
 
 Usage:
-    deepwork hook rules_check
     deepwork hook <hook_name>
 
 This is meant to be called from hook wrapper scripts (claude_hook.sh, gemini_hook.sh).
@@ -32,14 +31,14 @@ def hook(hook_name: str) -> None:
     """
     Run a DeepWork hook by name.
 
-    HOOK_NAME: Name of the hook to run (e.g., 'rules_check')
+    HOOK_NAME: Name of the hook to run (e.g., 'check_version')
 
     This command imports and runs the hook module from deepwork.hooks.{hook_name}.
     The hook receives stdin input and outputs to stdout, following the hook protocol.
 
     Examples:
-        deepwork hook rules_check
-        echo '{}' | deepwork hook rules_check
+        deepwork hook check_version
+        echo '{}' | deepwork hook my_hook
     """
     try:
         # Import the hook module

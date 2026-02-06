@@ -21,6 +21,39 @@ class InstallError(Exception):
     pass
 
 
+def _install_schemas(schemas_dir: Path, project_path: Path) -> None:
+    """
+    Install JSON schemas to the project's .deepwork/schemas directory.
+
+    Args:
+        schemas_dir: Path to .deepwork/schemas directory
+        project_path: Path to project root (for relative path display)
+
+    Raises:
+        InstallError: If installation fails
+    """
+    # Find the source schemas directory
+    source_schemas_dir = Path(__file__).parent.parent / "schemas"
+
+    if not source_schemas_dir.exists():
+        raise InstallError(
+            f"Schemas directory not found at {source_schemas_dir}. "
+            "DeepWork installation may be corrupted."
+        )
+
+    # Copy JSON schema files
+    try:
+        for schema_file in source_schemas_dir.glob("*.json"):
+            target_file = schemas_dir / schema_file.name
+            shutil.copy(schema_file, target_file)
+            fix_permissions(target_file)
+            console.print(
+                f"  [green]✓[/green] Installed schema {schema_file.name} ({target_file.relative_to(project_path)})"
+            )
+    except Exception as e:
+        raise InstallError(f"Failed to install schemas: {e}") from e
+
+
 def _inject_standard_job(job_name: str, jobs_dir: Path, project_path: Path) -> None:
     """
     Inject a standard job definition into the project.
@@ -88,20 +121,6 @@ def _inject_deepwork_jobs(jobs_dir: Path, project_path: Path) -> None:
     _inject_standard_job("deepwork_jobs", jobs_dir, project_path)
 
 
-def _inject_deepwork_rules(jobs_dir: Path, project_path: Path) -> None:
-    """
-    Inject the deepwork_rules job definition into the project.
-
-    Args:
-        jobs_dir: Path to .deepwork/jobs directory
-        project_path: Path to project root (for relative path display)
-
-    Raises:
-        InstallError: If injection fails
-    """
-    _inject_standard_job("deepwork_rules", jobs_dir, project_path)
-
-
 def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
     """
     Create .gitignore file in .deepwork/ directory.
@@ -127,6 +146,27 @@ tmp/*
     gitignore_path.write_text(gitignore_content)
 
 
+def _create_common_info_directory(deepwork_dir: Path) -> None:
+    """
+    Create the .deepwork/common_info directory with a .gitkeep file.
+
+    This directory holds shared reference files that are available across
+    all jobs and workflow steps.
+
+    Args:
+        deepwork_dir: Path to .deepwork directory
+    """
+    common_info_dir = deepwork_dir / "common_info"
+    ensure_dir(common_info_dir)
+
+    gitkeep_file = common_info_dir / ".gitkeep"
+    if not gitkeep_file.exists():
+        gitkeep_file.write_text(
+            "# This file ensures the .deepwork/common_info directory exists in version control.\n"
+            "# Place shared reference files here that should be available across all jobs.\n"
+        )
+
+
 def _create_tmp_directory(deepwork_dir: Path) -> None:
     """
     Create the .deepwork/tmp directory with a .gitkeep file.
@@ -147,89 +187,6 @@ def _create_tmp_directory(deepwork_dir: Path) -> None:
             "# The tmp directory is used for temporary files during DeepWork operations.\n"
             "# Do not delete this file.\n"
         )
-
-
-def _create_rules_directory(project_path: Path) -> bool:
-    """
-    Create the v2 rules directory structure with example templates.
-
-    Creates .deepwork/rules/ with example rule files that users can customize.
-    Only creates the directory if it doesn't already exist.
-
-    Args:
-        project_path: Path to the project root
-
-    Returns:
-        True if the directory was created, False if it already existed
-    """
-    rules_dir = project_path / ".deepwork" / "rules"
-
-    if rules_dir.exists():
-        return False
-
-    # Create the rules directory
-    ensure_dir(rules_dir)
-
-    # Copy example rule templates from the deepwork_rules standard job
-    example_rules_dir = Path(__file__).parent.parent / "standard_jobs" / "deepwork_rules" / "rules"
-
-    if example_rules_dir.exists():
-        # Copy all .example files
-        for example_file in example_rules_dir.glob("*.md.example"):
-            dest_file = rules_dir / example_file.name
-            shutil.copy(example_file, dest_file)
-            # Fix permissions for copied rule template
-            fix_permissions(dest_file)
-
-    # Create a README file explaining the rules system
-    readme_content = """# DeepWork Rules
-
-Rules are automated guardrails that trigger when specific files change during
-AI agent sessions. They help ensure documentation stays current, security reviews
-happen, and team guidelines are followed.
-
-## Getting Started
-
-1. Copy an example file and rename it (remove the `.example` suffix):
-   ```
-   cp readme-documentation.md.example readme-documentation.md
-   ```
-
-2. Edit the file to match your project's patterns
-
-3. The rule will automatically trigger when matching files change
-
-## Rule Format
-
-Rules use YAML frontmatter in markdown files:
-
-```markdown
----
-name: Rule Name
-trigger: "pattern/**/*"
-safety: "optional/pattern"
----
-Instructions in markdown here.
-```
-
-## Detection Modes
-
-- **trigger/safety**: Fire when trigger matches, unless safety also matches
-- **set**: Bidirectional file correspondence (e.g., source + test)
-- **pair**: Directional correspondence (e.g., API code -> docs)
-
-## Documentation
-
-See `doc/rules_syntax.md` in the DeepWork repository for full syntax documentation.
-
-## Creating Rules Interactively
-
-Use `/deepwork_rules.define` to create new rules with guidance.
-"""
-    readme_path = rules_dir / "README.md"
-    readme_path.write_text(readme_content)
-
-    return True
 
 
 class DynamicChoice(click.Choice):
@@ -346,29 +303,32 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     deepwork_dir = project_path / ".deepwork"
     jobs_dir = deepwork_dir / "jobs"
     doc_specs_dir = deepwork_dir / "doc_specs"
+    schemas_dir = deepwork_dir / "schemas"
     ensure_dir(deepwork_dir)
     ensure_dir(jobs_dir)
     ensure_dir(doc_specs_dir)
+    ensure_dir(schemas_dir)
     console.print(f"  [green]✓[/green] Created {deepwork_dir.relative_to(project_path)}/")
 
-    # Step 3b: Inject standard jobs (core job definitions)
+    # Step 3b: Install schemas
+    console.print("[yellow]→[/yellow] Installing schemas...")
+    _install_schemas(schemas_dir, project_path)
+
+    # Step 3c: Inject standard jobs (core job definitions)
     console.print("[yellow]→[/yellow] Installing core job definitions...")
     _inject_deepwork_jobs(jobs_dir, project_path)
-    _inject_deepwork_rules(jobs_dir, project_path)
 
-    # Step 3c: Create .gitignore for temporary files
+    # Step 3d: Create .gitignore for temporary files
     _create_deepwork_gitignore(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/.gitignore")
 
-    # Step 3d: Create tmp directory with .gitkeep file for version control
+    # Step 3e: Create tmp directory with .gitkeep file for version control
     _create_tmp_directory(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/tmp/.gitkeep")
 
-    # Step 3e: Create rules directory with v2 templates
-    if _create_rules_directory(project_path):
-        console.print("  [green]✓[/green] Created .deepwork/rules/ with example templates")
-    else:
-        console.print("  [dim]•[/dim] .deepwork/rules/ already exists")
+    # Step 3f: Create common_info directory for shared reference files
+    _create_common_info_directory(deepwork_dir)
+    console.print("  [green]✓[/green] Created .deepwork/common_info/.gitkeep")
 
     # Step 4: Load or create config.yml
     console.print("[yellow]→[/yellow] Updating configuration...")
@@ -402,7 +362,17 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     save_yaml(config_file, config_data)
     console.print(f"  [green]✓[/green] Updated {config_file.relative_to(project_path)}")
 
-    # Step 5: Run sync to generate skills
+    # Step 5: Register MCP server for each platform
+    console.print("[yellow]→[/yellow] Registering MCP server...")
+    for adapter in detected_adapters:
+        if adapter.register_mcp_server(project_path):
+            console.print(f"  [green]✓[/green] Registered MCP server for {adapter.display_name}")
+        else:
+            console.print(
+                f"  [dim]•[/dim] MCP server already registered for {adapter.display_name}"
+            )
+
+    # Step 6: Run sync to generate skills
     console.print()
     console.print("[yellow]→[/yellow] Running sync to generate skills...")
     console.print()
@@ -410,18 +380,26 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     from deepwork.cli.sync import sync_skills
 
     try:
-        sync_skills(project_path)
+        sync_result = sync_skills(project_path)
     except Exception as e:
         raise InstallError(f"Failed to sync skills: {e}") from e
 
-    # Success message
+    # Success or warning message
     console.print()
     platform_names = ", ".join(a.display_name for a in detected_adapters)
-    console.print(
-        f"[bold green]✓ DeepWork installed successfully for {platform_names}![/bold green]"
-    )
-    console.print()
-    console.print("[bold]Next steps:[/bold]")
-    console.print("  1. Start your agent CLI (ex. [cyan]claude[/cyan] or [cyan]gemini[/cyan])")
-    console.print("  2. Define your first job using the command [cyan]/deepwork_jobs[/cyan]")
+
+    if sync_result.has_warnings:
+        console.print("[bold yellow]⚠ You should repair your DeepWork install[/bold yellow]")
+        console.print()
+        console.print("[bold]To fix issues:[/bold]")
+        console.print("  1. Start your agent CLI (ex. [cyan]claude[/cyan] or [cyan]gemini[/cyan])")
+        console.print("  2. Run [cyan]/deepwork repair[/cyan]")
+    else:
+        console.print(
+            f"[bold green]✓ DeepWork installed successfully for {platform_names}![/bold green]"
+        )
+        console.print()
+        console.print("[bold]Next steps:[/bold]")
+        console.print("  1. Start your agent CLI (ex. [cyan]claude[/cyan] or [cyan]gemini[/cyan])")
+        console.print("  2. Define your first job using the command [cyan]/deepwork_jobs[/cyan]")
     console.print()

@@ -78,43 +78,47 @@ main() {
     mkdir -p "$job_path/steps"
     mkdir -p "$job_path/hooks"
     mkdir -p "$job_path/templates"
+    mkdir -p "$job_path/scripts"
 
     # Add .gitkeep files to empty directories
     touch "$job_path/hooks/.gitkeep"
     touch "$job_path/templates/.gitkeep"
+    touch "$job_path/scripts/.gitkeep"
 
     # Create AGENTS.md file
     cat > "$job_path/AGENTS.md" << 'EOF'
 # Job Management
 
-This folder and its subfolders are managed using the `deepwork_jobs` slash commands.
+This folder and its subfolders are managed using `deepwork_jobs` workflows.
 
-## Recommended Commands
+## Recommended Workflows
 
-- `/deepwork_jobs.define` - Create or modify the job.yml specification
-- `/deepwork_jobs.implement` - Generate step instruction files from the specification
-- `/deepwork_jobs.learn` - Improve instructions based on execution learnings
+- `deepwork_jobs/new_job` - Full lifecycle: define → implement → test → iterate
+- `deepwork_jobs/learn` - Improve instructions based on execution learnings
+- `deepwork_jobs/repair` - Clean up and migrate from prior DeepWork versions
 
 ## Directory Structure
 
 ```
 .
 ├── AGENTS.md          # This file - project context and guidance
-├── job.yml            # Job specification (created by /deepwork_jobs.define)
-├── steps/             # Step instruction files (created by /deepwork_jobs.implement)
+├── job.yml            # Job specification (created by define step)
+├── steps/             # Step instruction files (created by implement step)
 │   └── *.md           # One file per step
 ├── hooks/             # Custom validation scripts and prompts
 │   └── *.md|*.sh      # Hook files referenced in job.yml
+├── scripts/           # Reusable scripts and utilities created during job execution
+│   └── *.sh|*.py      # Helper scripts referenced in step instructions
 └── templates/         # Example file formats and templates
     └── *.md|*.yml     # Templates referenced in step instructions
 ```
 
 ## Editing Guidelines
 
-1. **Use slash commands** for structural changes (adding steps, modifying job.yml)
+1. **Use workflows** for structural changes (adding steps, modifying job.yml)
 2. **Direct edits** are fine for minor instruction tweaks
-3. **Run `/deepwork_jobs.learn`** after executing job steps to capture improvements
-4. **Run `deepwork sync`** after any changes to regenerate commands
+3. **Run `deepwork_jobs/learn`** after executing job steps to capture improvements
+4. **Run `deepwork install`** after any changes to regenerate commands
 EOF
 
     info "Created directory structure:"
@@ -122,13 +126,8 @@ EOF
     echo "  ├── AGENTS.md"
     echo "  ├── steps/"
     echo "  ├── hooks/.gitkeep"
+    echo "  ├── scripts/.gitkeep"
     echo "  └── templates/.gitkeep"
-
-    echo ""
-    info "Next steps:"
-    echo "  1. Run '/deepwork_jobs.define' to create the job.yml specification"
-    echo "  2. Run '/deepwork_jobs.implement' to generate step instructions"
-    echo "  3. Run 'deepwork sync' to create slash commands"
 }
 
 main "$@"

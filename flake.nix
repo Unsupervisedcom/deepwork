@@ -3,117 +3,138 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
+
+    # Claude Code with pre-built native binaries (hourly updates)
+    claude-code-nix.url = "github:sadjow/claude-code-nix";
+
+    pyproject-nix = {
+      url = "github:pyproject-nix/pyproject.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    uv2nix = {
+      url = "github:pyproject-nix/uv2nix";
+      inputs.pyproject-nix.follows = "pyproject-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    pyproject-build-systems = {
+      url = "github:pyproject-nix/build-system-pkgs";
+      inputs.pyproject-nix.follows = "pyproject-nix";
+      inputs.uv2nix.follows = "uv2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs {
-          inherit system;
-          # Allow unfree packages to support the Business Source License 1.1
-          config.allowUnfree = true;
-        };
-        # Local claude-code package for version control (update via nix/claude-code/update.sh)
-        claude-code = pkgs.callPackage ./nix/claude-code/package.nix { };
-        # Read version from pyproject.toml to avoid duplication
-        pyproject = builtins.fromTOML (builtins.readFile ./pyproject.toml);
-        deepwork = pkgs.python311Packages.buildPythonPackage {
-          pname = "deepwork";
-          version = pyproject.project.version;
-          src = ./.;
-          format = "pyproject";
-          nativeBuildInputs = [ pkgs.python311Packages.hatchling ];
-          # Required for `nix build` - must match pyproject.toml dependencies
-          propagatedBuildInputs = with pkgs.python311Packages; [
-            click gitpython jinja2 jsonschema pyyaml rich rpds-py
-          ];
-          doCheck = false;
-        };
-      in
-      {
-        devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [
-            # Python 3.11 - base interpreter for uv
-            python311
+  outputs = { self, nixpkgs, claude-code-nix, pyproject-nix, uv2nix, pyproject-build-systems, ... }:
+    let
+      inherit (nixpkgs) lib;
 
-            # uv manages all Python packages (deps, dev tools, etc.)
-            uv
+      # Systems to support
+      forAllSystems = lib.genAttrs [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
 
-            # Git for version control
-            git
+      # Load the uv workspace from uv.lock
+      workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
 
-            # System tools
-            jq  # For JSON processing
+      # Create overlay from uv.lock - prefer wheels for faster builds
+      overlay = workspace.mkPyprojectOverlay { sourcePreference = "wheel"; };
 
-            # CLI tools (claude-code is locally built, see nix/claude-code/)
-            claude-code
-            gh           # GitHub CLI
-          ];
+      # Editable overlay for development (live-reload from src/)
+      editableOverlay = workspace.mkEditablePyprojectOverlay { root = "$REPO_ROOT"; };
 
-          # Environment variables for uv integration with Nix
-          env = {
-            # Tell uv to use the Nix-provided Python interpreter
-            UV_PYTHON = "${pkgs.python311}/bin/python";
-            # Prevent uv from downloading Python binaries
-            UV_PYTHON_DOWNLOADS = "never";
-            # Development mode flag
-            DEEPWORK_DEV = "1";
+      # Build Python package sets for each system
+      pythonSets = forAllSystems (system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
+          python = pkgs.python311;
+        in
+        (pkgs.callPackage pyproject-nix.build.packages { inherit python; }).overrideScope
+          (lib.composeManyExtensions [
+            pyproject-build-systems.overlays.default
+            overlay
+          ])
+      );
+
+    in
+    {
+      devShells = forAllSystems (system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
           };
 
-          shellHook = ''
-            # Create venv if it doesn't exist
-            if [ ! -d .venv ]; then
-              echo "Creating virtual environment..."
-              uv venv .venv --quiet
-            fi
+          # Python set with editable overlay for development
+          pythonSet = pythonSets.${system}.overrideScope editableOverlay;
 
-            # Sync dependencies (including dev extras like pytest, ruff, mypy)
-            # Run quietly - uv only outputs when changes are needed
-            uv sync --all-extras --quiet 2>/dev/null || uv sync --all-extras
+          # Virtual environment with all dependencies (including dev extras)
+          virtualenv = pythonSet.mkVirtualEnv "deepwork-dev-env" workspace.deps.all;
+        in
+        {
+          default = pkgs.mkShell {
+            packages = [
+              virtualenv
+              pkgs.uv
+              pkgs.git
+              pkgs.jq
+              claude-code-nix.packages.${system}.default
+              pkgs.gh
+            ];
 
-            # Activate venv by setting environment variables directly
-            # This works reliably for both interactive shells and `nix develop --command`
-            export VIRTUAL_ENV="$PWD/.venv"
-            export PATH="$VIRTUAL_ENV/bin:$PATH"
-            unset PYTHONHOME
+            env = {
+              # Prevent uv from managing packages (Nix handles it)
+              UV_NO_SYNC = "1";
+              UV_PYTHON = "${pythonSet.python}/bin/python";
+              UV_PYTHON_DOWNLOADS = "never";
+              DEEPWORK_DEV = "1";
+            };
 
-            # Set PYTHONPATH for editable install access to src/
-            export PYTHONPATH="$PWD/src:$PYTHONPATH"
+            shellHook = ''
+              # Required for editable overlay
+              unset PYTHONPATH
+              export REPO_ROOT=$(git rev-parse --show-toplevel)
 
-            # Add nix/ scripts to PATH (for 'update' command)
-            export PATH="$PWD/nix:$PATH"
+              # Only show welcome message in interactive shells
+              if [[ $- == *i* ]]; then
+                echo ""
+                echo "DeepWork Development Environment (uv2nix)"
+                echo "=========================================="
+                echo ""
+                echo "Python: $(python --version) | uv: $(uv --version)"
+                echo ""
+                echo "Commands:"
+                echo "  deepwork --help    CLI (development version)"
+                echo "  pytest             Run tests"
+                echo "  ruff check src/    Lint code"
+                echo "  mypy src/          Type check"
+                echo "  claude             Claude Code CLI"
+                echo "  gh                 GitHub CLI"
+                echo ""
+              fi
+            '';
+          };
+        }
+      );
 
-            # Only show welcome message in interactive shells
-            if [[ $- == *i* ]]; then
-              echo ""
-              echo "DeepWork Development Environment"
-              echo "================================"
-              echo ""
-              echo "Python: $(python --version) | uv: $(uv --version)"
-              echo ""
-              echo "Commands:"
-              echo "  deepwork --help    CLI (development version)"
-              echo "  pytest             Run tests"
-              echo "  ruff check src/    Lint code"
-              echo "  mypy src/          Type check"
-              echo "  claude-code        Claude Code CLI"
-              echo "  gh                 GitHub CLI"
-              echo "  update             Update claude-code and flake inputs"
-              echo ""
-            fi
-          '';
-        };
+      # Package output - virtual environment with default deps only
+      packages = forAllSystems (system:
+        let
+          pkg = pythonSets.${system}.mkVirtualEnv "deepwork-env" workspace.deps.default;
+        in {
+          default = pkg;
+          deepwork = pkg;  # Alias for backwards compatibility
+        }
+      );
 
-        # Make the package available as a flake output
-        packages.default = deepwork;
-        packages.deepwork = deepwork;
-
-        # Make deepwork runnable with 'nix run'
-        apps.default = {
+      # Make deepwork runnable with 'nix run'
+      apps = forAllSystems (system: {
+        default = {
           type = "app";
-          program = "${deepwork}/bin/deepwork";
+          program = "${self.packages.${system}.default}/bin/deepwork";
         };
-      }
-    );
+      });
+    };
 }

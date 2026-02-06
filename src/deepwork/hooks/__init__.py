@@ -1,4 +1,4 @@
-"""DeepWork hooks package for rules enforcement and lifecycle events.
+"""DeepWork hooks package for lifecycle events.
 
 This package provides:
 
@@ -7,9 +7,6 @@ This package provides:
    - claude_hook.sh: Shell wrapper for Claude Code hooks
    - gemini_hook.sh: Shell wrapper for Gemini CLI hooks
 
-2. Hook implementations:
-   - rules_check.py: Evaluates rules on after_agent events
-
 Usage with wrapper system:
     # Register hook in .claude/settings.json:
     {
@@ -17,7 +14,7 @@ Usage with wrapper system:
         "Stop": [{
           "hooks": [{
             "type": "command",
-            "command": ".deepwork/hooks/claude_hook.sh rules_check"
+            "command": ".deepwork/hooks/claude_hook.sh my_hook"
           }]
         }]
       }
@@ -29,7 +26,7 @@ Usage with wrapper system:
         "AfterAgent": [{
           "hooks": [{
             "type": "command",
-            "command": ".gemini/hooks/gemini_hook.sh rules_check"
+            "command": ".gemini/hooks/gemini_hook.sh my_hook"
           }]
         }]
       }

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "deepwork": {
+      "command": "deepwork",
+      "args": [
+        "serve",
+        "--path",
+        "."
+      ]
+    }
+  }
+}

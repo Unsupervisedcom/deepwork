@@ -18,11 +18,12 @@ DeepWork is a framework for enabling AI agents to perform complex, multi-step wo
 
 ## Architecture Overview
 
-This document is organized into three major sections:
+This document is organized into four major sections:
 
 1. **[DeepWork Tool Architecture](#part-1-deepwork-tool-architecture)** - The DeepWork repository/codebase itself and how it works
 2. **[Target Project Architecture](#part-2-target-project-architecture)** - What a project looks like after DeepWork is installed
 3. **[Runtime Execution Model](#part-3-runtime-execution-model)** - How AI agents execute jobs using the installed skills
+4. **[MCP Server Architecture](#part-4-mcp-server-architecture)** - The MCP server for checkpoint-based workflow execution
 
 ---
 
@@ -40,47 +41,41 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── __init__.py
 │       │   ├── main.py         # CLI entry point
 │       │   ├── install.py      # Install command
-│       │   └── sync.py         # Sync command
+│       │   ├── sync.py         # Sync command
+│       │   └── serve.py        # MCP server command
 │       ├── core/
 │       │   ├── adapters.py     # Agent adapters for AI platforms
 │       │   ├── detector.py     # AI platform detection
 │       │   ├── generator.py    # Command file generation
 │       │   ├── parser.py       # Job definition parsing
 │       │   ├── doc_spec_parser.py   # Doc spec parsing
-│       │   ├── rules_parser.py     # Rule definition parsing
-│       │   ├── pattern_matcher.py  # Variable pattern matching for rules
-│       │   ├── rules_queue.py      # Rule state queue system
-│       │   ├── command_executor.py # Command action execution
 │       │   └── hooks_syncer.py     # Hook syncing to platforms
+│       ├── mcp/                # MCP server module
+│       │   ├── __init__.py
+│       │   ├── server.py       # FastMCP server definition
+│       │   ├── tools.py        # MCP tool implementations
+│       │   ├── state.py        # Workflow session state management
+│       │   ├── schemas.py      # Pydantic models for I/O
+│       │   └── quality_gate.py # Quality gate with review agent
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── __init__.py
 │       │   ├── wrapper.py           # Cross-platform input/output normalization
 │       │   ├── claude_hook.sh       # Shell wrapper for Claude Code
-│       │   ├── gemini_hook.sh       # Shell wrapper for Gemini CLI
-│       │   └── rules_check.py       # Cross-platform rule evaluation hook
+│       │   └── gemini_hook.sh       # Shell wrapper for Gemini CLI
 │       ├── templates/          # Skill templates for each platform
 │       │   ├── claude/
-│       │   │   └── skill-job-step.md.jinja
+│       │   │   └── skill-deepwork.md.jinja  # MCP entry point skill
 │       │   ├── gemini/
 │       │   └── copilot/
 │       ├── standard_jobs/      # Built-in job definitions
-│       │   ├── deepwork_jobs/
-│       │   │   ├── job.yml
-│       │   │   ├── steps/
-│       │   │   └── templates/
-│       │   │       └── doc_spec.md.template
-│       │   └── deepwork_rules/   # Rule management job
+│       │   └── deepwork_jobs/
 │       │       ├── job.yml
 │       │       ├── steps/
-│       │       │   └── define.md
-│       │       └── hooks/         # Hook scripts
-│       │           ├── global_hooks.yml
-│       │           ├── user_prompt_submit.sh
-│       │           └── capture_prompt_work_tree.sh
+│       │       └── templates/
+│       │           └── doc_spec.md.template
 │       ├── schemas/            # Definition schemas
 │       │   ├── job_schema.py
-│       │   ├── doc_spec_schema.py   # Doc spec schema definition
-│       │   └── rules_schema.py
+│       │   └── doc_spec_schema.py   # Doc spec schema definition
 │       └── utils/
 │           ├── fs.py
 │           ├── git.py
@@ -124,11 +119,6 @@ def install(platform: str):
 
     # Inject core job definitions
     inject_deepwork_jobs(".deepwork/jobs/")
-
-    # Create rules directory with example templates (if not exists)
-    if not exists(".deepwork/rules/"):
-        create_directory(".deepwork/rules/")
-        copy_example_rules(".deepwork/rules/")
 
     # Update config (supports multiple platforms)
     config = load_yaml(".deepwork/config.yml") or {}
@@ -223,52 +213,35 @@ class PlatformDetector:
 
 ### 4. Skill Generator (`generator.py`)
 
-Generates AI-platform-specific skill files from job definitions.
+Generates AI-platform-specific skill files. The generator has been simplified to focus
+on generating only the MCP entry point skill (`/deepwork`), as workflow orchestration
+is now handled by the MCP server rather than individual step skills.
 
-This component is called by the `sync` command to regenerate all skills:
-1. Reads the job definition from `.deepwork/jobs/[job-name]/job.yml`
-2. Loads platform-specific templates
-3. Generates skill files for each step in the job
-4. Writes skills to the AI platform's skills directory
+This component is called by the `sync` command to regenerate the DeepWork skill:
+1. Loads the platform-specific template (`skill-deepwork.md.jinja`)
+2. Generates the `/deepwork` skill file that directs agents to use MCP tools
+3. Writes the skill to the AI platform's skills directory
 
 **Example Generation Flow**:
 ```python
 class SkillGenerator:
-    def generate_all_skills(self, job: JobDefinition,
-                            platform: PlatformConfig,
-                            output_dir: Path) -> list[Path]:
-        """Generate skill files for all steps in a job."""
-        skill_paths = []
+    def generate_deepwork_skill(self, adapter: AgentAdapter,
+                                output_dir: Path) -> Path:
+        """Generate the global /deepwork skill for MCP entry point."""
+        skills_dir = output_dir / adapter.skills_dir
+        skills_dir.mkdir(parents=True, exist_ok=True)
 
-        for step_index, step in enumerate(job.steps):
-            # Load step instructions
-            instructions = read_file(job.job_dir / step.instructions_file)
+        # Load and render template
+        env = self._get_jinja_env(adapter)
+        template = env.get_template("skill-deepwork.md.jinja")
+        rendered = template.render()
 
-            # Build template context
-            context = {
-                "job_name": job.name,
-                "step_id": step.id,
-                "step_name": step.name,
-                "step_number": step_index + 1,
-                "total_steps": len(job.steps),
-                "instructions_content": instructions,
-                "user_inputs": [inp for inp in step.inputs if inp.is_user_input()],
-                "file_inputs": [inp for inp in step.inputs if inp.is_file_input()],
-                "outputs": step.outputs,
-                "dependencies": step.dependencies,
-                "exposed": step.exposed,
-            }
+        # Write skill file
+        skill_path = skills_dir / "deepwork/SKILL.md"
+        skill_path.parent.mkdir(parents=True, exist_ok=True)
+        safe_write(skill_path, rendered)
 
-            # Render template
-            template = env.get_template("skill-job-step.md.jinja")
-            rendered = template.render(**context)
-
-            # Write to platform's skills directory
-            skill_path = output_dir / platform.config_dir / platform.skills_dir / f"{job.name}.{step.id}.md"
-            write_file(skill_path, rendered)
-            skill_paths.append(skill_path)
-
-        return skill_paths
+        return skill_path
 ```
 
 ---
@@ -288,7 +261,6 @@ my-project/                     # User's project (target)
 │       ├── deepwork_jobs.define.md         # Core DeepWork skills
 │       ├── deepwork_jobs.implement.md
 │       ├── deepwork_jobs.refine.md
-│       ├── deepwork_rules.define.md        # Rule management
 │       ├── competitive_research.identify_competitors.md
 │       └── ...
 ├── .deepwork/                  # DeepWork configuration
@@ -296,24 +268,11 @@ my-project/                     # User's project (target)
 │   ├── .gitignore              # Ignores tmp/ directory
 │   ├── doc_specs/                   # Doc specs (document specifications)
 │   │   └── monthly_aws_report.md
-│   ├── rules/                  # Rule definitions (v2 format)
-│   │   ├── source-test-pairing.md
-│   │   ├── format-python.md
-│   │   └── api-docs.md
 │   ├── tmp/                    # Temporary state (gitignored)
-│   │   └── rules/queue/        # Rule evaluation queue
 │   └── jobs/                   # Job definitions
 │       ├── deepwork_jobs/      # Core job for managing jobs
 │       │   ├── job.yml
 │       │   └── steps/
-│       ├── deepwork_rules/     # Rule management job
-│       │   ├── job.yml
-│       │   ├── steps/
-│       │   │   └── define.md
-│       │   └── hooks/          # Hook scripts (installed from standard_jobs)
-│       │       ├── global_hooks.yml
-│       │       ├── user_prompt_submit.sh
-│       │       └── capture_prompt_work_tree.sh
 │       ├── competitive_research/
 │       │   ├── job.yml         # Job metadata
 │       │   └── steps/
@@ -1033,203 +992,6 @@ Github Actions are used for all CI/CD tasks.
 
 ---
 
-## Rules
-
-Rules are automated enforcement mechanisms that trigger based on file changes during an AI agent session. They help ensure that:
-- Documentation stays in sync with code changes
-- Security reviews happen when sensitive code is modified
-- Team guidelines are followed automatically
-- File correspondences are maintained (e.g., source/test pairing)
-
-### Rules System v2 (Frontmatter Markdown)
-
-Rules are defined as individual markdown files in `.deepwork/rules/`:
-
-```
-.deepwork/rules/
-├── source-test-pairing.md
-├── format-python.md
-└── api-docs.md
-```
-
-Each rule file uses YAML frontmatter with a markdown body for instructions:
-
-```markdown
----
-name: Source/Test Pairing
-set:
-  - src/{path}.py
-  - tests/{path}_test.py
-compare_to: base
----
-When source files change, corresponding test files should also change.
-Please create or update tests for the modified source files.
-```
-
-### Detection Modes
-
-Rules support three detection modes:
-
-**1. Trigger/Safety (default)** - Fire when trigger matches but safety doesn't:
-```yaml
----
-name: Update install guide
-trigger: "app/config/**/*"
-safety: "docs/install_guide.md"
-compare_to: base
----
-```
-
-**2. Set (bidirectional)** - Enforce file correspondence in both directions:
-```yaml
----
-name: Source/Test Pairing
-set:
-  - src/{path}.py
-  - tests/{path}_test.py
-compare_to: base
----
-```
-Uses variable patterns like `{path}` (multi-segment) and `{name}` (single-segment) for matching.
-
-**3. Pair (directional)** - Trigger requires corresponding files, but not vice versa:
-```yaml
----
-name: API Documentation
-pair:
-  trigger: src/api/{name}.py
-  expects: docs/api/{name}.md
-compare_to: base
----
-```
-
-### Action Types
-
-**1. Prompt (default)** - Show instructions to the agent:
-```yaml
----
-name: Security Review
-trigger: "src/auth/**/*"
-compare_to: base
----
-Please check for hardcoded credentials and validate input.
-```
-
-**2. Command** - Run an idempotent command:
-```yaml
----
-name: Format Python
-trigger: "**/*.py"
-action:
-  command: "ruff format {file}"
-  run_for: each_match  # or "all_matches"
-compare_to: prompt
----
-```
-
-### Rule Evaluation Flow
-
-1. **Session Start**: When a Claude Code session begins, the baseline git state is captured
-2. **Agent Works**: The AI agent performs tasks, potentially modifying files
-3. **Session Stop**: When the agent finishes (after_agent event):
-   - Changed files are detected based on `compare_to` setting (base, default_tip, or prompt)
-   - Each rule is evaluated based on its detection mode
-   - Queue entries are created in `.deepwork/tmp/rules/queue/` for deduplication
-   - For command actions: commands are executed, results tracked
-   - For prompt actions: if rule fires and not already promised, agent is prompted
-4. **Promise Tags**: Agents can mark rules as addressed by including `<promise>✓ Rule Name</promise>` in their response
-
-### Queue System
-
-Rule state is tracked in `.deepwork/tmp/rules/queue/` with files named `{hash}.{status}.json`:
-- `queued` - Detected, awaiting evaluation
-- `passed` - Rule satisfied (promise found or command succeeded)
-- `failed` - Rule not satisfied
-- `skipped` - Safety pattern matched
-
-This prevents re-prompting for the same rule violation within a session.
-
-### Hook Integration
-
-The v2 rules system uses the cross-platform hook wrapper:
-
-```
-src/deepwork/hooks/
-├── wrapper.py           # Cross-platform input/output normalization
-├── rules_check.py       # Rule evaluation hook (v2)
-├── claude_hook.sh       # Claude Code shell wrapper
-└── gemini_hook.sh       # Gemini CLI shell wrapper
-```
-
-Hooks are called via the shell wrappers:
-```bash
-claude_hook.sh deepwork.hooks.rules_check
-```
-
-The hooks are installed to `.claude/settings.json` during `deepwork sync`:
-
-```json
-{
-  "hooks": {
-    "Stop": [
-      {"matcher": "", "hooks": [{"type": "command", "command": "deepwork hook rules_check"}]}
-    ]
-  }
-}
-```
-
-### Cross-Platform Hook Wrapper System
-
-The `hooks/` module provides a wrapper system that allows writing hooks once in Python and running them on multiple platforms. This normalizes the differences between Claude Code and Gemini CLI hook systems.
-
-**Architecture:**
-```
-┌─────────────────┐     ┌─────────────────┐
-│  Claude Code    │     │   Gemini CLI    │
-│  (Stop event)   │     │ (AfterAgent)    │
-└────────┬────────┘     └────────┬────────┘
-         │                       │
-         ▼                       ▼
-┌─────────────────┐     ┌─────────────────┐
-│ claude_hook.sh  │     │ gemini_hook.sh  │
-│ (shell wrapper) │     │ (shell wrapper) │
-└────────┬────────┘     └────────┬────────┘
-         │                       │
-         └───────────┬───────────┘
-                     ▼
-           ┌─────────────────┐
-           │   wrapper.py    │
-           │ (normalization) │
-           └────────┬────────┘
-                    ▼
-           ┌─────────────────┐
-           │  Python Hook    │
-           │ (common logic)  │
-           └─────────────────┘
-```
-
-**Key normalizations:**
-- Event names: `Stop` ↔ `AfterAgent`, `PreToolUse` ↔ `BeforeTool`, `UserPromptSubmit` ↔ `BeforeAgent`
-- Tool names: `Write` ↔ `write_file`, `Bash` ↔ `shell`, `Read` ↔ `read_file`
-- Decision values: `block` → `deny` for Gemini CLI
-- Environment variables: `CLAUDE_PROJECT_DIR` ↔ `GEMINI_PROJECT_DIR`
-
-**Usage:**
-```python
-from deepwork.hooks.wrapper import HookInput, HookOutput, run_hook, Platform
-
-def my_hook(input: HookInput) -> HookOutput:
-    if input.event == NormalizedEvent.AFTER_AGENT:
-        return HookOutput(decision="block", reason="Complete X first")
-    return HookOutput()
-
-# Called via: claude_hook.sh mymodule or gemini_hook.sh mymodule
-```
-
-See `doc/platforms/` for detailed platform-specific hook documentation.
-
----
-
 ## Doc Specs (Document Specifications)
 
 Doc specs formalize document specifications for job outputs. They enable consistent document structure and automated quality validation.
@@ -1312,38 +1074,6 @@ See `doc/doc-specs.md` for complete documentation.
 
 ---
 
-### Rule Schema
-
-Rules are validated against a JSON Schema:
-
-```yaml
-- name: string          # Required: Friendly name for the rule
-  trigger: string|array # Required: Glob pattern(s) for triggering files
-  safety: string|array  # Optional: Glob pattern(s) for safety files
-  instructions: string  # Required (unless instructions_file): What to do
-  instructions_file: string  # Alternative: Path to instructions file
-```
-
-### Defining Rules
-
-Use the `/deepwork_rules.define` command to interactively create rules:
-
-```
-User: /deepwork_rules.define
-
-Claude: I'll help you define a new rule. What guideline or constraint
-        should this rule enforce?
-
-User: When API code changes, the API documentation should be updated
-
-Claude: Got it. Let me ask a few questions...
-        [Interactive dialog to define trigger, safety, and instructions]
-
-Claude: Created rule "API documentation update" in .deepwork/rules/api-documentation.md
-```
-
----
-
 ## Technical Decisions
 
 ### Language: Python 3.11+
@@ -1384,6 +1114,222 @@ Claude: Created rule "API documentation update" in .deepwork/rules/api-documenta
 
 ---
 
+---
+
+# Part 4: MCP Server Architecture
+
+DeepWork includes an MCP (Model Context Protocol) server that provides an alternative execution model. Instead of relying solely on skill files with embedded instructions, the MCP server guides agents through workflows via checkpoint calls with quality gate enforcement.
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Claude Code / AI Agent                     │
+│  /deepwork skill → instructs to use MCP tools               │
+└─────────────────────────────────────────────────────────────┘
+                              │ MCP Protocol (stdio)
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   DeepWork MCP Server                        │
+│  Tools: get_workflows | start_workflow | finished_step      │
+│  State: session tracking, step progress, outputs            │
+│  Quality Gate: invokes review agent for validation          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│              .deepwork/jobs/[job_name]/job.yml              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## MCP Server Components
+
+### Server (`server.py`)
+
+The FastMCP server definition that:
+- Creates and configures the MCP server instance
+- Registers the three workflow tools
+- Provides server instructions for agents
+
+### Tools (`tools.py`)
+
+Implements the three MCP tools:
+
+#### 1. `get_workflows`
+Lists all available workflows from `.deepwork/jobs/`.
+
+**Parameters**: None
+
+**Returns**: List of jobs with their workflows, steps, and summaries
+
+#### 2. `start_workflow`
+Begins a new workflow session.
+
+**Parameters**:
+- `goal: str` - What the user wants to accomplish
+- `job_name: str` - Name of the job
+- `workflow_name: str` - Name of the workflow within the job
+- `instance_id: str | None` - Optional identifier (e.g., "acme", "q1-2026")
+
+**Returns**: Session ID, branch name, first step instructions
+
+#### 3. `finished_step`
+Reports step completion and gets next instructions.
+
+**Parameters**:
+- `outputs: list[str]` - List of output file paths created
+- `notes: str | None` - Optional notes about work done
+
+**Returns**:
+- `status: "needs_work" | "next_step" | "workflow_complete"`
+- If `needs_work`: feedback from quality gate, failed criteria
+- If `next_step`: next step instructions
+- If `workflow_complete`: summary of all outputs
+
+### State Management (`state.py`)
+
+Manages workflow session state persisted to `.deepwork/tmp/session_[id].json`:
+
+```python
+class StateManager:
+    def create_session(...) -> WorkflowSession
+    def load_session(session_id) -> WorkflowSession
+    def start_step(step_id) -> None
+    def complete_step(step_id, outputs, notes) -> None
+    def advance_to_step(step_id, entry_index) -> None
+    def complete_workflow() -> None
+```
+
+Session state includes:
+- Session ID and timestamps
+- Job/workflow/instance identification
+- Current step and entry index
+- Per-step progress (started_at, completed_at, outputs, quality_attempts)
+
+### Quality Gate (`quality_gate.py`)
+
+Evaluates step outputs against quality criteria:
+
+```python
+class QualityGate:
+    def evaluate(
+        quality_criteria: list[str],
+        outputs: list[str],
+        project_root: Path,
+    ) -> QualityGateResult
+```
+
+The quality gate:
+1. Builds a review prompt with criteria and output file contents
+2. Invokes Claude Code via subprocess with proper flag ordering (see `doc/reference/calling_claude_in_print_mode.md`)
+3. Uses `--json-schema` for structured output conformance
+4. Parses the `structured_output` field from the JSON response
+5. Returns pass/fail with per-criterion feedback
+
+### Schemas (`schemas.py`)
+
+Pydantic models for all tool inputs and outputs:
+- `StartWorkflowInput`, `FinishedStepInput`
+- `GetWorkflowsResponse`, `StartWorkflowResponse`, `FinishedStepResponse`
+- `WorkflowSession`, `StepProgress`
+- `QualityGateResult`, `QualityCriteriaResult`
+
+## MCP Server Registration
+
+When `deepwork install` runs, it registers the MCP server in platform settings:
+
+```json
+// .claude/settings.json
+{
+  "mcpServers": {
+    "deepwork": {
+      "command": "deepwork",
+      "args": ["serve", "--path", "."],
+      "transport": "stdio"
+    }
+  }
+}
+```
+
+## The `/deepwork` Skill
+
+A single skill (`.claude/skills/deepwork/SKILL.md`) instructs agents to use MCP tools:
+
+```markdown
+# DeepWork Workflow Manager
+
+Execute multi-step workflows with quality gate checkpoints.
+
+## Quick Start
+1. Discover workflows: Call `get_workflows`
+2. Start a workflow: Call `start_workflow` with your goal
+3. Execute steps: Follow the instructions returned
+4. Checkpoint: Call `finished_step` with your outputs
+5. Iterate or continue: Handle needs_work, next_step, or workflow_complete
+```
+
+## MCP Execution Flow
+
+1. **User invokes `/deepwork`**
+   - Agent calls `get_workflows` to discover available workflows
+   - Parses user intent to identify target workflow
+
+2. **Agent calls `start_workflow`**
+   - MCP server creates session, generates branch name
+   - Returns first step instructions and expected outputs
+
+3. **Agent executes step**
+   - Follows step instructions
+   - Creates output files
+
+4. **Agent calls `finished_step`**
+   - MCP server evaluates outputs against quality criteria (if configured)
+   - If `needs_work`: returns feedback for agent to fix issues
+   - If `next_step`: returns next step instructions
+   - If `workflow_complete`: workflow finished
+
+5. **Loop continues until workflow complete**
+
+## Quality Gate
+
+Quality gate is enabled by default and uses Claude Code to evaluate step outputs
+against quality criteria. The command is constructed internally with proper flag
+ordering (see `doc/reference/calling_claude_in_print_mode.md`).
+
+To disable quality gate:
+
+```bash
+deepwork serve --no-quality-gate
+```
+
+## Serve Command
+
+Start the MCP server manually:
+
+```bash
+# Basic usage (quality gate enabled by default)
+deepwork serve
+
+# With quality gate disabled
+deepwork serve --no-quality-gate
+
+# For a specific project
+deepwork serve --path /path/to/project
+
+# SSE transport (for remote)
+deepwork serve --transport sse --port 8000
+```
+
+## Benefits of MCP Approach
+
+1. **Centralized state**: Session state persisted and visible in `.deepwork/tmp/`
+2. **Quality gates**: Automated validation before proceeding
+3. **Structured checkpoints**: Clear handoff points between steps
+4. **Resumability**: Sessions can be loaded and resumed
+5. **Observability**: All state changes logged and inspectable
+
+---
+
 ## References
 
 - [Spec-Kit Repository](https://github.com/github/spec-kit)
@@ -1392,4 +1338,6 @@ Claude: Created rule "API documentation update" in .deepwork/rules/api-documenta
 - [Git Workflows](https://www.atlassian.com/git/tutorials/comparing-workflows)
 - [JSON Schema](https://json-schema.org/)
 - [Jinja2 Documentation](https://jinja.palletsprojects.com/)
+- [Model Context Protocol](https://modelcontextprotocol.io/)
+- [FastMCP Documentation](https://github.com/jlowin/fastmcp)
 

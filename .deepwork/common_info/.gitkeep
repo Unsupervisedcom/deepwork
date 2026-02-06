@@ -1,0 +1,2 @@
+# This file ensures the .deepwork/common_info directory exists in version control.
+# Place shared reference files here that should be available across all jobs.
