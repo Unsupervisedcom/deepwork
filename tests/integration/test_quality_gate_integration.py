@@ -86,10 +86,10 @@ class TestRealClaudeIntegration:
         gate = QualityGate(cli=ClaudeCLI(timeout=120))
 
         result = await gate.evaluate(
-            quality_criteria=[
-                "The document must have a title",
-                "The document must contain a summary section",
-            ],
+            quality_criteria={
+                "Has Title": "Does the document have a title?",
+                "Has Summary": "Does the document contain a summary section?",
+            },
             outputs={"analysis": "analysis.md"},
             project_root=project_root,
         )
@@ -120,11 +120,11 @@ class TestRealClaudeIntegration:
         gate = QualityGate(cli=ClaudeCLI(timeout=120))
 
         result = await gate.evaluate(
-            quality_criteria=[
-                "The document must contain a section titled 'Executive Summary'",
-                "The document must include a numbered list of recommendations",
-                "The document must have a 'Conclusions' section",
-            ],
+            quality_criteria={
+                "Executive Summary": "Does the document contain a section titled 'Executive Summary'?",
+                "Recommendations": "Does the document include a numbered list of recommendations?",
+                "Conclusions": "Does the document have a 'Conclusions' section?",
+            },
             outputs={"document": "incomplete.md"},
             project_root=project_root,
         )

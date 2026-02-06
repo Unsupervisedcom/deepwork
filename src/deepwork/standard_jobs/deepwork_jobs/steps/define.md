@@ -116,20 +116,7 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Are there any quality checks or validation needed?
    - What makes a good vs. bad output for this step?
 
-   **Important**: Quality criteria belong in the `quality_criteria` field of job.yml, NOT in the step details. When skills are generated, quality criteria are automatically included in the output. Do not duplicate them in step instructions or details—this causes redundancy and confusion.
-
-6. **Agent Delegation** (optional)
-   - Should this step be executed by a specific agent type?
-   - Use the `agent` field when the step should run in a forked context with a specific agent
-   - When `agent` is set, the generated skill automatically includes `context: fork`
-   - Available agent types:
-     - `general-purpose` - Standard agent for multi-step tasks
-
-   ```yaml
-   steps:
-     - id: research_step
-       agent: general-purpose  # Delegates to the general-purpose agent
-   ```
+   **Important**: When skills are generated, quality criteria are automatically included in the output. Do not duplicate them in step instructions or details—this causes redundancy and confusion.
 
 **Note**: You're gathering this information to understand what instructions will be needed, but you won't create the instruction files yet - that happens in the `implement` step.
 
@@ -159,56 +146,53 @@ After gathering information about all steps:
    - Job description (detailed multi-line explanation)
    - Version number (start with 1.0.0)
 
-### Step 4: Define Quality Validation Hooks
+### Step 4: Define Quality Reviews
 
-For each step, consider whether it would benefit from **quality validation loops**. Quality hooks allow the AI agent to iteratively refine its work until quality criteria are met.
+For each step, define **reviews** that evaluate the step's outputs. Reviews run automatically when a step completes and provide quality validation loops.
 
-**Ask structured questions about quality validation:**
-- "Are there specific quality criteria that must be met for this step?"
-- "Would you like the agent to validate its work before completing?"
-- "What would make you send the work back for revision?"
+For intermediate outputs between steps, reviews let you make sure you don't go too far down the wrong path. Add reviews that confirm things that could cause problems later. For example, in a report creation process, you might have an intermediate step that performs a number of queries on the data and records the results so that later report-writing steps can synthesize that information into a coherent narrative. In this case, you would want to add a review that checks that the queries SQL matches up with the description of the queries in the job description.
 
-**Quality hooks are particularly valuable for:**
-- Steps with complex outputs that need multiple checks
-- Steps where quality is critical (final deliverables)
-- Steps with subjective quality criteria that benefit from AI self-review
+For final outputs, reviews let you make sure the output meets the user's expectations. For example, with a data-centric report job, you might have one review on the final output for consistency with style guidelines and tone and such, and a totally separate review on the data-backing to make sure the claims in the report are supported by the data from earlier steps and all have citations. 
 
-**Three types of hooks are supported:**
+**Any jobs with written final output must always have reviews**. Some suggested ones are:
+- Ensure claims have citations and the citations are not hallucinated
+- Ensure the output follows the style guidelines and tone
+- Ensure the output is well-organized and easy to read
+- Ensure obvious questions the content raises have answers provided
+- Visual formatting is correct (for things like PDF or HTML where the visual output matters)
+- That the content matches what the intended audience expects (i.e. executives vs engineers)
 
-1. **Inline Prompt** (`prompt`) - Best for simple quality criteria
-   ```yaml
-   hooks:
-     after_agent:
-       - prompt: |
-           Verify the output meets these criteria:
-           1. Contains at least 5 competitors
-           2. Each competitor has a description
-           3. Selection rationale is clear
-   ```
+**Reviews format:**
 
-2. **Prompt File** (`prompt_file`) - For detailed/reusable criteria
-   ```yaml
-   hooks:
-     after_agent:
-       - prompt_file: hooks/quality_check.md
-   ```
+Each review specifies `run_each` (what to review) and `quality_criteria` (a map of criterion name to question):
 
-3. **Script** (`script`) - For programmatic validation (tests, linting)
-   ```yaml
-   hooks:
-     after_agent:
-       - script: hooks/run_tests.sh
-   ```
-
-**Multiple hooks can be combined:**
 ```yaml
-hooks:
-  after_agent:
-    - script: hooks/lint_output.sh
-    - prompt: "Verify the content is comprehensive and well-organized"
+reviews:
+  - run_each: step  # Review all outputs together
+    quality_criteria:
+      "Consistent Style": "Do all files follow the same structure?"
+      "Complete Coverage": "Are all required topics covered?"
+  - run_each: report_files  # Review each file in a 'files'-type output individually
+    quality_criteria:
+      "Well Written": "Is the content clear and well-organized?"
+      "Data-Backed": "Are claims supported by data?"
 ```
 
-**Encourage prompt-based hooks** - They leverage the AI's ability to understand context and make nuanced quality judgments. Script hooks are best for objective checks (syntax, format, tests).
+**`run_each` options:**
+- `step` — Review runs once with ALL output files + input files
+- `<output_name>` where output is `type: file` — Review runs once with that specific file
+- `<output_name>` where output is `type: files` — Review runs once per file in the list
+
+**Reviews are particularly valuable for:**
+- Steps with complex outputs that need multiple quality checks
+- Steps where quality is critical (final deliverables)
+- Steps with subjective quality criteria that benefit from AI self-review
+- Steps producing multiple files where each file needs individual review
+
+**For steps with no quality checks needed, use an empty reviews list:**
+```yaml
+reviews: []
+```
 
 ### Step 5: Create the Job Directory and Specification
 
@@ -219,13 +203,6 @@ Only after you have complete understanding, create the job directory and `job.ym
 ```bash
 .deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
 ```
-
-This creates:
-- `.deepwork/jobs/[job_name]/` - Main job directory
-- `.deepwork/jobs/[job_name]/steps/` - For step instruction files
-- `.deepwork/jobs/[job_name]/hooks/` - For custom validation scripts
-- `.deepwork/jobs/[job_name]/templates/` - For example file formats
-- `.deepwork/jobs/[job_name]/AGENTS.md` - Job management guidance
 
 **Then create the job.yml file** at `.deepwork/jobs/[job_name]/job.yml`
 

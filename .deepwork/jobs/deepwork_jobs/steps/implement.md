@@ -47,28 +47,27 @@ For each step in the job.yml, create a comprehensive instruction file at `.deepw
 3. **Provide examples** - Show what good output looks like
 4. **Explain the "why"** - Help the user understand the step's role in the workflow
 5. **Quality over quantity** - Detailed, actionable instructions are better than vague ones
-6. **Align with stop hooks** - If the step has `stop_hooks` defined, ensure the quality criteria in the instruction file match the validation criteria in the hooks
+6. **Align with reviews** - If the step has `reviews` defined, ensure the quality criteria in the instruction file match the review criteria
 7. **Ask structured questions** - When a step has user inputs, the instructions MUST explicitly tell the agent to "ask structured questions" using the AskUserQuestion tool to gather that information. Never use generic phrasing like "ask the user" - always use "ask structured questions"
 
-### Handling Quality Hooks
+### Handling Reviews
 
-If a step in the job.yml has `hooks.after_agent` defined, the generated instruction file should:
+If a step in the job.yml has `reviews` defined, the generated instruction file should:
 
-1. **Mirror the quality criteria** - The "Quality Criteria" section should match what the hooks will validate
+1. **Mirror the quality criteria** - The "Quality Criteria" section should match what the reviews will validate
 2. **Be explicit about success** - Help the agent understand when the step is truly complete
-3. **Include the promise pattern** - Mention that `<promise>✓ Quality Criteria Met</promise>` should be included when criteria are met
+3. **Explain what's reviewed** - If reviews target specific outputs (via `run_each`), mention which outputs will be reviewed
 
 **Example: If the job.yml has:**
 ```yaml
 - id: research_competitors
   name: "Research Competitors"
-  hooks:
-    after_agent:
-      - prompt: |
-          Verify the research meets criteria:
-          1. Each competitor has at least 3 data points
-          2. Sources are cited
-          3. Information is current (within last year)
+  reviews:
+    - run_each: research_notes.md
+      quality_criteria:
+        "Sufficient Data": "Does each competitor have at least 3 data points?"
+        "Sources Cited": "Are sources cited for key claims?"
+        "Current Information": "Is the information current (within last year)?"
 ```
 
 **The instruction file should include:**
@@ -78,7 +77,6 @@ If a step in the job.yml has `hooks.after_agent` defined, the generated instruct
 - Each competitor has at least 3 distinct data points
 - All information is sourced with citations
 - Data is current (from within the last year)
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 ```
 
 This alignment ensures the AI agent knows exactly what will be validated and can self-check before completing.

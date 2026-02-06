@@ -21,6 +21,7 @@ steps:
         type: file
         description: "Output from the hidden step"
     dependencies: []
+    reviews: []
 
   - id: exposed_step
     name: "Exposed Step"
@@ -32,3 +33,4 @@ steps:
         type: file
         description: "Output from the exposed step"
     dependencies: []
+    reviews: []

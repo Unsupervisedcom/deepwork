@@ -38,8 +38,9 @@ Audit and repair the job at `.deepwork/jobs/[job_name]/job.yml`:
 4. Fix orphaned steps by adding them to workflows
 5. Migrate `outputs` from array format to map format with `type` and `description`
 6. Update any `file` inputs that reference renamed output keys
-7. Bump version and add changelog entry if changes were made
-8. Validate YAML syntax
+7. Migrate `quality_criteria` arrays to `reviews` format (run_each + map criteria)
+8. Bump version and add changelog entry if changes were made
+9. Validate YAML syntax
 
 Report what changes were made.
 ```
@@ -212,7 +213,38 @@ steps:
         from_step: define
 ```
 
-### Step 7: Update Version Numbers
+### Step 7: Migrate `quality_criteria` to `reviews`
+
+The flat `quality_criteria` field on steps has been replaced by the `reviews` array. Each review specifies `run_each` (what to review) and `quality_criteria` as a map of criterion name to question.
+
+**Before (deprecated):**
+```yaml
+steps:
+  - id: my_step
+    quality_criteria:
+      - "**Complete**: Is the output complete?"
+      - "**Accurate**: Is the data accurate?"
+```
+
+**After (current format):**
+```yaml
+steps:
+  - id: my_step
+    reviews:
+      - run_each: step
+        quality_criteria:
+          "Complete": "Is the output complete?"
+          "Accurate": "Is the data accurate?"
+```
+
+**Migration rules:**
+
+1. **Parse the old format**: Each string typically follows `**Name**: Question` format. Extract the name (bold text) as the map key and the question as the value.
+2. **Choose `run_each`**: Default to `step` (reviews all outputs together). If the step has a single primary output, consider using that output name instead.
+3. **For steps with no quality_criteria**: Use `reviews: []`
+4. **Remove the old field**: Delete the `quality_criteria` array entirely after migration.
+
+### Step 8: Update Version Numbers
 
 If you made significant changes to a job, bump its version number:
 
@@ -263,6 +295,7 @@ For each job in `.deepwork/jobs/`, check:
 | `exposed` field | Remove from all steps |
 | `stop_hooks` | Migrate to `hooks.after_agent` |
 | `outputs` format | Migrate from array to map with `type` and `description` |
+| `quality_criteria` | Migrate to `reviews` with `run_each` and map-format criteria |
 | Workflow steps | Remove references to deleted steps |
 | Dependencies | Update to valid step IDs |
 | File inputs | Update `from_step` references; update keys for renamed outputs |

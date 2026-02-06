@@ -93,7 +93,12 @@ class FinishedStepInput(BaseModel):
     """Input for finished_step tool."""
 
     outputs: dict[str, str | list[str]] = Field(
-        description="Map of output names to file path(s). Single file outputs map to a string path, multi-file outputs map to a list of paths."
+        description=(
+            "Map of output names to file path(s). "
+            "For outputs declared as type 'file': pass a single string path (e.g. \"report.md\"). "
+            "For outputs declared as type 'files': pass a list of string paths (e.g. [\"a.md\", \"b.md\"]). "
+            "Check step_expected_outputs from start_workflow/finished_step response to see each output's type."
+        )
     )
     notes: str | None = Field(default=None, description="Optional notes about work done")
     quality_review_override_reason: str | None = Field(
@@ -131,11 +136,45 @@ class QualityGateResult(BaseModel):
     )
 
 
+class ReviewInfo(BaseModel):
+    """Information about a review for a step."""
+
+    run_each: str = Field(description="'step' or output name to review")
+    quality_criteria: dict[str, str] = Field(
+        description="Map of criterion name to criterion question"
+    )
+
+
+class ReviewResult(BaseModel):
+    """Result from a single review evaluation."""
+
+    review_run_each: str = Field(description="'step' or output name that was reviewed")
+    target_file: str | None = Field(
+        default=None, description="Specific file reviewed (for per-file reviews)"
+    )
+    passed: bool = Field(description="Whether this review passed")
+    feedback: str = Field(description="Summary feedback")
+    criteria_results: list[QualityCriteriaResult] = Field(
+        default_factory=list, description="Per-criterion results"
+    )
+
+
 # =============================================================================
 # Tool Output Models
 # NOTE: Changes to these models affect MCP tool return types.
 #       Update doc/mcp_interface.md when modifying.
 # =============================================================================
+
+
+class ExpectedOutput(BaseModel):
+    """Describes an expected output for a step."""
+
+    name: str = Field(description="Output name (use as key in finished_step outputs)")
+    type: str = Field(description="Output type: 'file' or 'files'")
+    description: str = Field(description="What this output should contain")
+    syntax_for_finished_step_tool: str = Field(
+        description="The value format to use for this output when calling finished_step"
+    )
 
 
 class ActiveStepInfo(BaseModel):
@@ -144,9 +183,11 @@ class ActiveStepInfo(BaseModel):
     session_id: str = Field(description="Unique session identifier")
     branch_name: str = Field(description="Git branch for this workflow instance")
     step_id: str = Field(description="ID of the current step")
-    step_expected_outputs: list[str] = Field(description="Expected output files for this step")
-    step_quality_criteria: list[str] = Field(
-        default_factory=list, description="Criteria for step completion"
+    step_expected_outputs: list[ExpectedOutput] = Field(
+        description="Expected outputs for this step, including type and format hints"
+    )
+    step_reviews: list[ReviewInfo] = Field(
+        default_factory=list, description="Reviews to run when step completes"
     )
     step_instructions: str = Field(description="Instructions for the step")
 
@@ -180,8 +221,8 @@ class FinishedStepResponse(BaseModel):
 
     # For needs_work status
     feedback: str | None = Field(default=None, description="Feedback from quality gate")
-    failed_criteria: list[QualityCriteriaResult] | None = Field(
-        default=None, description="Failed quality criteria"
+    failed_reviews: list[ReviewResult] | None = Field(
+        default=None, description="Failed review results"
     )
 
     # For next_step status

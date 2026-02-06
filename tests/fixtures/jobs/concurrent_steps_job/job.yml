@@ -24,6 +24,7 @@ steps:
       setup_complete.md:
         type: file
         description: "Setup confirmation and configuration"
+    reviews: []
 
   - id: research_web
     name: "Web Research"
@@ -38,6 +39,7 @@ steps:
         description: "Research findings from web sources"
     dependencies:
       - setup
+    reviews: []
 
   - id: research_docs
     name: "Document Research"
@@ -52,6 +54,7 @@ steps:
         description: "Research findings from internal documents"
     dependencies:
       - setup
+    reviews: []
 
   - id: research_interviews
     name: "Interview Research"
@@ -66,6 +69,7 @@ steps:
         description: "Research findings from stakeholder interviews"
     dependencies:
       - setup
+    reviews: []
 
   - id: compile_results
     name: "Compile Results"
@@ -86,6 +90,7 @@ steps:
       - research_web
       - research_docs
       - research_interviews
+    reviews: []
 
   - id: final_review
     name: "Final Review"
@@ -100,3 +105,4 @@ steps:
         description: "Final reviewed and approved analysis report"
     dependencies:
       - compile_results
+    reviews: []

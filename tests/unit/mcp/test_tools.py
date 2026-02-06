@@ -41,8 +41,10 @@ steps:
       output1.md:
         type: file
         description: First step output
-    quality_criteria:
-      - Output must be valid
+    reviews:
+      - run_each: step
+        quality_criteria:
+          "Output Valid": "Is the output valid?"
   - id: step2
     name: Second Step
     description: The second step
@@ -53,6 +55,7 @@ steps:
         description: Second step output
     dependencies:
       - step1
+    reviews: []
 
 workflows:
   - name: main
@@ -149,8 +152,14 @@ class TestWorkflowTools:
         assert "test-instance" in response.begin_step.branch_name
         assert response.begin_step.step_id == "step1"
         assert "Step 1" in response.begin_step.step_instructions
-        assert "output1.md" in response.begin_step.step_expected_outputs
-        assert "Output must be valid" in response.begin_step.step_quality_criteria
+        outputs = response.begin_step.step_expected_outputs
+        assert len(outputs) == 1
+        assert outputs[0].name == "output1.md"
+        assert outputs[0].type == "file"
+        assert outputs[0].syntax_for_finished_step_tool == "filepath"
+        assert len(response.begin_step.step_reviews) == 1
+        assert response.begin_step.step_reviews[0].run_each == "step"
+        assert "Output Valid" in response.begin_step.step_reviews[0].quality_criteria
 
     async def test_start_workflow_invalid_job(self, tools: WorkflowTools) -> None:
         """Test starting workflow with invalid job."""
@@ -200,6 +209,7 @@ steps:
       output_a.md:
         type: file
         description: Step A output
+    reviews: []
   - id: step_b
     name: Step B
     description: Step B
@@ -208,6 +218,7 @@ steps:
       output_b.md:
         type: file
         description: Step B output
+    reviews: []
 
 workflows:
   - name: alpha
@@ -349,7 +360,7 @@ workflows:
 
         assert response.status == StepStatus.NEEDS_WORK
         assert response.feedback == "Needs improvement"
-        assert response.failed_criteria is not None
+        assert response.failed_reviews is not None
 
     async def test_finished_step_quality_gate_max_attempts(
         self, project_root: Path, state_manager: StateManager
@@ -510,6 +521,7 @@ steps:
     description: Cleanup step with no outputs
     instructions_file: steps/cleanup.md
     outputs: {}
+    reviews: []
 
 workflows:
   - name: main
@@ -561,6 +573,7 @@ steps:
       reports:
         type: files
         description: Generated report files
+    reviews: []
 
 workflows:
   - name: main
@@ -613,6 +626,7 @@ steps:
       reports:
         type: files
         description: Generated report files
+    reviews: []
 
 workflows:
   - name: main
@@ -669,6 +683,7 @@ steps:
       reports:
         type: files
         description: Generated report files
+    reviews: []
 
 workflows:
   - name: main

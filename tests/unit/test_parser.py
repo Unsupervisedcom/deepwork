@@ -8,6 +8,7 @@ from deepwork.core.parser import (
     JobDefinition,
     OutputSpec,
     ParseError,
+    Review,
     Step,
     StepInput,
     parse_job_definition,
@@ -88,6 +89,39 @@ class TestOutputSpec:
         assert output.name == "reports"
         assert output.type == "files"
         assert output.description == "Multiple output files"
+
+
+class TestReview:
+    """Tests for Review dataclass."""
+
+    def test_from_dict(self) -> None:
+        """Test creating review from dictionary."""
+        data = {
+            "run_each": "step",
+            "quality_criteria": {"Complete": "Is it complete?", "Valid": "Is it valid?"},
+        }
+        review = Review.from_dict(data)
+
+        assert review.run_each == "step"
+        assert review.quality_criteria == {"Complete": "Is it complete?", "Valid": "Is it valid?"}
+
+    def test_from_dict_output_specific(self) -> None:
+        """Test creating review targeting specific output."""
+        data = {
+            "run_each": "reports",
+            "quality_criteria": {"Well Written": "Is it well written?"},
+        }
+        review = Review.from_dict(data)
+
+        assert review.run_each == "reports"
+        assert len(review.quality_criteria) == 1
+
+    def test_from_dict_empty_criteria(self) -> None:
+        """Test creating review with empty criteria defaults."""
+        data = {"run_each": "step"}
+        review = Review.from_dict(data)
+
+        assert review.quality_criteria == {}
 
 
 class TestStep:
@@ -193,6 +227,50 @@ class TestStep:
         step = Step.from_dict(data)
 
         assert step.exposed is True
+
+    def test_from_dict_with_reviews(self) -> None:
+        """Test creating step with reviews."""
+        data = {
+            "id": "step1",
+            "name": "Step 1",
+            "description": "First step",
+            "instructions_file": "steps/step1.md",
+            "outputs": {
+                "output.md": {"type": "file", "description": "An output file"},
+            },
+            "reviews": [
+                {
+                    "run_each": "step",
+                    "quality_criteria": {"Complete": "Is it complete?"},
+                },
+                {
+                    "run_each": "output.md",
+                    "quality_criteria": {"Valid": "Is it valid?"},
+                },
+            ],
+        }
+        step = Step.from_dict(data)
+
+        assert len(step.reviews) == 2
+        assert step.reviews[0].run_each == "step"
+        assert step.reviews[0].quality_criteria == {"Complete": "Is it complete?"}
+        assert step.reviews[1].run_each == "output.md"
+
+    def test_from_dict_empty_reviews(self) -> None:
+        """Test creating step with empty reviews list."""
+        data = {
+            "id": "step1",
+            "name": "Step 1",
+            "description": "First step",
+            "instructions_file": "steps/step1.md",
+            "outputs": {
+                "output.md": {"type": "file", "description": "An output file"},
+            },
+            "reviews": [],
+        }
+        step = Step.from_dict(data)
+
+        assert step.reviews == []
 
 
 class TestJobDefinition:
@@ -318,6 +396,64 @@ class TestJobDefinition:
 
         with pytest.raises(ParseError, match="references non-existent step"):
             job.validate_file_inputs()
+
+    def test_validate_reviews_valid(self) -> None:
+        """Test that validate_reviews passes for valid run_each values."""
+        job = JobDefinition(
+            name="test_job",
+            version="1.0.0",
+            summary="Test job",
+            description="Test",
+            steps=[
+                Step(
+                    id="step1",
+                    name="Step 1",
+                    description="Step",
+                    instructions_file="steps/step1.md",
+                    outputs=[
+                        OutputSpec(name="report.md", type="file", description="Report")
+                    ],
+                    reviews=[
+                        Review(run_each="step", quality_criteria={"Complete": "Is it?"}),
+                        Review(run_each="report.md", quality_criteria={"Valid": "Is it?"}),
+                    ],
+                )
+            ],
+            job_dir=Path("/tmp"),
+        )
+
+        # Should not raise
+        job.validate_reviews()
+
+    def test_validate_reviews_invalid_run_each(self) -> None:
+        """Test that validate_reviews fails for invalid run_each."""
+        job = JobDefinition(
+            name="test_job",
+            version="1.0.0",
+            summary="Test job",
+            description="Test",
+            steps=[
+                Step(
+                    id="step1",
+                    name="Step 1",
+                    description="Step",
+                    instructions_file="steps/step1.md",
+                    outputs=[
+                        OutputSpec(name="report.md", type="file", description="Report")
+                    ],
+                    reviews=[
+                        Review(
+                            run_each="nonexistent_output",
+                            quality_criteria={"Test": "Is it?"},
+                        ),
+                    ],
+                )
+            ],
+            job_dir=Path("/tmp"),
+        )
+
+        with pytest.raises(ParseError, match="run_each='nonexistent_output'"):
+            job.validate_reviews()
 
     def test_validate_file_inputs_not_in_dependencies(self) -> None:
         """Test file input validation fails if from_step not in dependencies."""

@@ -149,7 +149,10 @@ def create_server(
             "'needs_work' with feedback to fix issues, "
             "'next_step' with instructions for the next step, or "
             "'workflow_complete' when finished (pops from stack if nested). "
-            "Required: outputs (list of file paths created). "
+            "Required: outputs (map of output names to file paths created). "
+            "For outputs with type 'file': pass a single string path. "
+            "For outputs with type 'files': pass a list of string paths. "
+            "Check step_expected_outputs in the response to see each output's type. "
             "Optional: notes about work done. "
             "Optional: quality_review_override_reason to skip quality review (must explain why)."
         )

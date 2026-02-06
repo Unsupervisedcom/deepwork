@@ -135,7 +135,8 @@
         "name",
         "description",
         "instructions_file",
-        "outputs"
+        "outputs",
+        "reviews"
       ],
       "additionalProperties": false,
       "description": "A single Step in a job, representing one material unit of work with evaluatable outputs",
@@ -202,12 +203,11 @@
           "description": "If true, step is hidden from menus. Alias for exposed: false. Default: false",
           "default": false
         },
-        "quality_criteria": {
+        "reviews": {
           "type": "array",
-          "description": "Declarative quality criteria for evaluating step outputs. Rendered with standard evaluation framing.",
+          "description": "Quality reviews to run when step completes. Can be empty.",
           "items": {
-            "type": "string",
-            "minLength": 1
+            "$ref": "#/$defs/review"
           }
         },
         "agent": {
@@ -365,6 +365,31 @@
           }
         }
       ]
+    },
+    "review": {
+      "type": "object",
+      "required": [
+        "run_each",
+        "quality_criteria"
+      ],
+      "additionalProperties": false,
+      "description": "A quality review that evaluates step outputs against criteria",
+      "properties": {
+        "run_each": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Either 'step' to review all outputs together, or the name of a specific output to review individually"
+        },
+        "quality_criteria": {
+          "type": "object",
+          "description": "Map of criterion name to criterion question",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minProperties": 1
+        }
+      }
     }
   }
 }

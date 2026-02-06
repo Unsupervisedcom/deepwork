@@ -88,6 +88,7 @@ For each generalizable learning:
    - Include helpful examples
    - Clarify ambiguous instructions
    - Update quality criteria if needed
+   - If you identify problems in the outcomes of steps, those usually should be reflected in an update to the `reviews` for that step in `job.yml` (adjusting criteria names, questions, or `run_each` targeting)
 
 3. **Keep instructions concise**
    - Avoid redundancy - don't repeat the same guidance in multiple places

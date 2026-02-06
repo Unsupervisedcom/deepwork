@@ -6,13 +6,18 @@ step outputs against quality criteria.
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from typing import Any
 
 import aiofiles
 
 from deepwork.mcp.claude_cli import ClaudeCLI
-from deepwork.mcp.schemas import QualityCriteriaResult, QualityGateResult
+from deepwork.mcp.schemas import (
+    QualityCriteriaResult,
+    QualityGateResult,
+    ReviewResult,
+)
 
 # JSON Schema for quality gate response validation
 QUALITY_GATE_RESPONSE_SCHEMA: dict[str, Any] = {
@@ -39,6 +44,9 @@ QUALITY_GATE_RESPONSE_SCHEMA: dict[str, Any] = {
 # File separator format: 20 dashes, filename, 20 dashes
 FILE_SEPARATOR = "-" * 20
 
+# Section headers for inputs/outputs
+SECTION_SEPARATOR = "=" * 20
+
 
 class QualityGateError(Exception):
     """Exception raised for quality gate errors."""
@@ -61,22 +69,43 @@ class QualityGate:
         """
         self._cli = cli or ClaudeCLI()
 
-    def _build_instructions(self, quality_criteria: list[str]) -> str:
+    def _build_instructions(
+        self,
+        quality_criteria: dict[str, str],
+        notes: str | None = None,
+    ) -> str:
         """Build the system instructions for the review agent.
 
         Args:
-            quality_criteria: List of quality criteria to evaluate
+            quality_criteria: Map of criterion name to criterion question
+            notes: Optional notes from the agent about work done
 
         Returns:
             System instructions string
         """
-        criteria_list = "\n".join(f"- {c}" for c in quality_criteria)
+        criteria_list = "\n".join(
+            f"- **{name}**: {question}" for name, question in quality_criteria.items()
+        )
 
-        return f"""You are a quality gate reviewer. Your job is to evaluate whether outputs meet the specified quality criteria.
+        notes_section = ""
+        if notes:
+            notes_section = f"""
 
-## Quality Criteria to Evaluate
+## Author Notes
+
+The author provided the following notes about the work done:
+
+{notes}"""
+
+        return f"""\
+You are an editor responsible for reviewing the files listed as outputs.
+Your job is to evaluate whether outputs meet the specified criteria below.
+You have also been provided any relevant inputs that were used by the process that generated the outputs.
+
+## Criteria to Evaluate
 
 {criteria_list}
+{notes_section}
 
 ## Response Format
 
@@ -87,7 +116,7 @@ You must respond with JSON in this exact structure:
   "feedback": "Brief overall summary of evaluation",
   "criteria_results": [
     {{
-      "criterion": "The criterion text",
+      "criterion": "The criterion name",
       "passed": true/false,
       "feedback": "Specific feedback for this criterion (null if passed)"
     }}
@@ -120,41 +149,84 @@ You must respond with JSON in this exact structure:
                 paths.append(value)
         return paths
 
-    async def _build_payload(
+    async def _read_file_sections(
         self,
-        outputs: dict[str, str | list[str]],
+        file_paths: dict[str, str | list[str]],
         project_root: Path,
-    ) -> str:
-        """Build the user prompt payload with file contents.
+    ) -> list[str]:
+        """Read files and return formatted sections for each.
 
         Args:
-            outputs: Map of output names to file path(s)
+            file_paths: Map of names to file path(s)
             project_root: Project root path for reading files
 
         Returns:
-            Formatted payload with file contents
+            List of formatted file sections
         """
-        output_sections: list[str] = []
-        all_paths = self._flatten_output_paths(outputs)
+        sections: list[str] = []
+        all_paths = self._flatten_output_paths(file_paths)
 
-        for output_path in all_paths:
-            full_path = project_root / output_path
-            header = f"{FILE_SEPARATOR} {output_path} {FILE_SEPARATOR}"
+        for file_path in all_paths:
+            full_path = project_root / file_path
+            header = f"{FILE_SEPARATOR} {file_path} {FILE_SEPARATOR}"
 
             if full_path.exists():
                 try:
                     async with aiofiles.open(full_path, encoding="utf-8") as f:
                         content = await f.read()
-                    output_sections.append(f"{header}\n{content}")
+                    sections.append(f"{header}\n{content}")
+                except (UnicodeDecodeError, ValueError):
+                    abs_path = full_path.resolve()
+                    sections.append(
+                        f"{header}\n[Binary file — not included in review. "
+                        f"Read from: {abs_path}]"
+                    )
                 except Exception as e:
-                    output_sections.append(f"{header}\n[Error reading file: {e}]")
+                    sections.append(f"{header}\n[Error reading file: {e}]")
             else:
-                output_sections.append(f"{header}\n[File not found]")
+                sections.append(f"{header}\n[File not found]")
 
-        if not output_sections:
-            return "[No output files provided]"
+        return sections
 
-        return "\n\n".join(output_sections)
+    async def _build_payload(
+        self,
+        outputs: dict[str, str | list[str]],
+        project_root: Path,
+        inputs: dict[str, str | list[str]] | None = None,
+    ) -> str:
+        """Build the user prompt payload with file contents.
+
+        Organizes content into clearly separated INPUTS and OUTPUTS sections.
+
+        Args:
+            outputs: Map of output names to file path(s)
+            project_root: Project root path for reading files
+            inputs: Optional map of input names to file path(s) from prior steps
+
+        Returns:
+            Formatted payload with file contents in sections
+        """
+        parts: list[str] = []
+
+        # Build inputs section if provided
+        if inputs:
+            input_sections = await self._read_file_sections(inputs, project_root)
+            if input_sections:
+                parts.append(f"{SECTION_SEPARATOR} BEGIN INPUTS {SECTION_SEPARATOR}")
+                parts.extend(input_sections)
+                parts.append(f"{SECTION_SEPARATOR} END INPUTS {SECTION_SEPARATOR}")
+
+        # Build outputs section
+        output_sections = await self._read_file_sections(outputs, project_root)
+        if output_sections:
+            parts.append(f"{SECTION_SEPARATOR} BEGIN OUTPUTS {SECTION_SEPARATOR}")
+            parts.extend(output_sections)
+            parts.append(f"{SECTION_SEPARATOR} END OUTPUTS {SECTION_SEPARATOR}")
+
+        if not parts:
+            return "[No files provided]"
+
+        return "\n\n".join(parts)
 
     def _parse_result(self, data: dict[str, Any]) -> QualityGateResult:
         """Parse the structured output into a QualityGateResult.
@@ -192,16 +264,20 @@ You must respond with JSON in this exact structure:
 
     async def evaluate(
         self,
-        quality_criteria: list[str],
+        quality_criteria: dict[str, str],
         outputs: dict[str, str | list[str]],
         project_root: Path,
+        inputs: dict[str, str | list[str]] | None = None,
+        notes: str | None = None,
     ) -> QualityGateResult:
         """Evaluate step outputs against quality criteria.
 
         Args:
-            quality_criteria: List of quality criteria to evaluate
+            quality_criteria: Map of criterion name to criterion question
             outputs: Map of output names to file path(s)
             project_root: Project root path
+            inputs: Optional map of input names to file path(s) from prior steps
+            notes: Optional notes from the agent about work done
 
         Returns:
             QualityGateResult with pass/fail and feedback
@@ -217,8 +293,8 @@ You must respond with JSON in this exact structure:
                 criteria_results=[],
             )
 
-        instructions = self._build_instructions(quality_criteria)
-        payload = await self._build_payload(outputs, project_root)
+        instructions = self._build_instructions(quality_criteria, notes=notes)
+        payload = await self._build_payload(outputs, project_root, inputs=inputs)
 
         from deepwork.mcp.claude_cli import ClaudeCLIError
 
@@ -233,6 +309,89 @@ You must respond with JSON in this exact structure:
             raise QualityGateError(str(e)) from e
 
         return self._parse_result(data)
+
+    async def evaluate_reviews(
+        self,
+        reviews: list[dict[str, Any]],
+        outputs: dict[str, str | list[str]],
+        output_specs: dict[str, str],
+        project_root: Path,
+        inputs: dict[str, str | list[str]] | None = None,
+        notes: str | None = None,
+    ) -> list[ReviewResult]:
+        """Evaluate all reviews for a step, running them in parallel.
+
+        Args:
+            reviews: List of review dicts with run_each and quality_criteria
+            outputs: Map of output names to file path(s)
+            output_specs: Map of output names to their type ("file" or "files")
+            project_root: Project root path
+            inputs: Optional map of input names to file path(s) from prior steps
+            notes: Optional notes from the agent about work done
+
+        Returns:
+            List of ReviewResult for any failed reviews (empty if all pass)
+        """
+        if not reviews:
+            return []
+
+        tasks: list[tuple[str, str | None, dict[str, str], dict[str, str | list[str]]]] = []
+
+        for review in reviews:
+            run_each = review["run_each"]
+            quality_criteria = review["quality_criteria"]
+
+            if run_each == "step":
+                # Review all outputs together
+                tasks.append((run_each, None, quality_criteria, outputs))
+            elif run_each in outputs:
+                output_type = output_specs.get(run_each, "file")
+                output_value = outputs[run_each]
+
+                if output_type == "files" and isinstance(output_value, list):
+                    # Run once per file
+                    for file_path in output_value:
+                        tasks.append((
+                            run_each,
+                            file_path,
+                            quality_criteria,
+                            {run_each: file_path},
+                        ))
+                else:
+                    # Single file - run once
+                    tasks.append((
+                        run_each,
+                        output_value if isinstance(output_value, str) else None,
+                        quality_criteria,
+                        {run_each: output_value},
+                    ))
+
+        async def run_review(
+            run_each: str,
+            target_file: str | None,
+            criteria: dict[str, str],
+            review_outputs: dict[str, str | list[str]],
+        ) -> ReviewResult:
+            result = await self.evaluate(
+                quality_criteria=criteria,
+                outputs=review_outputs,
+                project_root=project_root,
+                inputs=inputs,
+                notes=notes,
+            )
+            return ReviewResult(
+                review_run_each=run_each,
+                target_file=target_file,
+                passed=result.passed,
+                feedback=result.feedback,
+                criteria_results=result.criteria_results,
+            )
+
+        results = await asyncio.gather(
+            *(run_review(*task) for task in tasks)
+        )
+
+        return [r for r in results if not r.passed]
 
 
 class MockQualityGate(QualityGate):
@@ -255,25 +414,29 @@ class MockQualityGate(QualityGate):
 
     async def evaluate(
         self,
-        quality_criteria: list[str],
+        quality_criteria: dict[str, str],
         outputs: dict[str, str | list[str]],
         project_root: Path,
+        inputs: dict[str, str | list[str]] | None = None,
+        notes: str | None = None,
     ) -> QualityGateResult:
         """Mock evaluation - records call and returns configured result."""
         self.evaluations.append(
             {
                 "quality_criteria": quality_criteria,
                 "outputs": outputs,
+                "inputs": inputs,
+                "notes": notes,
             }
         )
 
         criteria_results = [
             QualityCriteriaResult(
-                criterion=c,
+                criterion=name,
                 passed=self.should_pass,
                 feedback=None if self.should_pass else self.feedback,
             )
-            for c in quality_criteria
+            for name in quality_criteria
         ]
 
         return QualityGateResult(

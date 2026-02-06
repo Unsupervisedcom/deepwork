@@ -15,7 +15,6 @@ from deepwork.core.parser import (
     JobDefinition,
     OutputSpec,
     ParseError,
-    Step,
     Workflow,
     parse_job_definition,
 )
@@ -23,10 +22,12 @@ from deepwork.mcp.schemas import (
     AbortWorkflowInput,
     AbortWorkflowResponse,
     ActiveStepInfo,
+    ExpectedOutput,
     FinishedStepInput,
     FinishedStepResponse,
     GetWorkflowsResponse,
     JobInfo,
+    ReviewInfo,
     StartWorkflowInput,
     StartWorkflowResponse,
     StepStatus,
@@ -263,6 +264,23 @@ class WorkflowTools:
                             f"Output '{name}': file not found at '{path}'"
                         )
 
+    @staticmethod
+    def _build_expected_outputs(outputs: list[OutputSpec]) -> list[ExpectedOutput]:
+        """Build ExpectedOutput list from OutputSpec list."""
+        syntax_map = {
+            "file": "filepath",
+            "files": "array of filepaths for all individual files",
+        }
+        return [
+            ExpectedOutput(
+                name=out.name,
+                type=out.type,
+                description=out.description,
+                syntax_for_finished_step_tool=syntax_map.get(out.type, out.type),
+            )
+            for out in outputs
+        ]
+
     # =========================================================================
     # Tool Implementations
     # =========================================================================
@@ -318,7 +336,7 @@ class WorkflowTools:
         instructions = self._get_step_instructions(job, first_step_id)
 
         # Get expected outputs
-        step_outputs = [out.name for out in first_step.outputs]
+        step_outputs = self._build_expected_outputs(first_step.outputs)
 
         return StartWorkflowResponse(
             begin_step=ActiveStepInfo(
@@ -326,7 +344,13 @@ class WorkflowTools:
                 branch_name=session.branch_name,
                 step_id=first_step_id,
                 step_expected_outputs=step_outputs,
-                step_quality_criteria=first_step.quality_criteria,
+                step_reviews=[
+                    ReviewInfo(
+                        run_each=r.run_each,
+                        quality_criteria=r.quality_criteria,
+                    )
+                    for r in first_step.reviews
+                ],
                 step_instructions=instructions,
             ),
             stack=self.state_manager.get_stack(),
@@ -359,34 +383,55 @@ class WorkflowTools:
         # Validate outputs against step's declared output specs
         self._validate_outputs(input_data.outputs, current_step.outputs)
 
-        # Run quality gate if available and step has criteria (unless overridden)
+        # Run quality gate if available and step has reviews (unless overridden)
         if (
             self.quality_gate
-            and current_step.quality_criteria
+            and current_step.reviews
             and not input_data.quality_review_override_reason
         ):
             attempts = await self.state_manager.record_quality_attempt(current_step_id)
 
-            result = await self.quality_gate.evaluate(
-                quality_criteria=current_step.quality_criteria,
+            # Build output specs map for evaluate_reviews
+            output_specs = {out.name: out.type for out in current_step.outputs}
+
+            # Resolve input files from prior step outputs
+            input_files: dict[str, str | list[str]] = {}
+            for inp in current_step.inputs:
+                if inp.is_file_input():
+                    source_progress = session.step_progress.get(inp.from_step)  # type: ignore[arg-type]
+                    if source_progress and inp.file in source_progress.outputs:
+                        input_files[inp.file] = source_progress.outputs[inp.file]  # type: ignore[index]
+
+            failed_reviews = await self.quality_gate.evaluate_reviews(
+                reviews=[
+                    {
+                        "run_each": r.run_each,
+                        "quality_criteria": r.quality_criteria,
+                    }
+                    for r in current_step.reviews
+                ],
                 outputs=input_data.outputs,
+                output_specs=output_specs,
                 project_root=self.project_root,
+                inputs=input_files if input_files else None,
+                notes=input_data.notes,
             )
 
-            if not result.passed:
+            if failed_reviews:
                 # Check max attempts
                 if attempts >= self.max_quality_attempts:
+                    feedback_parts = [r.feedback for r in failed_reviews]
                     raise ToolError(
                         f"Quality gate failed after {self.max_quality_attempts} attempts. "
-                        f"Feedback: {result.feedback}"
+                        f"Feedback: {'; '.join(feedback_parts)}"
                     )
 
                 # Return needs_work status
-                failed_criteria = [cr for cr in result.criteria_results if not cr.passed]
+                combined_feedback = "; ".join(r.feedback for r in failed_reviews)
                 return FinishedStepResponse(
                     status=StepStatus.NEEDS_WORK,
-                    feedback=result.feedback,
-                    failed_criteria=failed_criteria,
+                    feedback=combined_feedback,
+                    failed_reviews=failed_reviews,
                     stack=self.state_manager.get_stack(),
                 )
 
@@ -430,7 +475,7 @@ class WorkflowTools:
 
         # Get instructions
         instructions = self._get_step_instructions(job, next_step_id)
-        step_outputs = [out.name for out in next_step.outputs]
+        step_outputs = self._build_expected_outputs(next_step.outputs)
 
         # Add info about concurrent steps if this is a concurrent entry
         if next_entry.is_concurrent and len(next_entry.step_ids) > 1:
@@ -451,7 +496,13 @@ class WorkflowTools:
                 branch_name=session.branch_name,
                 step_id=next_step_id,
                 step_expected_outputs=step_outputs,
-                step_quality_criteria=next_step.quality_criteria,
+                step_reviews=[
+                    ReviewInfo(
+                        run_each=r.run_each,
+                        quality_criteria=r.quality_criteria,
+                    )
+                    for r in next_step.reviews
+                ],
                 step_instructions=instructions,
             ),
             stack=self.state_manager.get_stack(),

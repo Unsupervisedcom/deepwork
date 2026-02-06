@@ -2,11 +2,14 @@
 
 from deepwork.mcp.schemas import (
     ActiveStepInfo,
+    ExpectedOutput,
     FinishedStepInput,
     FinishedStepResponse,
     JobInfo,
     QualityCriteriaResult,
     QualityGateResult,
+    ReviewInfo,
+    ReviewResult,
     StartWorkflowInput,
     StartWorkflowResponse,
     StepInfo,
@@ -223,38 +226,122 @@ class TestQualityGateResult:
         assert len(result.criteria_results) == 2
 
 
+class TestReviewInfo:
+    """Tests for ReviewInfo model."""
+
+    def test_step_review(self) -> None:
+        """Test step-level review info."""
+        review = ReviewInfo(
+            run_each="step",
+            quality_criteria={"Complete": "Is it complete?"},
+        )
+
+        assert review.run_each == "step"
+        assert review.quality_criteria == {"Complete": "Is it complete?"}
+
+    def test_output_review(self) -> None:
+        """Test output-specific review info."""
+        review = ReviewInfo(
+            run_each="reports",
+            quality_criteria={
+                "Valid": "Is it valid?",
+                "Complete": "Is it complete?",
+            },
+        )
+
+        assert review.run_each == "reports"
+        assert len(review.quality_criteria) == 2
+
+
+class TestReviewResult:
+    """Tests for ReviewResult model."""
+
+    def test_passed_review(self) -> None:
+        """Test passed review result."""
+        result = ReviewResult(
+            review_run_each="step",
+            target_file=None,
+            passed=True,
+            feedback="All good",
+        )
+
+        assert result.passed is True
+        assert result.target_file is None
+
+    def test_failed_per_file_review(self) -> None:
+        """Test failed per-file review result."""
+        result = ReviewResult(
+            review_run_each="reports",
+            target_file="report1.md",
+            passed=False,
+            feedback="Issues found",
+            criteria_results=[
+                QualityCriteriaResult(criterion="Valid", passed=False, feedback="Not valid"),
+            ],
+        )
+
+        assert result.passed is False
+        assert result.target_file == "report1.md"
+        assert result.review_run_each == "reports"
+        assert len(result.criteria_results) == 1
+
+
 class TestActiveStepInfo:
     """Tests for ActiveStepInfo model."""
 
     def test_basic_step_info(self) -> None:
         """Test basic active step info."""
+        expected = [
+            ExpectedOutput(
+                name="output.md",
+                type="file",
+                description="Test output",
+                syntax_for_finished_step_tool="filepath",
+            )
+        ]
         step_info = ActiveStepInfo(
             session_id="abc123",
             branch_name="deepwork/test-main-20240101",
             step_id="step1",
-            step_expected_outputs=["output.md"],
-            step_quality_criteria=["Must be complete"],
+            step_expected_outputs=expected,
+            step_reviews=[
+                ReviewInfo(
+                    run_each="step",
+                    quality_criteria={"Complete": "Is it complete?"},
+                )
+            ],
             step_instructions="Do something",
         )
 
         assert step_info.session_id == "abc123"
         assert step_info.branch_name == "deepwork/test-main-20240101"
         assert step_info.step_id == "step1"
-        assert step_info.step_expected_outputs == ["output.md"]
-        assert step_info.step_quality_criteria == ["Must be complete"]
+        assert len(step_info.step_expected_outputs) == 1
+        assert step_info.step_expected_outputs[0].name == "output.md"
+        assert step_info.step_expected_outputs[0].type == "file"
+        assert step_info.step_expected_outputs[0].syntax_for_finished_step_tool == "filepath"
+        assert len(step_info.step_reviews) == 1
+        assert step_info.step_reviews[0].run_each == "step"
         assert step_info.step_instructions == "Do something"
 
-    def test_default_quality_criteria(self) -> None:
-        """Test default empty quality criteria."""
+    def test_default_reviews(self) -> None:
+        """Test default empty reviews."""
         step_info = ActiveStepInfo(
             session_id="abc123",
             branch_name="deepwork/test-main-20240101",
             step_id="step1",
-            step_expected_outputs=["output.md"],
+            step_expected_outputs=[
+                ExpectedOutput(
+                    name="output.md",
+                    type="file",
+                    description="Test output",
+                    syntax_for_finished_step_tool="filepath",
+                )
+            ],
             step_instructions="Do something",
         )
 
-        assert step_info.step_quality_criteria == []
+        assert step_info.step_reviews == []
 
 
 class TestStartWorkflowResponse:
@@ -267,7 +354,14 @@ class TestStartWorkflowResponse:
                 session_id="abc123",
                 branch_name="deepwork/test-main-20240101",
                 step_id="step1",
-                step_expected_outputs=["output.md"],
+                step_expected_outputs=[
+                    ExpectedOutput(
+                        name="output.md",
+                        type="file",
+                        description="Test output",
+                        syntax_for_finished_step_tool="filepath",
+                    )
+                ],
                 step_instructions="Do something",
             )
         )
@@ -275,7 +369,7 @@ class TestStartWorkflowResponse:
         assert response.begin_step.session_id == "abc123"
         assert response.begin_step.branch_name == "deepwork/test-main-20240101"
         assert response.begin_step.step_id == "step1"
-        assert response.begin_step.step_quality_criteria == []
+        assert response.begin_step.step_reviews == []
 
 
 class TestFinishedStepResponse:
@@ -286,8 +380,18 @@ class TestFinishedStepResponse:
         response = FinishedStepResponse(
             status=StepStatus.NEEDS_WORK,
             feedback="Fix the issues",
-            failed_criteria=[
-                QualityCriteriaResult(criterion="Test", passed=False, feedback="Failed"),
+            failed_reviews=[
+                ReviewResult(
+                    review_run_each="step",
+                    target_file=None,
+                    passed=False,
+                    feedback="Issues found",
+                    criteria_results=[
+                        QualityCriteriaResult(
+                            criterion="Test", passed=False, feedback="Failed"
+                        ),
+                    ],
+                ),
             ],
         )
 
@@ -303,7 +407,14 @@ class TestFinishedStepResponse:
                 session_id="abc123",
                 branch_name="deepwork/test-main-20240101",
                 step_id="step2",
-                step_expected_outputs=["output2.md"],
+                step_expected_outputs=[
+                    ExpectedOutput(
+                        name="output2.md",
+                        type="file",
+                        description="Test output",
+                        syntax_for_finished_step_tool="filepath",
+                    )
+                ],
                 step_instructions="Next step instructions",
             ),
         )

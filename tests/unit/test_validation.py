@@ -24,6 +24,7 @@ class TestValidateAgainstSchema:
                     "instructions_file": "steps/step1.md",
                     "outputs": {"output.md": {"type": "file", "description": "Output"}},
                     "dependencies": [],
+                    "reviews": [],
                 }
             ],
         }
@@ -50,6 +51,7 @@ class TestValidateAgainstSchema:
                     ],
                     "outputs": {"output.md": {"type": "file", "description": "Output"}},
                     "dependencies": [],
+                    "reviews": [],
                 }
             ],
         }
@@ -71,6 +73,7 @@ class TestValidateAgainstSchema:
                     "instructions_file": "steps/step1.md",
                     "outputs": {"data.md": {"type": "file", "description": "Data output"}},
                     "dependencies": [],
+                    "reviews": [],
                 },
                 {
                     "id": "step2",
@@ -80,6 +83,7 @@ class TestValidateAgainstSchema:
                     "inputs": [{"file": "data.md", "from_step": "step1"}],
                     "outputs": {"result.md": {"type": "file", "description": "Result output"}},
                     "dependencies": ["step1"],
+                    "reviews": [],
                 },
             ],
         }
@@ -113,6 +117,7 @@ class TestValidateAgainstSchema:
                     "description": "Step",
                     "instructions_file": "steps/step1.md",
                     "outputs": {"output.md": {"type": "file", "description": "Output"}},
+                    "reviews": [],
                 }
             ],
         }
@@ -134,6 +139,7 @@ class TestValidateAgainstSchema:
                     "description": "Step",
                     "instructions_file": "steps/step1.md",
                     "outputs": {"output.md": {"type": "file", "description": "Output"}},
+                    "reviews": [],
                 }
             ],
         }
@@ -195,6 +201,7 @@ class TestValidateAgainstSchema:
                         }
                     ],
                     "outputs": {"output.md": {"type": "file", "description": "Output"}},
+                    "reviews": [],
                 }
             ],
         }
@@ -211,3 +218,116 @@ class TestValidateAgainstSchema:
 
         assert job_data is not None
         validate_against_schema(job_data, JOB_SCHEMA)
+
+    def test_raises_for_step_missing_reviews(self) -> None:
+        """Test that validation fails for step without reviews field."""
+        job_data = {
+            "name": "job",
+            "version": "1.0.0",
+            "summary": "Missing reviews test",
+            "description": "Job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "Step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": {"output.md": {"type": "file", "description": "Output"}},
+                    # Missing reviews - now required
+                }
+            ],
+        }
+
+        with pytest.raises(ValidationError, match="'reviews' is a required property"):
+            validate_against_schema(job_data, JOB_SCHEMA)
+
+    def test_validates_job_with_reviews(self) -> None:
+        """Test validation of job with reviews."""
+        job_data = {
+            "name": "job_with_reviews",
+            "version": "1.0.0",
+            "summary": "Job with reviews",
+            "description": "Job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "Step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": {
+                        "report.md": {"type": "file", "description": "Report"},
+                    },
+                    "reviews": [
+                        {
+                            "run_each": "step",
+                            "quality_criteria": {
+                                "Complete": "Is it complete?",
+                                "Valid": "Is it valid?",
+                            },
+                        },
+                        {
+                            "run_each": "report.md",
+                            "quality_criteria": {
+                                "Well Written": "Is it well written?",
+                            },
+                        },
+                    ],
+                }
+            ],
+        }
+
+        validate_against_schema(job_data, JOB_SCHEMA)
+
+    def test_raises_for_review_missing_run_each(self) -> None:
+        """Test validation fails for review without run_each."""
+        job_data = {
+            "name": "job",
+            "version": "1.0.0",
+            "summary": "Test",
+            "description": "Job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "Step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": {"output.md": {"type": "file", "description": "Output"}},
+                    "reviews": [
+                        {
+                            # Missing run_each
+                            "quality_criteria": {"Test": "Is it tested?"},
+                        }
+                    ],
+                }
+            ],
+        }
+
+        with pytest.raises(ValidationError):
+            validate_against_schema(job_data, JOB_SCHEMA)
+
+    def test_raises_for_review_empty_criteria(self) -> None:
+        """Test validation fails for review with empty quality_criteria."""
+        job_data = {
+            "name": "job",
+            "version": "1.0.0",
+            "summary": "Test",
+            "description": "Job",
+            "steps": [
+                {
+                    "id": "step1",
+                    "name": "Step 1",
+                    "description": "Step",
+                    "instructions_file": "steps/step1.md",
+                    "outputs": {"output.md": {"type": "file", "description": "Output"}},
+                    "reviews": [
+                        {
+                            "run_each": "step",
+                            "quality_criteria": {},  # Empty - minProperties: 1
+                        }
+                    ],
+                }
+            ],
+        }
+
+        with pytest.raises(ValidationError):
+            validate_against_schema(job_data, JOB_SCHEMA)

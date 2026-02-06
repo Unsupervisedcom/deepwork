@@ -4,7 +4,12 @@
   "title": "DeepWork Job Definition",
   "description": "Schema for DeepWork job.yml files. Jobs are multi-step workflows executed by AI agents.",
   "type": "object",
-  "required": ["name", "version", "summary", "steps"],
+  "required": [
+    "name",
+    "version",
+    "summary",
+    "steps"
+  ],
   "additionalProperties": false,
   "properties": {
     "name": {
@@ -59,7 +64,11 @@
     },
     "workflow": {
       "type": "object",
-      "required": ["name", "summary", "steps"],
+      "required": [
+        "name",
+        "summary",
+        "steps"
+      ],
       "additionalProperties": false,
       "description": "A named workflow grouping steps into a sequence",
       "properties": {
@@ -101,7 +110,10 @@
     },
     "changelogEntry": {
       "type": "object",
-      "required": ["version", "changes"],
+      "required": [
+        "version",
+        "changes"
+      ],
       "additionalProperties": false,
       "properties": {
         "version": {
@@ -118,9 +130,16 @@
     },
     "step": {
       "type": "object",
-      "required": ["id", "name", "description", "instructions_file", "outputs"],
+      "required": [
+        "id",
+        "name",
+        "description",
+        "instructions_file",
+        "outputs",
+        "reviews"
+      ],
       "additionalProperties": false,
-      "description": "A single step in a job, representing one unit of work",
+      "description": "A single Step in a job, representing one material unit of work with evaluatable outputs",
       "properties": {
         "id": {
           "$ref": "#/$defs/stepId",
@@ -149,9 +168,9 @@
           }
         },
         "outputs": {
-          "type": "array",
-          "description": "List of output files/directories produced by this step. May be empty for cleanup or validation steps.",
-          "items": {
+          "type": "object",
+          "description": "Named outputs produced by this step. Keys are output identifiers, values describe type and purpose. May be empty for cleanup or validation steps.",
+          "additionalProperties": {
             "$ref": "#/$defs/stepOutput"
           }
         },
@@ -184,12 +203,11 @@
           "description": "If true, step is hidden from menus. Alias for exposed: false. Default: false",
           "default": false
         },
-        "quality_criteria": {
+        "reviews": {
           "type": "array",
-          "description": "Declarative quality criteria for evaluating step outputs. Rendered with standard evaluation framing.",
+          "description": "Quality reviews to run when step completes. Can be empty.",
           "items": {
-            "type": "string",
-            "minLength": 1
+            "$ref": "#/$defs/review"
           }
         },
         "agent": {
@@ -211,7 +229,10 @@
     },
     "userParameterInput": {
       "type": "object",
-      "required": ["name", "description"],
+      "required": [
+        "name",
+        "description"
+      ],
       "additionalProperties": false,
       "description": "A user-provided parameter input that will be requested at runtime",
       "properties": {
@@ -229,7 +250,10 @@
     },
     "fileInput": {
       "type": "object",
-      "required": ["file", "from_step"],
+      "required": [
+        "file",
+        "from_step"
+      ],
       "additionalProperties": false,
       "description": "A file input from a previous step's output",
       "properties": {
@@ -246,32 +270,26 @@
       }
     },
     "stepOutput": {
-      "oneOf": [
-        {
-          "type": "string",
-          "minLength": 1,
-          "description": "Simple output file path (backward compatible format)"
-        },
-        {
-          "$ref": "#/$defs/outputWithDocSpec"
-        }
-      ]
-    },
-    "outputWithDocSpec": {
       "type": "object",
-      "required": ["file"],
+      "required": [
+        "type",
+        "description"
+      ],
       "additionalProperties": false,
-      "description": "Output file with optional document specification reference",
+      "description": "Output specification with type information indicating single file or multiple files",
       "properties": {
-        "file": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "file",
+            "files"
+          ],
+          "description": "Whether this output is a single file ('file') or multiple files ('files')"
+        },
+        "description": {
           "type": "string",
           "minLength": 1,
-          "description": "Output file path"
-        },
-        "doc_spec": {
-          "type": "string",
-          "pattern": "^\\.deepwork/doc_specs/[a-z][a-z0-9_-]*\\.md$",
-          "description": "Path to doc spec file defining the expected document structure. Example: '.deepwork/doc_specs/report.md'"
+          "description": "Description of what this output contains"
         }
       }
     },
@@ -308,7 +326,9 @@
       "description": "A hook action - exactly one of: prompt (inline text), prompt_file (external file), or script (shell script)",
       "oneOf": [
         {
-          "required": ["prompt"],
+          "required": [
+            "prompt"
+          ],
           "additionalProperties": false,
           "properties": {
             "prompt": {
@@ -319,7 +339,9 @@
           }
         },
         {
-          "required": ["prompt_file"],
+          "required": [
+            "prompt_file"
+          ],
           "additionalProperties": false,
           "properties": {
             "prompt_file": {
@@ -330,7 +352,9 @@
           }
         },
         {
-          "required": ["script"],
+          "required": [
+            "script"
+          ],
           "additionalProperties": false,
           "properties": {
             "script": {
@@ -341,6 +365,31 @@
           }
         }
       ]
+    },
+    "review": {
+      "type": "object",
+      "required": [
+        "run_each",
+        "quality_criteria"
+      ],
+      "additionalProperties": false,
+      "description": "A quality review that evaluates step outputs against criteria",
+      "properties": {
+        "run_each": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Either 'step' to review all outputs together, or the name of a specific output to review individually"
+        },
+        "quality_criteria": {
+          "type": "object",
+          "description": "Map of criterion name to criterion question",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minProperties": 1
+        }
+      }
     }
   }
 }

@@ -68,28 +68,33 @@ For each step that needs improvement:
    - Be direct and actionable
    - Use bullet points where appropriate
 
-### Step 4: Update Quality Criteria
+### Step 4: Update Reviews
 
-Review and update quality criteria in two places:
+Review and update quality reviews in two places:
 
 1. **In step instruction files** - The "Quality Criteria" section should reflect what the user actually cared about during testing
 
-2. **In job.yml** - If steps have `quality_criteria` or `stop_hooks`, update them to:
+2. **In job.yml** - Update the `reviews` array on each step to:
    - Remove criteria that weren't relevant
    - Add criteria based on user feedback
    - Make existing criteria more specific
+   - Adjust `run_each` targeting if outputs should be reviewed differently
 
 **Example improvement:**
 ```yaml
 # Before
-quality_criteria:
-  - "Report is formatted correctly"
+reviews:
+  - run_each: step
+    quality_criteria:
+      "Formatted Correctly": "Is the report formatted correctly?"
 
 # After
-quality_criteria:
-  - "Report uses distinct colors for each data series in charts"
-  - "Tables have sufficient padding and font size for readability"
-  - "Executive summary is understandable by non-technical readers"
+reviews:
+  - run_each: report.md
+    quality_criteria:
+      "Distinct Colors": "Does the report use distinct colors for each data series in charts?"
+      "Readable Tables": "Do tables have sufficient padding and font size for readability?"
+      "Clear Summary": "Is the executive summary understandable by non-technical readers?"
 ```
 
 ### Step 5: Consider Alternative Tools

@@ -114,6 +114,22 @@ StopHook = HookAction
 
 
 @dataclass
+class Review:
+    """Represents a quality review for step outputs."""
+
+    run_each: str  # "step" or output name
+    quality_criteria: dict[str, str]  # name → question
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Review":
+        """Create Review from dictionary."""
+        return cls(
+            run_each=data["run_each"],
+            quality_criteria=data.get("quality_criteria", {}),
+        )
+
+
+@dataclass
 class Step:
     """Represents a single step in a job."""
 
@@ -132,8 +148,8 @@ class Step:
     # If true, skill is user-invocable in menus. Default: false (hidden from menus).
     exposed: bool = False
 
-    # Declarative quality criteria rendered with standard evaluation framing
-    quality_criteria: list[str] = field(default_factory=list)
+    # Quality reviews to run when step completes
+    reviews: list[Review] = field(default_factory=list)
 
     # Agent type for this step (e.g., "general-purpose"). When set, skill uses context: fork
     agent: str | None = None
@@ -178,7 +194,7 @@ class Step:
             dependencies=data.get("dependencies", []),
             hooks=hooks,
             exposed=data.get("exposed", False),
-            quality_criteria=data.get("quality_criteria", []),
+            reviews=[Review.from_dict(r) for r in data.get("reviews", [])],
             agent=data.get("agent"),
         )
 
@@ -345,6 +361,23 @@ class JobDefinition:
                             f"Step '{step.id}' has file input from '{inp.from_step}' "
                             f"but '{inp.from_step}' is not in dependencies"
                         )
+
+    def validate_reviews(self) -> None:
+        """
+        Validate that review run_each values reference valid output names or 'step'.
+
+        Raises:
+            ParseError: If run_each references an invalid output name
+        """
+        for step in self.steps:
+            output_names = {out.name for out in step.outputs}
+            for review in step.reviews:
+                if review.run_each != "step" and review.run_each not in output_names:
+                    raise ParseError(
+                        f"Step '{step.id}' has review with run_each='{review.run_each}' "
+                        f"but no output with that name. "
+                        f"Valid values: 'step', {', '.join(sorted(output_names)) or '(no outputs)'}"
+                    )
 
     def get_workflow_for_step(self, step_id: str) -> Workflow | None:
         """
@@ -597,9 +630,10 @@ def parse_job_definition(job_dir: Path | str) -> JobDefinition:
     # Parse into dataclass
     job_def = JobDefinition.from_dict(job_data, job_dir_path)
 
-    # Validate dependencies, file inputs, and workflows
+    # Validate dependencies, file inputs, reviews, and workflows
     job_def.validate_dependencies()
     job_def.validate_file_inputs()
+    job_def.validate_reviews()
     job_def.validate_workflows()
 
     # Warn about orphaned steps (not in any workflow)

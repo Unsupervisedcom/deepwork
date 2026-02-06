@@ -146,6 +146,27 @@ tmp/*
     gitignore_path.write_text(gitignore_content)
 
 
+def _create_common_info_directory(deepwork_dir: Path) -> None:
+    """
+    Create the .deepwork/common_info directory with a .gitkeep file.
+
+    This directory holds shared reference files that are available across
+    all jobs and workflow steps.
+
+    Args:
+        deepwork_dir: Path to .deepwork directory
+    """
+    common_info_dir = deepwork_dir / "common_info"
+    ensure_dir(common_info_dir)
+
+    gitkeep_file = common_info_dir / ".gitkeep"
+    if not gitkeep_file.exists():
+        gitkeep_file.write_text(
+            "# This file ensures the .deepwork/common_info directory exists in version control.\n"
+            "# Place shared reference files here that should be available across all jobs.\n"
+        )
+
+
 def _create_tmp_directory(deepwork_dir: Path) -> None:
     """
     Create the .deepwork/tmp directory with a .gitkeep file.
@@ -304,6 +325,10 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     # Step 3e: Create tmp directory with .gitkeep file for version control
     _create_tmp_directory(deepwork_dir)
     console.print("  [green]✓[/green] Created .deepwork/tmp/.gitkeep")
+
+    # Step 3f: Create common_info directory for shared reference files
+    _create_common_info_directory(deepwork_dir)
+    console.print("  [green]✓[/green] Created .deepwork/common_info/.gitkeep")
 
     # Step 4: Load or create config.yml
     console.print("[yellow]→[/yellow] Updating configuration...")

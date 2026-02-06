@@ -10,7 +10,7 @@ This document describes the Model Context Protocol (MCP) tools exposed by the De
 
 ## Tools
 
-DeepWork exposes three MCP tools:
+DeepWork exposes four MCP tools:
 
 ### 1. `get_workflows`
 
@@ -42,22 +42,13 @@ interface WorkflowInfo {
   name: string;              // Workflow identifier
   summary: string;           // Short description
 }
-
-interface ActiveStepInfo {
-  session_id: string;        // Unique session identifier
-  branch_name: string;       // Git branch for this workflow instance
-  step_id: string;           // ID of the current step
-  step_expected_outputs: string[]; // Expected output files for this step
-  step_quality_criteria: string[]; // Criteria for step completion (if configured)
-  step_instructions: string; // Instructions for the step
-}
 ```
 
 ---
 
 ### 2. `start_workflow`
 
-Start a new workflow session. Creates a git branch, initializes state tracking, and returns the first step's instructions.
+Start a new workflow session. Creates a git branch, initializes state tracking, and returns the first step's instructions. Supports nested workflows — starting a workflow while one is active pushes onto a stack.
 
 #### Parameters
 
@@ -73,6 +64,7 @@ Start a new workflow session. Creates a git branch, initializes state tracking, 
 ```typescript
 {
   begin_step: ActiveStepInfo; // Information about the first step to begin
+  stack: StackEntry[];        // Current workflow stack after starting
 }
 ```
 
@@ -86,7 +78,7 @@ Report that you've finished a workflow step. Validates outputs against quality c
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `outputs` | `string[]` | Yes | List of output file paths created |
+| `outputs` | `Record<string, string \| string[]>` | Yes | Map of output names to file path(s). For outputs declared as type `file`: pass a single string path (e.g. `"report.md"`). For outputs declared as type `files`: pass a list of string paths (e.g. `["a.md", "b.md"]`). Check `step_expected_outputs` to see each output's declared type. |
 | `notes` | `string \| null` | No | Optional notes about work done |
 | `quality_review_override_reason` | `string \| null` | No | If provided, skips quality review (must explain why) |
 
@@ -99,21 +91,91 @@ The response varies based on the `status` field:
   status: "needs_work" | "next_step" | "workflow_complete";
 
   // For status = "needs_work"
-  feedback?: string;                    // Feedback from quality gate
-  failed_criteria?: QualityCriteriaResult[]; // Failed quality criteria
+  feedback?: string;                    // Combined feedback from failed reviews
+  failed_reviews?: ReviewResult[];      // Failed review results
 
   // For status = "next_step"
   begin_step?: ActiveStepInfo;         // Information about the next step to begin
 
   // For status = "workflow_complete"
   summary?: string;                    // Summary of completed workflow
-  all_outputs?: string[];              // All outputs from all steps
+  all_outputs?: Record<string, string | string[]>; // All outputs from all steps
+
+  // Always included
+  stack: StackEntry[];                 // Current workflow stack after this operation
+}
+```
+
+---
+
+### 4. `abort_workflow`
+
+Abort the current workflow and return to the parent workflow (if nested). Use this when a workflow cannot be completed.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `explanation` | `string` | Yes | Why the workflow is being aborted |
+
+#### Returns
+
+```typescript
+{
+  aborted_workflow: string;           // The workflow that was aborted (job_name/workflow_name)
+  aborted_step: string;               // The step that was active when aborted
+  explanation: string;                // The explanation provided
+  stack: StackEntry[];                // Current workflow stack after abort
+  resumed_workflow?: string | null;   // The workflow now active (if any)
+  resumed_step?: string | null;       // The step now active (if any)
+}
+```
+
+---
+
+## Shared Types
+
+```typescript
+interface ExpectedOutput {
+  name: string;                    // Output name (use as key in finished_step outputs)
+  type: string;                    // "file" or "files"
+  description: string;             // What this output should contain
+  syntax_for_finished_step_tool: string; // Value format hint:
+                                         //   "filepath" for type "file"
+                                         //   "array of filepaths for all individual files" for type "files"
+}
+
+interface ActiveStepInfo {
+  session_id: string;              // Unique session identifier
+  branch_name: string;             // Git branch for this workflow instance
+  step_id: string;                 // ID of the current step
+  step_expected_outputs: ExpectedOutput[]; // Expected outputs with type and format hints
+  step_reviews: ReviewInfo[];      // Reviews to run when step completes
+  step_instructions: string;       // Instructions for the step
+}
+
+interface ReviewInfo {
+  run_each: string;                // 'step' or output name to review
+  quality_criteria: Record<string, string>; // Map of criterion name to question
+}
+
+interface ReviewResult {
+  review_run_each: string;         // 'step' or output name that was reviewed
+  target_file: string | null;      // Specific file reviewed (for per-file reviews)
+  passed: boolean;                 // Whether this review passed
+  feedback: string;                // Summary feedback
+  criteria_results: QualityCriteriaResult[];
 }
 
 interface QualityCriteriaResult {
-  criterion: string;         // The quality criterion text
-  passed: boolean;           // Whether this criterion passed
-  feedback: string | null;   // Feedback if failed
+  criterion: string;               // The quality criterion name
+  passed: boolean;                 // Whether this criterion passed
+  feedback: string | null;         // Feedback if failed
+}
+
+interface StackEntry {
+  workflow: string;                // Workflow identifier (job_name/workflow_name)
+  step: string;                    // Current step ID in this workflow
 }
 ```
 
@@ -135,34 +197,83 @@ The `finished_step` tool returns one of three statuses:
 
 ```
 1. get_workflows()
-   ↓
+   |
    Discover available jobs and workflows
-   ↓
+   |
 2. start_workflow(goal, job_name, workflow_name)
-   ↓
+   |
    Get session_id, branch_name, first step instructions
-   ↓
+   |
 3. Execute step instructions, create outputs
-   ↓
+   |
 4. finished_step(outputs)
-   ↓
-   ├─ status = "needs_work" → Fix issues, goto 4
-   ├─ status = "next_step" → Execute new instructions, goto 4
-   └─ status = "workflow_complete" → Done!
+   |
+   +-- status = "needs_work" -> Fix issues, goto 4
+   +-- status = "next_step"  -> Execute new instructions, goto 4
+   +-- status = "workflow_complete" -> Done!
 ```
 
 ---
 
 ## Quality Gates
 
-Steps may define quality criteria that outputs must meet. When `finished_step` is called:
+Steps may define quality reviews that outputs must pass. When `finished_step` is called:
 
-1. If the step has quality criteria and a quality gate agent is configured, outputs are evaluated
-2. If any criteria fail, `status = "needs_work"` with feedback
-3. If all criteria pass (or no criteria defined), workflow advances
+1. If the step has reviews and a quality gate is configured, outputs are evaluated
+2. **Input files from prior steps are included** alongside outputs in the review payload, giving the reviewer full context to evaluate whether outputs are consistent with their inputs
+3. If any review fails, `status = "needs_work"` with feedback
+4. If all reviews pass (or no reviews defined), workflow advances
+5. After 3 failed attempts (configurable), the quality gate raises an error
+
+### Review Payload Structure
+
+The quality gate builds a prompt for the review agent with clearly separated sections:
+
+```
+==================== BEGIN INPUTS ====================
+(contents of input files from prior steps)
+==================== END INPUTS ====================
+
+==================== BEGIN OUTPUTS ====================
+(contents of output files from current step)
+==================== END OUTPUTS ====================
+```
+
+- **Inputs** are resolved automatically from prior step outputs recorded in the session state. If a step declares `file` inputs with `from_step` references, the quality gate looks up the actual file paths from the referenced step's completed outputs.
+- **The inputs section is omitted** if the step has no file inputs from prior steps.
+- **Binary files** (e.g., PDFs) that cannot be decoded as UTF-8 are not embedded in the payload. Instead, a placeholder is included: `[Binary file — not included in review. Read from: /absolute/path/to/file]`
+
+### Review Types
+
+Reviews are defined per-step in the job.yml:
+
+```yaml
+reviews:
+  - run_each: step                    # Review all outputs together
+    quality_criteria:
+      "Criterion Name": "Question to evaluate"
+  - run_each: output_name             # Review a specific output
+    quality_criteria:
+      "Criterion Name": "Question to evaluate"
+```
+
+- `run_each: step` — Review runs once with ALL output files
+- `run_each: <output_name>` where output is `type: file` — Review runs once with that specific file
+- `run_each: <output_name>` where output is `type: files` — Review runs once per file in the list
 
 To skip quality review (use sparingly):
 - Provide `quality_review_override_reason` explaining why review is unnecessary
+
+---
+
+## Nested Workflows
+
+Workflows can be nested — starting a new workflow while one is active pushes onto a stack:
+
+- All tool responses include a `stack` field showing the current workflow stack
+- Each stack entry shows `{workflow: "job/workflow", step: "current_step"}`
+- When a workflow completes, it pops from the stack and resumes the parent
+- Use `abort_workflow` to cancel the current workflow and return to parent
 
 ---
 
@@ -217,4 +328,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
+| 1.3.0 | `step_expected_outputs` changed from `string[]` to `ExpectedOutput[]` — each entry includes `name`, `type`, `description`, and `syntax_for_finished_step_tool` so agents know exactly what format to use when calling `finished_step`. |
+| 1.2.0 | Quality gate now includes input files from prior steps in review payload with BEGIN INPUTS/END INPUTS and BEGIN OUTPUTS/END OUTPUTS section headers. Binary files (PDFs, etc.) get a placeholder instead of raw content. |
+| 1.1.0 | Added `abort_workflow` tool, `stack` field in all responses, `ReviewInfo`/`ReviewResult` types, typed outputs as `Record<string, string \| string[]>` |
 | 1.0.0 | Initial MCP interface with `get_workflows`, `start_workflow`, `finished_step` |

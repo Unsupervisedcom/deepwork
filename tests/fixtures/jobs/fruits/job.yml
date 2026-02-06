@@ -36,6 +36,7 @@ steps:
         type: file
         description: "List of identified fruits from the input items"
     dependencies: []
+    reviews: []
 
   - id: classify
     name: "Classify Fruits"
@@ -50,3 +51,4 @@ steps:
         description: "Fruits organized into categories"
     dependencies:
       - identify
+    reviews: []
