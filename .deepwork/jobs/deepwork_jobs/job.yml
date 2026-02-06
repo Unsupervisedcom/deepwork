@@ -100,6 +100,7 @@ steps:
       - define
     reviews:
       - run_each: step_instruction_files
+        additional_review_guidance: "Read the job.yml file in the same job directory for context on how this instruction file fits into the larger workflow."
         quality_criteria:
           "Complete Instructions": "Is the instruction file complete (no stubs or placeholders)?"
           "Specific & Actionable": "Are instructions tailored to the step's purpose, not generic?"
@@ -118,7 +119,7 @@ steps:
       - file: step_instruction_files
         from_step: implement
     outputs:
-      test_feedback.md:
+      .deepwork/tmp/test_feedback.md:
         type: file
         description: "Feedback from testing the workflow on a real use case"
     dependencies:
@@ -142,6 +143,8 @@ steps:
         from_step: define
       - file: step_instruction_files
         from_step: implement
+      - file: .deepwork/tmp/test_feedback.md
+        from_step: test
     outputs:
       job.yml:
         type: file
@@ -149,6 +152,9 @@ steps:
       step_instruction_files:
         type: files
         description: "Updated instruction Markdown files for each step"
+      scripts:
+        type: files
+        description: "Updated scripts to run parts of the job more efficiently"
     dependencies:
       - define
       - implement
@@ -166,6 +172,15 @@ steps:
       AGENTS.md:
         type: file
         description: "Bespoke learnings and run-specific context for the working folder"
+      job.yml:
+        type: file
+        description: "Updated job definition with improvements from test run"
+      step_instruction_files:
+        type: files
+        description: "Updated instruction Markdown files for each step"
+      scripts:
+        type: files
+        description: "Updated scripts to run parts of the job more efficiently"
     dependencies: []
     reviews:
       - run_each: step
@@ -178,7 +193,6 @@ steps:
           "Bespoke Learnings Captured": "Were run-specific learnings added to AGENTS.md?"
           "File References Used": "Do AGENTS.md entries reference other files where appropriate?"
           "Working Folder Correct": "Is AGENTS.md in the correct working folder for the job?"
-          "Generalizable Separated": "Are generalizable improvements in instructions, not AGENTS.md?"
 
   - id: fix_settings
     name: "Fix Settings Files"
@@ -214,10 +228,14 @@ steps:
       job_definitions:
         type: files
         description: "Updated job.yml files and step instructions in current DeepWork format"
+      step_instruction_files:
+        type: files
+        description: "Updated step instruction files"
     dependencies:
       - fix_settings
     reviews:
       - run_each: step
+        additional_review_guidance: "Read the .claude/settings.json file for context on what settings were cleaned up in the prior step."
         quality_criteria:
           "Exposed Field Addressed": "Are `exposed: true` fields removed or noted as deprecated?"
           "Stop Hooks Migrated": "Are `stop_hooks` migrated to `hooks.after_agent` format?"
@@ -238,6 +256,7 @@ steps:
       - fix_jobs
     reviews:
       - run_each: step
+        additional_review_guidance: "Check the .deepwork/jobs/ directory and .claude/skills/ directory to verify the cleanup was done correctly."
         quality_criteria:
           "Legacy Job Skills Removed": "Are legacy skill folders for each job removed from `.claude/skills/` and `.gemini/skills/`?"
           "Deepwork Skill Preserved": "Does the `deepwork` skill folder still exist in `.claude/skills/deepwork/`?"

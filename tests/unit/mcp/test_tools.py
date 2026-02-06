@@ -718,3 +718,249 @@ workflows:
         )
 
         assert response.status == StepStatus.WORKFLOW_COMPLETE
+
+    async def test_quality_reviewer_receives_only_current_step_outputs(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test that quality reviewer receives ONLY the current step's outputs.
+
+        Prior step outputs are no longer auto-included as inputs.
+        """
+        # Create a 3-step job: step1 -> step2 -> step3
+        job_dir = project_root / ".deepwork" / "jobs" / "chain_job"
+        job_dir.mkdir(parents=True)
+        (job_dir / "job.yml").write_text(
+            """
+name: chain_job
+version: "1.0.0"
+summary: Three-step chain to test input filtering
+description: Test job
+
+steps:
+  - id: step1
+    name: Step 1
+    description: First step
+    instructions_file: steps/step1.md
+    outputs:
+      step1_output.md:
+        type: file
+        description: Step 1 output
+    reviews: []
+
+  - id: step2
+    name: Step 2
+    description: Second step - takes step1 output
+    instructions_file: steps/step2.md
+    inputs:
+      - file: step1_output.md
+        from_step: step1
+    outputs:
+      step2_output.md:
+        type: file
+        description: Step 2 output
+    dependencies:
+      - step1
+    reviews: []
+
+  - id: step3
+    name: Step 3
+    description: Third step - takes ONLY step2 output (not step1)
+    instructions_file: steps/step3.md
+    inputs:
+      - file: step2_output.md
+        from_step: step2
+    outputs:
+      step3_output.md:
+        type: file
+        description: Step 3 output
+    dependencies:
+      - step2
+    reviews:
+      - run_each: step
+        quality_criteria:
+          "Complete": "Is the output complete?"
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - step1
+      - step2
+      - step3
+"""
+        )
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step1.md").write_text("# Step 1\n\nProduce output.")
+        (steps_dir / "step2.md").write_text("# Step 2\n\nProduce output.")
+        (steps_dir / "step3.md").write_text("# Step 3\n\nProduce output.")
+
+        mock_gate = MockQualityGate(should_pass=True)
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+            quality_gate=mock_gate,
+        )
+
+        # Start workflow
+        await tools.start_workflow(
+            StartWorkflowInput(
+                goal="Test input filtering",
+                job_name="chain_job",
+                workflow_name="main",
+            )
+        )
+
+        # Complete step1
+        (project_root / "step1_output.md").write_text("STEP1_CONTENT_MARKER")
+        await tools.finished_step(
+            FinishedStepInput(outputs={"step1_output.md": "step1_output.md"})
+        )
+
+        # Complete step2
+        (project_root / "step2_output.md").write_text("STEP2_CONTENT_MARKER")
+        await tools.finished_step(
+            FinishedStepInput(outputs={"step2_output.md": "step2_output.md"})
+        )
+
+        # Complete step3 — quality gate runs here
+        (project_root / "step3_output.md").write_text("STEP3_CONTENT_MARKER")
+        response = await tools.finished_step(
+            FinishedStepInput(outputs={"step3_output.md": "step3_output.md"})
+        )
+
+        assert response.status == StepStatus.WORKFLOW_COMPLETE
+
+        # Verify reviewer was called WITHOUT any prior step inputs
+        assert len(mock_gate.evaluations) == 1
+        evaluation = mock_gate.evaluations[0]
+
+        # Should only have the current step's outputs, not inputs from prior steps
+        assert "step3_output.md" in evaluation["outputs"]
+        assert "inputs" not in evaluation, (
+            "Quality reviewer should not receive 'inputs' key — "
+            "prior step outputs are no longer auto-included"
+        )
+
+    async def test_additional_review_guidance_reaches_reviewer(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test that additional_review_guidance from job.yml is passed to the reviewer."""
+        job_dir = project_root / ".deepwork" / "jobs" / "guided_job"
+        job_dir.mkdir(parents=True)
+        (job_dir / "job.yml").write_text(
+            """
+name: guided_job
+version: "1.0.0"
+summary: Job with review guidance
+description: Test job
+
+steps:
+  - id: write
+    name: Write Report
+    description: Write a report
+    instructions_file: steps/write.md
+    outputs:
+      report.md:
+        type: file
+        description: The report
+    reviews:
+      - run_each: report.md
+        additional_review_guidance: "Read the project README for context on expected format."
+        quality_criteria:
+          "Format Correct": "Does the report follow the expected format?"
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - write
+"""
+        )
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "write.md").write_text("# Write\n\nWrite the report.")
+
+        mock_gate = MockQualityGate(should_pass=True)
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+            quality_gate=mock_gate,
+        )
+
+        await tools.start_workflow(
+            StartWorkflowInput(
+                goal="Write report",
+                job_name="guided_job",
+                workflow_name="main",
+            )
+        )
+
+        (project_root / "report.md").write_text("Report content")
+        response = await tools.finished_step(
+            FinishedStepInput(outputs={"report.md": "report.md"})
+        )
+
+        assert response.status == StepStatus.WORKFLOW_COMPLETE
+        assert len(mock_gate.evaluations) == 1
+        assert mock_gate.evaluations[0]["additional_review_guidance"] == (
+            "Read the project README for context on expected format."
+        )
+
+    async def test_review_guidance_in_start_workflow_response(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test that ReviewInfo in start_workflow response includes guidance."""
+        job_dir = project_root / ".deepwork" / "jobs" / "guided_job2"
+        job_dir.mkdir(parents=True)
+        (job_dir / "job.yml").write_text(
+            """
+name: guided_job2
+version: "1.0.0"
+summary: Job with review guidance
+description: Test job
+
+steps:
+  - id: analyze
+    name: Analyze
+    description: Analyze data
+    instructions_file: steps/analyze.md
+    outputs:
+      analysis.md:
+        type: file
+        description: Analysis output
+    reviews:
+      - run_each: step
+        additional_review_guidance: "Check the raw data directory for completeness."
+        quality_criteria:
+          "Thorough": "Is the analysis thorough?"
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - analyze
+"""
+        )
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "analyze.md").write_text("# Analyze\n\nAnalyze the data.")
+
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+        )
+
+        response = await tools.start_workflow(
+            StartWorkflowInput(
+                goal="Analyze data",
+                job_name="guided_job2",
+                workflow_name="main",
+            )
+        )
+
+        reviews = response.begin_step.step_reviews
+        assert len(reviews) == 1
+        assert reviews[0].additional_review_guidance == (
+            "Check the raw data directory for completeness."
+        )

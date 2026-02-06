@@ -119,6 +119,7 @@ class Review:
 
     run_each: str  # "step" or output name
     quality_criteria: dict[str, str]  # name → question
+    additional_review_guidance: str | None = None  # optional guidance for reviewer
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Review":
@@ -126,6 +127,7 @@ class Review:
         return cls(
             run_each=data["run_each"],
             quality_criteria=data.get("quality_criteria", {}),
+            additional_review_guidance=data.get("additional_review_guidance"),
         )
 
 

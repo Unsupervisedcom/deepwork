@@ -388,6 +388,10 @@
             "minLength": 1
           },
           "minProperties": 1
+        },
+        "additional_review_guidance": {
+          "type": "string",
+          "description": "Optional guidance for the reviewer about what context to look at (e.g., 'Look at the job.yml file for context'). Replaces automatic inclusion of input file contents."
         }
       }
     }

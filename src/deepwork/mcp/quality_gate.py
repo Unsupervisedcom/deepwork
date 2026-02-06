@@ -73,12 +73,14 @@ class QualityGate:
         self,
         quality_criteria: dict[str, str],
         notes: str | None = None,
+        additional_review_guidance: str | None = None,
     ) -> str:
         """Build the system instructions for the review agent.
 
         Args:
             quality_criteria: Map of criterion name to criterion question
             notes: Optional notes from the agent about work done
+            additional_review_guidance: Optional guidance about what context to look at
 
         Returns:
             System instructions string
@@ -97,15 +99,23 @@ The author provided the following notes about the work done:
 
 {notes}"""
 
+        guidance_section = ""
+        if additional_review_guidance:
+            guidance_section = f"""
+
+## Additional Context
+
+{additional_review_guidance}"""
+
         return f"""\
 You are an editor responsible for reviewing the files listed as outputs.
 Your job is to evaluate whether outputs meet the specified criteria below.
-You have also been provided any relevant inputs that were used by the process that generated the outputs.
 
 ## Criteria to Evaluate
 
 {criteria_list}
 {notes_section}
+{guidance_section}
 
 ## Response Format
 
@@ -192,29 +202,17 @@ You must respond with JSON in this exact structure:
         self,
         outputs: dict[str, str | list[str]],
         project_root: Path,
-        inputs: dict[str, str | list[str]] | None = None,
     ) -> str:
-        """Build the user prompt payload with file contents.
-
-        Organizes content into clearly separated INPUTS and OUTPUTS sections.
+        """Build the user prompt payload with output file contents.
 
         Args:
             outputs: Map of output names to file path(s)
             project_root: Project root path for reading files
-            inputs: Optional map of input names to file path(s) from prior steps
 
         Returns:
-            Formatted payload with file contents in sections
+            Formatted payload with output file contents
         """
         parts: list[str] = []
-
-        # Build inputs section if provided
-        if inputs:
-            input_sections = await self._read_file_sections(inputs, project_root)
-            if input_sections:
-                parts.append(f"{SECTION_SEPARATOR} BEGIN INPUTS {SECTION_SEPARATOR}")
-                parts.extend(input_sections)
-                parts.append(f"{SECTION_SEPARATOR} END INPUTS {SECTION_SEPARATOR}")
 
         # Build outputs section
         output_sections = await self._read_file_sections(outputs, project_root)
@@ -267,8 +265,8 @@ You must respond with JSON in this exact structure:
         quality_criteria: dict[str, str],
         outputs: dict[str, str | list[str]],
         project_root: Path,
-        inputs: dict[str, str | list[str]] | None = None,
         notes: str | None = None,
+        additional_review_guidance: str | None = None,
     ) -> QualityGateResult:
         """Evaluate step outputs against quality criteria.
 
@@ -276,8 +274,8 @@ You must respond with JSON in this exact structure:
             quality_criteria: Map of criterion name to criterion question
             outputs: Map of output names to file path(s)
             project_root: Project root path
-            inputs: Optional map of input names to file path(s) from prior steps
             notes: Optional notes from the agent about work done
+            additional_review_guidance: Optional guidance for the reviewer
 
         Returns:
             QualityGateResult with pass/fail and feedback
@@ -293,8 +291,12 @@ You must respond with JSON in this exact structure:
                 criteria_results=[],
             )
 
-        instructions = self._build_instructions(quality_criteria, notes=notes)
-        payload = await self._build_payload(outputs, project_root, inputs=inputs)
+        instructions = self._build_instructions(
+            quality_criteria,
+            notes=notes,
+            additional_review_guidance=additional_review_guidance,
+        )
+        payload = await self._build_payload(outputs, project_root)
 
         from deepwork.mcp.claude_cli import ClaudeCLIError
 
@@ -316,17 +318,16 @@ You must respond with JSON in this exact structure:
         outputs: dict[str, str | list[str]],
         output_specs: dict[str, str],
         project_root: Path,
-        inputs: dict[str, str | list[str]] | None = None,
         notes: str | None = None,
     ) -> list[ReviewResult]:
         """Evaluate all reviews for a step, running them in parallel.
 
         Args:
-            reviews: List of review dicts with run_each and quality_criteria
+            reviews: List of review dicts with run_each, quality_criteria,
+                and optional additional_review_guidance
             outputs: Map of output names to file path(s)
             output_specs: Map of output names to their type ("file" or "files")
             project_root: Project root path
-            inputs: Optional map of input names to file path(s) from prior steps
             notes: Optional notes from the agent about work done
 
         Returns:
@@ -335,15 +336,19 @@ You must respond with JSON in this exact structure:
         if not reviews:
             return []
 
-        tasks: list[tuple[str, str | None, dict[str, str], dict[str, str | list[str]]]] = []
+        # Each task is (run_each, target_file, criteria, review_outputs, guidance)
+        tasks: list[
+            tuple[str, str | None, dict[str, str], dict[str, str | list[str]], str | None]
+        ] = []
 
         for review in reviews:
             run_each = review["run_each"]
             quality_criteria = review["quality_criteria"]
+            guidance = review.get("additional_review_guidance")
 
             if run_each == "step":
                 # Review all outputs together
-                tasks.append((run_each, None, quality_criteria, outputs))
+                tasks.append((run_each, None, quality_criteria, outputs, guidance))
             elif run_each in outputs:
                 output_type = output_specs.get(run_each, "file")
                 output_value = outputs[run_each]
@@ -356,6 +361,7 @@ You must respond with JSON in this exact structure:
                             file_path,
                             quality_criteria,
                             {run_each: file_path},
+                            guidance,
                         ))
                 else:
                     # Single file - run once
@@ -364,6 +370,7 @@ You must respond with JSON in this exact structure:
                         output_value if isinstance(output_value, str) else None,
                         quality_criteria,
                         {run_each: output_value},
+                        guidance,
                     ))
 
         async def run_review(
@@ -371,13 +378,14 @@ You must respond with JSON in this exact structure:
             target_file: str | None,
             criteria: dict[str, str],
             review_outputs: dict[str, str | list[str]],
+            guidance: str | None,
         ) -> ReviewResult:
             result = await self.evaluate(
                 quality_criteria=criteria,
                 outputs=review_outputs,
                 project_root=project_root,
-                inputs=inputs,
                 notes=notes,
+                additional_review_guidance=guidance,
             )
             return ReviewResult(
                 review_run_each=run_each,
@@ -417,16 +425,16 @@ class MockQualityGate(QualityGate):
         quality_criteria: dict[str, str],
         outputs: dict[str, str | list[str]],
         project_root: Path,
-        inputs: dict[str, str | list[str]] | None = None,
         notes: str | None = None,
+        additional_review_guidance: str | None = None,
     ) -> QualityGateResult:
         """Mock evaluation - records call and returns configured result."""
         self.evaluations.append(
             {
                 "quality_criteria": quality_criteria,
                 "outputs": outputs,
-                "inputs": inputs,
                 "notes": notes,
+                "additional_review_guidance": additional_review_guidance,
             }
         )
 

@@ -73,6 +73,24 @@ class TestQualityGate:
         assert "passed" in instructions  # JSON format mentioned
         assert "feedback" in instructions  # JSON format mentioned
 
+    def test_build_instructions_with_guidance(self, quality_gate: QualityGate) -> None:
+        """Test that additional_review_guidance appears in system instructions."""
+        instructions = quality_gate._build_instructions(
+            quality_criteria={"Valid": "Is it valid?"},
+            additional_review_guidance="Read the job.yml file for context.",
+        )
+
+        assert "Additional Context" in instructions
+        assert "Read the job.yml file for context." in instructions
+
+    def test_build_instructions_without_guidance(self, quality_gate: QualityGate) -> None:
+        """Test that guidance section is absent when not provided."""
+        instructions = quality_gate._build_instructions(
+            quality_criteria={"Valid": "Is it valid?"},
+        )
+
+        assert "Additional Context" not in instructions
+
     async def test_build_payload(self, quality_gate: QualityGate, project_root: Path) -> None:
         """Test building payload with file contents."""
         output_file = project_root / "output.md"
@@ -158,34 +176,10 @@ class TestQualityGate:
         assert "not included in review" in payload
         assert str(binary_file.resolve()) in payload
 
-    async def test_build_payload_with_inputs_and_outputs(
+    async def test_build_payload_only_outputs(
         self, quality_gate: QualityGate, project_root: Path
     ) -> None:
-        """Test building payload with both inputs and outputs in separate sections."""
-        (project_root / "input_data.md").write_text("Input content from prior step")
-        (project_root / "output_report.md").write_text("Output content from current step")
-
-        payload = await quality_gate._build_payload(
-            outputs={"report": "output_report.md"},
-            project_root=project_root,
-            inputs={"data": "input_data.md"},
-        )
-
-        # Both sections present
-        assert "BEGIN INPUTS" in payload
-        assert "END INPUTS" in payload
-        assert "BEGIN OUTPUTS" in payload
-        assert "END OUTPUTS" in payload
-        # Content included
-        assert "Input content from prior step" in payload
-        assert "Output content from current step" in payload
-        # Inputs section comes before outputs section
-        assert payload.index("BEGIN INPUTS") < payload.index("BEGIN OUTPUTS")
-
-    async def test_build_payload_outputs_only_no_input_headers(
-        self, quality_gate: QualityGate, project_root: Path
-    ) -> None:
-        """Test that when no inputs provided, only outputs section appears."""
+        """Test that payload only contains outputs section (no inputs)."""
         (project_root / "output.md").write_text("Output only")
 
         payload = await quality_gate._build_payload(
@@ -197,44 +191,6 @@ class TestQualityGate:
         assert "END OUTPUTS" in payload
         assert "BEGIN INPUTS" not in payload
         assert "END INPUTS" not in payload
-
-    async def test_build_payload_empty_inputs_no_input_headers(
-        self, quality_gate: QualityGate, project_root: Path
-    ) -> None:
-        """Test that empty inputs dict doesn't add input headers."""
-        (project_root / "output.md").write_text("Output only")
-
-        payload = await quality_gate._build_payload(
-            outputs={"report": "output.md"},
-            project_root=project_root,
-            inputs={},
-        )
-
-        assert "BEGIN OUTPUTS" in payload
-        assert "BEGIN INPUTS" not in payload
-
-    async def test_build_payload_multiple_inputs(
-        self, quality_gate: QualityGate, project_root: Path
-    ) -> None:
-        """Test building payload with multiple input files."""
-        (project_root / "data1.md").write_text("Data file 1")
-        (project_root / "data2.md").write_text("Data file 2")
-        (project_root / "output.md").write_text("Final output")
-
-        payload = await quality_gate._build_payload(
-            outputs={"report": "output.md"},
-            project_root=project_root,
-            inputs={"data_a": "data1.md", "data_b": "data2.md"},
-        )
-
-        assert "Data file 1" in payload
-        assert "Data file 2" in payload
-        assert "Final output" in payload
-        # Both files should be within the inputs section
-        inputs_start = payload.index("BEGIN INPUTS")
-        inputs_end = payload.index("END INPUTS")
-        assert payload.index("data1.md") > inputs_start
-        assert payload.index("data1.md") < inputs_end
 
     def test_parse_result_valid(self, quality_gate: QualityGate) -> None:
         """Test parsing valid structured output data."""
@@ -478,6 +434,91 @@ class TestEvaluateReviews:
         assert result == []
         mock_cli.run.assert_called_once()
 
+    async def test_review_passes_guidance_to_system_prompt(
+        self, mock_cli: ClaudeCLI, project_root: Path
+    ) -> None:
+        """Test that additional_review_guidance is included in the CLI system prompt."""
+        mock_cli.run = AsyncMock(
+            return_value={"passed": True, "feedback": "OK", "criteria_results": []}
+        )
+        gate = QualityGate(cli=mock_cli)
+
+        (project_root / "output.md").write_text("content")
+
+        await gate.evaluate_reviews(
+            reviews=[
+                {
+                    "run_each": "step",
+                    "quality_criteria": {"Valid": "Is it valid?"},
+                    "additional_review_guidance": "Read the job.yml for workflow context.",
+                }
+            ],
+            outputs={"report": "output.md"},
+            output_specs={"report": "file"},
+            project_root=project_root,
+        )
+
+        mock_cli.run.assert_called_once()
+        system_prompt = mock_cli.run.call_args.kwargs["system_prompt"]
+        assert "Read the job.yml for workflow context." in system_prompt
+        assert "Additional Context" in system_prompt
+
+    async def test_review_without_guidance_omits_section(
+        self, mock_cli: ClaudeCLI, project_root: Path
+    ) -> None:
+        """Test that reviews without guidance don't include the section."""
+        mock_cli.run = AsyncMock(
+            return_value={"passed": True, "feedback": "OK", "criteria_results": []}
+        )
+        gate = QualityGate(cli=mock_cli)
+
+        (project_root / "output.md").write_text("content")
+
+        await gate.evaluate_reviews(
+            reviews=[
+                {
+                    "run_each": "step",
+                    "quality_criteria": {"Valid": "Is it valid?"},
+                }
+            ],
+            outputs={"report": "output.md"},
+            output_specs={"report": "file"},
+            project_root=project_root,
+        )
+
+        system_prompt = mock_cli.run.call_args.kwargs["system_prompt"]
+        assert "Additional Context" not in system_prompt
+
+    async def test_per_file_review_passes_guidance_to_each(
+        self, mock_cli: ClaudeCLI, project_root: Path
+    ) -> None:
+        """Test that guidance is passed to each per-file review invocation."""
+        mock_cli.run = AsyncMock(
+            return_value={"passed": True, "feedback": "OK", "criteria_results": []}
+        )
+        gate = QualityGate(cli=mock_cli)
+
+        (project_root / "a.md").write_text("File A")
+        (project_root / "b.md").write_text("File B")
+
+        await gate.evaluate_reviews(
+            reviews=[
+                {
+                    "run_each": "reports",
+                    "quality_criteria": {"Valid": "Is it valid?"},
+                    "additional_review_guidance": "Check against the spec.",
+                }
+            ],
+            outputs={"reports": ["a.md", "b.md"]},
+            output_specs={"reports": "files"},
+            project_root=project_root,
+        )
+
+        assert mock_cli.run.call_count == 2
+        for call in mock_cli.run.call_args_list:
+            system_prompt = call.kwargs["system_prompt"]
+            assert "Check against the spec." in system_prompt
+
 
 class TestMockQualityGate:
     """Tests for MockQualityGate class."""
@@ -532,3 +573,29 @@ class TestMockQualityGate:
         assert len(gate.evaluations) == 2
         assert gate.evaluations[0]["quality_criteria"] == {"Criterion 1": "Is criterion 1 met?"}
         assert gate.evaluations[1]["quality_criteria"] == {"Criterion 2": "Is criterion 2 met?"}
+
+    async def test_mock_records_additional_review_guidance(self, project_root: Path) -> None:
+        """Test mock gate records additional_review_guidance when provided."""
+        gate = MockQualityGate()
+
+        await gate.evaluate(
+            quality_criteria={"Check": "Is it good?"},
+            outputs={"report": "output.md"},
+            project_root=project_root,
+            additional_review_guidance="Look at the job.yml for context.",
+        )
+
+        assert len(gate.evaluations) == 1
+        assert gate.evaluations[0]["additional_review_guidance"] == "Look at the job.yml for context."
+
+    async def test_mock_records_none_guidance_when_omitted(self, project_root: Path) -> None:
+        """Test mock gate records None for guidance when not provided."""
+        gate = MockQualityGate()
+
+        await gate.evaluate(
+            quality_criteria={"Check": "Is it good?"},
+            outputs={"report": "output.md"},
+            project_root=project_root,
+        )
+
+        assert gate.evaluations[0]["additional_review_guidance"] is None

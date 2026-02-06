@@ -89,7 +89,8 @@ steps:
     dependencies:
       - comparative_analysis
     reviews:
-      - run_each: step
+      - run_each: positioning_report.md
+        additional_review_guidance: "Read the comparison_matrix.md file to verify that recommendations are grounded in the competitive analysis data."
         quality_criteria:
           "Actionable": "Are recommendations specific and actionable?"
           "Data-Backed": "Are recommendations supported by the competitive analysis data?"

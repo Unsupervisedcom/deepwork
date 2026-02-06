@@ -179,9 +179,33 @@ reviews:
 ```
 
 **`run_each` options:**
-- `step` — Review runs once with ALL output files + input files
+- `step` — Review runs once with ALL output files
 - `<output_name>` where output is `type: file` — Review runs once with that specific file
 - `<output_name>` where output is `type: files` — Review runs once per file in the list
+
+**`additional_review_guidance`** (optional): Tells the reviewer what other files or context to look at when performing the review. Reviewers only see the step's output files by default — they do NOT automatically see inputs from prior steps. When a review needs context beyond the output files (e.g., checking that an output is consistent with a prior step's deliverable, or that it follows conventions in a config file), use this field to tell the reviewer what to read.
+
+```yaml
+reviews:
+  - run_each: report_files
+    additional_review_guidance: "Read the comparison_matrix.md file for context on whether claims in the report are supported by the analysis data."
+    quality_criteria:
+      "Data-Backed": "Are recommendations supported by the competitive analysis data?"
+  - run_each: step_instruction_files
+    additional_review_guidance: "Read the job.yml file in the same job directory for context on how this instruction file fits into the larger workflow."
+    quality_criteria:
+      "Complete Instructions": "Is the instruction file complete?"
+```
+
+**When to use `additional_review_guidance`:**
+- When a review criterion references data or context from a prior step's output
+- When the reviewer needs to cross-check the output against a specification, config, or schema file
+- When the review involves consistency checks between the current output and other project files
+- When the criterion mentions something the reviewer can't assess from the output alone
+
+**When NOT to use it:**
+- When all criteria can be evaluated by reading just the output files themselves (e.g., "Is it well-written?", "Are there spelling errors?")
+- Don't use it to dump large amounts of content — keep guidance short and tell the reviewer *what to read*, not *what's in it*
 
 **Reviews are particularly valuable for:**
 - Steps with complex outputs that need multiple quality checks

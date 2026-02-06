@@ -348,6 +348,7 @@ class WorkflowTools:
                     ReviewInfo(
                         run_each=r.run_each,
                         quality_criteria=r.quality_criteria,
+                        additional_review_guidance=r.additional_review_guidance,
                     )
                     for r in first_step.reviews
                 ],
@@ -394,26 +395,18 @@ class WorkflowTools:
             # Build output specs map for evaluate_reviews
             output_specs = {out.name: out.type for out in current_step.outputs}
 
-            # Resolve input files from prior step outputs
-            input_files: dict[str, str | list[str]] = {}
-            for inp in current_step.inputs:
-                if inp.is_file_input():
-                    source_progress = session.step_progress.get(inp.from_step)  # type: ignore[arg-type]
-                    if source_progress and inp.file in source_progress.outputs:
-                        input_files[inp.file] = source_progress.outputs[inp.file]  # type: ignore[index]
-
             failed_reviews = await self.quality_gate.evaluate_reviews(
                 reviews=[
                     {
                         "run_each": r.run_each,
                         "quality_criteria": r.quality_criteria,
+                        "additional_review_guidance": r.additional_review_guidance,
                     }
                     for r in current_step.reviews
                 ],
                 outputs=input_data.outputs,
                 output_specs=output_specs,
                 project_root=self.project_root,
-                inputs=input_files if input_files else None,
                 notes=input_data.notes,
             )
 
@@ -500,6 +493,7 @@ class WorkflowTools:
                     ReviewInfo(
                         run_each=r.run_each,
                         quality_criteria=r.quality_criteria,
+                        additional_review_guidance=r.additional_review_guidance,
                     )
                     for r in next_step.reviews
                 ],

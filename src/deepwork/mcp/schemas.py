@@ -143,6 +143,10 @@ class ReviewInfo(BaseModel):
     quality_criteria: dict[str, str] = Field(
         description="Map of criterion name to criterion question"
     )
+    additional_review_guidance: str | None = Field(
+        default=None,
+        description="Optional guidance for the reviewer about what context to look at",
+    )
 
 
 class ReviewResult(BaseModel):
