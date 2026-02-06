@@ -8,7 +8,7 @@ Resolve ambiguities, fill gaps, and validate completeness of the specification t
 
 Review the existing specification, identify underspecified areas, and ask structured questions to resolve them. Update the spec.md with clarifications.
 
-**Important**: Use the AskUserQuestion tool to ask structured questions when gathering information from the user.
+**Important**: Ask questions one at a time - present a question, wait for the user's response, then ask the next. Do not output all questions as a list.
 
 **Critical**: This step refines requirements, not implementation. Do not add code examples or technical solutions. Keep clarifications focused on user needs, acceptance criteria, and behavior - not how things will be coded.
 

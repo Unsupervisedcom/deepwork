@@ -1,5 +1,8 @@
 {
   "permissions": {
+    "deny": [
+      "Bash(gh pr merge:*)"
+    ],
     "allow": [
       "WebFetch(domain:code.claude.com)",
       "WebFetch(domain:www.anthropic.com)",
@@ -130,7 +133,11 @@
       "Bash(deepwork:*)",
       "Bash(.claude/hooks/commit_job_git_commit.sh:*)",
       "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
-      "WebSearch"
+      "WebSearch",
+      "Skill(review_pr)",
+      "Skill(review_pr.check_relevance)",
+      "Skill(review_pr.deep_review)",
+      "Skill(review_pr.improve_and_rereview)"
     ]
   },
   "hooks": {

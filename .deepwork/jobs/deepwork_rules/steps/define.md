@@ -8,7 +8,7 @@ Create a new rule file in the `.deepwork/rules/` directory to enforce team guide
 
 Guide the user through defining a new rule by asking structured questions. **Do not create the rule without first understanding what they want to enforce.**
 
-**Important**: Use the AskUserQuestion tool to ask structured questions when gathering information from the user. This provides a better user experience with clear options and guided choices.
+**Important**: Ask questions one at a time - present a question, wait for the user's response, then ask the next. Do not output all questions as a list.
 
 ### Step 1: Understand the Rule Purpose
 

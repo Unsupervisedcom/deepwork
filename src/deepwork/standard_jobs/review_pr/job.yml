@@ -1,0 +1,82 @@
+name: review_pr
+version: "1.0.0"
+summary: "Coordinates expert-driven PR review with iterative improvement cycles until all feedback is addressed."
+description: |
+  A multi-phase workflow for comprehensive pull request review using domain experts.
+
+  The workflow operates in three phases:
+  1. **Relevance Check**: All available experts examine the PR changes in parallel to determine
+     if any changes fall within their domain of expertise.
+  2. **Deep Review**: Experts who found relevant changes perform detailed code review, producing
+     written feedback and specific code change suggestions.
+  3. **Improvement Cycle**: The PR is improved based on feedback, then re-reviewed by the same
+     experts. This cycle repeats until all experts report no further feedback or 3 iterations
+     are reached.
+
+  Produces:
+  - Relevance assessments from all experts
+  - Detailed review feedback with code suggestions
+  - Iteratively improved PR code
+
+  Requires: PR branch checked out, `gh` CLI available for PR metadata
+
+workflows:
+  - name: full
+    summary: "Full PR review: relevance check, deep review, and improvement cycles"
+    steps:
+      - check_relevance
+      - deep_review
+      - improve_and_rereview
+
+changelog:
+  - version: "1.0.0"
+    changes: "Initial job creation"
+
+steps:
+  - id: check_relevance
+    name: "Check Expert Relevance"
+    description: "Invokes all available experts in parallel to assess if PR changes are relevant to their domain. Use at the start of a PR review."
+    instructions_file: steps/check_relevance.md
+    inputs:
+      - name: pr_number
+        description: "Optional PR number (defaults to current branch's PR)"
+    outputs:
+      - pr_review/relevance_assessments.md
+    dependencies: []
+    quality_criteria:
+      - "All experts in .deepwork/experts/ were invoked in parallel"
+      - "Each expert provided a yes/no relevance determination with justification"
+      - "Relevant experts are clearly identified for the next step"
+
+  - id: deep_review
+    name: "Deep Expert Review"
+    description: "Invokes only relevant experts (from previous step) to perform detailed code review. Use after relevance check identifies applicable experts."
+    instructions_file: steps/deep_review.md
+    inputs:
+      - file: pr_review/relevance_assessments.md
+        from_step: check_relevance
+    outputs:
+      - pr_review/[expert_name]/review.md
+    dependencies:
+      - check_relevance
+    quality_criteria:
+      - "Only experts marked as relevant were invoked"
+      - "Each expert produced written feedback in their review file"
+      - "Specific code change suggestions are included where applicable"
+
+  - id: improve_and_rereview
+    name: "Improve and Re-Review"
+    description: "Applies expert feedback to improve the PR, then re-runs expert reviews. Cycles until no further feedback or 3 iterations. Use after deep review completes."
+    instructions_file: steps/improve_and_rereview.md
+    inputs:
+      - file: pr_review/[expert_name]/review.md
+        from_step: deep_review
+    outputs:
+      - pr_review/iteration_[n]/summary.md
+    dependencies:
+      - deep_review
+    quality_criteria:
+      - "User approved suggested improvements before they were applied"
+      - "Re-reviews were run after each improvement iteration"
+      - "Cycle stopped when all experts reported no further feedback OR after 3 iterations"
+      - "Final iteration summary documents the outcome"

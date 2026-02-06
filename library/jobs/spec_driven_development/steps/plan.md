@@ -8,7 +8,7 @@ Create a comprehensive technical implementation plan that defines architecture, 
 
 Analyze the clarified specification and create detailed technical planning documents that will guide implementation.
 
-**Important**: Use the AskUserQuestion tool to ask structured questions when technology choices need user input.
+**Important**: Ask questions one at a time - present a question, wait for the user's response, then ask the next. Do not output all questions as a list.
 
 **Critical**: This step produces planning documents, NOT implementation code. Do not write actual code - that happens in the implement step. You may include:
 - API contracts (endpoints, request/response schemas)

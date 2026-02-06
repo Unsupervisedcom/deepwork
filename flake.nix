@@ -68,9 +68,9 @@
               uv venv .venv --quiet
             fi
 
-            # Sync dependencies (including dev extras like pytest, ruff, mypy)
+            # Sync dependencies (including dev group: pytest, ruff, mypy)
             # Run quietly - uv only outputs when changes are needed
-            uv sync --all-extras --quiet 2>/dev/null || uv sync --all-extras
+            uv sync --group dev --quiet 2>/dev/null || uv sync --group dev
 
             # Activate venv by setting environment variables directly
             # This works reliably for both interactive shells and `nix develop --command`

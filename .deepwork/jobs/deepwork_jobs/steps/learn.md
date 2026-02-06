@@ -2,354 +2,113 @@
 
 ## Objective
 
-Think deeply about this task. Reflect on the current conversation to identify learnings from DeepWork job executions, improve job instructions with generalizable insights, and capture bespoke (run-specific) learnings in AGENTS.md files in the deepest common folder that would contain all work on the topic in the future.
+Reflect on the conversation to identify learnings from DeepWork job executions, improve job instructions with generalizable insights, and capture run-specific learnings in AGENTS.md files.
 
 ## Task
 
-Analyze the conversation history to extract learnings and improvements, then apply them appropriately:
-- **Generalizable learnings** → Update job instruction files
-- **Bespoke learnings** (specific to this run) → Add to AGENTS.md in the deepest common folder for the topic
+Analyze conversation history to extract learnings, then apply them:
+- **Generalizable learnings** -> Update job instruction files
+- **Bespoke learnings** (run-specific) -> Add to AGENTS.md in the working folder
 
 ### Step 1: Analyze Conversation for Job Executions
 
-1. **Scan the conversation** for DeepWork slash commands that were run
-   - Look for patterns like `/job_name.step_id`
-   - Identify which jobs and steps were executed
-   - Note the order of execution
+1. **Scan the conversation** for DeepWork slash commands (`/job_name.step_id`)
+2. **Identify the target folder** - the deepest common folder for all work on the topic
+3. **If no job specified**, ask which job to learn from
 
-2. **Identify the target folder**
-   - This should be the deepest common folder that would contain all work on the topic in the future
-   - Should be clear from conversation history where work was done
-   - If unclear, run `git diff` to see where changes were made on the branch
-
-3. **If no job was specified**, ask the user:
-   - "Which DeepWork job would you like me to learn from?"
-   - List available jobs from `.deepwork/jobs/`
-
-### Step 2: Identify Points of Confusion and Inefficiency
+### Step 2: Identify Confusion and Inefficiency
 
 Review the conversation for:
 
-1. **Confusion signals**
-   - Questions the agent asked that shouldn't have been necessary
-   - Misunderstandings about what a step required
-   - Incorrect outputs that needed correction
-   - Ambiguous instructions that led to wrong interpretations
+**Confusion signals**:
+- Unnecessary questions the agent asked
+- Misunderstandings about step requirements
+- Incorrect outputs needing correction
+- Ambiguous instructions causing wrong interpretations
 
-2. **Inefficiency signals**
-   - Extra steps or iterations that were needed
-   - Information that had to be repeated
-   - Context that was missing from instructions
-   - Dependencies that weren't clear
+**Inefficiency signals**:
+- Extra iterations needed
+- Repeated information
+- Missing context
+- Unclear dependencies
 
-3. **Error patterns**
-   - Failed validations and why they failed
-   - Quality criteria that were misunderstood
-   - Edge cases that weren't handled
+**Error patterns**:
+- Failed validations and why
+- Misunderstood quality criteria
+- Unhandled edge cases
 
-4. **Success patterns**
-   - What worked particularly well
-   - Efficient approaches worth preserving
-   - Good examples that could be added to instructions
+**Success patterns**:
+- What worked well
+- Efficient approaches worth preserving
+- Good examples to add to instructions
 
 ### Step 3: Classify Learnings
 
-For each learning identified, determine if it is:
+For each learning, determine if it is:
 
-**Generalizable** (should improve instructions):
+**Generalizable** (update instructions):
 - Would help ANY future run of this job
 - Addresses unclear or missing guidance
-- Fixes incorrect assumptions in instructions
-- Adds helpful examples or context
-- Examples:
-  - "Step instructions should mention that X format is required"
-  - "Quality criteria should include checking for Y"
-  - "Add example of correct output format"
+- Fixes incorrect assumptions
+- Adds helpful examples
 
-**doc spec-Related** (should improve doc spec files):
+**Doc spec-related** (update doc spec files):
 - Improvements to document quality criteria
 - Changes to document structure or format
-- Updated audience or frequency information
-- Examples:
-  - "The report should include a summary table"
-  - "Quality criterion 'Visualization' needs clearer requirements"
-  - "Documents need a section for action items"
 
-**Bespoke** (should go in AGENTS.md):
+**Bespoke** (add to AGENTS.md):
 - Specific to THIS project/codebase/run
-- Depends on local conventions or structure
+- Depends on local conventions
 - References specific files or paths
-- Would not apply to other uses of this job
-- Examples:
-  - "In this codebase, API endpoints are in `src/api/`"
-  - "This project uses camelCase for function names"
-  - "The main config file is at `config/settings.yml`"
+- Would not apply to other uses
 
-### Step 3.5: Identify doc spec-Related Learnings
-
-Review the conversation for doc spec-related improvements:
-
-1. **Quality Criteria Changes**
-   - Were any quality criteria unclear or insufficient?
-   - Did the agent repeatedly fail certain criteria?
-   - Are there new criteria that should be added?
-
-2. **Document Structure Changes**
-   - Did the user request different sections?
-   - Were parts of the document format confusing?
-   - Should the example document be updated?
-
-3. **Metadata Updates**
-   - Has the target audience changed?
-   - Should frequency or path patterns be updated?
-
-**Signals for doc spec improvements:**
-- User asked for changes to document format
-- Repeated validation failures on specific criteria
-- Feedback about missing sections or information
-- Changes to how documents are organized/stored
-
-### Step 4: Update Job Instructions (Generalizable Learnings)
+### Step 4: Update Job Instructions (Generalizable)
 
 For each generalizable learning:
 
-1. **Locate the instruction file**
-   - Path: `.deepwork/jobs/[job_name]/steps/[step_id].md`
-
-2. **Make targeted improvements**
-   - Add missing context or clarification
+1. Locate `.deepwork/jobs/[job_name]/steps/[step_id].md`
+2. Make targeted improvements:
+   - Add missing context
    - Include helpful examples
    - Clarify ambiguous instructions
-   - Update quality criteria if needed
+   - Update quality criteria
+3. Keep instructions concise - avoid redundancy
+4. Preserve structure (Objective, Task, Output Format, Quality Criteria)
 
-3. **Keep instructions concise**
-   - Avoid redundancy - don't repeat the same guidance in multiple places
-   - Be direct - remove verbose explanations that don't add value
-   - Prefer bullet points over paragraphs where appropriate
+### Step 5: Update Doc Specs (if applicable)
 
-4. **Preserve instruction structure**
-   - Keep existing sections (Objective, Task, Process, Output Format, Quality Criteria)
-   - Add to appropriate sections rather than restructuring
-   - Maintain consistency with other steps
+If doc spec-related learnings identified:
 
-5. **Track changes for changelog**
-   - Note what was changed and why
-   - Prepare changelog entry for job.yml
+1. Locate doc spec at `.deepwork/doc_specs/[doc_spec_name].md`
+2. Update quality_criteria, example document, or metadata as needed
 
-### Step 4b: Extract Shared Content into Referenced Files
+### Step 6: Create/Update AGENTS.md (Bespoke)
 
-Review all instruction files for the job and identify content that:
-- Appears in multiple step instructions (duplicated)
-- Is lengthy and could be extracted for clarity
-- Would benefit from being maintained in one place
+1. Place in the deepest common folder for the topic
+2. Use file references instead of duplicating content: "See `path/to/file.ext` for [description]"
+3. Follow structure in `.deepwork/jobs/deepwork_jobs/templates/agents.md.template`
 
-**Extract to shared files:**
-
-1. **Create shared files** in `.deepwork/jobs/[job_name]/steps/shared/`
-   - `conventions.md` - Coding/formatting conventions used across steps
-   - `examples.md` - Common examples referenced by multiple steps
-   - `schemas.md` - Data structures or formats used throughout
-
-2. **Reference from instructions** using markdown includes or explicit references:
-   ```markdown
-   ## Conventions
-
-   Follow the conventions defined in `shared/conventions.md`.
-   ```
-
-3. **Benefits of extraction:**
-   - Single source of truth - update once, applies everywhere
-   - Shorter instruction files - easier to read and maintain
-   - Consistent guidance across steps
-
-### Step 4.5: Update doc spec Files (doc spec-Related Learnings)
-
-If doc spec-related learnings were identified:
-
-1. **Locate the doc spec file**
-   - Find doc spec references in job.yml outputs (look for `doc_spec: .deepwork/doc_specs/[doc_spec_name].md`)
-   - doc spec files are at `.deepwork/doc_specs/[doc_spec_name].md`
-
-2. **Update quality_criteria array**
-   - Add new criteria with name and description
-   - Modify existing criteria descriptions for clarity
-   - Remove criteria that are no longer relevant
-
-3. **Update example document**
-   - Modify the markdown body to reflect structure changes
-   - Ensure the example matches updated criteria
-
-4. **Update metadata as needed**
-   - target_audience: If audience has changed
-   - frequency: If production cadence has changed
-   - path_patterns: If storage location has changed
-
-**Example doc spec update:**
-```yaml
-# Before
-quality_criteria:
-  - name: Visualization
-    description: Include charts
-
-# After
-quality_criteria:
-  - name: Visualization
-    description: Include Mermaid.js charts showing spend breakdown by service and month-over-month trend
-```
-
-### Step 5: Create/Update AGENTS.md (Bespoke Learnings)
-
-The AGENTS.md file captures project-specific knowledge that helps future agent runs.
-
-1. **Determine the correct location**
-   - Place AGENTS.md in the deepest common folder that would contain all work on the topic in the future
-   - This ensures the knowledge is available when working in that context
-   - If uncertain, place at the project root
-
-2. **Use file references where possible**
-   - Instead of duplicating information, reference source files
-   - This keeps AGENTS.md in sync as the codebase evolves
-   - Pattern: "See `path/to/file.ext` for [description]"
-
-3. **AGENTS.md structure**: See `.deepwork/jobs/deepwork_jobs/templates/agents.md.template` for the standard format.
-
-4. **Writing entries**
-   - Be concise but specific
-   - Always prefer file references over inline content
-   - Use line numbers when referencing specific code: `file.ext:42`
-   - Group related learnings together
-
-### Step 6: Update Job Version and Changelog
-
-If instruction files were modified:
-
-1. **Bump version in job.yml**
-   - Patch version (0.0.x) for instruction improvements
-   - Minor version (0.x.0) if quality criteria changed
-
-2. **Add changelog entry**
-   ```yaml
-   - version: "[new_version]"
-     changes: "Improved [step] instructions based on execution learnings: [brief description]"
-   ```
-
-### Step 7: Sync Skills
-
-**Run deepwork sync** (if instructions were modified)
-```bash
-deepwork sync
-```
-
-## File Reference Patterns
-
-When adding entries to AGENTS.md, prefer these patterns:
-
-**Good (references)**:
+**Good patterns** (references):
 ```markdown
 - API endpoints follow REST conventions. See `src/api/routes.ts` for examples.
-- Error handling pattern: See `src/utils/errors.ts:15-30`
 - Configuration schema: Defined in `config/schema.json`
 ```
 
-**Avoid (duplicating)**:
+**Avoid** (duplicating):
 ```markdown
 - API endpoints should return JSON with this format: { status: ..., data: ... }
-- Error handling should use try/catch with custom error classes
-- Configuration requires these fields: name, version, ...
 ```
 
-## Quality Criteria
+### Step 7: Update Job Version and Sync
 
-- Conversation has been analyzed for job executions
-- Points of confusion and inefficiency are identified
-- Learnings are correctly classified (generalizable vs bespoke)
-- Job instructions updated for generalizable improvements
-- Instructions are concise - no redundancy or unnecessary verbosity
-- Shared/lengthy content extracted into referenced files where appropriate
-- AGENTS.md created/updated with bespoke learnings
-- File references used instead of duplicating content
-- AGENTS.md is in the correct folder (the deepest common folder for the topic)
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
+If instructions were modified:
 
-## Example Dialog
+1. Bump version in job.yml (patch for improvements, minor for quality criteria changes)
+2. Add changelog entry
+3. Run `deepwork sync`
 
-```
-User: /deepwork_jobs.learn
+## Output
 
-Claude: I'll analyze this conversation for learnings from DeepWork job executions.
-
-**Conversation Analysis**
-
-I found the following job executions:
-1. `/competitive_research.identify_competitors` - Completed
-2. `/competitive_research.research_competitors` - Completed with 2 iterations
-3. `/competitive_research.comparative_analysis` - Completed
-
-**Identified Issues**
-
-1. **Confusion in step 2**: The instructions didn't specify that competitor research should include pricing information. This caused an extra iteration.
-
-2. **Missing context**: The agent had to ask about the industry focus, which should have been carried forward from step 1.
-
-**Classification**
-
-- Generalizable: Add pricing to research requirements in instructions
-- Bespoke: This project focuses on B2B SaaS in the HR tech space
-
-**Actions Taken**
-
-1. Updated `.deepwork/jobs/competitive_research/steps/research_competitors.md`:
-   - Added "Include pricing information (tiers, models, approximate ranges)" to research requirements
-   - Added note about carrying forward industry context from previous step
-
-2. Created `./competitive_research_output/AGENTS.md`:
-   ```markdown
-   # Project Context for Competitive Research
-
-   ## Job-Specific Context
-
-   ### competitive_research
-
-   #### Industry Focus
-   - Domain: B2B SaaS, HR Technology sector
-   - See `identify_competitors_output.md` for market definition
-
-   #### Competitors Identified
-   - Reference: `competitor_list.md` for full details
-
-   ## Last Updated
-   - Date: 2024-01-15
-   - From conversation about: Initial competitive analysis run
-   ```
-
-3. Updated job.yml version to 1.0.1 with changelog entry
-
-4. Ran `deepwork sync`
-
-**Summary**
-
-Updated job instructions and created AGENTS.md with bespoke learnings.
-```
-
-## Handling Edge Cases
-
-**No job executions found**:
-- Ask user which job they'd like to analyze
-- Or offer to review available jobs
-
-**Multiple jobs executed**:
-- Analyze each job separately
-- Create separate AGENTS.md entries or files as appropriate
-
-**AGENTS.md already exists**:
-- Read existing content
-- Append new learnings to appropriate sections
-- Update "Last Updated" section
-
-**No issues found**:
-- Document what worked well
-- Consider if any successful patterns should be added to instructions as examples
-
-**Sensitive information**:
-- Never include secrets, credentials, or PII in AGENTS.md
-- Reference config files instead of including values
+- Updated job instructions (generalizable learnings)
+- Updated doc specs (if applicable)
+- AGENTS.md with bespoke learnings in the correct working folder
