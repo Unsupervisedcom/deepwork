@@ -17,7 +17,9 @@ steps:
     description: "A step that is hidden by default"
     instructions_file: steps/hidden_step.md
     outputs:
-      - hidden_output.md
+      hidden_output.md:
+        type: file
+        description: "Output from the hidden step"
     dependencies: []
 
   - id: exposed_step
@@ -26,5 +28,7 @@ steps:
     instructions_file: steps/exposed_step.md
     exposed: true
     outputs:
-      - exposed_output.md
+      exposed_output.md:
+        type: file
+        description: "Output from the exposed step"
     dependencies: []

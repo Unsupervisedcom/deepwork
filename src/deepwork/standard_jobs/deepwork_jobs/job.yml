@@ -70,7 +70,9 @@ steps:
       - name: job_purpose
         description: "What complex task or workflow are you trying to accomplish?"
     outputs:
-      - job.yml
+      job.yml:
+        type: file
+        description: "Definition of the job and its workflows"
     dependencies: []
   - id: implement
     name: "Implement Job Steps"
@@ -80,7 +82,9 @@ steps:
       - file: job.yml
         from_step: define
     outputs:
-      - steps/
+      step_instruction_files:
+        type: files
+        description: "Instruction Markdown files for each step"
     dependencies:
       - define
     quality_criteria:
@@ -97,10 +101,12 @@ steps:
     inputs:
       - file: job.yml
         from_step: define
-      - file: steps/
+      - file: step_instruction_files
         from_step: implement
     outputs:
-      - test_feedback.md
+      test_feedback.md:
+        type: file
+        description: "Feedback from testing the workflow on a real use case"
     dependencies:
       - define
       - implement
@@ -119,11 +125,15 @@ steps:
     inputs:
       - file: job.yml
         from_step: define
-      - file: steps/
+      - file: step_instruction_files
         from_step: implement
     outputs:
-      - job.yml
-      - steps/
+      job.yml:
+        type: file
+        description: "Updated job definition with improvements from test run"
+      step_instruction_files:
+        type: files
+        description: "Updated instruction Markdown files for each step"
     dependencies:
       - define
       - implement
@@ -143,7 +153,9 @@ steps:
       - name: job_name
         description: "Name of the job that was run (optional - will auto-detect from conversation)"
     outputs:
-      - AGENTS.md
+      AGENTS.md:
+        type: file
+        description: "Bespoke learnings and run-specific context for the working folder"
     dependencies: []
     quality_criteria:
       - "**Conversation Analyzed**: Did the agent review the conversation for DeepWork job executions?"
@@ -162,7 +174,9 @@ steps:
     instructions_file: steps/fix_settings.md
     inputs: []
     outputs:
-      - .claude/settings.json
+      settings.json:
+        type: file
+        description: "Cleaned up Claude settings file with legacy permissions removed"
     dependencies: []
     quality_criteria:
       - "**DeepWork Skills Removed**: Are `Skill(...)` entries matching jobs in `.deepwork/jobs/` removed?"
@@ -180,10 +194,12 @@ steps:
     description: "Updates job.yml files and step instructions to current DeepWork format, removing deprecated fields and migrating to new structures."
     instructions_file: steps/fix_jobs.md
     inputs:
-      - file: .claude/settings.json
+      - file: settings.json
         from_step: fix_settings
     outputs:
-      - .deepwork/jobs/
+      job_definitions:
+        type: files
+        description: "Updated job.yml files and step instructions in current DeepWork format"
     dependencies:
       - fix_settings
     quality_criteria:
@@ -197,9 +213,9 @@ steps:
     name: "Clean Up Errata"
     description: "Removes obsolete files and folders from prior DeepWork versions, including old skill directories, temp files, and deprecated configurations."
     instructions_file: steps/errata.md
-    outputs: []
+    outputs: {}
     inputs:
-      - file: .deepwork/jobs/
+      - file: job_definitions
         from_step: fix_jobs
     dependencies:
       - fix_settings

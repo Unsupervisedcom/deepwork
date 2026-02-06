@@ -139,16 +139,24 @@ class TestFinishedStepInput:
     """Tests for FinishedStepInput model."""
 
     def test_with_outputs(self) -> None:
-        """Test with outputs only."""
-        input_data = FinishedStepInput(outputs=["output1.md", "output2.md"])
+        """Test with structured outputs."""
+        input_data = FinishedStepInput(
+            outputs={"report": "report.md", "data_files": ["a.csv", "b.csv"]}
+        )
 
-        assert input_data.outputs == ["output1.md", "output2.md"]
+        assert input_data.outputs == {"report": "report.md", "data_files": ["a.csv", "b.csv"]}
         assert input_data.notes is None
+
+    def test_with_empty_outputs(self) -> None:
+        """Test with empty outputs dict (for steps with no outputs)."""
+        input_data = FinishedStepInput(outputs={})
+
+        assert input_data.outputs == {}
 
     def test_with_notes(self) -> None:
         """Test with notes."""
         input_data = FinishedStepInput(
-            outputs=["output.md"],
+            outputs={"output": "output.md"},
             notes="Completed successfully",
         )
 
@@ -310,12 +318,13 @@ class TestFinishedStepResponse:
         response = FinishedStepResponse(
             status=StepStatus.WORKFLOW_COMPLETE,
             summary="Workflow completed!",
-            all_outputs=["output1.md", "output2.md"],
+            all_outputs={"output1": "output1.md", "output2": "output2.md"},
         )
 
         assert response.status == StepStatus.WORKFLOW_COMPLETE
         assert response.summary is not None
         assert response.all_outputs is not None
+        assert response.all_outputs == {"output1": "output1.md", "output2": "output2.md"}
 
 
 class TestStepProgress:
@@ -328,7 +337,7 @@ class TestStepProgress:
         assert progress.step_id == "step1"
         assert progress.started_at is None
         assert progress.completed_at is None
-        assert progress.outputs == []
+        assert progress.outputs == {}
         assert progress.quality_attempts == 0
 
 

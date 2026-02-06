@@ -146,7 +146,7 @@ class TestStateManager:
 
         await state_manager.complete_step(
             step_id="step1",
-            outputs=["output1.md", "output2.md"],
+            outputs={"report": "output1.md", "data": "output2.md"},
             notes="Done!",
         )
 
@@ -155,7 +155,7 @@ class TestStateManager:
         progress = session.step_progress["step1"]
 
         assert progress.completed_at is not None
-        assert progress.outputs == ["output1.md", "output2.md"]
+        assert progress.outputs == {"report": "output1.md", "data": "output2.md"}
         assert progress.notes == "Done!"
 
     async def test_record_quality_attempt(self, state_manager: StateManager) -> None:
@@ -223,15 +223,18 @@ class TestStateManager:
             first_step_id="step1",
         )
 
-        await state_manager.complete_step("step1", ["output1.md"])
-        await state_manager.complete_step("step2", ["output2.md", "output3.md"])
+        await state_manager.complete_step("step1", {"report": "output1.md"})
+        await state_manager.complete_step(
+            "step2", {"data_files": ["output2.md", "output3.md"]}
+        )
 
         outputs = state_manager.get_all_outputs()
 
-        assert "output1.md" in outputs
-        assert "output2.md" in outputs
-        assert "output3.md" in outputs
-        assert len(outputs) == 3
+        assert outputs == {
+            "report": "output1.md",
+            "data_files": ["output2.md", "output3.md"],
+        }
+        assert len(outputs) == 2
 
     async def test_list_sessions(self, state_manager: StateManager) -> None:
         """Test listing all sessions."""

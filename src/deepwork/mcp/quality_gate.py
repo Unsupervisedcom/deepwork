@@ -102,23 +102,42 @@ You must respond with JSON in this exact structure:
 - Provide specific, actionable feedback for failed criteria
 - The overall "passed" should be true only if ALL criteria pass"""
 
+    @staticmethod
+    def _flatten_output_paths(outputs: dict[str, str | list[str]]) -> list[str]:
+        """Flatten a structured outputs dict into a list of file paths.
+
+        Args:
+            outputs: Map of output names to file path(s)
+
+        Returns:
+            Flat list of all file paths
+        """
+        paths: list[str] = []
+        for value in outputs.values():
+            if isinstance(value, list):
+                paths.extend(value)
+            else:
+                paths.append(value)
+        return paths
+
     async def _build_payload(
         self,
-        outputs: list[str],
+        outputs: dict[str, str | list[str]],
         project_root: Path,
     ) -> str:
         """Build the user prompt payload with file contents.
 
         Args:
-            outputs: List of output file paths
+            outputs: Map of output names to file path(s)
             project_root: Project root path for reading files
 
         Returns:
             Formatted payload with file contents
         """
         output_sections: list[str] = []
+        all_paths = self._flatten_output_paths(outputs)
 
-        for output_path in outputs:
+        for output_path in all_paths:
             full_path = project_root / output_path
             header = f"{FILE_SEPARATOR} {output_path} {FILE_SEPARATOR}"
 
@@ -174,14 +193,14 @@ You must respond with JSON in this exact structure:
     async def evaluate(
         self,
         quality_criteria: list[str],
-        outputs: list[str],
+        outputs: dict[str, str | list[str]],
         project_root: Path,
     ) -> QualityGateResult:
         """Evaluate step outputs against quality criteria.
 
         Args:
             quality_criteria: List of quality criteria to evaluate
-            outputs: List of output file paths
+            outputs: Map of output names to file path(s)
             project_root: Project root path
 
         Returns:
@@ -237,7 +256,7 @@ class MockQualityGate(QualityGate):
     async def evaluate(
         self,
         quality_criteria: list[str],
-        outputs: list[str],
+        outputs: dict[str, str | list[str]],
         project_root: Path,
     ) -> QualityGateResult:
         """Mock evaluation - records call and returns configured result."""

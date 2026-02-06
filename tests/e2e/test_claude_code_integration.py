@@ -276,7 +276,7 @@ class TestMCPWorkflowTools:
 
         # Report first step completion
         finish_input = FinishedStepInput(
-            outputs=[str(output_file)],
+            outputs={"identified_fruits.md": str(output_file)},
             notes="Identified fruits from test input",
         )
         finish_response = await tools.finished_step(finish_input)

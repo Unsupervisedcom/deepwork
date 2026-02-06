@@ -21,7 +21,9 @@ steps:
     description: "Initialize the analysis environment"
     instructions_file: steps/setup.md
     outputs:
-      - setup_complete.md
+      setup_complete.md:
+        type: file
+        description: "Setup confirmation and configuration"
 
   - id: research_web
     name: "Web Research"
@@ -31,7 +33,9 @@ steps:
       - file: setup_complete.md
         from_step: setup
     outputs:
-      - web_research.md
+      web_research.md:
+        type: file
+        description: "Research findings from web sources"
     dependencies:
       - setup
 
@@ -43,7 +47,9 @@ steps:
       - file: setup_complete.md
         from_step: setup
     outputs:
-      - docs_research.md
+      docs_research.md:
+        type: file
+        description: "Research findings from internal documents"
     dependencies:
       - setup
 
@@ -55,7 +61,9 @@ steps:
       - file: setup_complete.md
         from_step: setup
     outputs:
-      - interviews_research.md
+      interviews_research.md:
+        type: file
+        description: "Research findings from stakeholder interviews"
     dependencies:
       - setup
 
@@ -71,7 +79,9 @@ steps:
       - file: interviews_research.md
         from_step: research_interviews
     outputs:
-      - compiled_results.md
+      compiled_results.md:
+        type: file
+        description: "Unified report from all research sources"
     dependencies:
       - research_web
       - research_docs
@@ -85,6 +95,8 @@ steps:
       - file: compiled_results.md
         from_step: compile_results
     outputs:
-      - final_report.md
+      final_report.md:
+        type: file
+        description: "Final reviewed and approved analysis report"
     dependencies:
       - compile_results

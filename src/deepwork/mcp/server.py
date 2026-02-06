@@ -155,7 +155,7 @@ def create_server(
         )
     )
     async def finished_step(
-        outputs: list[str],
+        outputs: dict[str, str | list[str]],
         notes: str | None = None,
         quality_review_override_reason: str | None = None,
     ) -> dict[str, Any]:

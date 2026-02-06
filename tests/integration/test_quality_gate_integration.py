@@ -90,7 +90,7 @@ class TestRealClaudeIntegration:
                 "The document must have a title",
                 "The document must contain a summary section",
             ],
-            outputs=["analysis.md"],
+            outputs={"analysis": "analysis.md"},
             project_root=project_root,
         )
 
@@ -125,7 +125,7 @@ class TestRealClaudeIntegration:
                 "The document must include a numbered list of recommendations",
                 "The document must have a 'Conclusions' section",
             ],
-            outputs=["incomplete.md"],
+            outputs={"document": "incomplete.md"},
             project_root=project_root,
         )
 

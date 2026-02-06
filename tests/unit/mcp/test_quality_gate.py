@@ -74,7 +74,7 @@ class TestQualityGate:
         output_file.write_text("Test content")
 
         payload = await quality_gate._build_payload(
-            outputs=["output.md"],
+            outputs={"report": "output.md"},
             project_root=project_root,
         )
 
@@ -87,12 +87,29 @@ class TestQualityGate:
     ) -> None:
         """Test building payload with missing file."""
         payload = await quality_gate._build_payload(
-            outputs=["nonexistent.md"],
+            outputs={"report": "nonexistent.md"},
             project_root=project_root,
         )
 
         assert "File not found" in payload
         assert "nonexistent.md" in payload
+
+    async def test_build_payload_files_type(
+        self, quality_gate: QualityGate, project_root: Path
+    ) -> None:
+        """Test building payload with multi-file outputs."""
+        (project_root / "a.md").write_text("File A")
+        (project_root / "b.md").write_text("File B")
+
+        payload = await quality_gate._build_payload(
+            outputs={"reports": ["a.md", "b.md"]},
+            project_root=project_root,
+        )
+
+        assert "File A" in payload
+        assert "File B" in payload
+        assert "a.md" in payload
+        assert "b.md" in payload
 
     def test_parse_result_valid(self, quality_gate: QualityGate) -> None:
         """Test parsing valid structured output data."""
@@ -153,7 +170,7 @@ class TestQualityGate:
         """Test evaluation with no criteria auto-passes."""
         result = await quality_gate.evaluate(
             quality_criteria=[],
-            outputs=["output.md"],
+            outputs={"report": "output.md"},
             project_root=project_root,
         )
 
@@ -172,7 +189,7 @@ class TestQualityGate:
 
         await gate.evaluate(
             quality_criteria=["Must be valid"],
-            outputs=["output.md"],
+            outputs={"report": "output.md"},
             project_root=project_root,
         )
 
@@ -196,7 +213,7 @@ class TestQualityGate:
         with pytest.raises(QualityGateError, match="CLI failed"):
             await gate.evaluate(
                 quality_criteria=["Test"],
-                outputs=["output.md"],
+                outputs={"report": "output.md"},
                 project_root=project_root,
             )
 
@@ -218,12 +235,12 @@ class TestMockQualityGate:
         gate: MockQualityGate,
         project_root: Path,
         criteria: list[str] | None = None,
-        outputs: list[str] | None = None,
+        outputs: dict[str, str | list[str]] | None = None,
     ) -> Any:
         """Helper to evaluate a mock gate with default parameters."""
         return await gate.evaluate(
             quality_criteria=criteria or ["Criterion 1"],
-            outputs=outputs or ["output.md"],
+            outputs=outputs or {"report": "output.md"},
             project_root=project_root,
         )
 
@@ -248,10 +265,10 @@ class TestMockQualityGate:
         gate = MockQualityGate()
 
         await self.evaluate_mock_gate(
-            gate, project_root, criteria=["Criterion 1"], outputs=["output1.md"]
+            gate, project_root, criteria=["Criterion 1"], outputs={"out1": "output1.md"}
         )
         await self.evaluate_mock_gate(
-            gate, project_root, criteria=["Criterion 2"], outputs=["output2.md"]
+            gate, project_root, criteria=["Criterion 2"], outputs={"out2": "output2.md"}
         )
 
         assert len(gate.evaluations) == 2

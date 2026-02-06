@@ -210,13 +210,13 @@ class StateManager:
             await self._save_session_unlocked(session)
 
     async def complete_step(
-        self, step_id: str, outputs: list[str], notes: str | None = None
+        self, step_id: str, outputs: dict[str, str | list[str]], notes: str | None = None
     ) -> None:
         """Mark a step as completed.
 
         Args:
             step_id: Step ID to complete
-            outputs: Output files created
+            outputs: Map of output names to file path(s)
             notes: Optional notes
 
         Raises:
@@ -329,20 +329,20 @@ class StateManager:
             new_active = self._session_stack[-1] if self._session_stack else None
             return session, new_active
 
-    def get_all_outputs(self) -> list[str]:
+    def get_all_outputs(self) -> dict[str, str | list[str]]:
         """Get all outputs from all completed steps.
 
         Returns:
-            List of all output file paths
+            Merged dict of all output names to file path(s)
 
         Raises:
             StateError: If no active session
         """
         session = self.require_active_session()
-        outputs: list[str] = []
+        all_outputs: dict[str, str | list[str]] = {}
         for progress in session.step_progress.values():
-            outputs.extend(progress.outputs)
-        return outputs
+            all_outputs.update(progress.outputs)
+        return all_outputs
 
     def get_stack(self) -> list[StackEntry]:
         """Get the current workflow stack as StackEntry objects.

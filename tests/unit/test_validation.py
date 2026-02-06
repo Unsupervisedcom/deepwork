@@ -22,7 +22,7 @@ class TestValidateAgainstSchema:
                     "name": "Step 1",
                     "description": "First step",
                     "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
+                    "outputs": {"output.md": {"type": "file", "description": "Output"}},
                     "dependencies": [],
                 }
             ],
@@ -48,7 +48,7 @@ class TestValidateAgainstSchema:
                         {"name": "param1", "description": "First parameter"},
                         {"name": "param2", "description": "Second parameter"},
                     ],
-                    "outputs": ["output.md"],
+                    "outputs": {"output.md": {"type": "file", "description": "Output"}},
                     "dependencies": [],
                 }
             ],
@@ -69,7 +69,7 @@ class TestValidateAgainstSchema:
                     "name": "Step 1",
                     "description": "First step",
                     "instructions_file": "steps/step1.md",
-                    "outputs": ["data.md"],
+                    "outputs": {"data.md": {"type": "file", "description": "Data output"}},
                     "dependencies": [],
                 },
                 {
@@ -78,7 +78,7 @@ class TestValidateAgainstSchema:
                     "description": "Second step",
                     "instructions_file": "steps/step2.md",
                     "inputs": [{"file": "data.md", "from_step": "step1"}],
-                    "outputs": ["result.md"],
+                    "outputs": {"result.md": {"type": "file", "description": "Result output"}},
                     "dependencies": ["step1"],
                 },
             ],
@@ -112,7 +112,7 @@ class TestValidateAgainstSchema:
                     "name": "Step 1",
                     "description": "Step",
                     "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
+                    "outputs": {"output.md": {"type": "file", "description": "Output"}},
                 }
             ],
         }
@@ -133,7 +133,7 @@ class TestValidateAgainstSchema:
                     "name": "Step 1",
                     "description": "Step",
                     "instructions_file": "steps/step1.md",
-                    "outputs": ["output.md"],
+                    "outputs": {"output.md": {"type": "file", "description": "Output"}},
                 }
             ],
         }
@@ -194,7 +194,7 @@ class TestValidateAgainstSchema:
                             # Missing description for user input
                         }
                     ],
-                    "outputs": ["output.md"],
+                    "outputs": {"output.md": {"type": "file", "description": "Output"}},
                 }
             ],
         }

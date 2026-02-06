@@ -11,7 +11,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from deepwork.core.parser import JobDefinition, ParseError, Workflow, parse_job_definition
+from deepwork.core.parser import (
+    JobDefinition,
+    OutputSpec,
+    ParseError,
+    Step,
+    Workflow,
+    parse_job_definition,
+)
 from deepwork.mcp.schemas import (
     AbortWorkflowInput,
     AbortWorkflowResponse,
@@ -182,6 +189,80 @@ class WorkflowTools:
 
         return instructions_path.read_text(encoding="utf-8")
 
+    def _validate_outputs(
+        self,
+        submitted: dict[str, str | list[str]],
+        declared: list[OutputSpec],
+    ) -> None:
+        """Validate submitted outputs against declared output specs.
+
+        Checks:
+        1. Every submitted key matches a declared output name
+        2. Every declared output has a corresponding submitted key
+        3. type: file -> value is a single string path, file must exist
+        4. type: files -> value is a list of strings, each file must exist
+
+        Args:
+            submitted: The outputs dict from the agent
+            declared: The OutputSpec list from the step definition
+
+        Raises:
+            ToolError: If validation fails
+        """
+        declared_map = {spec.name: spec for spec in declared}
+        declared_names = set(declared_map.keys())
+        submitted_names = set(submitted.keys())
+
+        # Check for unknown output keys
+        extra = submitted_names - declared_names
+        if extra:
+            raise ToolError(
+                f"Unknown output names: {', '.join(sorted(extra))}. "
+                f"Declared outputs: {', '.join(sorted(declared_names))}"
+            )
+
+        # Check for missing output keys
+        missing = declared_names - submitted_names
+        if missing:
+            raise ToolError(
+                f"Missing required outputs: {', '.join(sorted(missing))}. "
+                f"All declared outputs must be provided."
+            )
+
+        # Validate types and file existence
+        for name, value in submitted.items():
+            spec = declared_map[name]
+
+            if spec.type == "file":
+                if not isinstance(value, str):
+                    raise ToolError(
+                        f"Output '{name}' is declared as type 'file' and must be a "
+                        f"single string path, got {type(value).__name__}"
+                    )
+                full_path = self.project_root / value
+                if not full_path.exists():
+                    raise ToolError(
+                        f"Output '{name}': file not found at '{value}'"
+                    )
+
+            elif spec.type == "files":
+                if not isinstance(value, list):
+                    raise ToolError(
+                        f"Output '{name}' is declared as type 'files' and must be a "
+                        f"list of paths, got {type(value).__name__}"
+                    )
+                for path in value:
+                    if not isinstance(path, str):
+                        raise ToolError(
+                            f"Output '{name}': all paths must be strings, "
+                            f"got {type(path).__name__}"
+                        )
+                    full_path = self.project_root / path
+                    if not full_path.exists():
+                        raise ToolError(
+                            f"Output '{name}': file not found at '{path}'"
+                        )
+
     # =========================================================================
     # Tool Implementations
     # =========================================================================
@@ -237,7 +318,7 @@ class WorkflowTools:
         instructions = self._get_step_instructions(job, first_step_id)
 
         # Get expected outputs
-        step_outputs = [out.file for out in first_step.outputs]
+        step_outputs = [out.name for out in first_step.outputs]
 
         return StartWorkflowResponse(
             begin_step=ActiveStepInfo(
@@ -274,6 +355,9 @@ class WorkflowTools:
 
         if current_step is None:
             raise ToolError(f"Current step not found: {current_step_id}")
+
+        # Validate outputs against step's declared output specs
+        self._validate_outputs(input_data.outputs, current_step.outputs)
 
         # Run quality gate if available and step has criteria (unless overridden)
         if (
@@ -346,7 +430,7 @@ class WorkflowTools:
 
         # Get instructions
         instructions = self._get_step_instructions(job, next_step_id)
-        step_outputs = [out.file for out in next_step.outputs]
+        step_outputs = [out.name for out in next_step.outputs]
 
         # Add info about concurrent steps if this is a concurrent entry
         if next_entry.is_concurrent and len(next_entry.step_ids) > 1:

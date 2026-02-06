@@ -31,7 +31,9 @@ steps:
       - name: product_category
         description: "Product category"
     outputs:
-      - competitors.md
+      competitors.md:
+        type: file
+        description: "Vetted list of direct and indirect competitors"
     dependencies: []
 
   - id: primary_research
@@ -42,8 +44,12 @@ steps:
       - file: competitors.md
         from_step: identify_competitors
     outputs:
-      - primary_research.md
-      - competitor_profiles/
+      primary_research.md:
+        type: file
+        description: "Analysis of competitors' self-presentation"
+      competitor_profiles:
+        type: files
+        description: "Individual competitor profile documents"
     dependencies:
       - identify_competitors
 
@@ -57,7 +63,9 @@ steps:
       - file: primary_research.md
         from_step: primary_research
     outputs:
-      - secondary_research.md
+      secondary_research.md:
+        type: file
+        description: "Third-party perspectives on competitors"
     dependencies:
       - identify_competitors
       - primary_research
@@ -72,8 +80,12 @@ steps:
       - file: secondary_research.md
         from_step: secondary_research
     outputs:
-      - comparison_matrix.md
-      - strengths_weaknesses.md
+      comparison_matrix.md:
+        type: file
+        description: "Detailed comparison matrix across competitors"
+      strengths_weaknesses.md:
+        type: file
+        description: "Strengths and weaknesses analysis"
     dependencies:
       - primary_research
       - secondary_research

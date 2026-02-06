@@ -32,7 +32,9 @@ steps:
       - name: raw_items
         description: "Comma-separated list of items to filter (e.g., 'apple, car, banana, chair')"
     outputs:
-      - identified_fruits.md
+      identified_fruits.md:
+        type: file
+        description: "List of identified fruits from the input items"
     dependencies: []
 
   - id: classify
@@ -43,6 +45,8 @@ steps:
       - file: identified_fruits.md
         from_step: identify
     outputs:
-      - classified_fruits.md
+      classified_fruits.md:
+        type: file
+        description: "Fruits organized into categories"
     dependencies:
       - identify

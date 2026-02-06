@@ -92,7 +92,9 @@ class StartWorkflowInput(BaseModel):
 class FinishedStepInput(BaseModel):
     """Input for finished_step tool."""
 
-    outputs: list[str] = Field(description="List of output file paths created")
+    outputs: dict[str, str | list[str]] = Field(
+        description="Map of output names to file path(s). Single file outputs map to a string path, multi-file outputs map to a list of paths."
+    )
     notes: str | None = Field(default=None, description="Optional notes about work done")
     quality_review_override_reason: str | None = Field(
         default=None,
@@ -189,7 +191,9 @@ class FinishedStepResponse(BaseModel):
 
     # For workflow_complete status
     summary: str | None = Field(default=None, description="Summary of completed workflow")
-    all_outputs: list[str] | None = Field(default=None, description="All outputs from all steps")
+    all_outputs: dict[str, str | list[str]] | None = Field(
+        default=None, description="All outputs from all steps"
+    )
 
     # Stack info (included in all responses)
     stack: list[StackEntry] = Field(
@@ -225,7 +229,9 @@ class StepProgress(BaseModel):
     step_id: str = Field(description="Step identifier")
     started_at: str | None = Field(default=None, description="ISO timestamp when started")
     completed_at: str | None = Field(default=None, description="ISO timestamp when completed")
-    outputs: list[str] = Field(default_factory=list, description="Output files created")
+    outputs: dict[str, str | list[str]] = Field(
+        default_factory=dict, description="Output files created"
+    )
     notes: str | None = Field(default=None, description="Notes from agent")
     quality_attempts: int = Field(default=0, description="Number of quality gate attempts")
 

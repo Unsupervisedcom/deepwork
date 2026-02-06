@@ -41,7 +41,9 @@ steps:
       - name: development_priorities
         description: "Key priorities like code quality, testing, UX consistency, performance"
     outputs:
-      - file: "[docs_folder]/constitution.md"
+      constitution.md:
+        type: file
+        description: "Foundational governance principles and development guidelines"
     dependencies: []
     quality_criteria:
       - "**Priorities Captured**: Did the agent gather specific development priorities from the user?"
@@ -60,10 +62,12 @@ steps:
         description: "Name of the feature being specified (lowercase, hyphens for spaces)"
       - name: feature_description
         description: "High-level description of what the feature should do"
-      - file: "[docs_folder]/constitution.md"
+      - file: constitution.md
         from_step: constitution
     outputs:
-      - file: specs/[feature-name]/spec.md
+      spec.md:
+        type: file
+        description: "Functional requirements as user stories without technology choices"
     dependencies:
       - constitution
     quality_criteria:
@@ -81,10 +85,12 @@ steps:
     description: "Resolves ambiguities and gaps in the specification through structured questioning. Use after specification to ensure completeness."
     instructions_file: steps/clarify.md
     inputs:
-      - file: specs/[feature-name]/spec.md
+      - file: spec.md
         from_step: specify
     outputs:
-      - file: specs/[feature-name]/spec.md
+      spec.md:
+        type: file
+        description: "Updated specification with clarifications and resolved ambiguities"
     dependencies:
       - specify
     quality_criteria:
@@ -101,18 +107,27 @@ steps:
     description: "Creates technical implementation strategy including architecture and technology choices. Use after specification is clarified."
     instructions_file: steps/plan.md
     inputs:
-      - file: specs/[feature-name]/spec.md
+      - file: spec.md
         from_step: clarify
-      - file: "[docs_folder]/constitution.md"
+      - file: constitution.md
         from_step: constitution
-      - file: "[docs_folder]/architecture.md"
+      - file: architecture.md
         description: "Existing project architecture document (if present)"
     outputs:
-      - file: specs/[feature-name]/plan.md
-      - file: specs/[feature-name]/data-model.md
-      - file: specs/[feature-name]/api-spec.json
-      - file: specs/[feature-name]/research.md
-      - file: "[docs_folder]/architecture.md"
+      plan.md:
+        type: file
+        description: "Technical implementation strategy including architecture and technology choices"
+      data-model.md:
+        type: file
+        description: "Data model documentation with all entities and relationships"
+      api-spec.json:
+        type: file
+        description: "API endpoint definitions with request/response schemas"
+      research.md:
+        type: file
+        description: "Research findings and technology evaluations"
+      architecture.md:
+        type: file
         description: "Updated project architecture document"
     dependencies:
       - clarify
@@ -133,14 +148,16 @@ steps:
     description: "Converts the implementation plan into actionable, ordered development tasks. Use after plan is validated."
     instructions_file: steps/tasks.md
     inputs:
-      - file: specs/[feature-name]/plan.md
+      - file: plan.md
         from_step: plan
-      - file: specs/[feature-name]/spec.md
+      - file: spec.md
         from_step: clarify
-      - file: "[docs_folder]/architecture.md"
+      - file: architecture.md
         from_step: plan
     outputs:
-      - file: specs/[feature-name]/tasks.md
+      tasks.md:
+        type: file
+        description: "Actionable, ordered development tasks organized by user story"
     dependencies:
       - plan
     quality_criteria:
@@ -159,18 +176,20 @@ steps:
     description: "Generates code and assets by executing the task breakdown. Use when ready to build the feature."
     instructions_file: steps/implement.md
     inputs:
-      - file: specs/[feature-name]/tasks.md
+      - file: tasks.md
         from_step: tasks
-      - file: specs/[feature-name]/plan.md
+      - file: plan.md
         from_step: plan
-      - file: specs/[feature-name]/spec.md
+      - file: spec.md
         from_step: clarify
-      - file: "[docs_folder]/architecture.md"
+      - file: architecture.md
         from_step: plan
     outputs:
-      - directory: src/
+      source_files:
+        type: files
         description: "Implementation source files as specified in tasks"
-      - directory: tests/
+      test_files:
+        type: files
         description: "Test files as specified in tasks"
     dependencies:
       - tasks

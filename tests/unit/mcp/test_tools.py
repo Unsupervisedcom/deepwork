@@ -38,7 +38,9 @@ steps:
     description: The first step
     instructions_file: steps/step1.md
     outputs:
-      - output1.md
+      output1.md:
+        type: file
+        description: First step output
     quality_criteria:
       - Output must be valid
   - id: step2
@@ -46,7 +48,9 @@ steps:
     description: The second step
     instructions_file: steps/step2.md
     outputs:
-      - output2.md
+      output2.md:
+        type: file
+        description: Second step output
     dependencies:
       - step1
 
@@ -193,13 +197,17 @@ steps:
     description: Step A
     instructions_file: steps/step_a.md
     outputs:
-      - output_a.md
+      output_a.md:
+        type: file
+        description: Step A output
   - id: step_b
     name: Step B
     description: Step B
     instructions_file: steps/step_b.md
     outputs:
-      - output_b.md
+      output_b.md:
+        type: file
+        description: Step B output
 
 workflows:
   - name: alpha
@@ -231,7 +239,7 @@ workflows:
 
     async def test_finished_step_no_session(self, tools: WorkflowTools) -> None:
         """Test finished_step without active session."""
-        input_data = FinishedStepInput(outputs=["output1.md"])
+        input_data = FinishedStepInput(outputs={"output1.md": "output1.md"})
 
         with pytest.raises(StateError, match="No active workflow session"):
             await tools.finished_step(input_data)
@@ -253,7 +261,7 @@ workflows:
 
         # Finish first step
         finish_input = FinishedStepInput(
-            outputs=["output1.md"],
+            outputs={"output1.md": "output1.md"},
             notes="Completed step 1",
         )
         response = await tools.finished_step(finish_input)
@@ -278,15 +286,18 @@ workflows:
 
         # Complete first step
         (project_root / "output1.md").write_text("Output 1")
-        await tools.finished_step(FinishedStepInput(outputs=["output1.md"]))
+        await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}))
 
         # Complete second (last) step
         (project_root / "output2.md").write_text("Output 2")
-        response = await tools.finished_step(FinishedStepInput(outputs=["output2.md"]))
+        response = await tools.finished_step(
+            FinishedStepInput(outputs={"output2.md": "output2.md"})
+        )
 
         assert response.status == StepStatus.WORKFLOW_COMPLETE
         assert response.summary is not None
         assert "completed" in response.summary.lower()
+        assert response.all_outputs is not None
         assert "output1.md" in response.all_outputs
         assert "output2.md" in response.all_outputs
 
@@ -304,7 +315,9 @@ workflows:
 
         # Create output and finish step
         (project_root / "output1.md").write_text("Valid output")
-        response = await tools_with_quality.finished_step(FinishedStepInput(outputs=["output1.md"]))
+        response = await tools_with_quality.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"})
+        )
 
         # Should advance to next step
         assert response.status == StepStatus.NEXT_STEP
@@ -330,7 +343,9 @@ workflows:
 
         # Create output and finish step
         (project_root / "output1.md").write_text("Invalid output")
-        response = await tools.finished_step(FinishedStepInput(outputs=["output1.md"]))
+        response = await tools.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"})
+        )
 
         assert response.status == StepStatus.NEEDS_WORK
         assert response.feedback == "Needs improvement"
@@ -359,12 +374,16 @@ workflows:
 
         # Try multiple times (max is 3)
         for _ in range(2):
-            response = await tools.finished_step(FinishedStepInput(outputs=["output1.md"]))
+            response = await tools.finished_step(
+                FinishedStepInput(outputs={"output1.md": "output1.md"})
+            )
             assert response.status == StepStatus.NEEDS_WORK
 
         # Third attempt should raise error
         with pytest.raises(ToolError, match="Quality gate failed after.*attempts"):
-            await tools.finished_step(FinishedStepInput(outputs=["output1.md"]))
+            await tools.finished_step(
+                FinishedStepInput(outputs={"output1.md": "output1.md"})
+            )
 
     async def test_finished_step_quality_gate_override(
         self, project_root: Path, state_manager: StateManager
@@ -390,7 +409,7 @@ workflows:
         (project_root / "output1.md").write_text("Output that would fail quality check")
         response = await tools.finished_step(
             FinishedStepInput(
-                outputs=["output1.md"],
+                outputs={"output1.md": "output1.md"},
                 quality_review_override_reason="Manual review completed offline",
             )
         )
@@ -399,3 +418,288 @@ workflows:
         assert response.status == StepStatus.NEXT_STEP
         # Quality gate should not have been called
         assert len(failing_gate.evaluations) == 0
+
+    async def test_finished_step_validates_unknown_output_keys(
+        self, tools: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test finished_step rejects unknown output keys."""
+        start_input = StartWorkflowInput(
+            goal="Complete task",
+            job_name="test_job",
+            workflow_name="main",
+        )
+        await tools.start_workflow(start_input)
+
+        (project_root / "output1.md").write_text("content")
+        (project_root / "extra.md").write_text("content")
+
+        with pytest.raises(ToolError, match="Unknown output names.*extra.md"):
+            await tools.finished_step(
+                FinishedStepInput(
+                    outputs={"output1.md": "output1.md", "extra.md": "extra.md"}
+                )
+            )
+
+    async def test_finished_step_validates_missing_output_keys(
+        self, tools: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test finished_step rejects when declared outputs are missing."""
+        start_input = StartWorkflowInput(
+            goal="Complete task",
+            job_name="test_job",
+            workflow_name="main",
+        )
+        await tools.start_workflow(start_input)
+
+        # Step1 declares output1.md, but we provide empty dict
+        with pytest.raises(ToolError, match="Missing required outputs.*output1.md"):
+            await tools.finished_step(FinishedStepInput(outputs={}))
+
+    async def test_finished_step_validates_file_type_must_be_string(
+        self, tools: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test finished_step rejects list value for type: file output."""
+        start_input = StartWorkflowInput(
+            goal="Complete task",
+            job_name="test_job",
+            workflow_name="main",
+        )
+        await tools.start_workflow(start_input)
+
+        (project_root / "output1.md").write_text("content")
+
+        with pytest.raises(ToolError, match="type 'file'.*single string path"):
+            await tools.finished_step(
+                FinishedStepInput(outputs={"output1.md": ["output1.md"]})
+            )
+
+    async def test_finished_step_validates_file_existence(
+        self, tools: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test finished_step rejects when file does not exist."""
+        start_input = StartWorkflowInput(
+            goal="Complete task",
+            job_name="test_job",
+            workflow_name="main",
+        )
+        await tools.start_workflow(start_input)
+
+        # Don't create the file
+        with pytest.raises(ToolError, match="file not found at.*nonexistent.md"):
+            await tools.finished_step(
+                FinishedStepInput(outputs={"output1.md": "nonexistent.md"})
+            )
+
+    async def test_finished_step_empty_outputs_for_step_with_no_outputs(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test that empty outputs {} works for steps declared with no outputs."""
+        # Create a job with a step that has no outputs
+        job_dir = project_root / ".deepwork" / "jobs" / "no_output_job"
+        job_dir.mkdir(parents=True)
+        (job_dir / "job.yml").write_text(
+            """
+name: no_output_job
+version: "1.0.0"
+summary: Job with no-output step
+description: Test job
+
+steps:
+  - id: cleanup
+    name: Cleanup
+    description: Cleanup step with no outputs
+    instructions_file: steps/cleanup.md
+    outputs: {}
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - cleanup
+"""
+        )
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "cleanup.md").write_text("# Cleanup\n\nDo cleanup.")
+
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+        )
+
+        start_input = StartWorkflowInput(
+            goal="Run cleanup",
+            job_name="no_output_job",
+            workflow_name="main",
+        )
+        await tools.start_workflow(start_input)
+
+        response = await tools.finished_step(FinishedStepInput(outputs={}))
+
+        assert response.status == StepStatus.WORKFLOW_COMPLETE
+
+    async def test_finished_step_validates_files_type_output(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test finished_step validation for type: files outputs."""
+        # Create a job with a files-type output
+        job_dir = project_root / ".deepwork" / "jobs" / "files_job"
+        job_dir.mkdir(parents=True)
+        (job_dir / "job.yml").write_text(
+            """
+name: files_job
+version: "1.0.0"
+summary: Job with files output
+description: Test job
+
+steps:
+  - id: generate
+    name: Generate
+    description: Generates multiple files
+    instructions_file: steps/generate.md
+    outputs:
+      reports:
+        type: files
+        description: Generated report files
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - generate
+"""
+        )
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "generate.md").write_text("# Generate\n\nGenerate reports.")
+
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+        )
+
+        start_input = StartWorkflowInput(
+            goal="Generate reports",
+            job_name="files_job",
+            workflow_name="main",
+        )
+        await tools.start_workflow(start_input)
+
+        # type: files requires a list, not a string
+        with pytest.raises(ToolError, match="type 'files'.*list of paths"):
+            await tools.finished_step(
+                FinishedStepInput(outputs={"reports": "report1.md"})
+            )
+
+    async def test_finished_step_validates_files_type_existence(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test finished_step validates file existence for type: files outputs."""
+        job_dir = project_root / ".deepwork" / "jobs" / "files_job2"
+        job_dir.mkdir(parents=True)
+        (job_dir / "job.yml").write_text(
+            """
+name: files_job2
+version: "1.0.0"
+summary: Job with files output
+description: Test job
+
+steps:
+  - id: generate
+    name: Generate
+    description: Generates multiple files
+    instructions_file: steps/generate.md
+    outputs:
+      reports:
+        type: files
+        description: Generated report files
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - generate
+"""
+        )
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "generate.md").write_text("# Generate\n\nGenerate reports.")
+
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+        )
+
+        start_input = StartWorkflowInput(
+            goal="Generate reports",
+            job_name="files_job2",
+            workflow_name="main",
+        )
+        await tools.start_workflow(start_input)
+
+        # Create one file but not the other
+        (project_root / "report1.md").write_text("Report 1")
+
+        with pytest.raises(ToolError, match="file not found at.*missing.md"):
+            await tools.finished_step(
+                FinishedStepInput(
+                    outputs={"reports": ["report1.md", "missing.md"]}
+                )
+            )
+
+    async def test_finished_step_files_type_success(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test finished_step succeeds with valid type: files outputs."""
+        job_dir = project_root / ".deepwork" / "jobs" / "files_job3"
+        job_dir.mkdir(parents=True)
+        (job_dir / "job.yml").write_text(
+            """
+name: files_job3
+version: "1.0.0"
+summary: Job with files output
+description: Test job
+
+steps:
+  - id: generate
+    name: Generate
+    description: Generates multiple files
+    instructions_file: steps/generate.md
+    outputs:
+      reports:
+        type: files
+        description: Generated report files
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - generate
+"""
+        )
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "generate.md").write_text("# Generate\n\nGenerate reports.")
+
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+        )
+
+        start_input = StartWorkflowInput(
+            goal="Generate reports",
+            job_name="files_job3",
+            workflow_name="main",
+        )
+        await tools.start_workflow(start_input)
+
+        (project_root / "report1.md").write_text("Report 1")
+        (project_root / "report2.md").write_text("Report 2")
+
+        response = await tools.finished_step(
+            FinishedStepInput(
+                outputs={"reports": ["report1.md", "report2.md"]}
+            )
+        )
+
+        assert response.status == StepStatus.WORKFLOW_COMPLETE
