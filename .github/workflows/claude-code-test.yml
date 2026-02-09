@@ -245,16 +245,22 @@ jobs:
           ls -la test_project/.claude/skills/
 
       # STEP 1: Use /deepwork to CREATE the fruits job via MCP workflow
+      #
+      # This invokes Claude with the /deepwork skill, which uses MCP tools to
+      # walk through the deepwork_jobs/new_job workflow (define → implement →
+      # test → iterate). The workflow includes quality gates that spawn Claude
+      # subprocesses, so it needs a generous timeout.
       - name: Create job with /deepwork
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
-        timeout-minutes: 6
+        timeout-minutes: 10
         run: |
           echo "=== Running /deepwork to create fruits job ==="
           mkdir fruits
 
-          # Provide detailed, deterministic instructions for creating the job
-          claude --print --model claude-sonnet-4-5 <<'PROMPT_EOF'
+          # Use --debug to capture detailed logs for diagnosing failures.
+          # The debug log is dumped in the failure handler below.
+          claude --print --debug --model claude-sonnet-4-5 <<'PROMPT_EOF'
           /deepwork I want to create a simple job called "fruits" for identifying and classifying fruits.
 
           Here are the EXACT specifications.
@@ -276,6 +282,7 @@ jobs:
           - Do not ask questions - just make the job
           - Rules are explicitly not desired. Tell the review agents that.
           - Do not give long commentary of what you did - just make the job with no commentary.
+          - IMPORTANT: Once the job.yml and step instruction files have been created (i.e. after the "define" and "implement" steps are done), STOP. Do NOT continue into the "test" or "iterate" steps. Abort the workflow at that point. We only need the job definition files created, not the full workflow run.
           PROMPT_EOF
 
           # Verify the job.yml was created
@@ -320,6 +327,35 @@ jobs:
             echo "ERROR: /deepwork skill was not generated"
             exit 1
           fi
+
+      # Dump Claude debug log if the job creation step failed or timed out.
+      # This captures MCP server communication, tool calls, and error details.
+      - name: Dump Claude debug log on failure
+        if: failure() && steps.check-key.outputs.has_key == 'true'
+        working-directory: test_project
+        run: |
+          echo "=== Claude debug log ==="
+          # Claude --debug writes to ~/.claude/debug.log
+          if [ -f "$HOME/.claude/debug.log" ]; then
+            echo "--- Last 200 lines of debug.log ---"
+            tail -200 "$HOME/.claude/debug.log"
+          else
+            echo "No debug.log found at ~/.claude/debug.log"
+            echo "Searching for debug logs..."
+            find "$HOME/.claude" -name "*.log" -type f 2>/dev/null || echo "No log files found"
+          fi
+          echo ""
+          echo "=== MCP server config ==="
+          cat .mcp.json 2>/dev/null || echo "No .mcp.json found"
+          echo ""
+          echo "=== Settings.json ==="
+          cat .claude/settings.json 2>/dev/null || echo "No settings.json found"
+          echo ""
+          echo "=== DeepWork session state ==="
+          ls -la .deepwork/tmp/ 2>/dev/null || echo "No tmp directory"
+          for f in .deepwork/tmp/session_*.json; do
+            [ -f "$f" ] && echo "--- $f ---" && cat "$f"
+          done
 
       # STEP 3: Execute the fruits workflow via /deepwork MCP entry point
       - name: Run Workflow
