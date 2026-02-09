@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: concurrent_workflow
 version: "1.0.0"
 summary: "Workflow with concurrent steps for testing"
@@ -20,7 +21,11 @@ steps:
     description: "Initialize the analysis environment"
     instructions_file: steps/setup.md
     outputs:
-      - setup_complete.md
+      setup_complete.md:
+        type: file
+        description: "Setup confirmation and configuration"
+        required: true
+    reviews: []
 
   - id: research_web
     name: "Web Research"
@@ -30,9 +35,13 @@ steps:
       - file: setup_complete.md
         from_step: setup
     outputs:
-      - web_research.md
+      web_research.md:
+        type: file
+        description: "Research findings from web sources"
+        required: true
     dependencies:
       - setup
+    reviews: []
 
   - id: research_docs
     name: "Document Research"
@@ -42,9 +51,13 @@ steps:
       - file: setup_complete.md
         from_step: setup
     outputs:
-      - docs_research.md
+      docs_research.md:
+        type: file
+        description: "Research findings from internal documents"
+        required: true
     dependencies:
       - setup
+    reviews: []
 
   - id: research_interviews
     name: "Interview Research"
@@ -54,9 +67,13 @@ steps:
       - file: setup_complete.md
         from_step: setup
     outputs:
-      - interviews_research.md
+      interviews_research.md:
+        type: file
+        description: "Research findings from stakeholder interviews"
+        required: true
     dependencies:
       - setup
+    reviews: []
 
   - id: compile_results
     name: "Compile Results"
@@ -70,11 +87,15 @@ steps:
       - file: interviews_research.md
         from_step: research_interviews
     outputs:
-      - compiled_results.md
+      compiled_results.md:
+        type: file
+        description: "Unified report from all research sources"
+        required: true
     dependencies:
       - research_web
       - research_docs
       - research_interviews
+    reviews: []
 
   - id: final_review
     name: "Final Review"
@@ -84,6 +105,10 @@ steps:
       - file: compiled_results.md
         from_step: compile_results
     outputs:
-      - final_report.md
+      final_report.md:
+        type: file
+        description: "Final reviewed and approved analysis report"
+        required: true
     dependencies:
       - compile_results
+    reviews: []

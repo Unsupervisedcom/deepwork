@@ -20,6 +20,13 @@ changelog:
   - version: "1.0.0"
     changes: "Initial job creation"
 
+workflows:
+  - name: [workflow_name]
+    summary: "[What this workflow accomplishes]"
+    steps:
+      - [step_id]
+      - [another_step]
+
 steps:
   - id: [step_id]
     name: "[Step Name]"
@@ -32,27 +39,33 @@ steps:
       # - file: [filename_or_path]
       #   from_step: [previous_step_id]
     outputs:
-      - [output_filename_or_path]  # e.g., "report.md" or "reports/analysis.md"
+      [output_name]:
+        type: file
+        description: "[What this output contains]"
+        required: true
     dependencies: []  # List of step IDs that must complete first
+    reviews:
+      - run_each: step  # or a specific output name
+        # Optional: tell the reviewer what files to read for context
+        # additional_review_guidance: "Read the [filename] for context on [what]."
+        quality_criteria:
+          "[Criterion Name]": "[Question to evaluate]"
+          "[Another Criterion]": "[Another question]"
     # Optional: Delegate to a specific agent type (uses context: fork)
     # agent: general-purpose  # or other agent type
-    # Optional: Quality validation hooks
-    hooks:
-      after_agent:
-        - prompt: |
-            Verify this step's output meets quality criteria:
-            1. [Criterion 1]
-            2. [Criterion 2]
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
 
   - id: [another_step]
     name: "[Another Step]"
     description: "[What this step does]"
     instructions_file: steps/[another_step].md
     inputs:
-      - file: [output_filename_or_path]
+      - file: [output_name]
         from_step: [step_id]
     outputs:
-      - [another_output_path]
+      [another_output]:
+        type: file
+        description: "[What this output contains]"
+        required: true
     dependencies:
       - [step_id]  # This step requires the previous step
+    reviews: []  # Empty if no quality checks needed

@@ -1,13 +1,16 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: deepwork_jobs
-version: "1.0.0"
-summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, or improving DeepWork jobs."
+version: "1.4.0"
+summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, testing, or improving DeepWork jobs."
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
-  workflows and learn from running them.
+  workflows, test them on real use cases, and learn from running them.
 
-  The `new_job` workflow guides you through defining and implementing a new job by
-  asking structured questions about your workflow, understanding each step's inputs and outputs,
-  reviewing the specification, and generating all necessary files.
+  The `new_job` workflow guides you through the full lifecycle of creating a new job:
+  1. **Define**: Gather requirements through structured questions and create job.yml
+  2. **Implement**: Generate step instruction files and sync slash commands
+  3. **Test**: Run the workflow on a real use case, critique output, and iterate with user
+  4. **Iterate**: Review what happened and improve the job definition based on learnings
 
   The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
   confusion or inefficiencies, and improves job instructions. It also captures bespoke
@@ -15,13 +18,38 @@ description: |
 
 workflows:
   - name: new_job
-    summary: "Create a new DeepWork job from scratch through definition, review, and implementation"
+    summary: "Create a new DeepWork job from scratch through definition, implementation, testing, and iteration"
     steps:
       - define
-      - review_job_spec
       - implement
+      - test
+      - iterate
+
+  - name: repair
+    summary: "Clean up and migrate DeepWork configurations from prior versions"
+    steps:
+      - fix_settings
+      - fix_jobs
+      - errata
+
+  - name: learn
+    summary: "Analyze conversation history to improve job instructions and capture learnings"
+    steps:
+      - learn
 
 changelog:
+  - version: "1.4.0"
+    changes: "Fixed implement step review criteria that caused severe friction: 'Ask Structured Questions' now auto-passes for steps without user inputs; 'Output Examples' renamed to 'Output Format Examples' and accepts template placeholders; added detailed review guidance to prevent misapplication of criteria"
+  - version: "1.3.0"
+    changes: "Migrated quality_criteria to reviews system with run_each targeting and map-format criteria"
+  - version: "1.2.1"
+    changes: "Removed deprecated exposed field from learn step; added learn workflow to make step accessible via MCP"
+  - version: "1.2.0"
+    changes: "Added repair workflow with fix_settings, fix_jobs, and errata steps for migrating old DeepWork configurations to current format"
+  - version: "1.1.0"
+    changes: "Added test and iterate steps to new_job workflow; test runs the workflow on a real use case and gathers feedback; iterate improves the job definition based on what happened"
+  - version: "1.0.1"
+    changes: "Removed review_job_spec step from new_job workflow; implement now follows directly from define"
   - version: "1.0.0"
     changes: "Added workflows section to distinguish new_job workflow (define→review_job_spec→implement) from standalone learn skill"
   - version: "0.1.0"
@@ -34,12 +62,6 @@ changelog:
     changes: "Removed implementation_summary and learning_summary outputs; simplified step outputs"
   - version: "0.5.0"
     changes: "Standardized on 'ask structured questions' phrasing for user input; Updated quality criteria hooks to verify phrase usage; Added guidance in implement.md to use phrase in generated instructions"
-  - version: "0.6.0"
-    changes: "Added doc spec support; define.md now detects document-oriented workflows and guides doc spec creation; learn.md now identifies and applies doc spec-related improvements"
-  - version: "0.7.0"
-    changes: "Added job.yml doc spec; define step now outputs job.yml with doc_spec reference for quality validation"
-  - version: "0.8.0"
-    changes: "Added review_job_spec step between define and implement for doc spec-based quality validation using sub-agent review"
   - version: "0.9.0"
     changes: "Improved skill descriptions with third-person voice and 'Use when...' triggers for better discoverability"
 
@@ -52,70 +74,210 @@ steps:
       - name: job_purpose
         description: "What complex task or workflow are you trying to accomplish?"
     outputs:
-      - file: job.yml
-        doc_spec: .deepwork/doc_specs/job_spec.md
+      job.yml:
+        type: file
+        description: "Definition of the job and its workflows"
+        required: true
     dependencies: []
-  - id: review_job_spec
-    name: "Review Job Specification"
-    description: "Reviews job.yml against quality criteria using a sub-agent for unbiased validation. Use after defining a job specification."
-    instructions_file: steps/review_job_spec.md
+    reviews:
+      - run_each: job.yml
+        quality_criteria:
+          "Intermediate Deliverables": "Does the job break out across the logical steps such that there are reviewable intermediate deliverables?"
+          "Reviews": |
+            Are there reviews defined for each step? Do particularly critical documents have their own reviews?
+            Note that the reviewers do not have transcript access, so if the criteria are about the conversation,
+            then add a `.deepwork/tmp/[step_summary].md` step output file so the agent has a communication channel to the reviewer.
+
+  - id: implement
+    name: "Implement Job Steps"
+    description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after defining a job."
+    instructions_file: steps/implement.md
     inputs:
       - file: job.yml
         from_step: define
     outputs:
-      - file: job.yml
-        doc_spec: .deepwork/doc_specs/job_spec.md
+      step_instruction_files:
+        type: files
+        description: "Instruction Markdown files for each step"
+        required: true
     dependencies:
       - define
-    quality_criteria:
-      - "**Sub-Agent Used**: Was a sub-agent spawned to provide unbiased review?"
-      - "**All doc spec Criteria Evaluated**: Did the sub-agent assess all 9 quality criteria?"
-      - "**Findings Addressed**: Were all failed criteria addressed by the main agent?"
-      - "**Validation Loop Complete**: Did the review-fix cycle continue until all criteria passed?"
+    reviews:
+      - run_each: step_instruction_files
+        additional_review_guidance: "Read the job.yml file in the same job directory for context on how this instruction file fits into the larger workflow."
+        quality_criteria:
+          "Complete Instructions": "Is the instruction file complete (no stubs or placeholders)?"
+          "Specific & Actionable": "Are instructions tailored to the step's purpose, not generic?"
+          "Output Examples": "Does the instruction file show what good output looks like? This can be either template examples, or negative examples of what not to do. Only required if the step has ouputs"
+          "Quality Criteria": "Does the instruction file define quality criteria for its outputs?"
+          "Ask Structured Questions": "If this step gathers user input, do instructions explicitly use the phrase 'ask structured questions'? If the step has no user inputs, this criterion passes automatically."
+          "Prompt Engineering": "Does the instruction file follow Anthropic's best practices for prompt engineering?"
 
-  - id: implement
-    name: "Implement Job Steps"
-    description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after job spec review passes."
-    instructions_file: steps/implement.md
+  - id: test
+    name: "Test the New Workflow"
+    description: "Tests the newly created workflow by running it on a real use case, critiquing the output, and iterating until the user is satisfied. Use after implementing a job."
+    instructions_file: steps/test.md
     inputs:
       - file: job.yml
-        from_step: review_job_spec
+        from_step: define
+      - file: step_instruction_files
+        from_step: implement
     outputs:
-      - steps/
+      .deepwork/tmp/test_feedback.md:
+        type: file
+        description: "Feedback from testing the workflow on a real use case"
+        required: true
     dependencies:
-      - review_job_spec
-    quality_criteria:
-      - "**Directory Structure**: Is `.deepwork/jobs/[job_name]/` created correctly?"
-      - "**Complete Instructions**: Are ALL step instruction files complete (not stubs or placeholders)?"
-      - "**Specific & Actionable**: Are instructions tailored to each step's purpose, not generic?"
-      - "**Output Examples**: Does each instruction file show what good output looks like?"
-      - "**Quality Criteria**: Does each instruction file define quality criteria for its outputs?"
-      - "**Ask Structured Questions**: Do step instructions that gather user input explicitly use the phrase \"ask structured questions\"?"
-      - "**Sync Complete**: Has `deepwork sync` been run successfully?"
-      - "**Commands Available**: Are the slash-commands generated in `.claude/commands/`?"
-      - "**Rules Considered**: Has the agent thought about whether rules would benefit this job? If relevant rules were identified, did they explain them and offer to run `/deepwork_rules.define`? Not every job needs rules - only suggest when genuinely helpful."
+      - define
+      - implement
+    reviews:
+      - run_each: step
+        quality_criteria:
+          "Workflow Invoked": "Was the new workflow actually run on the user's test case via MCP?"
+          "Output Critiqued": "Did the agent identify up to 3 top issues with the output?"
+          "User Feedback Gathered": "Did the agent ask the user about each issue and gather additional feedback?"
+          "Corrections Made": "Were all requested corrections applied to the output?"
+          "User Satisfied": "Did the user confirm the output meets their needs?"
+
+  - id: iterate
+    name: "Iterate on Workflow Design"
+    description: "Reviews the test run conversation and improves the job definition based on what happened. Use after testing a newly created job."
+    instructions_file: steps/iterate.md
+    inputs:
+      - file: job.yml
+        from_step: define
+      - file: step_instruction_files
+        from_step: implement
+      - file: .deepwork/tmp/test_feedback.md
+        from_step: test
+    outputs:
+      job.yml:
+        type: file
+        description: "Updated job definition with improvements from test run"
+        required: true
+      step_instruction_files:
+        type: files
+        description: "Updated instruction Markdown files for each step"
+        required: true
+      scripts:
+        type: files
+        description: "Updated scripts to run parts of the job more efficiently"
+        required: false
+    dependencies:
+      - define
+      - implement
+      - test
+    reviews: []
 
   - id: learn
     name: "Learn from Job Execution"
     description: "Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it."
     instructions_file: steps/learn.md
-    exposed: true
     inputs:
       - name: job_name
         description: "Name of the job that was run (optional - will auto-detect from conversation)"
     outputs:
-      - AGENTS.md
+      AGENTS.md:
+        type: file
+        description: "Bespoke learnings and run-specific context for the working folder"
+        required: true
+      job.yml:
+        type: file
+        description: "Updated job definition with improvements from test run"
+        required: true
+      step_instruction_files:
+        type: files
+        description: "Updated instruction Markdown files for each step"
+        required: true
+      scripts:
+        type: files
+        description: "Updated scripts to run parts of the job more efficiently"
+        required: false
     dependencies: []
-    quality_criteria:
-      - "**Conversation Analyzed**: Did the agent review the conversation for DeepWork job executions?"
-      - "**Confusion Identified**: Did the agent identify points of confusion, errors, or inefficiencies?"
-      - "**Instructions Improved**: Were job instructions updated to address identified issues?"
-      - "**Instructions Concise**: Are instructions free of redundancy and unnecessary verbosity?"
-      - "**Shared Content Extracted**: Is lengthy/duplicated content extracted into referenced files?"
-      - "**doc spec Reviewed (if applicable)**: For jobs with doc spec outputs, were doc spec-related learnings identified?"
-      - "**doc spec Updated (if applicable)**: Were doc spec files updated with improved quality criteria or structure?"
-      - "**Bespoke Learnings Captured**: Were run-specific learnings added to AGENTS.md?"
-      - "**File References Used**: Do AGENTS.md entries reference other files where appropriate?"
-      - "**Working Folder Correct**: Is AGENTS.md in the correct working folder for the job?"
-      - "**Generalizable Separated**: Are generalizable improvements in instructions, not AGENTS.md?"
-      - "**Sync Complete**: Has `deepwork sync` been run if instructions were modified?"
+    reviews:
+      - run_each: step
+        quality_criteria:
+          "Conversation Analyzed": "Did the agent review the conversation for DeepWork job executions?"
+          "Confusion Identified": "Did the agent identify points of confusion, errors, or inefficiencies?"
+          "Instructions Improved": "Were job instructions updated to address identified issues?"
+          "Instructions Concise": "Are instructions free of redundancy and unnecessary verbosity?"
+          "Shared Content Extracted": "Is lengthy/duplicated content extracted into referenced files?"
+          "Bespoke Learnings Captured": "Were run-specific learnings added to AGENTS.md?"
+          "File References Used": "Do AGENTS.md entries reference other files where appropriate?"
+          "Working Folder Correct": "Is AGENTS.md in the correct working folder for the job?"
+
+  - id: fix_settings
+    name: "Fix Settings Files"
+    description: "Cleans up .claude/settings.json and related configuration files, removing legacy permissions, duplicate hooks, and hardcoded paths from prior DeepWork versions."
+    instructions_file: steps/fix_settings.md
+    inputs: []
+    outputs:
+      settings.json:
+        type: file
+        description: "Cleaned up Claude settings file with legacy permissions removed"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: step
+        quality_criteria:
+          "DeepWork Skills Removed": "Are `Skill(...)` entries matching jobs in `.deepwork/jobs/` removed?"
+          "Non-DeepWork Skills Preserved": "Are skills NOT matching DeepWork jobs left intact?"
+          "make_new_job.sh Preserved": "Is the `Bash(...)` permission for `make_new_job.sh` preserved (if present)?"
+          "Rules Hooks Removed": "Are all DeepWork Rules hooks and permissions removed?"
+          "Duplicate Hooks Removed": "Are duplicate hook entries consolidated or removed?"
+          "Hardcoded Paths Removed": "Are user-specific hardcoded paths (like `/Users/*/...`) removed?"
+          "Deprecated Commands Removed": "Are deprecated commands like `deepwork hook *` removed?"
+          "Valid JSON": "Is settings.json still valid JSON after modifications?"
+          "Backup Created": "Was a backup of the original settings created before modifications?"
+
+  - id: fix_jobs
+    name: "Fix Job Definitions"
+    description: "Updates job.yml files and step instructions to current DeepWork format, removing deprecated fields and migrating to new structures."
+    instructions_file: steps/fix_jobs.md
+    inputs:
+      - file: settings.json
+        from_step: fix_settings
+    outputs:
+      job_definitions:
+        type: files
+        description: "Updated job.yml files and step instructions in current DeepWork format"
+        required: true
+      step_instruction_files:
+        type: files
+        description: "Updated step instruction files"
+        required: true
+    dependencies:
+      - fix_settings
+    reviews:
+      - run_each: step
+        additional_review_guidance: "Read the .claude/settings.json file for context on what settings were cleaned up in the prior step."
+        quality_criteria:
+          "Exposed Field Addressed": "Are `exposed: true` fields removed or noted as deprecated?"
+          "Stop Hooks Migrated": "Are `stop_hooks` migrated to `hooks.after_agent` format?"
+          "Removed Steps Cleaned": "Are references to removed steps (like `review_job_spec`) updated?"
+          "Orphaned Steps Fixed": "For jobs with no workflows, is there a single workflow (named after the job) containing all steps? For jobs with existing workflows, does each orphan get its own workflow (named after the step)?"
+          "Valid YAML": "Are all job.yml files valid YAML?"
+
+  - id: errata
+    name: "Clean Up Errata"
+    description: "Removes obsolete files and folders from prior DeepWork versions, including old skill directories, temp files, and deprecated configurations."
+    instructions_file: steps/errata.md
+    outputs: {}
+    inputs:
+      - file: job_definitions
+        from_step: fix_jobs
+    dependencies:
+      - fix_settings
+      - fix_jobs
+    reviews:
+      - run_each: step
+        additional_review_guidance: "Check the .deepwork/jobs/ directory and .claude/skills/ directory to verify the cleanup was done correctly."
+        quality_criteria:
+          "Legacy Job Skills Removed": "Are legacy skill folders for each job removed from `.claude/skills/` and `.gemini/skills/`?"
+          "Deepwork Skill Preserved": "Does the `deepwork` skill folder still exist in `.claude/skills/deepwork/`?"
+          "Temp Files Cleaned": "Are `.deepwork/tmp/` contents cleaned appropriately?"
+          "Rules Folder Removed": "Is `.deepwork/rules/` folder backed up and removed (fully deprecated)?"
+          "Rules Job Removed": "Is `.deepwork/jobs/deepwork_rules/` removed if present?"
+          "Config Version Updated": "Is `.deepwork/config.yml` using current version format?"
+          "DeepWork Re-installed": "Was `deepwork install` run after cleanup, and does it complete without errors?"
+          "Git Status Clean": "Are changes ready to be committed (no untracked garbage files)?"

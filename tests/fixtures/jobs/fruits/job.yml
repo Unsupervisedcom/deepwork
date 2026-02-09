@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: fruits
 version: "1.0.0"
 summary: "Identify and classify fruits from a mixed list of items"
@@ -15,6 +16,13 @@ changelog:
   - version: "1.0.0"
     changes: "Initial version for CI testing"
 
+workflows:
+  - name: full
+    summary: "Run the complete fruits identification and classification"
+    steps:
+      - identify
+      - classify
+
 steps:
   - id: identify
     name: "Identify Fruits"
@@ -24,8 +32,12 @@ steps:
       - name: raw_items
         description: "Comma-separated list of items to filter (e.g., 'apple, car, banana, chair')"
     outputs:
-      - identified_fruits.md
+      identified_fruits.md:
+        type: file
+        description: "List of identified fruits from the input items"
+        required: true
     dependencies: []
+    reviews: []
 
   - id: classify
     name: "Classify Fruits"
@@ -35,6 +47,10 @@ steps:
       - file: identified_fruits.md
         from_step: identify
     outputs:
-      - classified_fruits.md
+      classified_fruits.md:
+        type: file
+        description: "Fruits organized into categories"
+        required: true
     dependencies:
       - identify
+    reviews: []

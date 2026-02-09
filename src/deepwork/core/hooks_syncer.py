@@ -36,7 +36,7 @@ class HookEntry:
         """
         if self.module:
             # Python module - use deepwork hook CLI for portability
-            # Extract hook name from module path (e.g., "deepwork.hooks.rules_check" -> "rules_check")
+            # Extract hook name from module path (e.g., "deepwork.hooks.my_hook" -> "my_hook")
             hook_name = self.module.rsplit(".", 1)[-1]
             return f"deepwork hook {hook_name}"
         elif self.script:

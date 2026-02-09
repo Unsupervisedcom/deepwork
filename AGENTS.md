@@ -14,12 +14,11 @@ When creating or modifying jobs in this repository, you MUST understand which ty
 
 **Current standard jobs**:
 - `deepwork_jobs` - Core job management (define, implement, learn)
-- `deepwork_rules` - Rules enforcement system
 
 **Editing rules**:
 - Source of truth is ALWAYS in `src/deepwork/standard_jobs/`
 - NEVER edit the installed copies in `.deepwork/jobs/` directly
-- After editing, run `deepwork install --platform claude` to sync
+- After editing, run `deepwork install` to sync
 
 ### 2. Library Jobs (`library/jobs/`)
 
@@ -75,13 +74,11 @@ Which type of job should this be?
 ```
 deepwork/
 ├── src/deepwork/standard_jobs/    # Standard jobs (source of truth)
-│   ├── deepwork_jobs/
-│   └── deepwork_rules/
+│   └── deepwork_jobs/
 ├── library/jobs/                   # Library/example jobs
 │   └── [example_job]/
 └── .deepwork/jobs/                 # Installed standard jobs + bespoke jobs
     ├── deepwork_jobs/              # ← Installed copy, NOT source of truth
-    ├── deepwork_rules/             # ← Installed copy, NOT source of truth
     └── [bespoke_job]/              # ← Source of truth for bespoke only
 
 ## Debugging Issues

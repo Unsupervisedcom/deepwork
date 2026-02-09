@@ -7,6 +7,7 @@ Thank you for your interest in contributing to DeepWork! This guide will help yo
 - [Prerequisites](#prerequisites)
 - [Development Setup](#development-setup)
 - [Installing DeepWork Locally](#installing-deepwork-locally)
+- [Installing Pre-Release Versions](#installing-pre-release-versions)
 - [Testing Your Local Installation](#testing-your-local-installation)
 - [Running Tests](#running-tests)
 - [Code Quality](#code-quality)
@@ -240,6 +241,32 @@ which deepwork  # Should point to .venv/bin/deepwork
 deepwork --version
 ```
 
+## Installing Pre-Release Versions
+
+DeepWork uses pre-release versions (e.g., `0.7.0a1`) during development. By default, `uv` and `pip` skip pre-release versions, so you need to opt in explicitly.
+
+### With uv
+
+```bash
+# Install the latest pre-release from PyPI
+uv pip install --prerelease=allow deepwork
+
+# Or pin to a specific pre-release
+uv pip install --prerelease=allow "deepwork==0.7.0a1"
+```
+
+### With pip
+
+```bash
+pip install --pre deepwork
+```
+
+### With uv tool install (global CLI)
+
+```bash
+uv tool install --prerelease=allow deepwork
+```
+
 ## Testing Your Local Installation
 
 To test your local DeepWork installation in a real project:
@@ -259,7 +286,7 @@ Since you installed DeepWork in editable mode, the `deepwork` command uses your 
 
 ```bash
 # Run the install command
-deepwork install --platform claude
+deepwork install
 
 # Verify installation
 ls -la .deepwork/
@@ -273,7 +300,7 @@ Any changes you make to the DeepWork source code will be immediately reflected:
 ```bash
 # Make changes in ~/deepwork/src/deepwork/...
 # Then test in your test project
-deepwork install --platform claude
+deepwork install
 
 # Or test the CLI directly
 deepwork --help
@@ -306,7 +333,7 @@ nix run github:Unsupervisedcom/deepwork/feature-branch-name -- --help
 nix develop github:Unsupervisedcom/deepwork/feature-branch-name
 
 # Run a specific command from a feature branch
-nix develop github:Unsupervisedcom/deepwork/feature-branch-name --command deepwork install --platform claude
+nix develop github:Unsupervisedcom/deepwork/feature-branch-name --command deepwork install
 
 # Test against a specific commit
 nix run github:Unsupervisedcom/deepwork/abc1234 -- --version
@@ -321,7 +348,7 @@ For example, to test a branch named `feat/new-parser`:
 
 ```bash
 # Quick test of the CLI
-nix run github:Unsupervisedcom/deepwork/feat/new-parser -- install --platform claude --dry-run
+nix run github:Unsupervisedcom/deepwork/feat/new-parser -- install --dry-run
 
 # Or enter a full development shell to run tests and run a specific test
 nix develop github:Unsupervisedcom/deepwork/feat/new-parser --command pytest tests/unit/core/test_parser.py -v
@@ -466,7 +493,7 @@ mypy src/
 ```bash
 # Create or use a test project
 cd ~/test-project/
-deepwork install --platform claude
+deepwork install
 
 # Verify your changes work as expected
 ```

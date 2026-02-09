@@ -66,15 +66,6 @@ For each learning identified, determine if it is:
   - "Quality criteria should include checking for Y"
   - "Add example of correct output format"
 
-**doc spec-Related** (should improve doc spec files):
-- Improvements to document quality criteria
-- Changes to document structure or format
-- Updated audience or frequency information
-- Examples:
-  - "The report should include a summary table"
-  - "Quality criterion 'Visualization' needs clearer requirements"
-  - "Documents need a section for action items"
-
 **Bespoke** (should go in AGENTS.md):
 - Specific to THIS project/codebase/run
 - Depends on local conventions or structure
@@ -84,30 +75,6 @@ For each learning identified, determine if it is:
   - "In this codebase, API endpoints are in `src/api/`"
   - "This project uses camelCase for function names"
   - "The main config file is at `config/settings.yml`"
-
-### Step 3.5: Identify doc spec-Related Learnings
-
-Review the conversation for doc spec-related improvements:
-
-1. **Quality Criteria Changes**
-   - Were any quality criteria unclear or insufficient?
-   - Did the agent repeatedly fail certain criteria?
-   - Are there new criteria that should be added?
-
-2. **Document Structure Changes**
-   - Did the user request different sections?
-   - Were parts of the document format confusing?
-   - Should the example document be updated?
-
-3. **Metadata Updates**
-   - Has the target audience changed?
-   - Should frequency or path patterns be updated?
-
-**Signals for doc spec improvements:**
-- User asked for changes to document format
-- Repeated validation failures on specific criteria
-- Feedback about missing sections or information
-- Changes to how documents are organized/stored
 
 ### Step 4: Update Job Instructions (Generalizable Learnings)
 
@@ -121,6 +88,7 @@ For each generalizable learning:
    - Include helpful examples
    - Clarify ambiguous instructions
    - Update quality criteria if needed
+   - If you identify problems in the outcomes of steps, those usually should be reflected in an update to the `reviews` for that step in `job.yml` (adjusting criteria names, questions, or `run_each` targeting)
 
 3. **Keep instructions concise**
    - Avoid redundancy - don't repeat the same guidance in multiple places
@@ -162,41 +130,6 @@ Review all instruction files for the job and identify content that:
    - Shorter instruction files - easier to read and maintain
    - Consistent guidance across steps
 
-### Step 4.5: Update doc spec Files (doc spec-Related Learnings)
-
-If doc spec-related learnings were identified:
-
-1. **Locate the doc spec file**
-   - Find doc spec references in job.yml outputs (look for `doc_spec: .deepwork/doc_specs/[doc_spec_name].md`)
-   - doc spec files are at `.deepwork/doc_specs/[doc_spec_name].md`
-
-2. **Update quality_criteria array**
-   - Add new criteria with name and description
-   - Modify existing criteria descriptions for clarity
-   - Remove criteria that are no longer relevant
-
-3. **Update example document**
-   - Modify the markdown body to reflect structure changes
-   - Ensure the example matches updated criteria
-
-4. **Update metadata as needed**
-   - target_audience: If audience has changed
-   - frequency: If production cadence has changed
-   - path_patterns: If storage location has changed
-
-**Example doc spec update:**
-```yaml
-# Before
-quality_criteria:
-  - name: Visualization
-    description: Include charts
-
-# After
-quality_criteria:
-  - name: Visualization
-    description: Include Mermaid.js charts showing spend breakdown by service and month-over-month trend
-```
-
 ### Step 5: Create/Update AGENTS.md (Bespoke Learnings)
 
 The AGENTS.md file captures project-specific knowledge that helps future agent runs.
@@ -233,13 +166,6 @@ If instruction files were modified:
      changes: "Improved [step] instructions based on execution learnings: [brief description]"
    ```
 
-### Step 7: Sync Skills
-
-**Run deepwork sync** (if instructions were modified)
-```bash
-deepwork sync
-```
-
 ## File Reference Patterns
 
 When adding entries to AGENTS.md, prefer these patterns:
@@ -258,23 +184,10 @@ When adding entries to AGENTS.md, prefer these patterns:
 - Configuration requires these fields: name, version, ...
 ```
 
-## Quality Criteria
-
-- Conversation has been analyzed for job executions
-- Points of confusion and inefficiency are identified
-- Learnings are correctly classified (generalizable vs bespoke)
-- Job instructions updated for generalizable improvements
-- Instructions are concise - no redundancy or unnecessary verbosity
-- Shared/lengthy content extracted into referenced files where appropriate
-- AGENTS.md created/updated with bespoke learnings
-- File references used instead of duplicating content
-- AGENTS.md is in the correct folder (the deepest common folder for the topic)
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>`
-
 ## Example Dialog
 
 ```
-User: /deepwork_jobs.learn
+User: [Invokes the learn workflow via MCP]
 
 Claude: I'll analyze this conversation for learnings from DeepWork job executions.
 
@@ -323,8 +236,6 @@ I found the following job executions:
    ```
 
 3. Updated job.yml version to 1.0.1 with changelog entry
-
-4. Ran `deepwork sync`
 
 **Summary**
 

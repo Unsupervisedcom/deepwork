@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: competitive_research
 version: "0.1.0"
 summary: "Systematic competitive analysis workflow"
@@ -30,8 +31,12 @@ steps:
       - name: product_category
         description: "Product category"
     outputs:
-      - competitors.md
+      competitors.md:
+        type: file
+        description: "Vetted list of direct and indirect competitors"
+        required: true
     dependencies: []
+    reviews: []
 
   - id: primary_research
     name: "Primary Research"
@@ -41,10 +46,17 @@ steps:
       - file: competitors.md
         from_step: identify_competitors
     outputs:
-      - primary_research.md
-      - competitor_profiles/
+      primary_research.md:
+        type: file
+        description: "Analysis of competitors' self-presentation"
+        required: true
+      competitor_profiles:
+        type: files
+        description: "Individual competitor profile documents"
+        required: true
     dependencies:
       - identify_competitors
+    reviews: []
 
   - id: secondary_research
     name: "Secondary Research"
@@ -56,10 +68,14 @@ steps:
       - file: primary_research.md
         from_step: primary_research
     outputs:
-      - secondary_research.md
+      secondary_research.md:
+        type: file
+        description: "Third-party perspectives on competitors"
+        required: true
     dependencies:
       - identify_competitors
       - primary_research
+    reviews: []
 
   - id: comparative_report
     name: "Comparative Report"
@@ -71,8 +87,15 @@ steps:
       - file: secondary_research.md
         from_step: secondary_research
     outputs:
-      - comparison_matrix.md
-      - strengths_weaknesses.md
+      comparison_matrix.md:
+        type: file
+        description: "Detailed comparison matrix across competitors"
+        required: true
+      strengths_weaknesses.md:
+        type: file
+        description: "Strengths and weaknesses analysis"
+        required: true
     dependencies:
       - primary_research
       - secondary_research
+    reviews: []

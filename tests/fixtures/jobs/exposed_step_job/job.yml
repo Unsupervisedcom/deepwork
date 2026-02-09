@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: exposed_job
 version: "0.1.0"
 summary: "A job with exposed and hidden steps for testing"
@@ -16,8 +17,12 @@ steps:
     description: "A step that is hidden by default"
     instructions_file: steps/hidden_step.md
     outputs:
-      - hidden_output.md
+      hidden_output.md:
+        type: file
+        description: "Output from the hidden step"
+        required: true
     dependencies: []
+    reviews: []
 
   - id: exposed_step
     name: "Exposed Step"
@@ -25,5 +30,9 @@ steps:
     instructions_file: steps/exposed_step.md
     exposed: true
     outputs:
-      - exposed_output.md
+      exposed_output.md:
+        type: file
+        description: "Output from the exposed step"
+        required: true
     dependencies: []
+    reviews: []

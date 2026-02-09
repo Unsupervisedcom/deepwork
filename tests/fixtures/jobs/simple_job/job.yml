@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: simple_job
 version: "0.1.0"
 summary: "A simple single-step job for testing"
@@ -20,5 +21,9 @@ steps:
       - name: input_param
         description: "An input parameter"
     outputs:
-      - output.md
+      output.md:
+        type: file
+        description: "The output file produced by this step"
+        required: true
     dependencies: []
+    reviews: []

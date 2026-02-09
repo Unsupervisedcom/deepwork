@@ -14,6 +14,15 @@ changelog:
   - version: "1.0.0"
     changes: "Initial job creation"
 
+workflows:
+  - name: full_analysis
+    summary: "Complete competitive research from identification to positioning"
+    steps:
+      - identify_competitors
+      - research_competitors
+      - comparative_analysis
+      - positioning_recommendations
+
 steps:
   - id: identify_competitors
     name: "Identify Competitors"
@@ -25,8 +34,12 @@ steps:
       - name: product_category
         description: "The product category"
     outputs:
-      - competitors_list.md
+      competitors_list.md:
+        type: file
+        description: "Vetted list of direct and indirect competitors"
+        required: true
     dependencies: []
+    reviews: []
 
   - id: research_competitors
     name: "Research Competitors"
@@ -36,17 +49,18 @@ steps:
       - file: competitors_list.md
         from_step: identify_competitors
     outputs:
-      - research_notes.md
+      research_notes.md:
+        type: file
+        description: "Detailed research notes on each competitor"
+        required: true
     dependencies:
       - identify_competitors
-    hooks:
-      after_agent:
-        - prompt: |
-            Verify the research meets criteria:
-            1. Each competitor has at least 3 data points
-            2. Sources are cited
-            3. Information is current (within last year)
-            If ALL criteria are met, include `<promise>✓ Quality Criteria Met</promise>`.
+    reviews:
+      - run_each: research_notes.md
+        quality_criteria:
+          "Sufficient Data": "Does each competitor have at least 3 data points?"
+          "Sources Cited": "Are sources cited for key claims?"
+          "Current Information": "Is the information current (within last year)?"
 
   - id: comparative_analysis
     name: "Comparative Analysis"
@@ -56,9 +70,13 @@ steps:
       - file: research_notes.md
         from_step: research_competitors
     outputs:
-      - comparison_matrix.md
+      comparison_matrix.md:
+        type: file
+        description: "Side-by-side comparison matrix of all competitors"
+        required: true
     dependencies:
       - research_competitors
+    reviews: []
 
   - id: positioning_recommendations
     name: "Positioning Recommendations"
@@ -68,6 +86,15 @@ steps:
       - file: comparison_matrix.md
         from_step: comparative_analysis
     outputs:
-      - positioning_report.md
+      positioning_report.md:
+        type: file
+        description: "Strategic positioning recommendations"
+        required: true
     dependencies:
       - comparative_analysis
+    reviews:
+      - run_each: positioning_report.md
+        additional_review_guidance: "Read the comparison_matrix.md file to verify that recommendations are grounded in the competitive analysis data."
+        quality_criteria:
+          "Actionable": "Are recommendations specific and actionable?"
+          "Data-Backed": "Are recommendations supported by the competitive analysis data?"

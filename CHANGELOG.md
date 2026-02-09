@@ -8,40 +8,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Concurrent steps support in workflow definitions
-  - Workflows can now specify nested arrays of step IDs to indicate steps that can run in parallel
-  - Example: `steps: [setup, [task_a, task_b, task_c], finalize]` runs task_a/b/c concurrently
-  - Single-item arrays indicate a step with multiple parallel instances (e.g., `[fetch_campaign_data]` runs for each campaign)
-  - New `WorkflowStepEntry` dataclass in parser for sequential/concurrent step groups
-  - Meta-skill template renders concurrent steps as "Background Task 1/2/3" with clear instructions
-  - Added `get_step_entry_position_in_workflow()` and `get_concurrent_step_info()` methods to JobDefinition
-  - Full backward compatibility: existing workflows with simple step arrays continue to work
-- Agent delegation field for job.yml steps
-  - New `agent` field on steps allows specifying an agent type (e.g., `agent: general-purpose`)
-  - When `agent` is set, generated Claude Code skills automatically include `context: fork` and `agent:` in frontmatter
-  - Enables steps to delegate execution to specific agent types
-  - Updated `deepwork_jobs.define` step instructions with agent delegation guidance
-  - Updated `job_spec.md` doc spec with "Agent Delegation" section
-- Explicit workflow definitions in job.yml for distinguishing multi-step workflows from standalone skills
-  - New `workflows` section in job.yml with `name`, `summary`, and ordered `steps` array
-  - Workflows are shown separately from standalone skills in generated meta-skills
-  - Step skills now display workflow context (e.g., "Step 2/3 in new_job workflow")
-  - Standalone skills are clearly marked as "can be run anytime"
-  - Backward compatible: jobs without `workflows` section use dependency-based detection
 
 ### Changed
-- Skill templates now show workflow-aware progress (e.g., "new_job step 2/3 complete")
-- Meta-skill template reorganized to show "Workflows" and "Standalone Skills" sections separately
-- Updated `deepwork_jobs` standard job to v1.0.0 with explicit `new_job` workflow
-- SessionStart hook now skips non-initial sessions (resume, compact/clear) by checking the `source` field in stdin JSON, reducing noise and redundant checks
 
 ### Fixed
-- Fixed skill template generating malformed YAML frontmatter with fields concatenated on single lines
-  - Removed over-aggressive `{%-` whitespace stripping from Jinja template
-  - Fields like `user-invocable` and `hooks` now render on proper separate lines
-  - Affects `src/deepwork/templates/claude/skill-job-step.md.jinja`
+
+## [0.7.0] - 2026-02-05
+
+### Added
+- **MCP Server Architecture** - New Model Context Protocol server for checkpoint-based workflow execution
+- Improved `deepwork_jobs` steps for workflow management
+- JSON Schema for job.yml validation (`src/deepwork/schemas/job.schema.json`)
+- Reference documentation for calling Claude in print mode (`doc/reference/calling_claude_in_print_mode.md`)
+- Migrated to uv2nix for reproducible Python builds in flake.nix
+
+### Changed
+- **BREAKING**: Simplified skill generation to single `/deepwork` entry point skill
+- **BREAKING**: Workflow execution now happens through MCP tool calls instead of slash commands
+- Streamlined `deepwork_jobs.define` and `deepwork_jobs.implement` for MCP workflow
+- Updated `deepwork_jobs.learn` with simplified instructions
+- Simplified adapter templates - removed complex skill templates
+- MCP server registered in `.claude/settings.json` during install
 
 ### Removed
+- **BREAKING**: Rules system removed
+- **BREAKING**: Removed per-step skill generation templates and logic
+- Removed per-step skill generation templates and logic
+- Removed `commit` job from library (was example job)
+- Removed `manual_tests/` directory and `manual_tests` job
+- Removed `add_platform` bespoke job
+- Removed many hook scripts that are no longer needed with MCP architecture
+- Removed Gemini per-step skill templates (`.gemini/skills/` now only has entry point)
+
+### Migration Guide
+- Run `deepwork install` to get the new MCP server configuration
+- Workflows are now executed via `/deepwork` which uses MCP tools internally
+- Rules system is completely removed - consider implementing validation logic in quality criteria instead
+- Existing job definitions still work but are executed through MCP checkpoints
+- The `.deepwork/rules/` directory can be safely deleted
 
 ## [0.5.1] - 2026-01-24
 

@@ -31,60 +31,6 @@ Start by asking structured questions to understand what the user wants to accomp
    - What are the distinct stages from start to finish?
    - Are there any dependencies between phases?
 
-### Step 1.5: Detect Document-Oriented Workflows
-
-**Check for document-focused patterns** in the user's description:
-- Keywords: "report", "summary", "document", "create", "monthly", "quarterly", "for stakeholders", "for leadership"
-- Final deliverable is a specific document (e.g., "AWS spending report", "competitive analysis", "sprint summary")
-- Recurring documents with consistent structure
-
-**If a document-oriented workflow is detected:**
-
-1. Inform the user: "This workflow produces a specific document type. I recommend defining a doc spec first to ensure consistent quality."
-
-2. Ask structured questions to understand if they want to:
-   - Create a doc spec for this document
-   - Use an existing doc spec (if any exist in `.deepwork/doc_specs/`)
-   - Skip doc spec and proceed with simple outputs
-
-### Step 1.6: Define the Doc Spec (if needed)
-
-When creating a doc spec, gather the following information:
-
-1. **Document Identity**
-   - What is the document called? (e.g., "Monthly AWS Spending Report")
-   - Brief description of its purpose
-   - Where should these documents be stored? (path patterns like `finance/aws-reports/*.md`)
-
-2. **Audience and Context**
-   - Who reads this document? (target audience)
-   - How often is it produced? (frequency)
-
-3. **Quality Criteria** (3-5 criteria, each with name and description)
-
-   **Important**: Doc spec quality criteria define requirements for the **output document itself**, not the process of creating it. Focus on what the finished document must contain or achieve.
-
-   Examples for a spending report:
-   - **Visualization**: Must include charts showing spend breakdown by service
-   - **Variance Analysis**: Must compare current month against previous with percentages
-   - **Action Items**: Must include recommended cost optimization actions
-
-   **Note**: When a doc spec is created for a step's output, the step should generally NOT have separate `quality_criteria` in the job.yml. The doc spec's criteria cover output quality. Only add step-level quality_criteria if there are essential process requirements (e.g., "must use specific tool"), and minimize these when possible.
-
-4. **Document Structure**
-   - What sections should it have?
-   - Any required elements (tables, charts, summaries)?
-
-### Step 1.7: Create the doc spec File (if needed)
-
-Create the doc spec file at `.deepwork/doc_specs/[doc_spec_name].md`:
-
-**Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/doc_spec.md.template` for the standard structure.
-
-**Complete example**: See `.deepwork/doc_specs/job_spec.md` for a fully worked example (the doc spec for job.yml files).
-
-After creating the doc spec, proceed to Step 2 with the doc spec reference for the final step's output.
-
 ### Step 2: Define Each Step
 
 For each major phase they mentioned, ask structured questions to gather details:
@@ -106,8 +52,6 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Where should each output be saved? (filename/path)
    - Should outputs be organized in subdirectories? (e.g., `reports/`, `data/`, `drafts/`)
    - Will other steps need this output?
-   - **Does this output have a doc spec?** If a doc spec was created in Step 1.6/1.7, reference it for the appropriate output
-
    #### Work Product Storage Guidelines
 
    **Key principle**: Job outputs belong in the main repository directory structure, not in dot-directories. The `.deepwork/` directory is for job definitions and configuration only.
@@ -172,38 +116,54 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Are there any quality checks or validation needed?
    - What makes a good vs. bad output for this step?
 
-6. **Agent Delegation** (optional)
-   - Should this step be executed by a specific agent type?
-   - Use the `agent` field when the step should run in a forked context with a specific agent
-   - When `agent` is set, the generated skill automatically includes `context: fork`
-   - Available agent types:
-     - `general-purpose` - Standard agent for multi-step tasks
-
-   ```yaml
-   steps:
-     - id: research_step
-       agent: general-purpose  # Delegates to the general-purpose agent
-   ```
+   **Important**: When skills are generated, quality criteria are automatically included in the output. Do not duplicate them in step instructions or details—this causes redundancy and confusion.
 
 **Note**: You're gathering this information to understand what instructions will be needed, but you won't create the instruction files yet - that happens in the `implement` step.
-
-#### Doc Spec-Aware Output Format
-
-When a step produces a document with a doc spec reference, use this format in job.yml:
-
-```yaml
-outputs:
-  - file: reports/monthly_spending.md
-    doc_spec: .deepwork/doc_specs/monthly_aws_report.md
-```
-
-The doc spec's quality criteria will automatically be included in the generated skill, ensuring consistent document quality.
 
 ### Capability Considerations
 
 When defining steps, identify any that require specialized tools:
 
 **Browser Automation**: If any step involves web scraping, form filling, interactive browsing, UI testing, or research requiring website visits, ask the user what browser tools they have available. For Claude Code users, **Claude in Chrome** (Anthropic's browser extension) has been tested with DeepWork and is recommended for new users. Don't assume a default—confirm the tool before designing browser-dependent steps.
+
+### Parallel Sub-Workflow Pattern
+
+When a workflow needs to apply a multi-step process to many items independently (e.g., research each of 5 competitors, review each of 12 pull requests, analyze each file in a directory), **do not inline the repeated logic as a single step**. Instead, use the parallel sub-workflow pattern:
+
+1. **Define a separate workflow** for the process that will be repeated. This workflow handles one item at a time (e.g., `research_one_competitor` with steps like `gather_data` → `analyze` → `write_summary`).
+
+2. **In the main workflow**, add a step whose instructions tell the agent to launch the sub-workflow once per item using sub-agents (via the Task tool). Since each item is independent, these sub-workflow runs execute in parallel.
+
+**Why this matters:**
+- **Parallelism**: Independent items are processed concurrently instead of sequentially, dramatically reducing wall-clock time
+- **Quality gates**: Each sub-workflow run goes through its own review cycle, so a bad result for one item doesn't block the others
+- **Reusability**: The sub-workflow can be invoked on its own for ad-hoc single-item runs
+
+**How to structure it in `job.yml`:**
+
+```yaml
+workflows:
+  - name: full_analysis
+    summary: "Research all competitors end-to-end"
+    steps:
+      - identify_competitors
+      - research_all          # This step launches research_one in parallel
+      - synthesize
+
+  - name: research_one
+    summary: "Deep-dive research on a single competitor"
+    steps:
+      - gather_data
+      - analyze
+      - write_summary
+```
+
+The `research_all` step's instructions should tell the agent to:
+- Read the list of items from the prior step's output
+- Launch `research_one` as a sub-workflow for each item using parallel sub-agents (Task tool)
+- Collect the results and confirm all runs completed
+
+**When to recognize this pattern:** Look for language like "for each X, do Y" where Y involves more than one logical phase. If Y is a single simple action, a regular step with a loop is fine. If Y is itself a multi-step process with intermediate outputs worth reviewing, split it into a sub-workflow.
 
 ### Step 3: Validate the Workflow
 
@@ -225,52 +185,86 @@ After gathering information about all steps:
    - Job description (detailed multi-line explanation)
    - Version number (start with 1.0.0)
 
-### Step 4: Define Quality Validation (Stop Hooks)
+### Step 4: Define Quality Reviews
 
-For each step, consider whether it would benefit from **quality validation loops**. Stop hooks allow the AI agent to iteratively refine its work until quality criteria are met.
+For each step, define **reviews** that evaluate the step's outputs. Reviews run automatically when a step completes and provide quality validation loops.
 
-**Ask structured questions about quality validation:**
-- "Are there specific quality criteria that must be met for this step?"
-- "Would you like the agent to validate its work before completing?"
-- "What would make you send the work back for revision?"
+For intermediate outputs between steps, reviews let you make sure you don't go too far down the wrong path. Add reviews that confirm things that could cause problems later. For example, in a report creation process, you might have an intermediate step that performs a number of queries on the data and records the results so that later report-writing steps can synthesize that information into a coherent narrative. In this case, you would want to add a review that checks that the queries SQL matches up with the description of the queries in the job description.
 
-**Stop hooks are particularly valuable for:**
-- Steps with complex outputs that need multiple checks
-- Steps where quality is critical (final deliverables)
-- Steps with subjective quality criteria that benefit from AI self-review
+For final outputs, reviews let you make sure the output meets the user's expectations. For example, with a data-centric report job, you might have one review on the final output for consistency with style guidelines and tone and such, and a totally separate review on the data-backing to make sure the claims in the report are supported by the data from earlier steps and all have citations. 
 
-**Three types of stop hooks are supported:**
+**Any jobs with written final output must always have reviews**. Some suggested ones are:
+- Ensure claims have citations and the citations are not hallucinated
+- Ensure the output follows the style guidelines and tone
+- Ensure the output is well-organized and easy to read
+- Ensure obvious questions the content raises have answers provided
+- Visual formatting is correct (for things like PDF or HTML where the visual output matters)
+- That the content matches what the intended audience expects (i.e. executives vs engineers)
 
-1. **Inline Prompt** (`prompt`) - Best for simple quality criteria
-   ```yaml
-   stop_hooks:
-     - prompt: |
-         Verify the output meets these criteria:
-         1. Contains at least 5 competitors
-         2. Each competitor has a description
-         3. Selection rationale is clear
-   ```
+**Reviews format:**
 
-2. **Prompt File** (`prompt_file`) - For detailed/reusable criteria
-   ```yaml
-   stop_hooks:
-     - prompt_file: hooks/quality_check.md
-   ```
+Each review specifies `run_each` (what to review) and `quality_criteria` (a map of criterion name to question):
 
-3. **Script** (`script`) - For programmatic validation (tests, linting)
-   ```yaml
-   stop_hooks:
-     - script: hooks/run_tests.sh
-   ```
-
-**Multiple hooks can be combined:**
 ```yaml
-stop_hooks:
-  - script: hooks/lint_output.sh
-  - prompt: "Verify the content is comprehensive and well-organized"
+reviews:
+  - run_each: step  # Review all outputs together
+    quality_criteria:
+      "Consistent Style": "Do all files follow the same structure?"
+      "Complete Coverage": "Are all required topics covered?"
+  - run_each: report_files  # Review each file in a 'files'-type output individually
+    quality_criteria:
+      "Well Written": "Is the content clear and well-organized?"
+      "Data-Backed": "Are claims supported by data?"
 ```
 
-**Encourage prompt-based hooks** - They leverage the AI's ability to understand context and make nuanced quality judgments. Script hooks are best for objective checks (syntax, format, tests).
+**`run_each` options:**
+- `step` — Review runs once with ALL output files
+- `<output_name>` where output is `type: file` — Review runs once with that specific file
+- `<output_name>` where output is `type: files` — Review runs once per file in the list
+
+**`additional_review_guidance`** (optional): Tells the reviewer what other files or context to look at when performing the review. Reviewers only see the step's output files by default — they do NOT automatically see inputs from prior steps. When a review needs context beyond the output files (e.g., checking that an output is consistent with a prior step's deliverable, or that it follows conventions in a config file), use this field to tell the reviewer what to read.
+
+```yaml
+reviews:
+  - run_each: report_files
+    additional_review_guidance: "Read the comparison_matrix.md file for context on whether claims in the report are supported by the analysis data."
+    quality_criteria:
+      "Data-Backed": "Are recommendations supported by the competitive analysis data?"
+  - run_each: step_instruction_files
+    additional_review_guidance: "Read the job.yml file in the same job directory for context on how this instruction file fits into the larger workflow."
+    quality_criteria:
+      "Complete Instructions": "Is the instruction file complete?"
+```
+
+**When to use `additional_review_guidance`:**
+- When a review criterion references data or context from a prior step's output
+- When the reviewer needs to cross-check the output against a specification, config, or schema file
+- When the review involves consistency checks between the current output and other project files
+- When the criterion mentions something the reviewer can't assess from the output alone
+
+**When NOT to use it:**
+- When all criteria can be evaluated by reading just the output files themselves (e.g., "Is it well-written?", "Are there spelling errors?")
+- Don't use it to dump large amounts of content — keep guidance short and tell the reviewer *what to read*, not *what's in it*
+
+**Reviews are particularly valuable for:**
+- Steps with complex outputs that need multiple quality checks
+- Steps where quality is critical (final deliverables)
+- Steps with subjective quality criteria that benefit from AI self-review
+- Steps producing multiple files where each file needs individual review
+
+**Quality review timeout considerations:**
+Each individual quality review call has a 120-second timeout. For `run_each: <output_name>` with `files`-type outputs, each file gets its own separate review call — so having many files does NOT cause timeout accumulation. Timeout risk is only for individual reviews that are complex, such as:
+- Reviewing a single very large file (500+ lines) with many criteria
+- Review criteria that require cross-referencing large amounts of context
+For these cases:
+- Keep review criteria focused and efficient to evaluate
+- Consider using `run_each: step` (reviews all outputs together once) if the per-file reviews are unnecessary
+- The agent can use `quality_review_override_reason` to bypass a timed-out review, but this loses the quality gate benefit
+
+**For steps with no quality checks needed, use an empty reviews list:**
+```yaml
+reviews: []
+```
 
 ### Step 5: Create the Job Directory and Specification
 
@@ -282,18 +276,9 @@ Only after you have complete understanding, create the job directory and `job.ym
 .deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
 ```
 
-This creates:
-- `.deepwork/jobs/[job_name]/` - Main job directory
-- `.deepwork/jobs/[job_name]/steps/` - For step instruction files
-- `.deepwork/jobs/[job_name]/hooks/` - For custom validation scripts
-- `.deepwork/jobs/[job_name]/templates/` - For example file formats
-- `.deepwork/jobs/[job_name]/AGENTS.md` - Job management guidance
-
 **Then create the job.yml file** at `.deepwork/jobs/[job_name]/job.yml`
 
 (Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`)
-
-**Doc Spec**: See `.deepwork/doc_specs/job_spec.md` for the complete specification with quality criteria.
 
 **Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.template` for the standard structure.
 
@@ -414,7 +399,7 @@ Claude: Great! Creating the job.yml specification now...
 - .deepwork/jobs/competitive_research/job.yml
 
 **Next step:**
-Run `/deepwork_jobs.review_job_spec` to validate the specification against quality criteria.
+Implement the job to generate step instruction files.
 ```
 
 ## Important Guidelines
@@ -454,5 +439,5 @@ The complete YAML specification file (example shown in Step 5 above).
 After creating the file:
 1. Inform the user that the specification is complete
 2. Recommend that they review the job.yml file
-3. Tell them to run `/deepwork_jobs.review_job_spec` next
+3. Tell them the next step is to implement the job (generate step instruction files)
 

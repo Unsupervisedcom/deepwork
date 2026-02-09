@@ -1,5 +1,6 @@
 """Job definition parser."""
 
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -7,6 +8,8 @@ from typing import Any
 from deepwork.schemas.job_schema import JOB_SCHEMA, LIFECYCLE_HOOK_EVENTS
 from deepwork.utils.validation import ValidationError, validate_against_schema
 from deepwork.utils.yaml_utils import YAMLError, load_yaml
+
+logger = logging.getLogger("deepwork.parser")
 
 
 class ParseError(Exception):
@@ -48,29 +51,21 @@ class StepInput:
 
 @dataclass
 class OutputSpec:
-    """Represents a step output specification, optionally with doc spec reference."""
+    """Represents a step output specification with type information."""
 
-    file: str
-    doc_spec: str | None = None
-
-    def has_doc_spec(self) -> bool:
-        """Check if this output has a doc spec reference."""
-        return self.doc_spec is not None
+    name: str
+    type: str  # "file" or "files"
+    description: str
+    required: bool
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any] | str) -> "OutputSpec":
-        """
-        Create OutputSpec from dictionary or string.
-
-        Supports both formats:
-        - String: "output.md" -> OutputSpec(file="output.md")
-        - Dict: {"file": "output.md", "doc_spec": ".deepwork/doc_specs/report.md"}
-        """
-        if isinstance(data, str):
-            return cls(file=data)
+    def from_dict(cls, name: str, data: dict[str, Any]) -> "OutputSpec":
+        """Create OutputSpec from output name and its specification dict."""
         return cls(
-            file=data["file"],
-            doc_spec=data.get("doc_spec"),
+            name=name,
+            type=data["type"],
+            description=data["description"],
+            required=data["required"],
         )
 
 
@@ -121,6 +116,24 @@ StopHook = HookAction
 
 
 @dataclass
+class Review:
+    """Represents a quality review for step outputs."""
+
+    run_each: str  # "step" or output name
+    quality_criteria: dict[str, str]  # name → question
+    additional_review_guidance: str | None = None  # optional guidance for reviewer
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Review":
+        """Create Review from dictionary."""
+        return cls(
+            run_each=data["run_each"],
+            quality_criteria=data.get("quality_criteria", {}),
+            additional_review_guidance=data.get("additional_review_guidance"),
+        )
+
+
+@dataclass
 class Step:
     """Represents a single step in a job."""
 
@@ -139,8 +152,8 @@ class Step:
     # If true, skill is user-invocable in menus. Default: false (hidden from menus).
     exposed: bool = False
 
-    # Declarative quality criteria rendered with standard evaluation framing
-    quality_criteria: list[str] = field(default_factory=list)
+    # Quality reviews to run when step completes
+    reviews: list[Review] = field(default_factory=list)
 
     # Agent type for this step (e.g., "general-purpose"). When set, skill uses context: fork
     agent: str | None = None
@@ -178,11 +191,13 @@ class Step:
             description=data["description"],
             instructions_file=data["instructions_file"],
             inputs=[StepInput.from_dict(inp) for inp in data.get("inputs", [])],
-            outputs=[OutputSpec.from_dict(out) for out in data["outputs"]],
+            outputs=[
+                OutputSpec.from_dict(name, spec) for name, spec in data.get("outputs", {}).items()
+            ],
             dependencies=data.get("dependencies", []),
             hooks=hooks,
             exposed=data.get("exposed", False),
-            quality_criteria=data.get("quality_criteria", []),
+            reviews=[Review.from_dict(r) for r in data.get("reviews", [])],
             agent=data.get("agent"),
         )
 
@@ -350,39 +365,22 @@ class JobDefinition:
                             f"but '{inp.from_step}' is not in dependencies"
                         )
 
-    def validate_doc_spec_references(self, project_root: Path) -> None:
+    def validate_reviews(self) -> None:
         """
-        Validate that doc spec references in outputs point to existing files.
-
-        Args:
-            project_root: Path to the project root directory
+        Validate that review run_each values reference valid output names or 'step'.
 
         Raises:
-            ParseError: If doc spec references are invalid
+            ParseError: If run_each references an invalid output name
         """
         for step in self.steps:
-            for output in step.outputs:
-                if output.has_doc_spec():
-                    doc_spec_file = project_root / output.doc_spec
-                    if not doc_spec_file.exists():
-                        raise ParseError(
-                            f"Step '{step.id}' references non-existent doc spec "
-                            f"'{output.doc_spec}'. Expected file at {doc_spec_file}"
-                        )
-
-    def get_doc_spec_references(self) -> list[str]:
-        """
-        Get all unique doc spec file paths referenced in this job's outputs.
-
-        Returns:
-            List of doc spec file paths (e.g., ".deepwork/doc_specs/report.md")
-        """
-        doc_spec_refs = set()
-        for step in self.steps:
-            for output in step.outputs:
-                if output.has_doc_spec() and output.doc_spec:
-                    doc_spec_refs.add(output.doc_spec)
-        return list(doc_spec_refs)
+            output_names = {out.name for out in step.outputs}
+            for review in step.reviews:
+                if review.run_each != "step" and review.run_each not in output_names:
+                    raise ParseError(
+                        f"Step '{step.id}' has review with run_each='{review.run_each}' "
+                        f"but no output with that name. "
+                        f"Valid values: 'step', {', '.join(sorted(output_names)) or '(no outputs)'}"
+                    )
 
     def get_workflow_for_step(self, step_id: str) -> Workflow | None:
         """
@@ -543,6 +541,31 @@ class JobDefinition:
                     )
                 seen_steps.add(step_id)
 
+    def warn_orphaned_steps(self) -> list[str]:
+        """
+        Check for steps not included in any workflow and emit warnings.
+
+        Returns:
+            List of orphaned step IDs
+        """
+        # Collect all step IDs referenced in workflows
+        workflow_step_ids: set[str] = set()
+        for workflow in self.workflows:
+            workflow_step_ids.update(workflow.steps)
+
+        # Find orphaned steps
+        orphaned_steps = [step.id for step in self.steps if step.id not in workflow_step_ids]
+
+        if orphaned_steps:
+            logger.warning(
+                "Job '%s' has steps not included in any workflow: %s. "
+                "These steps are not accessible via the MCP interface.",
+                self.name,
+                ", ".join(orphaned_steps),
+            )
+
+        return orphaned_steps
+
     @classmethod
     def from_dict(cls, data: dict[str, Any], job_dir: Path) -> "JobDefinition":
         """
@@ -610,9 +633,13 @@ def parse_job_definition(job_dir: Path | str) -> JobDefinition:
     # Parse into dataclass
     job_def = JobDefinition.from_dict(job_data, job_dir_path)
 
-    # Validate dependencies, file inputs, and workflows
+    # Validate dependencies, file inputs, reviews, and workflows
     job_def.validate_dependencies()
     job_def.validate_file_inputs()
+    job_def.validate_reviews()
     job_def.validate_workflows()
+
+    # Warn about orphaned steps (not in any workflow)
+    job_def.warn_orphaned_steps()
 
     return job_def

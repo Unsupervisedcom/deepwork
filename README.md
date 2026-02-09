@@ -137,9 +137,7 @@ To start the process, just run:
 
 **3. Learns automatically** — Run `/deepwork_jobs.learn` (or ask claude to `run the deepwork learn job`) after any job to automatically capture what worked and improve for next time.
 
-**4. Rules** - The system adds enforced rules that are truly evaluated for everything it does, not just "hints" that Claude does by default
-
-**5. All work happens on Git branches** — Every change can be version-controlled and tracked. You can roll-back to prior versions of the skill or keep skills in-sync and up-to-date across your team.
+**4. All work happens on Git branches** — Every change can be version-controlled and tracked. You can roll-back to prior versions of the skill or keep skills in-sync and up-to-date across your team.
 
 ---
 
@@ -147,7 +145,7 @@ To start the process, just run:
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| **Claude Code** | Full Support | Recommended. Quality hooks, rules, best DX. |
+| **Claude Code** | Full Support | Recommended. Quality hooks, best DX. |
 | **Gemini CLI** | Partial Support | TOML format, global hooks only |
 | OpenCode | Planned | |
 | GitHub Copilot CLI | Planned | |
@@ -202,7 +200,6 @@ Send [@tylerwillis](https://x.com/tylerwillis) a message on X.
 your-project/
 ├── .deepwork/
 │   ├── config.yml          # Platform configuration
-│   ├── rules/              # Automated rules
 │   └── jobs/               # Job definitions
 │       └── job_name/
 │           ├── job.yml     # Job metadata
@@ -237,25 +234,6 @@ Then in your project folder (in terminal, not in Claude Code):
 ```bash
 deepwork install
 ```
-
-</details>
-
-<details>
-<summary><strong>Advanced: Automated Rules</strong></summary>
-
-Rules monitor file changes and prompt Claude to follow guidelines:
-
-```markdown
----
-name: Source/Test Pairing
-set:
-  - src/{path}.py
-  - tests/{path}_test.py
----
-When source files change, corresponding test files should also change.
-```
-
-See [Architecture](doc/architecture.md) for full rules documentation.
 
 </details>
 
@@ -296,3 +274,5 @@ We're iterating fast. [Open an issue](https://github.com/Unsupervisedcom/deepwor
 ---
 
 <sub>Inspired by [GitHub's spec-kit](https://github.com/github/spec-kit)</sub>
+
+**Code Coverage**: 78.99% (as of 2026-02-09)

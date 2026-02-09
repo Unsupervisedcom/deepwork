@@ -8,6 +8,7 @@ from deepwork.core.parser import (
     JobDefinition,
     OutputSpec,
     ParseError,
+    Review,
     Step,
     StepInput,
     parse_job_definition,
@@ -53,47 +54,98 @@ class TestStepInput:
 class TestOutputSpec:
     """Tests for OutputSpec dataclass."""
 
-    def test_simple_output(self) -> None:
-        """Test simple output without doc spec."""
-        output = OutputSpec(file="output.md")
+    def test_file_output(self) -> None:
+        """Test single file output."""
+        output = OutputSpec(
+            name="output.md", type="file", description="An output file", required=True
+        )
 
-        assert output.file == "output.md"
-        assert output.doc_spec is None
-        assert not output.has_doc_spec()
+        assert output.name == "output.md"
+        assert output.type == "file"
+        assert output.description == "An output file"
+        assert output.required is True
 
-    def test_output_with_doc_spec(self) -> None:
-        """Test output with doc spec reference."""
-        output = OutputSpec(file="report.md", doc_spec=".deepwork/doc_specs/monthly_report.md")
+    def test_files_output(self) -> None:
+        """Test multiple files output."""
+        output = OutputSpec(
+            name="step_instruction_files",
+            type="files",
+            description="Instruction files",
+            required=True,
+        )
 
-        assert output.file == "report.md"
-        assert output.doc_spec == ".deepwork/doc_specs/monthly_report.md"
-        assert output.has_doc_spec()
+        assert output.name == "step_instruction_files"
+        assert output.type == "files"
+        assert output.description == "Instruction files"
+        assert output.required is True
 
-    def test_from_dict_string(self) -> None:
-        """Test creating output from string."""
-        output = OutputSpec.from_dict("output.md")
+    def test_optional_output(self) -> None:
+        """Test optional output with required=False."""
+        output = OutputSpec(name="bonus.md", type="file", description="Optional", required=False)
 
-        assert output.file == "output.md"
-        assert output.doc_spec is None
-        assert not output.has_doc_spec()
+        assert output.name == "bonus.md"
+        assert output.required is False
 
-    def test_from_dict_simple_object(self) -> None:
-        """Test creating output from dict without doc spec."""
-        data = {"file": "output.md"}
-        output = OutputSpec.from_dict(data)
+    def test_from_dict(self) -> None:
+        """Test creating output from name and dict."""
+        data = {"type": "file", "description": "An output file", "required": True}
+        output = OutputSpec.from_dict("output.md", data)
 
-        assert output.file == "output.md"
-        assert output.doc_spec is None
-        assert not output.has_doc_spec()
+        assert output.name == "output.md"
+        assert output.type == "file"
+        assert output.description == "An output file"
+        assert output.required is True
 
-    def test_from_dict_with_doc_spec(self) -> None:
-        """Test creating output from dict with doc spec."""
-        data = {"file": "report.md", "doc_spec": ".deepwork/doc_specs/monthly_report.md"}
-        output = OutputSpec.from_dict(data)
+    def test_from_dict_files_type(self) -> None:
+        """Test creating files-type output from dict."""
+        data = {"type": "files", "description": "Multiple output files", "required": True}
+        output = OutputSpec.from_dict("reports", data)
 
-        assert output.file == "report.md"
-        assert output.doc_spec == ".deepwork/doc_specs/monthly_report.md"
-        assert output.has_doc_spec()
+        assert output.name == "reports"
+        assert output.type == "files"
+        assert output.description == "Multiple output files"
+        assert output.required is True
+
+    def test_from_dict_optional(self) -> None:
+        """Test creating optional output from dict."""
+        data = {"type": "files", "description": "Optional files", "required": False}
+        output = OutputSpec.from_dict("extras", data)
+
+        assert output.name == "extras"
+        assert output.required is False
+
+
+class TestReview:
+    """Tests for Review dataclass."""
+
+    def test_from_dict(self) -> None:
+        """Test creating review from dictionary."""
+        data = {
+            "run_each": "step",
+            "quality_criteria": {"Complete": "Is it complete?", "Valid": "Is it valid?"},
+        }
+        review = Review.from_dict(data)
+
+        assert review.run_each == "step"
+        assert review.quality_criteria == {"Complete": "Is it complete?", "Valid": "Is it valid?"}
+
+    def test_from_dict_output_specific(self) -> None:
+        """Test creating review targeting specific output."""
+        data = {
+            "run_each": "reports",
+            "quality_criteria": {"Well Written": "Is it well written?"},
+        }
+        review = Review.from_dict(data)
+
+        assert review.run_each == "reports"
+        assert len(review.quality_criteria) == 1
+
+    def test_from_dict_empty_criteria(self) -> None:
+        """Test creating review with empty criteria defaults."""
+        data = {"run_each": "step"}
+        review = Review.from_dict(data)
+
+        assert review.quality_criteria == {}
 
 
 class TestStep:
@@ -106,7 +158,9 @@ class TestStep:
             "name": "Step 1",
             "description": "First step",
             "instructions_file": "steps/step1.md",
-            "outputs": ["output.md"],
+            "outputs": {
+                "output.md": {"type": "file", "description": "An output file", "required": True},
+            },
         }
         step = Step.from_dict(data)
 
@@ -115,31 +169,38 @@ class TestStep:
         assert step.description == "First step"
         assert step.instructions_file == "steps/step1.md"
         assert len(step.outputs) == 1
-        assert step.outputs[0].file == "output.md"
-        assert not step.outputs[0].has_doc_spec()
+        assert step.outputs[0].name == "output.md"
+        assert step.outputs[0].type == "file"
         assert step.inputs == []
         assert step.dependencies == []
 
-    def test_from_dict_with_doc_spec_output(self) -> None:
-        """Test creating step with doc spec-referenced output."""
+    def test_from_dict_with_multiple_outputs(self) -> None:
+        """Test creating step with file and files type outputs."""
         data = {
             "id": "step1",
             "name": "Step 1",
             "description": "First step",
             "instructions_file": "steps/step1.md",
-            "outputs": [
-                "simple_output.md",
-                {"file": "report.md", "doc_spec": ".deepwork/doc_specs/monthly_report.md"},
-            ],
+            "outputs": {
+                "report.md": {"type": "file", "description": "A report", "required": True},
+                "attachments": {
+                    "type": "files",
+                    "description": "Supporting files",
+                    "required": True,
+                },
+            },
         }
         step = Step.from_dict(data)
 
         assert len(step.outputs) == 2
-        assert step.outputs[0].file == "simple_output.md"
-        assert not step.outputs[0].has_doc_spec()
-        assert step.outputs[1].file == "report.md"
-        assert step.outputs[1].doc_spec == ".deepwork/doc_specs/monthly_report.md"
-        assert step.outputs[1].has_doc_spec()
+        output_names = {out.name for out in step.outputs}
+        assert "report.md" in output_names
+        assert "attachments" in output_names
+
+        report = next(out for out in step.outputs if out.name == "report.md")
+        assert report.type == "file"
+        attachments = next(out for out in step.outputs if out.name == "attachments")
+        assert attachments.type == "files"
 
     def test_from_dict_with_inputs(self) -> None:
         """Test creating step with inputs."""
@@ -152,7 +213,9 @@ class TestStep:
                 {"name": "param1", "description": "Parameter 1"},
                 {"file": "data.md", "from_step": "step0"},
             ],
-            "outputs": ["output.md"],
+            "outputs": {
+                "output.md": {"type": "file", "description": "An output file", "required": True},
+            },
             "dependencies": ["step0"],
         }
         step = Step.from_dict(data)
@@ -169,7 +232,9 @@ class TestStep:
             "name": "Step 1",
             "description": "First step",
             "instructions_file": "steps/step1.md",
-            "outputs": ["output.md"],
+            "outputs": {
+                "output.md": {"type": "file", "description": "An output file", "required": True},
+            },
         }
         step = Step.from_dict(data)
 
@@ -182,12 +247,58 @@ class TestStep:
             "name": "Step 1",
             "description": "First step",
             "instructions_file": "steps/step1.md",
-            "outputs": ["output.md"],
+            "outputs": {
+                "output.md": {"type": "file", "description": "An output file", "required": True},
+            },
             "exposed": True,
         }
         step = Step.from_dict(data)
 
         assert step.exposed is True
+
+    def test_from_dict_with_reviews(self) -> None:
+        """Test creating step with reviews."""
+        data = {
+            "id": "step1",
+            "name": "Step 1",
+            "description": "First step",
+            "instructions_file": "steps/step1.md",
+            "outputs": {
+                "output.md": {"type": "file", "description": "An output file", "required": True},
+            },
+            "reviews": [
+                {
+                    "run_each": "step",
+                    "quality_criteria": {"Complete": "Is it complete?"},
+                },
+                {
+                    "run_each": "output.md",
+                    "quality_criteria": {"Valid": "Is it valid?"},
+                },
+            ],
+        }
+        step = Step.from_dict(data)
+
+        assert len(step.reviews) == 2
+        assert step.reviews[0].run_each == "step"
+        assert step.reviews[0].quality_criteria == {"Complete": "Is it complete?"}
+        assert step.reviews[1].run_each == "output.md"
+
+    def test_from_dict_empty_reviews(self) -> None:
+        """Test creating step with empty reviews list."""
+        data = {
+            "id": "step1",
+            "name": "Step 1",
+            "description": "First step",
+            "instructions_file": "steps/step1.md",
+            "outputs": {
+                "output.md": {"type": "file", "description": "An output file", "required": True},
+            },
+            "reviews": [],
+        }
+        step = Step.from_dict(data)
+
+        assert step.reviews == []
 
 
 class TestJobDefinition:
@@ -225,7 +336,11 @@ class TestJobDefinition:
                     name="Step 1",
                     description="Step",
                     instructions_file="steps/step1.md",
-                    outputs=["output.md"],
+                    outputs=[
+                        OutputSpec(
+                            name="output.md", type="file", description="Output file", required=True
+                        )
+                    ],
                     dependencies=["nonexistent"],
                 )
             ],
@@ -248,7 +363,11 @@ class TestJobDefinition:
                     name="Step 1",
                     description="Step",
                     instructions_file="steps/step1.md",
-                    outputs=["output.md"],
+                    outputs=[
+                        OutputSpec(
+                            name="output.md", type="file", description="Output file", required=True
+                        )
+                    ],
                     dependencies=["step2"],
                 ),
                 Step(
@@ -256,7 +375,11 @@ class TestJobDefinition:
                     name="Step 2",
                     description="Step",
                     instructions_file="steps/step2.md",
-                    outputs=["output.md"],
+                    outputs=[
+                        OutputSpec(
+                            name="output.md", type="file", description="Output file", required=True
+                        )
+                    ],
                     dependencies=["step1"],
                 ),
             ],
@@ -288,7 +411,11 @@ class TestJobDefinition:
                     description="Step",
                     instructions_file="steps/step1.md",
                     inputs=[StepInput(file="data.md", from_step="nonexistent")],
-                    outputs=["output.md"],
+                    outputs=[
+                        OutputSpec(
+                            name="output.md", type="file", description="Output file", required=True
+                        )
+                    ],
                     dependencies=["nonexistent"],
                 )
             ],
@@ -297,6 +424,68 @@ class TestJobDefinition:
 
         with pytest.raises(ParseError, match="references non-existent step"):
             job.validate_file_inputs()
+
+    def test_validate_reviews_valid(self) -> None:
+        """Test that validate_reviews passes for valid run_each values."""
+        job = JobDefinition(
+            name="test_job",
+            version="1.0.0",
+            summary="Test job",
+            description="Test",
+            steps=[
+                Step(
+                    id="step1",
+                    name="Step 1",
+                    description="Step",
+                    instructions_file="steps/step1.md",
+                    outputs=[
+                        OutputSpec(
+                            name="report.md", type="file", description="Report", required=True
+                        )
+                    ],
+                    reviews=[
+                        Review(run_each="step", quality_criteria={"Complete": "Is it?"}),
+                        Review(run_each="report.md", quality_criteria={"Valid": "Is it?"}),
+                    ],
+                )
+            ],
+            job_dir=Path("/tmp"),
+        )
+
+        # Should not raise
+        job.validate_reviews()
+
+    def test_validate_reviews_invalid_run_each(self) -> None:
+        """Test that validate_reviews fails for invalid run_each."""
+        job = JobDefinition(
+            name="test_job",
+            version="1.0.0",
+            summary="Test job",
+            description="Test",
+            steps=[
+                Step(
+                    id="step1",
+                    name="Step 1",
+                    description="Step",
+                    instructions_file="steps/step1.md",
+                    outputs=[
+                        OutputSpec(
+                            name="report.md", type="file", description="Report", required=True
+                        )
+                    ],
+                    reviews=[
+                        Review(
+                            run_each="nonexistent_output",
+                            quality_criteria={"Test": "Is it?"},
+                        ),
+                    ],
+                )
+            ],
+            job_dir=Path("/tmp"),
+        )
+
+        with pytest.raises(ParseError, match="run_each='nonexistent_output'"):
+            job.validate_reviews()
 
     def test_validate_file_inputs_not_in_dependencies(self) -> None:
         """Test file input validation fails if from_step not in dependencies."""
@@ -311,7 +500,11 @@ class TestJobDefinition:
                     name="Step 1",
                     description="Step",
                     instructions_file="steps/step1.md",
-                    outputs=["output.md"],
+                    outputs=[
+                        OutputSpec(
+                            name="output.md", type="file", description="Output file", required=True
+                        )
+                    ],
                 ),
                 Step(
                     id="step2",
@@ -319,7 +512,11 @@ class TestJobDefinition:
                     description="Step",
                     instructions_file="steps/step2.md",
                     inputs=[StepInput(file="data.md", from_step="step1")],
-                    outputs=["output.md"],
+                    outputs=[
+                        OutputSpec(
+                            name="output.md", type="file", description="Output file", required=True
+                        )
+                    ],
                     # Missing step1 in dependencies!
                     dependencies=[],
                 ),

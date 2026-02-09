@@ -1,18 +1,22 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: job_with_doc_spec
 version: "1.0.0"
-summary: "Job with doc spec output for testing"
+summary: "Job with typed output for testing"
 description: |
-  A test job that produces a document with a doc spec reference.
+  A test job that produces a report document.
 
 steps:
   - id: generate_report
     name: "Generate Report"
-    description: "Generate a report following the doc spec"
+    description: "Generate a report"
     instructions_file: steps/generate_report.md
     inputs:
       - name: report_title
         description: "Title for the report"
     outputs:
-      - file: report.md
-        doc_spec: .deepwork/doc_specs/valid_report.md
+      report.md:
+        type: file
+        description: "Generated report document"
+        required: true
     dependencies: []
+    reviews: []
