@@ -8,8 +8,11 @@ This module provides the core tools for guiding agents through workflows:
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+logger = logging.getLogger("deepwork.mcp")
 
 from deepwork.core.parser import (
     JobDefinition,
@@ -85,8 +88,8 @@ class WorkflowTools:
                 try:
                     job = parse_job_definition(job_dir)
                     jobs.append(job)
-                except ParseError:
-                    # Skip invalid job definitions
+                except ParseError as e:
+                    logger.warning("Skipping invalid job '%s': %s", job_dir.name, e)
                     continue
 
         return jobs
