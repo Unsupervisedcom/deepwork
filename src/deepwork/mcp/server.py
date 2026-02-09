@@ -152,15 +152,19 @@ def create_server(
             "Required: outputs (map of output names to file paths created). "
             "For outputs with type 'file': pass a single string path. "
             "For outputs with type 'files': pass a list of string paths. "
-            "Check step_expected_outputs in the response to see each output's type. "
+            "Outputs marked required: true must be provided; required: false outputs can be omitted. "
+            "Check step_expected_outputs in the response to see each output's type and required status. "
             "Optional: notes about work done. "
-            "Optional: quality_review_override_reason to skip quality review (must explain why)."
+            "Optional: quality_review_override_reason to skip quality review (must explain why). "
+            "Optional: session_id to target a specific workflow session "
+            "(use when multiple workflows are active concurrently)."
         )
     )
     async def finished_step(
         outputs: dict[str, str | list[str]],
         notes: str | None = None,
         quality_review_override_reason: str | None = None,
+        session_id: str | None = None,
     ) -> dict[str, Any]:
         """Report step completion and get next instructions."""
         _log_tool_call(
@@ -169,12 +173,14 @@ def create_server(
                 "outputs": outputs,
                 "notes": notes,
                 "quality_review_override_reason": quality_review_override_reason,
+                "session_id": session_id,
             },
         )
         input_data = FinishedStepInput(
             outputs=outputs,
             notes=notes,
             quality_review_override_reason=quality_review_override_reason,
+            session_id=session_id,
         )
         response = await tools.finished_step(input_data)
         return response.model_dump()
@@ -184,15 +190,21 @@ def create_server(
             "Abort the current workflow and return to the parent workflow (if nested). "
             "Use this when a workflow cannot be completed and needs to be abandoned. "
             "Required: explanation (why the workflow is being aborted). "
+            "Optional: session_id to target a specific workflow session "
+            "(use when multiple workflows are active concurrently). "
             "Returns the aborted workflow info and the resumed parent workflow (if any)."
         )
     )
     async def abort_workflow(
         explanation: str,
+        session_id: str | None = None,
     ) -> dict[str, Any]:
         """Abort the current workflow and return to parent."""
-        _log_tool_call("abort_workflow", {"explanation": explanation})
-        input_data = AbortWorkflowInput(explanation=explanation)
+        _log_tool_call(
+            "abort_workflow",
+            {"explanation": explanation, "session_id": session_id},
+        )
+        input_data = AbortWorkflowInput(explanation=explanation, session_id=session_id)
         response = await tools.abort_workflow(input_data)
         return response.model_dump()
 

@@ -34,6 +34,7 @@ steps:
       competitors.md:
         type: file
         description: "Vetted list of direct and indirect competitors"
+        required: true
     dependencies: []
     reviews: []
 
@@ -48,9 +49,11 @@ steps:
       primary_research.md:
         type: file
         description: "Analysis of competitors' self-presentation"
+        required: true
       competitor_profiles:
         type: files
         description: "Individual competitor profile documents"
+        required: true
     dependencies:
       - identify_competitors
     reviews: []
@@ -68,6 +71,7 @@ steps:
       secondary_research.md:
         type: file
         description: "Third-party perspectives on competitors"
+        required: true
     dependencies:
       - identify_competitors
       - primary_research
@@ -86,9 +90,11 @@ steps:
       comparison_matrix.md:
         type: file
         description: "Detailed comparison matrix across competitors"
+        required: true
       strengths_weaknesses.md:
         type: file
         description: "Strengths and weaknesses analysis"
+        required: true
     dependencies:
       - primary_research
       - secondary_research

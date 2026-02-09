@@ -24,6 +24,7 @@ steps:
       setup_complete.md:
         type: file
         description: "Setup confirmation and configuration"
+        required: true
     reviews: []
 
   - id: research_web
@@ -37,6 +38,7 @@ steps:
       web_research.md:
         type: file
         description: "Research findings from web sources"
+        required: true
     dependencies:
       - setup
     reviews: []
@@ -52,6 +54,7 @@ steps:
       docs_research.md:
         type: file
         description: "Research findings from internal documents"
+        required: true
     dependencies:
       - setup
     reviews: []
@@ -67,6 +70,7 @@ steps:
       interviews_research.md:
         type: file
         description: "Research findings from stakeholder interviews"
+        required: true
     dependencies:
       - setup
     reviews: []
@@ -86,6 +90,7 @@ steps:
       compiled_results.md:
         type: file
         description: "Unified report from all research sources"
+        required: true
     dependencies:
       - research_web
       - research_docs
@@ -103,6 +108,7 @@ steps:
       final_report.md:
         type: file
         description: "Final reviewed and approved analysis report"
+        required: true
     dependencies:
       - compile_results
     reviews: []

@@ -56,39 +56,58 @@ class TestOutputSpec:
 
     def test_file_output(self) -> None:
         """Test single file output."""
-        output = OutputSpec(name="output.md", type="file", description="An output file")
+        output = OutputSpec(name="output.md", type="file", description="An output file", required=True)
 
         assert output.name == "output.md"
         assert output.type == "file"
         assert output.description == "An output file"
+        assert output.required is True
 
     def test_files_output(self) -> None:
         """Test multiple files output."""
         output = OutputSpec(
-            name="step_instruction_files", type="files", description="Instruction files"
+            name="step_instruction_files", type="files", description="Instruction files", required=True
         )
 
         assert output.name == "step_instruction_files"
         assert output.type == "files"
         assert output.description == "Instruction files"
+        assert output.required is True
+
+    def test_optional_output(self) -> None:
+        """Test optional output with required=False."""
+        output = OutputSpec(name="bonus.md", type="file", description="Optional", required=False)
+
+        assert output.name == "bonus.md"
+        assert output.required is False
 
     def test_from_dict(self) -> None:
         """Test creating output from name and dict."""
-        data = {"type": "file", "description": "An output file"}
+        data = {"type": "file", "description": "An output file", "required": True}
         output = OutputSpec.from_dict("output.md", data)
 
         assert output.name == "output.md"
         assert output.type == "file"
         assert output.description == "An output file"
+        assert output.required is True
 
     def test_from_dict_files_type(self) -> None:
         """Test creating files-type output from dict."""
-        data = {"type": "files", "description": "Multiple output files"}
+        data = {"type": "files", "description": "Multiple output files", "required": True}
         output = OutputSpec.from_dict("reports", data)
 
         assert output.name == "reports"
         assert output.type == "files"
         assert output.description == "Multiple output files"
+        assert output.required is True
+
+    def test_from_dict_optional(self) -> None:
+        """Test creating optional output from dict."""
+        data = {"type": "files", "description": "Optional files", "required": False}
+        output = OutputSpec.from_dict("extras", data)
+
+        assert output.name == "extras"
+        assert output.required is False
 
 
 class TestReview:
@@ -135,7 +154,7 @@ class TestStep:
             "description": "First step",
             "instructions_file": "steps/step1.md",
             "outputs": {
-                "output.md": {"type": "file", "description": "An output file"},
+                "output.md": {"type": "file", "description": "An output file", "required": True},
             },
         }
         step = Step.from_dict(data)
@@ -158,8 +177,8 @@ class TestStep:
             "description": "First step",
             "instructions_file": "steps/step1.md",
             "outputs": {
-                "report.md": {"type": "file", "description": "A report"},
-                "attachments": {"type": "files", "description": "Supporting files"},
+                "report.md": {"type": "file", "description": "A report", "required": True},
+                "attachments": {"type": "files", "description": "Supporting files", "required": True},
             },
         }
         step = Step.from_dict(data)
@@ -186,7 +205,7 @@ class TestStep:
                 {"file": "data.md", "from_step": "step0"},
             ],
             "outputs": {
-                "output.md": {"type": "file", "description": "An output file"},
+                "output.md": {"type": "file", "description": "An output file", "required": True},
             },
             "dependencies": ["step0"],
         }
@@ -205,7 +224,7 @@ class TestStep:
             "description": "First step",
             "instructions_file": "steps/step1.md",
             "outputs": {
-                "output.md": {"type": "file", "description": "An output file"},
+                "output.md": {"type": "file", "description": "An output file", "required": True},
             },
         }
         step = Step.from_dict(data)
@@ -220,7 +239,7 @@ class TestStep:
             "description": "First step",
             "instructions_file": "steps/step1.md",
             "outputs": {
-                "output.md": {"type": "file", "description": "An output file"},
+                "output.md": {"type": "file", "description": "An output file", "required": True},
             },
             "exposed": True,
         }
@@ -236,7 +255,7 @@ class TestStep:
             "description": "First step",
             "instructions_file": "steps/step1.md",
             "outputs": {
-                "output.md": {"type": "file", "description": "An output file"},
+                "output.md": {"type": "file", "description": "An output file", "required": True},
             },
             "reviews": [
                 {
@@ -264,7 +283,7 @@ class TestStep:
             "description": "First step",
             "instructions_file": "steps/step1.md",
             "outputs": {
-                "output.md": {"type": "file", "description": "An output file"},
+                "output.md": {"type": "file", "description": "An output file", "required": True},
             },
             "reviews": [],
         }
@@ -310,7 +329,7 @@ class TestJobDefinition:
                     instructions_file="steps/step1.md",
                     outputs=[
                         OutputSpec(
-                            name="output.md", type="file", description="Output file"
+                            name="output.md", type="file", description="Output file", required=True
                         )
                     ],
                     dependencies=["nonexistent"],
@@ -337,7 +356,7 @@ class TestJobDefinition:
                     instructions_file="steps/step1.md",
                     outputs=[
                         OutputSpec(
-                            name="output.md", type="file", description="Output file"
+                            name="output.md", type="file", description="Output file", required=True
                         )
                     ],
                     dependencies=["step2"],
@@ -349,7 +368,7 @@ class TestJobDefinition:
                     instructions_file="steps/step2.md",
                     outputs=[
                         OutputSpec(
-                            name="output.md", type="file", description="Output file"
+                            name="output.md", type="file", description="Output file", required=True
                         )
                     ],
                     dependencies=["step1"],
@@ -385,7 +404,7 @@ class TestJobDefinition:
                     inputs=[StepInput(file="data.md", from_step="nonexistent")],
                     outputs=[
                         OutputSpec(
-                            name="output.md", type="file", description="Output file"
+                            name="output.md", type="file", description="Output file", required=True
                         )
                     ],
                     dependencies=["nonexistent"],
@@ -411,7 +430,7 @@ class TestJobDefinition:
                     description="Step",
                     instructions_file="steps/step1.md",
                     outputs=[
-                        OutputSpec(name="report.md", type="file", description="Report")
+                        OutputSpec(name="report.md", type="file", description="Report", required=True)
                     ],
                     reviews=[
                         Review(run_each="step", quality_criteria={"Complete": "Is it?"}),
@@ -439,7 +458,7 @@ class TestJobDefinition:
                     description="Step",
                     instructions_file="steps/step1.md",
                     outputs=[
-                        OutputSpec(name="report.md", type="file", description="Report")
+                        OutputSpec(name="report.md", type="file", description="Report", required=True)
                     ],
                     reviews=[
                         Review(
@@ -470,7 +489,7 @@ class TestJobDefinition:
                     instructions_file="steps/step1.md",
                     outputs=[
                         OutputSpec(
-                            name="output.md", type="file", description="Output file"
+                            name="output.md", type="file", description="Output file", required=True
                         )
                     ],
                 ),
@@ -482,7 +501,7 @@ class TestJobDefinition:
                     inputs=[StepInput(file="data.md", from_step="step1")],
                     outputs=[
                         OutputSpec(
-                            name="output.md", type="file", description="Output file"
+                            name="output.md", type="file", description="Output file", required=True
                         )
                     ],
                     # Missing step1 in dependencies!

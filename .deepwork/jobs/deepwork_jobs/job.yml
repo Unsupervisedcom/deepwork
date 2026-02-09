@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: deepwork_jobs
-version: "1.3.0"
+version: "1.4.0"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, testing, or improving DeepWork jobs."
 description: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -38,6 +38,8 @@ workflows:
       - learn
 
 changelog:
+  - version: "1.4.0"
+    changes: "Fixed implement step review criteria that caused severe friction: 'Ask Structured Questions' now auto-passes for steps without user inputs; 'Output Examples' renamed to 'Output Format Examples' and accepts template placeholders; added detailed review guidance to prevent misapplication of criteria"
   - version: "1.3.0"
     changes: "Migrated quality_criteria to reviews system with run_each targeting and map-format criteria"
   - version: "1.2.1"
@@ -100,14 +102,19 @@ steps:
       - define
     reviews:
       - run_each: step_instruction_files
-        additional_review_guidance: "Read the job.yml file in the same job directory for context on how this instruction file fits into the larger workflow."
+        additional_review_guidance: |
+          Read the job.yml file in the same job directory for context on how this instruction file fits into the larger workflow.
+          IMPORTANT review guidance:
+          - "Ask Structured Questions" only applies to steps whose job.yml inputs include user-provided parameters (name/description inputs, NOT file inputs from prior steps). If a step only has file inputs from prior steps, this criterion automatically passes.
+          - "Output Format Examples" requires a markdown code block showing the output structure. A template with [bracket placeholders] is sufficient — a fully filled-in example with realistic data is better but not required.
+          - Apply criteria pragmatically. If a criterion is not applicable to this step's purpose, pass it.
         quality_criteria:
           "Complete Instructions": "Is the instruction file complete (no stubs or placeholders)?"
           "Specific & Actionable": "Are instructions tailored to the step's purpose, not generic?"
-          "Output Examples": "Does the instruction file show what good output looks like?"
+          "Output Format Examples": "Does the instruction file include a markdown code block showing the expected output structure (template with placeholders is acceptable)?"
           "Quality Criteria": "Does the instruction file define quality criteria for its outputs?"
-          "Ask Structured Questions": "Do instructions that gather user input explicitly use the phrase 'ask structured questions'?"
-          "Prompt Engineering": "Does the instructions file following Anthropics Best Practices for Prompt Engineering?"
+          "Ask Structured Questions": "If this step gathers user input (has name/description inputs in job.yml, not just file inputs), do instructions explicitly use the phrase 'ask structured questions'? If the step has no user inputs, this criterion passes automatically."
+          "Prompt Engineering": "Does the instruction file follow Anthropic's best practices for prompt engineering?"
 
   - id: test
     name: "Test the New Workflow"

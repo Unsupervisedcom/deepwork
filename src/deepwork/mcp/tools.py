@@ -222,12 +222,13 @@ class WorkflowTools:
                 f"Declared outputs: {', '.join(sorted(declared_names))}"
             )
 
-        # Check for missing output keys
-        missing = declared_names - submitted_names
+        # Check for missing required output keys
+        required_names = {spec.name for spec in declared if spec.required}
+        missing = required_names - submitted_names
         if missing:
             raise ToolError(
                 f"Missing required outputs: {', '.join(sorted(missing))}. "
-                f"All declared outputs must be provided."
+                f"All required outputs must be provided."
             )
 
         # Validate types and file existence
@@ -276,6 +277,7 @@ class WorkflowTools:
                 name=out.name,
                 type=out.type,
                 description=out.description,
+                required=out.required,
                 syntax_for_finished_step_tool=syntax_map.get(out.type, out.type),
             )
             for out in outputs
@@ -370,7 +372,8 @@ class WorkflowTools:
             StateError: If no active session
             ToolError: If quality gate fails after max attempts
         """
-        session = self.state_manager.require_active_session()
+        session = self.state_manager._resolve_session(input_data.session_id)
+        sid = session.session_id
         current_step_id = session.current_step_id
 
         # Load job and workflow
@@ -390,7 +393,9 @@ class WorkflowTools:
             and current_step.reviews
             and not input_data.quality_review_override_reason
         ):
-            attempts = await self.state_manager.record_quality_attempt(current_step_id)
+            attempts = await self.state_manager.record_quality_attempt(
+                current_step_id, session_id=sid
+            )
 
             # Build output specs map for evaluate_reviews
             output_specs = {out.name: out.type for out in current_step.outputs}
@@ -433,6 +438,7 @@ class WorkflowTools:
             step_id=current_step_id,
             outputs=input_data.outputs,
             notes=input_data.notes,
+            session_id=sid,
         )
 
         # Find next step
@@ -440,9 +446,9 @@ class WorkflowTools:
         next_entry_index = current_entry_index + 1
 
         if next_entry_index >= len(workflow.step_entries):
-            # Workflow complete - get outputs before completing (which pops from stack)
-            all_outputs = self.state_manager.get_all_outputs()
-            await self.state_manager.complete_workflow()
+            # Workflow complete - get outputs before completing (which removes from stack)
+            all_outputs = self.state_manager.get_all_outputs(session_id=sid)
+            await self.state_manager.complete_workflow(session_id=sid)
 
             return FinishedStepResponse(
                 status=StepStatus.WORKFLOW_COMPLETE,
@@ -463,8 +469,10 @@ class WorkflowTools:
             raise ToolError(f"Next step not found: {next_step_id}")
 
         # Advance session
-        await self.state_manager.advance_to_step(next_step_id, next_entry_index)
-        await self.state_manager.start_step(next_step_id)
+        await self.state_manager.advance_to_step(
+            next_step_id, next_entry_index, session_id=sid
+        )
+        await self.state_manager.start_step(next_step_id, session_id=sid)
 
         # Get instructions
         instructions = self._get_step_instructions(job, next_step_id)
@@ -480,7 +488,7 @@ class WorkflowTools:
             instructions = instructions + concurrent_info
 
         # Reload session to get current state after advance
-        session = self.state_manager.require_active_session()
+        session = self.state_manager._resolve_session(sid)
 
         return FinishedStepResponse(
             status=StepStatus.NEXT_STEP,
@@ -515,7 +523,7 @@ class WorkflowTools:
             StateError: If no active session
         """
         aborted_session, new_active = await self.state_manager.abort_workflow(
-            input_data.explanation
+            input_data.explanation, session_id=input_data.session_id
         )
 
         return AbortWorkflowResponse(

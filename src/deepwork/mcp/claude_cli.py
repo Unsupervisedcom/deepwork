@@ -127,6 +127,7 @@ class ClaudeCLI:
         system_prompt: str,
         json_schema: dict[str, Any],
         cwd: Path | None = None,
+        timeout: int | None = None,
     ) -> dict[str, Any]:
         """Run Claude CLI and return the structured output.
 
@@ -135,6 +136,8 @@ class ClaudeCLI:
             system_prompt: System instructions for the CLI
             json_schema: JSON schema enforcing structured output conformance
             cwd: Working directory for the subprocess
+            timeout: Override instance timeout for this call (seconds).
+                     If None, uses the instance default.
 
         Returns:
             The parsed structured_output dict from Claude CLI
@@ -142,6 +145,7 @@ class ClaudeCLI:
         Raises:
             ClaudeCLIError: If the subprocess fails or output cannot be parsed
         """
+        effective_timeout = timeout if timeout is not None else self.timeout
         cmd = self._build_command(system_prompt, json_schema)
 
         try:
@@ -156,13 +160,13 @@ class ClaudeCLI:
             try:
                 stdout, stderr = await asyncio.wait_for(
                     process.communicate(input=prompt.encode()),
-                    timeout=self.timeout,
+                    timeout=effective_timeout,
                 )
             except TimeoutError:
                 process.kill()
                 await process.wait()
                 raise ClaudeCLIError(
-                    f"Claude CLI timed out after {self.timeout} seconds"
+                    f"Claude CLI timed out after {effective_timeout} seconds"
                 ) from None
 
             if process.returncode != 0:

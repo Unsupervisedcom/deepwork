@@ -44,11 +44,12 @@ For each step in the job.yml, create a comprehensive instruction file at `.deepw
 
 1. **Use the job description** - The detailed description from job.yml provides crucial context
 2. **Be specific** - Don't write generic instructions; tailor them to the step's purpose
-3. **Provide examples** - Show what good output looks like
+3. **Provide output format examples** - Include a markdown code block in an "Output Format" section showing the expected file structure. A template with `[bracket placeholders]` is acceptable. For complex outputs, also include a concrete filled-in example showing realistic data — this is especially valuable for the first step in a workflow where there's no prior output to reference.
 4. **Explain the "why"** - Help the user understand the step's role in the workflow
 5. **Quality over quantity** - Detailed, actionable instructions are better than vague ones
 6. **Align with reviews** - If the step has `reviews` defined, ensure the quality criteria in the instruction file match the review criteria
-7. **Ask structured questions** - When a step has user inputs, the instructions MUST explicitly tell the agent to "ask structured questions" using the AskUserQuestion tool to gather that information. Never use generic phrasing like "ask the user" - always use "ask structured questions"
+7. **Ask structured questions (when applicable)** - When a step has user-provided inputs (name/description inputs in job.yml), the instructions MUST explicitly tell the agent to "ask structured questions" using the AskUserQuestion tool. Steps that only have file inputs from prior steps do NOT need this phrase — they process data without user interaction.
+8. **Handle edge cases** - If inputs might be missing, ambiguous, or incomplete, tell the agent to ask structured questions to clarify how to proceed rather than guessing
 
 ### Handling Reviews
 

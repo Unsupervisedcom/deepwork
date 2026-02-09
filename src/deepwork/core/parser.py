@@ -56,6 +56,7 @@ class OutputSpec:
     name: str
     type: str  # "file" or "files"
     description: str
+    required: bool
 
     @classmethod
     def from_dict(cls, name: str, data: dict[str, Any]) -> "OutputSpec":
@@ -64,6 +65,7 @@ class OutputSpec:
             name=name,
             type=data["type"],
             description=data["description"],
+            required=data["required"],
         )
 
 

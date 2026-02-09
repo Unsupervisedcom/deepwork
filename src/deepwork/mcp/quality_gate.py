@@ -137,7 +137,8 @@ You must respond with JSON in this exact structure:
 ## Guidelines
 
 - Be strict but fair
-- Only mark a criterion as passed if it is clearly met
+- Apply criteria pragmatically. If a criterion is not applicable to this step's purpose, pass it.
+- Only mark a criterion as passed if it is clearly met or if it is not applicable.
 - Provide specific, actionable feedback for failed criteria
 - The overall "passed" should be true only if ALL criteria pass"""
 
@@ -198,6 +199,50 @@ You must respond with JSON in this exact structure:
 
         return sections
 
+    # =========================================================================
+    # WARNING: REVIEW PERFORMANCE IS SENSITIVE TO PAYLOAD SIZE
+    #
+    # The payload builder below sends file contents to the review agent (Claude
+    # CLI subprocess). Reviews can get REALLY SLOW if the content gets too big:
+    #
+    # - Each file's full content is read and embedded in the prompt
+    # - The review agent must process ALL of this content to evaluate criteria
+    # - Large payloads (25+ files, or files with 500+ lines each) can cause
+    #   the review to approach or exceed its timeout
+    # - Per-file reviews (run_each: <output_name> with type: files) multiply
+    #   the problem — each file gets its own review subprocess
+    #
+    # To mitigate this, when more than MAX_INLINE_FILES files are present,
+    # the payload switches to a path-listing mode that only shows file paths
+    # instead of dumping all contents inline. The reviewer can then use its
+    # own tools to read specific files as needed.
+    #
+    # If you're changing the payload builder, keep payload size in mind.
+    # =========================================================================
+
+    # Maximum number of files to include inline in the review payload.
+    # Beyond this threshold, only file paths are listed.
+    MAX_INLINE_FILES = 5
+
+    @staticmethod
+    def _build_path_listing(file_paths: dict[str, str | list[str]]) -> list[str]:
+        """Build a path-only listing for large file sets.
+
+        Args:
+            file_paths: Map of names to file path(s)
+
+        Returns:
+            List of formatted path entries
+        """
+        lines: list[str] = []
+        for name, value in file_paths.items():
+            if isinstance(value, list):
+                for path in value:
+                    lines.append(f"- {path}  (output: {name})")
+            else:
+                lines.append(f"- {value}  (output: {name})")
+        return lines
+
     async def _build_payload(
         self,
         outputs: dict[str, str | list[str]],
@@ -205,21 +250,36 @@ You must respond with JSON in this exact structure:
     ) -> str:
         """Build the user prompt payload with output file contents.
 
+        When the total number of files exceeds MAX_INLINE_FILES, the payload
+        lists file paths instead of embedding full contents to avoid slow reviews.
+
         Args:
             outputs: Map of output names to file path(s)
             project_root: Project root path for reading files
 
         Returns:
-            Formatted payload with output file contents
+            Formatted payload with output file contents or path listing
         """
         parts: list[str] = []
+        total_files = len(self._flatten_output_paths(outputs))
 
-        # Build outputs section
-        output_sections = await self._read_file_sections(outputs, project_root)
-        if output_sections:
+        if total_files > self.MAX_INLINE_FILES:
+            # Too many files — list paths only so the reviewer reads selectively
+            path_lines = self._build_path_listing(outputs)
             parts.append(f"{SECTION_SEPARATOR} BEGIN OUTPUTS {SECTION_SEPARATOR}")
-            parts.extend(output_sections)
+            parts.append(
+                f"[{total_files} files — too many to include inline. "
+                f"Paths listed below. Read files as needed to evaluate criteria.]"
+            )
+            parts.extend(path_lines)
             parts.append(f"{SECTION_SEPARATOR} END OUTPUTS {SECTION_SEPARATOR}")
+        else:
+            # Build outputs section with full content
+            output_sections = await self._read_file_sections(outputs, project_root)
+            if output_sections:
+                parts.append(f"{SECTION_SEPARATOR} BEGIN OUTPUTS {SECTION_SEPARATOR}")
+                parts.extend(output_sections)
+                parts.append(f"{SECTION_SEPARATOR} END OUTPUTS {SECTION_SEPARATOR}")
 
         if not parts:
             return "[No files provided]"
@@ -260,6 +320,25 @@ You must respond with JSON in this exact structure:
                 f"Data was: {data}"
             ) from e
 
+    @staticmethod
+    def compute_timeout(file_count: int) -> int:
+        """Compute dynamic timeout based on number of files.
+
+        Base timeout is 120 seconds. For every file beyond the first 5,
+        add 30 seconds. Examples:
+          - 3 files  -> 120s
+          - 5 files  -> 120s
+          - 10 files -> 120 + 30*5 = 270s (4.5 min)
+          - 20 files -> 120 + 30*15 = 570s (9.5 min)
+
+        Args:
+            file_count: Total number of files being reviewed
+
+        Returns:
+            Timeout in seconds
+        """
+        return 120 + 30 * max(0, file_count - 5)
+
     async def evaluate(
         self,
         quality_criteria: dict[str, str],
@@ -298,6 +377,10 @@ You must respond with JSON in this exact structure:
         )
         payload = await self._build_payload(outputs, project_root)
 
+        # Dynamic timeout: more files = more time for the reviewer
+        file_count = len(self._flatten_output_paths(outputs))
+        timeout = self.compute_timeout(file_count)
+
         from deepwork.mcp.claude_cli import ClaudeCLIError
 
         try:
@@ -306,6 +389,7 @@ You must respond with JSON in this exact structure:
                 system_prompt=instructions,
                 json_schema=QUALITY_GATE_RESPONSE_SCHEMA,
                 cwd=project_root,
+                timeout=timeout,
             )
         except ClaudeCLIError as e:
             raise QualityGateError(str(e)) from e

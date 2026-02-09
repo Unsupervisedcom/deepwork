@@ -78,9 +78,10 @@ Report that you've finished a workflow step. Validates outputs against quality c
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `outputs` | `Record<string, string \| string[]>` | Yes | Map of output names to file path(s). For outputs declared as type `file`: pass a single string path (e.g. `"report.md"`). For outputs declared as type `files`: pass a list of string paths (e.g. `["a.md", "b.md"]`). Check `step_expected_outputs` to see each output's declared type. |
+| `outputs` | `Record<string, string \| string[]>` | Yes | Map of output names to file path(s). For outputs declared as type `file`: pass a single string path (e.g. `"report.md"`). For outputs declared as type `files`: pass a list of string paths (e.g. `["a.md", "b.md"]`). Outputs with `required: false` can be omitted. Check `step_expected_outputs` to see each output's declared type and required status. |
 | `notes` | `string \| null` | No | Optional notes about work done |
 | `quality_review_override_reason` | `string \| null` | No | If provided, skips quality review (must explain why) |
+| `session_id` | `string \| null` | No | Target a specific workflow session by ID. Use when multiple workflows are active concurrently. If omitted, operates on the top-of-stack session. The session_id is returned in `ActiveStepInfo` from `start_workflow` and `finished_step`. |
 
 #### Returns
 
@@ -117,6 +118,7 @@ Abort the current workflow and return to the parent workflow (if nested). Use th
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `explanation` | `string` | Yes | Why the workflow is being aborted |
+| `session_id` | `string \| null` | No | Target a specific workflow session by ID. Use when multiple workflows are active concurrently. If omitted, aborts the top-of-stack session. |
 
 #### Returns
 
@@ -140,6 +142,7 @@ interface ExpectedOutput {
   name: string;                    // Output name (use as key in finished_step outputs)
   type: string;                    // "file" or "files"
   description: string;             // What this output should contain
+  required: boolean;               // If false, this output can be omitted from finished_step
   syntax_for_finished_step_tool: string; // Value format hint:
                                          //   "filepath" for type "file"
                                          //   "array of filepaths for all individual files" for type "files"
@@ -328,6 +331,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
+| 1.4.0 | Added optional `session_id` parameter to `finished_step` and `abort_workflow` for concurrent workflow safety. When multiple workflows are active on the stack, callers can pass the `session_id` (returned in `ActiveStepInfo`) to target the correct session. Fully backward compatible — omitting `session_id` preserves existing top-of-stack behavior. |
 | 1.3.0 | `step_expected_outputs` changed from `string[]` to `ExpectedOutput[]` — each entry includes `name`, `type`, `description`, and `syntax_for_finished_step_tool` so agents know exactly what format to use when calling `finished_step`. |
 | 1.2.0 | Quality gate now includes input files from prior steps in review payload with BEGIN INPUTS/END INPUTS and BEGIN OUTPUTS/END OUTPUTS section headers. Binary files (PDFs, etc.) get a placeholder instead of raw content. |
 | 1.1.0 | Added `abort_workflow` tool, `stack` field in all responses, `ReviewInfo`/`ReviewResult` types, typed outputs as `Record<string, string \| string[]>` |

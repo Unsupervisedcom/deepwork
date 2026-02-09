@@ -438,3 +438,163 @@ class TestStateManagerStack:
         assert resumed is None
         assert state_manager.get_stack_depth() == 0
         assert state_manager.get_active_session() is None
+
+
+class TestSessionIdRouting:
+    """Tests for session_id-based routing in StateManager."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project root with .deepwork directory."""
+        deepwork_dir = tmp_path / ".deepwork"
+        deepwork_dir.mkdir()
+        (deepwork_dir / "tmp").mkdir()
+        return tmp_path
+
+    @pytest.fixture
+    def state_manager(self, project_root: Path) -> StateManager:
+        """Create a StateManager instance."""
+        return StateManager(project_root)
+
+    def test_resolve_session_by_id(self, state_manager: StateManager) -> None:
+        """Test _resolve_session finds the correct session in a multi-session stack."""
+        import asyncio
+
+        async def setup() -> None:
+            await state_manager.create_session(
+                job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
+            )
+            await state_manager.create_session(
+                job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
+            )
+            await state_manager.create_session(
+                job_name="job3", workflow_name="wf3", goal="G3", first_step_id="s3"
+            )
+
+        asyncio.get_event_loop().run_until_complete(setup())
+
+        # Stack has 3 sessions; resolve the middle one by ID
+        middle_session = state_manager._session_stack[1]
+        resolved = state_manager._resolve_session(middle_session.session_id)
+        assert resolved.session_id == middle_session.session_id
+        assert resolved.job_name == "job2"
+
+    def test_resolve_session_invalid_id(self, state_manager: StateManager) -> None:
+        """Test _resolve_session raises StateError for unknown session ID."""
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(
+            state_manager.create_session(
+                job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
+            )
+        )
+
+        with pytest.raises(StateError, match="Session 'nonexistent' not found"):
+            state_manager._resolve_session("nonexistent")
+
+    def test_resolve_session_none_falls_back_to_active(
+        self, state_manager: StateManager
+    ) -> None:
+        """Test _resolve_session with None falls back to top-of-stack."""
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(
+            state_manager.create_session(
+                job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
+            )
+        )
+        asyncio.get_event_loop().run_until_complete(
+            state_manager.create_session(
+                job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
+            )
+        )
+
+        resolved = state_manager._resolve_session(None)
+        assert resolved.job_name == "job2"  # top-of-stack
+
+    async def test_complete_workflow_by_session_id(
+        self, state_manager: StateManager
+    ) -> None:
+        """Test complete_workflow removes a specific session from middle of stack."""
+        session1 = await state_manager.create_session(
+            job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
+        )
+        session2 = await state_manager.create_session(
+            job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
+        )
+        session3 = await state_manager.create_session(
+            job_name="job3", workflow_name="wf3", goal="G3", first_step_id="s3"
+        )
+
+        assert state_manager.get_stack_depth() == 3
+
+        # Complete the middle session by ID
+        new_active = await state_manager.complete_workflow(session_id=session2.session_id)
+
+        assert state_manager.get_stack_depth() == 2
+        # Stack should have session1 and session3; top is session3
+        assert new_active is not None
+        assert new_active.session_id == session3.session_id
+        assert state_manager.get_active_session() == session3
+        remaining_ids = [s.session_id for s in state_manager._session_stack]
+        assert session1.session_id in remaining_ids
+        assert session2.session_id not in remaining_ids
+        assert session3.session_id in remaining_ids
+
+    async def test_abort_workflow_by_session_id(
+        self, state_manager: StateManager
+    ) -> None:
+        """Test abort_workflow removes a specific session from middle of stack."""
+        session1 = await state_manager.create_session(
+            job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
+        )
+        session2 = await state_manager.create_session(
+            job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
+        )
+        session3 = await state_manager.create_session(
+            job_name="job3", workflow_name="wf3", goal="G3", first_step_id="s3"
+        )
+
+        # Abort the middle session
+        aborted, new_active = await state_manager.abort_workflow(
+            "Testing mid-stack abort", session_id=session2.session_id
+        )
+
+        assert aborted.session_id == session2.session_id
+        assert aborted.status == "aborted"
+        assert state_manager.get_stack_depth() == 2
+        # Top of stack should still be session3
+        assert new_active is not None
+        assert new_active.session_id == session3.session_id
+        remaining_ids = [s.session_id for s in state_manager._session_stack]
+        assert session1.session_id in remaining_ids
+        assert session2.session_id not in remaining_ids
+
+    async def test_complete_step_with_session_id(
+        self, state_manager: StateManager
+    ) -> None:
+        """Test complete_step operates on a non-top session when session_id is given."""
+        session1 = await state_manager.create_session(
+            job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
+        )
+        await state_manager.create_session(
+            job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
+        )
+
+        # Complete step on session1 (not on top) using session_id
+        await state_manager.complete_step(
+            step_id="s1",
+            outputs={"report": "report.md"},
+            notes="Done",
+            session_id=session1.session_id,
+        )
+
+        # Verify session1 was updated
+        progress = session1.step_progress["s1"]
+        assert progress.completed_at is not None
+        assert progress.outputs == {"report": "report.md"}
+
+        # Verify session2 (top) was not affected
+        top = state_manager.get_active_session()
+        assert top is not None
+        assert "s1" not in top.step_progress

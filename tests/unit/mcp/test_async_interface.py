@@ -140,3 +140,61 @@ class TestAsyncInterfaceRegression:
         final_session = manager.get_active_session()
         assert final_session is not None
         assert final_session.step_progress["step1"].quality_attempts == 10
+
+    async def test_concurrent_workflows_with_session_id_routing(
+        self, tmp_path: Path
+    ) -> None:
+        """Test that two concurrent sessions can be routed correctly via session_id.
+
+        Two sessions are created on the stack. Concurrent finished_step-like
+        operations (complete_step) target different sessions via session_id
+        and don't interfere with each other.
+        """
+        deepwork_dir = tmp_path / ".deepwork"
+        deepwork_dir.mkdir()
+        (deepwork_dir / "tmp").mkdir()
+
+        manager = StateManager(tmp_path)
+
+        # Create two sessions on the stack
+        session1 = await manager.create_session(
+            job_name="job1",
+            workflow_name="wf1",
+            goal="Goal 1",
+            first_step_id="step_a",
+        )
+        session2 = await manager.create_session(
+            job_name="job2",
+            workflow_name="wf2",
+            goal="Goal 2",
+            first_step_id="step_x",
+        )
+
+        # Concurrent complete_step calls targeting different sessions
+        async def complete_session1() -> None:
+            await manager.complete_step(
+                step_id="step_a",
+                outputs={"out1": "file1.md"},
+                session_id=session1.session_id,
+            )
+
+        async def complete_session2() -> None:
+            await manager.complete_step(
+                step_id="step_x",
+                outputs={"out2": "file2.md"},
+                session_id=session2.session_id,
+            )
+
+        # Run concurrently
+        await asyncio.gather(complete_session1(), complete_session2())
+
+        # Verify each session got the right updates
+        assert "step_a" in session1.step_progress
+        assert session1.step_progress["step_a"].outputs == {"out1": "file1.md"}
+
+        assert "step_x" in session2.step_progress
+        assert session2.step_progress["step_x"].outputs == {"out2": "file2.md"}
+
+        # Cross-check: session1 should NOT have step_x, session2 should NOT have step_a
+        assert "step_x" not in session1.step_progress
+        assert "step_a" not in session2.step_progress

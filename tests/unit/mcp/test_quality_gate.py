@@ -520,6 +520,173 @@ class TestEvaluateReviews:
             assert "Check against the spec." in system_prompt
 
 
+class TestBuildPayloadLargeFileSet:
+    """Tests for _build_payload behavior when file count exceeds MAX_INLINE_FILES."""
+
+    async def test_payload_lists_paths_when_over_threshold(
+        self, quality_gate: QualityGate, project_root: Path
+    ) -> None:
+        """Test that >5 files produces path listing instead of inline content."""
+        for i in range(6):
+            (project_root / f"file{i}.md").write_text(f"Content {i}")
+
+        payload = await quality_gate._build_payload(
+            outputs={"reports": [f"file{i}.md" for i in range(6)]},
+            project_root=project_root,
+        )
+
+        assert "6 files" in payload
+        assert "too many to include inline" in payload
+        for i in range(6):
+            assert f"file{i}.md" in payload
+        # Content should NOT be embedded
+        assert "Content 0" not in payload
+        assert "Content 5" not in payload
+
+    async def test_payload_inlines_content_at_threshold(
+        self, quality_gate: QualityGate, project_root: Path
+    ) -> None:
+        """Test that exactly 5 files still gets inline content."""
+        for i in range(5):
+            (project_root / f"file{i}.md").write_text(f"Content {i}")
+
+        payload = await quality_gate._build_payload(
+            outputs={"reports": [f"file{i}.md" for i in range(5)]},
+            project_root=project_root,
+        )
+
+        # Should have inline content, not path listing
+        assert "too many to include inline" not in payload
+        for i in range(5):
+            assert f"Content {i}" in payload
+
+    async def test_path_listing_includes_output_names(
+        self, quality_gate: QualityGate, project_root: Path
+    ) -> None:
+        """Test that path listing shows which output each file belongs to."""
+        for i in range(4):
+            (project_root / f"doc{i}.md").write_text("x")
+        for i in range(3):
+            (project_root / f"data{i}.csv").write_text("x")
+
+        payload = await quality_gate._build_payload(
+            outputs={
+                "docs": [f"doc{i}.md" for i in range(4)],
+                "data": [f"data{i}.csv" for i in range(3)],
+            },
+            project_root=project_root,
+        )
+
+        assert "7 files" in payload
+        assert "(output: docs)" in payload
+        assert "(output: data)" in payload
+
+    async def test_path_listing_counts_across_outputs(
+        self, quality_gate: QualityGate, project_root: Path
+    ) -> None:
+        """Test that file count is summed across all outputs."""
+        # 3 files in one output + 3 in another = 6 total > 5
+        for i in range(3):
+            (project_root / f"a{i}.md").write_text("x")
+            (project_root / f"b{i}.md").write_text("x")
+
+        payload = await quality_gate._build_payload(
+            outputs={
+                "alpha": [f"a{i}.md" for i in range(3)],
+                "beta": [f"b{i}.md" for i in range(3)],
+            },
+            project_root=project_root,
+        )
+
+        assert "6 files" in payload
+        assert "too many to include inline" in payload
+
+
+class TestBuildPathListing:
+    """Tests for _build_path_listing static method."""
+
+    def test_single_file_output(self) -> None:
+        """Test path listing with single file outputs."""
+        lines = QualityGate._build_path_listing({"report": "report.md"})
+        assert lines == ["- report.md  (output: report)"]
+
+    def test_multi_file_output(self) -> None:
+        """Test path listing with list outputs."""
+        lines = QualityGate._build_path_listing({"reports": ["a.md", "b.md"]})
+        assert lines == [
+            "- a.md  (output: reports)",
+            "- b.md  (output: reports)",
+        ]
+
+    def test_mixed_outputs(self) -> None:
+        """Test path listing with both single and list outputs."""
+        lines = QualityGate._build_path_listing({
+            "summary": "summary.md",
+            "details": ["d1.md", "d2.md"],
+        })
+        assert len(lines) == 3
+        assert "- summary.md  (output: summary)" in lines
+        assert "- d1.md  (output: details)" in lines
+        assert "- d2.md  (output: details)" in lines
+
+
+class TestComputeTimeout:
+    """Tests for QualityGate.compute_timeout."""
+
+    def test_base_timeout_for_few_files(self) -> None:
+        """Test that <=5 files gives base 120s timeout."""
+        assert QualityGate.compute_timeout(0) == 120
+        assert QualityGate.compute_timeout(1) == 120
+        assert QualityGate.compute_timeout(5) == 120
+
+    def test_timeout_increases_after_five(self) -> None:
+        """Test that each file after 5 adds 30 seconds."""
+        assert QualityGate.compute_timeout(6) == 150
+        assert QualityGate.compute_timeout(10) == 270  # 120 + 5*30
+        assert QualityGate.compute_timeout(20) == 570  # 120 + 15*30
+
+
+class TestDynamicTimeout:
+    """Tests that evaluate passes dynamic timeout to CLI."""
+
+    async def test_timeout_passed_to_cli(
+        self, mock_cli: ClaudeCLI, project_root: Path
+    ) -> None:
+        """Test that evaluate passes computed timeout to CLI.run."""
+        gate = QualityGate(cli=mock_cli)
+
+        (project_root / "output.md").write_text("content")
+
+        await gate.evaluate(
+            quality_criteria={"Valid": "Is it valid?"},
+            outputs={"report": "output.md"},
+            project_root=project_root,
+        )
+
+        call_kwargs = mock_cli.run.call_args.kwargs
+        # 1 file -> timeout = 120
+        assert call_kwargs["timeout"] == 120
+
+    async def test_timeout_scales_with_file_count(
+        self, mock_cli: ClaudeCLI, project_root: Path
+    ) -> None:
+        """Test that timeout increases with many files."""
+        gate = QualityGate(cli=mock_cli)
+
+        for i in range(10):
+            (project_root / f"f{i}.md").write_text(f"content {i}")
+
+        await gate.evaluate(
+            quality_criteria={"Valid": "Is it valid?"},
+            outputs={"reports": [f"f{i}.md" for i in range(10)]},
+            project_root=project_root,
+        )
+
+        call_kwargs = mock_cli.run.call_args.kwargs
+        # 10 files -> 120 + 5*30 = 270
+        assert call_kwargs["timeout"] == 270
+
+
 class TestMockQualityGate:
     """Tests for MockQualityGate class."""
 

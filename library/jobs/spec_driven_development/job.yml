@@ -44,6 +44,7 @@ steps:
       constitution.md:
         type: file
         description: "Foundational governance principles and development guidelines"
+        required: true
     dependencies: []
     quality_criteria:
       - "**Priorities Captured**: Did the agent gather specific development priorities from the user?"
@@ -68,6 +69,7 @@ steps:
       spec.md:
         type: file
         description: "Functional requirements as user stories without technology choices"
+        required: true
     dependencies:
       - constitution
     quality_criteria:
@@ -91,6 +93,7 @@ steps:
       spec.md:
         type: file
         description: "Updated specification with clarifications and resolved ambiguities"
+        required: true
     dependencies:
       - specify
     quality_criteria:
@@ -117,18 +120,23 @@ steps:
       plan.md:
         type: file
         description: "Technical implementation strategy including architecture and technology choices"
+        required: true
       data-model.md:
         type: file
         description: "Data model documentation with all entities and relationships"
+        required: true
       api-spec.json:
         type: file
         description: "API endpoint definitions with request/response schemas"
+        required: true
       research.md:
         type: file
         description: "Research findings and technology evaluations"
+        required: true
       architecture.md:
         type: file
         description: "Updated project architecture document"
+        required: true
     dependencies:
       - clarify
     quality_criteria:
@@ -158,6 +166,7 @@ steps:
       tasks.md:
         type: file
         description: "Actionable, ordered development tasks organized by user story"
+        required: true
     dependencies:
       - plan
     quality_criteria:
@@ -188,9 +197,11 @@ steps:
       source_files:
         type: files
         description: "Implementation source files as specified in tasks"
+        required: true
       test_files:
         type: files
         description: "Test files as specified in tasks"
+        required: true
     dependencies:
       - tasks
     quality_criteria:

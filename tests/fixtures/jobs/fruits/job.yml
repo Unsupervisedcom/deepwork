@@ -35,6 +35,7 @@ steps:
       identified_fruits.md:
         type: file
         description: "List of identified fruits from the input items"
+        required: true
     dependencies: []
     reviews: []
 
@@ -49,6 +50,7 @@ steps:
       classified_fruits.md:
         type: file
         description: "Fruits organized into categories"
+        required: true
     dependencies:
       - identify
     reviews: []

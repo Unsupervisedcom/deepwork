@@ -24,5 +24,6 @@ steps:
       output.md:
         type: file
         description: "The output file produced by this step"
+        required: true
     dependencies: []
     reviews: []

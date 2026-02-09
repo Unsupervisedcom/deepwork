@@ -5,7 +5,12 @@ from pathlib import Path
 import pytest
 
 from deepwork.mcp.quality_gate import MockQualityGate
-from deepwork.mcp.schemas import FinishedStepInput, StartWorkflowInput, StepStatus
+from deepwork.mcp.schemas import (
+    AbortWorkflowInput,
+    FinishedStepInput,
+    StartWorkflowInput,
+    StepStatus,
+)
 from deepwork.mcp.state import StateError, StateManager
 from deepwork.mcp.tools import ToolError, WorkflowTools
 
@@ -41,6 +46,7 @@ steps:
       output1.md:
         type: file
         description: First step output
+        required: true
     reviews:
       - run_each: step
         quality_criteria:
@@ -53,6 +59,7 @@ steps:
       output2.md:
         type: file
         description: Second step output
+        required: true
     dependencies:
       - step1
     reviews: []
@@ -209,6 +216,7 @@ steps:
       output_a.md:
         type: file
         description: Step A output
+        required: true
     reviews: []
   - id: step_b
     name: Step B
@@ -218,6 +226,7 @@ steps:
       output_b.md:
         type: file
         description: Step B output
+        required: true
     reviews: []
 
 workflows:
@@ -466,6 +475,255 @@ workflows:
         with pytest.raises(ToolError, match="Missing required outputs.*output1.md"):
             await tools.finished_step(FinishedStepInput(outputs={}))
 
+    async def test_finished_step_allows_omitting_optional_outputs(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test finished_step allows omitting outputs with required: false."""
+        job_dir = project_root / ".deepwork" / "jobs" / "optional_job"
+        job_dir.mkdir(parents=True)
+        (job_dir / "job.yml").write_text(
+            """
+name: optional_job
+version: "1.0.0"
+summary: Job with optional output
+description: Test job
+
+steps:
+  - id: produce
+    name: Produce
+    description: Produces outputs
+    instructions_file: steps/produce.md
+    outputs:
+      main_report.md:
+        type: file
+        description: The main report
+        required: true
+      supplementary.md:
+        type: file
+        description: Optional supplementary material
+        required: false
+      extra_files:
+        type: files
+        description: Optional extra files
+        required: false
+    reviews: []
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - produce
+"""
+        )
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "produce.md").write_text("# Produce\n\nProduce outputs.")
+
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+        )
+
+        await tools.start_workflow(
+            StartWorkflowInput(
+                goal="Produce outputs",
+                job_name="optional_job",
+                workflow_name="main",
+            )
+        )
+
+        # Only provide the required output, omit optional ones
+        (project_root / "main_report.md").write_text("Main report content")
+        response = await tools.finished_step(
+            FinishedStepInput(outputs={"main_report.md": "main_report.md"})
+        )
+
+        assert response.status == StepStatus.WORKFLOW_COMPLETE
+
+    async def test_finished_step_rejects_missing_required_but_not_optional(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test finished_step rejects missing required outputs even when optional ones exist."""
+        job_dir = project_root / ".deepwork" / "jobs" / "mixed_job"
+        job_dir.mkdir(parents=True)
+        (job_dir / "job.yml").write_text(
+            """
+name: mixed_job
+version: "1.0.0"
+summary: Job with mixed required/optional outputs
+description: Test job
+
+steps:
+  - id: produce
+    name: Produce
+    description: Produces outputs
+    instructions_file: steps/produce.md
+    outputs:
+      required_output.md:
+        type: file
+        description: Must be provided
+        required: true
+      optional_output.md:
+        type: file
+        description: Can be skipped
+        required: false
+    reviews: []
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - produce
+"""
+        )
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "produce.md").write_text("# Produce\n\nProduce outputs.")
+
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+        )
+
+        await tools.start_workflow(
+            StartWorkflowInput(
+                goal="Produce outputs",
+                job_name="mixed_job",
+                workflow_name="main",
+            )
+        )
+
+        # Provide only the optional output, not the required one
+        (project_root / "optional_output.md").write_text("Optional content")
+        with pytest.raises(ToolError, match="Missing required outputs.*required_output.md"):
+            await tools.finished_step(
+                FinishedStepInput(outputs={"optional_output.md": "optional_output.md"})
+            )
+
+    async def test_finished_step_accepts_optional_outputs_when_provided(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test finished_step validates optional outputs when they are provided."""
+        job_dir = project_root / ".deepwork" / "jobs" / "optional_provided_job"
+        job_dir.mkdir(parents=True)
+        (job_dir / "job.yml").write_text(
+            """
+name: optional_provided_job
+version: "1.0.0"
+summary: Job with optional output that gets provided
+description: Test job
+
+steps:
+  - id: produce
+    name: Produce
+    description: Produces outputs
+    instructions_file: steps/produce.md
+    outputs:
+      main.md:
+        type: file
+        description: Required output
+        required: true
+      bonus.md:
+        type: file
+        description: Optional output
+        required: false
+    reviews: []
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - produce
+"""
+        )
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "produce.md").write_text("# Produce\n\nProduce outputs.")
+
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+        )
+
+        await tools.start_workflow(
+            StartWorkflowInput(
+                goal="Produce outputs",
+                job_name="optional_provided_job",
+                workflow_name="main",
+            )
+        )
+
+        # Provide both required and optional
+        (project_root / "main.md").write_text("Main content")
+        (project_root / "bonus.md").write_text("Bonus content")
+        response = await tools.finished_step(
+            FinishedStepInput(outputs={"main.md": "main.md", "bonus.md": "bonus.md"})
+        )
+
+        assert response.status == StepStatus.WORKFLOW_COMPLETE
+
+    async def test_expected_outputs_include_required_field(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test that step_expected_outputs includes the required field."""
+        job_dir = project_root / ".deepwork" / "jobs" / "req_field_job"
+        job_dir.mkdir(parents=True)
+        (job_dir / "job.yml").write_text(
+            """
+name: req_field_job
+version: "1.0.0"
+summary: Job to test required field in expected outputs
+description: Test job
+
+steps:
+  - id: produce
+    name: Produce
+    description: Produces outputs
+    instructions_file: steps/produce.md
+    outputs:
+      required_out.md:
+        type: file
+        description: Required output
+        required: true
+      optional_out.md:
+        type: file
+        description: Optional output
+        required: false
+    reviews: []
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - produce
+"""
+        )
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "produce.md").write_text("# Produce\n\nProduce outputs.")
+
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+        )
+
+        response = await tools.start_workflow(
+            StartWorkflowInput(
+                goal="Produce outputs",
+                job_name="req_field_job",
+                workflow_name="main",
+            )
+        )
+
+        outputs = response.begin_step.step_expected_outputs
+        assert len(outputs) == 2
+
+        required_out = next(o for o in outputs if o.name == "required_out.md")
+        optional_out = next(o for o in outputs if o.name == "optional_out.md")
+
+        assert required_out.required is True
+        assert optional_out.required is False
+
     async def test_finished_step_validates_file_type_must_be_string(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -573,6 +831,7 @@ steps:
       reports:
         type: files
         description: Generated report files
+        required: true
     reviews: []
 
 workflows:
@@ -626,6 +885,7 @@ steps:
       reports:
         type: files
         description: Generated report files
+        required: true
     reviews: []
 
 workflows:
@@ -683,6 +943,7 @@ steps:
       reports:
         type: files
         description: Generated report files
+        required: true
     reviews: []
 
 workflows:
@@ -745,6 +1006,7 @@ steps:
       step1_output.md:
         type: file
         description: Step 1 output
+        required: true
     reviews: []
 
   - id: step2
@@ -758,6 +1020,7 @@ steps:
       step2_output.md:
         type: file
         description: Step 2 output
+        required: true
     dependencies:
       - step1
     reviews: []
@@ -773,6 +1036,7 @@ steps:
       step3_output.md:
         type: file
         description: Step 3 output
+        required: true
     dependencies:
       - step2
     reviews:
@@ -864,6 +1128,7 @@ steps:
       report.md:
         type: file
         description: The report
+        required: true
     reviews:
       - run_each: report.md
         additional_review_guidance: "Read the project README for context on expected format."
@@ -929,6 +1194,7 @@ steps:
       analysis.md:
         type: file
         description: Analysis output
+        required: true
     reviews:
       - run_each: step
         additional_review_guidance: "Check the raw data directory for completeness."
@@ -964,3 +1230,175 @@ workflows:
         assert reviews[0].additional_review_guidance == (
             "Check the raw data directory for completeness."
         )
+
+
+class TestSessionIdRouting:
+    """Tests for session_id routing in WorkflowTools."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project with two test jobs."""
+        deepwork_dir = tmp_path / ".deepwork"
+        deepwork_dir.mkdir()
+        (deepwork_dir / "tmp").mkdir()
+        jobs_dir = deepwork_dir / "jobs"
+        jobs_dir.mkdir()
+
+        # Create job_a with two steps
+        job_a_dir = jobs_dir / "job_a"
+        job_a_dir.mkdir()
+        (job_a_dir / "job.yml").write_text(
+            """
+name: job_a
+version: "1.0.0"
+summary: Job A
+description: Test job A
+
+steps:
+  - id: a_step1
+    name: A Step 1
+    description: First step of A
+    instructions_file: steps/a_step1.md
+    outputs:
+      a_out1.md:
+        type: file
+        description: A step 1 output
+        required: true
+    reviews: []
+  - id: a_step2
+    name: A Step 2
+    description: Second step of A
+    instructions_file: steps/a_step2.md
+    outputs:
+      a_out2.md:
+        type: file
+        description: A step 2 output
+        required: true
+    reviews: []
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - a_step1
+      - a_step2
+"""
+        )
+        a_steps = job_a_dir / "steps"
+        a_steps.mkdir()
+        (a_steps / "a_step1.md").write_text("# A Step 1\n\nDo A step 1.")
+        (a_steps / "a_step2.md").write_text("# A Step 2\n\nDo A step 2.")
+
+        # Create job_b with one step
+        job_b_dir = jobs_dir / "job_b"
+        job_b_dir.mkdir()
+        (job_b_dir / "job.yml").write_text(
+            """
+name: job_b
+version: "1.0.0"
+summary: Job B
+description: Test job B
+
+steps:
+  - id: b_step1
+    name: B Step 1
+    description: First step of B
+    instructions_file: steps/b_step1.md
+    outputs:
+      b_out1.md:
+        type: file
+        description: B step 1 output
+        required: true
+    reviews: []
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - b_step1
+"""
+        )
+        b_steps = job_b_dir / "steps"
+        b_steps.mkdir()
+        (b_steps / "b_step1.md").write_text("# B Step 1\n\nDo B step 1.")
+
+        return tmp_path
+
+    @pytest.fixture
+    def state_manager(self, project_root: Path) -> StateManager:
+        return StateManager(project_root)
+
+    @pytest.fixture
+    def tools(self, project_root: Path, state_manager: StateManager) -> WorkflowTools:
+        return WorkflowTools(project_root=project_root, state_manager=state_manager)
+
+    async def test_finished_step_with_session_id_not_on_top(
+        self, tools: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test finished_step targets a non-top session when session_id is provided."""
+        # Start two workflows — session_a is below session_b on the stack
+        resp_a = await tools.start_workflow(
+            StartWorkflowInput(goal="Do A", job_name="job_a", workflow_name="main")
+        )
+        session_a_id = resp_a.begin_step.session_id
+
+        resp_b = await tools.start_workflow(
+            StartWorkflowInput(goal="Do B", job_name="job_b", workflow_name="main")
+        )
+        session_b_id = resp_b.begin_step.session_id
+
+        assert tools.state_manager.get_stack_depth() == 2
+
+        # Create output files for job_a's first step
+        (project_root / "a_out1.md").write_text("A output 1")
+
+        # Finish step on session_a (NOT on top) using session_id
+        response = await tools.finished_step(
+            FinishedStepInput(
+                outputs={"a_out1.md": "a_out1.md"},
+                session_id=session_a_id,
+            )
+        )
+
+        # Should advance to next step in job_a
+        assert response.status == StepStatus.NEXT_STEP
+        assert response.begin_step is not None
+        assert response.begin_step.step_id == "a_step2"
+        assert response.begin_step.session_id == session_a_id
+
+        # Session B should still be on top and untouched
+        top_session = tools.state_manager.get_active_session()
+        assert top_session is not None
+        assert top_session.session_id == session_b_id
+        assert top_session.current_step_id == "b_step1"
+
+    async def test_abort_workflow_with_session_id(
+        self, tools: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test abort_workflow targets a specific session by session_id."""
+        # Start two workflows
+        resp_a = await tools.start_workflow(
+            StartWorkflowInput(goal="Do A", job_name="job_a", workflow_name="main")
+        )
+        session_a_id = resp_a.begin_step.session_id
+
+        resp_b = await tools.start_workflow(
+            StartWorkflowInput(goal="Do B", job_name="job_b", workflow_name="main")
+        )
+        session_b_id = resp_b.begin_step.session_id
+
+        # Abort session_a (not on top) by ID
+        response = await tools.abort_workflow(
+            AbortWorkflowInput(
+                explanation="Aborting A",
+                session_id=session_a_id,
+            )
+        )
+
+        assert response.aborted_workflow == "job_a/main"
+        assert response.explanation == "Aborting A"
+
+        # Stack should only have session_b now
+        assert tools.state_manager.get_stack_depth() == 1
+        assert tools.state_manager.get_active_session() is not None
+        assert tools.state_manager.get_active_session().session_id == session_b_id

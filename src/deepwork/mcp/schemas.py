@@ -97,7 +97,8 @@ class FinishedStepInput(BaseModel):
             "Map of output names to file path(s). "
             "For outputs declared as type 'file': pass a single string path (e.g. \"report.md\"). "
             "For outputs declared as type 'files': pass a list of string paths (e.g. [\"a.md\", \"b.md\"]). "
-            "Check step_expected_outputs from start_workflow/finished_step response to see each output's type."
+            "Outputs with required: false can be omitted from this map. "
+            "Check step_expected_outputs from start_workflow/finished_step response to see each output's type and required status."
         )
     )
     notes: str | None = Field(default=None, description="Optional notes about work done")
@@ -105,12 +106,28 @@ class FinishedStepInput(BaseModel):
         default=None,
         description="If provided, skips the quality gate review. Must explain why the review is being bypassed.",
     )
+    session_id: str | None = Field(
+        default=None,
+        description=(
+            "Optional session ID to target a specific workflow session. "
+            "Use this when multiple workflows are active concurrently to ensure "
+            "the correct session is updated. If omitted, operates on the top-of-stack session."
+        ),
+    )
 
 
 class AbortWorkflowInput(BaseModel):
     """Input for abort_workflow tool."""
 
     explanation: str = Field(description="Explanation of why the workflow is being aborted")
+    session_id: str | None = Field(
+        default=None,
+        description=(
+            "Optional session ID to target a specific workflow session. "
+            "Use this when multiple workflows are active concurrently to ensure "
+            "the correct session is aborted. If omitted, aborts the top-of-stack session."
+        ),
+    )
 
 
 # =============================================================================
@@ -176,6 +193,7 @@ class ExpectedOutput(BaseModel):
     name: str = Field(description="Output name (use as key in finished_step outputs)")
     type: str = Field(description="Output type: 'file' or 'files'")
     description: str = Field(description="What this output should contain")
+    required: bool = Field(description="Whether this output must be provided. If false, it can be omitted from finished_step outputs.")
     syntax_for_finished_step_tool: str = Field(
         description="The value format to use for this output when calling finished_step"
     )

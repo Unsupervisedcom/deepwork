@@ -20,6 +20,7 @@ steps:
       hidden_output.md:
         type: file
         description: "Output from the hidden step"
+        required: true
     dependencies: []
     reviews: []
 
@@ -32,5 +33,6 @@ steps:
       exposed_output.md:
         type: file
         description: "Output from the exposed step"
+        required: true
     dependencies: []
     reviews: []

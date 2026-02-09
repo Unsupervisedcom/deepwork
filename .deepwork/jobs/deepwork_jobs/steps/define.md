@@ -213,6 +213,13 @@ reviews:
 - Steps with subjective quality criteria that benefit from AI self-review
 - Steps producing multiple files where each file needs individual review
 
+**Quality review timeout considerations:**
+When a step produces many files (`type: files` with 15+ items) or very large files (500+ lines), quality reviews may hit the MCP timeout (120 seconds). For these steps:
+- Keep review criteria focused and efficient to evaluate
+- Consider using `run_each: step` (reviews all outputs together once) instead of `run_each: <output_name>` for `files`-type outputs with many items, since the latter runs a separate review per file
+- The agent can use `quality_review_override_reason` to bypass a timed-out review, but this loses the quality gate benefit
+- If a step is expected to produce many files, note this in the step description so agents can plan accordingly
+
 **For steps with no quality checks needed, use an empty reviews list:**
 ```yaml
 reviews: []

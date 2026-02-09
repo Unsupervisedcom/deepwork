@@ -273,7 +273,8 @@
       "type": "object",
       "required": [
         "type",
-        "description"
+        "description",
+        "required"
       ],
       "additionalProperties": false,
       "description": "Output specification with type information indicating single file or multiple files",
@@ -290,6 +291,10 @@
           "type": "string",
           "minLength": 1,
           "description": "Description of what this output contains"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether this output must be provided when calling finished_step. If false, the output is optional and can be omitted."
         }
       }
     },

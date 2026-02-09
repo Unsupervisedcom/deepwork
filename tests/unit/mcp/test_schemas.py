@@ -296,6 +296,7 @@ class TestActiveStepInfo:
                 name="output.md",
                 type="file",
                 description="Test output",
+                required=True,
                 syntax_for_finished_step_tool="filepath",
             )
         ]
@@ -335,6 +336,7 @@ class TestActiveStepInfo:
                     name="output.md",
                     type="file",
                     description="Test output",
+                    required=True,
                     syntax_for_finished_step_tool="filepath",
                 )
             ],
@@ -359,6 +361,7 @@ class TestStartWorkflowResponse:
                         name="output.md",
                         type="file",
                         description="Test output",
+                        required=True,
                         syntax_for_finished_step_tool="filepath",
                     )
                 ],
@@ -412,6 +415,7 @@ class TestFinishedStepResponse:
                         name="output2.md",
                         type="file",
                         description="Test output",
+                        required=True,
                         syntax_for_finished_step_tool="filepath",
                     )
                 ],

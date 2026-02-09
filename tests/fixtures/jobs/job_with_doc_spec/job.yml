@@ -17,5 +17,6 @@ steps:
       report.md:
         type: file
         description: "Generated report document"
+        required: true
     dependencies: []
     reviews: []
