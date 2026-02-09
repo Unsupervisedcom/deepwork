@@ -1,0 +1,130 @@
+name: test_job_flow
+version: "1.0.1"
+summary: "End-to-end test of the DeepWork job creation workflow with friction analysis"
+description: |
+  A meta-workflow that tests the DeepWork job creation process itself. This job:
+
+  1. Creates a new job ("detailed_test_review") via a nested sub-agent workflow,
+     exercising the full `/deepwork new_job` creation pipeline
+  2. Reviews the sub-agent's transcript for completeness and documents any friction
+     points encountered during the creation process
+  3. Investigates the DeepWork system code to identify improvements that could
+     reduce the friction found in step 2
+
+  This is a diagnostic/improvement workflow for the DeepWork framework. The final
+  output is a set of actionable recommendations for reducing job creation friction.
+
+  The "detailed_test_review" job created in step 1 has two steps:
+  - Run all tests with coverage reporting, with per-file and per-step quality reviews
+  - Update the README with coverage numbers and an as-of date
+
+changelog:
+  - version: "1.0.1"
+    changes: "Updated create_test_review_job instructions: added explicit `required` field to all output examples to prevent schema validation failures. Added description fields to YAML example outputs."
+  - version: "1.0.0"
+    changes: "Initial job creation"
+
+workflows:
+  - name: run
+    summary: "Create a test job via sub-agent, review the process, and identify improvements"
+    steps:
+      - create_test_review_job
+      - review_creation_process
+      - identify_improvements
+
+steps:
+  - id: create_test_review_job
+    name: "Create Test Review Job via Sub-Agent"
+    description: |
+      Launch the `/deepwork new_job` workflow as a nested sub-agent to create a job
+      called `detailed_test_review`. The sub-agent should be given very prescriptive
+      instructions so it doesn't need to ask the user anything.
+
+      The detailed_test_review job should have:
+
+      **Step 1 - run_tests**: Run all tests with code coverage reporting enabled.
+        - Output `test_files` (type: files): all the test files that were run
+        - Output `coverage_report` (type: file): the code coverage report
+        - Review (for_each: test_files): Check that all tests in each file are on-topic
+          and relevant to what the file is testing
+        - Review (for_each: step): Look at the coverage numbers and confirm coverage
+          is over 60%
+
+      **Step 2 - update_readme**: Update the README with code coverage numbers.
+        - Add or update a line at the very end of the README with the coverage
+          percentage and an as-of date
+        - Output `readme` (type: file): the updated README file
+        - Input: coverage_report from run_tests step
+    instructions_file: steps/create_test_review_job.md
+    inputs: []
+    outputs:
+      job_yml:
+        type: file
+        description: "The job.yml file created by the sub-agent for detailed_test_review"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: job_yml
+        quality_criteria:
+          "Job Structure": "Does the job.yml define two steps (run_tests and update_readme) with correct dependencies?"
+          "Outputs Defined": "Does run_tests have both a test_files (type: files) output and a coverage_report (type: file) output?"
+          "Reviews Defined": "Does run_tests have a for_each review on test_files AND a for_each step review for coverage threshold?"
+          "README Step": "Does update_readme take coverage_report as input and produce a readme output?"
+
+  - id: review_creation_process
+    name: "Review Sub-Agent Transcript and Document Friction"
+    description: |
+      Review the transcript/output from the sub-agent that ran in step 1. Verify that
+      it appears to have run all workflow steps successfully (define, implement, etc.).
+
+      Create a friction report documenting anything that seemed high-friction during
+      the job creation process, such as:
+      - Errors the agent encountered and had to work around
+      - Confusing instructions or ambiguous guidance
+      - Steps that required multiple retries
+      - Unnecessary back-and-forth or wasted effort
+      - Any quality review failures and what caused them
+    instructions_file: steps/review_creation_process.md
+    inputs:
+      - file: job_yml
+        from_step: create_test_review_job
+    outputs:
+      friction_report:
+        type: file
+        description: "Report on friction points encountered during the job creation process"
+        required: true
+    dependencies:
+      - create_test_review_job
+    reviews:
+      - run_each: step
+        quality_criteria:
+          "Transcript Reviewed": "Does the friction report reference specific events from the sub-agent's transcript?"
+          "Actionable Observations": "Are the friction points described concretely enough that a developer could act on them?"
+
+  - id: identify_improvements
+    name: "Investigate Code and Propose Improvements"
+    description: |
+      Read the friction report from step 2, then investigate the DeepWork system code
+      (particularly the new_job workflow definition and related system code) to identify
+      concrete ways to reduce the friction documented.
+
+      Produce a recommendations report with specific, actionable improvement ideas for
+      the user to review and decide whether to implement.
+    instructions_file: steps/identify_improvements.md
+    inputs:
+      - file: friction_report
+        from_step: review_creation_process
+    outputs:
+      recommendations:
+        type: file
+        description: "Actionable recommendations for reducing job creation friction"
+        required: true
+    dependencies:
+      - review_creation_process
+    reviews:
+      - run_each: recommendations
+        additional_review_guidance: "Read the .deepwork/tmp/job_creation_friction.md file to verify recommendations address the documented friction points."
+        quality_criteria:
+          "Addresses Friction": "Does each recommendation clearly map to a friction point from the friction report?"
+          "Actionable": "Are recommendations specific enough to implement (pointing to files/code/workflow changes)?"
+          "Feasible": "Do the recommendations seem technically feasible given the DeepWork architecture?"

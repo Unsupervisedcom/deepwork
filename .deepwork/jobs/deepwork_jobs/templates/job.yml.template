@@ -42,6 +42,7 @@ steps:
       [output_name]:
         type: file
         description: "[What this output contains]"
+        required: true
     dependencies: []  # List of step IDs that must complete first
     reviews:
       - run_each: step  # or a specific output name
@@ -64,6 +65,7 @@ steps:
       [another_output]:
         type: file
         description: "[What this output contains]"
+        required: true
     dependencies:
       - [step_id]  # This step requires the previous step
     reviews: []  # Empty if no quality checks needed

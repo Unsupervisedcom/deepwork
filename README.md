@@ -274,3 +274,5 @@ We're iterating fast. [Open an issue](https://github.com/Unsupervisedcom/deepwor
 ---
 
 <sub>Inspired by [GitHub's spec-kit](https://github.com/github/spec-kit)</sub>
+
+**Code Coverage**: 78.99% (as of 2026-02-09)

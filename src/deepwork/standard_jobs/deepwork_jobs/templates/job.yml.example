@@ -37,6 +37,7 @@ steps:
       competitors_list.md:
         type: file
         description: "Vetted list of direct and indirect competitors"
+        required: true
     dependencies: []
     reviews: []
 
@@ -51,6 +52,7 @@ steps:
       research_notes.md:
         type: file
         description: "Detailed research notes on each competitor"
+        required: true
     dependencies:
       - identify_competitors
     reviews:
@@ -71,6 +73,7 @@ steps:
       comparison_matrix.md:
         type: file
         description: "Side-by-side comparison matrix of all competitors"
+        required: true
     dependencies:
       - research_competitors
     reviews: []
@@ -86,6 +89,7 @@ steps:
       positioning_report.md:
         type: file
         description: "Strategic positioning recommendations"
+        required: true
     dependencies:
       - comparative_analysis
     reviews:
