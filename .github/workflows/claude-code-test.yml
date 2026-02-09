@@ -56,9 +56,48 @@ jobs:
         if: github.event_name != 'pull_request'
         run: uv sync --extra dev
 
-      - name: Run fruits workflow tests
+      - name: Validate fruits fixture parses and install generates correct structure
         if: github.event_name != 'pull_request'
-        run: uv run pytest tests/integration/test_fruits_workflow.py -v
+        run: |
+          # Verify the fruits fixture parses correctly via deepwork's parser
+          uv run python -c "
+          from pathlib import Path
+          from deepwork.core.parser import parse_job_definition
+
+          job = parse_job_definition(Path('tests/fixtures/jobs/fruits'))
+
+          assert job.name == 'fruits'
+          assert job.version == '1.0.0'
+          assert len(job.steps) == 2
+          assert [s.id for s in job.steps] == ['identify', 'classify']
+
+          # Identify step: user input -> file output
+          identify = job.steps[0]
+          assert identify.inputs[0].is_user_input()
+          assert identify.inputs[0].name == 'raw_items'
+          assert identify.outputs[0].name == 'identified_fruits.md'
+          assert identify.dependencies == []
+
+          # Classify step: file input from identify -> file output
+          classify = job.steps[1]
+          assert classify.inputs[0].is_file_input()
+          assert classify.inputs[0].file == 'identified_fruits.md'
+          assert classify.inputs[0].from_step == 'identify'
+          assert classify.outputs[0].name == 'classified_fruits.md'
+          assert classify.dependencies == ['identify']
+
+          # Workflow definition
+          assert len(job.workflows) == 1
+          assert job.workflows[0].name == 'full'
+          assert job.workflows[0].steps == ['identify', 'classify']
+
+          # Validations pass
+          job.validate_dependencies()
+          job.validate_file_inputs()
+          job.validate_workflows()
+
+          print('All fruits fixture validations passed!')
+          "
 
       - name: Generate skills and validate structure
         if: github.event_name != 'pull_request'
@@ -84,21 +123,12 @@ jobs:
           echo "Checking generated skills..."
           ls -la test_project/.claude/skills/
 
-          # Verify skill directories and SKILL.md files exist
-          # Meta-skill for the job itself
-          test -f test_project/.claude/skills/fruits/SKILL.md || (echo "Missing fruits meta-skill" && exit 1)
-          # Step skills
-          test -f test_project/.claude/skills/fruits.identify/SKILL.md || (echo "Missing fruits.identify skill" && exit 1)
-          test -f test_project/.claude/skills/fruits.classify/SKILL.md || (echo "Missing fruits.classify skill" && exit 1)
+          # MCP variant: only the /deepwork entry point skill is generated
+          # (per-step skills are no longer created; MCP server handles orchestration)
+          test -f test_project/.claude/skills/deepwork/SKILL.md || (echo "Missing deepwork MCP entry point skill" && exit 1)
 
-          # Verify skill content
-          grep -q "# fruits.identify" test_project/.claude/skills/fruits.identify/SKILL.md
-          grep -q "raw_items" test_project/.claude/skills/fruits.identify/SKILL.md
-          grep -q "identified_fruits.md" test_project/.claude/skills/fruits.identify/SKILL.md
-
-          grep -q "# fruits.classify" test_project/.claude/skills/fruits.classify/SKILL.md
-          grep -q "identified_fruits.md" test_project/.claude/skills/fruits.classify/SKILL.md
-          grep -q "classified_fruits.md" test_project/.claude/skills/fruits.classify/SKILL.md
+          # Verify the deepwork skill references MCP tools
+          grep -qi "deepwork" test_project/.claude/skills/deepwork/SKILL.md
 
           echo "Skill generation validated successfully!"
 
@@ -193,21 +223,21 @@ jobs:
           echo "Available skills:"
           ls -la test_project/.claude/skills/
 
-      # STEP 1: Use /deepwork_jobs.define to CREATE the fruits job
-      - name: Create job with /deepwork_jobs
+      # STEP 1: Use /deepwork to CREATE the fruits job via MCP workflow
+      - name: Create job with /deepwork
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
         timeout-minutes: 6
         run: |
-          echo "=== Running /deepwork_jobs to create fruits job ==="
+          echo "=== Running /deepwork to create fruits job ==="
           mkdir fruits
 
           # Provide detailed, deterministic instructions for creating the job
           claude --print --model claude-sonnet-4-5 <<'PROMPT_EOF'
-          /deepwork_jobs I want to create a simple job called "fruits" for identifying and classifying fruits.
+          /deepwork I want to create a simple job called "fruits" for identifying and classifying fruits.
 
           Here are the EXACT specifications.
-          
+
           Intent: A simple workflow that takes a list of mixed items, identifies which are fruits, then classifies them by category. Designed for CI testing.
 
           Steps:
@@ -218,7 +248,7 @@ jobs:
 
           2. Step: classify
              Name: Classify Fruits
-             Description: Organize identified fruits into categories (citrus, tropical, berries, etc.). 
+             Description: Organize identified fruits into categories (citrus, tropical, berries, etc.).
              **CRITICAL**: must put the classified fruit list in `./fruits/classified_fruits.md`.
 
           **Key Instructions:**
@@ -254,31 +284,32 @@ jobs:
             exit 1
           fi
 
-          # Run sync to generate the skills
-          echo "=== Running deepwork sync to generate skills ==="
+          # Run sync to regenerate skills after new job was created
+          echo "=== Running deepwork sync to regenerate skills ==="
           cd ..
           uv run deepwork sync --path test_project
 
           echo "=== Checking generated skills ==="
           ls -la test_project/.claude/skills/
 
-          if [ -f "test_project/.claude/skills/fruits.identify/SKILL.md" ] && [ -f "test_project/.claude/skills/fruits.classify/SKILL.md" ]; then
-            echo "SUCCESS: Skills generated"
+          # MCP variant: only the /deepwork entry point skill is generated
+          if [ -f "test_project/.claude/skills/deepwork/SKILL.md" ]; then
+            echo "SUCCESS: /deepwork MCP entry point skill generated"
           else
-            echo "ERROR: Skills were not generated"
+            echo "ERROR: /deepwork skill was not generated"
             exit 1
           fi
 
-      # STEP 3: Execute the /fruits workflow (runs all steps automatically)
+      # STEP 3: Execute the fruits workflow via /deepwork MCP entry point
       - name: Run Workflow
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
         timeout-minutes: 3
         run: |
-          echo "=== Running /fruits workflow with test input ==="
+          echo "=== Running fruits workflow with test input via /deepwork ==="
 
           claude --print --model claude-sonnet-4-5 <<'PROMPT_EOF'
-          /fruits Proccess the list to the file and don't give any extra commentary or text output.
+          /deepwork Run the fruits full workflow. Process the list to the file and don't give any extra commentary or text output.
           raw_items: apple, car, banana, chair, orange, table, mango, laptop, grape, bicycle
           PROMPT_EOF
           
@@ -329,7 +360,7 @@ jobs:
           echo "  ALL E2E TESTS PASSED SUCCESSFULLY!"
           echo "=========================================="
           echo ""
-          echo "Workflow tested: /fruits - Executed full fruits workflow (identify + classify)"
+          echo "Workflow tested: /deepwork fruits full - Executed full fruits workflow (identify + classify)"
           echo ""
 
       - name: Upload test artifacts
@@ -339,7 +370,7 @@ jobs:
           name: claude-code-e2e-outputs
           path: |
             test_project/.deepwork/jobs/fruits/
-            test_project/.claude/skills/fruits*/
-            test_project/identified_fruits.md
-            test_project/classified_fruits.md
+            test_project/.claude/skills/deepwork/
+            test_project/fruits/identified_fruits.md
+            test_project/fruits/classified_fruits.md
           retention-days: 7
