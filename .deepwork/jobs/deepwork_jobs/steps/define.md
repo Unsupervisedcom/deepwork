@@ -126,6 +126,45 @@ When defining steps, identify any that require specialized tools:
 
 **Browser Automation**: If any step involves web scraping, form filling, interactive browsing, UI testing, or research requiring website visits, ask the user what browser tools they have available. For Claude Code users, **Claude in Chrome** (Anthropic's browser extension) has been tested with DeepWork and is recommended for new users. Don't assume a default—confirm the tool before designing browser-dependent steps.
 
+### Parallel Sub-Workflow Pattern
+
+When a workflow needs to apply a multi-step process to many items independently (e.g., research each of 5 competitors, review each of 12 pull requests, analyze each file in a directory), **do not inline the repeated logic as a single step**. Instead, use the parallel sub-workflow pattern:
+
+1. **Define a separate workflow** for the process that will be repeated. This workflow handles one item at a time (e.g., `research_one_competitor` with steps like `gather_data` → `analyze` → `write_summary`).
+
+2. **In the main workflow**, add a step whose instructions tell the agent to launch the sub-workflow once per item using sub-agents (via the Task tool). Since each item is independent, these sub-workflow runs execute in parallel.
+
+**Why this matters:**
+- **Parallelism**: Independent items are processed concurrently instead of sequentially, dramatically reducing wall-clock time
+- **Quality gates**: Each sub-workflow run goes through its own review cycle, so a bad result for one item doesn't block the others
+- **Reusability**: The sub-workflow can be invoked on its own for ad-hoc single-item runs
+
+**How to structure it in `job.yml`:**
+
+```yaml
+workflows:
+  - name: full_analysis
+    summary: "Research all competitors end-to-end"
+    steps:
+      - identify_competitors
+      - research_all          # This step launches research_one in parallel
+      - synthesize
+
+  - name: research_one
+    summary: "Deep-dive research on a single competitor"
+    steps:
+      - gather_data
+      - analyze
+      - write_summary
+```
+
+The `research_all` step's instructions should tell the agent to:
+- Read the list of items from the prior step's output
+- Launch `research_one` as a sub-workflow for each item using parallel sub-agents (Task tool)
+- Collect the results and confirm all runs completed
+
+**When to recognize this pattern:** Look for language like "for each X, do Y" where Y involves more than one logical phase. If Y is a single simple action, a regular step with a loop is fine. If Y is itself a multi-step process with intermediate outputs worth reviewing, split it into a sub-workflow.
+
 ### Step 3: Validate the Workflow
 
 After gathering information about all steps:
