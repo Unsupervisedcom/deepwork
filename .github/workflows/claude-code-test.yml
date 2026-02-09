@@ -219,20 +219,26 @@ jobs:
           # Install deepwork (this sets up .deepwork/ with standard jobs only)
           uv run deepwork install --platform claude --path test_project
 
-          # Create permissive settings.json to allow file operations in CI
-          cat > test_project/.claude/settings.json << 'SETTINGS_EOF'
-          {
-            "permissions": {
-              "allow": [
-                "Bash(*)",
-                "Read(./**)",
-                "Edit(./**)",
-                "Write(./**)",
-                "Skill(*)"
-              ]
-            }
-          }
-          SETTINGS_EOF
+          # Merge broad CI permissions into settings.json WITHOUT overwriting it.
+          #
+          # Why merge instead of overwrite: `deepwork install` writes MCP tool
+          # permissions (mcp__deepwork__get_workflows, mcp__deepwork__start_workflow,
+          # etc.) into settings.json. These are required for Claude to call the
+          # DeepWork MCP server tools. Overwriting settings.json with only generic
+          # permissions (Bash, Read, Write, etc.) removes the MCP permissions,
+          # causing Claude to silently fail when trying to use /deepwork.
+          python3 -c "
+          import json
+          settings_path = 'test_project/.claude/settings.json'
+          with open(settings_path) as f:
+              settings = json.load(f)
+          ci_permissions = ['Bash(*)', 'Read(./**)', 'Edit(./**)', 'Write(./**)', 'Skill(*)']
+          for perm in ci_permissions:
+              if perm not in settings.setdefault('permissions', {}).setdefault('allow', []):
+                  settings['permissions']['allow'].append(perm)
+          with open(settings_path, 'w') as f:
+              json.dump(settings, f, indent=2)
+          "
 
           echo "Fresh test project setup complete"
           echo "Available skills:"
