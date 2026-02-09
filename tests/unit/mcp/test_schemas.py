@@ -390,9 +390,7 @@ class TestFinishedStepResponse:
                     passed=False,
                     feedback="Issues found",
                     criteria_results=[
-                        QualityCriteriaResult(
-                            criterion="Test", passed=False, feedback="Failed"
-                        ),
+                        QualityCriteriaResult(criterion="Test", passed=False, feedback="Failed"),
                     ],
                 ),
             ],

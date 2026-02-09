@@ -56,7 +56,9 @@ class TestOutputSpec:
 
     def test_file_output(self) -> None:
         """Test single file output."""
-        output = OutputSpec(name="output.md", type="file", description="An output file", required=True)
+        output = OutputSpec(
+            name="output.md", type="file", description="An output file", required=True
+        )
 
         assert output.name == "output.md"
         assert output.type == "file"
@@ -66,7 +68,10 @@ class TestOutputSpec:
     def test_files_output(self) -> None:
         """Test multiple files output."""
         output = OutputSpec(
-            name="step_instruction_files", type="files", description="Instruction files", required=True
+            name="step_instruction_files",
+            type="files",
+            description="Instruction files",
+            required=True,
         )
 
         assert output.name == "step_instruction_files"
@@ -178,7 +183,11 @@ class TestStep:
             "instructions_file": "steps/step1.md",
             "outputs": {
                 "report.md": {"type": "file", "description": "A report", "required": True},
-                "attachments": {"type": "files", "description": "Supporting files", "required": True},
+                "attachments": {
+                    "type": "files",
+                    "description": "Supporting files",
+                    "required": True,
+                },
             },
         }
         step = Step.from_dict(data)
@@ -430,7 +439,9 @@ class TestJobDefinition:
                     description="Step",
                     instructions_file="steps/step1.md",
                     outputs=[
-                        OutputSpec(name="report.md", type="file", description="Report", required=True)
+                        OutputSpec(
+                            name="report.md", type="file", description="Report", required=True
+                        )
                     ],
                     reviews=[
                         Review(run_each="step", quality_criteria={"Complete": "Is it?"}),
@@ -458,7 +469,9 @@ class TestJobDefinition:
                     description="Step",
                     instructions_file="steps/step1.md",
                     outputs=[
-                        OutputSpec(name="report.md", type="file", description="Report", required=True)
+                        OutputSpec(
+                            name="report.md", type="file", description="Report", required=True
+                        )
                     ],
                     reviews=[
                         Review(

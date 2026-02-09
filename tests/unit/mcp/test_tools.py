@@ -179,9 +179,7 @@ class TestWorkflowTools:
         with pytest.raises(ToolError, match="Job not found"):
             await tools.start_workflow(input_data)
 
-    async def test_start_workflow_auto_selects_single_workflow(
-        self, tools: WorkflowTools
-    ) -> None:
+    async def test_start_workflow_auto_selects_single_workflow(self, tools: WorkflowTools) -> None:
         """Test that a wrong workflow name auto-selects when job has one workflow."""
         input_data = StartWorkflowInput(
             goal="Complete task",
@@ -245,9 +243,7 @@ workflows:
         (steps_dir / "step_a.md").write_text("# Step A")
         (steps_dir / "step_b.md").write_text("# Step B")
 
-        tools = WorkflowTools(
-            project_root=project_root, state_manager=state_manager
-        )
+        tools = WorkflowTools(project_root=project_root, state_manager=state_manager)
         input_data = StartWorkflowInput(
             goal="Complete task",
             job_name="multi_wf_job",
@@ -401,9 +397,7 @@ workflows:
 
         # Third attempt should raise error
         with pytest.raises(ToolError, match="Quality gate failed after.*attempts"):
-            await tools.finished_step(
-                FinishedStepInput(outputs={"output1.md": "output1.md"})
-            )
+            await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}))
 
     async def test_finished_step_quality_gate_override(
         self, project_root: Path, state_manager: StateManager
@@ -455,9 +449,7 @@ workflows:
 
         with pytest.raises(ToolError, match="Unknown output names.*extra.md"):
             await tools.finished_step(
-                FinishedStepInput(
-                    outputs={"output1.md": "output1.md", "extra.md": "extra.md"}
-                )
+                FinishedStepInput(outputs={"output1.md": "output1.md", "extra.md": "extra.md"})
             )
 
     async def test_finished_step_validates_missing_output_keys(
@@ -738,9 +730,7 @@ workflows:
         (project_root / "output1.md").write_text("content")
 
         with pytest.raises(ToolError, match="type 'file'.*single string path"):
-            await tools.finished_step(
-                FinishedStepInput(outputs={"output1.md": ["output1.md"]})
-            )
+            await tools.finished_step(FinishedStepInput(outputs={"output1.md": ["output1.md"]}))
 
     async def test_finished_step_validates_file_existence(
         self, tools: WorkflowTools, project_root: Path
@@ -755,9 +745,7 @@ workflows:
 
         # Don't create the file
         with pytest.raises(ToolError, match="file not found at.*nonexistent.md"):
-            await tools.finished_step(
-                FinishedStepInput(outputs={"output1.md": "nonexistent.md"})
-            )
+            await tools.finished_step(FinishedStepInput(outputs={"output1.md": "nonexistent.md"}))
 
     async def test_finished_step_empty_outputs_for_step_with_no_outputs(
         self, project_root: Path, state_manager: StateManager
@@ -859,9 +847,7 @@ workflows:
 
         # type: files requires a list, not a string
         with pytest.raises(ToolError, match="type 'files'.*list of paths"):
-            await tools.finished_step(
-                FinishedStepInput(outputs={"reports": "report1.md"})
-            )
+            await tools.finished_step(FinishedStepInput(outputs={"reports": "report1.md"}))
 
     async def test_finished_step_validates_files_type_existence(
         self, project_root: Path, state_manager: StateManager
@@ -916,9 +902,7 @@ workflows:
 
         with pytest.raises(ToolError, match="file not found at.*missing.md"):
             await tools.finished_step(
-                FinishedStepInput(
-                    outputs={"reports": ["report1.md", "missing.md"]}
-                )
+                FinishedStepInput(outputs={"reports": ["report1.md", "missing.md"]})
             )
 
     async def test_finished_step_files_type_success(
@@ -973,9 +957,7 @@ workflows:
         (project_root / "report2.md").write_text("Report 2")
 
         response = await tools.finished_step(
-            FinishedStepInput(
-                outputs={"reports": ["report1.md", "report2.md"]}
-            )
+            FinishedStepInput(outputs={"reports": ["report1.md", "report2.md"]})
         )
 
         assert response.status == StepStatus.WORKFLOW_COMPLETE
@@ -1077,15 +1059,11 @@ workflows:
 
         # Complete step1
         (project_root / "step1_output.md").write_text("STEP1_CONTENT_MARKER")
-        await tools.finished_step(
-            FinishedStepInput(outputs={"step1_output.md": "step1_output.md"})
-        )
+        await tools.finished_step(FinishedStepInput(outputs={"step1_output.md": "step1_output.md"}))
 
         # Complete step2
         (project_root / "step2_output.md").write_text("STEP2_CONTENT_MARKER")
-        await tools.finished_step(
-            FinishedStepInput(outputs={"step2_output.md": "step2_output.md"})
-        )
+        await tools.finished_step(FinishedStepInput(outputs={"step2_output.md": "step2_output.md"}))
 
         # Complete step3 — quality gate runs here
         (project_root / "step3_output.md").write_text("STEP3_CONTENT_MARKER")
@@ -1162,9 +1140,7 @@ workflows:
         )
 
         (project_root / "report.md").write_text("Report content")
-        response = await tools.finished_step(
-            FinishedStepInput(outputs={"report.md": "report.md"})
-        )
+        response = await tools.finished_step(FinishedStepInput(outputs={"report.md": "report.md"}))
 
         assert response.status == StepStatus.WORKFLOW_COMPLETE
         assert len(mock_gate.evaluations) == 1

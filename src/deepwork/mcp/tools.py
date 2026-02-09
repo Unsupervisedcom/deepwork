@@ -12,8 +12,6 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-logger = logging.getLogger("deepwork.mcp")
-
 from deepwork.core.parser import (
     JobDefinition,
     OutputSpec,
@@ -37,6 +35,8 @@ from deepwork.mcp.schemas import (
     WorkflowInfo,
 )
 from deepwork.mcp.state import StateManager
+
+logger = logging.getLogger("deepwork.mcp")
 
 if TYPE_CHECKING:
     from deepwork.mcp.quality_gate import QualityGate
@@ -246,9 +246,7 @@ class WorkflowTools:
                     )
                 full_path = self.project_root / value
                 if not full_path.exists():
-                    raise ToolError(
-                        f"Output '{name}': file not found at '{value}'"
-                    )
+                    raise ToolError(f"Output '{name}': file not found at '{value}'")
 
             elif spec.type == "files":
                 if not isinstance(value, list):
@@ -259,14 +257,11 @@ class WorkflowTools:
                 for path in value:
                     if not isinstance(path, str):
                         raise ToolError(
-                            f"Output '{name}': all paths must be strings, "
-                            f"got {type(path).__name__}"
+                            f"Output '{name}': all paths must be strings, got {type(path).__name__}"
                         )
                     full_path = self.project_root / path
                     if not full_path.exists():
-                        raise ToolError(
-                            f"Output '{name}': file not found at '{path}'"
-                        )
+                        raise ToolError(f"Output '{name}': file not found at '{path}'")
 
     @staticmethod
     def _build_expected_outputs(outputs: list[OutputSpec]) -> list[ExpectedOutput]:
@@ -472,9 +467,7 @@ class WorkflowTools:
             raise ToolError(f"Next step not found: {next_step_id}")
 
         # Advance session
-        await self.state_manager.advance_to_step(
-            next_step_id, next_entry_index, session_id=sid
-        )
+        await self.state_manager.advance_to_step(next_step_id, next_entry_index, session_id=sid)
         await self.state_manager.start_step(next_step_id, session_id=sid)
 
         # Get instructions

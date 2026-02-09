@@ -76,7 +76,7 @@ class TestAsyncInterfaceRegression:
 
     def test_claude_cli_async_methods(self) -> None:
         """Verify ClaudeCLI methods that must be async remain async."""
-        method = getattr(ClaudeCLI, "run")
+        method = ClaudeCLI.run
         assert inspect.iscoroutinefunction(method), (
             "ClaudeCLI.run must be async (coroutine function). "
             "This is required for non-blocking subprocess execution."
@@ -141,9 +141,7 @@ class TestAsyncInterfaceRegression:
         assert final_session is not None
         assert final_session.step_progress["step1"].quality_attempts == 10
 
-    async def test_concurrent_workflows_with_session_id_routing(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_concurrent_workflows_with_session_id_routing(self, tmp_path: Path) -> None:
         """Test that two concurrent sessions can be routed correctly via session_id.
 
         Two sessions are created on the stack. Concurrent finished_step-like

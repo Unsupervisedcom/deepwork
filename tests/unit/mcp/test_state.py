@@ -224,9 +224,7 @@ class TestStateManager:
         )
 
         await state_manager.complete_step("step1", {"report": "output1.md"})
-        await state_manager.complete_step(
-            "step2", {"data_files": ["output2.md", "output3.md"]}
-        )
+        await state_manager.complete_step("step2", {"data_files": ["output2.md", "output3.md"]})
 
         outputs = state_manager.get_all_outputs()
 
@@ -492,9 +490,7 @@ class TestSessionIdRouting:
         with pytest.raises(StateError, match="Session 'nonexistent' not found"):
             state_manager._resolve_session("nonexistent")
 
-    def test_resolve_session_none_falls_back_to_active(
-        self, state_manager: StateManager
-    ) -> None:
+    def test_resolve_session_none_falls_back_to_active(self, state_manager: StateManager) -> None:
         """Test _resolve_session with None falls back to top-of-stack."""
         import asyncio
 
@@ -512,9 +508,7 @@ class TestSessionIdRouting:
         resolved = state_manager._resolve_session(None)
         assert resolved.job_name == "job2"  # top-of-stack
 
-    async def test_complete_workflow_by_session_id(
-        self, state_manager: StateManager
-    ) -> None:
+    async def test_complete_workflow_by_session_id(self, state_manager: StateManager) -> None:
         """Test complete_workflow removes a specific session from middle of stack."""
         session1 = await state_manager.create_session(
             job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
@@ -541,9 +535,7 @@ class TestSessionIdRouting:
         assert session2.session_id not in remaining_ids
         assert session3.session_id in remaining_ids
 
-    async def test_abort_workflow_by_session_id(
-        self, state_manager: StateManager
-    ) -> None:
+    async def test_abort_workflow_by_session_id(self, state_manager: StateManager) -> None:
         """Test abort_workflow removes a specific session from middle of stack."""
         session1 = await state_manager.create_session(
             job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
@@ -570,9 +562,7 @@ class TestSessionIdRouting:
         assert session1.session_id in remaining_ids
         assert session2.session_id not in remaining_ids
 
-    async def test_complete_step_with_session_id(
-        self, state_manager: StateManager
-    ) -> None:
+    async def test_complete_step_with_session_id(self, state_manager: StateManager) -> None:
         """Test complete_step operates on a non-top session when session_id is given."""
         session1 = await state_manager.create_session(
             job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"

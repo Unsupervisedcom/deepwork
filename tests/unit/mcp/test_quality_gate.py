@@ -211,9 +211,7 @@ class TestQualityGate:
         data = {
             "passed": False,
             "feedback": "Issues found",
-            "criteria_results": [
-                {"criterion": "Test 1", "passed": False, "feedback": "Failed"}
-            ],
+            "criteria_results": [{"criterion": "Test 1", "passed": False, "feedback": "Failed"}],
         }
 
         result = quality_gate._parse_result(data)
@@ -282,9 +280,7 @@ class TestQualityGate:
         assert "Must be valid" in call_kwargs.kwargs["system_prompt"]
         assert "Test content" in call_kwargs.kwargs["prompt"]
 
-    async def test_evaluate_wraps_cli_error(
-        self, mock_cli: ClaudeCLI, project_root: Path
-    ) -> None:
+    async def test_evaluate_wraps_cli_error(self, mock_cli: ClaudeCLI, project_root: Path) -> None:
         """Test that ClaudeCLIError is wrapped in QualityGateError."""
         mock_cli.run = AsyncMock(side_effect=ClaudeCLIError("CLI failed"))
         gate = QualityGate(cli=mock_cli)
@@ -322,9 +318,7 @@ class TestEvaluateReviews:
         )
         assert result == []
 
-    async def test_step_review_passes(
-        self, mock_cli: ClaudeCLI, project_root: Path
-    ) -> None:
+    async def test_step_review_passes(self, mock_cli: ClaudeCLI, project_root: Path) -> None:
         """Test step-level review that passes."""
         mock_cli.run = AsyncMock(
             return_value={"passed": True, "feedback": "All good", "criteria_results": []}
@@ -346,9 +340,7 @@ class TestEvaluateReviews:
         )
         assert result == []  # No failures
 
-    async def test_step_review_fails(
-        self, mock_cli: ClaudeCLI, project_root: Path
-    ) -> None:
+    async def test_step_review_fails(self, mock_cli: ClaudeCLI, project_root: Path) -> None:
         """Test step-level review that fails."""
         mock_cli.run = AsyncMock(
             return_value={
@@ -378,9 +370,7 @@ class TestEvaluateReviews:
         assert result[0].review_run_each == "step"
         assert result[0].passed is False
 
-    async def test_per_file_review(
-        self, mock_cli: ClaudeCLI, project_root: Path
-    ) -> None:
+    async def test_per_file_review(self, mock_cli: ClaudeCLI, project_root: Path) -> None:
         """Test per-file review for files-type output."""
         call_count = 0
 
@@ -409,9 +399,7 @@ class TestEvaluateReviews:
         assert result == []  # All pass
         assert call_count == 2  # Called once per file
 
-    async def test_single_file_review(
-        self, mock_cli: ClaudeCLI, project_root: Path
-    ) -> None:
+    async def test_single_file_review(self, mock_cli: ClaudeCLI, project_root: Path) -> None:
         """Test review targeting a single-file output."""
         mock_cli.run = AsyncMock(
             return_value={"passed": True, "feedback": "OK", "criteria_results": []}
@@ -620,10 +608,12 @@ class TestBuildPathListing:
 
     def test_mixed_outputs(self) -> None:
         """Test path listing with both single and list outputs."""
-        lines = QualityGate._build_path_listing({
-            "summary": "summary.md",
-            "details": ["d1.md", "d2.md"],
-        })
+        lines = QualityGate._build_path_listing(
+            {
+                "summary": "summary.md",
+                "details": ["d1.md", "d2.md"],
+            }
+        )
         assert len(lines) == 3
         assert "- summary.md  (output: summary)" in lines
         assert "- d1.md  (output: details)" in lines
@@ -649,9 +639,7 @@ class TestComputeTimeout:
 class TestDynamicTimeout:
     """Tests that evaluate passes dynamic timeout to CLI."""
 
-    async def test_timeout_passed_to_cli(
-        self, mock_cli: ClaudeCLI, project_root: Path
-    ) -> None:
+    async def test_timeout_passed_to_cli(self, mock_cli: ClaudeCLI, project_root: Path) -> None:
         """Test that evaluate passes computed timeout to CLI.run."""
         gate = QualityGate(cli=mock_cli)
 
@@ -753,7 +741,9 @@ class TestMockQualityGate:
         )
 
         assert len(gate.evaluations) == 1
-        assert gate.evaluations[0]["additional_review_guidance"] == "Look at the job.yml for context."
+        assert (
+            gate.evaluations[0]["additional_review_guidance"] == "Look at the job.yml for context."
+        )
 
     async def test_mock_records_none_guidance_when_omitted(self, project_root: Path) -> None:
         """Test mock gate records None for guidance when not provided."""

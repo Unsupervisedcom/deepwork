@@ -96,7 +96,7 @@ class FinishedStepInput(BaseModel):
         description=(
             "Map of output names to file path(s). "
             "For outputs declared as type 'file': pass a single string path (e.g. \"report.md\"). "
-            "For outputs declared as type 'files': pass a list of string paths (e.g. [\"a.md\", \"b.md\"]). "
+            'For outputs declared as type \'files\': pass a list of string paths (e.g. ["a.md", "b.md"]). '
             "Outputs with required: false can be omitted from this map. "
             "Check step_expected_outputs from start_workflow/finished_step response to see each output's type and required status."
         )
@@ -193,7 +193,9 @@ class ExpectedOutput(BaseModel):
     name: str = Field(description="Output name (use as key in finished_step outputs)")
     type: str = Field(description="Output type: 'file' or 'files'")
     description: str = Field(description="What this output should contain")
-    required: bool = Field(description="Whether this output must be provided. If false, it can be omitted from finished_step outputs.")
+    required: bool = Field(
+        description="Whether this output must be provided. If false, it can be omitted from finished_step outputs."
+    )
     syntax_for_finished_step_tool: str = Field(
         description="The value format to use for this output when calling finished_step"
     )

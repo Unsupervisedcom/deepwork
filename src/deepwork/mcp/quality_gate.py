@@ -189,8 +189,7 @@ You must respond with JSON in this exact structure:
                 except (UnicodeDecodeError, ValueError):
                     abs_path = full_path.resolve()
                     sections.append(
-                        f"{header}\n[Binary file — not included in review. "
-                        f"Read from: {abs_path}]"
+                        f"{header}\n[Binary file — not included in review. Read from: {abs_path}]"
                     )
                 except Exception as e:
                     sections.append(f"{header}\n[Error reading file: {e}]")
@@ -316,8 +315,7 @@ You must respond with JSON in this exact structure:
 
         except (ValueError, KeyError) as e:
             raise QualityGateError(
-                f"Failed to interpret quality gate result: {e}\n"
-                f"Data was: {data}"
+                f"Failed to interpret quality gate result: {e}\nData was: {data}"
             ) from e
 
     @staticmethod
@@ -440,22 +438,26 @@ You must respond with JSON in this exact structure:
                 if output_type == "files" and isinstance(output_value, list):
                     # Run once per file
                     for file_path in output_value:
-                        tasks.append((
-                            run_each,
-                            file_path,
-                            quality_criteria,
-                            {run_each: file_path},
-                            guidance,
-                        ))
+                        tasks.append(
+                            (
+                                run_each,
+                                file_path,
+                                quality_criteria,
+                                {run_each: file_path},
+                                guidance,
+                            )
+                        )
                 else:
                     # Single file - run once
-                    tasks.append((
-                        run_each,
-                        output_value if isinstance(output_value, str) else None,
-                        quality_criteria,
-                        {run_each: output_value},
-                        guidance,
-                    ))
+                    tasks.append(
+                        (
+                            run_each,
+                            output_value if isinstance(output_value, str) else None,
+                            quality_criteria,
+                            {run_each: output_value},
+                            guidance,
+                        )
+                    )
 
         async def run_review(
             run_each: str,
@@ -479,9 +481,7 @@ You must respond with JSON in this exact structure:
                 criteria_results=result.criteria_results,
             )
 
-        results = await asyncio.gather(
-            *(run_review(*task) for task in tasks)
-        )
+        results = await asyncio.gather(*(run_review(*task) for task in tasks))
 
         return [r for r in results if not r.passed]
 

@@ -192,8 +192,7 @@ class Step:
             instructions_file=data["instructions_file"],
             inputs=[StepInput.from_dict(inp) for inp in data.get("inputs", [])],
             outputs=[
-                OutputSpec.from_dict(name, spec)
-                for name, spec in data.get("outputs", {}).items()
+                OutputSpec.from_dict(name, spec) for name, spec in data.get("outputs", {}).items()
             ],
             dependencies=data.get("dependencies", []),
             hooks=hooks,

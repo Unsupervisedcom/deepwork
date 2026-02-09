@@ -22,7 +22,9 @@ class TestValidateAgainstSchema:
                     "name": "Step 1",
                     "description": "First step",
                     "instructions_file": "steps/step1.md",
-                    "outputs": {"output.md": {"type": "file", "description": "Output", "required": True}},
+                    "outputs": {
+                        "output.md": {"type": "file", "description": "Output", "required": True}
+                    },
                     "dependencies": [],
                     "reviews": [],
                 }
@@ -49,7 +51,9 @@ class TestValidateAgainstSchema:
                         {"name": "param1", "description": "First parameter"},
                         {"name": "param2", "description": "Second parameter"},
                     ],
-                    "outputs": {"output.md": {"type": "file", "description": "Output", "required": True}},
+                    "outputs": {
+                        "output.md": {"type": "file", "description": "Output", "required": True}
+                    },
                     "dependencies": [],
                     "reviews": [],
                 }
@@ -71,7 +75,9 @@ class TestValidateAgainstSchema:
                     "name": "Step 1",
                     "description": "First step",
                     "instructions_file": "steps/step1.md",
-                    "outputs": {"data.md": {"type": "file", "description": "Data output", "required": True}},
+                    "outputs": {
+                        "data.md": {"type": "file", "description": "Data output", "required": True}
+                    },
                     "dependencies": [],
                     "reviews": [],
                 },
@@ -81,7 +87,13 @@ class TestValidateAgainstSchema:
                     "description": "Second step",
                     "instructions_file": "steps/step2.md",
                     "inputs": [{"file": "data.md", "from_step": "step1"}],
-                    "outputs": {"result.md": {"type": "file", "description": "Result output", "required": True}},
+                    "outputs": {
+                        "result.md": {
+                            "type": "file",
+                            "description": "Result output",
+                            "required": True,
+                        }
+                    },
                     "dependencies": ["step1"],
                     "reviews": [],
                 },
@@ -116,7 +128,9 @@ class TestValidateAgainstSchema:
                     "name": "Step 1",
                     "description": "Step",
                     "instructions_file": "steps/step1.md",
-                    "outputs": {"output.md": {"type": "file", "description": "Output", "required": True}},
+                    "outputs": {
+                        "output.md": {"type": "file", "description": "Output", "required": True}
+                    },
                     "reviews": [],
                 }
             ],
@@ -138,7 +152,9 @@ class TestValidateAgainstSchema:
                     "name": "Step 1",
                     "description": "Step",
                     "instructions_file": "steps/step1.md",
-                    "outputs": {"output.md": {"type": "file", "description": "Output", "required": True}},
+                    "outputs": {
+                        "output.md": {"type": "file", "description": "Output", "required": True}
+                    },
                     "reviews": [],
                 }
             ],
@@ -200,7 +216,9 @@ class TestValidateAgainstSchema:
                             # Missing description for user input
                         }
                     ],
-                    "outputs": {"output.md": {"type": "file", "description": "Output", "required": True}},
+                    "outputs": {
+                        "output.md": {"type": "file", "description": "Output", "required": True}
+                    },
                     "reviews": [],
                 }
             ],
@@ -232,7 +250,9 @@ class TestValidateAgainstSchema:
                     "name": "Step 1",
                     "description": "Step",
                     "instructions_file": "steps/step1.md",
-                    "outputs": {"output.md": {"type": "file", "description": "Output", "required": True}},
+                    "outputs": {
+                        "output.md": {"type": "file", "description": "Output", "required": True}
+                    },
                     # Missing reviews - now required
                 }
             ],
@@ -291,7 +311,9 @@ class TestValidateAgainstSchema:
                     "name": "Step 1",
                     "description": "Step",
                     "instructions_file": "steps/step1.md",
-                    "outputs": {"output.md": {"type": "file", "description": "Output", "required": True}},
+                    "outputs": {
+                        "output.md": {"type": "file", "description": "Output", "required": True}
+                    },
                     "reviews": [
                         {
                             # Missing run_each
@@ -318,7 +340,9 @@ class TestValidateAgainstSchema:
                     "name": "Step 1",
                     "description": "Step",
                     "instructions_file": "steps/step1.md",
-                    "outputs": {"output.md": {"type": "file", "description": "Output", "required": True}},
+                    "outputs": {
+                        "output.md": {"type": "file", "description": "Output", "required": True}
+                    },
                     "reviews": [
                         {
                             "run_each": "step",
