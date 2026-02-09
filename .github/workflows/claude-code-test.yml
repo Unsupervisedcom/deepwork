@@ -185,7 +185,22 @@ jobs:
 
       - name: Install deepwork
         if: steps.check-key.outputs.has_key == 'true'
-        run: uv sync
+        run: |
+          uv sync
+
+          # Add the uv virtualenv bin directory to PATH for all subsequent steps.
+          #
+          # Why: `deepwork install` registers an MCP server in .mcp.json with
+          # the command "deepwork serve --path .". When Claude Code starts, it
+          # reads .mcp.json and spawns the MCP server as a subprocess using the
+          # bare "deepwork" command. Without this PATH addition, that subprocess
+          # fails because "deepwork" only exists inside the uv virtualenv
+          # (accessible via "uv run deepwork" but not as a bare command).
+          #
+          # Without the MCP server running, Claude cannot use the DeepWork MCP
+          # tools (get_workflows, start_workflow, finished_step) and falls back
+          # to ad-hoc file creation, which produces the wrong output format.
+          echo "$(pwd)/.venv/bin" >> $GITHUB_PATH
 
       - name: Set up fresh test project
         if: steps.check-key.outputs.has_key == 'true'
