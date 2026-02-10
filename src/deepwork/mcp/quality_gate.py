@@ -433,9 +433,7 @@ You must respond with JSON in this exact structure:
         parts.append("")
         parts.append("1. Read each output file listed above")
         parts.append("2. Evaluate every criterion in every review section")
-        parts.append(
-            "3. For each criterion, report **PASS** or **FAIL** with specific feedback"
-        )
+        parts.append("3. For each criterion, report **PASS** or **FAIL** with specific feedback")
         parts.append("4. At the end, clearly state the overall result: **PASSED** or **FAILED**")
         parts.append(
             "5. If any criteria failed, provide clear actionable feedback on what needs to change"

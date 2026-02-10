@@ -834,9 +834,7 @@ class TestEvaluateWithoutCli:
                 project_root=project_root,
             )
 
-    async def test_evaluate_no_criteria_still_passes_without_cli(
-        self, project_root: Path
-    ) -> None:
+    async def test_evaluate_no_criteria_still_passes_without_cli(self, project_root: Path) -> None:
         """Test that empty criteria auto-passes even without CLI."""
         gate = QualityGate(cli=None)
 

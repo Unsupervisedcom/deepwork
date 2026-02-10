@@ -1622,9 +1622,7 @@ class TestExternalRunnerClaude:
         )
         (project_root / "output1.md").write_text("output")
 
-        await tools.finished_step(
-            FinishedStepInput(outputs={"output1.md": "output1.md"})
-        )
+        await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}))
 
         review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
         assert len(review_files) == 0
@@ -1681,9 +1679,7 @@ class TestExternalRunnerClaude:
 
         # Third attempt: raises ToolError
         with pytest.raises(ToolError, match="Quality gate failed after.*attempts"):
-            await tools.finished_step(
-                FinishedStepInput(outputs={"output1.md": "output1.md"})
-            )
+            await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}))
 
 
 class TestExternalRunnerInit:

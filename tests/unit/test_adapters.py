@@ -84,7 +84,11 @@ class TestClaudeAdapterMCPRegistration:
         assert result is True
         config = json.loads((project_root / ".mcp.json").read_text())
         assert config["mcpServers"]["deepwork"]["args"] == [
-            "serve", "--path", ".", "--external-runner", "claude"
+            "serve",
+            "--path",
+            ".",
+            "--external-runner",
+            "claude",
         ]
 
     def test_register_preserves_other_servers(self, project_root: Path) -> None:
