@@ -104,6 +104,7 @@ def tools_with_quality(project_root: Path, state_manager: StateManager) -> Workf
         project_root=project_root,
         state_manager=state_manager,
         quality_gate=MockQualityGate(should_pass=True),
+        external_runner="claude",
     )
 
 
@@ -347,6 +348,7 @@ workflows:
             project_root=project_root,
             state_manager=state_manager,
             quality_gate=MockQualityGate(should_pass=False, feedback="Needs improvement"),
+            external_runner="claude",
         )
 
         # Start workflow
@@ -375,6 +377,7 @@ workflows:
             project_root=project_root,
             state_manager=state_manager,
             quality_gate=MockQualityGate(should_pass=False, feedback="Always fails"),
+            external_runner="claude",
         )
 
         # Start workflow
@@ -409,6 +412,7 @@ workflows:
             project_root=project_root,
             state_manager=state_manager,
             quality_gate=failing_gate,
+            external_runner="claude",
         )
 
         # Start workflow
@@ -1046,6 +1050,7 @@ workflows:
             project_root=project_root,
             state_manager=state_manager,
             quality_gate=mock_gate,
+            external_runner="claude",
         )
 
         # Start workflow
@@ -1129,6 +1134,7 @@ workflows:
             project_root=project_root,
             state_manager=state_manager,
             quality_gate=mock_gate,
+            external_runner="claude",
         )
 
         await tools.start_workflow(

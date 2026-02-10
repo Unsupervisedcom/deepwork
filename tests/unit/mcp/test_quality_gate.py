@@ -46,10 +46,11 @@ def output_file(project_root: Path) -> Path:
 class TestQualityGate:
     """Tests for QualityGate class."""
 
-    def test_init_default_cli(self) -> None:
-        """Test QualityGate creates a default ClaudeCLI if none provided."""
+    def test_init_no_cli(self) -> None:
+        """Test QualityGate with no CLI provided has _cli=None and default max_inline_files."""
         gate = QualityGate()
-        assert isinstance(gate._cli, ClaudeCLI)
+        assert gate._cli is None
+        assert gate.max_inline_files == QualityGate.DEFAULT_MAX_INLINE_FILES
 
     def test_init_custom_cli(self, mock_cli: ClaudeCLI) -> None:
         """Test QualityGate uses provided ClaudeCLI."""
@@ -509,7 +510,7 @@ class TestEvaluateReviews:
 
 
 class TestBuildPayloadLargeFileSet:
-    """Tests for _build_payload behavior when file count exceeds MAX_INLINE_FILES."""
+    """Tests for _build_payload behavior when file count exceeds max_inline_files."""
 
     async def test_payload_lists_paths_when_over_threshold(
         self, quality_gate: QualityGate, project_root: Path

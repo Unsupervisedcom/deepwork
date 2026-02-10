@@ -38,6 +38,7 @@ def create_server(
     enable_quality_gate: bool = True,
     quality_gate_timeout: int = 120,
     quality_gate_max_attempts: int = 3,
+    external_runner: str | None = None,
 ) -> FastMCP:
     """Create and configure the MCP server.
 
@@ -46,6 +47,9 @@ def create_server(
         enable_quality_gate: Whether to enable quality gate evaluation (default: True)
         quality_gate_timeout: Timeout in seconds for quality gate (default: 120)
         quality_gate_max_attempts: Max attempts before failing quality gate (default: 3)
+        external_runner: External runner for quality gate reviews.
+            "claude" uses Claude CLI subprocess. None means agent self-review
+            via instructions file. (default: None)
 
     Returns:
         Configured FastMCP server instance
@@ -57,14 +61,20 @@ def create_server(
 
     quality_gate: QualityGate | None = None
     if enable_quality_gate:
-        cli = ClaudeCLI(timeout=quality_gate_timeout)
-        quality_gate = QualityGate(cli=cli)
+        if external_runner == "claude":
+            # Claude CLI subprocess mode: embed up to 5 files inline
+            cli = ClaudeCLI(timeout=quality_gate_timeout)
+            quality_gate = QualityGate(cli=cli, max_inline_files=5)
+        else:
+            # Self-review mode: no CLI, always reference files by path (0 inline)
+            quality_gate = QualityGate(cli=None, max_inline_files=0)
 
     tools = WorkflowTools(
         project_root=project_path,
         state_manager=state_manager,
         quality_gate=quality_gate,
         max_quality_attempts=quality_gate_max_attempts,
+        external_runner=external_runner,
     )
 
     # Create MCP server

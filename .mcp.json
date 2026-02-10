@@ -5,7 +5,9 @@
       "args": [
         "serve",
         "--path",
-        "."
+        ".",
+        "--external-runner",
+        "claude"
       ]
     }
   }

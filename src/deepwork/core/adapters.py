@@ -562,9 +562,10 @@ class ClaudeAdapter(AgentAdapter):
 
         # Build the new MCP server config
         # Assume deepwork is available in PATH
+        # Include --external-runner claude so quality gate reviews use Claude CLI subprocess
         new_server_config = {
             "command": "deepwork",
-            "args": ["serve", "--path", "."],
+            "args": ["serve", "--path", ".", "--external-runner", "claude"],
         }
 
         # Check if already registered with same config
