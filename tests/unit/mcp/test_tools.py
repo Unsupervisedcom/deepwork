@@ -104,6 +104,7 @@ def tools_with_quality(project_root: Path, state_manager: StateManager) -> Workf
         project_root=project_root,
         state_manager=state_manager,
         quality_gate=MockQualityGate(should_pass=True),
+        external_runner="claude",
     )
 
 
@@ -347,6 +348,7 @@ workflows:
             project_root=project_root,
             state_manager=state_manager,
             quality_gate=MockQualityGate(should_pass=False, feedback="Needs improvement"),
+            external_runner="claude",
         )
 
         # Start workflow
@@ -375,6 +377,7 @@ workflows:
             project_root=project_root,
             state_manager=state_manager,
             quality_gate=MockQualityGate(should_pass=False, feedback="Always fails"),
+            external_runner="claude",
         )
 
         # Start workflow
@@ -409,6 +412,7 @@ workflows:
             project_root=project_root,
             state_manager=state_manager,
             quality_gate=failing_gate,
+            external_runner="claude",
         )
 
         # Start workflow
@@ -1046,6 +1050,7 @@ workflows:
             project_root=project_root,
             state_manager=state_manager,
             quality_gate=mock_gate,
+            external_runner="claude",
         )
 
         # Start workflow
@@ -1129,6 +1134,7 @@ workflows:
             project_root=project_root,
             state_manager=state_manager,
             quality_gate=mock_gate,
+            external_runner="claude",
         )
 
         await tools.start_workflow(
@@ -1378,3 +1384,337 @@ workflows:
         assert tools.state_manager.get_stack_depth() == 1
         assert tools.state_manager.get_active_session() is not None
         assert tools.state_manager.get_active_session().session_id == session_b_id
+
+
+class TestExternalRunnerSelfReview:
+    """Tests for self-review mode (external_runner=None) in finished_step."""
+
+    @pytest.fixture
+    def tools_self_review(self, project_root: Path, state_manager: StateManager) -> WorkflowTools:
+        """Create WorkflowTools with quality gate but no external runner (self-review mode)."""
+        from deepwork.mcp.quality_gate import QualityGate
+
+        return WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+            quality_gate=QualityGate(cli=None, max_inline_files=0),
+            external_runner=None,
+        )
+
+    async def test_self_review_returns_needs_work(
+        self, tools_self_review: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that self-review mode returns NEEDS_WORK with instructions."""
+        await tools_self_review.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main")
+        )
+        (project_root / "output1.md").write_text("Some output")
+
+        response = await tools_self_review.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"})
+        )
+
+        assert response.status == StepStatus.NEEDS_WORK
+        assert response.failed_reviews is None  # No actual review results yet
+
+    async def test_self_review_feedback_contains_instructions(
+        self, tools_self_review: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that feedback contains subagent and override instructions."""
+        await tools_self_review.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main")
+        )
+        (project_root / "output1.md").write_text("Some output")
+
+        response = await tools_self_review.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"})
+        )
+
+        assert "Quality review required" in response.feedback
+        assert "subagent" in response.feedback.lower()
+        assert "quality_review_override_reason" in response.feedback
+        assert ".deepwork/tmp/quality_review_" in response.feedback
+
+    async def test_self_review_writes_instructions_file(
+        self, tools_self_review: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that an instructions file is written to .deepwork/tmp/."""
+        await tools_self_review.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main")
+        )
+        (project_root / "output1.md").write_text("Some output")
+
+        await tools_self_review.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"})
+        )
+
+        review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
+        assert len(review_files) == 1
+
+    async def test_self_review_file_contains_criteria(
+        self, tools_self_review: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that the instructions file contains the quality criteria from the job."""
+        await tools_self_review.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main")
+        )
+        (project_root / "output1.md").write_text("Some output")
+
+        await tools_self_review.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"})
+        )
+
+        review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
+        content = review_files[0].read_text()
+
+        # step1 has review criteria "Output Valid": "Is the output valid?"
+        assert "Output Valid" in content
+        assert "Is the output valid?" in content
+
+    async def test_self_review_file_references_outputs_not_inline(
+        self, tools_self_review: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that the instructions file lists output paths, not inline content."""
+        await tools_self_review.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main")
+        )
+        (project_root / "output1.md").write_text("UNIQUE_CONTENT_MARKER_12345")
+
+        await tools_self_review.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"})
+        )
+
+        review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
+        content = review_files[0].read_text()
+
+        assert "output1.md" in content
+        assert "UNIQUE_CONTENT_MARKER_12345" not in content
+
+    async def test_self_review_file_named_with_session_and_step(
+        self, tools_self_review: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that review file name includes session and step IDs."""
+        resp = await tools_self_review.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main")
+        )
+        session_id = resp.begin_step.session_id
+        (project_root / "output1.md").write_text("output")
+
+        await tools_self_review.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"})
+        )
+
+        expected_file = project_root / ".deepwork" / "tmp" / f"quality_review_{session_id}_step1.md"
+        assert expected_file.exists()
+
+    async def test_self_review_then_override_completes_workflow(
+        self, tools_self_review: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that calling finished_step with override after self-review advances the workflow."""
+        await tools_self_review.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main")
+        )
+        (project_root / "output1.md").write_text("output")
+
+        # First call: self-review
+        resp1 = await tools_self_review.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"})
+        )
+        assert resp1.status == StepStatus.NEEDS_WORK
+
+        # Second call: override, should advance to step2
+        resp2 = await tools_self_review.finished_step(
+            FinishedStepInput(
+                outputs={"output1.md": "output1.md"},
+                quality_review_override_reason="Self-review passed: all criteria met",
+            )
+        )
+        assert resp2.status == StepStatus.NEXT_STEP
+        assert resp2.begin_step.step_id == "step2"
+
+    async def test_self_review_skipped_for_steps_without_reviews(
+        self, tools_self_review: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that steps without reviews skip self-review entirely."""
+        await tools_self_review.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main")
+        )
+        (project_root / "output1.md").write_text("output")
+
+        # Override step1 to advance to step2 (which has no reviews)
+        await tools_self_review.finished_step(
+            FinishedStepInput(
+                outputs={"output1.md": "output1.md"},
+                quality_review_override_reason="Skip",
+            )
+        )
+
+        # step2 has no reviews, so it should complete without self-review
+        (project_root / "output2.md").write_text("step2 output")
+        resp = await tools_self_review.finished_step(
+            FinishedStepInput(outputs={"output2.md": "output2.md"})
+        )
+        assert resp.status == StepStatus.WORKFLOW_COMPLETE
+
+    async def test_self_review_includes_notes_in_file(
+        self, tools_self_review: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that agent notes are included in the review instructions file."""
+        await tools_self_review.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main")
+        )
+        (project_root / "output1.md").write_text("output")
+
+        await tools_self_review.finished_step(
+            FinishedStepInput(
+                outputs={"output1.md": "output1.md"},
+                notes="I used the XYZ library for this step.",
+            )
+        )
+
+        review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
+        content = review_files[0].read_text()
+        assert "I used the XYZ library for this step." in content
+
+
+class TestExternalRunnerClaude:
+    """Tests that external_runner='claude' uses subprocess evaluation (existing behavior)."""
+
+    async def test_claude_runner_calls_quality_gate_evaluate(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test that claude runner mode invokes evaluate_reviews on the quality gate."""
+        mock_gate = MockQualityGate(should_pass=True)
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+            quality_gate=mock_gate,
+            external_runner="claude",
+        )
+
+        await tools.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main")
+        )
+        (project_root / "output1.md").write_text("output")
+
+        response = await tools.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"})
+        )
+
+        # Should have called evaluate_reviews and advanced
+        assert response.status == StepStatus.NEXT_STEP
+        assert len(mock_gate.evaluations) > 0
+
+    async def test_claude_runner_does_not_write_instructions_file(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test that claude runner mode does NOT write an instructions file."""
+        mock_gate = MockQualityGate(should_pass=True)
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+            quality_gate=mock_gate,
+            external_runner="claude",
+        )
+
+        await tools.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main")
+        )
+        (project_root / "output1.md").write_text("output")
+
+        await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}))
+
+        review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
+        assert len(review_files) == 0
+
+    async def test_claude_runner_failing_gate_returns_feedback(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test that claude runner with failing gate returns NEEDS_WORK with review feedback."""
+        mock_gate = MockQualityGate(should_pass=False, feedback="Missing detail in section 2")
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+            quality_gate=mock_gate,
+            external_runner="claude",
+        )
+
+        await tools.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main")
+        )
+        (project_root / "output1.md").write_text("output")
+
+        response = await tools.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"})
+        )
+
+        assert response.status == StepStatus.NEEDS_WORK
+        assert response.feedback == "Missing detail in section 2"
+        assert response.failed_reviews is not None
+        assert len(response.failed_reviews) == 1
+
+    async def test_claude_runner_records_quality_attempts(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test that claude runner mode tracks quality attempt count."""
+        mock_gate = MockQualityGate(should_pass=False, feedback="Fail")
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+            quality_gate=mock_gate,
+            external_runner="claude",
+        )
+
+        await tools.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main")
+        )
+        (project_root / "output1.md").write_text("output")
+
+        # First two attempts: NEEDS_WORK
+        for _ in range(2):
+            resp = await tools.finished_step(
+                FinishedStepInput(outputs={"output1.md": "output1.md"})
+            )
+            assert resp.status == StepStatus.NEEDS_WORK
+
+        # Third attempt: raises ToolError
+        with pytest.raises(ToolError, match="Quality gate failed after.*attempts"):
+            await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}))
+
+
+class TestExternalRunnerInit:
+    """Tests for external_runner parameter on WorkflowTools initialization."""
+
+    def test_default_external_runner_is_none(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test that external_runner defaults to None."""
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+        )
+        assert tools.external_runner is None
+
+    def test_explicit_external_runner(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test that external_runner is stored correctly."""
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+            external_runner="claude",
+        )
+        assert tools.external_runner == "claude"
+
+    def test_no_quality_gate_no_external_runner_skips_review(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """Test that without quality gate, external_runner is irrelevant."""
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+            quality_gate=None,
+            external_runner=None,
+        )
+        assert tools.quality_gate is None
+        assert tools.external_runner is None
