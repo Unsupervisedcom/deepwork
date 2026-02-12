@@ -87,6 +87,9 @@ steps:
             Are there reviews defined for each step? Do particularly critical documents have their own reviews?
             Note that the reviewers do not have transcript access, so if the criteria are about the conversation,
             then add a `.deepwork/tmp/[step_summary].md` step output file so the agent has a communication channel to the reviewer.
+      - run_each: job.yml
+        quality_criteria:
+          "Report Best-Practices": "If this job involves building a report, does it follow the best practices from src/deepwork/standard_jobs/deepwork_jobs/research_report_job_best_practices.md? Pass this criteria immediately if the job does not involve building a report."
 
   - id: implement
     name: "Implement Job Steps"
