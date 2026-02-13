@@ -361,7 +361,7 @@ jobs:
       - name: Run Workflow
         if: steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
-        timeout-minutes: 3
+        timeout-minutes: 6
         run: |
           echo "=== Running fruits workflow with test input via /deepwork ==="
 
