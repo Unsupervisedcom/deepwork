@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -15,7 +15,7 @@ class AdapterError(Exception):
     pass
 
 
-class SkillLifecycleHook(str, Enum):
+class SkillLifecycleHook(StrEnum):
     """Generic skill lifecycle hook events supported by DeepWork.
 
     These represent hook points in the AI agent's skill execution lifecycle.

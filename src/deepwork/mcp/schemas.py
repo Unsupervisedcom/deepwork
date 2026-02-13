@@ -6,7 +6,7 @@ update the documentation in doc/mcp_interface.md to keep it in sync with
 the implementation.
 """
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 # =============================================================================
 
 
-class StepStatus(str, Enum):
+class StepStatus(StrEnum):
     """Status returned from finished_step."""
 
     NEEDS_WORK = "needs_work"
