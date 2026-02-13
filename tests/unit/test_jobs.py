@@ -57,9 +57,7 @@ class TestGetJobFolders:
         folders = get_job_folders(tmp_path)
         assert _STANDARD_JOBS_DIR in folders
 
-    def test_env_var_appends_folders(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_env_var_appends_folders(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv(ENV_ADDITIONAL_JOBS_FOLDERS, "/extra/a:/extra/b")
         folders = get_job_folders(tmp_path)
         assert Path("/extra/a") in folders
@@ -87,9 +85,7 @@ class TestGetJobFolders:
 class TestLoadAllJobs:
     """Tests for load_all_jobs."""
 
-    def test_loads_from_project_jobs(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_loads_from_project_jobs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         jobs_dir = tmp_path / ".deepwork" / "jobs"
         _create_minimal_job(jobs_dir, "my_job")
         monkeypatch.setattr(
@@ -146,9 +142,7 @@ class TestLoadAllJobs:
         jobs = load_all_jobs(tmp_path)
         assert len(jobs) == 0
 
-    def test_skips_invalid_jobs(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_skips_invalid_jobs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         folder = tmp_path / "jobs"
         bad_job = folder / "bad_job"
         bad_job.mkdir(parents=True)
@@ -164,9 +158,7 @@ class TestLoadAllJobs:
 class TestFindJobDir:
     """Tests for find_job_dir."""
 
-    def test_finds_in_first_folder(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_finds_in_first_folder(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         folder = tmp_path / "jobs"
         _create_minimal_job(folder, "target")
         monkeypatch.setattr(
@@ -176,9 +168,7 @@ class TestFindJobDir:
         result = find_job_dir(tmp_path, "target")
         assert result == folder / "target"
 
-    def test_finds_in_second_folder(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_finds_in_second_folder(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         folder_a = tmp_path / "a"
         folder_b = tmp_path / "b"
         folder_a.mkdir()

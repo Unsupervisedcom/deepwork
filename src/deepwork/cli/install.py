@@ -54,7 +54,6 @@ def _install_schemas(schemas_dir: Path, project_path: Path) -> None:
         raise InstallError(f"Failed to install schemas: {e}") from e
 
 
-
 def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
     """
     Create .gitignore file in .deepwork/ directory.
