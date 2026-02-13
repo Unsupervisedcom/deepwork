@@ -29,11 +29,11 @@ Read the `job.yml` specification file created by the define step and generate co
 
 For each step in the job.yml, create a comprehensive instruction file at `.deepwork/jobs/[job_name]/steps/[step_id].md`.
 
-**Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.template` for the standard structure.
+**Template reference**: See `<job_dir>/templates/step_instruction.md.template` for the standard structure.
 
-**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.example` for a fully worked example.
+**Complete example**: See `<job_dir>/templates/step_instruction.md.example` for a fully worked example.
 
-**Available templates in `.deepwork/jobs/deepwork_jobs/templates/`:**
+**Available templates in `<job_dir>/templates/`** (replace `<job_dir>` with the `job_dir` path from the workflow response):
 - `job.yml.template` - Job specification structure
 - `step_instruction.md.template` - Step instruction file structure
 - `agents.md.template` - AGENTS.md file structure
@@ -86,7 +86,7 @@ This alignment ensures the AI agent knows exactly what will be validated and can
 
 Step instructions can include additional `.md` files in the `steps/` directory for detailed examples, templates, or reference material. Reference them using the full path from the project root.
 
-See `.deepwork/jobs/deepwork_jobs/steps/supplemental_file_references.md` for detailed documentation and examples.
+See `<job_dir>/steps/supplemental_file_references.md` for detailed documentation and examples.
 
 ### Step 3: Verify Files
 
@@ -97,8 +97,8 @@ Verify that all files are in their correct locations:
 ## Example Implementation
 
 For a complete worked example showing a job.yml and corresponding step instruction file, see:
-- **Job specification**: `.deepwork/jobs/deepwork_jobs/templates/job.yml.example`
-- **Step instruction**: `.deepwork/jobs/deepwork_jobs/templates/step_instruction.md.example`
+- **Job specification**: `<job_dir>/templates/job.yml.example`
+- **Step instruction**: `<job_dir>/templates/step_instruction.md.example`
 
 ## Important Guidelines
 

@@ -207,6 +207,10 @@ class ActiveStepInfo(BaseModel):
     session_id: str = Field(description="Unique session identifier")
     branch_name: str = Field(description="Git branch for this workflow instance")
     step_id: str = Field(description="ID of the current step")
+    job_dir: str = Field(
+        description="Absolute path to the job directory. Templates, scripts, "
+        "and other files referenced in step instructions live here."
+    )
     step_expected_outputs: list[ExpectedOutput] = Field(
         description="Expected outputs for this step, including type and format hints"
     )
