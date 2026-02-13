@@ -314,9 +314,9 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     console.print("[yellow]→[/yellow] Installing schemas...")
     _install_schemas(schemas_dir, project_path)
 
-    # Step 3c: Inject standard jobs (core job definitions)
-    console.print("[yellow]→[/yellow] Installing core job definitions...")
-    _inject_deepwork_jobs(jobs_dir, project_path)
+    # Note: Standard jobs (deepwork_jobs) are no longer copied into
+    # .deepwork/jobs/ during install.  They are loaded directly from
+    # the package's standard_jobs directory at runtime.
 
     # Step 3d: Create .gitignore for temporary files
     _create_deepwork_gitignore(deepwork_dir)

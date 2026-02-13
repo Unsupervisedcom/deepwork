@@ -15,6 +15,18 @@ from deepwork.mcp.state import StateError, StateManager
 from deepwork.mcp.tools import ToolError, WorkflowTools
 
 
+@pytest.fixture(autouse=True)
+def _isolate_job_folders(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prevent tests from picking up real standard_jobs from the package.
+
+    Each test gets only its own .deepwork/jobs/ directory.
+    """
+    monkeypatch.setattr(
+        "deepwork.core.jobs.get_job_folders",
+        lambda project_root: [project_root / ".deepwork" / "jobs"],
+    )
+
+
 @pytest.fixture
 def project_root(tmp_path: Path) -> Path:
     """Create a temporary project with a test job."""
@@ -114,7 +126,6 @@ class TestWorkflowTools:
     def test_init(self, tools: WorkflowTools, project_root: Path) -> None:
         """Test WorkflowTools initialization."""
         assert tools.project_root == project_root
-        assert tools.jobs_dir == project_root / ".deepwork" / "jobs"
 
     def test_get_workflows(self, tools: WorkflowTools) -> None:
         """Test getting all workflows."""

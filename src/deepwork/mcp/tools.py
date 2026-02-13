@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 import aiofiles
 
+from deepwork.core.jobs import find_job_dir, load_all_jobs
 from deepwork.core.parser import (
     JobDefinition,
     OutputSpec,
@@ -72,33 +73,18 @@ class WorkflowTools:
                 "claude" uses Claude CLI subprocess. None means agent self-review.
         """
         self.project_root = project_root
-        self.jobs_dir = project_root / ".deepwork" / "jobs"
         self.state_manager = state_manager
         self.quality_gate = quality_gate
         self.max_quality_attempts = max_quality_attempts
         self.external_runner = external_runner
 
     def _load_all_jobs(self) -> list[JobDefinition]:
-        """Load all job definitions from the jobs directory.
+        """Load all job definitions from all configured job folders.
 
         Returns:
             List of parsed JobDefinition objects
         """
-        jobs: list[JobDefinition] = []
-
-        if not self.jobs_dir.exists():
-            return jobs
-
-        for job_dir in self.jobs_dir.iterdir():
-            if job_dir.is_dir() and (job_dir / "job.yml").exists():
-                try:
-                    job = parse_job_definition(job_dir)
-                    jobs.append(job)
-                except ParseError as e:
-                    logger.warning("Skipping invalid job '%s': %s", job_dir.name, e)
-                    continue
-
-        return jobs
+        return load_all_jobs(self.project_root)
 
     def _job_to_info(self, job: JobDefinition) -> JobInfo:
         """Convert a JobDefinition to JobInfo for response.
@@ -128,6 +114,8 @@ class WorkflowTools:
     def _get_job(self, job_name: str) -> JobDefinition:
         """Get a specific job by name.
 
+        Searches all configured job folders for the named job.
+
         Args:
             job_name: Job name to find
 
@@ -137,8 +125,8 @@ class WorkflowTools:
         Raises:
             ToolError: If job not found
         """
-        job_dir = self.jobs_dir / job_name
-        if not job_dir.exists():
+        job_dir = find_job_dir(self.project_root, job_name)
+        if job_dir is None:
             raise ToolError(f"Job not found: {job_name}")
 
         try:
