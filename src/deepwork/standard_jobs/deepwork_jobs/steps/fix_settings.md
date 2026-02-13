@@ -172,6 +172,6 @@ If there are syntax errors, fix them before proceeding.
 ## Important Notes
 
 1. **Don't remove non-DeepWork permissions** - Keep permissions like `WebSearch`, `Read(...)`, `Bash(...)` that aren't related to old DeepWork skills
-2. **Preserve `make_new_job.sh`** - Keep any `Bash(...)` permission referencing `make_new_job.sh` (e.g., `Bash(.deepwork/jobs/deepwork_jobs/scripts/make_new_job.sh *)`) - this is a current DeepWork script
+2. **Remove stale `make_new_job.sh` permissions** - Remove any `Bash(...)` permission referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` — this script now lives in the package and is accessed via the `job_dir` path
 3. **Be conservative** - If unsure whether something is legacy, ask the user
 4. **Document changes** - Note what was removed for the final summary

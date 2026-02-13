@@ -304,6 +304,7 @@ class TestActiveStepInfo:
             session_id="abc123",
             branch_name="deepwork/test-main-20240101",
             step_id="step1",
+            job_dir="/tmp/test_job",
             step_expected_outputs=expected,
             step_reviews=[
                 ReviewInfo(
@@ -317,6 +318,7 @@ class TestActiveStepInfo:
         assert step_info.session_id == "abc123"
         assert step_info.branch_name == "deepwork/test-main-20240101"
         assert step_info.step_id == "step1"
+        assert step_info.job_dir == "/tmp/test_job"
         assert len(step_info.step_expected_outputs) == 1
         assert step_info.step_expected_outputs[0].name == "output.md"
         assert step_info.step_expected_outputs[0].type == "file"
@@ -331,6 +333,7 @@ class TestActiveStepInfo:
             session_id="abc123",
             branch_name="deepwork/test-main-20240101",
             step_id="step1",
+            job_dir="/tmp/test_job",
             step_expected_outputs=[
                 ExpectedOutput(
                     name="output.md",
@@ -356,6 +359,7 @@ class TestStartWorkflowResponse:
                 session_id="abc123",
                 branch_name="deepwork/test-main-20240101",
                 step_id="step1",
+                job_dir="/tmp/test_job",
                 step_expected_outputs=[
                     ExpectedOutput(
                         name="output.md",
@@ -408,6 +412,7 @@ class TestFinishedStepResponse:
                 session_id="abc123",
                 branch_name="deepwork/test-main-20240101",
                 step_id="step2",
+                job_dir="/tmp/test_job",
                 step_expected_outputs=[
                     ExpectedOutput(
                         name="output2.md",

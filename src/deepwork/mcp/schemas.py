@@ -6,7 +6,7 @@ update the documentation in doc/mcp_interface.md to keep it in sync with
 the implementation.
 """
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 # =============================================================================
 
 
-class StepStatus(str, Enum):
+class StepStatus(StrEnum):
     """Status returned from finished_step."""
 
     NEEDS_WORK = "needs_work"
@@ -207,6 +207,10 @@ class ActiveStepInfo(BaseModel):
     session_id: str = Field(description="Unique session identifier")
     branch_name: str = Field(description="Git branch for this workflow instance")
     step_id: str = Field(description="ID of the current step")
+    job_dir: str = Field(
+        description="Absolute path to the job directory. Templates, scripts, "
+        "and other files referenced in step instructions live here."
+    )
     step_expected_outputs: list[ExpectedOutput] = Field(
         description="Expected outputs for this step, including type and format hints"
     )

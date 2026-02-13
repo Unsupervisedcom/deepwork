@@ -1,5 +1,6 @@
 """Sync command for DeepWork CLI."""
 
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from rich.table import Table
 from deepwork.core.adapters import AgentAdapter
 from deepwork.core.generator import SkillGenerator
 from deepwork.core.hooks_syncer import collect_job_hooks, sync_hooks_to_platform
+from deepwork.core.jobs import get_job_folders
 from deepwork.core.parser import parse_job_definition
 from deepwork.utils.fs import ensure_dir
 from deepwork.utils.yaml_utils import load_yaml
@@ -36,6 +38,25 @@ class SyncResult:
     def has_warnings(self) -> bool:
         """Return True if there were any warnings during sync."""
         return len(self.warnings) > 0
+
+
+def _migrate_remove_synced_standard_jobs(deepwork_dir: Path) -> None:
+    """Remove standard jobs that were previously synced into .deepwork/jobs/.
+
+    Standard jobs are now loaded directly from the package source, so the
+    copied ``deepwork_jobs`` folder inside ``.deepwork/jobs/`` is no longer
+    needed.  This helper silently removes it when present to keep existing
+    installs tidy.
+    """
+    synced_standard = deepwork_dir / "jobs" / "deepwork_jobs"
+    if synced_standard.exists():
+        try:
+            shutil.rmtree(synced_standard)
+            console.print(
+                "  [dim]•[/dim] Removed legacy .deepwork/jobs/deepwork_jobs (now loaded from package)"
+            )
+        except OSError:
+            pass  # best-effort cleanup
 
 
 @click.command()
@@ -136,12 +157,21 @@ def sync_skills(project_path: Path) -> SyncResult:
 
         all_skill_paths_by_platform[platform_name] = all_skill_paths
 
-    # Discover jobs
-    jobs_dir = deepwork_dir / "jobs"
-    if not jobs_dir.exists():
-        job_dirs = []
-    else:
-        job_dirs = [d for d in jobs_dir.iterdir() if d.is_dir() and (d / "job.yml").exists()]
+    # Migration: remove synced standard jobs from .deepwork/jobs/ since they
+    # are now loaded directly from the package's standard_jobs directory.
+    _migrate_remove_synced_standard_jobs(deepwork_dir)
+
+    # Discover jobs from all configured job folders
+    job_folders = get_job_folders(project_path)
+    job_dirs: list[Path] = []
+    seen_names: set[str] = set()
+    for folder in job_folders:
+        if not folder.exists() or not folder.is_dir():
+            continue
+        for d in sorted(folder.iterdir()):
+            if d.is_dir() and (d / "job.yml").exists() and d.name not in seen_names:
+                job_dirs.append(d)
+                seen_names.add(d.name)
 
     console.print(f"\n[yellow]→[/yellow] Found {len(job_dirs)} job(s) to sync")
 
@@ -169,8 +199,16 @@ def sync_skills(project_path: Path) -> SyncResult:
             "[dim]The /deepwork skill is installed. Fix the job errors and run 'deepwork sync' again.[/dim]"
         )
 
-    # Collect hooks from jobs (hooks collection is independent of job.yml parsing)
-    job_hooks_list = collect_job_hooks(jobs_dir)
+    # Collect hooks from jobs across all job folders
+    job_hooks_list: list = []
+    seen_hook_jobs: set[str] = set()
+    for folder in job_folders:
+        if not folder.exists() or not folder.is_dir():
+            continue
+        for jh in collect_job_hooks(folder):
+            if jh.job_name not in seen_hook_jobs:
+                job_hooks_list.append(jh)
+                seen_hook_jobs.add(jh.job_name)
     if job_hooks_list:
         console.print(f"\n[yellow]→[/yellow] Found {len(job_hooks_list)} job(s) with hooks")
 
