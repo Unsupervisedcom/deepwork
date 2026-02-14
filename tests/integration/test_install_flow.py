@@ -128,6 +128,51 @@ class TestInstallCommand:
         # so we don't assert on Gemini skill existence - the install will show
         # an error for Gemini skill generation but continue
 
+    def test_install_with_codex(self, mock_codex_project: Path) -> None:
+        """Test installing DeepWork in a Codex CLI project."""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            ["install", "--platform", "codex", "--path", str(mock_codex_project)],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+        assert "DeepWork Installation" in result.output
+        assert "Git repository found" in result.output
+        assert "Codex CLI detected" in result.output
+        assert "DeepWork installed successfully" in result.output
+
+        # Verify directory structure
+        deepwork_dir = mock_codex_project / ".deepwork"
+        assert deepwork_dir.exists()
+        assert (deepwork_dir / "jobs").exists()
+
+        # Verify config.yml
+        config_file = deepwork_dir / "config.yml"
+        assert config_file.exists()
+        config = load_yaml(config_file)
+        assert config is not None
+        assert "codex" in config["platforms"]
+
+        # Verify MCP entry point skill was created (deepwork/SKILL.md)
+        codex_dir = mock_codex_project / ".codex" / "skills"
+        assert (codex_dir / "deepwork" / "SKILL.md").exists()
+
+        # Verify deepwork skill content references MCP tools
+        deepwork_skill = (codex_dir / "deepwork" / "SKILL.md").read_text()
+        assert "deepwork" in deepwork_skill.lower()
+
+        # Verify MCP server registered in .codex/config.toml
+        config_toml = mock_codex_project / ".codex" / "config.toml"
+        assert config_toml.exists()
+        toml_content = config_toml.read_text()
+        assert "[mcp_servers.deepwork]" in toml_content
+        assert 'command = "deepwork"' in toml_content
+        # No --external-runner flag for Codex (uses self-review mode)
+        assert "external-runner" not in toml_content
+
     def test_install_with_specified_platform_when_missing(self, mock_git_repo: Path) -> None:
         """Test that install fails when specified platform is not present."""
         runner = CliRunner()

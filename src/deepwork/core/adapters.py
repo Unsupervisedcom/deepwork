@@ -628,3 +628,141 @@ class GeminiAdapter(AgentAdapter):
         # Gemini CLI does not support skill-level hooks
         # Hooks are configured globally in settings.json, not per-skill
         return 0
+
+
+class CodexAdapter(AgentAdapter):
+    """Adapter for OpenAI Codex CLI.
+
+    Codex CLI uses SKILL.md files in .codex/skills/ folders (same naming as Claude).
+    MCP servers are registered in .codex/config.toml under [mcp_servers.<name>].
+
+    Codex does NOT support skill-level hooks, so hook_name_mapping is empty.
+    Codex uses the self-review quality gate path (external_runner=None) since
+    there is no Codex CLI subprocess for running reviews.
+    """
+
+    name = "codex"
+    display_name = "Codex CLI"
+    config_dir = ".codex"
+
+    # Codex CLI does NOT support skill-level hooks
+    hook_name_mapping: ClassVar[dict[SkillLifecycleHook, str]] = {}
+
+    def sync_hooks(self, project_path: Path, hooks: dict[str, list[dict[str, Any]]]) -> int:
+        """
+        Sync hooks to Codex CLI settings.
+
+        Codex CLI does not support skill-level hooks. This method is a no-op.
+
+        Args:
+            project_path: Path to project root
+            hooks: Dict mapping lifecycle events to hook configurations (ignored)
+
+        Returns:
+            0 (Codex does not support skill-level hooks)
+        """
+        return 0
+
+    def register_mcp_server(self, project_path: Path) -> bool:
+        """
+        Register the DeepWork MCP server in .codex/config.toml.
+
+        Codex CLI reads MCP server configurations from config.toml using
+        [mcp_servers.<name>] TOML tables. No --external-runner flag is passed,
+        so the server uses self-review mode for quality gates.
+
+        Args:
+            project_path: Path to project root
+
+        Returns:
+            True if server was registered or updated, False if no changes needed
+
+        Raises:
+            AdapterError: If registration fails
+        """
+        try:
+            import tomllib
+        except ModuleNotFoundError:
+            import tomli as tomllib  # type: ignore[no-redef]
+
+        config_file = project_path / self.config_dir / "config.toml"
+
+        # Load existing config.toml or start fresh
+        existing_config: dict[str, Any] = {}
+        if config_file.exists():
+            try:
+                with open(config_file, "rb") as f:
+                    existing_config = tomllib.load(f)
+            except Exception as e:
+                raise AdapterError(f"Failed to read .codex/config.toml: {e}") from e
+
+        # Build the expected MCP server config
+        # No --external-runner flag: quality gates use self-review mode
+        new_server_config = {
+            "command": "deepwork",
+            "args": ["serve", "--path", "."],
+        }
+
+        # Check if already registered with same config
+        mcp_servers = existing_config.get("mcp_servers", {})
+        existing_server = mcp_servers.get("deepwork", {})
+        if (
+            existing_server.get("command") == new_server_config["command"]
+            and existing_server.get("args") == new_server_config["args"]
+        ):
+            return False
+
+        # Write config.toml with the MCP server entry
+        # We use a targeted approach: read existing content and append/update
+        # the [mcp_servers.deepwork] section
+        self._write_mcp_server_to_config(config_file, new_server_config)
+
+        return True
+
+    def _write_mcp_server_to_config(
+        self, config_file: Path, server_config: dict[str, Any]
+    ) -> None:
+        """
+        Write or update the [mcp_servers.deepwork] section in config.toml.
+
+        Args:
+            config_file: Path to .codex/config.toml
+            server_config: Server configuration dict with command and args
+
+        Raises:
+            AdapterError: If write fails
+        """
+        import re
+
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+
+        # Read existing content
+        existing_content = ""
+        if config_file.exists():
+            try:
+                existing_content = config_file.read_text(encoding="utf-8")
+            except OSError as e:
+                raise AdapterError(f"Failed to read {config_file}: {e}") from e
+
+        # Build the TOML section
+        args_toml = ", ".join(f'"{a}"' for a in server_config["args"])
+        new_section = (
+            f'[mcp_servers.deepwork]\n'
+            f'command = "{server_config["command"]}"\n'
+            f'args = [{args_toml}]\n'
+        )
+
+        # Replace existing section or append
+        pattern = r'\[mcp_servers\.deepwork\]\n(?:[^\[]*?)(?=\n\[|\Z)'
+        if re.search(pattern, existing_content, re.DOTALL):
+            updated_content = re.sub(pattern, new_section.rstrip(), existing_content, flags=re.DOTALL)
+        else:
+            # Append to end
+            separator = "\n" if existing_content and not existing_content.endswith("\n") else ""
+            extra_newline = "\n" if existing_content.strip() else ""
+            updated_content = existing_content + separator + extra_newline + new_section
+
+        try:
+            config_file.write_text(updated_content, encoding="utf-8")
+        except OSError as e:
+            raise AdapterError(f"Failed to write {config_file}: {e}") from e

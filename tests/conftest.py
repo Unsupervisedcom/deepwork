@@ -48,6 +48,14 @@ def mock_multi_platform_project(mock_git_repo: Path) -> Path:
 
 
 @pytest.fixture
+def mock_codex_project(mock_git_repo: Path) -> Path:
+    """Create a mock project with Codex CLI setup."""
+    codex_dir = mock_git_repo / ".codex"
+    codex_dir.mkdir(exist_ok=True)
+    return mock_git_repo
+
+
+@pytest.fixture
 def fixtures_dir() -> Path:
     """Return the path to the fixtures directory."""
     return Path(__file__).parent / "fixtures"
