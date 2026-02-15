@@ -19,12 +19,12 @@ Old DeepWork versions created individual skill folders for each job and step. Th
    ls .deepwork/jobs/
    ```
 
-2. **For each job**, kick off a sub-agent to find and remove legacy skill folders. The sub-agent should be concise — output minimal text, only reporting what was removed or confirming nothing was found. Do not narrate the process or echo commands. The sub-agent should:
-   - Search in both `.claude/skills/` and `.gemini/skills/`
-   - Find folders matching:
+2. **Kick off a single sub-agent** to remove all legacy skill folders for every job at once. Be concise — output minimal text, only reporting what was removed or confirming nothing was found. The sub-agent should:
+   - For each job in `.deepwork/jobs/`, search in both `.claude/skills/` and `.gemini/skills/` for folders matching:
      - `{job_name}/` - folder named exactly like the job
      - `{job_name}.*/` - folders starting with the job name followed by a period (e.g., `my_job.step1/`, `my_job.step2/`)
    - Remove each matching folder
+   - **Do NOT remove** `.claude/skills/deepwork/` or `.gemini/skills/deepwork/`
    - Report only: what was removed (one line per folder) or "No legacy folders found"
 
    **Example commands for a job named `competitive_research`:**
@@ -38,9 +38,7 @@ Old DeepWork versions created individual skill folders for each job and step. Th
    rm -rf .gemini/skills/competitive_research.*/ 2>/dev/null
    ```
 
-3. **Run sub-agents in parallel** - one for each job to speed up the process.
-
-4. **Verify the `deepwork` skill folder remains:**
+3. **Verify the `deepwork` skill folder remains:**
    ```bash
    ls -d .claude/skills/deepwork/ 2>/dev/null || echo "ERROR: deepwork skill missing!"
    ls -d .gemini/skills/deepwork/ 2>/dev/null || echo "WARNING: gemini deepwork skill missing (may not have been installed)"
