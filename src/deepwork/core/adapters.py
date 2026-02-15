@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -15,7 +15,7 @@ class AdapterError(Exception):
     pass
 
 
-class SkillLifecycleHook(str, Enum):
+class SkillLifecycleHook(StrEnum):
     """Generic skill lifecycle hook events supported by DeepWork.
 
     These represent hook points in the AI agent's skill execution lifecycle.
@@ -562,9 +562,10 @@ class ClaudeAdapter(AgentAdapter):
 
         # Build the new MCP server config
         # Assume deepwork is available in PATH
+        # Include --external-runner claude so quality gate reviews use Claude CLI subprocess
         new_server_config = {
             "command": "deepwork",
-            "args": ["serve", "--path", "."],
+            "args": ["serve", "--path", ".", "--external-runner", "claude"],
         }
 
         # Check if already registered with same config

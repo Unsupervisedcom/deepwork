@@ -12,6 +12,9 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import aiofiles
+
+from deepwork.core.jobs import find_job_dir, load_all_jobs
 from deepwork.core.parser import (
     JobDefinition,
     OutputSpec,
@@ -57,6 +60,7 @@ class WorkflowTools:
         state_manager: StateManager,
         quality_gate: QualityGate | None = None,
         max_quality_attempts: int = 3,
+        external_runner: str | None = None,
     ):
         """Initialize workflow tools.
 
@@ -65,34 +69,22 @@ class WorkflowTools:
             state_manager: State manager instance
             quality_gate: Optional quality gate for step validation
             max_quality_attempts: Maximum attempts before failing quality gate
+            external_runner: External runner for quality gate reviews.
+                "claude" uses Claude CLI subprocess. None means agent self-review.
         """
         self.project_root = project_root
-        self.jobs_dir = project_root / ".deepwork" / "jobs"
         self.state_manager = state_manager
         self.quality_gate = quality_gate
         self.max_quality_attempts = max_quality_attempts
+        self.external_runner = external_runner
 
     def _load_all_jobs(self) -> list[JobDefinition]:
-        """Load all job definitions from the jobs directory.
+        """Load all job definitions from all configured job folders.
 
         Returns:
             List of parsed JobDefinition objects
         """
-        jobs: list[JobDefinition] = []
-
-        if not self.jobs_dir.exists():
-            return jobs
-
-        for job_dir in self.jobs_dir.iterdir():
-            if job_dir.is_dir() and (job_dir / "job.yml").exists():
-                try:
-                    job = parse_job_definition(job_dir)
-                    jobs.append(job)
-                except ParseError as e:
-                    logger.warning("Skipping invalid job '%s': %s", job_dir.name, e)
-                    continue
-
-        return jobs
+        return load_all_jobs(self.project_root)
 
     def _job_to_info(self, job: JobDefinition) -> JobInfo:
         """Convert a JobDefinition to JobInfo for response.
@@ -122,6 +114,8 @@ class WorkflowTools:
     def _get_job(self, job_name: str) -> JobDefinition:
         """Get a specific job by name.
 
+        Searches all configured job folders for the named job.
+
         Args:
             job_name: Job name to find
 
@@ -131,8 +125,8 @@ class WorkflowTools:
         Raises:
             ToolError: If job not found
         """
-        job_dir = self.jobs_dir / job_name
-        if not job_dir.exists():
+        job_dir = find_job_dir(self.project_root, job_name)
+        if job_dir is None:
             raise ToolError(f"Job not found: {job_name}")
 
         try:
@@ -343,6 +337,7 @@ class WorkflowTools:
                 session_id=session.session_id,
                 branch_name=session.branch_name,
                 step_id=first_step_id,
+                job_dir=str(job.job_dir),
                 step_expected_outputs=step_outputs,
                 step_reviews=[
                     ReviewInfo(
@@ -391,45 +386,89 @@ class WorkflowTools:
             and current_step.reviews
             and not input_data.quality_review_override_reason
         ):
-            attempts = await self.state_manager.record_quality_attempt(
-                current_step_id, session_id=sid
-            )
-
-            # Build output specs map for evaluate_reviews
+            # Build review dicts and output specs used by both paths
+            review_dicts = [
+                {
+                    "run_each": r.run_each,
+                    "quality_criteria": r.quality_criteria,
+                    "additional_review_guidance": r.additional_review_guidance,
+                }
+                for r in current_step.reviews
+            ]
             output_specs = {out.name: out.type for out in current_step.outputs}
 
-            failed_reviews = await self.quality_gate.evaluate_reviews(
-                reviews=[
-                    {
-                        "run_each": r.run_each,
-                        "quality_criteria": r.quality_criteria,
-                        "additional_review_guidance": r.additional_review_guidance,
-                    }
-                    for r in current_step.reviews
-                ],
-                outputs=input_data.outputs,
-                output_specs=output_specs,
-                project_root=self.project_root,
-                notes=input_data.notes,
-            )
+            if self.external_runner is None:
+                # Self-review mode: build instructions file and return guidance
+                # to the agent to verify its own work via a subagent.
+                review_content = await self.quality_gate.build_review_instructions_file(
+                    reviews=review_dicts,
+                    outputs=input_data.outputs,
+                    output_specs=output_specs,
+                    project_root=self.project_root,
+                    notes=input_data.notes,
+                )
 
-            if failed_reviews:
-                # Check max attempts
-                if attempts >= self.max_quality_attempts:
-                    feedback_parts = [r.feedback for r in failed_reviews]
-                    raise ToolError(
-                        f"Quality gate failed after {self.max_quality_attempts} attempts. "
-                        f"Feedback: {'; '.join(feedback_parts)}"
-                    )
+                # Write instructions to .deepwork/tmp/
+                tmp_dir = self.project_root / ".deepwork" / "tmp"
+                tmp_dir.mkdir(parents=True, exist_ok=True)
+                review_filename = f"quality_review_{sid}_{current_step_id}.md"
+                review_file_path = tmp_dir / review_filename
+                async with aiofiles.open(review_file_path, "w", encoding="utf-8") as f:
+                    await f.write(review_content)
 
-                # Return needs_work status
-                combined_feedback = "; ".join(r.feedback for r in failed_reviews)
+                relative_path = f".deepwork/tmp/{review_filename}"
+                feedback = (
+                    f"Quality review required. Review instructions have been written to: "
+                    f"{relative_path}\n\n"
+                    f"Verify the quality of your work:\n"
+                    f'1. Spawn a subagent with the prompt: "Read the file at '
+                    f"{relative_path} and follow the instructions in it. "
+                    f"Review the referenced output files and evaluate them against "
+                    f'the criteria specified. Report your detailed findings."\n'
+                    f"2. Review the subagent's findings\n"
+                    f"3. Fix any issues identified by the subagent\n"
+                    f"4. Repeat steps 1-3 until all criteria pass\n"
+                    f"5. Once all criteria pass, call finished_step again with "
+                    f"quality_review_override_reason set to describe the "
+                    f"review outcome (e.g. 'Self-review passed: all criteria met')"
+                )
+
                 return FinishedStepResponse(
                     status=StepStatus.NEEDS_WORK,
-                    feedback=combined_feedback,
-                    failed_reviews=failed_reviews,
+                    feedback=feedback,
                     stack=self.state_manager.get_stack(),
                 )
+            else:
+                # External runner mode: use quality gate subprocess evaluation
+                attempts = await self.state_manager.record_quality_attempt(
+                    current_step_id, session_id=sid
+                )
+
+                failed_reviews = await self.quality_gate.evaluate_reviews(
+                    reviews=review_dicts,
+                    outputs=input_data.outputs,
+                    output_specs=output_specs,
+                    project_root=self.project_root,
+                    notes=input_data.notes,
+                )
+
+                if failed_reviews:
+                    # Check max attempts
+                    if attempts >= self.max_quality_attempts:
+                        feedback_parts = [r.feedback for r in failed_reviews]
+                        raise ToolError(
+                            f"Quality gate failed after {self.max_quality_attempts} attempts. "
+                            f"Feedback: {'; '.join(feedback_parts)}"
+                        )
+
+                    # Return needs_work status
+                    combined_feedback = "; ".join(r.feedback for r in failed_reviews)
+                    return FinishedStepResponse(
+                        status=StepStatus.NEEDS_WORK,
+                        feedback=combined_feedback,
+                        failed_reviews=failed_reviews,
+                        stack=self.state_manager.get_stack(),
+                    )
 
         # Mark step as completed
         await self.state_manager.complete_step(
@@ -492,6 +531,7 @@ class WorkflowTools:
                 session_id=session.session_id,
                 branch_name=session.branch_name,
                 step_id=next_step_id,
+                job_dir=str(job.job_dir),
                 step_expected_outputs=step_outputs,
                 step_reviews=[
                     ReviewInfo(

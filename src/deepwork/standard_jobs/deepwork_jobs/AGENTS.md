@@ -5,27 +5,15 @@ This is the source of truth for the `deepwork_jobs` standard job.
 ## Codebase Structure
 
 - Source location: `src/deepwork/standard_jobs/deepwork_jobs/`
-- Working copy: `.deepwork/jobs/deepwork_jobs/`
-- Templates: `templates/` directory within each location
+- Templates: `templates/` directory within the job directory
+- Loaded at runtime directly from the package (no copy into `.deepwork/jobs/`)
 
-## Dual Location Maintenance
+## Location
 
-**Important**: This job exists in two locations that must be kept in sync:
-
-1. **Source of truth**: `src/deepwork/standard_jobs/deepwork_jobs/`
-   - This is where changes should be made first
-   - Tracked in version control
-
-2. **Working copy**: `.deepwork/jobs/deepwork_jobs/`
-   - Must be updated after changes to source
-   - Used by the MCP server at runtime
-
-After making changes to the source, run `deepwork install` or manually copy:
-```bash
-cp src/deepwork/standard_jobs/deepwork_jobs/job.yml .deepwork/jobs/deepwork_jobs/
-cp src/deepwork/standard_jobs/deepwork_jobs/steps/*.md .deepwork/jobs/deepwork_jobs/steps/
-cp -r src/deepwork/standard_jobs/deepwork_jobs/templates/* .deepwork/jobs/deepwork_jobs/templates/
-```
+This job lives in the DeepWork package source at `src/deepwork/standard_jobs/deepwork_jobs/`.
+It is loaded directly at runtime by the multi-folder job discovery system — there is no
+separate "working copy" in `.deepwork/jobs/`. The MCP server returns the job directory path
+as `job_dir` in workflow responses so agents can find templates and scripts.
 
 ## File Organization
 

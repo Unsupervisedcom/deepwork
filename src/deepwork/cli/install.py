@@ -54,73 +54,6 @@ def _install_schemas(schemas_dir: Path, project_path: Path) -> None:
         raise InstallError(f"Failed to install schemas: {e}") from e
 
 
-def _inject_standard_job(job_name: str, jobs_dir: Path, project_path: Path) -> None:
-    """
-    Inject a standard job definition into the project.
-
-    Args:
-        job_name: Name of the standard job to inject
-        jobs_dir: Path to .deepwork/jobs directory
-        project_path: Path to project root (for relative path display)
-
-    Raises:
-        InstallError: If injection fails
-    """
-    # Find the standard jobs directory
-    standard_jobs_dir = Path(__file__).parent.parent / "standard_jobs" / job_name
-
-    if not standard_jobs_dir.exists():
-        raise InstallError(
-            f"Standard job '{job_name}' not found at {standard_jobs_dir}. "
-            "DeepWork installation may be corrupted."
-        )
-
-    # Target directory
-    target_dir = jobs_dir / job_name
-
-    # Copy the entire directory
-    try:
-        if target_dir.exists():
-            # Remove existing if present (for reinstall/upgrade)
-            shutil.rmtree(target_dir)
-
-        shutil.copytree(standard_jobs_dir, target_dir)
-        # Fix permissions - source may have restrictive permissions (e.g., read-only)
-        fix_permissions(target_dir)
-        console.print(
-            f"  [green]✓[/green] Installed {job_name} ({target_dir.relative_to(project_path)})"
-        )
-
-        # Copy any doc specs from the standard job to .deepwork/doc_specs/
-        doc_specs_source = standard_jobs_dir / "doc_specs"
-        doc_specs_target = project_path / ".deepwork" / "doc_specs"
-        if doc_specs_source.exists():
-            for doc_spec_file in doc_specs_source.glob("*.md"):
-                target_doc_spec = doc_specs_target / doc_spec_file.name
-                shutil.copy(doc_spec_file, target_doc_spec)
-                # Fix permissions for copied doc spec
-                fix_permissions(target_doc_spec)
-                console.print(
-                    f"  [green]✓[/green] Installed doc spec {doc_spec_file.name} ({target_doc_spec.relative_to(project_path)})"
-                )
-    except Exception as e:
-        raise InstallError(f"Failed to install {job_name}: {e}") from e
-
-
-def _inject_deepwork_jobs(jobs_dir: Path, project_path: Path) -> None:
-    """
-    Inject the deepwork_jobs job definition into the project.
-
-    Args:
-        jobs_dir: Path to .deepwork/jobs directory
-        project_path: Path to project root (for relative path display)
-
-    Raises:
-        InstallError: If injection fails
-    """
-    _inject_standard_job("deepwork_jobs", jobs_dir, project_path)
-
-
 def _create_deepwork_gitignore(deepwork_dir: Path) -> None:
     """
     Create .gitignore file in .deepwork/ directory.
@@ -314,9 +247,9 @@ def _install_deepwork(platform_name: str | None, project_path: Path) -> None:
     console.print("[yellow]→[/yellow] Installing schemas...")
     _install_schemas(schemas_dir, project_path)
 
-    # Step 3c: Inject standard jobs (core job definitions)
-    console.print("[yellow]→[/yellow] Installing core job definitions...")
-    _inject_deepwork_jobs(jobs_dir, project_path)
+    # Note: Standard jobs (deepwork_jobs) are no longer copied into
+    # .deepwork/jobs/ during install.  They are loaded directly from
+    # the package's standard_jobs directory at runtime.
 
     # Step 3d: Create .gitignore for temporary files
     _create_deepwork_gitignore(deepwork_dir)

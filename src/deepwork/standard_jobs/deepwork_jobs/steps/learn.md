@@ -144,7 +144,7 @@ The AGENTS.md file captures project-specific knowledge that helps future agent r
    - This keeps AGENTS.md in sync as the codebase evolves
    - Pattern: "See `path/to/file.ext` for [description]"
 
-3. **AGENTS.md structure**: See `.deepwork/jobs/deepwork_jobs/templates/agents.md.template` for the standard format.
+3. **AGENTS.md structure**: See `<job_dir>/templates/agents.md.template` for the standard format.
 
 4. **Writing entries**
    - Be concise but specific

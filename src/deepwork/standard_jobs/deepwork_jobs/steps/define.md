@@ -270,19 +270,19 @@ reviews: []
 
 Only after you have complete understanding, create the job directory and `job.yml` file:
 
-**First, create the directory structure** using the `make_new_job.sh` script:
+**First, create the directory structure** using the `make_new_job.sh` script located in this job's directory (the `job_dir` path from the workflow response):
 
 ```bash
-.deepwork/jobs/deepwork_jobs/make_new_job.sh [job_name]
+<job_dir>/make_new_job.sh [job_name]
 ```
 
 **Then create the job.yml file** at `.deepwork/jobs/[job_name]/job.yml`
 
-(Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`)
+(Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`. Replace `<job_dir>` with the actual `job_dir` path from the workflow response.)
 
-**Template reference**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.template` for the standard structure.
+**Template reference**: See `<job_dir>/templates/job.yml.template` for the standard structure.
 
-**Complete example**: See `.deepwork/jobs/deepwork_jobs/templates/job.yml.example` for a fully worked example.
+**Complete example**: See `<job_dir>/templates/job.yml.example` for a fully worked example.
 
 **Important**:
 - Use lowercase with underscores for job name and step IDs

@@ -41,18 +41,18 @@ import json
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class Platform(str, Enum):
+class Platform(StrEnum):
     """Supported AI CLI platforms."""
 
     CLAUDE = "claude"
     GEMINI = "gemini"
 
 
-class NormalizedEvent(str, Enum):
+class NormalizedEvent(StrEnum):
     """Normalized hook event names."""
 
     AFTER_AGENT = "after_agent"

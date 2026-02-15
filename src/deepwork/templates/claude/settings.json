@@ -5,7 +5,6 @@
       "Edit(./.deepwork/**)",
       "Write(./.deepwork/**)",
       "Bash(deepwork:*)",
-      "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
       "WebSearch",
       "mcp__deepwork__get_workflows",
       "mcp__deepwork__start_workflow",

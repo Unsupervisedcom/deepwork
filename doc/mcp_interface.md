@@ -152,6 +152,7 @@ interface ActiveStepInfo {
   session_id: string;              // Unique session identifier
   branch_name: string;             // Git branch for this workflow instance
   step_id: string;                 // ID of the current step
+  job_dir: string;                 // Absolute path to job directory (templates, scripts, etc.)
   step_expected_outputs: ExpectedOutput[]; // Expected outputs with type and format hints
   step_reviews: ReviewInfo[];      // Reviews to run when step completes
   step_instructions: string;       // Instructions for the step

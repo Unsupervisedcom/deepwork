@@ -46,10 +46,11 @@ def output_file(project_root: Path) -> Path:
 class TestQualityGate:
     """Tests for QualityGate class."""
 
-    def test_init_default_cli(self) -> None:
-        """Test QualityGate creates a default ClaudeCLI if none provided."""
+    def test_init_no_cli(self) -> None:
+        """Test QualityGate with no CLI provided has _cli=None and default max_inline_files."""
         gate = QualityGate()
-        assert isinstance(gate._cli, ClaudeCLI)
+        assert gate._cli is None
+        assert gate.max_inline_files == QualityGate.DEFAULT_MAX_INLINE_FILES
 
     def test_init_custom_cli(self, mock_cli: ClaudeCLI) -> None:
         """Test QualityGate uses provided ClaudeCLI."""
@@ -509,7 +510,7 @@ class TestEvaluateReviews:
 
 
 class TestBuildPayloadLargeFileSet:
-    """Tests for _build_payload behavior when file count exceeds MAX_INLINE_FILES."""
+    """Tests for _build_payload behavior when file count exceeds max_inline_files."""
 
     async def test_payload_lists_paths_when_over_threshold(
         self, quality_gate: QualityGate, project_root: Path
@@ -756,3 +757,299 @@ class TestMockQualityGate:
         )
 
         assert gate.evaluations[0]["additional_review_guidance"] is None
+
+
+class TestConfigurableMaxInlineFiles:
+    """Tests for configurable max_inline_files on QualityGate."""
+
+    def test_default_max_inline_files(self) -> None:
+        """Test QualityGate defaults to DEFAULT_MAX_INLINE_FILES."""
+        gate = QualityGate()
+        assert gate.max_inline_files == QualityGate.DEFAULT_MAX_INLINE_FILES
+        assert gate.max_inline_files == 5
+
+    def test_custom_max_inline_files(self) -> None:
+        """Test QualityGate respects explicit max_inline_files."""
+        gate = QualityGate(max_inline_files=10)
+        assert gate.max_inline_files == 10
+
+    def test_zero_max_inline_files(self) -> None:
+        """Test QualityGate with max_inline_files=0 always lists paths."""
+        gate = QualityGate(max_inline_files=0)
+        assert gate.max_inline_files == 0
+
+    def test_max_inline_files_none_uses_default(self) -> None:
+        """Test that passing None explicitly uses the default."""
+        gate = QualityGate(max_inline_files=None)
+        assert gate.max_inline_files == QualityGate.DEFAULT_MAX_INLINE_FILES
+
+    def test_cli_and_max_inline_files_independent(self, mock_cli: ClaudeCLI) -> None:
+        """Test that cli and max_inline_files are independent parameters."""
+        gate = QualityGate(cli=mock_cli, max_inline_files=3)
+        assert gate._cli is mock_cli
+        assert gate.max_inline_files == 3
+
+    async def test_zero_max_inline_always_lists_paths(self, project_root: Path) -> None:
+        """Test that max_inline_files=0 uses path listing even for 1 file."""
+        gate = QualityGate(max_inline_files=0)
+        (project_root / "single.md").write_text("Single file content")
+
+        payload = await gate._build_payload(
+            outputs={"report": "single.md"},
+            project_root=project_root,
+        )
+
+        assert "too many to include inline" in payload
+        assert "single.md" in payload
+        assert "Single file content" not in payload
+
+    async def test_high_max_inline_embeds_many_files(self, project_root: Path) -> None:
+        """Test that a high max_inline_files embeds content for many files."""
+        gate = QualityGate(max_inline_files=100)
+        for i in range(10):
+            (project_root / f"f{i}.md").write_text(f"Embedded content {i}")
+
+        payload = await gate._build_payload(
+            outputs={"files": [f"f{i}.md" for i in range(10)]},
+            project_root=project_root,
+        )
+
+        assert "too many to include inline" not in payload
+        for i in range(10):
+            assert f"Embedded content {i}" in payload
+
+
+class TestEvaluateWithoutCli:
+    """Tests that evaluate() raises when no CLI is configured."""
+
+    async def test_evaluate_raises_without_cli(self, project_root: Path) -> None:
+        """Test that evaluate raises QualityGateError when _cli is None."""
+        gate = QualityGate(cli=None)
+        (project_root / "output.md").write_text("content")
+
+        with pytest.raises(QualityGateError, match="Cannot evaluate.*without a CLI runner"):
+            await gate.evaluate(
+                quality_criteria={"Valid": "Is it valid?"},
+                outputs={"report": "output.md"},
+                project_root=project_root,
+            )
+
+    async def test_evaluate_no_criteria_still_passes_without_cli(self, project_root: Path) -> None:
+        """Test that empty criteria auto-passes even without CLI."""
+        gate = QualityGate(cli=None)
+
+        result = await gate.evaluate(
+            quality_criteria={},
+            outputs={"report": "output.md"},
+            project_root=project_root,
+        )
+
+        assert result.passed is True
+        assert "auto-passing" in result.feedback.lower()
+
+
+class TestBuildReviewInstructionsFile:
+    """Tests for QualityGate.build_review_instructions_file method."""
+
+    async def test_basic_structure(self, project_root: Path) -> None:
+        """Test that the instructions file has the expected structure."""
+        gate = QualityGate(max_inline_files=0)
+        (project_root / "output.md").write_text("content")
+
+        content = await gate.build_review_instructions_file(
+            reviews=[
+                {
+                    "run_each": "step",
+                    "quality_criteria": {"Complete": "Is it complete?"},
+                }
+            ],
+            outputs={"report": "output.md"},
+            output_specs={"report": "file"},
+            project_root=project_root,
+        )
+
+        assert "# Quality Review Instructions" in content
+        assert "editor" in content.lower()
+        assert "BEGIN OUTPUTS" in content
+        assert "END OUTPUTS" in content
+        assert "Complete" in content
+        assert "Is it complete?" in content
+        assert "## Guidelines" in content
+        assert "## Your Task" in content
+        assert "PASS" in content
+        assert "FAIL" in content
+
+    async def test_contains_all_criteria(self, project_root: Path) -> None:
+        """Test that all criteria from all reviews appear in the file."""
+        gate = QualityGate(max_inline_files=0)
+        (project_root / "out.md").write_text("x")
+
+        content = await gate.build_review_instructions_file(
+            reviews=[
+                {
+                    "run_each": "step",
+                    "quality_criteria": {
+                        "Accuracy": "Are the facts correct?",
+                        "Completeness": "Is all data present?",
+                    },
+                }
+            ],
+            outputs={"report": "out.md"},
+            output_specs={"report": "file"},
+            project_root=project_root,
+        )
+
+        assert "**Accuracy**" in content
+        assert "Are the facts correct?" in content
+        assert "**Completeness**" in content
+        assert "Is all data present?" in content
+
+    async def test_multiple_reviews_numbered(self, project_root: Path) -> None:
+        """Test that multiple reviews get numbered sections."""
+        gate = QualityGate(max_inline_files=0)
+        (project_root / "out.md").write_text("x")
+
+        content = await gate.build_review_instructions_file(
+            reviews=[
+                {
+                    "run_each": "step",
+                    "quality_criteria": {"First": "First check?"},
+                },
+                {
+                    "run_each": "report",
+                    "quality_criteria": {"Second": "Second check?"},
+                },
+            ],
+            outputs={"report": "out.md"},
+            output_specs={"report": "file"},
+            project_root=project_root,
+        )
+
+        assert "## Review 1" in content
+        assert "## Review 2" in content
+        assert "scope: all outputs together" in content
+        assert "scope: output 'report'" in content
+
+    async def test_single_review_not_numbered(self, project_root: Path) -> None:
+        """Test that a single review uses 'Criteria to Evaluate' heading."""
+        gate = QualityGate(max_inline_files=0)
+        (project_root / "out.md").write_text("x")
+
+        content = await gate.build_review_instructions_file(
+            reviews=[
+                {
+                    "run_each": "step",
+                    "quality_criteria": {"Only": "Only check?"},
+                }
+            ],
+            outputs={"report": "out.md"},
+            output_specs={"report": "file"},
+            project_root=project_root,
+        )
+
+        assert "## Criteria to Evaluate" in content
+        assert "Review 1" not in content
+
+    async def test_includes_author_notes(self, project_root: Path) -> None:
+        """Test that notes are included when provided."""
+        gate = QualityGate(max_inline_files=0)
+        (project_root / "out.md").write_text("x")
+
+        content = await gate.build_review_instructions_file(
+            reviews=[
+                {
+                    "run_each": "step",
+                    "quality_criteria": {"Check": "Is it ok?"},
+                }
+            ],
+            outputs={"report": "out.md"},
+            output_specs={"report": "file"},
+            project_root=project_root,
+            notes="I focused on section 3 the most.",
+        )
+
+        assert "## Author Notes" in content
+        assert "I focused on section 3 the most." in content
+
+    async def test_excludes_notes_when_none(self, project_root: Path) -> None:
+        """Test that notes section is absent when not provided."""
+        gate = QualityGate(max_inline_files=0)
+        (project_root / "out.md").write_text("x")
+
+        content = await gate.build_review_instructions_file(
+            reviews=[
+                {
+                    "run_each": "step",
+                    "quality_criteria": {"Check": "Is it ok?"},
+                }
+            ],
+            outputs={"report": "out.md"},
+            output_specs={"report": "file"},
+            project_root=project_root,
+        )
+
+        assert "## Author Notes" not in content
+
+    async def test_includes_guidance(self, project_root: Path) -> None:
+        """Test that additional_review_guidance is included."""
+        gate = QualityGate(max_inline_files=0)
+        (project_root / "out.md").write_text("x")
+
+        content = await gate.build_review_instructions_file(
+            reviews=[
+                {
+                    "run_each": "step",
+                    "quality_criteria": {"Check": "Is it ok?"},
+                    "additional_review_guidance": "Also read config.yml for context.",
+                }
+            ],
+            outputs={"report": "out.md"},
+            output_specs={"report": "file"},
+            project_root=project_root,
+        )
+
+        assert "### Additional Context" in content
+        assert "Also read config.yml for context." in content
+
+    async def test_per_file_review_lists_files(self, project_root: Path) -> None:
+        """Test that per-file reviews list each file to evaluate."""
+        gate = QualityGate(max_inline_files=0)
+        (project_root / "a.md").write_text("x")
+        (project_root / "b.md").write_text("x")
+
+        content = await gate.build_review_instructions_file(
+            reviews=[
+                {
+                    "run_each": "pages",
+                    "quality_criteria": {"Valid": "Is it valid?"},
+                }
+            ],
+            outputs={"pages": ["a.md", "b.md"]},
+            output_specs={"pages": "files"},
+            project_root=project_root,
+        )
+
+        assert "each file" in content.lower()
+        assert "a.md" in content
+        assert "b.md" in content
+
+    async def test_output_paths_listed_not_inlined_at_zero(self, project_root: Path) -> None:
+        """Test that with max_inline_files=0, file contents are NOT embedded."""
+        gate = QualityGate(max_inline_files=0)
+        (project_root / "report.md").write_text("SECRET_CONTENT_MARKER")
+
+        content = await gate.build_review_instructions_file(
+            reviews=[
+                {
+                    "run_each": "step",
+                    "quality_criteria": {"Check": "Is it ok?"},
+                }
+            ],
+            outputs={"report": "report.md"},
+            output_specs={"report": "file"},
+            project_root=project_root,
+        )
+
+        assert "report.md" in content
+        assert "SECRET_CONTENT_MARKER" not in content
+        assert "too many to include inline" in content

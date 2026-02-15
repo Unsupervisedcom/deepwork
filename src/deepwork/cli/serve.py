@@ -64,24 +64,38 @@ def _load_config(project_path: Path) -> dict:
     default=8000,
     help="Port for SSE transport (default: 8000)",
 )
+@click.option(
+    "--external-runner",
+    type=click.Choice(["claude"]),
+    default=None,
+    help="External runner for quality gate reviews. 'claude' uses Claude CLI subprocess. Default: None (agent self-review).",
+)
 def serve(
     path: Path,
     no_quality_gate: bool,
     transport: str,
     port: int,
+    external_runner: str | None,
 ) -> None:
     """Start the DeepWork MCP server.
 
     Exposes workflow management tools to AI agents via MCP protocol.
     By default uses stdio transport for local integration with Claude Code.
 
-    Quality gate is enabled by default and uses Claude Code to evaluate
-    step outputs against quality criteria.
+    Quality gate is enabled by default. Use --external-runner to specify
+    how quality reviews are executed:
+
+    \b
+    - No flag (default): Agent self-review via instructions file
+    - --external-runner claude: Claude CLI subprocess review
 
     Examples:
 
-        # Start server for current directory
+        # Start server for current directory (agent self-review)
         deepwork serve
+
+        # Start with Claude CLI as quality gate reviewer
+        deepwork serve --external-runner claude
 
         # Start with quality gate disabled
         deepwork serve --no-quality-gate
@@ -90,7 +104,7 @@ def serve(
         deepwork serve --path /path/to/project
     """
     try:
-        _serve_mcp(path, not no_quality_gate, transport, port)
+        _serve_mcp(path, not no_quality_gate, transport, port, external_runner)
     except ServeError as e:
         console.print(f"[red]Error:[/red] {e}")
         raise click.Abort() from e
@@ -104,6 +118,7 @@ def _serve_mcp(
     enable_quality_gate: bool,
     transport: str,
     port: int,
+    external_runner: str | None = None,
 ) -> None:
     """Start the MCP server.
 
@@ -112,6 +127,8 @@ def _serve_mcp(
         enable_quality_gate: Whether to enable quality gate evaluation
         transport: Transport protocol (stdio or sse)
         port: Port for SSE transport
+        external_runner: External runner for quality gate reviews.
+            "claude" uses Claude CLI subprocess. None means agent self-review.
 
     Raises:
         ServeError: If server fails to start
@@ -125,6 +142,7 @@ def _serve_mcp(
     server = create_server(
         project_root=project_path,
         enable_quality_gate=enable_quality_gate,
+        external_runner=external_runner,
     )
 
     if transport == "stdio":

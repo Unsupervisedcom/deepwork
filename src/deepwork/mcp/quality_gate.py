@@ -58,16 +58,32 @@ class QualityGate:
     """Evaluates step outputs against quality criteria.
 
     Uses ClaudeCLI to invoke a review agent that evaluates outputs
-    and returns structured feedback.
+    and returns structured feedback. Can also build review instructions
+    files for agent self-review when no external runner is configured.
     """
 
-    def __init__(self, cli: ClaudeCLI | None = None):
+    # Default maximum number of files to include inline in the review payload.
+    # Beyond this threshold, only file paths are listed.
+    DEFAULT_MAX_INLINE_FILES = 5
+
+    def __init__(
+        self,
+        cli: ClaudeCLI | None = None,
+        max_inline_files: int | None = None,
+    ):
         """Initialize quality gate.
 
         Args:
-            cli: ClaudeCLI instance. If not provided, a default one is created.
+            cli: ClaudeCLI instance. If None, evaluate() cannot be called
+                but instruction-building methods still work.
+            max_inline_files: Maximum number of files to embed inline in
+                review payloads. Beyond this, only file paths are listed.
+                Defaults to DEFAULT_MAX_INLINE_FILES (5).
         """
-        self._cli = cli or ClaudeCLI()
+        self._cli = cli
+        self.max_inline_files = (
+            max_inline_files if max_inline_files is not None else self.DEFAULT_MAX_INLINE_FILES
+        )
 
     def _build_instructions(
         self,
@@ -202,7 +218,8 @@ You must respond with JSON in this exact structure:
     # WARNING: REVIEW PERFORMANCE IS SENSITIVE TO PAYLOAD SIZE
     #
     # The payload builder below sends file contents to the review agent (Claude
-    # CLI subprocess). Reviews can get REALLY SLOW if the content gets too big:
+    # CLI subprocess or self-review file). Reviews can get REALLY SLOW if the
+    # content gets too big:
     #
     # - Each file's full content is read and embedded in the prompt
     # - The review agent must process ALL of this content to evaluate criteria
@@ -211,17 +228,17 @@ You must respond with JSON in this exact structure:
     # - Per-file reviews (run_each: <output_name> with type: files) multiply
     #   the problem — each file gets its own review subprocess
     #
-    # To mitigate this, when more than MAX_INLINE_FILES files are present,
-    # the payload switches to a path-listing mode that only shows file paths
-    # instead of dumping all contents inline. The reviewer can then use its
-    # own tools to read specific files as needed.
+    # To mitigate this, when more than self.max_inline_files files are
+    # present, the payload switches to a path-listing mode that only shows
+    # file paths instead of dumping all contents inline. The reviewer can
+    # then use its own tools to read specific files as needed.
+    #
+    # max_inline_files is configurable per instance:
+    #   - external_runner="claude": 5 (embed small sets, list large ones)
+    #   - external_runner=None (self-review): 0 (always list paths)
     #
     # If you're changing the payload builder, keep payload size in mind.
     # =========================================================================
-
-    # Maximum number of files to include inline in the review payload.
-    # Beyond this threshold, only file paths are listed.
-    MAX_INLINE_FILES = 5
 
     @staticmethod
     def _build_path_listing(file_paths: dict[str, str | list[str]]) -> list[str]:
@@ -262,7 +279,7 @@ You must respond with JSON in this exact structure:
         parts: list[str] = []
         total_files = len(self._flatten_output_paths(outputs))
 
-        if total_files > self.MAX_INLINE_FILES:
+        if total_files > self.max_inline_files:
             # Too many files — list paths only so the reviewer reads selectively
             path_lines = self._build_path_listing(outputs)
             parts.append(f"{SECTION_SEPARATOR} BEGIN OUTPUTS {SECTION_SEPARATOR}")
@@ -318,6 +335,112 @@ You must respond with JSON in this exact structure:
                 f"Failed to interpret quality gate result: {e}\nData was: {data}"
             ) from e
 
+    async def build_review_instructions_file(
+        self,
+        reviews: list[dict[str, Any]],
+        outputs: dict[str, str | list[str]],
+        output_specs: dict[str, str],
+        project_root: Path,
+        notes: str | None = None,
+    ) -> str:
+        """Build complete review instructions content for writing to a file.
+
+        Used in self-review mode (no external runner) to generate a file that
+        a subagent can read and follow to evaluate quality criteria.
+
+        Args:
+            reviews: List of review dicts with run_each, quality_criteria,
+                and optional additional_review_guidance
+            outputs: Map of output names to file path(s)
+            output_specs: Map of output names to their type ("file" or "files")
+            project_root: Project root path
+            notes: Optional notes from the agent about work done
+
+        Returns:
+            Complete review instructions as a string
+        """
+        parts: list[str] = []
+
+        parts.append("# Quality Review Instructions")
+        parts.append("")
+        parts.append(
+            "You are an editor responsible for reviewing the outputs of a workflow step. "
+            "Your job is to evaluate whether the outputs meet the specified quality criteria."
+        )
+        parts.append("")
+
+        # Build outputs listing (uses self.max_inline_files to decide inline vs path-only)
+        payload = await self._build_payload(outputs, project_root)
+        parts.append(payload)
+        parts.append("")
+
+        # Build review sections
+        for i, review in enumerate(reviews, 1):
+            run_each = review["run_each"]
+            quality_criteria = review["quality_criteria"]
+            guidance = review.get("additional_review_guidance")
+
+            if len(reviews) > 1:
+                scope = "all outputs together" if run_each == "step" else f"output '{run_each}'"
+                parts.append(f"## Review {i} (scope: {scope})")
+            else:
+                parts.append("## Criteria to Evaluate")
+            parts.append("")
+
+            criteria_list = "\n".join(
+                f"- **{name}**: {question}" for name, question in quality_criteria.items()
+            )
+            parts.append(criteria_list)
+            parts.append("")
+
+            if run_each != "step" and run_each in outputs:
+                output_type = output_specs.get(run_each, "file")
+                output_value = outputs[run_each]
+                if output_type == "files" and isinstance(output_value, list):
+                    parts.append(
+                        f"Evaluate the above criteria for **each file** in output '{run_each}':"
+                    )
+                    for fp in output_value:
+                        parts.append(f"- {fp}")
+                    parts.append("")
+
+            if guidance:
+                parts.append("### Additional Context")
+                parts.append("")
+                parts.append(guidance)
+                parts.append("")
+
+        if notes:
+            parts.append("## Author Notes")
+            parts.append("")
+            parts.append(notes)
+            parts.append("")
+
+        parts.append("## Guidelines")
+        parts.append("")
+        parts.append("- Be strict but fair")
+        parts.append(
+            "- Apply criteria pragmatically. If a criterion is not applicable "
+            "to this step's purpose, pass it."
+        )
+        parts.append("- Only mark a criterion as passed if it is clearly met or not applicable.")
+        parts.append("- Provide specific, actionable feedback for failed criteria.")
+        parts.append(
+            "- The overall review should PASS only if ALL criteria across all reviews pass."
+        )
+        parts.append("")
+        parts.append("## Your Task")
+        parts.append("")
+        parts.append("1. Read each output file listed above")
+        parts.append("2. Evaluate every criterion in every review section")
+        parts.append("3. For each criterion, report **PASS** or **FAIL** with specific feedback")
+        parts.append("4. At the end, clearly state the overall result: **PASSED** or **FAILED**")
+        parts.append(
+            "5. If any criteria failed, provide clear actionable feedback on what needs to change"
+        )
+
+        return "\n".join(parts)
+
     @staticmethod
     def compute_timeout(file_count: int) -> int:
         """Compute dynamic timeout based on number of files.
@@ -366,6 +489,12 @@ You must respond with JSON in this exact structure:
                 passed=True,
                 feedback="No quality criteria defined - auto-passing",
                 criteria_results=[],
+            )
+
+        if self._cli is None:
+            raise QualityGateError(
+                "Cannot evaluate quality gate without a CLI runner. "
+                "Use build_review_instructions_file() for self-review mode."
             )
 
         instructions = self._build_instructions(
