@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 
 import aiofiles
 
-from deepwork.core.jobs import find_job_dir, load_all_jobs
+from deepwork.core.jobs import JobLoadError, find_job_dir, load_all_jobs
 from deepwork.core.parser import (
     JobDefinition,
     OutputSpec,
@@ -31,6 +31,7 @@ from deepwork.mcp.schemas import (
     FinishedStepResponse,
     GetWorkflowsResponse,
     JobInfo,
+    JobLoadErrorInfo,
     ReviewInfo,
     StartWorkflowInput,
     StartWorkflowResponse,
@@ -78,11 +79,11 @@ class WorkflowTools:
         self.max_quality_attempts = max_quality_attempts
         self.external_runner = external_runner
 
-    def _load_all_jobs(self) -> list[JobDefinition]:
+    def _load_all_jobs(self) -> tuple[list[JobDefinition], list[JobLoadError]]:
         """Load all job definitions from all configured job folders.
 
         Returns:
-            List of parsed JobDefinition objects
+            Tuple of (parsed JobDefinition objects, errors for jobs that failed)
         """
         return load_all_jobs(self.project_root)
 
@@ -285,10 +286,18 @@ class WorkflowTools:
         Returns:
             GetWorkflowsResponse with all jobs and their workflows
         """
-        jobs = self._load_all_jobs()
+        jobs, load_errors = self._load_all_jobs()
         job_infos = [self._job_to_info(job) for job in jobs]
+        error_infos = [
+            JobLoadErrorInfo(
+                job_name=e.job_name,
+                job_dir=e.job_dir,
+                error=e.error,
+            )
+            for e in load_errors
+        ]
 
-        return GetWorkflowsResponse(jobs=job_infos)
+        return GetWorkflowsResponse(jobs=job_infos, errors=error_infos)
 
     async def start_workflow(self, input_data: StartWorkflowInput) -> StartWorkflowResponse:
         """Start a new workflow session.

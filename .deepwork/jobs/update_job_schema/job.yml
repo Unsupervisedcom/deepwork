@@ -114,6 +114,7 @@ steps:
         description: "The updated src/deepwork/mcp/tools.py (even if unchanged, provide the path)"
         required: true
     dependencies:
+      - update_schema
       - update_parser
     reviews:
       - run_each: step
@@ -185,6 +186,7 @@ steps:
         description: "All updated test files (test_parser.py, test_validation.py, test_schemas.py, test_tools.py, etc.)"
         required: true
     dependencies:
+      - update_schema
       - update_parser
       - update_mcp_schemas
       - update_fixtures
@@ -235,6 +237,7 @@ steps:
         description: "Log of the get_workflows verification result, saved to .deepwork/tmp/verification_log.md"
         required: true
     dependencies:
+      - update_schema
       - update_parser
       - update_mcp_schemas
       - update_fixtures

@@ -92,9 +92,10 @@ class TestLoadAllJobs:
             "deepwork.core.jobs.get_job_folders",
             lambda pr: [pr / ".deepwork" / "jobs"],
         )
-        jobs = load_all_jobs(tmp_path)
+        jobs, errors = load_all_jobs(tmp_path)
         assert len(jobs) == 1
         assert jobs[0].name == "my_job"
+        assert len(errors) == 0
 
     def test_loads_from_multiple_folders(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -107,9 +108,10 @@ class TestLoadAllJobs:
             "deepwork.core.jobs.get_job_folders",
             lambda pr: [folder_a, folder_b],
         )
-        jobs = load_all_jobs(tmp_path)
+        jobs, errors = load_all_jobs(tmp_path)
         names = {j.name for j in jobs}
         assert names == {"job_a", "job_b"}
+        assert len(errors) == 0
 
     def test_first_folder_wins_for_duplicate_name(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -128,7 +130,7 @@ class TestLoadAllJobs:
             "deepwork.core.jobs.get_job_folders",
             lambda pr: [folder_a, folder_b],
         )
-        jobs = load_all_jobs(tmp_path)
+        jobs, errors = load_all_jobs(tmp_path)
         assert len(jobs) == 1
         assert jobs[0].summary == "Test job same_name"
 
@@ -139,8 +141,9 @@ class TestLoadAllJobs:
             "deepwork.core.jobs.get_job_folders",
             lambda pr: [tmp_path / "does_not_exist"],
         )
-        jobs = load_all_jobs(tmp_path)
+        jobs, errors = load_all_jobs(tmp_path)
         assert len(jobs) == 0
+        assert len(errors) == 0
 
     def test_skips_invalid_jobs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         folder = tmp_path / "jobs"
@@ -151,8 +154,12 @@ class TestLoadAllJobs:
             "deepwork.core.jobs.get_job_folders",
             lambda pr: [folder],
         )
-        jobs = load_all_jobs(tmp_path)
+        jobs, errors = load_all_jobs(tmp_path)
         assert len(jobs) == 0
+        assert len(errors) == 1
+        assert errors[0].job_name == "bad_job"
+        assert errors[0].job_dir == str(bad_job)
+        assert errors[0].error  # non-empty error message
 
 
 class TestFindJobDir:

@@ -14,11 +14,21 @@ from __future__ import annotations
 
 import logging
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 from deepwork.core.parser import JobDefinition, ParseError, parse_job_definition
 
 logger = logging.getLogger("deepwork.core.jobs")
+
+
+@dataclass
+class JobLoadError:
+    """A job that failed to load."""
+
+    job_name: str
+    job_dir: str
+    error: str
 
 # Environment variable for additional job folders (colon-delimited)
 ENV_ADDITIONAL_JOBS_FOLDERS = "DEEPWORK_ADDITIONAL_JOBS_FOLDERS"
@@ -52,7 +62,9 @@ def get_job_folders(project_root: Path) -> list[Path]:
     return folders
 
 
-def load_all_jobs(project_root: Path) -> list[JobDefinition]:
+def load_all_jobs(
+    project_root: Path,
+) -> tuple[list[JobDefinition], list[JobLoadError]]:
     """Load all job definitions from all configured job folders.
 
     Jobs are discovered from each folder returned by :func:`get_job_folders`.
@@ -60,10 +72,11 @@ def load_all_jobs(project_root: Path) -> list[JobDefinition]:
     earlier folder wins (project-local overrides standard, etc.).
 
     Returns:
-        List of successfully parsed ``JobDefinition`` objects.
+        Tuple of (successfully parsed jobs, errors for jobs that failed to load).
     """
     seen_names: set[str] = set()
     jobs: list[JobDefinition] = []
+    errors: list[JobLoadError] = []
 
     for folder in get_job_folders(project_root):
         if not folder.exists() or not folder.is_dir():
@@ -82,8 +95,15 @@ def load_all_jobs(project_root: Path) -> list[JobDefinition]:
                 seen_names.add(job_dir.name)
             except ParseError as e:
                 logger.warning("Skipping invalid job '%s': %s", job_dir.name, e)
+                errors.append(
+                    JobLoadError(
+                        job_name=job_dir.name,
+                        job_dir=str(job_dir),
+                        error=str(e),
+                    )
+                )
 
-    return jobs
+    return jobs, errors
 
 
 def find_job_dir(project_root: Path, job_name: str) -> Path | None:
