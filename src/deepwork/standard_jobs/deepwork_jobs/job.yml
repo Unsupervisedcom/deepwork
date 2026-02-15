@@ -229,6 +229,7 @@ steps:
           "Stop Hooks Migrated": "Are `stop_hooks` migrated to `hooks.after_agent` format?"
           "Removed Steps Cleaned": "Are references to removed steps (like `review_job_spec`) updated?"
           "Orphaned Steps Fixed": "For jobs with no workflows, is there a single workflow (named after the job) containing all steps? For jobs with existing workflows, does each orphan get its own workflow (named after the step)?"
+          "Promise Lines Removed": "Are deprecated `<promise>Quality Criteria Met</promise>` lines removed from step instruction .md files?"
           "Valid YAML": "Are all job.yml files valid YAML?"
 
   - id: errata
