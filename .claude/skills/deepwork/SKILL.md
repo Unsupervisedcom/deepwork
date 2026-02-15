@@ -19,6 +19,28 @@ Execute multi-step workflows with quality gate checkpoints.
 4. Call `finished_step` with your outputs when done
 5. Handle the response: `needs_work`, `next_step`, or `workflow_complete`
 
+## Creating New Jobs
+
+<important>
+You MUST use the `new_job` workflow to create new DeepWork jobs. NEVER create job
+definitions by manually writing `job.yml` files, step instructions, or job directory
+structures by hand. The `new_job` workflow exists specifically to ensure jobs are
+well-structured, tested, and reviewed.
+</important>
+
+To create a new job, use the MCP tools:
+
+1. Call `get_workflows` to confirm the `deepwork_jobs` job is available
+2. Call `start_workflow` with:
+   - `job_name`: `"deepwork_jobs"`
+   - `workflow_name`: `"new_job"`
+   - `goal`: a description of what the new job should accomplish
+   - `instance_id`: a short name for the new job (e.g., `"code_review"`)
+3. Follow the guided steps: **define** → **implement** → **test** → **iterate**
+
+The workflow handles specification authoring, file generation, real-world testing, and
+iterative refinement. Skipping it produces brittle, untested jobs that lack quality gates.
+
 ## Intent Parsing
 
 When the user invokes `/deepwork`, parse their intent:
