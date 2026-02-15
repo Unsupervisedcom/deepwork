@@ -31,6 +31,8 @@ For each job directory, you'll need to check and potentially fix the `job.yml` f
 
 **Example prompt for sub-agent:**
 ```
+Be concise. Output minimal text — only report changes made or confirm no changes needed. Do not echo back file contents, do not explain what each migration rule means, and do not narrate your process.
+
 Audit and repair the job at `.deepwork/jobs/[job_name]/job.yml`:
 1. Remove any `exposed: true` fields from steps
 2. Migrate `stop_hooks` to `hooks.after_agent` format
@@ -42,7 +44,7 @@ Audit and repair the job at `.deepwork/jobs/[job_name]/job.yml`:
 8. Bump version and add changelog entry if changes were made
 9. Validate YAML syntax
 
-Report what changes were made.
+Report only: which checks passed with no changes, and which changes were made (one line each).
 ```
 
 ### Step 2: Remove `exposed` Field

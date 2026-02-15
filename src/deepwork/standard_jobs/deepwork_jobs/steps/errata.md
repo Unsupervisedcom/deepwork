@@ -19,13 +19,13 @@ Old DeepWork versions created individual skill folders for each job and step. Th
    ls .deepwork/jobs/
    ```
 
-2. **For each job**, kick off a sub-agent to find and remove legacy skill folders. The sub-agent should:
+2. **For each job**, kick off a sub-agent to find and remove legacy skill folders. The sub-agent should be concise — output minimal text, only reporting what was removed or confirming nothing was found. Do not narrate the process or echo commands. The sub-agent should:
    - Search in both `.claude/skills/` and `.gemini/skills/`
    - Find folders matching:
      - `{job_name}/` - folder named exactly like the job
      - `{job_name}.*/` - folders starting with the job name followed by a period (e.g., `my_job.step1/`, `my_job.step2/`)
    - Remove each matching folder
-   - Report what was removed
+   - Report only: what was removed (one line per folder) or "No legacy folders found"
 
    **Example commands for a job named `competitive_research`:**
    ```bash
