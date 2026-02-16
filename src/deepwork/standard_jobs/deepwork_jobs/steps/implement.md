@@ -66,9 +66,9 @@ If a step in the job.yml has `reviews` defined, the generated instruction file s
   reviews:
     - run_each: research_notes.md
       quality_criteria:
-        "Sufficient Data": "Does each competitor have at least 3 data points?"
-        "Sources Cited": "Are sources cited for key claims?"
-        "Current Information": "Is the information current (within last year)?"
+        "Sufficient Data": "Each competitor has at least 3 data points."
+        "Sources Cited": "Sources are cited for key claims."
+        "Current Information": "Information is current (within last year)."
 ```
 
 **The instruction file should include:**

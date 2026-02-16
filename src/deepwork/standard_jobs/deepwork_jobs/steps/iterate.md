@@ -86,15 +86,15 @@ Review and update quality reviews in two places:
 reviews:
   - run_each: step
     quality_criteria:
-      "Formatted Correctly": "Is the report formatted correctly?"
+      "Formatted Correctly": "The report is formatted correctly."
 
 # After
 reviews:
   - run_each: report.md
     quality_criteria:
-      "Distinct Colors": "Does the report use distinct colors for each data series in charts?"
-      "Readable Tables": "Do tables have sufficient padding and font size for readability?"
-      "Clear Summary": "Is the executive summary understandable by non-technical readers?"
+      "Distinct Colors": "The report uses distinct colors for each data series in charts."
+      "Readable Tables": "Tables have sufficient padding and font size for readability."
+      "Clear Summary": "The executive summary is understandable by non-technical readers."
 ```
 
 ### Step 5: Consider Alternative Tools

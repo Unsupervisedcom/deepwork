@@ -223,15 +223,15 @@ steps:
 
 ### Step 7: Migrate `quality_criteria` to `reviews`
 
-The flat `quality_criteria` field on steps has been replaced by the `reviews` array. Each review specifies `run_each` (what to review) and `quality_criteria` as a map of criterion name to question.
+The flat `quality_criteria` field on steps has been replaced by the `reviews` array. Each review specifies `run_each` (what to review) and `quality_criteria` as a map of criterion name to a statement describing the expected state (not a question).
 
 **Before (deprecated):**
 ```yaml
 steps:
   - id: my_step
     quality_criteria:
-      - "**Complete**: Is the output complete?"
-      - "**Accurate**: Is the data accurate?"
+      - "**Complete**: The output is complete."
+      - "**Accurate**: The data is accurate."
 ```
 
 **After (current format):**
@@ -241,13 +241,13 @@ steps:
     reviews:
       - run_each: step
         quality_criteria:
-          "Complete": "Is the output complete?"
-          "Accurate": "Is the data accurate?"
+          "Complete": "The output is complete."
+          "Accurate": "The data is accurate."
 ```
 
 **Migration rules:**
 
-1. **Parse the old format**: Each string typically follows `**Name**: Question` format. Extract the name (bold text) as the map key and the question as the value.
+1. **Parse the old format**: Each string typically follows `**Name**: Question/Statement` format. Extract the name (bold text) as the map key and convert the value to a statement of expected state (not a question).
 2. **Choose `run_each`**: Default to `step` (reviews all outputs together). If the step has a single primary output, consider using that output name instead.
 3. **For steps with no quality_criteria**: Use `reviews: []`
 4. **Remove the old field**: Delete the `quality_criteria` array entirely after migration.

@@ -150,16 +150,16 @@ reviews:
   # Content review - is the analysis sound?
   - run_each: final_report.md
     quality_criteria:
-      "Claims Cited": "Is every factual claim backed by a specific source or query from the dataroom?"
-      "Questions Answered": "Are all research questions from the scoping document addressed?"
-      "Depth": "Does the analysis go beyond surface-level observations to root causes or actionable insights?"
+      "Claims Cited": "Every factual claim is backed by a specific source or query from the dataroom."
+      "Questions Answered": "All research questions from the scoping document are addressed."
+      "Depth": "The analysis goes beyond surface-level observations to root causes or actionable insights."
 
   # Presentation review - is the output polished?
   - run_each: final_report.md
     quality_criteria:
-      "Readable Flow": "Does the document flow logically for someone reading it without prior context?"
-      "Audience Fit": "Is the language and detail level appropriate for the intended audience?"
-      "Visual Quality": "Do all charts, tables, and figures render correctly and add value?"
+      "Readable Flow": "The document flows logically for someone reading it without prior context."
+      "Audience Fit": "The language and detail level are appropriate for the intended audience."
+      "Visual Quality": "All charts, tables, and figures render correctly and add value."
 ```
 
 ### Capability Considerations
