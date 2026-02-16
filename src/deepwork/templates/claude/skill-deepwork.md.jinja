@@ -15,6 +15,13 @@ description: "Start or continue DeepWork workflows using MCP tools"
 
 Execute multi-step workflows with quality gate checkpoints.
 
+## Terminology
+
+A **job** is a collection of related **workflows**. For example, a "code_review" job
+might contain workflows like "review_pr" and "review_diff". Users may use the terms
+"job" and "workflow" somewhat interchangeably when describing the work they want done —
+use context and the available workflows from `get_workflows` to determine the best match.
+
 > **IMPORTANT**: Use the DeepWork MCP server tools. All workflow operations
 > are performed through MCP tool calls and following the instructions they return,
 > not by reading instructions from files.
