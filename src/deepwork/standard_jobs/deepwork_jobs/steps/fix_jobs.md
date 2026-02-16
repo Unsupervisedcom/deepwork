@@ -33,7 +33,9 @@ For each job directory, you'll need to check and potentially fix the `job.yml` f
 ```
 Be concise. Output minimal text — only report changes made or confirm no changes needed. Do not echo back file contents, do not explain what each migration rule means, and do not narrate your process.
 
-Audit and repair the job at `.deepwork/jobs/[job_name]/job.yml`:
+First, read the job.yml JSON Schema at `.deepwork/schemas/job.schema.json` to understand the current valid structure. Use it as the source of truth.
+
+Then audit and repair the job at `.deepwork/jobs/[job_name]/job.yml`:
 1. Remove any `exposed: true` fields from steps
 2. Migrate `stop_hooks` to `hooks.after_agent` format
 3. Remove references to deleted steps (like `review_job_spec`)
@@ -41,8 +43,12 @@ Audit and repair the job at `.deepwork/jobs/[job_name]/job.yml`:
 5. Migrate `outputs` from array format to map format with `type` and `description`
 6. Update any `file` inputs that reference renamed output keys
 7. Migrate `quality_criteria` arrays to `reviews` format (run_each + map criteria)
-8. Bump version and add changelog entry if changes were made
-9. Validate YAML syntax
+8. Remove any `changelog` section (no longer in schema)
+9. Replace `description:` with `common_job_info_provided_to_all_steps_at_runtime:` if present
+10. Remove any info in `common_job_info_provided_to_all_steps_at_runtime` that is not relevant to most steps.
+11. Read the step instructions and remove anything that is repeated in many steps and put it into `common_job_info_provided_to_all_steps_at_runtime`
+12. Bump version if changes were made
+13. Validate YAML syntax
 
 Report only: which checks passed with no changes, and which changes were made (one line each).
 ```
@@ -253,11 +259,6 @@ If you made significant changes to a job, bump its version number:
 ```yaml
 # Bump patch version for minor fixes
 version: "1.0.0"  ->  version: "1.0.1"
-
-# Add changelog entry
-changelog:
-  - version: "1.0.1"
-    changes: "Migrated to current DeepWork format; removed deprecated fields"
 ```
 
 ## Common Issues and Fixes

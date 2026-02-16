@@ -66,7 +66,6 @@ class JobInfo(BaseModel):
 
     name: str = Field(description="Job identifier")
     summary: str = Field(description="Short summary of the job")
-    description: str | None = Field(default=None, description="Full description")
     workflows: list[WorkflowInfo] = Field(default_factory=list)
 
 
@@ -218,12 +217,27 @@ class ActiveStepInfo(BaseModel):
         default_factory=list, description="Reviews to run when step completes"
     )
     step_instructions: str = Field(description="Instructions for the step")
+    common_job_info: str = Field(
+        description="Common context and information shared across all steps in this job"
+    )
+
+
+class JobLoadErrorInfo(BaseModel):
+    """A job that failed to load due to a parse or validation error."""
+
+    job_name: str = Field(description="Directory name of the job that failed")
+    job_dir: str = Field(description="Absolute path to the job directory")
+    error: str = Field(description="Detailed error message explaining why the job failed to load")
 
 
 class GetWorkflowsResponse(BaseModel):
     """Response from get_workflows tool."""
 
     jobs: list[JobInfo] = Field(description="List of all jobs with their workflows")
+    errors: list[JobLoadErrorInfo] = Field(
+        default_factory=list,
+        description="Jobs that failed to load, with detailed error messages",
+    )
 
 
 class StackEntry(BaseModel):

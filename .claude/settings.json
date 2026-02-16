@@ -99,7 +99,6 @@
       "Edit(./.deepwork/**)",
       "Write(./.deepwork/**)",
       "Bash(deepwork:*)",
-      "Bash(./.deepwork/jobs/deepwork_jobs/make_new_job.sh:*)",
       "WebSearch",
       "Skill(deepwork)",
       "mcp__deepwork__get_workflows",

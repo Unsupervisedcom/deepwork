@@ -280,7 +280,7 @@ class JobDefinition:
     name: str
     version: str
     summary: str
-    description: str | None
+    common_job_info_provided_to_all_steps_at_runtime: str
     steps: list[Step]
     job_dir: Path
     workflows: list[Workflow] = field(default_factory=list)
@@ -583,7 +583,9 @@ class JobDefinition:
             name=data["name"],
             version=data["version"],
             summary=data["summary"],
-            description=data.get("description"),
+            common_job_info_provided_to_all_steps_at_runtime=data[
+                "common_job_info_provided_to_all_steps_at_runtime"
+            ],
             steps=[Step.from_dict(step_data) for step_data in data["steps"]],
             job_dir=job_dir,
             workflows=workflows,

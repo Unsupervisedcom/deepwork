@@ -69,7 +69,6 @@ The github_outreach `final_report` step had `analyze_repos` as a file input but 
 - Version is tracked in `job.yml`
 - Bump patch version (0.0.x) for instruction improvements
 - Bump minor version (0.x.0) for new features or structural changes
-- Always update changelog when bumping version
 
 ## Last Updated
 

@@ -12,10 +12,8 @@ quality_criteria:
     description: "Version must follow semantic versioning format X.Y.Z (e.g., `1.0.0`, `2.1.3`)"
   - name: Concise Summary
     description: "Summary must be under 200 characters and clearly describe what the job accomplishes"
-  - name: Rich Description
-    description: "Description must be multi-line and explain: the problem solved, the process, expected outcomes, and target users"
-  - name: Changelog Present
-    description: "Must include a changelog array with at least the initial version entry. Changelog should only include one entry per branch at most"
+  - name: Common Job Info
+    description: "common_job_info_provided_to_all_steps_at_runtime must be present and provide shared context for all steps"
   - name: Complete Steps
     description: "Each step must have: id (lowercase_underscores), name, description, instructions_file, outputs (at least one), and dependencies array"
   - name: Valid Dependencies
@@ -40,19 +38,9 @@ A `job.yml` file defines a complete multi-step workflow that AI agents can execu
 name: job_name                    # lowercase, underscores only
 version: "1.0.0"                  # semantic versioning
 summary: "Brief description"      # max 200 characters
-description: |                    # detailed multi-line explanation
-  [Explain what this workflow does, why it exists,
-  what outputs it produces, and who should use it]
-```
-
-### Changelog
-
-```yaml
-changelog:
-  - version: "1.0.0"
-    changes: "Initial job creation"
-  - version: "1.1.0"
-    changes: "Added quality validation hooks"
+common_job_info_provided_to_all_steps_at_runtime: |
+  [Common context shared across all steps at runtime.
+  Include key terminology, constraints, and shared knowledge.]
 ```
 
 ### Steps Array
@@ -128,20 +116,10 @@ steps:
 name: competitive_research
 version: "1.0.0"
 summary: "Systematic competitive analysis workflow"
-description: |
+common_job_info_provided_to_all_steps_at_runtime: |
   A comprehensive workflow for analyzing competitors in your market segment.
   Helps product teams understand the competitive landscape through systematic
   identification, research, comparison, and positioning recommendations.
-
-  Produces:
-  - Vetted competitor list
-  - Research notes per competitor
-  - Comparison matrix
-  - Strategic positioning report
-
-changelog:
-  - version: "1.0.0"
-    changes: "Initial job creation"
 
 steps:
   - id: identify_competitors

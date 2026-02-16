@@ -1,7 +1,7 @@
 # This is an invalid job definition for testing validation
 name: invalid-job-name-with-dashes
 version: not-semver
-# missing description
+# missing common_job_info_provided_to_all_steps_at_runtime
 steps:
   - id: step_with_invalid_dependency
     name: "Invalid Step"

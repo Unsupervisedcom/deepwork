@@ -1,0 +1,260 @@
+name: update_job_schema
+version: "1.0.2"
+summary: "Update the job.yml JSON Schema and propagate changes through all dependent code and files"
+common_job_info_provided_to_all_steps_at_runtime: |
+  A repeatable workflow for making changes to the job.yml JSON Schema
+  (src/deepwork/schemas/job.schema.json) and systematically propagating those
+  changes through every dependent layer of the DeepWork codebase.
+
+  The schema is the single source of truth for job.yml structure. Changes to it
+  cascade through: the parser (dataclasses + validation), MCP Pydantic models,
+  all fixture and real job.yml files, unit/integration tests, documentation,
+  and the repair migration workflow.
+
+  This job enforces a strict ordering: the schema file is always updated first,
+  then downstream code and files are updated layer by layer, and finally the
+  repair workflow is updated and end-to-end verification confirms everything
+  still parses correctly.
+
+  Based on historical analysis, a typical schema change touches 20-40 files
+  across the codebase. This workflow ensures nothing is missed.
+
+  ## Shared References
+
+  - **Change summary**: `.deepwork/tmp/schema_change_summary.md` — written in
+    step 1 (update_schema) and consumed by every subsequent step. Always read
+    this first to understand what changed.
+  - **Schema file**: `src/deepwork/schemas/job.schema.json`
+  - **Parser**: `src/deepwork/core/parser.py`
+  - **MCP schemas**: `src/deepwork/mcp/schemas.py`
+  - **MCP tools**: `src/deepwork/mcp/tools.py`
+
+  ## Quality Criteria Convention
+
+  When all quality criteria listed in a step's reviews are met, include
+  `<promise>✓ Quality Criteria Met</promise>` in your response.
+
+workflows:
+  - name: run
+    summary: "Update the job.yml schema and propagate changes through all dependencies"
+    steps:
+      - update_schema
+      - update_parser
+      - update_mcp_schemas
+      - [update_fixtures, update_jobs, update_docs]
+      - update_tests
+      - verify_and_repair
+
+steps:
+  - id: update_schema
+    name: "Update JSON Schema"
+    description: "Edit the job.schema.json file — the single source of truth for job.yml structure"
+    instructions_file: steps/update_schema.md
+    inputs:
+      - name: change_description
+        description: "Description of the schema change to make (e.g., 'Add optional timeout field to steps')"
+      - name: motivation
+        description: "Why this change is needed — what problem it solves or what capability it enables"
+    outputs:
+      schema_file:
+        type: file
+        description: "The updated src/deepwork/schemas/job.schema.json file"
+        required: true
+      change_summary:
+        type: file
+        description: "A brief markdown summary of what changed in the schema, saved to .deepwork/tmp/schema_change_summary.md"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: schema_file
+        quality_criteria:
+          "Valid JSON Schema": "Is the file valid JSON Schema Draft 7? Are $ref references correct?"
+          "Backwards Compatible": "If intended as backwards-compatible, are new fields optional with sensible defaults? If breaking, is this clearly documented in the change summary?"
+          "Consistent Naming": "Do new field names follow existing conventions (snake_case, descriptive)?"
+      - run_each: change_summary
+        quality_criteria:
+          "Clear Description": "Does it clearly describe what fields were added, removed, or modified?"
+          "Breaking Change Noted": "If the change is breaking, does the summary explicitly say so and describe what existing files will need to change?"
+
+  - id: update_parser
+    name: "Update Parser and Dataclasses"
+    description: "Update src/deepwork/core/parser.py dataclasses and parsing logic, and src/deepwork/schemas/job_schema.py if needed"
+    instructions_file: steps/update_parser.md
+    inputs:
+      - file: schema_file
+        from_step: update_schema
+      - file: change_summary
+        from_step: update_schema
+    outputs:
+      parser_file:
+        type: file
+        description: "The updated src/deepwork/core/parser.py"
+        required: true
+      job_schema_py:
+        type: file
+        description: "The updated src/deepwork/schemas/job_schema.py (even if unchanged, provide the path)"
+        required: true
+    dependencies:
+      - update_schema
+    reviews:
+      - run_each: parser_file
+        additional_review_guidance: "Read .deepwork/tmp/schema_change_summary.md for context on what schema fields changed. Verify the parser handles all new/modified fields."
+        quality_criteria:
+          "Schema Parity": "Do the dataclasses and parsing logic handle every field added/modified in the schema change?"
+          "Validation Logic": "Are new fields validated appropriately (e.g., enum values, required fields, cross-references)?"
+          "No Regressions": "Are existing fields and parsing paths left intact unless intentionally changed?"
+
+  - id: update_mcp_schemas
+    name: "Update MCP Schemas"
+    description: "Update src/deepwork/mcp/schemas.py Pydantic models and src/deepwork/mcp/tools.py if the change affects MCP tool responses"
+    instructions_file: steps/update_mcp_schemas.md
+    inputs:
+      - file: change_summary
+        from_step: update_schema
+      - file: parser_file
+        from_step: update_parser
+    outputs:
+      mcp_schemas_file:
+        type: file
+        description: "The updated src/deepwork/mcp/schemas.py"
+        required: true
+      mcp_tools_file:
+        type: file
+        description: "The updated src/deepwork/mcp/tools.py (even if unchanged, provide the path)"
+        required: true
+    dependencies:
+      - update_schema
+      - update_parser
+    reviews:
+      - run_each: step
+        additional_review_guidance: "Read .deepwork/tmp/schema_change_summary.md for what changed. Read src/deepwork/core/parser.py to see the updated dataclasses that MCP schemas must reflect."
+        quality_criteria:
+          "Model Parity": "Do the Pydantic models reflect any new fields that should be exposed through MCP tool responses?"
+          "Serialization": "Are new fields properly serialized/deserialized in tool input/output handling?"
+
+  - id: update_fixtures
+    name: "Update Test Fixtures"
+    description: "Update all test fixture job.yml files to conform to the updated schema"
+    instructions_file: steps/update_fixtures.md
+    inputs:
+      - file: change_summary
+        from_step: update_schema
+      - file: schema_file
+        from_step: update_schema
+    outputs:
+      fixture_files:
+        type: files
+        description: "All updated fixture job.yml files under tests/fixtures/jobs/"
+        required: true
+    dependencies:
+      - update_schema
+    reviews:
+      - run_each: fixture_files
+        additional_review_guidance: "Read .deepwork/tmp/schema_change_summary.md and src/deepwork/schemas/job.schema.json to verify each fixture conforms to the updated schema."
+        quality_criteria:
+          "Schema Conformance": "Does this fixture job.yml conform to the updated schema? Are new required fields present?"
+          "Test Intent Preserved": "Does the fixture still test what it was designed to test (e.g., invalid_job should still be invalid, complex_job should still be complex)?"
+
+  - id: update_jobs
+    name: "Update Standard, Library, and Instance Jobs"
+    description: "Update real job.yml files: standard_jobs (source of truth), library jobs, and .deepwork/jobs instances"
+    instructions_file: steps/update_jobs.md
+    inputs:
+      - file: change_summary
+        from_step: update_schema
+      - file: schema_file
+        from_step: update_schema
+    outputs:
+      job_files:
+        type: files
+        description: "All updated real job.yml files (standard_jobs, library, .deepwork/jobs)"
+        required: true
+    dependencies:
+      - update_schema
+    reviews:
+      - run_each: job_files
+        additional_review_guidance: "Read .deepwork/tmp/schema_change_summary.md to verify each job.yml has been updated for the schema change."
+        quality_criteria:
+          "Schema Conformance": "Does this job.yml conform to the updated schema?"
+          "Functionality Preserved": "Does the job still work as intended after the update?"
+
+  - id: update_tests
+    name: "Update Unit and Integration Tests"
+    description: "Update test files to cover new schema fields and ensure existing tests pass with the changes"
+    instructions_file: steps/update_tests.md
+    inputs:
+      - file: change_summary
+        from_step: update_schema
+      - file: parser_file
+        from_step: update_parser
+      - file: mcp_schemas_file
+        from_step: update_mcp_schemas
+    outputs:
+      test_files:
+        type: files
+        description: "All updated test files (test_parser.py, test_validation.py, test_schemas.py, test_tools.py, etc.)"
+        required: true
+    dependencies:
+      - update_schema
+      - update_parser
+      - update_mcp_schemas
+      - update_fixtures
+    reviews:
+      - run_each: step
+        additional_review_guidance: "Read .deepwork/tmp/schema_change_summary.md for what changed. The tests should cover both new functionality and ensure no regressions."
+        quality_criteria:
+          "New Field Coverage": "Are there tests for the new/modified schema fields in both parser and validation tests?"
+          "No Broken Tests": "Have existing tests been updated to work with the schema change rather than just deleted?"
+
+  - id: update_docs
+    name: "Update Documentation"
+    description: "Update architecture.md, mcp_interface.md, and any other documentation affected by the schema change"
+    instructions_file: steps/update_docs.md
+    inputs:
+      - file: change_summary
+        from_step: update_schema
+    outputs:
+      doc_files:
+        type: files
+        description: "All updated documentation files"
+        required: true
+    dependencies:
+      - update_schema
+    reviews:
+      - run_each: doc_files
+        additional_review_guidance: "Read .deepwork/tmp/schema_change_summary.md to verify docs reflect the schema change."
+        quality_criteria:
+          "Accuracy": "Does the documentation accurately describe the current schema structure after the change?"
+          "Completeness": "Are all affected sections of the documentation updated?"
+
+  - id: verify_and_repair
+    name: "Verify and Update Repair Workflow"
+    description: "Update the deepwork_jobs repair workflow to handle migration for the schema change, then restart MCP and call get_workflows to verify everything parses"
+    instructions_file: steps/verify_and_repair.md
+    inputs:
+      - file: change_summary
+        from_step: update_schema
+      - file: schema_file
+        from_step: update_schema
+    outputs:
+      repair_step_file:
+        type: file
+        description: "The updated repair workflow step file (if migration logic was needed)"
+        required: false
+      verification_log:
+        type: file
+        description: "Log of the get_workflows verification result, saved to .deepwork/tmp/verification_log.md"
+        required: true
+    dependencies:
+      - update_schema
+      - update_parser
+      - update_mcp_schemas
+      - update_fixtures
+      - update_jobs
+      - update_tests
+      - update_docs
+    reviews:
+      - run_each: verification_log
+        quality_criteria:
+          "Parses Successfully": "Does the verification log show that get_workflows returned successfully with all jobs parsed?"
+          "No Errors": "Are there any parsing errors or warnings in the log?"

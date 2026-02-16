@@ -47,7 +47,7 @@ def project_root(tmp_path: Path) -> Path:
 name: test_job
 version: "1.0.0"
 summary: A test job
-description: This is a test job for unit tests
+common_job_info_provided_to_all_steps_at_runtime: This is a test job for unit tests
 
 steps:
   - id: step1
@@ -215,7 +215,7 @@ class TestWorkflowTools:
 name: multi_wf_job
 version: "1.0.0"
 summary: A job with multiple workflows
-description: Test job with multiple workflows
+common_job_info_provided_to_all_steps_at_runtime: Test job with multiple workflows
 
 steps:
   - id: step_a
@@ -493,7 +493,7 @@ workflows:
 name: optional_job
 version: "1.0.0"
 summary: Job with optional output
-description: Test job
+common_job_info_provided_to_all_steps_at_runtime: Test job
 
 steps:
   - id: produce
@@ -558,7 +558,7 @@ workflows:
 name: mixed_job
 version: "1.0.0"
 summary: Job with mixed required/optional outputs
-description: Test job
+common_job_info_provided_to_all_steps_at_runtime: Test job
 
 steps:
   - id: produce
@@ -618,7 +618,7 @@ workflows:
 name: optional_provided_job
 version: "1.0.0"
 summary: Job with optional output that gets provided
-description: Test job
+common_job_info_provided_to_all_steps_at_runtime: Test job
 
 steps:
   - id: produce
@@ -680,7 +680,7 @@ workflows:
 name: req_field_job
 version: "1.0.0"
 summary: Job to test required field in expected outputs
-description: Test job
+common_job_info_provided_to_all_steps_at_runtime: Test job
 
 steps:
   - id: produce
@@ -774,7 +774,7 @@ workflows:
 name: no_output_job
 version: "1.0.0"
 summary: Job with no-output step
-description: Test job
+common_job_info_provided_to_all_steps_at_runtime: Test job
 
 steps:
   - id: cleanup
@@ -823,7 +823,7 @@ workflows:
 name: files_job
 version: "1.0.0"
 summary: Job with files output
-description: Test job
+common_job_info_provided_to_all_steps_at_runtime: Test job
 
 steps:
   - id: generate
@@ -875,7 +875,7 @@ workflows:
 name: files_job2
 version: "1.0.0"
 summary: Job with files output
-description: Test job
+common_job_info_provided_to_all_steps_at_runtime: Test job
 
 steps:
   - id: generate
@@ -931,7 +931,7 @@ workflows:
 name: files_job3
 version: "1.0.0"
 summary: Job with files output
-description: Test job
+common_job_info_provided_to_all_steps_at_runtime: Test job
 
 steps:
   - id: generate
@@ -992,7 +992,7 @@ workflows:
 name: chain_job
 version: "1.0.0"
 summary: Three-step chain to test input filtering
-description: Test job
+common_job_info_provided_to_all_steps_at_runtime: Test job
 
 steps:
   - id: step1
@@ -1111,7 +1111,7 @@ workflows:
 name: guided_job
 version: "1.0.0"
 summary: Job with review guidance
-description: Test job
+common_job_info_provided_to_all_steps_at_runtime: Test job
 
 steps:
   - id: write
@@ -1176,7 +1176,7 @@ workflows:
 name: guided_job2
 version: "1.0.0"
 summary: Job with review guidance
-description: Test job
+common_job_info_provided_to_all_steps_at_runtime: Test job
 
 steps:
   - id: analyze
@@ -1245,7 +1245,7 @@ class TestSessionIdRouting:
 name: job_a
 version: "1.0.0"
 summary: Job A
-description: Test job A
+common_job_info_provided_to_all_steps_at_runtime: Test job A
 
 steps:
   - id: a_step1
@@ -1290,7 +1290,7 @@ workflows:
 name: job_b
 version: "1.0.0"
 summary: Job B
-description: Test job B
+common_job_info_provided_to_all_steps_at_runtime: Test job B
 
 steps:
   - id: b_step1

@@ -2,8 +2,8 @@
 name: job_with_doc_spec
 version: "1.0.0"
 summary: "Job with typed output for testing"
-description: |
-  A test job that produces a report document.
+common_job_info_provided_to_all_steps_at_runtime: |
+  Reports should always include citations.
 
 steps:
   - id: generate_report

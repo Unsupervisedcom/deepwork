@@ -2,7 +2,7 @@
 name: concurrent_workflow
 version: "1.0.0"
 summary: "Workflow with concurrent steps for testing"
-description: |
+common_job_info_provided_to_all_steps_at_runtime: |
   A test workflow that demonstrates concurrent step execution.
   Some steps run sequentially while others run in parallel.
 

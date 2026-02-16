@@ -106,7 +106,6 @@ class TestJobInfo:
 
         assert job.name == "test_job"
         assert job.summary == "A test job"
-        assert job.description is None
         assert job.workflows == []
 
 
@@ -313,6 +312,7 @@ class TestActiveStepInfo:
                 )
             ],
             step_instructions="Do something",
+            common_job_info="Test job info",
         )
 
         assert step_info.session_id == "abc123"
@@ -326,6 +326,7 @@ class TestActiveStepInfo:
         assert len(step_info.step_reviews) == 1
         assert step_info.step_reviews[0].run_each == "step"
         assert step_info.step_instructions == "Do something"
+        assert step_info.common_job_info == "Test job info"
 
     def test_default_reviews(self) -> None:
         """Test default empty reviews."""
@@ -344,6 +345,7 @@ class TestActiveStepInfo:
                 )
             ],
             step_instructions="Do something",
+            common_job_info="Test job info",
         )
 
         assert step_info.step_reviews == []
@@ -370,6 +372,7 @@ class TestStartWorkflowResponse:
                     )
                 ],
                 step_instructions="Do something",
+                common_job_info="Test job info",
             )
         )
 
@@ -423,6 +426,7 @@ class TestFinishedStepResponse:
                     )
                 ],
                 step_instructions="Next step instructions",
+                common_job_info="Test job info",
             ),
         )
 

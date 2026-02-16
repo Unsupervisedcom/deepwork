@@ -2,34 +2,17 @@
 name: spec_driven_development
 version: "1.0.0"
 summary: "Spec-driven development workflow that turns specifications into working implementations through structured planning."
-description: |
+common_job_info_provided_to_all_steps_at_runtime: |
   A comprehensive workflow inspired by GitHub's spec-kit that enables "spec-driven development" -
   a methodology where executable specifications generate working implementations rather than
   merely guiding them.
 
   This job inverts traditional development: instead of starting with code, you first create
   detailed specifications that directly generate implementations. The workflow progresses through
-  six phases:
-
-  1. **Constitution**: Establish project governance principles and development guidelines
-  2. **Specification**: Define functional requirements focusing on "what" and "why"
-  3. **Clarification**: Resolve ambiguities before technical planning
-  4. **Planning**: Create technical implementation strategy and architecture
-  5. **Task Generation**: Break plans into actionable, ordered development tasks
-  6. **Implementation**: Execute tasks to deliver the complete feature
+  six phases: Constitution, Specification, Clarification, Planning, Task Generation, and Implementation.
 
   The workflow produces all artifacts in a `specs/[feature-name]/` directory structure,
   keeping specifications versioned alongside the implementation they generate.
-
-  Ideal for:
-  - New feature development requiring upfront design
-  - Complex features with multiple stakeholders
-  - Projects where specification quality directly impacts implementation success
-  - Teams wanting to capture design decisions for future reference
-
-changelog:
-  - version: "1.0.0"
-    changes: "Initial version based on GitHub spec-kit workflow"
 
 steps:
   - id: constitution
