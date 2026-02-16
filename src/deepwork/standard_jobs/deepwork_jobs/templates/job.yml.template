@@ -44,8 +44,8 @@ steps:
         # Optional: tell the reviewer what files to read for context
         # additional_review_guidance: "Read the [filename] for context on [what]."
         quality_criteria:
-          "[Criterion Name]": "[Question to evaluate]"
-          "[Another Criterion]": "[Another question]"
+          "[Criterion Name]": "[Statement of expected state after the step — NOT a question]"
+          "[Another Criterion]": "[Another statement of expected state]"
     # Optional: Delegate to a specific agent type (uses context: fork)
     # agent: general-purpose  # or other agent type
 

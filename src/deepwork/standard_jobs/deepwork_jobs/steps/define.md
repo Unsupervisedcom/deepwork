@@ -203,18 +203,18 @@ For final outputs, reviews let you make sure the output meets the user's expecta
 
 **Reviews format:**
 
-Each review specifies `run_each` (what to review) and `quality_criteria` (a map of criterion name to question):
+Each review specifies `run_each` (what to review) and `quality_criteria` (a map of criterion name to a statement describing the expected state after the step completes — NOT a question):
 
 ```yaml
 reviews:
   - run_each: step  # Review all outputs together
     quality_criteria:
-      "Consistent Style": "Do all files follow the same structure?"
-      "Complete Coverage": "Are all required topics covered?"
+      "Consistent Style": "All files follow the same structure."
+      "Complete Coverage": "All required topics are covered."
   - run_each: report_files  # Review each file in a 'files'-type output individually
     quality_criteria:
-      "Well Written": "Is the content clear and well-organized?"
-      "Data-Backed": "Are claims supported by data?"
+      "Well Written": "Content is clear and well-organized."
+      "Data-Backed": "Claims are supported by data."
 ```
 
 **`run_each` options:**
@@ -229,11 +229,11 @@ reviews:
   - run_each: report_files
     additional_review_guidance: "Read the comparison_matrix.md file for context on whether claims in the report are supported by the analysis data."
     quality_criteria:
-      "Data-Backed": "Are recommendations supported by the competitive analysis data?"
+      "Data-Backed": "Recommendations are supported by the competitive analysis data."
   - run_each: step_instruction_files
     additional_review_guidance: "Read the job.yml file in the same job directory for context on how this instruction file fits into the larger workflow."
     quality_criteria:
-      "Complete Instructions": "Is the instruction file complete?"
+      "Complete Instructions": "The instruction file is complete."
 ```
 
 **When to use `additional_review_guidance`:**

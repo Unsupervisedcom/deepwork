@@ -54,9 +54,9 @@ steps:
     reviews:
       - run_each: job.yml
         quality_criteria:
-          "Intermediate Deliverables": "Does the job break out across the logical steps such that there are reviewable intermediate deliverables?"
+          "Intermediate Deliverables": "The job breaks out across logical steps with reviewable intermediate deliverables."
           "Reviews": |
-            Are there reviews defined for each step? Do particularly critical documents have their own reviews?
+            Reviews are defined for each step. Particularly critical documents have their own reviews.
             Note that the reviewers do not have transcript access, so if the criteria are about the conversation,
             then add a `.deepwork/tmp/[step_summary].md` step output file so the agent has a communication channel to the reviewer.
 
@@ -78,13 +78,13 @@ steps:
       - run_each: step_instruction_files
         additional_review_guidance: "Read the job.yml file in the same job directory for context on how this instruction file fits into the larger workflow."
         quality_criteria:
-          "Complete Instructions": "Is the instruction file complete (no stubs or placeholders)?"
-          "Specific & Actionable": "Are instructions tailored to the step's purpose, not generic?"
-          "Output Examples": "Does the instruction file show what good output looks like? This can be either template examples, or negative examples of what not to do. Only required if the step has ouputs"
-          "Quality Criteria": "Does the instruction file define quality criteria for its outputs?"
-          "Ask Structured Questions": "If this step gathers user input, do instructions explicitly use the phrase 'ask structured questions'? If the step has no user inputs, this criterion passes automatically."
-          "Prompt Engineering": "Does the instruction file follow Anthropic's best practices for prompt engineering?"
-          "No Redundant Info": "Does the instruction file avoid duplicating information that belongs in the job.yml's common_job_info_provided_to_all_steps_at_runtime section? Shared context (project background, terminology, conventions) should be in common_job_info, not repeated in each step."
+          "Complete Instructions": "The instruction file is complete (no stubs or placeholders)."
+          "Specific & Actionable": "Instructions are tailored to the step's purpose, not generic."
+          "Output Examples": "The instruction file shows what good output looks like. This can be either template examples, or negative examples of what not to do. Only required if the step has outputs."
+          "Quality Criteria": "The instruction file defines quality criteria for its outputs."
+          "Ask Structured Questions": "If this step gathers user input, instructions explicitly use the phrase 'ask structured questions'. If the step has no user inputs, this criterion passes automatically."
+          "Prompt Engineering": "The instruction file follows Anthropic's best practices for prompt engineering."
+          "No Redundant Info": "The instruction file avoids duplicating information that belongs in the job.yml's common_job_info_provided_to_all_steps_at_runtime section. Shared context (project background, terminology, conventions) is in common_job_info, not repeated in each step."
 
   - id: test
     name: "Test the New Workflow"
@@ -106,11 +106,11 @@ steps:
     reviews:
       - run_each: step
         quality_criteria:
-          "Workflow Invoked": "Was the new workflow actually run on the user's test case via MCP?"
-          "Output Critiqued": "Did the agent identify up to 3 top issues with the output?"
-          "User Feedback Gathered": "Did the agent ask the user about each issue and gather additional feedback?"
-          "Corrections Made": "Were all requested corrections applied to the output?"
-          "User Satisfied": "Did the user confirm the output meets their needs?"
+          "Workflow Invoked": "The new workflow was actually run on the user's test case via MCP."
+          "Output Critiqued": "The agent identified up to 3 top issues with the output."
+          "User Feedback Gathered": "The agent asked the user about each issue and gathered additional feedback."
+          "Corrections Made": "All requested corrections were applied to the output."
+          "User Satisfied": "The user confirmed the output meets their needs."
 
   - id: iterate
     name: "Iterate on Workflow Design"
@@ -170,14 +170,14 @@ steps:
     reviews:
       - run_each: step
         quality_criteria:
-          "Conversation Analyzed": "Did the agent review the conversation for DeepWork job executions?"
-          "Confusion Identified": "Did the agent identify points of confusion, errors, or inefficiencies?"
-          "Instructions Improved": "Were job instructions updated to address identified issues?"
-          "Instructions Concise": "Are instructions free of redundancy and unnecessary verbosity?"
-          "Shared Content Extracted": "Is lengthy/duplicated content extracted into referenced files?"
-          "Bespoke Learnings Captured": "Were run-specific learnings added to AGENTS.md?"
-          "File References Used": "Do AGENTS.md entries reference other files where appropriate?"
-          "Working Folder Correct": "Is AGENTS.md in the correct working folder for the job?"
+          "Conversation Analyzed": "The agent reviewed the conversation for DeepWork job executions."
+          "Confusion Identified": "The agent identified points of confusion, errors, or inefficiencies."
+          "Instructions Improved": "Job instructions were updated to address identified issues."
+          "Instructions Concise": "Instructions are free of redundancy and unnecessary verbosity."
+          "Shared Content Extracted": "Lengthy/duplicated content is extracted into referenced files."
+          "Bespoke Learnings Captured": "Run-specific learnings were added to AGENTS.md."
+          "File References Used": "AGENTS.md entries reference other files where appropriate."
+          "Working Folder Correct": "AGENTS.md is in the correct working folder for the job."
 
   - id: fix_settings
     name: "Fix Settings Files"
@@ -193,15 +193,14 @@ steps:
     reviews:
       - run_each: step
         quality_criteria:
-          "DeepWork Skills Removed": "Are `Skill(...)` entries matching jobs in `.deepwork/jobs/` removed?"
-          "Non-DeepWork Skills Preserved": "Are skills NOT matching DeepWork jobs left intact?"
-          "Stale make_new_job.sh Removed": "Are stale `Bash(...)` permissions referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` removed?"
-          "Rules Hooks Removed": "Are all DeepWork Rules hooks and permissions removed?"
-          "Duplicate Hooks Removed": "Are duplicate hook entries consolidated or removed?"
-          "Hardcoded Paths Removed": "Are user-specific hardcoded paths (like `/Users/*/...`) removed?"
-          "Deprecated Commands Removed": "Are deprecated commands like `deepwork hook *` removed?"
-          "Valid JSON": "Is settings.json still valid JSON after modifications?"
-          "Backup Created": "Was a backup of the original settings created before modifications?"
+          "DeepWork Skills Removed": "`Skill(...)` entries matching jobs in `.deepwork/jobs/` are removed."
+          "Non-DeepWork Skills Preserved": "Skills NOT matching DeepWork jobs are left intact."
+          "Stale make_new_job.sh Removed": "Stale `Bash(...)` permissions referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` are removed."
+          "Rules Hooks Removed": "All DeepWork Rules hooks and permissions are removed."
+          "Duplicate Hooks Removed": "Duplicate hook entries are consolidated or removed."
+          "Hardcoded Paths Removed": "User-specific hardcoded paths (like `/Users/*/...`) are removed."
+          "Deprecated Commands Removed": "Deprecated commands like `deepwork hook *` are removed."
+          "Backup Created": "A backup of the original settings was created before modifications."
 
   - id: fix_jobs
     name: "Fix Job Definitions"
@@ -225,12 +224,12 @@ steps:
       - run_each: step
         additional_review_guidance: "Read the .claude/settings.json file for context on what settings were cleaned up in the prior step."
         quality_criteria:
-          "Exposed Field Addressed": "Are `exposed: true` fields removed or noted as deprecated?"
-          "Stop Hooks Migrated": "Are `stop_hooks` migrated to `hooks.after_agent` format?"
-          "Removed Steps Cleaned": "Are references to removed steps (like `review_job_spec`) updated?"
-          "Orphaned Steps Fixed": "For jobs with no workflows, is there a single workflow (named after the job) containing all steps? For jobs with existing workflows, does each orphan get its own workflow (named after the step)?"
-          "Promise Lines Removed": "Are deprecated `<promise>Quality Criteria Met</promise>` lines removed from step instruction .md files?"
-          "Valid YAML": "Are all job.yml files valid YAML?"
+          "Exposed Field Addressed": "`exposed: true` fields are removed or noted as deprecated."
+          "Stop Hooks Migrated": "`stop_hooks` are migrated to `hooks.after_agent` format."
+          "Removed Steps Cleaned": "References to removed steps (like `review_job_spec`) are updated."
+          "Orphaned Steps Fixed": "For jobs with no workflows, there is a single workflow (named after the job) containing all steps. For jobs with existing workflows, each orphan gets its own workflow (named after the step)."
+          "Promise Lines Removed": "Step instructions do not include anything about `<promise>Quality Criteria Met</promise>`."
+          "job.ymls are readable": "Calling `get_workflows` from the Deepwork tool shows all expected jobs. If any are missing, its YML is likely bad."
 
   - id: errata
     name: "Clean Up Errata"
@@ -245,13 +244,9 @@ steps:
       - fix_jobs
     reviews:
       - run_each: step
-        additional_review_guidance: "Check the .deepwork/jobs/ directory and .claude/skills/ directory to verify the cleanup was done correctly."
+        additional_review_guidance: "You should do this in a small number or turns - tee up every data request you need in your first call. Do not invoke sub-agents."
         quality_criteria:
-          "Legacy Job Skills Removed": "Are legacy skill folders for each job removed from `.claude/skills/` and `.gemini/skills/`?"
-          "Deepwork Skill Preserved": "Does the `deepwork` skill folder still exist in `.claude/skills/deepwork/`?"
-          "Temp Files Cleaned": "Are `.deepwork/tmp/` contents cleaned appropriately?"
-          "Rules Folder Removed": "Is `.deepwork/rules/` folder backed up and removed (fully deprecated)?"
-          "Rules Job Removed": "Is `.deepwork/jobs/deepwork_rules/` removed if present?"
-          "Config Version Updated": "Is `.deepwork/config.yml` using current version format?"
-          "DeepWork Re-installed": "Was `deepwork install` run after cleanup, and does it complete without errors?"
-          "Git Status Clean": "Are changes ready to be committed (no untracked garbage files)?"
+          "Legacy Job Skills Removed": "Legacy skill folders for each job are removed from `.claude/skills/` and `.gemini/skills/`."
+          "Deepwork Skill Preserved": "The `deepwork` skill folder still exists in `.claude/skills/deepwork/`."
+          "Rules Folder Removed": "`.deepwork/rules/` folder is gone."
+          "Rules Job Removed": "`.deepwork/jobs/deepwork_rules/` is gone."
