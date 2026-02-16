@@ -30,6 +30,7 @@ class JobLoadError:
     job_dir: str
     error: str
 
+
 # Environment variable for additional job folders (colon-delimited)
 ENV_ADDITIONAL_JOBS_FOLDERS = "DEEPWORK_ADDITIONAL_JOBS_FOLDERS"
 
