@@ -625,16 +625,16 @@ class TestComputeTimeout:
     """Tests for QualityGate.compute_timeout."""
 
     def test_base_timeout_for_few_files(self) -> None:
-        """Test that <=5 files gives base 120s timeout."""
-        assert QualityGate.compute_timeout(0) == 120
-        assert QualityGate.compute_timeout(1) == 120
-        assert QualityGate.compute_timeout(5) == 120
+        """Test that <=5 files gives base 240s (4 min) timeout."""
+        assert QualityGate.compute_timeout(0) == 240
+        assert QualityGate.compute_timeout(1) == 240
+        assert QualityGate.compute_timeout(5) == 240
 
     def test_timeout_increases_after_five(self) -> None:
         """Test that each file after 5 adds 30 seconds."""
-        assert QualityGate.compute_timeout(6) == 150
-        assert QualityGate.compute_timeout(10) == 270  # 120 + 5*30
-        assert QualityGate.compute_timeout(20) == 570  # 120 + 15*30
+        assert QualityGate.compute_timeout(6) == 270
+        assert QualityGate.compute_timeout(10) == 390  # 240 + 5*30
+        assert QualityGate.compute_timeout(20) == 690  # 240 + 15*30
 
 
 class TestDynamicTimeout:
@@ -653,8 +653,8 @@ class TestDynamicTimeout:
         )
 
         call_kwargs = mock_cli.run.call_args.kwargs
-        # 1 file -> timeout = 120
-        assert call_kwargs["timeout"] == 120
+        # 1 file -> timeout = 240
+        assert call_kwargs["timeout"] == 240
 
     async def test_timeout_scales_with_file_count(
         self, mock_cli: ClaudeCLI, project_root: Path
@@ -672,8 +672,8 @@ class TestDynamicTimeout:
         )
 
         call_kwargs = mock_cli.run.call_args.kwargs
-        # 10 files -> 120 + 5*30 = 270
-        assert call_kwargs["timeout"] == 270
+        # 10 files -> 240 + 5*30 = 390
+        assert call_kwargs["timeout"] == 390
 
 
 class TestMockQualityGate:

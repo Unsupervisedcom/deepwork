@@ -263,6 +263,7 @@ You must respond with JSON in this exact structure:
         self,
         outputs: dict[str, str | list[str]],
         project_root: Path,
+        notes: str | None = None,
     ) -> str:
         """Build the user prompt payload with output file contents.
 
@@ -272,6 +273,7 @@ You must respond with JSON in this exact structure:
         Args:
             outputs: Map of output names to file path(s)
             project_root: Project root path for reading files
+            notes: Optional notes from the agent about work done
 
         Returns:
             Formatted payload with output file contents or path listing
@@ -296,6 +298,11 @@ You must respond with JSON in this exact structure:
                 parts.append(f"{SECTION_SEPARATOR} BEGIN OUTPUTS {SECTION_SEPARATOR}")
                 parts.extend(output_sections)
                 parts.append(f"{SECTION_SEPARATOR} END OUTPUTS {SECTION_SEPARATOR}")
+
+        if notes:
+            parts.append(f"{SECTION_SEPARATOR} AUTHOR NOTES {SECTION_SEPARATOR}")
+            parts.append(notes)
+            parts.append(f"{SECTION_SEPARATOR} END AUTHOR NOTES {SECTION_SEPARATOR}")
 
         if not parts:
             return "[No files provided]"
@@ -370,6 +377,8 @@ You must respond with JSON in this exact structure:
         parts.append("")
 
         # Build outputs listing (uses self.max_inline_files to decide inline vs path-only)
+        # Notes are handled separately below in the "Author Notes" section,
+        # so we don't pass them to _build_payload here.
         payload = await self._build_payload(outputs, project_root)
         parts.append(payload)
         parts.append("")
@@ -445,12 +454,12 @@ You must respond with JSON in this exact structure:
     def compute_timeout(file_count: int) -> int:
         """Compute dynamic timeout based on number of files.
 
-        Base timeout is 120 seconds. For every file beyond the first 5,
-        add 30 seconds. Examples:
-          - 3 files  -> 120s
-          - 5 files  -> 120s
-          - 10 files -> 120 + 30*5 = 270s (4.5 min)
-          - 20 files -> 120 + 30*15 = 570s (9.5 min)
+        Base timeout is 240 seconds (4 minutes). For every file beyond
+        the first 5, add 30 seconds. Examples:
+          - 3 files  -> 240s
+          - 5 files  -> 240s
+          - 10 files -> 240 + 30*5 = 390s (6.5 min)
+          - 20 files -> 240 + 30*15 = 690s (11.5 min)
 
         Args:
             file_count: Total number of files being reviewed
@@ -458,7 +467,7 @@ You must respond with JSON in this exact structure:
         Returns:
             Timeout in seconds
         """
-        return 120 + 30 * max(0, file_count - 5)
+        return 240 + 30 * max(0, file_count - 5)
 
     async def evaluate(
         self,
@@ -502,7 +511,7 @@ You must respond with JSON in this exact structure:
             notes=notes,
             additional_review_guidance=additional_review_guidance,
         )
-        payload = await self._build_payload(outputs, project_root)
+        payload = await self._build_payload(outputs, project_root, notes=notes)
 
         # Dynamic timeout: more files = more time for the reviewer
         file_count = len(self._flatten_output_paths(outputs))
