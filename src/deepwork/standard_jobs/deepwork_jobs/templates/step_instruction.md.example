@@ -75,7 +75,6 @@ A markdown document listing each competitor with context.
 - Each competitor has clear, specific description
 - Selection rationale explains the competitive landscape
 - Output is well-formatted and ready for use by next step
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
 
 ## Context
 

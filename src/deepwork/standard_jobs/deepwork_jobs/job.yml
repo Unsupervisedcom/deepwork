@@ -228,6 +228,7 @@ steps:
           "Stop Hooks Migrated": "`stop_hooks` are migrated to `hooks.after_agent` format."
           "Removed Steps Cleaned": "References to removed steps (like `review_job_spec`) are updated."
           "Orphaned Steps Fixed": "For jobs with no workflows, there is a single workflow (named after the job) containing all steps. For jobs with existing workflows, each orphan gets its own workflow (named after the step)."
+          "Promise Lines Removed": "Step instructions do not include anything about `<promise>Quality Criteria Met</promise>`."
           "job.ymls are readable": "Calling `get_workflows` from the Deepwork tool shows all expected jobs. If any are missing, its YML is likely bad."
 
   - id: errata
