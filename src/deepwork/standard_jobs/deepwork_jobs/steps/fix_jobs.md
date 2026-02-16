@@ -47,8 +47,9 @@ Then audit and repair the job at `.deepwork/jobs/[job_name]/job.yml`:
 9. Replace `description:` with `common_job_info_provided_to_all_steps_at_runtime:` if present
 10. Remove any info in `common_job_info_provided_to_all_steps_at_runtime` that is not relevant to most steps.
 11. Read the step instructions and remove anything that is repeated in many steps and put it into `common_job_info_provided_to_all_steps_at_runtime`
-12. Bump version if changes were made
-13. Validate YAML syntax
+12. Remove `<promise>Quality Criteria Met</promise>` lines from step instruction .md files
+13. Bump version if changes were made
+14. Validate YAML syntax
 
 Report only: which checks passed with no changes, and which changes were made (one line each).
 ```
@@ -252,7 +253,22 @@ steps:
 3. **For steps with no quality_criteria**: Use `reviews: []`
 4. **Remove the old field**: Delete the `quality_criteria` array entirely after migration.
 
-### Step 8: Update Version Numbers
+### Step 8: Remove Deprecated `<promise>Quality Criteria Met</promise>` from Step Instructions
+
+Old step instruction templates included a line telling the agent to self-attest quality by emitting a `<promise>` tag. This has been fully replaced by the structured `reviews` system with `QualityGate` evaluation. The old line serves no purpose and should be removed.
+
+**Find and remove lines like these from step instruction `.md` files:**
+
+```markdown
+- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
+- When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
+```
+
+**Where to look:** Check every `.md` file in each job's `steps/` directory. The line typically appears as the last bullet in a `## Quality Criteria` section.
+
+**What to do:** Delete the line entirely. Do not replace it with anything — the `reviews` system in `job.yml` now handles quality evaluation.
+
+### Step 9: Update Version Numbers
 
 If you made significant changes to a job, bump its version number:
 
@@ -299,6 +315,7 @@ For each job in `.deepwork/jobs/`, check:
 | `stop_hooks` | Migrate to `hooks.after_agent` |
 | `outputs` format | Migrate from array to map with `type` and `description` |
 | `quality_criteria` | Migrate to `reviews` with `run_each` and map-format criteria |
+| `<promise>` in step `.md` files | Remove deprecated `Quality Criteria Met` self-attestation lines |
 | Workflow steps | Remove references to deleted steps |
 | Dependencies | Update to valid step IDs |
 | File inputs | Update `from_step` references; update keys for renamed outputs |
