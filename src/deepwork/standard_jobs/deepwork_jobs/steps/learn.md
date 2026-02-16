@@ -100,10 +100,6 @@ For each generalizable learning:
    - Add to appropriate sections rather than restructuring
    - Maintain consistency with other steps
 
-5. **Track changes for changelog**
-   - Note what was changed and why
-   - Prepare changelog entry for job.yml
-
 ### Step 4b: Extract Shared Content into Referenced Files
 
 Review all instruction files for the job and identify content that:
@@ -152,19 +148,13 @@ The AGENTS.md file captures project-specific knowledge that helps future agent r
    - Use line numbers when referencing specific code: `file.ext:42`
    - Group related learnings together
 
-### Step 6: Update Job Version and Changelog
+### Step 6: Update Job Version
 
 If instruction files were modified:
 
 1. **Bump version in job.yml**
    - Patch version (0.0.x) for instruction improvements
    - Minor version (0.x.0) if quality criteria changed
-
-2. **Add changelog entry**
-   ```yaml
-   - version: "[new_version]"
-     changes: "Improved [step] instructions based on execution learnings: [brief description]"
-   ```
 
 ## File Reference Patterns
 
@@ -235,7 +225,7 @@ I found the following job executions:
    - From conversation about: Initial competitive analysis run
    ```
 
-3. Updated job.yml version to 1.0.1 with changelog entry
+3. Updated job.yml version to 1.0.1
 
 **Summary**
 

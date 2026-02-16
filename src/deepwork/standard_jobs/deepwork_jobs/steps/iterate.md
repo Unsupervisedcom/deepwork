@@ -112,20 +112,13 @@ Examples:
 - If data processing was slow, suggest a different method or tool
 - If file generation had issues, recommend a different library or format
 
-### Step 6: Update Job Version and Changelog
+### Step 6: Update Job Version
 
 After making improvements:
 
 1. **Bump the version** in `job.yml`:
    - Patch version (x.x.1) for minor instruction tweaks
    - Minor version (x.1.0) for quality criteria changes or significant improvements
-
-2. **Add a changelog entry** describing what was improved:
-   ```yaml
-   changelog:
-     - version: "1.0.1"
-       changes: "Improved [step] instructions based on test run: added examples, clarified criteria, updated tool recommendations"
-   ```
 
 ### Step 7: Provide Recap
 
@@ -158,7 +151,6 @@ Example recap format:
 
 **job.yml:**
 - Updated version to 1.0.1
-- Added changelog entry
 
 ### Expected Impact
 Future runs should produce reports with better visual design and clearer summaries, reducing the need for post-generation corrections.

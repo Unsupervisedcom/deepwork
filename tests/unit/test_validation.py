@@ -15,7 +15,7 @@ class TestValidateAgainstSchema:
             "name": "simple_job",
             "version": "1.0.0",
             "summary": "A simple job for testing",
-            "description": "A simple job",
+            "common_job_info_provided_to_all_steps_at_runtime": "A simple job",
             "steps": [
                 {
                     "id": "step1",
@@ -40,7 +40,7 @@ class TestValidateAgainstSchema:
             "name": "job_with_inputs",
             "version": "1.0.0",
             "summary": "Job with user inputs",
-            "description": "Job with inputs",
+            "common_job_info_provided_to_all_steps_at_runtime": "Job with inputs",
             "steps": [
                 {
                     "id": "step1",
@@ -68,7 +68,7 @@ class TestValidateAgainstSchema:
             "name": "job_with_deps",
             "version": "1.0.0",
             "summary": "Job with dependencies",
-            "description": "Job with dependencies",
+            "common_job_info_provided_to_all_steps_at_runtime": "Job with dependencies",
             "steps": [
                 {
                     "id": "step1",
@@ -108,7 +108,7 @@ class TestValidateAgainstSchema:
             "name": "incomplete_job",
             "version": "1.0.0",
             # Missing summary
-            # Missing description
+            # Missing common_job_info_provided_to_all_steps_at_runtime
             "steps": [],
         }
 
@@ -121,7 +121,7 @@ class TestValidateAgainstSchema:
             "name": "Invalid-Job-Name",  # Dashes not allowed
             "version": "1.0.0",
             "summary": "Invalid name test",
-            "description": "Invalid name",
+            "common_job_info_provided_to_all_steps_at_runtime": "Invalid name",
             "steps": [
                 {
                     "id": "step1",
@@ -145,7 +145,7 @@ class TestValidateAgainstSchema:
             "name": "job",
             "version": "1.0",  # Not semver
             "summary": "Invalid version test",
-            "description": "Job",
+            "common_job_info_provided_to_all_steps_at_runtime": "Job",
             "steps": [
                 {
                     "id": "step1",
@@ -169,7 +169,7 @@ class TestValidateAgainstSchema:
             "name": "job",
             "version": "1.0.0",
             "summary": "Empty steps test",
-            "description": "Job with no steps",
+            "common_job_info_provided_to_all_steps_at_runtime": "Job with no steps",
             "steps": [],
         }
 
@@ -182,7 +182,7 @@ class TestValidateAgainstSchema:
             "name": "job",
             "version": "1.0.0",
             "summary": "Missing outputs test",
-            "description": "Job",
+            "common_job_info_provided_to_all_steps_at_runtime": "Job",
             "steps": [
                 {
                     "id": "step1",
@@ -203,7 +203,7 @@ class TestValidateAgainstSchema:
             "name": "job",
             "version": "1.0.0",
             "summary": "Invalid input format test",
-            "description": "Job",
+            "common_job_info_provided_to_all_steps_at_runtime": "Job",
             "steps": [
                 {
                     "id": "step1",
@@ -243,7 +243,7 @@ class TestValidateAgainstSchema:
             "name": "job",
             "version": "1.0.0",
             "summary": "Missing reviews test",
-            "description": "Job",
+            "common_job_info_provided_to_all_steps_at_runtime": "Job",
             "steps": [
                 {
                     "id": "step1",
@@ -267,7 +267,7 @@ class TestValidateAgainstSchema:
             "name": "job_with_reviews",
             "version": "1.0.0",
             "summary": "Job with reviews",
-            "description": "Job",
+            "common_job_info_provided_to_all_steps_at_runtime": "Job",
             "steps": [
                 {
                     "id": "step1",
@@ -304,7 +304,7 @@ class TestValidateAgainstSchema:
             "name": "job",
             "version": "1.0.0",
             "summary": "Test",
-            "description": "Job",
+            "common_job_info_provided_to_all_steps_at_runtime": "Job",
             "steps": [
                 {
                     "id": "step1",
@@ -333,7 +333,7 @@ class TestValidateAgainstSchema:
             "name": "job",
             "version": "1.0.0",
             "summary": "Test",
-            "description": "Job",
+            "common_job_info_provided_to_all_steps_at_runtime": "Job",
             "steps": [
                 {
                     "id": "step1",

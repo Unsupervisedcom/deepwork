@@ -2,7 +2,7 @@
 name: deepwork_jobs
 version: "1.4.0"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, testing, or improving DeepWork jobs."
-description: |
+common_job_info_provided_to_all_steps_at_runtime: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
   workflows, test them on real use cases, and learn from running them.
 
@@ -36,34 +36,6 @@ workflows:
     summary: "Analyze conversation history to improve job instructions and capture learnings"
     steps:
       - learn
-
-changelog:
-  - version: "1.4.0"
-    changes: "Fixed implement step review criteria that caused severe friction: 'Ask Structured Questions' now auto-passes for steps without user inputs; 'Output Examples' renamed to 'Output Format Examples' and accepts template placeholders; added detailed review guidance to prevent misapplication of criteria"
-  - version: "1.3.0"
-    changes: "Migrated quality_criteria to reviews system with run_each targeting and map-format criteria"
-  - version: "1.2.1"
-    changes: "Removed deprecated exposed field from learn step; added learn workflow to make step accessible via MCP"
-  - version: "1.2.0"
-    changes: "Added repair workflow with fix_settings, fix_jobs, and errata steps for migrating old DeepWork configurations to current format"
-  - version: "1.1.0"
-    changes: "Added test and iterate steps to new_job workflow; test runs the workflow on a real use case and gathers feedback; iterate improves the job definition based on what happened"
-  - version: "1.0.1"
-    changes: "Removed review_job_spec step from new_job workflow; implement now follows directly from define"
-  - version: "1.0.0"
-    changes: "Added workflows section to distinguish new_job workflow (define→review_job_spec→implement) from standalone learn skill"
-  - version: "0.1.0"
-    changes: "Initial version"
-  - version: "0.2.0"
-    changes: "Replaced refine command with learn command for conversation-driven improvement"
-  - version: "0.3.0"
-    changes: "Added make_new_job.sh script and templates directory; updated instructions to reference templates instead of inline examples"
-  - version: "0.4.0"
-    changes: "Removed implementation_summary and learning_summary outputs; simplified step outputs"
-  - version: "0.5.0"
-    changes: "Standardized on 'ask structured questions' phrasing for user input; Updated quality criteria hooks to verify phrase usage; Added guidance in implement.md to use phrase in generated instructions"
-  - version: "0.9.0"
-    changes: "Improved skill descriptions with third-person voice and 'Use when...' triggers for better discoverability"
 
 steps:
   - id: define
@@ -112,6 +84,7 @@ steps:
           "Quality Criteria": "Does the instruction file define quality criteria for its outputs?"
           "Ask Structured Questions": "If this step gathers user input, do instructions explicitly use the phrase 'ask structured questions'? If the step has no user inputs, this criterion passes automatically."
           "Prompt Engineering": "Does the instruction file follow Anthropic's best practices for prompt engineering?"
+          "No Redundant Info": "Does the instruction file avoid duplicating information that belongs in the job.yml's common_job_info_provided_to_all_steps_at_runtime section? Shared context (project background, terminology, conventions) should be in common_job_info, not repeated in each step."
 
   - id: test
     name: "Test the New Workflow"

@@ -107,17 +107,6 @@ steps:
           "Date Included": "..."
 ```
 
-## Quality Criteria
-
-- The nested workflow ran to completion (all steps finished)
-- The `detailed_test_review` job.yml exists and is valid YAML
-- It defines exactly two steps: `run_tests` and `update_readme`
-- `run_tests` has both `test_files` (files) and `coverage_report` (file) outputs
-- `run_tests` has a for_each file review on `test_files` and a for_each step review for coverage
-- `update_readme` takes `coverage_report` as input from `run_tests`
-- `update_readme` produces a `readme` output
-- When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
-
 ## Context
 
 This step is the core exercise of the test_job_flow. By running the full job creation workflow as a nested sub-agent, we can observe the entire process end-to-end and identify any friction points. The transcript from this step will be reviewed in the next step.

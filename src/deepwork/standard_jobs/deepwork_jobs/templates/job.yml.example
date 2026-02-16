@@ -5,14 +5,10 @@
 name: competitive_research
 version: "1.0.0"
 summary: "Systematic competitive analysis workflow"
-description: |
+common_job_info_provided_to_all_steps_at_runtime: |
   A comprehensive workflow for analyzing competitors in your market segment.
   Helps product teams understand the competitive landscape through systematic
   identification, research, comparison, and positioning recommendations.
-
-changelog:
-  - version: "1.0.0"
-    changes: "Initial job creation"
 
 workflows:
   - name: full_analysis

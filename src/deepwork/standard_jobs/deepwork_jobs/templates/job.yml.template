@@ -6,19 +6,14 @@
 name: [job_name]
 version: "1.0.0"
 summary: "[Brief one-line summary of what this job accomplishes - max 200 chars]"
-description: |
-  [Detailed multi-line description of the job's purpose, process, and goals.
+common_job_info_provided_to_all_steps_at_runtime: |
+  [Common context and information shared across all steps at runtime.
 
-  This should explain:
+  This should include:
   - What problem this workflow solves
-  - What the overall process looks like
-  - What the end result will be
-  - Who the intended users are
-  - Any important context about the workflow]
-
-changelog:
-  - version: "1.0.0"
-    changes: "Initial job creation"
+  - Key terminology and conventions
+  - Constraints or guidelines that apply to every step
+  - Any important shared context about the workflow]
 
 workflows:
   - name: [workflow_name]

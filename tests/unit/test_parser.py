@@ -329,7 +329,7 @@ class TestJobDefinition:
             name="test_job",
             version="1.0.0",
             summary="Test job",
-            description="Test",
+            common_job_info_provided_to_all_steps_at_runtime="Test",
             steps=[
                 Step(
                     id="step1",
@@ -356,7 +356,7 @@ class TestJobDefinition:
             name="test_job",
             version="1.0.0",
             summary="Test job",
-            description="Test",
+            common_job_info_provided_to_all_steps_at_runtime="Test",
             steps=[
                 Step(
                     id="step1",
@@ -403,7 +403,7 @@ class TestJobDefinition:
             name="test_job",
             version="1.0.0",
             summary="Test job",
-            description="Test",
+            common_job_info_provided_to_all_steps_at_runtime="Test",
             steps=[
                 Step(
                     id="step1",
@@ -431,7 +431,7 @@ class TestJobDefinition:
             name="test_job",
             version="1.0.0",
             summary="Test job",
-            description="Test",
+            common_job_info_provided_to_all_steps_at_runtime="Test",
             steps=[
                 Step(
                     id="step1",
@@ -461,7 +461,7 @@ class TestJobDefinition:
             name="test_job",
             version="1.0.0",
             summary="Test job",
-            description="Test",
+            common_job_info_provided_to_all_steps_at_runtime="Test",
             steps=[
                 Step(
                     id="step1",
@@ -493,7 +493,7 @@ class TestJobDefinition:
             name="test_job",
             version="1.0.0",
             summary="Test job",
-            description="Test",
+            common_job_info_provided_to_all_steps_at_runtime="Test",
             steps=[
                 Step(
                     id="step1",
@@ -538,7 +538,7 @@ class TestParseJobDefinition:
 
         assert job.name == "simple_job"
         assert job.summary == "A simple single-step job for testing"
-        assert "DeepWork framework" in job.description  # Multi-line description
+        assert "DeepWork framework" in job.common_job_info_provided_to_all_steps_at_runtime
         assert len(job.steps) == 1
         assert job.steps[0].id == "single_step"
         assert job.job_dir == job_dir

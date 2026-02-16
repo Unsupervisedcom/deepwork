@@ -10,14 +10,9 @@ The MCP layer is how external tools (like Claude Code) interact with DeepWork. I
 
 ### Process
 
-1. **Read the change summary**
-   - Read `.deepwork/tmp/schema_change_summary.md` to understand what changed
-   - Determine if the change affects MCP tool responses
-
-2. **Read the current MCP schemas**
-   - Read `src/deepwork/mcp/schemas.py` — Pydantic models for tool I/O
-   - Key models: `JobInfo`, `WorkflowInfo`, `StepInfo`, `StartWorkflowInput`, `FinishedStepInput`, `GetWorkflowsResponse`
-   - Read the updated `src/deepwork/core/parser.py` to see the new dataclass fields
+1. **Read the change summary and current MCP schemas**
+   - Key models in `src/deepwork/mcp/schemas.py`: `JobInfo`, `WorkflowInfo`, `StepInfo`, `StartWorkflowInput`, `FinishedStepInput`, `GetWorkflowsResponse`
+   - Also read the updated `src/deepwork/core/parser.py` to see the new dataclass fields
 
 3. **Determine what needs updating**
    - Not every schema change affects MCP responses. Ask:
@@ -35,13 +30,6 @@ The MCP layer is how external tools (like Claude Code) interact with DeepWork. I
    - Read `src/deepwork/mcp/tools.py`
    - Update the conversion logic that transforms `JobDefinition` → MCP response models
    - Ensure new fields are correctly mapped from parser dataclasses to Pydantic models
-
-### Key Files
-
-- **MCP schemas**: `src/deepwork/mcp/schemas.py`
-- **MCP tools**: `src/deepwork/mcp/tools.py`
-- **Parser (for reference)**: `src/deepwork/core/parser.py`
-- **Change summary**: `.deepwork/tmp/schema_change_summary.md`
 
 ## Output Format
 
@@ -85,8 +73,6 @@ StepInfo(
 - Conversion logic in tools.py correctly maps new dataclass fields to Pydantic fields
 - No existing MCP response fields are broken or removed unintentionally
 - The header comment in schemas.py about staying in sync with mcp_interface.md is respected
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
-
 ## Context
 
 The MCP server is the primary interface for AI agents interacting with DeepWork. The Pydantic models in schemas.py define the contract between the MCP server and its clients. Changes here should be minimal and deliberate — only expose fields that clients actually need.

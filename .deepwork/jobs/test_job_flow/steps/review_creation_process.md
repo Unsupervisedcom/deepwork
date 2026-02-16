@@ -77,15 +77,6 @@ A markdown file at `.deepwork/tmp/job_creation_friction.md`.
 [Was the process smooth enough for production use? What's the biggest single improvement that could be made?]
 ```
 
-## Quality Criteria
-
-- The friction report references specific events from the sub-agent's transcript (not vague generalities)
-- Each friction point is described concretely enough that a developer could reproduce and fix it
-- The completion status section accurately reflects what happened
-- Both problems AND successes are documented (balanced view)
-- The overall assessment provides a clear priority for improvement
-- When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
-
 ## Context
 
 This step bridges observation and action. The friction points documented here will be the input to step 3, where we investigate the actual code to find improvements. The more specific and concrete the friction descriptions, the more targeted the improvements can be.

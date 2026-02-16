@@ -10,10 +10,7 @@ Documentation must accurately reflect the current schema. Outdated docs cause co
 
 ### Process
 
-1. **Read the change summary**
-   - Read `.deepwork/tmp/schema_change_summary.md` for what changed
-
-2. **Identify affected documentation**
+1. **Read the change summary** and identify affected documentation
    - `doc/architecture.md` — comprehensive architecture documentation, references job.yml structure, JobDefinition dataclasses, parsing process
    - `doc/mcp_interface.md` — MCP tool documentation, references job fields through tool descriptions
    - `CLAUDE.md` — project instructions, references standard_jobs structure
@@ -38,14 +35,6 @@ Documentation must accurately reflect the current schema. Outdated docs cause co
 6. **Verify consistency**
    - Ensure all docs tell the same story about the schema
    - Check that example snippets in docs match the actual schema
-
-### Key Files
-
-- **Architecture doc**: `doc/architecture.md`
-- **MCP interface doc**: `doc/mcp_interface.md`
-- **Project instructions**: `CLAUDE.md`
-- **README**: `README.md`
-- **Change summary**: `.deepwork/tmp/schema_change_summary.md`
 
 ## Output Format
 
@@ -83,8 +72,6 @@ After (updated):
 - Example snippets in documentation match the actual schema
 - No documentation references removed or renamed fields by old names
 - All affected sections are updated (not just the first one found)
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
-
 ## Context
 
 Documentation is read by both humans and AI agents. The CLAUDE.md and architecture.md files are particularly important because they are loaded into AI agent context when working on this project. Stale documentation here means AI agents will make incorrect assumptions about the codebase.

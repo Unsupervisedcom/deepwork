@@ -1,7 +1,7 @@
 name: update_job_schema
-version: "1.0.1"
+version: "1.0.2"
 summary: "Update the job.yml JSON Schema and propagate changes through all dependent code and files"
-description: |
+common_job_info_provided_to_all_steps_at_runtime: |
   A repeatable workflow for making changes to the job.yml JSON Schema
   (src/deepwork/schemas/job.schema.json) and systematically propagating those
   changes through every dependent layer of the DeepWork codebase.
@@ -19,11 +19,20 @@ description: |
   Based on historical analysis, a typical schema change touches 20-40 files
   across the codebase. This workflow ensures nothing is missed.
 
-changelog:
-  - version: "1.0.1"
-    changes: "Enable parallel execution for independent steps (fixtures, jobs, docs can run concurrently)"
-  - version: "1.0.0"
-    changes: "Initial job creation"
+  ## Shared References
+
+  - **Change summary**: `.deepwork/tmp/schema_change_summary.md` — written in
+    step 1 (update_schema) and consumed by every subsequent step. Always read
+    this first to understand what changed.
+  - **Schema file**: `src/deepwork/schemas/job.schema.json`
+  - **Parser**: `src/deepwork/core/parser.py`
+  - **MCP schemas**: `src/deepwork/mcp/schemas.py`
+  - **MCP tools**: `src/deepwork/mcp/tools.py`
+
+  ## Quality Criteria Convention
+
+  When all quality criteria listed in a step's reviews are met, include
+  `<promise>✓ Quality Criteria Met</promise>` in your response.
 
 workflows:
   - name: run

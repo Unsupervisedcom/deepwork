@@ -10,9 +10,7 @@ Test fixtures are job.yml files used in unit and integration tests. They must co
 
 ### Process
 
-1. **Read the change summary**
-   - Read `.deepwork/tmp/schema_change_summary.md` for what changed
-   - Identify whether the change adds required fields, modifies existing fields, or removes fields
+1. **Read the change summary** and identify whether the change adds required fields, modifies existing fields, or removes fields
 
 2. **Find all fixture job.yml files**
    - Use glob to find all `tests/fixtures/jobs/*/job.yml` files
@@ -38,12 +36,6 @@ Test fixtures are job.yml files used in unit and integration tests. They must co
 4. **Verify schema conformance**
    - For valid fixtures: ensure they would pass validation against the updated schema
    - For `invalid_job`: ensure it still fails validation, and the reason is still testable
-
-### Key Files
-
-- **Fixtures directory**: `tests/fixtures/jobs/`
-- **Updated schema**: `src/deepwork/schemas/job.schema.json`
-- **Change summary**: `.deepwork/tmp/schema_change_summary.md`
 
 ## Output Format
 
@@ -99,8 +91,6 @@ steps:
 - Each fixture preserves its original test purpose and characteristics
 - New required fields are added to all valid fixtures
 - At least one fixture demonstrates usage of new optional fields
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
-
 ## Context
 
 Test fixtures are the foundation of the test suite. If they don't match the schema, parser tests will fail before we even get to test the new functionality. Updating fixtures early (before tests) means we can run the test suite incrementally as we update test code.

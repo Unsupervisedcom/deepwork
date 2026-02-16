@@ -8,6 +8,7 @@
     "name",
     "version",
     "summary",
+    "common_job_info_provided_to_all_steps_at_runtime",
     "steps"
   ],
   "additionalProperties": false,
@@ -28,23 +29,16 @@
       "maxLength": 200,
       "description": "Brief one-line summary of what this job accomplishes. Used in skill descriptions."
     },
-    "description": {
+    "common_job_info_provided_to_all_steps_at_runtime": {
       "type": "string",
       "minLength": 1,
-      "description": "Detailed multi-line description of the job's purpose, process, and goals"
+      "description": "Common context and information provided to all steps at runtime. Use this for shared knowledge that every step needs (e.g., project background, key terminology, constraints, or conventions) rather than duplicating it in individual step instructions."
     },
     "workflows": {
       "type": "array",
       "description": "Named workflows that group steps into multi-step sequences. Workflows define execution order.",
       "items": {
         "$ref": "#/$defs/workflow"
-      }
-    },
-    "changelog": {
-      "type": "array",
-      "description": "Version history documenting changes to the job definition",
-      "items": {
-        "$ref": "#/$defs/changelogEntry"
       }
     },
     "steps": {
@@ -107,26 +101,6 @@
           }
         }
       ]
-    },
-    "changelogEntry": {
-      "type": "object",
-      "required": [
-        "version",
-        "changes"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "version": {
-          "type": "string",
-          "pattern": "^\\d+\\.\\d+\\.\\d+$",
-          "description": "Version number for this change"
-        },
-        "changes": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Description of changes made in this version"
-        }
-      }
     },
     "step": {
       "type": "object",

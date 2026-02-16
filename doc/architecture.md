@@ -304,23 +304,9 @@ platforms:
 name: competitive_research
 version: "1.0.0"
 summary: "Systematic competitive analysis workflow"
-description: |
-  A comprehensive workflow for analyzing competitors in your market segment. This job
-  helps product teams understand the competitive landscape by systematically identifying
-  competitors, researching their offerings, creating comparison matrices, and developing
-  strategic positioning recommendations.
-
-  The workflow produces:
-  - A vetted list of key competitors
-  - Detailed research notes on each competitor (primary and secondary sources)
-  - A comparison matrix highlighting key differentiators
-  - Strategic positioning recommendations
-
+common_job_info_provided_to_all_steps_at_runtime: |
+  A comprehensive workflow for analyzing competitors in your market segment.
   Designed for product teams conducting quarterly competitive analysis.
-
-changelog:
-  - version: "1.0.0"
-    changes: "Initial job creation"
 
 # Workflows define named sequences of steps that form complete processes.
 # Steps not in any workflow are "standalone skills" that can be run anytime.

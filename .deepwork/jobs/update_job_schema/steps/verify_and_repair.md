@@ -10,9 +10,7 @@ This is the final verification step. It ensures that: (1) existing user installa
 
 ### Process
 
-1. **Read the change summary**
-   - Read `.deepwork/tmp/schema_change_summary.md` for what changed
-   - Determine if the change is breaking (requires migration) or non-breaking (optional fields only)
+1. **Read the change summary** and determine if the change is breaking (requires migration) or non-breaking (optional fields only)
 
 2. **Update the repair workflow** (if migration needed)
    - Read the repair workflow step files:
@@ -43,12 +41,6 @@ This is the final verification step. It ensures that: (1) existing user installa
    - Document the get_workflows output
    - Document the test suite results
    - Note any issues encountered and how they were resolved
-
-### Key Files
-
-- **Repair step files**: `src/deepwork/standard_jobs/deepwork_jobs/steps/fix_jobs.md`, `fix_settings.md`, `errata.md`
-- **Change summary**: `.deepwork/tmp/schema_change_summary.md`
-- **Verification log output**: `.deepwork/tmp/verification_log.md`
 
 ## Output Format
 
@@ -85,8 +77,6 @@ A markdown file at `.deepwork/tmp/verification_log.md`:
 - The full test suite passes (`uv run pytest tests/`)
 - If the change is breaking, the repair workflow has migration instructions
 - The verification log documents all results clearly
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
-
 ## Context
 
 This step is the final gate. If get_workflows fails, it means something in the chain is broken — a job.yml doesn't conform, the parser can't handle a field, or the MCP layer has a mismatch. The repair workflow is also critical: when users upgrade DeepWork, the repair workflow is how their existing job.yml files get migrated to the new schema version.

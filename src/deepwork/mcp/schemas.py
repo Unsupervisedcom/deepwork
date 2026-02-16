@@ -66,7 +66,6 @@ class JobInfo(BaseModel):
 
     name: str = Field(description="Job identifier")
     summary: str = Field(description="Short summary of the job")
-    description: str | None = Field(default=None, description="Full description")
     workflows: list[WorkflowInfo] = Field(default_factory=list)
 
 
@@ -218,6 +217,9 @@ class ActiveStepInfo(BaseModel):
         default_factory=list, description="Reviews to run when step completes"
     )
     step_instructions: str = Field(description="Instructions for the step")
+    common_job_info: str = Field(
+        description="Common context and information shared across all steps in this job"
+    )
 
 
 class JobLoadErrorInfo(BaseModel):

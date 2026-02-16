@@ -10,8 +10,7 @@ Real job.yml files are used at runtime by the DeepWork MCP server and CLI. They 
 
 ### Process
 
-1. **Read the change summary**
-   - Read `.deepwork/tmp/schema_change_summary.md` for what changed
+1. **Read the change summary** and identify what fields changed
 
 2. **Find all real job.yml files**
    - Standard jobs: `src/deepwork/standard_jobs/*/job.yml`
@@ -37,13 +36,6 @@ Real job.yml files are used at runtime by the DeepWork MCP server and CLI. They 
 6. **Sync the install**
    - After updating standard jobs source, run `deepwork install` to sync to `.deepwork/jobs/`
    - Or manually copy changed files if install isn't available
-
-### Key Files
-
-- **Standard jobs**: `src/deepwork/standard_jobs/deepwork_jobs/job.yml`
-- **Library jobs**: `library/jobs/spec_driven_development/job.yml`
-- **Instance jobs**: `.deepwork/jobs/*/job.yml`
-- **Change summary**: `.deepwork/tmp/schema_change_summary.md`
 
 ## Output Format
 
@@ -98,8 +90,6 @@ After (with new optional field used where it makes sense):
 - Standard job source of truth and installed copies are in sync
 - Existing workflows and step definitions are preserved
 - New fields are used appropriately in each job's context
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
-
 ## Context
 
 Standard jobs are auto-installed to every user's project. Library jobs serve as examples users can adopt. Instance jobs are the working copies read by the MCP server at runtime. All three must conform to the schema or the system breaks. Standard jobs are the source of truth — update them first, then propagate.

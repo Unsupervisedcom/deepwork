@@ -24,7 +24,7 @@ def _create_minimal_job(parent: Path, job_name: str) -> Path:
 name: {job_name}
 version: "1.0.0"
 summary: Test job {job_name}
-description: A test job
+common_job_info_provided_to_all_steps_at_runtime: A test job
 
 steps:
   - id: step1

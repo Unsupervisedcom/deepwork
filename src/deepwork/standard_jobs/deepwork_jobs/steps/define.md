@@ -290,8 +290,7 @@ Only after you have complete understanding, create the job directory and `job.ym
 - No circular dependencies
 - At least one output per step
 - The `summary` should be concise (max 200 chars)
-- The `description` should provide rich context for future refinement
-- Include a `changelog` section with an initial entry for version 1.0.0
+- The `common_job_info_provided_to_all_steps_at_runtime` should provide rich context shared across all steps
 
 ## Example Dialog
 

@@ -2,14 +2,9 @@
 name: exposed_job
 version: "0.1.0"
 summary: "A job with exposed and hidden steps for testing"
-description: |
+common_job_info_provided_to_all_steps_at_runtime: |
   A test job demonstrating the exposed step feature.
-
   This job has two steps: one hidden by default and one explicitly exposed.
-
-changelog:
-  - version: "0.1.0"
-    changes: "Initial version"
 
 steps:
   - id: hidden_step

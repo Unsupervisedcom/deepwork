@@ -76,15 +76,6 @@ A markdown file at `.deepwork/tmp/improvement_recommendations.md`.
 [Suggested sequence for implementing the recommendations, noting dependencies]
 ```
 
-## Quality Criteria
-
-- Every recommendation maps to a specific friction point from the friction report
-- Recommendations point to specific files and code paths (not vague suggestions)
-- Each recommendation includes effort and risk assessment
-- Recommendations are technically feasible given the DeepWork architecture
-- Prioritization is logical (quick wins first, high-impact items ranked higher)
-- When all criteria are met, include `<promise>Quality Criteria Met</promise>` in your response
-
 ## Context
 
 This is the final step of the test_job_flow. Its output is a decision document for the user — they will review these recommendations and decide which ones to implement. The quality of this output determines whether the entire test_job_flow exercise produces actionable value. Be thorough but practical; the user wants recommendations they can act on, not a theoretical analysis.

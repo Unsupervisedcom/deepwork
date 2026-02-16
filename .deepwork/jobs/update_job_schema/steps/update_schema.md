@@ -34,11 +34,6 @@ Apply the requested change to the JSON Schema file. This is always the first ste
    - Create `.deepwork/tmp/schema_change_summary.md` documenting what changed
    - This file is critical — every subsequent step reads it to know what to update
 
-### Key Files
-
-- **Schema**: `src/deepwork/schemas/job.schema.json`
-- **Change summary output**: `.deepwork/tmp/schema_change_summary.md`
-
 ## Output Format
 
 ### schema_file
@@ -85,8 +80,6 @@ A markdown file at `.deepwork/tmp/schema_change_summary.md`:
 - If breaking, the change summary clearly documents what needs to change
 - The change summary has a complete impact checklist for all downstream files
 - `$ref` is used for reusable sub-schemas rather than inline duplication
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
-
 ## Context
 
 The JSON Schema at `src/deepwork/schemas/job.schema.json` is the single source of truth for job.yml structure. It is used by:

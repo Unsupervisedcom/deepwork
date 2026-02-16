@@ -1,7 +1,7 @@
 name: test_job_flow
-version: "1.0.1"
+version: "1.0.2"
 summary: "End-to-end test of the DeepWork job creation workflow with friction analysis"
-description: |
+common_job_info_provided_to_all_steps_at_runtime: |
   A meta-workflow that tests the DeepWork job creation process itself. This job:
 
   1. Creates a new job ("detailed_test_review") via a nested sub-agent workflow,
@@ -13,16 +13,6 @@ description: |
 
   This is a diagnostic/improvement workflow for the DeepWork framework. The final
   output is a set of actionable recommendations for reducing job creation friction.
-
-  The "detailed_test_review" job created in step 1 has two steps:
-  - Run all tests with coverage reporting, with per-file and per-step quality reviews
-  - Update the README with coverage numbers and an as-of date
-
-changelog:
-  - version: "1.0.1"
-    changes: "Updated create_test_review_job instructions: added explicit `required` field to all output examples to prevent schema validation failures. Added description fields to YAML example outputs."
-  - version: "1.0.0"
-    changes: "Initial job creation"
 
 workflows:
   - name: run

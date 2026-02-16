@@ -2,19 +2,10 @@
 name: fruits
 version: "1.0.0"
 summary: "Identify and classify fruits from a mixed list of items"
-description: |
+common_job_info_provided_to_all_steps_at_runtime: |
   A simple, deterministic job for CI testing of the DeepWork framework.
-
-  This job takes a list of mixed items (fruits and non-fruits) and:
-  1. Identifies which items are fruits
-  2. Classifies those fruits into categories (citrus, berries, tropical, etc.)
-
-  This workflow is designed to produce predictable, verifiable outputs
-  making it ideal for automated testing.
-
-changelog:
-  - version: "1.0.0"
-    changes: "Initial version for CI testing"
+  This job takes a list of mixed items (fruits and non-fruits) and identifies
+  and classifies them. Designed to produce predictable, verifiable outputs.
 
 workflows:
   - name: full

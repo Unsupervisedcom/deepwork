@@ -10,11 +10,7 @@ The parser is the runtime representation of job.yml files. It converts raw YAML 
 
 ### Process
 
-1. **Read the change summary**
-   - Read `.deepwork/tmp/schema_change_summary.md` to understand what changed
-   - Identify which dataclasses and parsing functions need updates
-
-2. **Read the current parser**
+1. **Read the change summary and current parser**
    - Read `src/deepwork/core/parser.py` in full
    - Understand the existing dataclass hierarchy: `Step`, `OutputSpec`, `StepInput`, `HookAction`, `Review`, `Workflow`, `WorkflowStepEntry`, `JobDefinition`
    - Understand the parsing flow in `parse_job_definition()`
@@ -34,12 +30,6 @@ The parser is the runtime representation of job.yml files. It converts raw YAML 
    - Read `src/deepwork/schemas/job_schema.py`
    - If the change adds new enum values or constants that the schema uses, update `LIFECYCLE_HOOK_EVENTS` or add new constants as needed
    - If no changes needed, note this in the output
-
-### Key Files
-
-- **Parser**: `src/deepwork/core/parser.py`
-- **Schema loader**: `src/deepwork/schemas/job_schema.py`
-- **Change summary**: `.deepwork/tmp/schema_change_summary.md`
 
 ## Output Format
 
@@ -85,8 +75,6 @@ The updated `src/deepwork/schemas/job_schema.py` (provide the path even if uncha
 - Required schema fields raise clear errors when missing
 - Validation logic catches invalid values (e.g., bad enum values, invalid cross-references)
 - Existing parsing behavior is preserved for all unchanged fields
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
-
 ## Context
 
 The parser defines the in-memory representation used by everything downstream: the MCP server reads `JobDefinition` objects, the CLI uses them for sync/install, and the skill generator uses them to create slash commands. Getting the dataclasses right here is critical — all subsequent steps depend on this representation.

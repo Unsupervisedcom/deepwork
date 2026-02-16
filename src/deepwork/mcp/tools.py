@@ -108,7 +108,6 @@ class WorkflowTools:
         return JobInfo(
             name=job.name,
             summary=job.summary,
-            description=job.description,
             workflows=workflows,
         )
 
@@ -357,6 +356,7 @@ class WorkflowTools:
                     for r in first_step.reviews
                 ],
                 step_instructions=instructions,
+                common_job_info=job.common_job_info_provided_to_all_steps_at_runtime,
             ),
             stack=self.state_manager.get_stack(),
         )
@@ -551,6 +551,7 @@ class WorkflowTools:
                     for r in next_step.reviews
                 ],
                 step_instructions=instructions,
+                common_job_info=job.common_job_info_provided_to_all_steps_at_runtime,
             ),
             stack=self.state_manager.get_stack(),
         )

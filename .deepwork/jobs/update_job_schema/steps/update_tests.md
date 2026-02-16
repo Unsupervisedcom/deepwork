@@ -10,9 +10,7 @@ Tests validate that the schema, parser, MCP layer, and validation logic all work
 
 ### Process
 
-1. **Read the change summary**
-   - Read `.deepwork/tmp/schema_change_summary.md` for what changed
-   - Read the updated parser (`src/deepwork/core/parser.py`) and MCP schemas (`src/deepwork/mcp/schemas.py`) to understand the new code
+1. **Read the change summary**, the updated parser, and MCP schemas to understand the new code
 
 2. **Identify affected test files**
    - `tests/unit/test_parser.py` — parser and dataclass tests
@@ -47,14 +45,6 @@ Tests validate that the schema, parser, MCP layer, and validation logic all work
    - Run `uv run pytest tests/` to verify all tests pass
    - Fix any failures from the schema change
    - Do NOT delete tests that fail — fix them to work with the new schema
-
-### Key Files
-
-- **Parser tests**: `tests/unit/test_parser.py`
-- **Validation tests**: `tests/unit/test_validation.py`
-- **MCP tests**: `tests/unit/mcp/test_*.py`
-- **Integration tests**: `tests/integration/test_install_flow.py`
-- **Change summary**: `.deepwork/tmp/schema_change_summary.md`
 
 ## Output Format
 
@@ -99,8 +89,6 @@ def test_timeout_invalid_type():
 - Existing tests are updated (not deleted) to work with the schema change
 - The full test suite passes: `uv run pytest tests/`
 - If MCP schemas changed, MCP test files are updated accordingly
-- When all criteria are met, include `<promise>✓ Quality Criteria Met</promise>` in your response
-
 ## Context
 
 Tests are the safety net that catches bugs before they reach users. A schema change that isn't properly tested will eventually cause hard-to-debug failures. The test suite should provide confidence that the change works correctly across all layers.
