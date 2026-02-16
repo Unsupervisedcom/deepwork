@@ -205,7 +205,7 @@ class TestMCPWorkflowTools:
 
         # Find fruits job and check structure
         fruits_job = next(j for j in response.jobs if j.name == "fruits")
-        assert fruits_job.description is not None
+        assert fruits_job.summary is not None
 
         # The fruits fixture has a "full" workflow
         assert len(fruits_job.workflows) >= 1
