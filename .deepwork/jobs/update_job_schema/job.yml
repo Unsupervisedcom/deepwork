@@ -29,11 +29,6 @@ common_job_info_provided_to_all_steps_at_runtime: |
   - **MCP schemas**: `src/deepwork/mcp/schemas.py`
   - **MCP tools**: `src/deepwork/mcp/tools.py`
 
-  ## Quality Criteria Convention
-
-  When all quality criteria listed in a step's reviews are met, include
-  `<promise>✓ Quality Criteria Met</promise>` in your response.
-
 workflows:
   - name: run
     summary: "Update the job.yml schema and propagate changes through all dependencies"
