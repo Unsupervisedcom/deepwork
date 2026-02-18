@@ -34,7 +34,7 @@ For each pending session folder, run the learning cycle in sequence. The Task ps
 ```
 Task tool call:
   name: "identify-issues"
-  subagent_type: general-purpose
+  subagent_type: learning-agents:learning-agent-expert
   model: sonnet
   prompt: "Run the identify skill on the session folder: .deepwork/tmp/agent_sessions/<session_id>/<agent_id>/
            Use: Skill learning-agents:identify .deepwork/tmp/agent_sessions/<session_id>/<agent_id>/"
@@ -47,7 +47,7 @@ After identification completes, spawn another Task to run investigation and inco
 ```
 Task tool call:
   name: "investigate-and-incorporate"
-  subagent_type: general-purpose
+  subagent_type: learning-agents:learning-agent-expert
   model: sonnet
   prompt: "Run these two skills in sequence on the session folder: .deepwork/tmp/agent_sessions/<session_id>/<agent_id>/
            1. First: Skill learning-agents:investigate-issues .deepwork/tmp/agent_sessions/<session_id>/<agent_id>/
@@ -79,3 +79,4 @@ Output in this format:
 - If a session's transcript cannot be found, skip it and report the issue
 - Do NOT modify agent files directly — always delegate to the learning cycle skills
 - Use Sonnet model for Task spawns to balance cost and quality
+- Use the `learning-agents:learning-agent-expert` agent for Task spawns
