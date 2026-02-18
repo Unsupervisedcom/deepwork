@@ -119,13 +119,29 @@
         }
       );
 
-      # Package output - virtual environment with default deps only
+      # Package output - wrapped deepwork binary with isolated Python environment
+      # When consumed as a dependency in other flakes, the consuming devShell may
+      # include Python packages for a different version (e.g. python3.13 from
+      # azure-cli, awscli2). These pollute PYTHONPATH and cause symbol errors
+      # when deepwork's python3.11 tries to load python3.13 native extensions.
+      # Wrapping with --unset PYTHONPATH isolates deepwork from the host environment.
       packages = forAllSystems (system:
         let
-          pkg = pythonSets.${system}.mkVirtualEnv "deepwork-env" workspace.deps.default;
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
+          venv = pythonSets.${system}.mkVirtualEnv "deepwork-env" workspace.deps.default;
+          wrapped = pkgs.runCommand "deepwork-wrapped" {
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+          } ''
+            mkdir -p $out/bin
+            makeWrapper ${venv}/bin/deepwork $out/bin/deepwork \
+              --unset PYTHONPATH
+          '';
         in {
-          default = pkg;
-          deepwork = pkg;  # Alias for backwards compatibility
+          default = wrapped;
+          deepwork = wrapped;  # Alias for backwards compatibility
         }
       );
 
