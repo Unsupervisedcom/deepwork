@@ -5,7 +5,7 @@
 # files so the learning cycle can process the transcript later.
 #
 # Input (stdin): JSON with tool_input, tool_response, session_id
-# Output (stdout): JSON with optional systemMessage
+# Output (stdout): JSON with optional hookSpecificOutput.additionalContext
 # Exit: Always 0 (non-blocking)
 
 set -euo pipefail
@@ -36,11 +36,14 @@ if [ -z "$SESSION_ID" ]; then
 fi
 
 # Extract agent name from tool_input.name (the name parameter passed to Task)
-AGENT_NAME=$(echo "$HOOK_INPUT" | jq -r '.tool_input.name // empty' 2>/dev/null)
-if [ -z "$AGENT_NAME" ]; then
+# Normalize: lowercase and replace spaces with hyphens to match directory naming
+# (e.g., "Consistency Reviewer" -> "consistency-reviewer")
+AGENT_NAME_RAW=$(echo "$HOOK_INPUT" | jq -r '.tool_input.name // empty' 2>/dev/null)
+if [ -z "$AGENT_NAME_RAW" ]; then
     echo '{}'
     exit 0
 fi
+AGENT_NAME=$(echo "$AGENT_NAME_RAW" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
 
 # Extract agent_id from tool_response
 AGENT_ID=$(echo "$HOOK_INPUT" | jq -r '.tool_response.agentId // .tool_response.agent_id // empty' 2>/dev/null)
@@ -84,7 +87,7 @@ fi
 
 if [ -n "$REMINDER" ]; then
     cat << EOF
-{"systemMessage":"${REMINDER}"}
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"${REMINDER}"}}
 EOF
 else
     echo '{}'
