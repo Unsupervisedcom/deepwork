@@ -27,27 +27,6 @@ def mock_git_repo(temp_dir: Path) -> Path:
 
 
 @pytest.fixture
-def mock_claude_project(mock_git_repo: Path) -> Path:
-    """Create a mock project with Claude Code setup."""
-    claude_dir = mock_git_repo / ".claude"
-    claude_dir.mkdir(exist_ok=True)
-    (claude_dir / "settings.json").write_text('{"version": "1.0"}')
-    return mock_git_repo
-
-
-@pytest.fixture
-def mock_multi_platform_project(mock_git_repo: Path) -> Path:
-    """Create a mock project with multiple AI platforms setup."""
-    claude_dir = mock_git_repo / ".claude"
-    claude_dir.mkdir(exist_ok=True)
-    (claude_dir / "settings.json").write_text('{"version": "1.0"}')
-
-    gemini_dir = mock_git_repo / ".gemini"
-    gemini_dir.mkdir(exist_ok=True)
-    return mock_git_repo
-
-
-@pytest.fixture
 def fixtures_dir() -> Path:
     """Return the path to the fixtures directory."""
     return Path(__file__).parent / "fixtures"

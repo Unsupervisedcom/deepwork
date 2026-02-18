@@ -107,20 +107,8 @@
       "mcp__deepwork__abort_workflow"
     ]
   },
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "src/deepwork/hooks/check_version.sh"
-          }
-        ]
-      }
-    ]
-  },
   "enabledPlugins": {
+    "deepwork@deepwork-plugins": true,
     "learning-agents@deepwork-plugins": true
   }
 }
