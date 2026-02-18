@@ -21,6 +21,9 @@ Research identified issues from a LearningAgent session to determine their root 
 **Agent core knowledge**:
 !`cat .deepwork/learning-agents/$(cat $ARGUMENTS/agent_used 2>/dev/null)/core-knowledge.md 2>/dev/null`
 
+**Additional investigation guidelines**:
+!`cat .deepwork/learning-agents/$(cat $ARGUMENTS/agent_used 2>/dev/null)/additional_learning_guidelines/issue_investigation.md 2>/dev/null`
+
 ## Procedure
 
 ### Step 1: Find Identified Issues

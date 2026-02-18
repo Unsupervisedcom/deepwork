@@ -7,6 +7,7 @@
 #   .deepwork/learning-agents/<agent-name>/core-knowledge.md
 #   .deepwork/learning-agents/<agent-name>/topics/.gitkeep
 #   .deepwork/learning-agents/<agent-name>/learnings/.gitkeep
+#   .deepwork/learning-agents/<agent-name>/additional_learning_guidelines/
 #   .claude/agents/<agent-name>.md
 
 set -euo pipefail
@@ -28,11 +29,31 @@ CLAUDE_AGENT_FILE=".claude/agents/${AGENT_NAME}.md"
 if [ -d "$AGENT_DIR" ]; then
     echo "Agent directory already exists: ${AGENT_DIR}" >&2
 else
-    mkdir -p "${AGENT_DIR}/topics" "${AGENT_DIR}/learnings"
+    mkdir -p "${AGENT_DIR}/topics" "${AGENT_DIR}/learnings" "${AGENT_DIR}/additional_learning_guidelines"
 
     # Create .gitkeep files for empty directories
     touch "${AGENT_DIR}/topics/.gitkeep"
     touch "${AGENT_DIR}/learnings/.gitkeep"
+
+    # Create empty additional learning guideline files
+    touch "${AGENT_DIR}/additional_learning_guidelines/issue_identification.md"
+    touch "${AGENT_DIR}/additional_learning_guidelines/issue_investigation.md"
+    touch "${AGENT_DIR}/additional_learning_guidelines/learning_from_issues.md"
+
+    # Create README for additional learning guidelines
+    cat > "${AGENT_DIR}/additional_learning_guidelines/README.md" << 'ALG_README'
+# Additional Learning Guidelines
+
+These files let you customize how the learning cycle works for this agent. Each file is automatically included in the corresponding learning skill. Leave empty to use default behavior, or add markdown instructions to guide the process.
+
+## Files
+
+- **issue_identification.md** — Included during the `identify` step. Use this to tell the reviewer what kinds of issues matter most for this agent, what to ignore, or domain-specific signals of mistakes.
+
+- **issue_investigation.md** — Included during the `investigate-issues` step. Use this to guide root cause analysis — e.g., common root causes in this domain, which parts of the agent's knowledge to check first, or investigation heuristics.
+
+- **learning_from_issues.md** — Included during the `incorporate-learnings` step. Use this to guide how learnings are integrated — e.g., preferences for topics vs learnings, naming conventions, or areas of core-knowledge that should stay concise.
+ALG_README
 
     # Create core-knowledge.md with TODO placeholder
     cat > "${AGENT_DIR}/core-knowledge.md" << 'CORE_KNOWLEDGE'

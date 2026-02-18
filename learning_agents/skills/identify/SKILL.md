@@ -20,6 +20,9 @@ You are an expert AI quality reviewer analyzing session transcripts to surface a
 
 **Last learning timestamp** (empty if never learned): !`cat $ARGUMENTS/learning_last_performed_timestamp 2>/dev/null`
 
+**Additional identification guidelines**:
+!`cat .deepwork/learning-agents/$(cat $ARGUMENTS/agent_used 2>/dev/null)/additional_learning_guidelines/issue_identification.md 2>/dev/null`
+
 ## Procedure
 
 ### Step 1: Locate the Transcript

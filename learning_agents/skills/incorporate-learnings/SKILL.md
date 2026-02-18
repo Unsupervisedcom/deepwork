@@ -20,6 +20,9 @@ Take investigated issues and integrate the lessons learned into the LearningAgen
 
 If `agent_used` is "unknown", stop and report an error — the session folder is missing required metadata.
 
+**Additional incorporation guidelines**:
+!`cat .deepwork/learning-agents/$(cat $ARGUMENTS/agent_used 2>/dev/null)/additional_learning_guidelines/learning_from_issues.md 2>/dev/null`
+
 ## Procedure
 
 ### Step 1: Find Investigated Issues

@@ -10,8 +10,13 @@ All LearningAgents live in `.deepwork/learning-agents/`. Each agent has its own 
     ├── core-knowledge.md                  # Core expertise (required)
     ├── topics/                            # Detailed topic documentation
     │   └── <topic-name>.md
-    └── learnings/                         # Experience-based insights
-        └── <learning-name>.md
+    ├── learnings/                         # Experience-based insights
+    │   └── <learning-name>.md
+    └── additional_learning_guidelines/    # Per-agent learning cycle customization
+        ├── README.md                      # Explains each file's purpose
+        ├── issue_identification.md        # Extra guidance for identify step
+        ├── issue_investigation.md         # Extra guidance for investigate step
+        └── learning_from_issues.md        # Extra guidance for incorporate step
 ```
 
 ## core-knowledge.md
@@ -94,6 +99,16 @@ The generalizable insight that should inform future behavior.
 - `name` (required): Descriptive name of the learning
 - `last_updated` (optional): Date in YYYY-MM-DD format
 - `summarized_result` (optional but recommended): 1-3 sentence summary
+
+## additional_learning_guidelines/ Directory
+
+Per-agent customization for the learning cycle. Each file is automatically included (via `!`cat``) in the corresponding hidden skill's Context section. Files are empty by default — add markdown content to guide learning behavior for this specific agent.
+
+- **`issue_identification.md`** — Included in the `identify` skill. Use to specify what kinds of issues matter most, what to ignore, or domain-specific mistake signals.
+- **`issue_investigation.md`** — Included in the `investigate-issues` skill. Use to guide root cause analysis — common root causes, which knowledge areas to check first, investigation heuristics.
+- **`learning_from_issues.md`** — Included in the `incorporate-learnings` skill. Use to guide how learnings are integrated — preferences for topics vs learnings, naming conventions, or areas of core-knowledge to keep concise.
+
+See the `README.md` in the directory for a quick reference.
 
 ## Naming Conventions
 

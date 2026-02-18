@@ -60,8 +60,13 @@ learning_agents/
 ├── core-knowledge.md                  # Core expertise in second person (required)
 ├── topics/
 │   └── <topic>.md                     # Detailed reference docs (frontmatter + body)
-└── learnings/
-    └── <learning>.md                  # Experience-based insights (frontmatter + body)
+├── learnings/
+│   └── <learning>.md                  # Experience-based insights (frontmatter + body)
+└── additional_learning_guidelines/    # Per-agent learning cycle customization
+    ├── README.md
+    ├── issue_identification.md        # Extra guidance for identify step
+    ├── issue_investigation.md         # Extra guidance for investigate step
+    └── learning_from_issues.md        # Extra guidance for incorporate step
 ```
 
 See `learning_agent_file_structure.md` for full schema details.
@@ -182,9 +187,14 @@ The skill invokes a bundled shell script that handles all the boilerplate:
 1. Creates the LearningAgent directory structure:
    ```
    .deepwork/learning-agents/<agent-name>/
-   ├── core-knowledge.md  # Stubbed with TODO placeholder
-   ├── topics/            # Empty directory
-   └── learnings/         # Empty directory
+   ├── core-knowledge.md              # Stubbed with TODO placeholder
+   ├── topics/                        # Empty directory
+   ├── learnings/                     # Empty directory
+   └── additional_learning_guidelines/
+       ├── README.md                  # Explains each file's purpose
+       ├── issue_identification.md    # Empty (customize for identify step)
+       ├── issue_investigation.md     # Empty (customize for investigate step)
+       └── learning_from_issues.md    # Empty (customize for incorporate step)
    ```
 
 2. Creates the Claude Code agent frontmatter file at `.claude/agents/<agent-name>.md` with:
