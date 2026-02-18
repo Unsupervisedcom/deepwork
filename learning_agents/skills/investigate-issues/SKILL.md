@@ -2,8 +2,6 @@
 name: investigate-issues
 description: Investigates identified issues in a LearningAgent session by reading the transcript, determining root causes, and updating issue files with investigation reports.
 user-invocable: false
-disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Edit
 ---
 
 # Investigate Issues

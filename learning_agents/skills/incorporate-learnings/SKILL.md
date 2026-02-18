@@ -2,8 +2,6 @@
 name: incorporate-learnings
 description: Takes investigated issues and incorporates the learnings into the LearningAgent's knowledge base by updating core-knowledge.md, topics, or learnings files.
 user-invocable: false
-disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Edit, Write
 ---
 
 # Incorporate Learnings

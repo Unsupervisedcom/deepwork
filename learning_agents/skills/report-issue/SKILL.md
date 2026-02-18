@@ -1,8 +1,6 @@
 ---
 name: report-issue
 description: Creates an issue file tracking a problem observed in a LearningAgent session. Used by the identify skill and can be invoked directly to report issues in real-time.
-user-invocable: false
-disable-model-invocation: true
 ---
 
 # Report Issue

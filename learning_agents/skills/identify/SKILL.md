@@ -2,8 +2,6 @@
 name: identify
 description: Reads a session transcript and identifies issues where a LearningAgent made mistakes, had knowledge gaps, or underperformed. Creates issue files for each problem found.
 user-invocable: false
-disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Skill
 ---
 
 # Identify Issues in Session Transcript

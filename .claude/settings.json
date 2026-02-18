@@ -119,8 +119,5 @@
         ]
       }
     ]
-  },
-  "enabledPlugins": {
-    "learning-agents@deepwork-plugins": true
   }
 }

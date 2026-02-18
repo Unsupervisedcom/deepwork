@@ -148,7 +148,23 @@ The AGENTS.md file captures project-specific knowledge that helps future agent r
    - Use line numbers when referencing specific code: `file.ext:42`
    - Group related learnings together
 
-### Step 6: Update Job Version
+### Step 6: Create or Fix Scripts
+
+Review the conversation for opportunities to add or improve scripts in the job's `scripts/` directory:
+
+1. **Fix existing scripts** - If any scripts were used during execution and had problems (wrong output, errors, edge cases), fix them now.
+
+2. **Create new scripts** - If any process during execution was manual, repetitive, or error-prone, and would be faster or more reliable as a script, create one. Good candidates:
+   - Data fetching or transformation that had to be done by hand
+   - File generation with specific formatting requirements
+   - Validation or checking steps that could be automated
+   - Setup or teardown tasks that will repeat on every run
+
+3. **Test the scripts** - Run any new or modified scripts to verify they work correctly.
+
+4. **Reference from instructions** - Update the relevant step instruction files to reference the new scripts so future runs use them.
+
+### Step 7: Update Job Version
 
 If instruction files were modified:
 

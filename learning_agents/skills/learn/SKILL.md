@@ -1,8 +1,6 @@
 ---
 name: learn
 description: Runs the learning cycle on all LearningAgent sessions with pending transcripts. Identifies issues, investigates root causes, and incorporates learnings into agent definitions.
-disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash, Task, Skill
 ---
 
 # Learning Cycle
