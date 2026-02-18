@@ -9,16 +9,16 @@ This repository includes a Claude Code plugin marketplace with reusable plugins 
 | **learning-agents** | Auto-improving AI sub-agents that learn from their mistakes across sessions |
 
 ## Installation
+Run the following *in Claude*.
 
+### Add the marketplace
 ```
-# Add the marketplace
 /plugin marketplace add https://github.com/Unsupervisedcom/deepwork
+```
 
-# Install the learning-agents plugin
+### Install the learning-agents plugin
+```
 /plugin install learning-agents@deepwork-plugins
-
-# Verify installation
-/plugin list
 ```
 
 ## Learn More
