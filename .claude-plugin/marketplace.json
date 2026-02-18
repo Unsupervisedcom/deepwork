@@ -1,0 +1,25 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "deepwork-plugins",
+  "version": "1.0.0",
+  "description": "Plugins for the DeepWork framework",
+  "owner": {
+    "name": "DeepWork",
+    "email": "noah@unsupervised.com"
+  },
+  "plugins": [
+    {
+      "name": "learning-agents",
+      "description": "Auto-improving AI sub-agents that learn from their mistakes across sessions",
+      "version": "0.1.0",
+      "source": "./learning_agents",
+      "author": {
+        "name": "DeepWork"
+      },
+      "category": "learning",
+      "keywords": ["agents", "learning", "self-improving", "sub-agents"],
+      "repository": "https://github.com/Unsupervisedcom/deepwork",
+      "license": "MIT"
+    }
+  ]
+}
