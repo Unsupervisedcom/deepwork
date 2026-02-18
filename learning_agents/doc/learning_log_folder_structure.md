@@ -11,7 +11,7 @@ Session-level agent interaction logs are stored in `.deepwork/tmp/agent_sessions
         ├── needs_learning_as_of_timestamp      # Flag: learning needed (auto-created by hook)
         ├── learning_last_performed_timestamp    # When learning was last run on this conversation
         ├── agent_used                           # Name of the LearningAgent (auto-created by hook)
-        └── <brief_name>.issue.yml               # Issue files (created during learning cycle)
+        └── <brief-name>.issue.yml               # Issue files (created during learning cycle)
 ```
 
 ## Files
@@ -28,7 +28,7 @@ Updated by `incorporate_learnings` after processing issues in this conversation.
 
 ### agent_used
 
-Created automatically by the post-Task hook. Contains the name of the LearningAgent that was used in this session (matching the folder name under `.deepwork/learning_agents/`). This links the session's agent_id back to the LearningAgent definition so learning skills can look up the agent's instructions and knowledge.
+Created automatically by the post-Task hook. Contains the name of the LearningAgent that was used in this session (matching the folder name under `.deepwork/learning-agents/`). This links the session's agent_id back to the LearningAgent definition so learning skills can look up the agent's instructions and knowledge.
 
 ### *.issue.yml
 

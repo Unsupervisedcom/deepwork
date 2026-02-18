@@ -9,7 +9,7 @@ This design is inspired by the "experts" system from PR #192 but restructured as
 ## Core Concepts
 
 ### LearningAgent
-A sub-agent with a persistent knowledge base that improves over time. Defined in `.deepwork/learning_agents/<agent_name>/` with structured expertise, topics, and learnings. Each LearningAgent gets a corresponding `.claude/agents/` file that dynamically loads its current knowledge at invocation time.
+A sub-agent with a persistent knowledge base that improves over time. Defined in `.deepwork/learning-agents/<agent-name>/` with structured expertise, topics, and learnings. Each LearningAgent gets a corresponding `.claude/agents/` file that dynamically loads its current knowledge at invocation time.
 
 ### Learning Cycle
 The feedback loop that makes agents improve:
@@ -43,9 +43,9 @@ learning_agents/
 │   ├── post_task.sh                       # After Task: track LearningAgent usage
 │   └── session_stop.sh                    # On Stop: suggest learning cycle if needed
 ├── agents/
-│   └── living-agent-expert.md             # LivingAgentExpert — knows how LearningAgents work
+│   └── learning-agent-expert.md           # LearningAgentExpert — knows how LearningAgents work
 └── doc/
-    ├── learning_agent_file_structure.md    # Structure of .deepwork/learning_agents/
+    ├── learning_agent_file_structure.md    # Structure of .deepwork/learning-agents/
     ├── learning_agent_post_task_reminder.md # Reminder shown after LearningAgent use
     ├── issue_yml_format.md                # Issue file schema
     └── learning_log_folder_structure.md   # Structure of .deepwork/tmp/agent_sessions/
@@ -56,8 +56,8 @@ learning_agents/
 ### LearningAgent Definition (persistent, Git-tracked)
 
 ```
-.deepwork/learning_agents/<agent_name>/
-├── agent.yml                          # discovery_description + full_expertise
+.deepwork/learning-agents/<agent-name>/
+├── core-knowledge.md                  # Core expertise in second person (required)
 ├── topics/
 │   └── <topic>.md                     # Detailed reference docs (frontmatter + body)
 └── learnings/
@@ -72,24 +72,28 @@ See `learning_agent_file_structure.md` for full schema details.
 .claude/agents/<agent-name>.md
 ```
 
-Created by `create-agent`. Uses Claude Code's `!`command`` dynamic context injection to include the agent's current `full_expertise`, topics, and learnings at invocation time. The `!`command`` syntax runs shell commands before the content is sent to Claude — the command output replaces the placeholder. This means the agent always sees its latest knowledge without needing to regenerate the file.
+Created by `create-agent`. Uses Claude Code's `!`command`` dynamic context injection to include the agent's current `core-knowledge.md` and a topic index at invocation time. Topics are listed as an index (filename + name from frontmatter) rather than included in full, keeping the agent prompt focused. Learnings are referenced by directory path with a note about their purpose — the agent can read individual files as needed. The `!`command`` syntax runs shell commands before the content is sent to Claude — the command output replaces the placeholder.
 
 Example structure:
 ```markdown
 ---
 name: <agent-name>
-description: "<discovery_description>"
+description: "<discovery description>"
 ---
 
-!`cat .deepwork/learning_agents/<agent_name>/agent.yml | yq -r .full_expertise`
+# Core Knowledge
 
-## Topics
+!`cat .deepwork/learning-agents/<agent-name>/core-knowledge.md`
 
-!`cat .deepwork/learning_agents/<agent_name>/topics/*.md 2>/dev/null`
+# Topics
 
-## Learnings
+Located in `.deepwork/learning-agents/<agent-name>/topics/`
 
-!`cat .deepwork/learning_agents/<agent_name>/learnings/*.md 2>/dev/null`
+!`for f in .deepwork/learning-agents/<agent-name>/topics/*.md; do [ -f "$f" ] || continue; desc=$(awk '/^---/{c++; next} c==1 && /^name:/{sub(/^name: *"?/,""); sub(/"$/,""); print; exit}' "$f"); echo "- $(basename "$f"): $desc"; done`
+
+# Learnings
+
+Learnings are incident post-mortems from past agent sessions capturing mistakes, root causes, and generalizable insights. Review them before starting work to avoid repeating past mistakes. Located in `.deepwork/learning-agents/<agent-name>/learnings/`.
 ```
 
 ### Session Logs (transient, gitignored)
@@ -99,7 +103,7 @@ description: "<discovery_description>"
 ├── needs_learning_as_of_timestamp      # Flag file (body = ISO 8601 timestamp)
 ├── learning_last_performed_timestamp   # When learning was last run on this conversation
 ├── agent_used                          # Body = LearningAgent folder name
-└── <brief_name>.issue.yml              # Issues found during learning
+└── <brief-name>.issue.yml              # Issues found during learning
 ```
 
 See `learning_log_folder_structure.md` for full details.
@@ -111,7 +115,7 @@ See `learning_log_folder_structure.md` for full details.
 Fires after every `Task` tool call. The script:
 
 1. Extracts the agent name from the Task's `tool_input`
-2. Checks if a matching folder exists in `.deepwork/learning_agents/` — if not, exits silently
+2. Checks if a matching folder exists in `.deepwork/learning-agents/` — if not, exits silently
 3. Creates `.deepwork/tmp/agent_sessions/<session_id>/<agent_id>/needs_learning_as_of_timestamp` with current timestamp
 4. Creates `.deepwork/tmp/agent_sessions/<session_id>/<agent_id>/agent_used` with the agent name
 5. Outputs the post-task reminder as feedback (contents of `learning_agent_post_task_reminder.md`)
@@ -177,38 +181,42 @@ The skill invokes a bundled shell script that handles all the boilerplate:
 
 1. Creates the LearningAgent directory structure:
    ```
-   .deepwork/learning_agents/<agent_name>/
-   ├── agent.yml          # Stubbed with TODO placeholders
+   .deepwork/learning-agents/<agent-name>/
+   ├── core-knowledge.md  # Stubbed with TODO placeholder
    ├── topics/            # Empty directory
    └── learnings/         # Empty directory
    ```
 
 2. Creates the Claude Code agent frontmatter file at `.claude/agents/<agent-name>.md` with:
    - TODO entries for `name` and `description` in the frontmatter (to be filled in by the agent in step 2)
-   - Body that uses `!`cat`` dynamic includes to pull content from the LearningAgent directory at invocation time:
+   - Body that uses `!`command`` dynamic includes to pull content from the LearningAgent directory at invocation time. Topics are included as an index (filename + name), not in full. Learnings are referenced by directory path:
    ```markdown
    ---
    name: TODO
    description: "TODO"
    ---
 
-   !`cat .deepwork/learning_agents/<agent_name>/agent.yml | yq -r .full_expertise`
+   # Core Knowledge
 
-   ## Topics
+   !`cat .deepwork/learning-agents/<agent-name>/core-knowledge.md`
 
-   !`cat .deepwork/learning_agents/<agent_name>/topics/*.md 2>/dev/null`
+   # Topics
 
-   ## Learnings
+   Located in `.deepwork/learning-agents/<agent-name>/topics/`
 
-   !`cat .deepwork/learning_agents/<agent_name>/learnings/*.md 2>/dev/null`
+   !`for f in .deepwork/learning-agents/<agent-name>/topics/*.md; do ...extract name from frontmatter...; echo "- $filename: $name"; done`
+
+   # Learnings
+
+   Learnings are incident post-mortems from past agent sessions. Located in `.deepwork/learning-agents/<agent-name>/learnings/`.
    ```
 
-   This means the agent file never needs regeneration — it always reflects the latest knowledge at invocation time.
+   This means the agent file never needs regeneration — it always reflects the latest knowledge at invocation time. Topics are indexed rather than fully included to keep the prompt focused.
 
 **Step 2 — Fill in agent identity**
 
 After the script runs, the skill prompts the user to describe what the agent is an expert in, then:
-- Updates `agent.yml` with `discovery_description` and `full_expertise`
+- Updates `core-knowledge.md` with the agent's expertise
 - Updates the `.claude/agents/<agent-name>.md` frontmatter (`name` and `description`) to reflect the agent's domain
 
 **Step 3 — Seed initial knowledge**
@@ -218,20 +226,20 @@ Fills in key files in the LearningAgent directory — initial topics and/or lear
 #### learn
 Runs the full learning cycle on all sessions needing it. Workflow:
 1. Uses `!`find ...`` to inject a list of all paths containing a `needs_learning_as_of_timestamp` file into the prompt
-2. For each such folder, spawns a Task with the `LivingAgentExpert` agent using **Sonnet model** to run the `identify` skill
-3. After identification completes, spawns a Task with the `LivingAgentExpert` to run `investigate_issues` then `incorporate_learnings` in sequence
+2. For each such folder, spawns a Task with the `LearningAgentExpert` agent using **Sonnet model** to run the `identify` skill
+3. After identification completes, spawns a Task with the `LearningAgentExpert` to run `investigate-issues` then `incorporate-learnings` in sequence
 
-### Hidden Skills (used by LivingAgentExpert during learning)
+### Hidden Skills (used by LearningAgentExpert during learning)
 
 #### identify
 Reviews a session transcript to find issues. Takes the session/agent_id folder path as an argument.
 - Uses `!`cat ...`` to inject `learning_last_performed_timestamp` value into the prompt
 - Reads the transcript and identifies mistakes, underperformance, or knowledge gaps
-- Calls `report_issue` for each issue found
+- Calls `report-issue` for each issue found
 - If `learning_last_performed_timestamp` exists, starts scanning from that point
 
 #### report-issue
-Creates an `<brief_name>.issue.yml` file in the session's agent log folder. Sets initial status to `identified` with the issue description and observed timestamps. See `issue_yml_format.md` for the schema.
+Creates an `<brief-name>.issue.yml` file in the session's agent log folder. Sets initial status to `identified` with the issue description and observed timestamps. See `issue_yml_format.md` for the schema.
 
 #### investigate-issues
 Processes all `identified` issues in a session folder:
@@ -244,7 +252,7 @@ Processes all `identified` issues in a session folder:
 Integrates investigated issues into the LearningAgent:
 1. Finds issues with status `investigated` (includes example bash command)
 2. For each issue, takes a learning action — one of:
-   - **Update full_expertise**: Modify `agent.yml` to address the knowledge gap
+   - **Update core knowledge**: Modify `core-knowledge.md` to address the knowledge gap
    - **Add a learning**: Create a new file in `learnings/` with the insight
    - **Add/update a topic**: Create or update a file in `topics/` with reference docs
    - **Update existing learning**: Amend an existing learning with new evidence
@@ -254,7 +262,7 @@ Integrates investigated issues into the LearningAgent:
 
 ## Agents
 
-### LivingAgentExpert
+### LearningAgentExpert
 
 A standard (non-learning) agent defined in the plugin. Its prompt dynamically includes all the LearningAgent documentation via `!`cat ...``:
 
@@ -263,7 +271,7 @@ A standard (non-learning) agent defined in the plugin. Its prompt dynamically in
 - `learning_log_folder_structure.md`
 - `learning_agent_post_task_reminder.md`
 
-This agent is used by the `learn` skill to execute `identify`, `investigate_issues`, and `incorporate_learnings` sub-skills. It understands the full LearningAgent system and can work with any LearningAgent's files.
+This agent is used by the `learn` skill to execute `identify`, `investigate-issues`, and `incorporate-learnings` sub-skills. It understands the full LearningAgent system and can work with any LearningAgent's files.
 
 This is a **normal** agent (not a LearningAgent) because it ships with the plugin and should not evolve per-repo — it gets updated with the package.
 
@@ -282,4 +290,4 @@ Issues are tied to specific transcripts for evidence. Storing them alongside ses
 The `learn` skill spawns identification tasks using the Sonnet model. Transcript review is high-volume, pattern-matching work that doesn't require the most capable model. This keeps learning cycles fast and cost-effective.
 
 ### Why Hidden Skills
-Skills like `identify`, `report_issue`, `investigate_issues`, and `incorporate_learnings` are implementation details of the learning cycle. They're invoked by the `learn` skill via Task delegation, not directly by users. Hiding them keeps the user-facing skill surface clean.
+Skills like `identify`, `report-issue`, `investigate-issues`, and `incorporate-learnings` are implementation details of the learning cycle. They're invoked by the `learn` skill via Task delegation, not directly by users. Hiding them keeps the user-facing skill surface clean.

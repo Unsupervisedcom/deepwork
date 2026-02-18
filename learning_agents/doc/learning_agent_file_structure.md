@@ -1,41 +1,34 @@
 # LearningAgent File Structure
 
-All LearningAgents live in `.deepwork/learning_agents/`. Each agent has its own subdirectory named with underscores (e.g., `rails_activejob`).
+All LearningAgents live in `.deepwork/learning-agents/`. Each agent has its own subdirectory named with dashes (e.g., `rails-activejob`).
 
 ## Directory Layout
 
 ```
-.deepwork/learning_agents/
-└── <agent_name>/
-    ├── agent.yml                          # Core agent definition (required)
+.deepwork/learning-agents/
+└── <agent-name>/
+    ├── core-knowledge.md                  # Core expertise (required)
     ├── topics/                            # Detailed topic documentation
-    │   └── <topic_name>.md
+    │   └── <topic-name>.md
     └── learnings/                         # Experience-based insights
-        └── <learning_name>.md
+        └── <learning-name>.md
 ```
 
-## agent.yml
+## core-knowledge.md
 
-The core definition file. Two required fields:
+The agent's core expertise, written in second person ("You should...") because this text becomes the agent's system instructions. Structure it as:
 
-```yaml
-discovery_description: |
-  Short description used to decide whether to invoke this agent.
-  Keep concise and domain-specific. This is what the outer agent
-  sees when deciding which sub-agent to delegate to.
+1. Identity statement ("You are an expert on...")
+2. Core concepts and terminology
+3. Common patterns and best practices
+4. Pitfalls to avoid
+5. Decision frameworks
 
-full_expertise: |
-  Complete current knowledge of this domain.
-  Written in second person ("You should...") because this text
-  becomes the agent's system instructions. Structure it as:
-  1. Identity statement ("You are an expert on...")
-  2. Core concepts and terminology
-  3. Common patterns and best practices
-  4. Pitfalls to avoid
-  5. Decision frameworks
-```
+This file is plain markdown (no frontmatter needed). It is dynamically included into the agent's prompt at invocation time via the `.claude/agents/<agent-name>.md` file.
 
-The folder name is the source of truth for the agent's name. No `name` field is needed in `agent.yml`.
+The agent's discovery description (used to decide whether to invoke this agent) lives in the `.claude/agents/<agent-name>.md` frontmatter `description` field, not in this directory.
+
+The folder name is the source of truth for the agent's name.
 
 > **Note**: `learning_last_performed_timestamp` is tracked per-conversation in the session log folder (`.deepwork/tmp/agent_sessions/`), not here. See `learning_log_folder_structure.md`.
 
@@ -104,6 +97,6 @@ The generalizable insight that should inform future behavior.
 
 ## Naming Conventions
 
-- **Folder names**: Use underscores (`rails_activejob`, `data_pipeline`)
-- **Agent names in Claude Code**: Underscores converted to dashes (`rails-activejob`)
-- **Topic/learning filenames**: Use underscores, descriptive names (`retry_handling.md`)
+- **Folder names**: Use dashes (`rails-activejob`, `data-pipeline`)
+- **Agent names in Claude Code**: Match folder names (`rails-activejob`)
+- **Topic/learning filenames**: Use dashes, descriptive names (`retry-handling.md`)

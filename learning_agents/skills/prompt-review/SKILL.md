@@ -35,7 +35,7 @@ If the file does not exist, inform the user and stop.
 Before evaluating, identify how this prompt will be used:
 
 - **Standalone system prompt**: The file is the complete prompt given to Claude
-- **Instruction chunk / skill file**: The file is injected into a larger prompt context (e.g., via `!command` dynamic context injection, Claude Code skill files, or agent definition fields like `full_expertise`)
+- **Instruction chunk / skill file**: The file is injected into a larger prompt context (e.g., via `!command` dynamic context injection, Claude Code skill files, or agent core-knowledge files)
 - **Template with variables**: The file contains placeholders or Jinja2 templates that are filled at runtime
 
 This context affects how you evaluate the prompt. Instruction chunks, for example, must work well when composed with other instructions and should avoid conflicting with likely surrounding context.

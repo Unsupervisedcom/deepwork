@@ -5,13 +5,13 @@ Issue files track problems observed in LearningAgent sessions. They are stored i
 ## Filename
 
 ```
-<short_name_roughly_describing_issue>.issue.yml
+<short-name-roughly-describing-issue>.issue.yml
 ```
 
-Use underscores and keep names brief but descriptive. Examples:
-- `wrong_retry_strategy.issue.yml`
-- `missed_edge_case_in_validation.issue.yml`
-- `hallucinated_api_endpoint.issue.yml`
+Use dashes and keep names brief but descriptive. Examples:
+- `wrong-retry-strategy.issue.yml`
+- `missed-edge-case-in-validation.issue.yml`
+- `hallucinated-api-endpoint.issue.yml`
 
 ## Fields
 
