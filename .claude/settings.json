@@ -99,6 +99,8 @@
       "Edit(./.deepwork/**)",
       "Write(./.deepwork/**)",
       "Bash(deepwork:*)",
+      "Bash(learning_agents/scripts/*)",
+      "Bash(bash learning_agents/scripts/*)",
       "WebSearch",
       "Skill(deepwork)",
       "mcp__deepwork__get_workflows",

@@ -11,54 +11,55 @@ Process unreviewed LearningAgent session transcripts to identify issues, investi
 
 This skill takes no arguments. It automatically discovers all pending sessions.
 
-## Pending Sessions
+## Session Log Folders needing Processing
 
-!`find .deepwork/tmp/agent_sessions -name needs_learning_as_of_timestamp 2>/dev/null`
+!`learning_agents/scripts/list_pending_sessions.sh`
 
 ## Procedure
 
-### Step 1: Find Pending Sessions
+If the list above is empty (or the `.deepwork/tmp/agent_sessions` directory does not exist), inform the user that there are no pending sessions to learn from and stop.
 
-Check for pending learning sessions. The dynamic include above lists all `needs_learning_as_of_timestamp` files. If the list is empty (or the `.deepwork/tmp/agent_sessions` directory does not exist), inform the user that there are no pending sessions to learn from and stop.
+### Step 1: Process Each Session
 
-For each pending file, extract:
-- The session folder path (parent directory of `needs_learning_as_of_timestamp`, e.g., `.deepwork/tmp/agent_sessions/sess-abc/agent-123/`)
-- The agent name (read the `agent_used` file in that folder)
+For each session log folder, run the learning cycle in sequence.
 
-### Step 2: Process Each Session
+#### 1a: Identify Issues
 
-For each pending session folder, run the learning cycle in sequence. The Task pseudo-code below shows the parameters to pass to the Task tool:
-
-#### 2a: Identify Issues
+Spawn a Task to run the identify skill:
 
 ```
 Task tool call:
   name: "identify-issues"
   subagent_type: learning-agents:learning-agent-expert
   model: sonnet
-  prompt: "Run the identify skill on the session folder: .deepwork/tmp/agent_sessions/<session_id>/<agent_id>/
-           Use: Skill learning-agents:identify .deepwork/tmp/agent_sessions/<session_id>/<agent_id>/"
+  prompt: "Run: Skill learning-agents:identify <session_log_folder>"
 ```
 
-#### 2b: Investigate and Incorporate
+**Run those in parallel**
 
-After identification completes, spawn another Task to run investigation and incorporation in sequence:
+#### 1b: Investigate and Incorporate
+
+After identification completes, **skip** any session where the identify step reported zero issues. Only proceed with sessions that had issues identified.
+
+For remaining sessions, start a new Task to run investigation and incorporation in sequence for each session_log_folder:
 
 ```
 Task tool call:
   name: "investigate-and-incorporate"
   subagent_type: learning-agents:learning-agent-expert
   model: sonnet
-  prompt: "Run these two skills in sequence on the session folder: .deepwork/tmp/agent_sessions/<session_id>/<agent_id>/
-           1. First: Skill learning-agents:investigate-issues .deepwork/tmp/agent_sessions/<session_id>/<agent_id>/
-           2. Then: Skill learning-agents:incorporate-learnings .deepwork/tmp/agent_sessions/<session_id>/<agent_id>/"
+  prompt: "Run these two skills in sequence:
+           1. Skill learning-agents:investigate-issues <session_log_folder>
+           2. Skill learning-agents:incorporate-learnings <session_log_folder>"
 ```
+
+**Run session log folders from the same agent serially, but different agents in parallel.** I.e. if Agent A has 7 sessions and Agent B has 3 sessions, you should have 3 "batches" of Tasks where you do one session for Agent A and one for Agent B, then you would have 4 more Tasks run serially for the remaining Agent A sessions.
 
 #### Handling failures
 
 If a sub-skill Task fails for a session, log the failure, skip that session, and continue processing remaining sessions. Do not mark `needs_learning_as_of_timestamp` as resolved for failed sessions.
 
-### Step 3: Summary
+### Step 2: Summary
 
 Output in this format:
 
@@ -75,8 +76,6 @@ Output in this format:
 
 ## Guardrails
 
-- Process sessions one at a time to avoid conflicts when multiple sessions involve the same agent
-- If a session's transcript cannot be found, skip it and report the issue
-- Do NOT modify agent files directly — always delegate to the learning cycle skills
+- Do NOT modify agent files directly — always delegate to the learning cycle skills in Tasks
 - Use Sonnet model for Task spawns to balance cost and quality
 - Use the `learning-agents:learning-agent-expert` agent for Task spawns

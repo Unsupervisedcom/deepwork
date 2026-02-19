@@ -97,6 +97,20 @@ Users interact via MCP tools: `get_workflows`, `start_workflow`, `finished_step`
 - Hook scripts should work cross-platform (watch for macOS-only date flags, etc.)
 - Changes to the hook system must work with all supported agent adapters (Claude, Gemini)
 
+## Tool Call Efficiency
+
+When gathering information, issue all independent tool calls in a single parallel block rather than sequentially. This applies whenever the inputs of one call do not depend on the outputs of another — for example, searching for multiple unrelated patterns, reading multiple unrelated files, or running independent lookups.
+
+Sequential calls are only justified when a later call genuinely needs the result of an earlier one.
+
+## Response Accuracy
+
+When writing summaries or descriptions of changes you made:
+
+- **Never state a metric you have not just verified.** If you want to report something concrete (e.g., line count before/after), re-read the file immediately before stating the figure.
+- **If you catch an error mid-sentence, stop and verify — do not substitute a guess.** The correct pattern is: detect error → use a tool to get the real value → state the corrected value. Replacing a wrong number with a vague approximation ("about 9 lines") without a tool call is still a fabrication.
+- **When in doubt, omit the metric.** A qualitative description ("the redundant content was removed") is always preferable to an unverified number.
+
 ## Review Approach
 
 When reviewing a PR:
@@ -106,3 +120,13 @@ When reviewing a PR:
 4. Flag issues with specific file paths and line references
 5. Distinguish between blocking issues (must fix) and suggestions (nice to have)
 6. Consider the downstream user experience — would this change confuse someone using DeepWork in their project?
+
+### When the Review Target Cannot Be Found
+
+If you search for the requested job, workflow, or file and it does not exist by the given name, **stop immediately and report the missing resource to the user before doing anything else**. Do not silently substitute a similar-sounding alternative and proceed with a review. Instead:
+
+1. State clearly that the named resource does not exist (include what you searched for).
+2. List any close matches you found (e.g., "No `add_job` workflow found; the closest match is `new_job` in `deepwork_jobs`").
+3. Ask the user to confirm which resource they intended before continuing.
+
+Proceeding silently with a substituted target wastes the user's time and delivers a review they did not ask for.

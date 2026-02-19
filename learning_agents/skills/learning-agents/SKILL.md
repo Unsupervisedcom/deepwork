@@ -11,6 +11,12 @@ Manage auto-improving AI sub-agents that learn from their mistakes across sessio
 
 `$ARGUMENTS` is the text after `/learning-agents` (e.g., for `/learning-agents create foo`, `$ARGUMENTS` is `create foo`).
 
+## Setup Check
+
+Before routing, check if `.claude/session_log_folder_info.md` exists. If it does **not** exist, run `Skill learning-agents:setup` first, then continue with routing below.
+
+Only perform this check once per session — after the setup skill completes (or if the file already exists), proceed directly to routing for all subsequent invocations.
+
 ## Routing
 
 Split `$ARGUMENTS` on the first whitespace. The first token is the sub-command (case-insensitive); the remainder is passed to the sub-skill. Accept both underscores and dashes in sub-command names (e.g., `report_issue` and `report-issue` are equivalent).
@@ -33,9 +39,9 @@ Invoke: `Skill learning-agents:learn`
 
 Report an issue with a LearningAgent from the current session.
 
-Invoke: `Skill learning-agents:report-issue <session_folder_path> <details>`
+Invoke: `Skill learning-agents:report-issue <session_log_folder> <details>`
 
-To construct the session folder path: search `.deepwork/tmp/agent_sessions/` for a subdirectory whose name contains the provided `agentId`. The path structure is `.deepwork/tmp/agent_sessions/<session_id>/<agentId>/`. If no match is found, inform the user. If multiple matches exist, use the most recently modified one.
+To construct the session log folder path: search `.deepwork/tmp/agent_sessions/` for a subdirectory whose name contains the provided `agentId`. The path structure is `.deepwork/tmp/agent_sessions/<session_id>/<agentId>/`. If no match is found, inform the user. If multiple matches exist, use the most recently modified one.
 
 Example: `$ARGUMENTS = "report_issue abc123 Used wrong retry strategy"` → find folder matching `abc123` under `.deepwork/tmp/agent_sessions/`, then `Skill learning-agents:report-issue .deepwork/tmp/agent_sessions/sess-xyz/abc123/ Used wrong retry strategy`
 

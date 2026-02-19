@@ -69,5 +69,5 @@ Recorded: <one-sentence summary of the issue>
 
 - Do NOT add an `investigation_report` field — that is added during the investigate step
 - Do NOT set status to anything other than `identified`
-- Do NOT modify any other files in the session folder
+- Do NOT modify any other files in the session log folder
 - Keep the `issue_description` factual and observable — describe symptoms, not root causes

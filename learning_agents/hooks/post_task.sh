@@ -66,14 +66,43 @@ fi
 # CREATE SESSION TRACKING FILES
 # ============================================================================
 
-SESSION_DIR=".deepwork/tmp/agent_sessions/${SESSION_ID}/${AGENT_ID}"
-mkdir -p "$SESSION_DIR"
+SESSION_LOG_DIR=".deepwork/tmp/agent_sessions/${SESSION_ID}/${AGENT_ID}"
+mkdir -p "$SESSION_LOG_DIR"
 
 # Write timestamp flag
-date -u +"%Y-%m-%dT%H:%M:%SZ" > "${SESSION_DIR}/needs_learning_as_of_timestamp"
+date -u +"%Y-%m-%dT%H:%M:%SZ" > "${SESSION_LOG_DIR}/needs_learning_as_of_timestamp"
 
 # Write agent name for later lookup
-echo "$AGENT_NAME" > "${SESSION_DIR}/agent_used"
+echo "$AGENT_NAME" > "${SESSION_LOG_DIR}/agent_used"
+
+# ============================================================================
+# SYMLINK AGENT TRANSCRIPT INTO SESSION LOG FOLDER
+# ============================================================================
+# The hook input includes transcript_path — the *parent* session's transcript
+# (e.g., ~/.claude/projects/<hash>/<session_id>.jsonl). The spawned agent's
+# transcript lives at:
+#   <same_dir>/<session_id>/subagents/agent-<agent_id>.jsonl
+#
+# We strip the .jsonl extension from transcript_path to get the session's
+# subagent directory, then append subagents/agent-<agent_id>.jsonl.
+# The resulting symlink lets the learning cycle find the transcript directly
+# from the session log folder without needing to search.
+
+TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
+
+if [ -n "$TRANSCRIPT_PATH" ]; then
+    # Strip .jsonl extension to get the session directory base path
+    # e.g., ~/.claude/projects/<hash>/ad6c338b-...jsonl → ~/.claude/projects/<hash>/ad6c338b-...
+    SESSION_TRANSCRIPT_BASE="${TRANSCRIPT_PATH%.jsonl}"
+
+    # Build the subagent transcript path
+    AGENT_TRANSCRIPT="${SESSION_TRANSCRIPT_BASE}/subagents/agent-${AGENT_ID}.jsonl"
+
+    # Create symlink only if the transcript file actually exists
+    if [ -f "$AGENT_TRANSCRIPT" ]; then
+        ln -sf "$AGENT_TRANSCRIPT" "${SESSION_LOG_DIR}/conversation_transcript.jsonl"
+    fi
+fi
 
 # ============================================================================
 # OUTPUT POST-TASK REMINDER
