@@ -79,31 +79,16 @@ if [ -f "$CLAUDE_AGENT_FILE" ]; then
 else
     mkdir -p "$(dirname "$CLAUDE_AGENT_FILE")"
 
-    # Use quoted heredoc to keep backticks/dollars literal, then sed in agent name
-    cat > "$CLAUDE_AGENT_FILE" << 'AGENT_MD'
+    # The agent file invokes the generator script with the agent name.
+    # Path is relative to project root (where Claude Code runs commands).
+    cat > "$CLAUDE_AGENT_FILE" << AGENT_MD
 ---
 name: TODO
 description: "TODO"
 ---
 
-# Core Knowledge
-
-!`cat .deepwork/learning-agents/__AGENT__/core-knowledge.md`
-
-# Topics
-
-Located in `.deepwork/learning-agents/__AGENT__/topics/`
-
-!`for f in .deepwork/learning-agents/__AGENT__/topics/*.md; do [ -f "$f" ] || continue; desc=$(awk '/^---/{c++; next} c==1 && /^name:/{sub(/^name: *"?/,""); sub(/"$/,""); print; exit}' "$f"); echo "- $(basename "$f"): $desc"; done`
-
-# Learnings
-
-Learnings are incident post-mortems from past agent sessions capturing mistakes, root causes, and generalizable insights. Review them before starting work to avoid repeating past mistakes. Located in `.deepwork/learning-agents/__AGENT__/learnings/`.
+!\`learning_agents/scripts/generate_agent_instructions.sh ${AGENT_NAME}\`
 AGENT_MD
-
-    # Replace placeholder with actual agent name (use .bak for GNU/BSD sed portability)
-    sed -i.bak "s/__AGENT__/${AGENT_NAME}/g" "$CLAUDE_AGENT_FILE"
-    rm -f "${CLAUDE_AGENT_FILE}.bak"
 
     echo "Created Claude agent file: ${CLAUDE_AGENT_FILE}"
 fi

@@ -77,9 +77,21 @@ After addressing the identified issues:
 
 3. **Confirm completion** - When the user says the output is good, confirm that testing is complete
 
+### Step 5: Write Test Feedback
+
+Once the user is satisfied, write a summary of the test run to `.deepwork/tmp/test_feedback.md`. This file is consumed by the iterate step. Include:
+
+1. **Test case description** - What was tested
+2. **Issues found during critique** - The problems identified in Step 3
+3. **User feedback** - What the user requested changed and why
+4. **Corrections applied** - What was fixed
+5. **Final outcome** - Whether the user was satisfied and any remaining concerns
+
+This file is the primary record of what happened during testing and what needs to improve in the workflow.
+
 ### Loop Behavior
 
-The feedback loop should continue until the user explicitly indicates satisfaction. Look for signals like:
+The feedback loop (Steps 3-4) should continue until the user explicitly indicates satisfaction. Look for signals like:
 - "Looks good"
 - "That's fine"
 - "I'm happy with it"

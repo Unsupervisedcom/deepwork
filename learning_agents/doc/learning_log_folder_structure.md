@@ -8,13 +8,20 @@ Session-level agent interaction logs are stored in `.deepwork/tmp/agent_sessions
 .deepwork/tmp/agent_sessions/
 └── <session_id>/
     └── <agent_id>/
-        ├── needs_learning_as_of_timestamp      # Flag: learning needed (auto-created by hook)
+        ├── conversation_transcript.jsonl        # Symlink to agent's transcript (auto-created by hook)
+        ├── needs_learning_as_of_timestamp       # Flag: learning needed (auto-created by hook)
         ├── learning_last_performed_timestamp    # When learning was last run on this conversation
         ├── agent_used                           # Name of the LearningAgent (auto-created by hook)
         └── <brief-name>.issue.yml               # Issue files (created during learning cycle)
 ```
 
 ## Files
+
+### conversation_transcript.jsonl
+
+A symlink to the agent's Claude Code transcript, created automatically by the post-Task hook. Points to the subagent transcript at `~/.claude/projects/<project-hash>/<session_id>/subagents/agent-<agent_id>.jsonl`. This allows learning cycle skills to read the transcript directly from the session log folder without needing to search for it via Glob patterns.
+
+The symlink is only created if the transcript file exists at hook execution time (which it should, since the PostToolUse hook fires after the Task completes).
 
 ### needs_learning_as_of_timestamp
 
@@ -34,9 +41,13 @@ Created automatically by the post-Task hook. Contains the name of the LearningAg
 
 Issue files created during the `identify` and `report_issue` skills. See `issue_yml_format.md` for the full schema. These files progress through statuses: `identified` → `investigated` → `learned`.
 
+### conversation_transcript.jsonl
+
+Symlink to the agent's Claude Code transcript, created automatically by the post-Task hook. **THIS IS THE FILE TO READ TO SEE THE CONVERSATION ALL THE OTHER FILES REFER TO.**
+
 ## Lifecycle
 
-1. **Agent used**: Post-Task hook creates `needs_learning_as_of_timestamp` and `agent_used`
+1. **Agent used**: Post-Task hook creates `needs_learning_as_of_timestamp`, `agent_used`, and `conversation_transcript.jsonl` symlink
 2. **Session ends**: Stop hook detects `needs_learning_as_of_timestamp` files and suggests running a learning cycle
 3. **Learning cycle** (`/learning-agents learn`):
    a. `identify` reads transcripts and creates `*.issue.yml` files with status `identified`
@@ -50,4 +61,3 @@ Issue files created during the `identify` and `report_issue` skills. See `issue_
 - The `session_id` comes from Claude Code's session identifier
 - The `agent_id` is the unique agent ID assigned by Claude Code when spawning a Task
 - The `.deepwork/tmp/` directory is intended for transient working files and can be gitignored
-- Transcript files referenced by issues are Claude Code's own session transcripts (typically at `~/.claude/projects/.../sessions/<session_id>/transcript.jsonl`)

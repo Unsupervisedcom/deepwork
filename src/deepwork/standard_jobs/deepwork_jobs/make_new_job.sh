@@ -117,8 +117,6 @@ This folder and its subfolders are managed using `deepwork_jobs` workflows.
 
 1. **Use workflows** for structural changes (adding steps, modifying job.yml)
 2. **Direct edits** are fine for minor instruction tweaks
-3. **Run `deepwork_jobs/learn`** after executing job steps to capture improvements
-4. **Run `deepwork install`** after any changes to regenerate commands
 EOF
 
     info "Created directory structure:"
