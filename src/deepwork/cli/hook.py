@@ -14,9 +14,6 @@ import importlib
 import sys
 
 import click
-from rich.console import Console
-
-console = Console()
 
 
 class HookError(Exception):
@@ -62,8 +59,8 @@ def hook(hook_name: str) -> None:
             raise HookError(f"Hook module '{module_name}' does not have a main() function")
 
     except HookError as e:
-        console.print(f"[red]Error:[/red] {e}", style="bold red")
+        click.echo(f"Error: {e}", err=True)
         sys.exit(1)
     except Exception as e:
-        console.print(f"[red]Unexpected error running hook:[/red] {e}", style="bold red")
+        click.echo(f"Unexpected error running hook: {e}", err=True)
         sys.exit(1)

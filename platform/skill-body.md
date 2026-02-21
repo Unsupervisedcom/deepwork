@@ -1,16 +1,3 @@
-{#
-Template: skill-deepwork.md.jinja
-Purpose: Generates the main /deepwork skill that instructs agents to use MCP tools
-
-This template is used to create the entry-point skill for DeepWork.
-Instead of containing step instructions, it directs agents to use the
-DeepWork MCP server tools.
-#}
-+++
-name = "deepwork"
-description = "Start or continue DeepWork workflows using MCP tools"
-+++
-
 # DeepWork Workflow Manager
 
 Execute multi-step workflows with quality gate checkpoints.
@@ -33,6 +20,24 @@ use context and the available workflows from `get_workflows` to determine the be
 3. Follow the step instructions returned
 4. Call `finished_step` with your outputs when done
 5. Handle the response: `needs_work`, `next_step`, or `workflow_complete`
+
+## Creating New Jobs
+
+<important>
+You MUST create new DeepWork jobs by starting the `new_job` workflow via the DeepWork
+MCP tools. Follow the guidance from the DeepWork MCP server as you go through the
+workflow — it will walk you through each step.
+</important>
+
+To create a new job, use the MCP tools:
+
+1. Call `get_workflows` to confirm the `deepwork_jobs` job is available
+2. Call `start_workflow` with:
+   - `job_name`: `"deepwork_jobs"`
+   - `workflow_name`: `"new_job"`
+   - `goal`: a description of what the new job should accomplish
+   - `instance_id`: a short name for the new job (e.g., `"code_review"`)
+3. Follow the instructions returned by the MCP tools as you progress through the workflow
 
 ## Intent Parsing
 

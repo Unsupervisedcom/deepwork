@@ -11,9 +11,8 @@ class TestServeExternalRunnerOption:
     """Tests for --external-runner CLI option on the serve command."""
 
     @patch("deepwork.cli.serve._serve_mcp")
-    @patch("deepwork.cli.serve._load_config")
     def test_default_external_runner_is_none(
-        self, mock_load: MagicMock, mock_serve: MagicMock, tmp_path: str
+        self, mock_serve: MagicMock, tmp_path: str
     ) -> None:
         """Test that --external-runner defaults to None when not specified."""
         runner = CliRunner()
@@ -28,9 +27,8 @@ class TestServeExternalRunnerOption:
         assert call_args[0][4] is None or call_args.kwargs.get("external_runner") is None
 
     @patch("deepwork.cli.serve._serve_mcp")
-    @patch("deepwork.cli.serve._load_config")
     def test_external_runner_claude(
-        self, mock_load: MagicMock, mock_serve: MagicMock, tmp_path: str
+        self, mock_serve: MagicMock, tmp_path: str
     ) -> None:
         """Test that --external-runner claude passes 'claude' through."""
         runner = CliRunner()

@@ -4,7 +4,7 @@
 
 DeepWork is a framework for enabling AI agents to perform complex, multi-step work tasks across any domain. It is inspired by GitHub's spec-kit but generalized for any job type - from competitive research to ad campaign design to monthly reporting.
 
-**Key Insight**: DeepWork is an *installation tool* that sets up job-based workflows in your project. After installation, all work is done through your chosen AI agent CLI (like Claude Code) using slash commands. The DeepWork CLI itself is only used for initial setup.
+**Key Insight**: DeepWork is delivered as a **plugin** for AI agent CLIs (Claude Code, Gemini CLI, etc.). The plugin provides a skill, MCP server configuration, and hooks. The MCP server (`deepwork serve`) is the core runtime — the CLI has no install/sync commands.
 
 ## Core Concepts
 
@@ -19,34 +19,42 @@ Jobs are complex, multi-step tasks defined once and executed many times by AI ag
 ### Steps
 Each job consists of reviewable steps with clear inputs and outputs. For example:
 - Competitive Research steps: `identify_competitors` → `primary_research` → `secondary_research` → `report` → `position`
-- Each step becomes a slash command: `/competitive_research.identify_competitors`
 
 ## Architecture Principles
 
 1. **Job-Agnostic**: Supports any multi-step workflow, not just software development
 2. **Git-Native**: All work products are versioned for collaboration and context accumulation
 3. **Step-Driven**: Jobs decomposed into reviewable steps with clear inputs/outputs
-4. **Template-Based**: Job definitions are reusable and shareable via Git
+4. **Plugin-Based**: Delivered as platform plugins (Claude Code plugin, Gemini extension)
 5. **AI-Neutral**: Supports multiple AI platforms (Claude Code, Gemini, Copilot, etc.)
 6. **Stateless Execution**: All state stored in filesystem artifacts for transparency
-7. **Installation-Only CLI**: DeepWork installs skills/commands then gets out of the way
+7. **MCP-Powered**: The MCP server is the core runtime — no install/sync CLI commands needed
 
 ## Project Structure
 
 ```
 deepwork/
 ├── src/deepwork/
-│   ├── cli/              # CLI commands (install, sync)
-│   ├── core/             # Core logic (detection, generation, parsing)
-│   ├── templates/        # Command templates per AI platform
-│   │   ├── claude/
-│   │   ├── gemini/
-│   │   └── copilot/
-│   ├── standard_jobs/    # Built-in job definitions (auto-installed)
+│   ├── cli/              # CLI commands (serve, hook)
+│   ├── core/             # Core logic (parsing, jobs, doc_spec_parser)
+│   ├── mcp/              # MCP server (the core runtime)
+│   ├── hooks/            # Hook scripts and wrappers
+│   ├── standard_jobs/    # Built-in job definitions (auto-discovered at runtime)
 │   │   └── deepwork_jobs/
 │   ├── schemas/          # Job definition schemas
 │   └── utils/            # Utilities (fs, git, yaml, validation)
-├── library/jobs/         # Reusable example jobs (not auto-installed)
+├── platform/             # Shared platform-agnostic content
+│   ├── skill-body.md     # Canonical skill body (source of truth)
+│   └── hooks/            # Shared hook scripts
+├── plugins/
+│   ├── claude/           # Claude Code plugin
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── skills/deepwork/SKILL.md
+│   │   ├── hooks/        # hooks.json + check_version.sh (symlink)
+│   │   └── .mcp.json     # MCP server config
+│   └── gemini/           # Gemini CLI extension
+│       └── skills/deepwork/SKILL.md
+├── library/jobs/         # Reusable example jobs
 ├── tests/                # Test suite
 ├── doc/                  # Documentation
 └── doc/architecture.md   # Detailed architecture document
@@ -55,8 +63,9 @@ deepwork/
 ## Technology Stack
 
 - **Language**: Python 3.11+
-- **Dependencies**: Jinja2 (templates), PyYAML (config), GitPython (git ops)
-- **Distribution**: uv/pipx for modern Python package management
+- **Runtime Dependencies**: PyYAML, Click, jsonschema, FastMCP, Pydantic, aiofiles
+- **Dev Dependencies**: Jinja2, GitPython, Rich, pytest, ruff, mypy
+- **Distribution**: uv/pipx/brew for Python package management
 - **Testing**: pytest with pytest-mock
 - **Linting**: ruff
 - **Type Checking**: mypy
@@ -74,58 +83,34 @@ uv sync                  # Install dependencies
 uv run pytest           # Run tests
 ```
 
-## Running DeepWork CLI (Claude Code Web Environment)
-
-When running in Claude Code on the web (not local installations), the `deepwork` CLI may not be available. To run DeepWork commands:
-
-```bash
-# Install the package in editable mode (one-time setup)
-pip install -e .
-
-# Then run commands normally
-deepwork install
-```
-
-**Note**: In web environments, you may also need to install dependencies like `jsonschema`, `pyyaml`, `gitpython`, `jinja2`, and `click` if they're not already available.
-
 ## How DeepWork Works
 
-### 1. Installation
-Users install DeepWork globally, then run it in a Git project:
-```bash
-cd my-project/
-deepwork install --claude
+### 1. Plugin Installation
+Users install the DeepWork plugin for their AI agent CLI:
+
+**Claude Code:**
+```
+/plugin marketplace add https://github.com/Unsupervisedcom/deepwork
+/plugin install deepwork@deepwork-plugins
 ```
 
-This installs core skills into `.claude/skills/`:
-- `deepwork_jobs.define` - Interactive job definition wizard
-- `deepwork_jobs.implement` - Generates step files and syncs skills
-- `deepwork_jobs.refine` - Refine existing job definitions
+The plugin provides:
+- `/deepwork` skill for invoking workflows
+- MCP server configuration (`uvx deepwork serve`)
+- SessionStart hook for version checking
 
 ### 2. Job Definition
-Users define jobs via Claude Code:
+Users define jobs via the `/deepwork` skill:
 ```
-/deepwork_jobs.define
-```
-
-The agent guides you through defining:
-- Job name and description
-- Steps with inputs/outputs
-- Dependencies between steps
-
-This creates the `job.yml` file. Then run:
-```
-/deepwork_jobs.implement
+/deepwork Make a job for doing competitive research
 ```
 
-This generates step instruction files and syncs skills to `.claude/skills/`.
-
-Job definitions are stored in `.deepwork/jobs/[job-name]/` and tracked in Git.
+The agent uses MCP tools (`get_workflows` → `start_workflow` → `finished_step`) to guide you through defining jobs. Job definitions are stored in `.deepwork/jobs/[job-name]/` and tracked in Git.
 
 ### 3. Job Execution
-Execute jobs via slash commands in Claude Code:
+Execute jobs via the `/deepwork` skill:
 ```
-/competitive_research.identify_competitors
+/deepwork competitive_research
 ```
 
 Each step:
@@ -140,21 +125,15 @@ Each step:
 - Create PR for team review
 - Merge to preserve work products for future context
 
-## Target Project Structure (After Installation)
+## Target Project Structure (After Plugin Install)
 
 ```
 my-project/
 ├── .git/
-├── .claude/                    # Claude Code directory
-│   └── skills/                 # Skill files
-│       ├── deepwork_jobs.define.md
-│       ├── deepwork_jobs.implement.md
-│       ├── deepwork_jobs.refine.md
-│       └── [job].[step].md
-└── .deepwork/                  # DeepWork configuration
-    ├── config.yml              # version, platforms[]
+└── .deepwork/                  # DeepWork runtime data
+    ├── tmp/                    # Session state (created lazily)
     └── jobs/
-        ├── deepwork_jobs/      # Built-in job
+        ├── deepwork_jobs/      # Built-in job (auto-discovered from package)
         │   ├── job.yml
         │   └── steps/
         └── [job-name]/
@@ -163,7 +142,7 @@ my-project/
                 └── [step].md
 ```
 
-**Note**: Work outputs are created on dedicated Git branches (e.g., `deepwork/job_name-instance-date`), not in a separate directory.
+**Note**: The plugin provides the skill and MCP config. Work outputs are created on dedicated Git branches (e.g., `deepwork/job_name-instance-date`), not in a separate directory.
 
 
 ## Key Files to Reference
@@ -189,30 +168,21 @@ my-project/
 
 | Type | Location | Purpose |
 |------|----------|---------|
-| **Standard Jobs** | `src/deepwork/standard_jobs/` | Framework core, auto-installed to users |
+| **Standard Jobs** | `src/deepwork/standard_jobs/` | Framework core, auto-discovered at runtime |
 | **Library Jobs** | `library/jobs/` | Reusable examples users can adopt |
 | **Bespoke Jobs** | `.deepwork/jobs/` (if not in standard_jobs) | This repo's internal workflows only |
 
 ### Editing Standard Jobs
 
-**Standard jobs** (like `deepwork_jobs`) are bundled with DeepWork and installed to user projects. They exist in THREE locations:
+**Standard jobs** (like `deepwork_jobs`) are bundled with DeepWork and discovered at runtime from the Python package. They exist in TWO locations:
 
 1. **Source of truth**: `src/deepwork/standard_jobs/[job_name]/` - The canonical source files
-2. **Installed copy**: `.deepwork/jobs/[job_name]/` - Installed by `deepwork install`
-3. **Generated skills**: `.claude/skills/[job_name].[step].md` - Generated from installed jobs
+2. **Runtime copy**: `.deepwork/jobs/[job_name]/` - Copied at runtime by the MCP server
 
-**NEVER edit files in `.deepwork/jobs/` or `.claude/skills/` for standard jobs directly!**
-
-Instead, follow this workflow:
-
-1. **Edit the source files** in `src/deepwork/standard_jobs/[job_name]/`
-   - `job.yml` - Job definition with steps, stop_hooks, etc.
-   - `steps/*.md` - Step instruction files
-   - `hooks/*` - Any hook scripts
-
-2. **Run `deepwork install`** to sync changes to `.deepwork/jobs/` and `.claude/skills/`
-
-3. **Verify** the changes propagated correctly to all locations
+**Edit the source files** in `src/deepwork/standard_jobs/[job_name]/`:
+- `job.yml` - Job definition with steps, stop_hooks, etc.
+- `steps/*.md` - Step instruction files
+- `hooks/*` - Any hook scripts
 
 ### How to Identify Job Types
 
