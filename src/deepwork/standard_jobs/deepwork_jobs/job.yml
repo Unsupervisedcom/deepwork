@@ -104,13 +104,11 @@ steps:
       - define
       - implement
     reviews:
-      - run_each: step
+      - run_each: .deepwork/tmp/test_feedback.md
         quality_criteria:
-          "Workflow Invoked": "The new workflow was actually run on the user's test case via MCP."
-          "Output Critiqued": "The agent identified up to 3 top issues with the output."
-          "User Feedback Gathered": "The agent asked the user about each issue and gathered additional feedback."
-          "Corrections Made": "All requested corrections were applied to the output."
-          "User Satisfied": "The user confirmed the output meets their needs."
+          "Test Case Documented": "The feedback file describes what test case was used and what the workflow produced."
+          "Issues Identified": "The feedback file lists specific issues found during output critique."
+          "Feedback Captured": "User feedback and requested corrections are documented with enough detail for the iterate step to act on."
 
   - id: iterate
     name: "Iterate on Workflow Design"

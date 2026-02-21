@@ -112,7 +112,23 @@ Examples:
 - If data processing was slow, suggest a different method or tool
 - If file generation had issues, recommend a different library or format
 
-### Step 6: Update Job Version
+### Step 6: Create or Fix Scripts
+
+Review the test run for opportunities to add or improve scripts in the job's `scripts/` directory:
+
+1. **Fix existing scripts** - If any scripts were used during the test and had problems (wrong output, errors, edge cases), fix them now.
+
+2. **Create new scripts** - If any process during the test was manual, repetitive, or error-prone, and would be faster or more reliable as a script, create one. Good candidates:
+   - Data fetching or transformation that had to be done by hand
+   - File generation with specific formatting requirements
+   - Validation or checking steps that could be automated
+   - Setup or teardown tasks that will repeat on every run
+
+3. **Test the scripts** - Run any new or modified scripts to verify they work correctly.
+
+4. **Reference from instructions** - Update the relevant step instruction files to reference the new scripts so future runs use them.
+
+### Step 7: Update Job Version
 
 After making improvements:
 
@@ -120,7 +136,7 @@ After making improvements:
    - Patch version (x.x.1) for minor instruction tweaks
    - Minor version (x.1.0) for quality criteria changes or significant improvements
 
-### Step 7: Provide Recap
+### Step 8: Provide Recap
 
 Summarize the improvements made:
 

@@ -5,7 +5,7 @@
 # files so the learning cycle can process the transcript later.
 #
 # Input (stdin): JSON with tool_input, tool_response, session_id
-# Output (stdout): JSON with optional systemMessage
+# Output (stdout): JSON with optional hookSpecificOutput.additionalContext
 # Exit: Always 0 (non-blocking)
 
 set -euo pipefail
@@ -36,11 +36,14 @@ if [ -z "$SESSION_ID" ]; then
 fi
 
 # Extract agent name from tool_input.name (the name parameter passed to Task)
-AGENT_NAME=$(echo "$HOOK_INPUT" | jq -r '.tool_input.name // empty' 2>/dev/null)
-if [ -z "$AGENT_NAME" ]; then
+# Normalize: lowercase and replace spaces with hyphens to match directory naming
+# (e.g., "Consistency Reviewer" -> "consistency-reviewer")
+AGENT_NAME_RAW=$(echo "$HOOK_INPUT" | jq -r '.tool_input.name // empty' 2>/dev/null)
+if [ -z "$AGENT_NAME_RAW" ]; then
     echo '{}'
     exit 0
 fi
+AGENT_NAME=$(echo "$AGENT_NAME_RAW" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
 
 # Extract agent_id from tool_response
 AGENT_ID=$(echo "$HOOK_INPUT" | jq -r '.tool_response.agentId // .tool_response.agent_id // empty' 2>/dev/null)
@@ -63,14 +66,43 @@ fi
 # CREATE SESSION TRACKING FILES
 # ============================================================================
 
-SESSION_DIR=".deepwork/tmp/agent_sessions/${SESSION_ID}/${AGENT_ID}"
-mkdir -p "$SESSION_DIR"
+SESSION_LOG_DIR=".deepwork/tmp/agent_sessions/${SESSION_ID}/${AGENT_ID}"
+mkdir -p "$SESSION_LOG_DIR"
 
 # Write timestamp flag
-date -u +"%Y-%m-%dT%H:%M:%SZ" > "${SESSION_DIR}/needs_learning_as_of_timestamp"
+date -u +"%Y-%m-%dT%H:%M:%SZ" > "${SESSION_LOG_DIR}/needs_learning_as_of_timestamp"
 
 # Write agent name for later lookup
-echo "$AGENT_NAME" > "${SESSION_DIR}/agent_used"
+echo "$AGENT_NAME" > "${SESSION_LOG_DIR}/agent_used"
+
+# ============================================================================
+# SYMLINK AGENT TRANSCRIPT INTO SESSION LOG FOLDER
+# ============================================================================
+# The hook input includes transcript_path — the *parent* session's transcript
+# (e.g., ~/.claude/projects/<hash>/<session_id>.jsonl). The spawned agent's
+# transcript lives at:
+#   <same_dir>/<session_id>/subagents/agent-<agent_id>.jsonl
+#
+# We strip the .jsonl extension from transcript_path to get the session's
+# subagent directory, then append subagents/agent-<agent_id>.jsonl.
+# The resulting symlink lets the learning cycle find the transcript directly
+# from the session log folder without needing to search.
+
+TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
+
+if [ -n "$TRANSCRIPT_PATH" ]; then
+    # Strip .jsonl extension to get the session directory base path
+    # e.g., ~/.claude/projects/<hash>/ad6c338b-...jsonl → ~/.claude/projects/<hash>/ad6c338b-...
+    SESSION_TRANSCRIPT_BASE="${TRANSCRIPT_PATH%.jsonl}"
+
+    # Build the subagent transcript path
+    AGENT_TRANSCRIPT="${SESSION_TRANSCRIPT_BASE}/subagents/agent-${AGENT_ID}.jsonl"
+
+    # Create symlink only if the transcript file actually exists
+    if [ -f "$AGENT_TRANSCRIPT" ]; then
+        ln -sf "$AGENT_TRANSCRIPT" "${SESSION_LOG_DIR}/conversation_transcript.jsonl"
+    fi
+fi
 
 # ============================================================================
 # OUTPUT POST-TASK REMINDER
@@ -84,7 +116,7 @@ fi
 
 if [ -n "$REMINDER" ]; then
     cat << EOF
-{"systemMessage":"${REMINDER}"}
+{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"${REMINDER}"}}
 EOF
 else
     echo '{}'

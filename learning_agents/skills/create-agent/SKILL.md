@@ -1,8 +1,6 @@
 ---
 name: create-agent
 description: Creates a new LearningAgent with directory structure, core-knowledge.md, and Claude Code agent file. Guides the user through initial configuration.
-disable-model-invocation: true
-allowed-tools: Read, Edit, Write, Bash, Glob
 ---
 
 # Create LearningAgent
@@ -96,8 +94,33 @@ Output in this format:
 - `.deepwork/learning-agents/<agent-name>/topics/` — topic documentation
 - `.deepwork/learning-agents/<agent-name>/learnings/` — experience-based insights
 - `.claude/agents/<agent-name>.md` — Claude Code agent file
+```
 
-**Usage:**
+Then output the following restart warning **exactly as written**, including the emphasis markers and blank lines. This is critical — the user WILL NOT be able to use the new agent without doing this:
+
+```
+---
+
+## !! IMPORTANT — YOU MUST RESTART CLAUDE CODE !!
+
+Claude Code does NOT hot-reload agent files. The agent you just created
+is **invisible** to Claude until you restart.
+
+**Do this now:**
+
+1. Exit this Claude Code session (type `/exit` or Ctrl+C)
+2. Restart with: `claude -c` (this continues your conversation)
+3. The new agent will then be available via the Task tool
+
+If you skip this step, Claude will not find the agent when you try to use it.
+
+---
+```
+
+After the restart warning, output:
+
+```
+**Usage (after restart):**
   Use the Task tool with `name: "<agent-name>"` to invoke this agent.
 
 **Learning cycle:**
