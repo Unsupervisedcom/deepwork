@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from deepwork.schemas.job_schema import JOB_SCHEMA, LIFECYCLE_HOOK_EVENTS
+from deepwork.jobs.schema import JOB_SCHEMA, LIFECYCLE_HOOK_EVENTS
 from deepwork.utils.validation import ValidationError, validate_against_schema
 from deepwork.utils.yaml_utils import YAMLError, load_yaml
 

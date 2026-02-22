@@ -17,9 +17,9 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from deepwork.core.parser import JobDefinition, ParseError, parse_job_definition
+from deepwork.jobs.parser import JobDefinition, ParseError, parse_job_definition
 
-logger = logging.getLogger("deepwork.core.jobs")
+logger = logging.getLogger("deepwork.jobs.discovery")
 
 
 @dataclass

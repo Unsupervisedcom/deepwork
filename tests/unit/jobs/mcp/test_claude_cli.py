@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from deepwork.mcp.claude_cli import ClaudeCLI, ClaudeCLIError
+from deepwork.jobs.mcp.claude_cli import ClaudeCLI, ClaudeCLIError
 
 
 def create_mock_subprocess(

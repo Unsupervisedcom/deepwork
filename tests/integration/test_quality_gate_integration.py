@@ -13,7 +13,7 @@
 #   - Use the MockQualityGate class
 #
 # If you need to test parsing logic or edge cases, add those tests to:
-#   tests/unit/mcp/test_quality_gate.py
+#   tests/unit/jobs/mcp/test_quality_gate.py
 #
 # These tests are SKIPPED in CI because they require Claude Code CLI to be
 # installed and authenticated. They are meant to be run locally during
@@ -28,8 +28,8 @@ from pathlib import Path
 
 import pytest
 
-from deepwork.mcp.claude_cli import ClaudeCLI
-from deepwork.mcp.quality_gate import QualityGate
+from deepwork.jobs.mcp.claude_cli import ClaudeCLI
+from deepwork.jobs.mcp.quality_gate import QualityGate
 
 # Skip marker for tests that require real Claude CLI
 # GitHub Actions sets CI=true, as do most other CI systems

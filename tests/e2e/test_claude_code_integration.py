@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pytest
 
-from deepwork.mcp.state import StateManager
-from deepwork.mcp.tools import WorkflowTools
+from deepwork.jobs.mcp.state import StateManager
+from deepwork.jobs.mcp.tools import WorkflowTools
 
 # Test input for deterministic validation
 TEST_INPUT = "apple, car, banana, chair, orange, table, mango, laptop, grape, bicycle"
@@ -249,7 +249,7 @@ class TestMCPWorkflowTools:
         assert len(fruits_job.workflows) >= 1
         workflow_name = fruits_job.workflows[0].name
 
-        from deepwork.mcp.schemas import StartWorkflowInput
+        from deepwork.jobs.mcp.schemas import StartWorkflowInput
 
         input_data = StartWorkflowInput(
             goal="Test identifying and classifying fruits",
@@ -283,7 +283,7 @@ class TestMCPWorkflowTools:
         assert len(fruits_job.workflows) >= 1
         workflow_name = fruits_job.workflows[0].name
 
-        from deepwork.mcp.schemas import FinishedStepInput, StartWorkflowInput
+        from deepwork.jobs.mcp.schemas import FinishedStepInput, StartWorkflowInput
 
         start_input = StartWorkflowInput(
             goal="Test workflow progression",

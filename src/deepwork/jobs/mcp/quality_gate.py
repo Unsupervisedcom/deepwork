@@ -12,8 +12,8 @@ from typing import Any
 
 import aiofiles
 
-from deepwork.mcp.claude_cli import ClaudeCLI
-from deepwork.mcp.schemas import (
+from deepwork.jobs.mcp.claude_cli import ClaudeCLI
+from deepwork.jobs.mcp.schemas import (
     QualityCriteriaResult,
     QualityGateResult,
     ReviewResult,
@@ -517,7 +517,7 @@ You must respond with JSON in this exact structure:
         file_count = len(self._flatten_output_paths(outputs))
         timeout = self.compute_timeout(file_count)
 
-        from deepwork.mcp.claude_cli import ClaudeCLIError
+        from deepwork.jobs.mcp.claude_cli import ClaudeCLIError
 
         try:
             data = await self._cli.run(

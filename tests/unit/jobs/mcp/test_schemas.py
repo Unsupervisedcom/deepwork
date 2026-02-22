@@ -1,6 +1,6 @@
 """Tests for MCP schemas."""
 
-from deepwork.mcp.schemas import (
+from deepwork.jobs.mcp.schemas import (
     ActiveStepInfo,
     ExpectedOutput,
     FinishedStepInput,

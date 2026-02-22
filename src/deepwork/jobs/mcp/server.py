@@ -19,18 +19,18 @@ from typing import Any
 
 from fastmcp import FastMCP
 
-from deepwork.mcp.claude_cli import ClaudeCLI
-from deepwork.mcp.quality_gate import QualityGate
-from deepwork.mcp.schemas import (
+from deepwork.jobs.mcp.claude_cli import ClaudeCLI
+from deepwork.jobs.mcp.quality_gate import QualityGate
+from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     FinishedStepInput,
     StartWorkflowInput,
 )
-from deepwork.mcp.state import StateManager
-from deepwork.mcp.tools import WorkflowTools
+from deepwork.jobs.mcp.state import StateManager
+from deepwork.jobs.mcp.tools import WorkflowTools
 
 # Configure logging
-logger = logging.getLogger("deepwork.mcp")
+logger = logging.getLogger("deepwork.jobs.mcp")
 
 
 def create_server(
