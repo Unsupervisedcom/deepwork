@@ -99,38 +99,25 @@ jobs:
           print('All fruits fixture validations passed!')
           "
 
-      - name: Generate skills and validate structure
+      - name: Validate plugin structure and skill content
         if: github.event_name != 'pull_request'
         run: |
-          # Create a test environment
-          mkdir -p test_project/.deepwork/jobs
-          mkdir -p test_project/.claude  # Required for platform detection
-          cp -r tests/fixtures/jobs/fruits test_project/.deepwork/jobs/
+          # Verify the plugin provides the required files
+          echo "Checking plugin structure..."
 
-          # Set up git repo in test project
-          cd test_project
-          git init
-          git config user.email "test@test.com"
-          git config user.name "Test"
-          echo "# Test" > README.md
-          git add . && git commit -m "init"
-          cd ..
+          test -f plugins/claude/.claude-plugin/plugin.json || (echo "Missing plugin.json" && exit 1)
+          test -f plugins/claude/skills/deepwork/SKILL.md || (echo "Missing SKILL.md" && exit 1)
+          test -f plugins/claude/.mcp.json || (echo "Missing .mcp.json" && exit 1)
+          test -f plugins/claude/hooks/hooks.json || (echo "Missing hooks.json" && exit 1)
 
-          # Run deepwork install to set up the project (this also runs sync)
-          uv run deepwork install --platform claude --path test_project
+          # Verify the skill references deepwork
+          grep -qi "deepwork" plugins/claude/skills/deepwork/SKILL.md
 
-          # Validate generated skills exist
-          echo "Checking generated skills..."
-          ls -la test_project/.claude/skills/
+          # Verify the MCP config runs deepwork serve
+          grep -q "deepwork" plugins/claude/.mcp.json
+          grep -q "serve" plugins/claude/.mcp.json
 
-          # MCP variant: only the /deepwork entry point skill is generated
-          # (per-step skills are no longer created; MCP server handles orchestration)
-          test -f test_project/.claude/skills/deepwork/SKILL.md || (echo "Missing deepwork MCP entry point skill" && exit 1)
-
-          # Verify the deepwork skill references MCP tools
-          grep -qi "deepwork" test_project/.claude/skills/deepwork/SKILL.md
-
-          echo "Skill generation validated successfully!"
+          echo "Plugin structure validated successfully!"
 
   # Job 2: Full end-to-end test with Claude Code
   # Tests the COMPLETE workflow:
@@ -190,23 +177,16 @@ jobs:
 
           # Add the uv virtualenv bin directory to PATH for all subsequent steps.
           #
-          # Why: `deepwork install` registers an MCP server in .mcp.json with
-          # the command "deepwork serve --path .". When Claude Code starts, it
-          # reads .mcp.json and spawns the MCP server as a subprocess using the
-          # bare "deepwork" command. Without this PATH addition, that subprocess
-          # fails because "deepwork" only exists inside the uv virtualenv
-          # (accessible via "uv run deepwork" but not as a bare command).
-          #
-          # Without the MCP server running, Claude cannot use the DeepWork MCP
-          # tools (get_workflows, start_workflow, finished_step) and falls back
-          # to ad-hoc file creation, which produces the wrong output format.
+          # Why: The MCP config uses "deepwork serve --path ." to spawn the
+          # MCP server. Without this PATH addition, the bare "deepwork" command
+          # is not found (it only exists inside the uv virtualenv).
           echo "$(pwd)/.venv/bin" >> $GITHUB_PATH
 
       - name: Set up fresh test project
         if: steps.check-key.outputs.has_key == 'true'
         run: |
           # Create a fresh project with NO pre-existing job definitions
-          mkdir -p test_project/.claude
+          mkdir -p test_project/.claude/skills/deepwork
 
           cd test_project
           git init
@@ -216,27 +196,34 @@ jobs:
           git add . && git commit -m "init"
           cd ..
 
-          # Install deepwork (this sets up .deepwork/ with standard jobs only)
-          uv run deepwork install --platform claude --path test_project
+          # Copy plugin skill into the test project (replaces old `deepwork install`)
+          cp plugins/claude/skills/deepwork/SKILL.md test_project/.claude/skills/deepwork/
 
-          # Merge broad CI permissions into settings.json WITHOUT overwriting it.
-          #
-          # Why merge instead of overwrite: `deepwork install` writes MCP tool
-          # permissions (mcp__deepwork__get_workflows, mcp__deepwork__start_workflow,
-          # etc.) into settings.json. These are required for Claude to call the
-          # DeepWork MCP server tools. Overwriting settings.json with only generic
-          # permissions (Bash, Read, Write, etc.) removes the MCP permissions,
-          # causing Claude to silently fail when trying to use /deepwork.
+          # Write MCP config using bare `deepwork` command (CI has it on PATH
+          # via .venv/bin; the plugin's .mcp.json uses `uvx` which isn't available here)
           python3 -c "
           import json
-          settings_path = 'test_project/.claude/settings.json'
-          with open(settings_path) as f:
-              settings = json.load(f)
-          ci_permissions = ['Bash(*)', 'Read(./**)', 'Edit(./**)', 'Write(./**)', 'Skill(*)']
-          for perm in ci_permissions:
-              if perm not in settings.setdefault('permissions', {}).setdefault('allow', []):
-                  settings['permissions']['allow'].append(perm)
-          with open(settings_path, 'w') as f:
+          mcp = {'mcpServers': {'deepwork': {
+              'command': 'deepwork',
+              'args': ['serve', '--path', '.', '--external-runner', 'claude']
+          }}}
+          with open('test_project/.mcp.json', 'w') as f:
+              json.dump(mcp, f, indent=2)
+          "
+
+          # Write settings.json with all required permissions
+          python3 -c "
+          import json
+          settings = {
+              'permissions': {
+                  'allow': [
+                      'Bash(*)', 'Read(./**)', 'Edit(./**)', 'Write(./**)', 'Skill(*)',
+                      'mcp__deepwork__get_workflows', 'mcp__deepwork__start_workflow',
+                      'mcp__deepwork__finished_step', 'mcp__deepwork__abort_workflow'
+                  ]
+              }
+          }
+          with open('test_project/.claude/settings.json', 'w') as f:
               json.dump(settings, f, indent=2)
           "
 
@@ -312,21 +299,7 @@ jobs:
             exit 1
           fi
 
-          # Run sync to regenerate skills after new job was created
-          echo "=== Running deepwork sync to regenerate skills ==="
-          cd ..
-          uv run deepwork sync --path test_project
-
-          echo "=== Checking generated skills ==="
-          ls -la test_project/.claude/skills/
-
-          # MCP variant: only the /deepwork entry point skill is generated
-          if [ -f "test_project/.claude/skills/deepwork/SKILL.md" ]; then
-            echo "SUCCESS: /deepwork MCP entry point skill generated"
-          else
-            echo "ERROR: /deepwork skill was not generated"
-            exit 1
-          fi
+          echo "=== Job creation complete ==="
 
       # Dump Claude debug log if the job creation step failed or timed out.
       # This captures MCP server communication, tool calls, and error details.

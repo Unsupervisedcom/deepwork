@@ -99,6 +99,7 @@
       "Edit(./.deepwork/**)",
       "Write(./.deepwork/**)",
       "Bash(deepwork:*)",
+      "Bash(gh pr edit:*)",
       "Bash(learning_agents/scripts/*)",
       "Bash(bash learning_agents/scripts/*)",
       "WebSearch",
