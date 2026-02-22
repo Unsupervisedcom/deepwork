@@ -109,8 +109,5 @@
       "mcp__deepwork__abort_workflow"
     ]
   },
-  "enabledPlugins": {
-    "deepwork@deepwork-plugins": true,
-    "learning-agents@deepwork-plugins": true
-  }
+  "enabledPlugins": {}
 }

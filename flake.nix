@@ -97,6 +97,10 @@
               unset PYTHONPATH
               export REPO_ROOT=$(git rev-parse --show-toplevel)
 
+              # Install deepwork as a uv tool (editable) so uvx picks up local source
+              # This makes the MCP config ("uvx deepwork serve") use the dev version
+              uv tool install -e "$REPO_ROOT" --quiet 2>/dev/null || true
+
               # Only show welcome message in interactive shells
               if [[ $- == *i* ]]; then
                 echo ""
