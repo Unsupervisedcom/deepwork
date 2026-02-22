@@ -106,7 +106,7 @@ class ClaudeCLI:
                     f"Claude CLI returned error: {wrapper.get('result', 'Unknown error')}"
                 )
 
-            data = wrapper.get("structured_output")
+            data: dict[str, Any] = wrapper.get("structured_output")
             if data is None:
                 raise ClaudeCLIError(
                     "Claude CLI response missing 'structured_output' field. "
