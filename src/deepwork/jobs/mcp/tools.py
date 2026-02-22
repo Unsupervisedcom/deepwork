@@ -15,13 +15,6 @@ from typing import TYPE_CHECKING
 import aiofiles
 
 from deepwork.jobs.discovery import JobLoadError, find_job_dir, load_all_jobs
-from deepwork.jobs.parser import (
-    JobDefinition,
-    OutputSpec,
-    ParseError,
-    Workflow,
-    parse_job_definition,
-)
 from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     AbortWorkflowResponse,
@@ -39,6 +32,13 @@ from deepwork.jobs.mcp.schemas import (
     WorkflowInfo,
 )
 from deepwork.jobs.mcp.state import StateManager
+from deepwork.jobs.parser import (
+    JobDefinition,
+    OutputSpec,
+    ParseError,
+    Workflow,
+    parse_job_definition,
+)
 
 logger = logging.getLogger("deepwork.jobs.mcp")
 
