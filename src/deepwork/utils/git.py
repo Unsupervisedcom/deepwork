@@ -61,6 +61,8 @@ def get_repo_root(path: Path | str) -> Path:
         GitError: If path is not in a Git repository
     """
     repo = get_repo(path)
+    if repo.working_tree_dir is None:
+        raise GitError(f"Repository at {path} has no working tree (bare repo?)")
     return Path(repo.working_tree_dir)
 
 

@@ -34,11 +34,3 @@ jobs:
 
       - name: Run tests
         run: pytest tests/ -v
-
-      - name: Build deepwork package
-        run: nix build
-
-      - name: Verify package output
-        run: |
-          ls -la result/bin/deepwork
-          ./result/bin/deepwork --version

@@ -39,6 +39,7 @@ dev = [
     "mypy>=1.0",
     "types-PyYAML",
     "types-aiofiles",
+    "types-jsonschema",
 ]
 
 [project.scripts]

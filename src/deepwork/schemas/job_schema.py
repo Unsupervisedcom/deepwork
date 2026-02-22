@@ -19,7 +19,8 @@ _SCHEMA_FILE = Path(__file__).parent / "job.schema.json"
 def _load_schema() -> dict[str, Any]:
     """Load the JSON schema from file."""
     with open(_SCHEMA_FILE) as f:
-        return json.load(f)
+        result: dict[str, Any] = json.load(f)
+        return result
 
 
 # Load the schema at module import time
