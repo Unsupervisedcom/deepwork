@@ -24,12 +24,12 @@ If the agent directory `.deepwork/learning-agents/<agent-name>/` already exists,
 
 ### REQ-002.5: Scaffold Script Execution
 
-The skill MUST execute the scaffold script at `${CLAUDE_PLUGIN_ROOT}/scripts/create_agent.sh` passing the normalized agent name as the argument.
+The skill MUST execute the scaffold script at `${CLAUDE_PLUGIN_ROOT}/scripts/create_agent.sh` passing the normalized agent name as the first argument and, when a template path is provided, the template path as the second argument.
 
 ### REQ-002.6: Scaffold Script -- Agent Directory Creation
 
 The `create_agent.sh` script MUST create the following directory structure when the agent directory does not exist:
-- `.deepwork/learning-agents/<agent-name>/core-knowledge.md` -- with TODO placeholder content
+- `.deepwork/learning-agents/<agent-name>/core-knowledge.md` -- with TODO placeholder content (when no template is provided; see REQ-002.19 for template behavior)
 - `.deepwork/learning-agents/<agent-name>/topics/` -- with `.gitkeep`
 - `.deepwork/learning-agents/<agent-name>/learnings/` -- with `.gitkeep`
 - `.deepwork/learning-agents/<agent-name>/additional_learning_guidelines/` -- containing `README.md`, `issue_identification.md`, `issue_investigation.md`, and `learning_from_issues.md`
@@ -75,3 +75,39 @@ Upon completion, the skill MUST output a summary listing all files created or mo
 ### REQ-002.15: No Overwrites Without Confirmation
 
 The skill MUST NOT overwrite any existing file without explicit user confirmation.
+
+### REQ-002.16: Scaffold Script -- Template Agent Argument
+
+The `create_agent.sh` script MUST accept an optional second positional argument `[template-agent-path]` specifying the path to an existing LearningAgent directory. When not provided, the script MUST behave identically to the non-template flow (creating TODO placeholder content in `core-knowledge.md`).
+
+### REQ-002.17: Scaffold Script -- Template Validation -- Directory Existence
+
+When a template path argument is provided, the script MUST verify that the path is an existing directory. If the directory does not exist, the script MUST print an error message containing the path to stderr and exit with code 1.
+
+### REQ-002.18: Scaffold Script -- Template Validation -- Core Knowledge Required
+
+When a template path argument is provided and the directory exists, the script MUST verify that the template directory contains a `core-knowledge.md` file. If the file is missing, the script MUST print an error message containing the path to stderr and exit with code 1.
+
+### REQ-002.19: Scaffold Script -- Template Seeding -- Core Knowledge
+
+When a valid template path is provided, the script MUST copy `core-knowledge.md` from the template directory into the new agent's directory instead of creating the TODO placeholder content.
+
+### REQ-002.20: Scaffold Script -- Template Seeding -- Topics
+
+When a valid template path is provided, the script MUST copy all `.md` files from the template's `topics/` directory into the new agent's `topics/` directory. If no `.md` files exist in the template's `topics/` directory, the new agent's `topics/` directory MUST remain empty (aside from `.gitkeep`).
+
+### REQ-002.21: Scaffold Script -- Template Seeding -- Learnings
+
+When a valid template path is provided, the script MUST copy all `.md` files from the template's `learnings/` directory into the new agent's `learnings/` directory. If no `.md` files exist in the template's `learnings/` directory, the new agent's `learnings/` directory MUST remain empty (aside from `.gitkeep`).
+
+### REQ-002.22: Scaffold Script -- Template Copy Reporting
+
+When files are copied from a template, the script MUST output a confirmation message for the core-knowledge copy. The script MUST output the count of copied topic files when at least one topic was copied. The script MUST output the count of copied learning files when at least one learning was copied.
+
+### REQ-002.23: Skill -- Template Configuration Guidance
+
+When a template was used, the skill MUST read the copied `core-knowledge.md` and present it to the user, asking whether to keep it as-is, modify it for the new agent's focus, or replace it entirely. The skill MUST also list any copied topics and learnings and offer the user the opportunity to review, remove, or add to them.
+
+### REQ-002.24: Skill -- Template Argument Parsing
+
+The skill MUST parse `$ARGUMENTS` to extract the agent name (first token) and an optional template path (second token). Both tokens MUST be passed to the scaffold script as separate positional arguments.
