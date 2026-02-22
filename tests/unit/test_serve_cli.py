@@ -13,9 +13,7 @@ class TestServeExternalRunnerOption:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.2.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.serve._serve_mcp")
-    def test_default_external_runner_is_none(
-        self, mock_serve: MagicMock, tmp_path: str
-    ) -> None:
+    def test_default_external_runner_is_none(self, mock_serve: MagicMock, tmp_path: str) -> None:
         """Test that --external-runner defaults to None when not specified."""
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
@@ -31,9 +29,7 @@ class TestServeExternalRunnerOption:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.2.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.serve._serve_mcp")
-    def test_external_runner_claude(
-        self, mock_serve: MagicMock, tmp_path: str
-    ) -> None:
+    def test_external_runner_claude(self, mock_serve: MagicMock, tmp_path: str) -> None:
         """Test that --external-runner claude passes 'claude' through."""
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:

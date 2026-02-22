@@ -301,7 +301,6 @@ class TestActiveStepInfo:
         ]
         step_info = ActiveStepInfo(
             session_id="abc123",
-
             step_id="step1",
             job_dir="/tmp/test_job",
             step_expected_outputs=expected,
@@ -332,7 +331,6 @@ class TestActiveStepInfo:
         """Test default empty reviews."""
         step_info = ActiveStepInfo(
             session_id="abc123",
-
             step_id="step1",
             job_dir="/tmp/test_job",
             step_expected_outputs=[
@@ -359,7 +357,6 @@ class TestStartWorkflowResponse:
         response = StartWorkflowResponse(
             begin_step=ActiveStepInfo(
                 session_id="abc123",
-    
                 step_id="step1",
                 job_dir="/tmp/test_job",
                 step_expected_outputs=[
@@ -413,7 +410,6 @@ class TestFinishedStepResponse:
             status=StepStatus.NEXT_STEP,
             begin_step=ActiveStepInfo(
                 session_id="abc123",
-    
                 step_id="step2",
                 job_dir="/tmp/test_job",
                 step_expected_outputs=[
@@ -477,7 +473,6 @@ class TestWorkflowSession:
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
-
             current_step_id="step1",
             started_at="2024-01-01T00:00:00Z",
         )
@@ -496,7 +491,6 @@ class TestWorkflowSession:
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
-
             current_step_id="step1",
             started_at="2024-01-01T00:00:00Z",
         )

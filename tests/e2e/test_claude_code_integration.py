@@ -148,9 +148,7 @@ class TestPluginSkillStructure:
         """Test that the plugin .mcp.json exists and is valid."""
         import json
 
-        mcp_json = (
-            Path(__file__).parent.parent.parent / "plugins" / "claude" / ".mcp.json"
-        )
+        mcp_json = Path(__file__).parent.parent.parent / "plugins" / "claude" / ".mcp.json"
         assert mcp_json.exists()
 
         data = json.loads(mcp_json.read_text())
@@ -160,9 +158,7 @@ class TestPluginSkillStructure:
 
     def test_platform_skill_body_exists(self) -> None:
         """Test that the shared platform skill body exists."""
-        skill_body = (
-            Path(__file__).parent.parent.parent / "platform" / "skill-body.md"
-        )
+        skill_body = Path(__file__).parent.parent.parent / "platform" / "skill-body.md"
         assert skill_body.exists()
 
         content = skill_body.read_text()
