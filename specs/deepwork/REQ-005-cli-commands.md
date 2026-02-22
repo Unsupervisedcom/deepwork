@@ -44,7 +44,7 @@ The DeepWork CLI provides two primary commands: `serve` (starts the MCP server) 
 
 ### REQ-005.4: Deprecated install and sync Commands
 
-> **SCHEDULED REMOVAL: June 1st, 2026.** These commands exist only for
+> **SCHEDULED REMOVAL: June 1st, 2026; details in PR https://github.com/Unsupervisedcom/deepwork/pull/227.** These commands exist only for
 > backwards compatibility with users who installed DeepWork globally via
 > `brew` or `uv`. Once all users have migrated to the Claude Code plugin
 > distribution model, this entire section and all associated code and tests

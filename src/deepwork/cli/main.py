@@ -18,7 +18,7 @@ from deepwork.cli.serve import serve  # noqa: E402
 cli.add_command(hook)
 cli.add_command(serve)
 
-# DEPRECATION NOTICE: Remove after June 1st, 2026.
+# DEPRECATION NOTICE: Remove after June 1st, 2026; details in PR https://github.com/Unsupervisedcom/deepwork/pull/227
 # install and sync are hidden back-compat commands that tell users
 # to migrate to the Claude plugin distribution model.
 cli.add_command(install)

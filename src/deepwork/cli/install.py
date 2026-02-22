@@ -1,6 +1,6 @@
 """Install/sync deprecation commands for DeepWork CLI.
 
-# DEPRECATION NOTICE: Remove after June 1st, 2026.
+# DEPRECATION NOTICE: Remove after June 1st, 2026; details in PR https://github.com/Unsupervisedcom/deepwork/pull/227
 # These commands exist only for backwards compatibility with users who
 # have DeepWork installed globally via brew or uv. By June 1st, 2026,
 # all users should have migrated to the Claude plugin distribution model
@@ -75,20 +75,20 @@ def _install_plugin_config() -> None:
 def _run_install_deprecation() -> None:
     """Shared implementation for both install and sync commands.
 
-    # DEPRECATION NOTICE: Remove after June 1st, 2026.
+    # DEPRECATION NOTICE: Remove after June 1st, 2026; details in PR https://github.com/Unsupervisedcom/deepwork/pull/227
     """
     _install_plugin_config()
     click.echo(_DEPRECATION_MESSAGE)
 
 
-# DEPRECATION NOTICE: Remove after June 1st, 2026.
+# DEPRECATION NOTICE: Remove after June 1st, 2026; details in PR https://github.com/Unsupervisedcom/deepwork/pull/227
 @click.command(hidden=True)
 def install() -> None:
     """(Deprecated) Install DeepWork — now distributed as a Claude plugin."""
     _run_install_deprecation()
 
 
-# DEPRECATION NOTICE: Remove after June 1st, 2026.
+# DEPRECATION NOTICE: Remove after June 1st, 2026; details in PR https://github.com/Unsupervisedcom/deepwork/pull/227
 @click.command(hidden=True)
 def sync() -> None:
     """(Deprecated) Sync DeepWork — now distributed as a Claude plugin."""

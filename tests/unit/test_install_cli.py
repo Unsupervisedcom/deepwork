@@ -1,6 +1,6 @@
 """Tests for deprecated install/sync CLI commands -- validates REQ-005.4.
 
-SCHEDULED REMOVAL: June 1st, 2026.
+SCHEDULED REMOVAL: June 1st, 2026; details in PR https://github.com/Unsupervisedcom/deepwork/pull/227
 Delete this entire file when REQ-005.4 and the install/sync commands are removed.
 """
 
