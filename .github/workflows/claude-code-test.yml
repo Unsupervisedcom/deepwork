@@ -62,7 +62,7 @@ jobs:
           # Verify the fruits fixture parses correctly via deepwork's parser
           uv run python -c "
           from pathlib import Path
-          from deepwork.core.parser import parse_job_definition
+          from deepwork.jobs.parser import parse_job_definition
 
           job = parse_job_definition(Path('tests/fixtures/jobs/fruits'))
 

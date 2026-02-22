@@ -13,7 +13,7 @@ __all__ = [
 def __getattr__(name: str) -> object:
     """Lazy import for core modules."""
     if name in ("JobDefinition", "ParseError", "Step", "StepInput", "parse_job_definition"):
-        from deepwork.core.parser import (
+        from deepwork.jobs.parser import (
             JobDefinition,
             ParseError,
             Step,

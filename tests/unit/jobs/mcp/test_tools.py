@@ -4,15 +4,15 @@ from pathlib import Path
 
 import pytest
 
-from deepwork.mcp.quality_gate import MockQualityGate
-from deepwork.mcp.schemas import (
+from deepwork.jobs.mcp.quality_gate import MockQualityGate
+from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     FinishedStepInput,
     StartWorkflowInput,
     StepStatus,
 )
-from deepwork.mcp.state import StateError, StateManager
-from deepwork.mcp.tools import ToolError, WorkflowTools
+from deepwork.jobs.mcp.state import StateError, StateManager
+from deepwork.jobs.mcp.tools import ToolError, WorkflowTools
 
 
 @pytest.fixture(autouse=True)
@@ -22,7 +22,7 @@ def _isolate_job_folders(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     Each test gets only its own .deepwork/jobs/ directory.
     """
     monkeypatch.setattr(
-        "deepwork.core.jobs.get_job_folders",
+        "deepwork.jobs.discovery.get_job_folders",
         lambda project_root: [project_root / ".deepwork" / "jobs"],
     )
 
@@ -1452,7 +1452,7 @@ class TestExternalRunnerSelfReview:
     @pytest.fixture
     def tools_self_review(self, project_root: Path, state_manager: StateManager) -> WorkflowTools:
         """Create WorkflowTools with quality gate but no external runner (self-review mode)."""
-        from deepwork.mcp.quality_gate import QualityGate
+        from deepwork.jobs.mcp.quality_gate import QualityGate
 
         return WorkflowTools(
             project_root=project_root,

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from deepwork.core.parser import (
+from deepwork.jobs.parser import (
     JobDefinition,
     OutputSpec,
     ParseError,

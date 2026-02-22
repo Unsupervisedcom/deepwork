@@ -18,7 +18,7 @@ from pathlib import Path
 
 import aiofiles
 
-from deepwork.mcp.schemas import StackEntry, StepProgress, WorkflowSession
+from deepwork.jobs.mcp.schemas import StackEntry, StepProgress, WorkflowSession
 
 
 class StateError(Exception):

@@ -14,15 +14,15 @@ from typing import TYPE_CHECKING
 
 import aiofiles
 
-from deepwork.core.jobs import JobLoadError, find_job_dir, load_all_jobs
-from deepwork.core.parser import (
+from deepwork.jobs.discovery import JobLoadError, find_job_dir, load_all_jobs
+from deepwork.jobs.parser import (
     JobDefinition,
     OutputSpec,
     ParseError,
     Workflow,
     parse_job_definition,
 )
-from deepwork.mcp.schemas import (
+from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     AbortWorkflowResponse,
     ActiveStepInfo,
@@ -38,12 +38,12 @@ from deepwork.mcp.schemas import (
     StepStatus,
     WorkflowInfo,
 )
-from deepwork.mcp.state import StateManager
+from deepwork.jobs.mcp.state import StateManager
 
-logger = logging.getLogger("deepwork.mcp")
+logger = logging.getLogger("deepwork.jobs.mcp")
 
 if TYPE_CHECKING:
-    from deepwork.mcp.quality_gate import QualityGate
+    from deepwork.jobs.mcp.quality_gate import QualityGate
 
 
 class ToolError(Exception):

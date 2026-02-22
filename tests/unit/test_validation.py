@@ -2,7 +2,7 @@
 
 import pytest
 
-from deepwork.schemas.job_schema import JOB_SCHEMA
+from deepwork.jobs.schema import JOB_SCHEMA
 from deepwork.utils.validation import ValidationError, validate_against_schema
 
 

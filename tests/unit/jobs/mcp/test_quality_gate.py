@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from deepwork.mcp.claude_cli import ClaudeCLI, ClaudeCLIError
-from deepwork.mcp.quality_gate import (
+from deepwork.jobs.mcp.claude_cli import ClaudeCLI, ClaudeCLIError
+from deepwork.jobs.mcp.quality_gate import (
     QUALITY_GATE_RESPONSE_SCHEMA,
     MockQualityGate,
     QualityGate,

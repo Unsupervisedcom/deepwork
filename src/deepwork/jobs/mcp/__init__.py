@@ -15,7 +15,7 @@ Example usage:
 
 def create_server(*args, **kwargs):  # type: ignore
     """Lazy import to avoid loading fastmcp at module import time."""
-    from deepwork.mcp.server import create_server as _create_server
+    from deepwork.jobs.mcp.server import create_server as _create_server
 
     return _create_server(*args, **kwargs)
 

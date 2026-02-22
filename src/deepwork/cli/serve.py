@@ -110,7 +110,7 @@ def _serve_mcp(
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
     # Create and run server
-    from deepwork.mcp.server import create_server
+    from deepwork.jobs.mcp.server import create_server
 
     server = create_server(
         project_root=project_path,
