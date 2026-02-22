@@ -1,0 +1,124 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "DeepReview Configuration",
+    "description": "Configuration schema for .deepreview files used by the deepwork CLI.",
+    "type": "object",
+    "additionalProperties": false,
+    "patternProperties": {
+        "^[a-zA-Z0-9_-]+$": {
+            "type": "object",
+            "description": "A named review rule defining what to match and how to review it.",
+            "required": [
+                "match",
+                "review"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "match": {
+                    "type": "object",
+                    "description": "Defines the file glob patterns that trigger this review rule.",
+                    "required": [
+                        "include"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "include": {
+                            "type": "array",
+                            "description": "List of glob patterns to include in the trigger.",
+                            "items": {
+                                "type": "string",
+                                "examples": [
+                                    "**/*.py",
+                                    "src/components/**/*.tsx"
+                                ]
+                            },
+                            "minItems": 1
+                        },
+                        "exclude": {
+                            "type": "array",
+                            "description": "List of glob patterns to exclude from the trigger.",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "review": {
+                    "type": "object",
+                    "description": "Defines how the matched files should be grouped and reviewed by the AI agent.",
+                    "required": [
+                        "strategy",
+                        "instructions"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "strategy": {
+                            "type": "string",
+                            "description": "How to batch the review tasks for the matched files.",
+                            "enum": [
+                                "individual",
+                                "matches_together",
+                                "all_changed_files"
+                            ]
+                        },
+                        "agent": {
+                            "type": "object",
+                            "description": "Optional mapping of CLI providers to specific agent personas. If omitted, the default agent is used.",
+                            "patternProperties": {
+                                "^[a-zA-Z0-9_-]+$": {
+                                    "type": "string",
+                                    "description": "The specific persona or model name to use for this provider (e.g., 'security-expert')."
+                                }
+                            },
+                            "examples": [
+                                {
+                                    "claude": "security-expert"
+                                },
+                                {
+                                    "openai": "devops-engineer"
+                                }
+                            ]
+                        },
+                        "instructions": {
+                            "description": "The prompt instructions for the review. Can be a literal string or a reference to an external file.",
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "description": "Inline text instructions for the review."
+                                },
+                                {
+                                    "type": "object",
+                                    "required": [
+                                        "file"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "file": {
+                                            "type": "string",
+                                            "description": "Path to a markdown file containing the review instructions."
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        "additional_context": {
+                            "type": "object",
+                            "description": "Optional flags to include additional context in the AI's prompt.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "all_changed_filenames": {
+                                    "type": "boolean",
+                                    "description": "If true, includes a list of all files changed in the PR/commit."
+                                },
+                                "unchanged_matching_files": {
+                                    "type": "boolean",
+                                    "description": "If true, pulls the full contents of files that match the include patterns even if they weren't modified in this diff."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
