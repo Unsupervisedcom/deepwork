@@ -9,6 +9,8 @@ from deepwork.utils.validation import ValidationError, validate_against_schema
 class TestValidateAgainstSchema:
     """Tests for validate_against_schema function."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validates_simple_job(self) -> None:
         """Test that validate_against_schema accepts valid simple job."""
         job_data = {
@@ -34,6 +36,8 @@ class TestValidateAgainstSchema:
         # Should not raise
         validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validates_job_with_user_inputs(self) -> None:
         """Test validation of job with user input parameters."""
         job_data = {
@@ -62,6 +66,8 @@ class TestValidateAgainstSchema:
 
         validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validates_job_with_file_inputs(self) -> None:
         """Test validation of job with file inputs from previous steps."""
         job_data = {
@@ -102,6 +108,8 @@ class TestValidateAgainstSchema:
 
         validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_missing_required_field(self) -> None:
         """Test that validation fails for missing required fields."""
         job_data = {
@@ -115,6 +123,8 @@ class TestValidateAgainstSchema:
         with pytest.raises(ValidationError, match="'summary' is a required property"):
             validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_invalid_job_name(self) -> None:
         """Test that validation fails for invalid job name."""
         job_data = {
@@ -139,6 +149,8 @@ class TestValidateAgainstSchema:
         with pytest.raises(ValidationError, match="does not match"):
             validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_invalid_version(self) -> None:
         """Test that validation fails for invalid version format."""
         job_data = {
@@ -163,6 +175,8 @@ class TestValidateAgainstSchema:
         with pytest.raises(ValidationError, match="does not match"):
             validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_empty_steps(self) -> None:
         """Test that validation fails for empty steps array."""
         job_data = {
@@ -176,6 +190,8 @@ class TestValidateAgainstSchema:
         with pytest.raises(ValidationError, match="should be non-empty"):
             validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_step_missing_outputs(self) -> None:
         """Test that validation fails for step without outputs."""
         job_data = {
@@ -197,6 +213,8 @@ class TestValidateAgainstSchema:
         with pytest.raises(ValidationError, match="'outputs' is a required property"):
             validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_invalid_input_format(self) -> None:
         """Test that validation fails for invalid input format."""
         job_data = {
@@ -227,6 +245,8 @@ class TestValidateAgainstSchema:
         with pytest.raises(ValidationError):
             validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validates_complex_job(self, fixtures_dir) -> None:
         """Test validation of complex job fixture."""
         from deepwork.utils.yaml_utils import load_yaml
@@ -237,6 +257,8 @@ class TestValidateAgainstSchema:
         assert job_data is not None
         validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_step_missing_reviews(self) -> None:
         """Test that validation fails for step without reviews field."""
         job_data = {
@@ -261,6 +283,8 @@ class TestValidateAgainstSchema:
         with pytest.raises(ValidationError, match="'reviews' is a required property"):
             validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validates_job_with_reviews(self) -> None:
         """Test validation of job with reviews."""
         job_data = {
@@ -298,6 +322,8 @@ class TestValidateAgainstSchema:
 
         validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_review_missing_run_each(self) -> None:
         """Test validation fails for review without run_each."""
         job_data = {
@@ -327,6 +353,8 @@ class TestValidateAgainstSchema:
         with pytest.raises(ValidationError):
             validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_review_empty_criteria(self) -> None:
         """Test validation fails for review with empty quality_criteria."""
         job_data = {

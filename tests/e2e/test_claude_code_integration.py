@@ -144,23 +144,6 @@ class TestPluginSkillStructure:
         assert data["name"] == "deepwork"
         assert "version" in data
 
-    def test_plugin_hooks_symlink(self) -> None:
-        """Test that the plugin hooks symlink resolves correctly."""
-        hook_path = (
-            Path(__file__).parent.parent.parent
-            / "plugins"
-            / "claude"
-            / "hooks"
-            / "check_version.sh"
-        )
-        assert hook_path.exists(), f"Hook not found at {hook_path}"
-        assert hook_path.is_symlink(), "check_version.sh should be a symlink"
-
-        # Verify the symlink target resolves
-        resolved = hook_path.resolve()
-        assert resolved.exists(), f"Symlink target does not exist: {resolved}"
-        assert resolved.name == "check_version.sh"
-
     def test_plugin_mcp_json_exists(self) -> None:
         """Test that the plugin .mcp.json exists and is valid."""
         import json
@@ -231,6 +214,8 @@ class TestMCPWorkflowTools:
         # Cleanup
         shutil.rmtree(tmpdir, ignore_errors=True)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.2.3, REQ-001.2.4, REQ-001.2.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_get_workflows_returns_jobs(self, project_with_job: Path) -> None:
         """Test that get_workflows returns available jobs and workflows."""
         state_manager = StateManager(project_with_job)
@@ -253,6 +238,8 @@ class TestMCPWorkflowTools:
         assert full_workflow.name == "full"
         assert full_workflow.summary is not None
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.3.8, REQ-001.3.10, REQ-001.3.11).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow_creates_session(self, project_with_job: Path) -> None:
         """Test that start_workflow creates a new workflow session."""
         state_manager = StateManager(project_with_job)
@@ -279,15 +266,14 @@ class TestMCPWorkflowTools:
 
         # Should return session info
         assert response.begin_step.session_id is not None
-        assert response.begin_step.branch_name is not None
-        assert "deepwork" in response.begin_step.branch_name.lower()
-        assert "fruits" in response.begin_step.branch_name.lower()
 
         # Should return first step instructions
         assert response.begin_step.step_id is not None
         assert response.begin_step.step_instructions is not None
         assert len(response.begin_step.step_instructions) > 0
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.7, REQ-001.4.17).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_workflow_step_progression(self, project_with_job: Path) -> None:
         """Test that finished_step progresses through workflow steps."""
         state_manager = StateManager(project_with_job)

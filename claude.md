@@ -44,13 +44,12 @@ deepwork/
 │   ├── schemas/          # Job definition schemas
 │   └── utils/            # Utilities (fs, git, yaml, validation)
 ├── platform/             # Shared platform-agnostic content
-│   ├── skill-body.md     # Canonical skill body (source of truth)
-│   └── hooks/            # Shared hook scripts
+│   └── skill-body.md     # Canonical skill body (source of truth)
 ├── plugins/
 │   ├── claude/           # Claude Code plugin
 │   │   ├── .claude-plugin/plugin.json
 │   │   ├── skills/deepwork/SKILL.md
-│   │   ├── hooks/        # hooks.json + check_version.sh (symlink)
+│   │   ├── hooks/        # hooks.json
 │   │   └── .mcp.json     # MCP server config
 │   └── gemini/           # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md
@@ -180,7 +179,7 @@ my-project/
 2. **Runtime copy**: `.deepwork/jobs/[job_name]/` - Copied at runtime by the MCP server
 
 **Edit the source files** in `src/deepwork/standard_jobs/[job_name]/`:
-- `job.yml` - Job definition with steps, stop_hooks, etc.
+- `job.yml` - Job definition with steps, hooks, etc.
 - `steps/*.md` - Step instruction files
 - `hooks/*` - Any hook scripts
 

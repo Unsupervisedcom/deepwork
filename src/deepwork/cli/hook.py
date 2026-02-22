@@ -28,13 +28,13 @@ def hook(hook_name: str) -> None:
     """
     Run a DeepWork hook by name.
 
-    HOOK_NAME: Name of the hook to run (e.g., 'check_version')
+    HOOK_NAME: Name of the hook to run (e.g., 'my_hook')
 
     This command imports and runs the hook module from deepwork.hooks.{hook_name}.
     The hook receives stdin input and outputs to stdout, following the hook protocol.
 
     Examples:
-        deepwork hook check_version
+        deepwork hook my_hook
         echo '{}' | deepwork hook my_hook
     """
     try:

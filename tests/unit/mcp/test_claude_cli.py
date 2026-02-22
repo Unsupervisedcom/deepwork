@@ -80,16 +80,22 @@ TEST_SCHEMA: dict[str, Any] = {
 class TestClaudeCLI:
     """Tests for ClaudeCLI class."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.1.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_init(self) -> None:
         """Test ClaudeCLI initialization."""
         cli = ClaudeCLI(timeout=60)
         assert cli.timeout == 60
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.1.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_init_defaults(self) -> None:
         """Test ClaudeCLI default values."""
         cli = ClaudeCLI()
         assert cli.timeout == 120
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.4.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_run_returns_structured_output(self, tmp_path: Path) -> None:
         """Test that run() returns the structured_output dict."""
         cli = ClaudeCLI(timeout=10)
@@ -105,6 +111,8 @@ class TestClaudeCLI:
 
         assert result == expected
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.3.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_run_pipes_prompt_via_stdin(self, tmp_path: Path) -> None:
         """Test that the prompt is piped via stdin."""
         cli = ClaudeCLI(timeout=10)
@@ -149,6 +157,8 @@ class TestClaudeCLICommandConstruction:
         flag_index = captured_cmd.index(flag)
         return captured_cmd[flag_index + 1]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.2.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_command_includes_json_schema(self, tmp_path: Path) -> None:
         """Test that the command includes --json-schema with the correct schema."""
         cli = ClaudeCLI(timeout=10)
@@ -165,6 +175,8 @@ class TestClaudeCLICommandConstruction:
         parsed_schema = json.loads(schema_json)
         assert parsed_schema == TEST_SCHEMA
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.2.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_command_includes_system_prompt(self, tmp_path: Path) -> None:
         """Test that the command includes --system-prompt."""
         cli = ClaudeCLI(timeout=10)
@@ -180,6 +192,8 @@ class TestClaudeCLICommandConstruction:
         system_prompt = self.get_command_arg(captured_cmd, "--system-prompt")
         assert system_prompt == "You are a reviewer"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.2.1, REQ-009.2.2, REQ-009.2.3, REQ-009.2.6, REQ-009.2.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_command_has_correct_flag_ordering(self, tmp_path: Path) -> None:
         """Test that flags come before -p -- for proper CLI invocation.
 
@@ -212,6 +226,8 @@ class TestClaudeCLICommandConstruction:
         assert system_prompt_index < p_index, "Flags must come before -p"
         assert dash_dash_index == p_index + 1, "-- must immediately follow -p"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.1.2, REQ-009.1.3, REQ-009.1.4, REQ-009.2.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_test_command_override(self, tmp_path: Path) -> None:
         """Test that _test_command overrides the default command."""
         cli = ClaudeCLI(timeout=10, _test_command=["echo", "test"])
@@ -235,6 +251,8 @@ class TestClaudeCLICommandConstruction:
 class TestClaudeCLIWrapperParsing:
     """Tests for Claude CLI response wrapper parsing."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.4.1, REQ-009.4.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parse_wrapper_valid(self) -> None:
         """Test parsing a valid wrapper response."""
         cli = ClaudeCLI()
@@ -250,6 +268,8 @@ class TestClaudeCLIWrapperParsing:
         result = cli._parse_wrapper(response)
         assert result == {"value": "hello"}
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.4.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parse_wrapper_error(self) -> None:
         """Test parsing a wrapper with is_error=True."""
         cli = ClaudeCLI()
@@ -265,6 +285,8 @@ class TestClaudeCLIWrapperParsing:
         with pytest.raises(ClaudeCLIError, match="returned error"):
             cli._parse_wrapper(response)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.4.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parse_wrapper_missing_structured_output(self) -> None:
         """Test parsing a wrapper missing structured_output field."""
         cli = ClaudeCLI()
@@ -280,6 +302,8 @@ class TestClaudeCLIWrapperParsing:
         with pytest.raises(ClaudeCLIError, match="missing 'structured_output'"):
             cli._parse_wrapper(response)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.4.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parse_wrapper_invalid_json(self) -> None:
         """Test parsing invalid JSON."""
         cli = ClaudeCLI()
@@ -291,6 +315,8 @@ class TestClaudeCLIWrapperParsing:
 class TestClaudeCLIErrors:
     """Tests for error handling."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.5.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_timeout_error(self, tmp_path: Path) -> None:
         """Test that timeout raises ClaudeCLIError."""
         import asyncio
@@ -322,6 +348,8 @@ class TestClaudeCLIErrors:
                     cwd=tmp_path,
                 )
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.5.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_nonzero_exit_code(self, tmp_path: Path) -> None:
         """Test that non-zero exit code raises ClaudeCLIError."""
         cli = ClaudeCLI(timeout=10)
@@ -345,6 +373,8 @@ class TestClaudeCLIErrors:
                     cwd=tmp_path,
                 )
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-009.5.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_command_not_found(self, tmp_path: Path) -> None:
         """Test that missing command raises ClaudeCLIError."""
         cli = ClaudeCLI(timeout=10)

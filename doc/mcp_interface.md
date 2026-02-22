@@ -150,7 +150,6 @@ interface ExpectedOutput {
 
 interface ActiveStepInfo {
   session_id: string;              // Unique session identifier
-  branch_name: string;             // Git branch for this workflow instance
   step_id: string;                 // ID of the current step
   job_dir: string;                 // Absolute path to job directory (templates, scripts, etc.)
   step_expected_outputs: ExpectedOutput[]; // Expected outputs with type and format hints
@@ -206,7 +205,7 @@ The `finished_step` tool returns one of three statuses:
    |
 2. start_workflow(goal, job_name, workflow_name)
    |
-   Get session_id, branch_name, first step instructions
+   Get session_id, first step instructions
    |
 3. Execute step instructions, create outputs
    |

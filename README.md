@@ -36,7 +36,8 @@ After that, you can run the workflow at any time:
 
 Running that `/deepwork competitive_research` command will get you output that looks something like this:
 ```
-deepwork-output/competitive_research/
+# On your work branch (deepwork/competitive_research-acme-2026-02-21):
+competitive_research/
 ├── competitors.md           # Who they are, what they do
 ├── competitor_profiles/     # Deep dive on each
 ├── primary_research.md      # What they say about themselves
@@ -188,7 +189,6 @@ your-project/
 │       └── job_name/
 │           ├── job.yml    # Job metadata
 │           └── steps/     # Step instructions
-└── deepwork-output/       # Job outputs (gitignored)
 ```
 
 </details>

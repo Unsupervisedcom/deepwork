@@ -67,14 +67,12 @@ deepwork/                       # DeepWork tool repository
 │           ├── validation.py
 │           └── yaml_utils.py
 ├── platform/                   # Shared platform-agnostic content
-│   ├── skill-body.md           # Canonical skill body (source of truth)
-│   └── hooks/
-│       └── check_version.sh    # Shared hook script
+│   └── skill-body.md           # Canonical skill body (source of truth)
 ├── plugins/
 │   ├── claude/                 # Claude Code plugin
 │   │   ├── .claude-plugin/plugin.json
 │   │   ├── skills/deepwork/SKILL.md
-│   │   ├── hooks/              # hooks.json + check_version.sh (symlink)
+│   │   ├── hooks/              # hooks.json
 │   │   └── .mcp.json           # MCP server config
 │   └── gemini/                 # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md
@@ -107,7 +105,7 @@ The serve command:
 Runs hook scripts by name, used by platform hook wrappers:
 
 ```bash
-deepwork hook check_version
+deepwork hook my_hook
 ```
 
 ### 3. Plugin System (replaces adapters/detector/generator)

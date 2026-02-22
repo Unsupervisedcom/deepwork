@@ -343,7 +343,6 @@ class WorkflowTools:
         return StartWorkflowResponse(
             begin_step=ActiveStepInfo(
                 session_id=session.session_id,
-                branch_name=session.branch_name,
                 step_id=first_step_id,
                 job_dir=str(job.job_dir),
                 step_expected_outputs=step_outputs,
@@ -538,7 +537,6 @@ class WorkflowTools:
             status=StepStatus.NEXT_STEP,
             begin_step=ActiveStepInfo(
                 session_id=session.session_id,
-                branch_name=session.branch_name,
                 step_id=next_step_id,
                 job_dir=str(job.job_dir),
                 step_expected_outputs=step_outputs,

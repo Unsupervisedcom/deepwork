@@ -66,17 +66,6 @@ class StateManager:
         """Generate a unique session ID."""
         return str(uuid.uuid4())[:8]
 
-    def _generate_branch_name(
-        self, job_name: str, workflow_name: str, instance_id: str | None
-    ) -> str:
-        """Generate a git branch name for the workflow.
-
-        Format: deepwork/[job_name]-[workflow_name]-[instance_id or date]
-        """
-        date_str = datetime.now(UTC).strftime("%Y%m%d")
-        instance = instance_id or date_str
-        return f"deepwork/{job_name}-{workflow_name}-{instance}"
-
     async def create_session(
         self,
         job_name: str,
@@ -101,7 +90,6 @@ class StateManager:
             self._ensure_sessions_dir()
 
             session_id = self._generate_session_id()
-            branch_name = self._generate_branch_name(job_name, workflow_name, instance_id)
             now = datetime.now(UTC).isoformat()
 
             session = WorkflowSession(
@@ -110,7 +98,6 @@ class StateManager:
                 workflow_name=workflow_name,
                 instance_id=instance_id,
                 goal=goal,
-                branch_name=branch_name,
                 current_step_id=first_step_id,
                 current_entry_index=0,
                 step_progress={},

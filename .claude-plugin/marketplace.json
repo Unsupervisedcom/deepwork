@@ -17,7 +17,7 @@
         "name": "DeepWork"
       },
       "category": "workflow",
-      "keywords": ["workflow", "automation", "quality-gates", "multi-step"],
+      "keywords": ["workflow", "automation", "quality-gates", "multi-step", "planning"],
       "repository": "https://github.com/Unsupervisedcom/deepwork",
       "license": "BSL-1.1"
     },

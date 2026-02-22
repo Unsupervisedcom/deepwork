@@ -1,1 +1,0 @@
-../../../platform/hooks/check_version.sh

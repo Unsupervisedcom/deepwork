@@ -18,6 +18,8 @@ from deepwork.core.parser import (
 class TestStepInput:
     """Tests for StepInput dataclass."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.4.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_user_input(self) -> None:
         """Test user parameter input."""
         inp = StepInput(name="param1", description="First parameter")
@@ -25,6 +27,8 @@ class TestStepInput:
         assert inp.is_user_input()
         assert not inp.is_file_input()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.4.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_file_input(self) -> None:
         """Test file input from previous step."""
         inp = StepInput(file="data.md", from_step="step1")
@@ -32,6 +36,8 @@ class TestStepInput:
         assert inp.is_file_input()
         assert not inp.is_user_input()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.4.2, REQ-002.4.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict_user_input(self) -> None:
         """Test creating user input from dictionary."""
         data = {"name": "param1", "description": "First parameter"}
@@ -41,6 +47,8 @@ class TestStepInput:
         assert inp.description == "First parameter"
         assert inp.is_user_input()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.4.3, REQ-002.4.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict_file_input(self) -> None:
         """Test creating file input from dictionary."""
         data = {"file": "data.md", "from_step": "step1"}
@@ -54,6 +62,8 @@ class TestStepInput:
 class TestOutputSpec:
     """Tests for OutputSpec dataclass."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.5.1, REQ-002.5.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_file_output(self) -> None:
         """Test single file output."""
         output = OutputSpec(
@@ -65,6 +75,8 @@ class TestOutputSpec:
         assert output.description == "An output file"
         assert output.required is True
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.5.1, REQ-002.5.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_files_output(self) -> None:
         """Test multiple files output."""
         output = OutputSpec(
@@ -79,6 +91,8 @@ class TestOutputSpec:
         assert output.description == "Instruction files"
         assert output.required is True
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.5.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_optional_output(self) -> None:
         """Test optional output with required=False."""
         output = OutputSpec(name="bonus.md", type="file", description="Optional", required=False)
@@ -86,6 +100,8 @@ class TestOutputSpec:
         assert output.name == "bonus.md"
         assert output.required is False
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.5.1, REQ-002.5.2, REQ-002.5.3, REQ-002.5.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict(self) -> None:
         """Test creating output from name and dict."""
         data = {"type": "file", "description": "An output file", "required": True}
@@ -96,6 +112,8 @@ class TestOutputSpec:
         assert output.description == "An output file"
         assert output.required is True
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.5.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict_files_type(self) -> None:
         """Test creating files-type output from dict."""
         data = {"type": "files", "description": "Multiple output files", "required": True}
@@ -106,6 +124,8 @@ class TestOutputSpec:
         assert output.description == "Multiple output files"
         assert output.required is True
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.5.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict_optional(self) -> None:
         """Test creating optional output from dict."""
         data = {"type": "files", "description": "Optional files", "required": False}
@@ -118,6 +138,8 @@ class TestOutputSpec:
 class TestReview:
     """Tests for Review dataclass."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.7.1, REQ-002.7.2, REQ-002.7.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict(self) -> None:
         """Test creating review from dictionary."""
         data = {
@@ -129,6 +151,8 @@ class TestReview:
         assert review.run_each == "step"
         assert review.quality_criteria == {"Complete": "Is it complete?", "Valid": "Is it valid?"}
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.7.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict_output_specific(self) -> None:
         """Test creating review targeting specific output."""
         data = {
@@ -151,6 +175,8 @@ class TestReview:
 class TestStep:
     """Tests for Step dataclass."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.3.1, REQ-002.3.3, REQ-002.3.4, REQ-002.3.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict_minimal(self) -> None:
         """Test creating step from minimal dictionary."""
         data = {
@@ -174,6 +200,8 @@ class TestStep:
         assert step.inputs == []
         assert step.dependencies == []
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.5.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict_with_multiple_outputs(self) -> None:
         """Test creating step with file and files type outputs."""
         data = {
@@ -202,6 +230,8 @@ class TestStep:
         attachments = next(out for out in step.outputs if out.name == "attachments")
         assert attachments.type == "files"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.4.1, REQ-002.4.4, REQ-002.4.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict_with_inputs(self) -> None:
         """Test creating step with inputs."""
         data = {
@@ -225,6 +255,8 @@ class TestStep:
         assert step.inputs[1].is_file_input()
         assert step.dependencies == ["step0"]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.3.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict_exposed_default_false(self) -> None:
         """Test that exposed defaults to False."""
         data = {
@@ -240,6 +272,8 @@ class TestStep:
 
         assert step.exposed is False
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.3.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict_exposed_true(self) -> None:
         """Test creating step with exposed=True."""
         data = {
@@ -256,6 +290,8 @@ class TestStep:
 
         assert step.exposed is True
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.7.1, REQ-002.7.2, REQ-002.7.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict_with_reviews(self) -> None:
         """Test creating step with reviews."""
         data = {
@@ -284,6 +320,8 @@ class TestStep:
         assert step.reviews[0].quality_criteria == {"Complete": "Is it complete?"}
         assert step.reviews[1].run_each == "output.md"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.3.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict_empty_reviews(self) -> None:
         """Test creating step with empty reviews list."""
         data = {
@@ -304,6 +342,8 @@ class TestStep:
 class TestJobDefinition:
     """Tests for JobDefinition dataclass."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.14.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_get_step(self, fixtures_dir: Path) -> None:
         """Test getting step by ID."""
         job_dir = fixtures_dir / "jobs" / "simple_job"
@@ -315,6 +355,8 @@ class TestJobDefinition:
 
         assert job.get_step("nonexistent") is None
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.9.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validate_dependencies_valid(self, fixtures_dir: Path) -> None:
         """Test validation passes for valid dependencies."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
@@ -323,6 +365,8 @@ class TestJobDefinition:
         # Should not raise
         job.validate_dependencies()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.9.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validate_dependencies_missing_step(self) -> None:
         """Test validation fails for missing dependency."""
         job = JobDefinition(
@@ -350,6 +394,8 @@ class TestJobDefinition:
         with pytest.raises(ParseError, match="depends on non-existent step"):
             job.validate_dependencies()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.9.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validate_dependencies_circular(self) -> None:
         """Test validation fails for circular dependencies."""
         job = JobDefinition(
@@ -389,6 +435,8 @@ class TestJobDefinition:
         with pytest.raises(ParseError, match="Circular dependency detected"):
             job.validate_dependencies()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.10.1, REQ-002.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validate_file_inputs_valid(self, fixtures_dir: Path) -> None:
         """Test file input validation passes for valid inputs."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
@@ -397,6 +445,8 @@ class TestJobDefinition:
         # Should not raise
         job.validate_file_inputs()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.10.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validate_file_inputs_missing_step(self) -> None:
         """Test file input validation fails for missing from_step."""
         job = JobDefinition(
@@ -425,6 +475,8 @@ class TestJobDefinition:
         with pytest.raises(ParseError, match="references non-existent step"):
             job.validate_file_inputs()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.11.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validate_reviews_valid(self) -> None:
         """Test that validate_reviews passes for valid run_each values."""
         job = JobDefinition(
@@ -455,6 +507,8 @@ class TestJobDefinition:
         # Should not raise
         job.validate_reviews()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.11.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validate_reviews_invalid_run_each(self) -> None:
         """Test that validate_reviews fails for invalid run_each."""
         job = JobDefinition(
@@ -487,6 +541,8 @@ class TestJobDefinition:
         with pytest.raises(ParseError, match="run_each='nonexistent_output'"):
             job.validate_reviews()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validate_file_inputs_not_in_dependencies(self) -> None:
         """Test file input validation fails if from_step not in dependencies."""
         job = JobDefinition(
@@ -531,6 +587,8 @@ class TestJobDefinition:
 class TestParseJobDefinition:
     """Tests for parse_job_definition function."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.1.1, REQ-002.2.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parses_simple_job(self, fixtures_dir: Path) -> None:
         """Test parsing simple job definition."""
         job_dir = fixtures_dir / "jobs" / "simple_job"
@@ -543,6 +601,8 @@ class TestParseJobDefinition:
         assert job.steps[0].id == "single_step"
         assert job.job_dir == job_dir
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.2.8, REQ-002.3.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parses_complex_job(self, fixtures_dir: Path) -> None:
         """Test parsing complex job with dependencies."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
@@ -563,6 +623,8 @@ class TestParseJobDefinition:
         assert "primary_research" in job.steps[3].dependencies
         assert "secondary_research" in job.steps[3].dependencies
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.4.1, REQ-002.4.2, REQ-002.4.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parses_user_inputs(self, fixtures_dir: Path) -> None:
         """Test parsing step with user inputs."""
         job_dir = fixtures_dir / "jobs" / "simple_job"
@@ -573,6 +635,8 @@ class TestParseJobDefinition:
         assert step.inputs[0].is_user_input()
         assert step.inputs[0].name == "input_param"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.4.3, REQ-002.4.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parses_file_inputs(self, fixtures_dir: Path) -> None:
         """Test parsing step with file inputs."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
@@ -584,6 +648,8 @@ class TestParseJobDefinition:
         assert step.inputs[0].file == "competitors.md"
         assert step.inputs[0].from_step == "identify_competitors"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.3.6, REQ-002.3.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parses_exposed_steps(self, fixtures_dir: Path) -> None:
         """Test parsing job with exposed and hidden steps."""
         job_dir = fixtures_dir / "jobs" / "exposed_step_job"
@@ -597,6 +663,8 @@ class TestParseJobDefinition:
         assert job.steps[1].id == "exposed_step"
         assert job.steps[1].exposed is True
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.1.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_missing_directory(self, temp_dir: Path) -> None:
         """Test parsing fails for missing directory."""
         nonexistent = temp_dir / "nonexistent"
@@ -604,6 +672,8 @@ class TestParseJobDefinition:
         with pytest.raises(ParseError, match="does not exist"):
             parse_job_definition(nonexistent)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.1.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_file_instead_of_directory(self, temp_dir: Path) -> None:
         """Test parsing fails for file path."""
         file_path = temp_dir / "file.txt"
@@ -612,6 +682,8 @@ class TestParseJobDefinition:
         with pytest.raises(ParseError, match="not a directory"):
             parse_job_definition(file_path)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.1.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_missing_job_yml(self, temp_dir: Path) -> None:
         """Test parsing fails for directory without job.yml."""
         job_dir = temp_dir / "job"
@@ -620,6 +692,8 @@ class TestParseJobDefinition:
         with pytest.raises(ParseError, match="job.yml not found"):
             parse_job_definition(job_dir)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.1.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_empty_job_yml(self, temp_dir: Path) -> None:
         """Test parsing fails for empty job.yml."""
         job_dir = temp_dir / "job"
@@ -629,6 +703,8 @@ class TestParseJobDefinition:
         with pytest.raises(ParseError, match="validation failed"):
             parse_job_definition(job_dir)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.1.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_invalid_yaml(self, temp_dir: Path) -> None:
         """Test parsing fails for invalid YAML."""
         job_dir = temp_dir / "job"
@@ -638,6 +714,8 @@ class TestParseJobDefinition:
         with pytest.raises(ParseError, match="Failed to load"):
             parse_job_definition(job_dir)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.2.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_invalid_schema(self, fixtures_dir: Path) -> None:
         """Test parsing fails for schema validation errors."""
         job_dir = fixtures_dir / "jobs" / "invalid_job"
@@ -649,6 +727,8 @@ class TestParseJobDefinition:
 class TestConcurrentSteps:
     """Tests for concurrent step parsing in workflows."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.8.1, REQ-002.8.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parses_concurrent_steps_workflow(self, fixtures_dir: Path) -> None:
         """Test parsing job with concurrent steps in workflow."""
         job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
@@ -658,6 +738,8 @@ class TestConcurrentSteps:
         assert len(job.workflows) == 1
         assert job.workflows[0].name == "full_analysis"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.8.5, REQ-002.8.6, REQ-002.8.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_workflow_step_entries(self, fixtures_dir: Path) -> None:
         """Test workflow step_entries structure with concurrent steps."""
         job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
@@ -721,6 +803,8 @@ class TestConcurrentSteps:
         assert entry.is_concurrent
         assert "research_web" in entry.step_ids
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.14.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_get_step_entry_position_in_workflow(self, fixtures_dir: Path) -> None:
         """Test getting entry-based position in workflow."""
         job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
@@ -743,6 +827,8 @@ class TestConcurrentSteps:
             assert total_entries == 4
             assert entry.is_concurrent
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-002.14.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_get_concurrent_step_info(self, fixtures_dir: Path) -> None:
         """Test getting info about position within concurrent group."""
         job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
