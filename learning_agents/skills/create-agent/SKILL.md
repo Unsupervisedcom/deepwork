@@ -9,23 +9,36 @@ Create a new LearningAgent and guide the user through initial configuration.
 
 ## Arguments
 
-`$ARGUMENTS` is the agent name. Use dashes for multi-word names (e.g., `rails-activejob`). If not provided, ask the user what to name the agent.
+`$ARGUMENTS` contains the agent name and an optional template path, separated by whitespace.
+
+- **Agent name** (required): Use dashes for multi-word names (e.g., `rails-activejob`). If not provided, ask the user what to name the agent.
+- **Template agent path** (optional): Path to an existing learning agent directory (e.g., `.deepwork/learning-agents/my-existing-agent`). If provided, the new agent is seeded with the template's `core-knowledge.md`, `topics/`, and `learnings/` as a starting point. The user can then customize the copied content during configuration.
 
 ## Procedure
 
 ### Step 1: Validate and Run Scaffold Script
 
+Parse `$ARGUMENTS` to extract the agent name (first word) and optional template path (second word, if present).
+
 If the name contains spaces or uppercase letters, normalize to lowercase dashes (e.g., "Rails ActiveJob" → `rails-activejob`).
 
 Check `.claude/agents/` for an existing file matching `<agent-name>.md`. If found, inform the user of the conflict and ask how to proceed.
 
+If a template path was provided, verify it exists and contains `core-knowledge.md`. If not, inform the user and ask how to proceed.
+
 Run the scaffold script:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/create_agent.sh $ARGUMENTS
+# Without template:
+${CLAUDE_PLUGIN_ROOT}/scripts/create_agent.sh <agent-name>
+
+# With template:
+${CLAUDE_PLUGIN_ROOT}/scripts/create_agent.sh <agent-name> <template-agent-path>
 ```
 
 If the script reports that directories already exist, inform the user and ask whether to proceed with updating the configuration or stop.
+
+If a template was used, inform the user what was copied (the script output will list the counts).
 
 ### Step 2: Configure the Agent
 
@@ -34,9 +47,11 @@ Ask the user about the agent's domain:
 - What domain or area of expertise does this agent cover?
 - What kinds of tasks will it be delegated to handle?
 
+If a template was used, read the copied `core-knowledge.md` and present it to the user. Ask if they want to keep it as-is, modify it for the new agent's focus, or replace it entirely.
+
 Based on their answers, update:
 
-1. **`.deepwork/learning-agents/<agent-name>/core-knowledge.md`**: Replace the TODO content with the agent's core expertise in second person ("You should...", "You are an expert on...").
+1. **`.deepwork/learning-agents/<agent-name>/core-knowledge.md`**: If created from scratch, replace the TODO content with the agent's core expertise in second person ("You should...", "You are an expert on..."). If seeded from a template, adapt the content to reflect the new agent's specific focus area.
 
    Example:
    ```
@@ -52,7 +67,9 @@ Based on their answers, update:
 
 ### Step 3: Seed Initial Knowledge (Optional)
 
-Ask the user if they want to seed any initial topics or learnings. If yes, create files using these formats:
+If a template was used and topics/learnings were copied, list what was copied and ask if the user wants to review, remove, or add to them.
+
+Otherwise, ask the user if they want to seed any initial topics or learnings. If yes, create files using these formats:
 
 **Topic file** (`.deepwork/learning-agents/<agent-name>/topics/<topic-name>.md`):
 ```yaml
