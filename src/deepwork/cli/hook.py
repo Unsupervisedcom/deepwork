@@ -14,9 +14,6 @@ import importlib
 import sys
 
 import click
-from rich.console import Console
-
-console = Console()
 
 
 class HookError(Exception):
@@ -31,13 +28,13 @@ def hook(hook_name: str) -> None:
     """
     Run a DeepWork hook by name.
 
-    HOOK_NAME: Name of the hook to run (e.g., 'check_version')
+    HOOK_NAME: Name of the hook to run (e.g., 'my_hook')
 
     This command imports and runs the hook module from deepwork.hooks.{hook_name}.
     The hook receives stdin input and outputs to stdout, following the hook protocol.
 
     Examples:
-        deepwork hook check_version
+        deepwork hook my_hook
         echo '{}' | deepwork hook my_hook
     """
     try:
@@ -62,8 +59,8 @@ def hook(hook_name: str) -> None:
             raise HookError(f"Hook module '{module_name}' does not have a main() function")
 
     except HookError as e:
-        console.print(f"[red]Error:[/red] {e}", style="bold red")
+        click.echo(f"Error: {e}", err=True)
         sys.exit(1)
     except Exception as e:
-        console.print(f"[red]Unexpected error running hook:[/red] {e}", style="bold red")
+        click.echo(f"Unexpected error running hook: {e}", err=True)
         sys.exit(1)

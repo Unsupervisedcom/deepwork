@@ -46,17 +46,23 @@ def output_file(project_root: Path) -> Path:
 class TestQualityGate:
     """Tests for QualityGate class."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.1.1, REQ-004.1.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_init_no_cli(self) -> None:
         """Test QualityGate with no CLI provided has _cli=None and default max_inline_files."""
         gate = QualityGate()
         assert gate._cli is None
         assert gate.max_inline_files == QualityGate.DEFAULT_MAX_INLINE_FILES
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.1.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_init_custom_cli(self, mock_cli: ClaudeCLI) -> None:
         """Test QualityGate uses provided ClaudeCLI."""
         gate = QualityGate(cli=mock_cli)
         assert gate._cli is mock_cli
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.2.2, REQ-004.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_build_instructions(self, quality_gate: QualityGate) -> None:
         """Test building system instructions with dict format."""
         instructions = quality_gate._build_instructions(
@@ -74,6 +80,8 @@ class TestQualityGate:
         assert "passed" in instructions  # JSON format mentioned
         assert "feedback" in instructions  # JSON format mentioned
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.10.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_build_instructions_with_guidance(self, quality_gate: QualityGate) -> None:
         """Test that additional_review_guidance appears in system instructions."""
         instructions = quality_gate._build_instructions(
@@ -84,6 +92,8 @@ class TestQualityGate:
         assert "Additional Context" in instructions
         assert "Read the job.yml file for context." in instructions
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.10.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_build_instructions_without_guidance(self, quality_gate: QualityGate) -> None:
         """Test that guidance section is absent when not provided."""
         instructions = quality_gate._build_instructions(
@@ -92,6 +102,8 @@ class TestQualityGate:
 
         assert "Additional Context" not in instructions
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.1, REQ-004.3.5, REQ-004.3.6, REQ-004.4.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_build_payload(self, quality_gate: QualityGate, project_root: Path) -> None:
         """Test building payload with file contents."""
         output_file = project_root / "output.md"
@@ -108,6 +120,8 @@ class TestQualityGate:
         assert "BEGIN OUTPUTS" in payload
         assert "END OUTPUTS" in payload
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.4.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_build_payload_missing_file(
         self, quality_gate: QualityGate, project_root: Path
     ) -> None:
@@ -120,6 +134,8 @@ class TestQualityGate:
         assert "File not found" in payload
         assert "nonexistent.md" in payload
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.1, REQ-004.4.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_build_payload_files_type(
         self, quality_gate: QualityGate, project_root: Path
     ) -> None:
@@ -137,6 +153,8 @@ class TestQualityGate:
         assert "a.md" in payload
         assert "b.md" in payload
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.4.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_build_payload_binary_file(
         self, quality_gate: QualityGate, project_root: Path
     ) -> None:
@@ -156,6 +174,8 @@ class TestQualityGate:
         # Should NOT contain the raw binary content
         assert "%PDF" not in payload
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.4.2, REQ-004.4.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_build_payload_binary_file_in_multi_output(
         self, quality_gate: QualityGate, project_root: Path
     ) -> None:
@@ -177,6 +197,8 @@ class TestQualityGate:
         assert "not included in review" in payload
         assert str(binary_file.resolve()) in payload
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_build_payload_only_outputs(
         self, quality_gate: QualityGate, project_root: Path
     ) -> None:
@@ -193,6 +215,8 @@ class TestQualityGate:
         assert "BEGIN INPUTS" not in payload
         assert "END INPUTS" not in payload
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.9.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parse_result_valid(self, quality_gate: QualityGate) -> None:
         """Test parsing valid structured output data."""
         data = {
@@ -207,6 +231,8 @@ class TestQualityGate:
         assert result.feedback == "All good"
         assert len(result.criteria_results) == 1
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.9.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parse_result_failed(self, quality_gate: QualityGate) -> None:
         """Test parsing failed evaluation data."""
         data = {
@@ -221,6 +247,8 @@ class TestQualityGate:
         assert result.feedback == "Issues found"
         assert result.criteria_results[0].passed is False
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.9.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parse_result_multiple_criteria(self, quality_gate: QualityGate) -> None:
         """Test that criteria results are properly parsed with multiple entries."""
         data = {
@@ -244,6 +272,8 @@ class TestQualityGate:
         assert result.criteria_results[2].passed is False
         assert result.criteria_results[2].feedback == "Wrong format"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.6.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_evaluate_no_criteria(
         self, quality_gate: QualityGate, project_root: Path
     ) -> None:
@@ -257,6 +287,8 @@ class TestQualityGate:
         assert result.passed is True
         assert "auto-passing" in result.feedback.lower()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.2.1, REQ-004.2.2, REQ-004.2.3, REQ-004.2.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_evaluate_calls_cli_with_correct_args(
         self, mock_cli: ClaudeCLI, project_root: Path
     ) -> None:
@@ -281,6 +313,8 @@ class TestQualityGate:
         assert "Must be valid" in call_kwargs.kwargs["system_prompt"]
         assert "Test content" in call_kwargs.kwargs["prompt"]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.6.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_evaluate_wraps_cli_error(self, mock_cli: ClaudeCLI, project_root: Path) -> None:
         """Test that ClaudeCLIError is wrapped in QualityGateError."""
         mock_cli.run = AsyncMock(side_effect=ClaudeCLIError("CLI failed"))
@@ -296,6 +330,8 @@ class TestQualityGate:
                 project_root=project_root,
             )
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.2.4, REQ-004.2.5, REQ-004.2.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_schema_is_valid_json(self) -> None:
         """Test that QUALITY_GATE_RESPONSE_SCHEMA is valid JSON-serializable."""
         import json
@@ -309,6 +345,8 @@ class TestQualityGate:
 class TestEvaluateReviews:
     """Tests for QualityGate.evaluate_reviews method."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.7.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_empty_reviews(self, quality_gate: QualityGate, project_root: Path) -> None:
         """Test that empty reviews returns empty list."""
         result = await quality_gate.evaluate_reviews(
@@ -319,6 +357,8 @@ class TestEvaluateReviews:
         )
         assert result == []
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.7.3, REQ-004.7.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_step_review_passes(self, mock_cli: ClaudeCLI, project_root: Path) -> None:
         """Test step-level review that passes."""
         mock_cli.run = AsyncMock(
@@ -341,6 +381,8 @@ class TestEvaluateReviews:
         )
         assert result == []  # No failures
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.7.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_step_review_fails(self, mock_cli: ClaudeCLI, project_root: Path) -> None:
         """Test step-level review that fails."""
         mock_cli.run = AsyncMock(
@@ -371,6 +413,8 @@ class TestEvaluateReviews:
         assert result[0].review_run_each == "step"
         assert result[0].passed is False
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.7.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_per_file_review(self, mock_cli: ClaudeCLI, project_root: Path) -> None:
         """Test per-file review for files-type output."""
         call_count = 0
@@ -400,6 +444,8 @@ class TestEvaluateReviews:
         assert result == []  # All pass
         assert call_count == 2  # Called once per file
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.7.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_single_file_review(self, mock_cli: ClaudeCLI, project_root: Path) -> None:
         """Test review targeting a single-file output."""
         mock_cli.run = AsyncMock(
@@ -423,6 +469,8 @@ class TestEvaluateReviews:
         assert result == []
         mock_cli.run.assert_called_once()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.7.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_review_passes_guidance_to_system_prompt(
         self, mock_cli: ClaudeCLI, project_root: Path
     ) -> None:
@@ -452,6 +500,8 @@ class TestEvaluateReviews:
         assert "Read the job.yml for workflow context." in system_prompt
         assert "Additional Context" in system_prompt
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.7.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_review_without_guidance_omits_section(
         self, mock_cli: ClaudeCLI, project_root: Path
     ) -> None:
@@ -478,6 +528,8 @@ class TestEvaluateReviews:
         system_prompt = mock_cli.run.call_args.kwargs["system_prompt"]
         assert "Additional Context" not in system_prompt
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.7.4, REQ-004.7.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_per_file_review_passes_guidance_to_each(
         self, mock_cli: ClaudeCLI, project_root: Path
     ) -> None:
@@ -512,6 +564,8 @@ class TestEvaluateReviews:
 class TestBuildPayloadLargeFileSet:
     """Tests for _build_payload behavior when file count exceeds max_inline_files."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.2, REQ-004.3.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_payload_lists_paths_when_over_threshold(
         self, quality_gate: QualityGate, project_root: Path
     ) -> None:
@@ -532,6 +586,8 @@ class TestBuildPayloadLargeFileSet:
         assert "Content 0" not in payload
         assert "Content 5" not in payload
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_payload_inlines_content_at_threshold(
         self, quality_gate: QualityGate, project_root: Path
     ) -> None:
@@ -549,6 +605,8 @@ class TestBuildPayloadLargeFileSet:
         for i in range(5):
             assert f"Content {i}" in payload
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_path_listing_includes_output_names(
         self, quality_gate: QualityGate, project_root: Path
     ) -> None:
@@ -570,6 +628,8 @@ class TestBuildPayloadLargeFileSet:
         assert "(output: docs)" in payload
         assert "(output: data)" in payload
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_path_listing_counts_across_outputs(
         self, quality_gate: QualityGate, project_root: Path
     ) -> None:
@@ -594,11 +654,15 @@ class TestBuildPayloadLargeFileSet:
 class TestBuildPathListing:
     """Tests for _build_path_listing static method."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_single_file_output(self) -> None:
         """Test path listing with single file outputs."""
         lines = QualityGate._build_path_listing({"report": "report.md"})
         assert lines == ["- report.md  (output: report)"]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_multi_file_output(self) -> None:
         """Test path listing with list outputs."""
         lines = QualityGate._build_path_listing({"reports": ["a.md", "b.md"]})
@@ -607,6 +671,8 @@ class TestBuildPathListing:
             "- b.md  (output: reports)",
         ]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_mixed_outputs(self) -> None:
         """Test path listing with both single and list outputs."""
         lines = QualityGate._build_path_listing(
@@ -624,12 +690,16 @@ class TestBuildPathListing:
 class TestComputeTimeout:
     """Tests for QualityGate.compute_timeout."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.8.1, REQ-004.8.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_base_timeout_for_few_files(self) -> None:
         """Test that <=5 files gives base 240s (4 min) timeout."""
         assert QualityGate.compute_timeout(0) == 240
         assert QualityGate.compute_timeout(1) == 240
         assert QualityGate.compute_timeout(5) == 240
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.8.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_timeout_increases_after_five(self) -> None:
         """Test that each file after 5 adds 30 seconds."""
         assert QualityGate.compute_timeout(6) == 270
@@ -640,6 +710,8 @@ class TestComputeTimeout:
 class TestDynamicTimeout:
     """Tests that evaluate passes dynamic timeout to CLI."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.6.3, REQ-004.8.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_timeout_passed_to_cli(self, mock_cli: ClaudeCLI, project_root: Path) -> None:
         """Test that evaluate passes computed timeout to CLI.run."""
         gate = QualityGate(cli=mock_cli)
@@ -656,6 +728,8 @@ class TestDynamicTimeout:
         # 1 file -> timeout = 240
         assert call_kwargs["timeout"] == 240
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.6.3, REQ-004.8.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_timeout_scales_with_file_count(
         self, mock_cli: ClaudeCLI, project_root: Path
     ) -> None:
@@ -762,12 +836,16 @@ class TestMockQualityGate:
 class TestConfigurableMaxInlineFiles:
     """Tests for configurable max_inline_files on QualityGate."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.1.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_default_max_inline_files(self) -> None:
         """Test QualityGate defaults to DEFAULT_MAX_INLINE_FILES."""
         gate = QualityGate()
         assert gate.max_inline_files == QualityGate.DEFAULT_MAX_INLINE_FILES
         assert gate.max_inline_files == 5
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.1.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_custom_max_inline_files(self) -> None:
         """Test QualityGate respects explicit max_inline_files."""
         gate = QualityGate(max_inline_files=10)
@@ -778,17 +856,23 @@ class TestConfigurableMaxInlineFiles:
         gate = QualityGate(max_inline_files=0)
         assert gate.max_inline_files == 0
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.1.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_max_inline_files_none_uses_default(self) -> None:
         """Test that passing None explicitly uses the default."""
         gate = QualityGate(max_inline_files=None)
         assert gate.max_inline_files == QualityGate.DEFAULT_MAX_INLINE_FILES
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.1.1, REQ-004.1.2, REQ-004.1.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_cli_and_max_inline_files_independent(self, mock_cli: ClaudeCLI) -> None:
         """Test that cli and max_inline_files are independent parameters."""
         gate = QualityGate(cli=mock_cli, max_inline_files=3)
         assert gate._cli is mock_cli
         assert gate.max_inline_files == 3
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_zero_max_inline_always_lists_paths(self, project_root: Path) -> None:
         """Test that max_inline_files=0 uses path listing even for 1 file."""
         gate = QualityGate(max_inline_files=0)
@@ -803,6 +887,8 @@ class TestConfigurableMaxInlineFiles:
         assert "single.md" in payload
         assert "Single file content" not in payload
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_high_max_inline_embeds_many_files(self, project_root: Path) -> None:
         """Test that a high max_inline_files embeds content for many files."""
         gate = QualityGate(max_inline_files=100)
@@ -822,6 +908,8 @@ class TestConfigurableMaxInlineFiles:
 class TestEvaluateWithoutCli:
     """Tests that evaluate() raises when no CLI is configured."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.1.6, REQ-004.6.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_evaluate_raises_without_cli(self, project_root: Path) -> None:
         """Test that evaluate raises QualityGateError when _cli is None."""
         gate = QualityGate(cli=None)
@@ -834,6 +922,8 @@ class TestEvaluateWithoutCli:
                 project_root=project_root,
             )
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.6.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_evaluate_no_criteria_still_passes_without_cli(self, project_root: Path) -> None:
         """Test that empty criteria auto-passes even without CLI."""
         gate = QualityGate(cli=None)
@@ -851,6 +941,8 @@ class TestEvaluateWithoutCli:
 class TestBuildReviewInstructionsFile:
     """Tests for QualityGate.build_review_instructions_file method."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.5.1, REQ-004.5.6, REQ-004.5.7, REQ-004.10.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_basic_structure(self, project_root: Path) -> None:
         """Test that the instructions file has the expected structure."""
         gate = QualityGate(max_inline_files=0)
@@ -879,6 +971,8 @@ class TestBuildReviewInstructionsFile:
         assert "PASS" in content
         assert "FAIL" in content
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_contains_all_criteria(self, project_root: Path) -> None:
         """Test that all criteria from all reviews appear in the file."""
         gate = QualityGate(max_inline_files=0)
@@ -904,6 +998,8 @@ class TestBuildReviewInstructionsFile:
         assert "**Completeness**" in content
         assert "Is all data present?" in content
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.5.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_multiple_reviews_numbered(self, project_root: Path) -> None:
         """Test that multiple reviews get numbered sections."""
         gate = QualityGate(max_inline_files=0)
@@ -930,6 +1026,8 @@ class TestBuildReviewInstructionsFile:
         assert "scope: all outputs together" in content
         assert "scope: output 'report'" in content
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.5.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_single_review_not_numbered(self, project_root: Path) -> None:
         """Test that a single review uses 'Criteria to Evaluate' heading."""
         gate = QualityGate(max_inline_files=0)
@@ -950,6 +1048,8 @@ class TestBuildReviewInstructionsFile:
         assert "## Criteria to Evaluate" in content
         assert "Review 1" not in content
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.5.9, REQ-004.10.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_includes_author_notes(self, project_root: Path) -> None:
         """Test that notes are included when provided."""
         gate = QualityGate(max_inline_files=0)
@@ -971,6 +1071,8 @@ class TestBuildReviewInstructionsFile:
         assert "## Author Notes" in content
         assert "I focused on section 3 the most." in content
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.5.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_excludes_notes_when_none(self, project_root: Path) -> None:
         """Test that notes section is absent when not provided."""
         gate = QualityGate(max_inline_files=0)
@@ -990,6 +1092,8 @@ class TestBuildReviewInstructionsFile:
 
         assert "## Author Notes" not in content
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.5.5, REQ-004.10.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_includes_guidance(self, project_root: Path) -> None:
         """Test that additional_review_guidance is included."""
         gate = QualityGate(max_inline_files=0)
@@ -1011,6 +1115,8 @@ class TestBuildReviewInstructionsFile:
         assert "### Additional Context" in content
         assert "Also read config.yml for context." in content
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.5.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_per_file_review_lists_files(self, project_root: Path) -> None:
         """Test that per-file reviews list each file to evaluate."""
         gate = QualityGate(max_inline_files=0)
@@ -1033,6 +1139,8 @@ class TestBuildReviewInstructionsFile:
         assert "a.md" in content
         assert "b.md" in content
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_output_paths_listed_not_inlined_at_zero(self, project_root: Path) -> None:
         """Test that with max_inline_files=0, file contents are NOT embedded."""
         gate = QualityGate(max_inline_files=0)

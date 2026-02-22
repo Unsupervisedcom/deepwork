@@ -4,17 +4,17 @@
 
 DeepWork is a framework for enabling AI agents to perform complex, multi-step work tasks across any domain. Inspired by spec-kit's approach to software development, DeepWork generalizes the pattern to support any job type—from competitive research to ad campaign design to monthly reporting.
 
-**Key Insight**: DeepWork is an *installation tool* that sets up job-based workflows in your project. After installation, all work is done through your chosen AI agent CLI (like Claude Code, Gemini, etc.) using slash commands. The DeepWork CLI itself is only used for the initial setup.
+**Key Insight**: DeepWork is delivered as a **plugin** for AI agent CLIs (Claude Code, Gemini CLI, etc.). The plugin provides a skill, MCP server configuration, and hooks. The MCP server (`deepwork serve`) is the core runtime — the CLI has no install/sync commands.
 
 ## Core Design Principles
 
 1. **Job-Agnostic**: The framework supports any multi-step workflow, not just software development
 2. **Git-Native**: All work products are versioned in Git for collaboration, review, and context accumulation
 3. **Step-Driven**: Jobs are decomposed into reviewable steps with clear inputs and outputs
-4. **Template-Based**: Job definitions are reusable and shareable via Git repositories
+4. **Plugin-Based**: Delivered as platform plugins (Claude Code plugin, Gemini extension)
 5. **AI-Neutral**: Support for multiple AI platforms (Claude Code, Gemini, Copilot, etc.)
 6. **Stateless Execution**: All state is stored in filesystem artifacts, enabling resumability and transparency
-7. **Installation-Only CLI**: The deepwork CLI installs skills/commands into projects, then gets out of the way
+7. **MCP-Powered**: The MCP server is the core runtime — no install/sync CLI commands needed
 
 ## Architecture Overview
 
@@ -38,239 +38,101 @@ deepwork/                       # DeepWork tool repository
 ├── src/
 │   └── deepwork/
 │       ├── cli/
-│       │   ├── __init__.py
-│       │   ├── main.py         # CLI entry point
-│       │   ├── install.py      # Install command
-│       │   ├── sync.py         # Sync command
-│       │   └── serve.py        # MCP server command
+│       │   ├── main.py         # CLI entry point (serve + hook commands)
+│       │   ├── serve.py        # MCP server command
+│       │   └── hook.py         # Hook runner command
 │       ├── core/
-│       │   ├── adapters.py     # Agent adapters for AI platforms
-│       │   ├── detector.py     # AI platform detection
-│       │   ├── generator.py    # Command file generation
 │       │   ├── parser.py       # Job definition parsing
-│       │   ├── doc_spec_parser.py   # Doc spec parsing
-│       │   └── hooks_syncer.py     # Hook syncing to platforms
-│       ├── mcp/                # MCP server module
-│       │   ├── __init__.py
+│       │   ├── jobs.py         # Job discovery
+│       │   └── doc_spec_parser.py   # Doc spec parsing
+│       ├── mcp/                # MCP server module (the core runtime)
 │       │   ├── server.py       # FastMCP server definition
 │       │   ├── tools.py        # MCP tool implementations
 │       │   ├── state.py        # Workflow session state management
 │       │   ├── schemas.py      # Pydantic models for I/O
-│       │   └── quality_gate.py # Quality gate with review agent
+│       │   ├── quality_gate.py # Quality gate with review agent
+│       │   └── claude_cli.py   # Claude CLI subprocess wrapper
 │       ├── hooks/              # Hook system and cross-platform wrappers
-│       │   ├── __init__.py
-│       │   ├── wrapper.py           # Cross-platform input/output normalization
-│       │   ├── claude_hook.sh       # Shell wrapper for Claude Code
-│       │   └── gemini_hook.sh       # Shell wrapper for Gemini CLI
-│       ├── templates/          # Skill templates for each platform
-│       │   ├── claude/
-│       │   │   └── skill-deepwork.md.jinja  # MCP entry point skill
-│       │   ├── gemini/
-│       │   └── copilot/
+│       │   ├── wrapper.py      # Cross-platform input/output normalization
+│       │   ├── claude_hook.sh  # Shell wrapper for Claude Code
+│       │   └── gemini_hook.sh  # Shell wrapper for Gemini CLI
 │       ├── standard_jobs/      # Built-in job definitions
 │       │   └── deepwork_jobs/
-│       │       ├── job.yml
-│       │       ├── steps/
-│       │       └── templates/
-│       │           └── doc_spec.md.template
 │       ├── schemas/            # Definition schemas
 │       │   ├── job_schema.py
-│       │   └── doc_spec_schema.py   # Doc spec schema definition
+│       │   └── doc_spec_schema.py
 │       └── utils/
 │           ├── fs.py
 │           ├── git.py
 │           ├── validation.py
 │           └── yaml_utils.py
-├── tests/                      # DeepWork tool tests
+├── platform/                   # Shared platform-agnostic content
+│   └── skill-body.md           # Canonical skill body (source of truth)
+├── plugins/
+│   ├── claude/                 # Claude Code plugin
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── skills/deepwork/SKILL.md
+│   │   ├── hooks/              # hooks.json
+│   │   └── .mcp.json           # MCP server config
+│   └── gemini/                 # Gemini CLI extension
+│       └── skills/deepwork/SKILL.md
+├── library/jobs/               # Reusable example jobs
+├── tests/                      # Test suite
 ├── doc/                        # Documentation
 ├── pyproject.toml
-└── readme.md
+└── README.md
 ```
 
 ## DeepWork CLI Components
 
-### 1. Installation Command (`install.py`)
+The CLI has been simplified to two commands: `serve` and `hook`. The old `install`, `sync`, adapters, detector, and generator have been replaced by the plugin system.
 
-The primary installation command. When user executes `deepwork install --claude`:
+### 1. Serve Command (`serve.py`)
 
-**Responsibilities**:
-1. Detect if current directory is a Git repository
-2. Detect if specified AI platform is available (check for `.claude/`, `.gemini/`, etc.)
-3. Create `.deepwork/` directory structure in the project
-4. Inject standard job definitions (deepwork_jobs)
-5. Update or create configuration file
-6. Run sync to generate commands for all platforms
+Starts the MCP server for workflow management:
 
-**Pseudocode**:
-```python
-def install(platform: str):
-    # Validate environment
-    if not is_git_repo():
-        raise Error("Must be run in a Git repository")
-
-    # Detect platform
-    platform_config = detect_platform(platform)
-    if not platform_config.is_available():
-        raise Error(f"{platform} not found in this project")
-
-    # Create DeepWork structure
-    create_directory(".deepwork/")
-    create_directory(".deepwork/jobs/")
-
-    # Inject core job definitions
-    inject_deepwork_jobs(".deepwork/jobs/")
-
-    # Update config (supports multiple platforms)
-    config = load_yaml(".deepwork/config.yml") or {}
-    config["version"] = "1.0.0"
-    config["platforms"] = config.get("platforms", [])
-
-    if platform not in config["platforms"]:
-        config["platforms"].append(platform)
-
-    write_yaml(".deepwork/config.yml", config)
-
-    # Run sync to generate skills
-    sync_skills()
-
-    print(f"✓ DeepWork installed for {platform}")
-    print(f"  Run /deepwork_jobs.define to create your first job")
+```bash
+deepwork serve --path . --external-runner claude
 ```
 
-### 2. Agent Adapters (`adapters.py`)
+The serve command:
+- Creates `.deepwork/tmp/` lazily for session state
+- Launches the FastMCP server (stdio or SSE transport)
+- No config file required — works out of the box
 
-Defines the modular adapter architecture for AI platforms. Each adapter encapsulates platform-specific configuration and behavior.
+### 2. Hook Command (`hook.py`)
 
-**Adapter Architecture**:
-```python
-class SkillLifecycleHook(str, Enum):
-    """Generic lifecycle hook events supported by DeepWork."""
-    AFTER_AGENT = "after_agent"    # After agent finishes (quality validation)
-    BEFORE_TOOL = "before_tool"    # Before tool execution
-    BEFORE_PROMPT = "before_prompt" # When user submits a prompt
+Runs hook scripts by name, used by platform hook wrappers:
 
-class AgentAdapter(ABC):
-    """Base class for AI agent platform adapters."""
-
-    # Auto-registration via __init_subclass__
-    _registry: ClassVar[dict[str, type[AgentAdapter]]] = {}
-
-    # Platform configuration (subclasses define as class attributes)
-    name: ClassVar[str]           # "claude"
-    display_name: ClassVar[str]   # "Claude Code"
-    config_dir: ClassVar[str]     # ".claude"
-    skills_dir: ClassVar[str] = "skills"
-
-    # Mapping from generic hook names to platform-specific names
-    hook_name_mapping: ClassVar[dict[SkillLifecycleHook, str]] = {}
-
-    def detect(self, project_root: Path) -> bool:
-        """Check if this platform is available in the project."""
-
-    def get_platform_hook_name(self, hook: SkillLifecycleHook) -> str | None:
-        """Get platform-specific event name for a generic hook."""
-
-    @abstractmethod
-    def sync_hooks(self, project_path: Path, hooks: dict) -> int:
-        """Sync hooks to platform settings."""
-
-class ClaudeAdapter(AgentAdapter):
-    name = "claude"
-    display_name = "Claude Code"
-    config_dir = ".claude"
-
-    # Claude Code uses PascalCase event names
-    hook_name_mapping = {
-        SkillLifecycleHook.AFTER_AGENT: "Stop",
-        SkillLifecycleHook.BEFORE_TOOL: "PreToolUse",
-        SkillLifecycleHook.BEFORE_PROMPT: "UserPromptSubmit",
-    }
+```bash
+deepwork hook my_hook
 ```
 
-### 3. Platform Detector (`detector.py`)
+### 3. Plugin System (replaces adapters/detector/generator)
 
-Uses adapters to identify which AI platforms are available in the project.
+Platform-specific delivery is now handled by plugins in `plugins/`:
 
-**Detection Logic**:
-```python
-class PlatformDetector:
-    def detect_platform(self, platform_name: str) -> AgentAdapter | None:
-        """Check if a specific platform is available."""
-        adapter_class = AgentAdapter.get(platform_name)
-        adapter = adapter_class(self.project_root)
-        if adapter.detect():
-            return adapter
-        return None
+- **Claude Code**: `plugins/claude/` — installed as a Claude Code plugin via marketplace
+- **Gemini CLI**: `plugins/gemini/` — skill files copied to `.gemini/skills/`
 
-    def detect_all_platforms(self) -> list[AgentAdapter]:
-        """Detect all available platforms."""
-        return [
-            adapter_class(self.project_root)
-            for adapter_class in AgentAdapter.get_all().values()
-            if adapter_class(self.project_root).detect()
-        ]
-```
-
-### 4. Skill Generator (`generator.py`)
-
-Generates AI-platform-specific skill files. The generator has been simplified to focus
-on generating only the MCP entry point skill (`/deepwork`), as workflow orchestration
-is now handled by the MCP server rather than individual step skills.
-
-This component is called by the `sync` command to regenerate the DeepWork skill:
-1. Loads the platform-specific template (`skill-deepwork.md.jinja`)
-2. Generates the `/deepwork` skill file that directs agents to use MCP tools
-3. Writes the skill to the AI platform's skills directory
-
-**Example Generation Flow**:
-```python
-class SkillGenerator:
-    def generate_deepwork_skill(self, adapter: AgentAdapter,
-                                output_dir: Path) -> Path:
-        """Generate the global /deepwork skill for MCP entry point."""
-        skills_dir = output_dir / adapter.skills_dir
-        skills_dir.mkdir(parents=True, exist_ok=True)
-
-        # Load and render template
-        env = self._get_jinja_env(adapter)
-        template = env.get_template("skill-deepwork.md.jinja")
-        rendered = template.render()
-
-        # Write skill file
-        skill_path = skills_dir / "deepwork/SKILL.md"
-        skill_path.parent.mkdir(parents=True, exist_ok=True)
-        safe_write(skill_path, rendered)
-
-        return skill_path
-```
+Each plugin contains static files (skill, hooks, MCP config) rather than generated content. The shared skill body lives in `platform/skill-body.md` as the single source of truth.
 
 ---
 
 # Part 2: Target Project Architecture
 
-This section describes what a project looks like AFTER `deepwork install --claude` has been run.
+This section describes what a project looks like after the DeepWork plugin is installed.
 
 ## Target Project Structure
 
 ```
 my-project/                     # User's project (target)
 ├── .git/
-├── .claude/                    # Claude Code directory
-│   ├── settings.json           # Includes installed hooks
-│   └── skills/                 # Skill files
-│       ├── deepwork_jobs.define.md         # Core DeepWork skills
-│       ├── deepwork_jobs.implement.md
-│       ├── deepwork_jobs.refine.md
-│       ├── competitive_research.identify_competitors.md
-│       └── ...
-├── .deepwork/                  # DeepWork configuration
-│   ├── config.yml              # Platform config
+├── .deepwork/                  # DeepWork runtime data
 │   ├── .gitignore              # Ignores tmp/ directory
-│   ├── doc_specs/                   # Doc specs (document specifications)
-│   │   └── monthly_aws_report.md
-│   ├── tmp/                    # Temporary state (gitignored)
+│   ├── tmp/                    # Temporary session state (gitignored, created lazily)
 │   └── jobs/                   # Job definitions
-│       ├── deepwork_jobs/      # Core job for managing jobs
+│       ├── deepwork_jobs/      # Core job (auto-discovered from package)
 │       │   ├── job.yml
 │       │   └── steps/
 │       ├── competitive_research/
@@ -282,21 +144,11 @@ my-project/                     # User's project (target)
 └── README.md
 ```
 
+**Note**: The plugin provides the `/deepwork` skill, MCP server config, and hooks. No config.yml needed.
+
 **Note**: Work outputs are created directly in the project on dedicated Git branches (e.g., `deepwork/competitive_research-acme-2026-01-11`). The branch naming convention is `deepwork/[job_name]-[instance]-[date]`.
 
-## Configuration Files
-
-### `.deepwork/config.yml`
-
-```yaml
-version: 1.0.0
-platforms:
-  - claude
-```
-
-**Note**: The config supports multiple platforms. You can add additional platforms by running `deepwork install --platform gemini` etc.
-
-### Job Definition Example
+## Job Definition Example
 
 `.deepwork/jobs/competitive_research/job.yml`:
 
@@ -500,11 +352,9 @@ Create `competitors.md` with this structure:
 - [ ] No duplicate entries
 ```
 
-## Generated Command Files
+## Workflow Execution via MCP
 
-When the job is defined and `sync` is run, DeepWork generates command files. Example for Claude Code:
-
-`.deepwork/jobs/competitive_research` a step called `identify_competitors` will generate a skill file at `.claude/skills/competitive_research.identify_competitors.md`:
+When a job is defined, the MCP server discovers it at runtime from `.deepwork/jobs/`. Steps are executed via MCP tool calls rather than individual skill files.
 
 
 # Part 3: Runtime Execution Model
@@ -515,74 +365,38 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
 
 ### User Workflow
 
-1. **Initial Setup** (one-time):
-   ```bash
-   # In terminal
-   cd my-project/
-   deepwork install --claude
+1. **Install Plugin** (one-time):
+   ```
+   # In Claude Code
+   /plugin marketplace add https://github.com/Unsupervisedcom/deepwork
+   /plugin install deepwork@deepwork-plugins
    ```
 
 2. **Define a Job** (once per job type):
    ```
    # In Claude Code
-   User: /deepwork_jobs.define
+   User: /deepwork Make a competitive research workflow
 
-   Claude: I'll help you define a new job. What type of work do you want to define?
+   Claude: [Calls get_workflows, finds deepwork_jobs/new_job]
+          [Calls start_workflow to begin the new_job workflow]
+          [Guides through interactive dialog to define steps]
 
-   User: Competitive research
-
-   [Interactive dialog to define all the steps]
-
-   Claude: ✓ Job 'competitive_research' created with 5 steps
-          new_job step 1/3 complete, outputs: job.yml
-          Continuing workflow: invoking review_job_spec...
-
-   [Claude automatically continues with review_job_spec step]
-
-   Claude: ✓ Job spec validated against quality criteria
-          new_job step 2/3 complete
-          Continuing workflow: invoking implement...
-
-   [Claude automatically continues with implement step]
-
-   Claude: [Generates step instruction files]
-          [Runs deepwork sync]
-          ✓ Skills installed to .claude/skills/
-          new_job workflow complete. Run /competitive_research.identify_competitors to start
+          ✓ Job 'competitive_research' created
+          new_job workflow complete.
    ```
 
 3. **Execute a Job Instance** (each time you need to do the work):
    ```
    # In Claude Code
-   User: /competitive_research.identify_competitors
+   User: /deepwork competitive_research
 
-   Claude: Starting competitive research job...
+   Claude: [Calls start_workflow for competitive_research]
+          Starting competitive research job...
           Created branch: deepwork/competitive_research-acme-2026-01-11
 
-          Please provide:
-          - Market segment: ?
-          - Product category: ?
-
-   User: Market segment: Enterprise SaaS
-         Product category: Project Management
-
-   Claude: [Performs research using web tools, analysis, etc.]
-          ✓ Created competitors.md
-
-          Found 8 direct competitors and 4 indirect competitors.
-          Review the file and run /competitive_research.primary_research when ready.
-
-   User: [Reviews competitors.md, maybe edits it]
-         /competitive_research.primary_research
-
-   Claude: Continuing competitive research (step 2/5)...
-          [Reads competitors.md]
-          [Performs primary research on each competitor]
-          ✓ Created primary_research.md and competitor_profiles/
-
-          Next: /competitive_research.secondary_research
-
-   [Continue through all steps...]
+          [Follows step instructions, creates output files]
+          [Calls finished_step after each step]
+          [Continues through all steps until workflow_complete]
    ```
 
 4. **Complete and Merge**:
@@ -732,7 +546,7 @@ DeepWork includes a built-in job called `deepwork_jobs` for managing jobs. It pr
 **Standalone Skills** (can be run anytime):
 - **`/deepwork_jobs.learn`** - Analyzes conversations to improve job instructions and capture learnings
 
-These skills are installed automatically when you run `deepwork install`.
+These are auto-discovered at runtime by the MCP server from the Python package.
 
 ### The `/deepwork_jobs.define` Command
 
@@ -1063,9 +877,9 @@ See `doc/doc-specs.md` for complete documentation.
 ## Technical Decisions
 
 ### Language: Python 3.11+
-- **Rationale**: Proven ecosystem for CLI tools (click, rich)
-- **Alternatives**: TypeScript (more verbose), Go (less flexible for templates)
-- **Dependencies**: Jinja2 (templates), PyYAML (config), GitPython (Git ops)
+- **Rationale**: Proven ecosystem for CLI tools (click) and MCP servers (FastMCP)
+- **Alternatives**: TypeScript (more verbose), Go (less flexible)
+- **Runtime Dependencies**: PyYAML (config), Click (CLI), FastMCP (MCP server), jsonschema (validation)
 
 ### Distribution: uv/pipx
 - **Rationale**: Modern Python tooling, fast, isolated environments
@@ -1222,16 +1036,14 @@ Pydantic models for all tool inputs and outputs:
 
 ## MCP Server Registration
 
-When `deepwork install` runs, it registers the MCP server in platform settings:
+The plugin's `.mcp.json` registers the MCP server automatically:
 
 ```json
-// .claude/settings.json
 {
   "mcpServers": {
     "deepwork": {
-      "command": "deepwork",
-      "args": ["serve", "--path", "."],
-      "transport": "stdio"
+      "command": "uvx",
+      "args": ["deepwork", "serve", "--path", ".", "--external-runner", "claude"]
     }
   }
 }
@@ -1239,7 +1051,7 @@ When `deepwork install` runs, it registers the MCP server in platform settings:
 
 ## The `/deepwork` Skill
 
-A single skill (`.claude/skills/deepwork/SKILL.md`) instructs agents to use MCP tools:
+The plugin provides a skill (`plugins/claude/skills/deepwork/SKILL.md`) that instructs agents to use MCP tools:
 
 ```markdown
 # DeepWork Workflow Manager

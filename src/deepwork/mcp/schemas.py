@@ -204,7 +204,6 @@ class ActiveStepInfo(BaseModel):
     """Information about the step to begin working on."""
 
     session_id: str = Field(description="Unique session identifier")
-    branch_name: str = Field(description="Git branch for this workflow instance")
     step_id: str = Field(description="ID of the current step")
     job_dir: str = Field(
         description="Absolute path to the job directory. Templates, scripts, "
@@ -327,7 +326,6 @@ class WorkflowSession(BaseModel):
     workflow_name: str = Field(description="Name of the workflow")
     instance_id: str | None = Field(default=None, description="Instance identifier")
     goal: str = Field(description="User's goal for this workflow")
-    branch_name: str = Field(description="Git branch name")
     current_step_id: str = Field(description="Current step in workflow")
     current_entry_index: int = Field(
         default=0, description="Index of current entry in step_entries"

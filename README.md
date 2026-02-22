@@ -3,45 +3,41 @@
 Triage email, give feedback to your team, make tutorials/documentation, QA your product every day, do competitive research... *anything*.
 
 ## Install
-```bash
-brew tap unsupervisedcom/deepwork && brew install deepwork
+
+In Claude Code, run:
+```
+/plugin marketplace add https://github.com/Unsupervisedcom/deepwork
+/plugin install deepwork@deepwork-plugins
 ```
 
-Then in your project folder (must be a Git repository):
-```bash
-deepwork install
-claude
+Then start a new session and define your first job:
+```
+/deepwork Make a job for doing competitive research. It will take the URL of the competitor as an input, and should make report including a SWOT analysis for that competitor.
 ```
 
-> **Note:** DeepWork requires a Git repository. If your folder isn't already a repo, run `git init` first.
-
-Now inside claude, define your first job using the `/deepwork_jobs` command. Ex.
-```
-/deepwork_jobs Make a job for doing competitive research. It will take the URL of the competitor as an input, and should make report including a SWOT analysis for that competitor.
-```
-
-See below for additional installation options
+> **Note:** DeepWork stores job definitions in `.deepwork/jobs/` and creates work branches in Git. Your project folder should be a Git repository. If it isn't, run `git init` first.
 
 DeepWork is an open-source plugin for Claude Code (and other CLI agents). It:
 - teaches Claude to follow strict workflows consistently
-- makes it easy for you to define them 
+- makes it easy for you to define them
 - learns and updates automatically
 
 ## Example
 
 You can make a DeepWork job that uses Claude Code to automatically run a deep competitive research workflow. To do this you:
-- Run `/deepwork_jobs` in Claude Code and select `define`
+- Run `/deepwork` in Claude Code
 - Explain your process _e.g. "Go look at my company's website and social channels to capture any new developments, look at our existing list of competitors, do broad web searches to identify any new competitiors, and then do deep research on each competitor and produce a comprehensive set of md reports including a summary report for me._
 
-Deepwork will ask you questions to improve the plan and make a hardened automation workflow. This usually takes ~10 minutes. 
+Deepwork will ask you questions to improve the plan and make a hardened automation workflow. This usually takes ~10 minutes.
 
-When this is done, it will create a .yml file that details the plan and then will use templates to document how Claude should execute each individual step in the workflow. This usually takes 2-5 minutes.
+When this is done, it will create a .yml file that details the plan and then will document how Claude should execute each individual step in the workflow. This usually takes 2-5 minutes.
 
-After that, it will create a new skill for you in Claude, something like `/competitive_research` that you can run at any time (or automate). 
+After that, you can run the workflow at any time:
 
-Running that `/competitive_research` command will get you output that looks something like this:
+Running that `/deepwork competitive_research` command will get you output that looks something like this:
 ```
-deepwork-output/competitive_research/
+# On your work branch (deepwork/competitive_research-acme-2026-02-21):
+competitive_research/
 ├── competitors.md           # Who they are, what they do
 ├── competitor_profiles/     # Deep dive on each
 ├── primary_research.md      # What they say about themselves
@@ -76,46 +72,39 @@ Similar to how vibe coding makes easier for anyone to produce software, this is 
 
 ## Quick Start
 
-### 1. Install
+### 1. Install the Plugin
 
-```bash
-brew tap unsupervisedcom/deepwork
-brew install deepwork
+In Claude Code:
+```
+/plugin marketplace add https://github.com/Unsupervisedcom/deepwork
+/plugin install deepwork@deepwork-plugins
 ```
 
-Then in any project folder (must be a Git repository):
-
-```bash
-deepwork install
-```
+Start a new Claude Code session after installing.
 
 > **Note:** If your folder isn't a Git repo yet, run `git init` first.
-
-**After install, load Claude.** Then verify you see this command: `/deepwork_jobs`
 
 ### 2. Define Your First Workflow
 
 Start simple—something you do manually in 15-30 minutes. Here's an example:
 
 ```
-/deepwork_jobs write a tutorial for how to use a new feature we just launched
+/deepwork write a tutorial for how to use a new feature we just launched
 ```
 
 DeepWork asks you questions (this usually takes about 10 minutes) then writes the steps. You're creating a **reusable skill** — after you do this process you can run that skill any time you want without repeating this process.
 
 ### 3. Run It
 
-Once the skill is created, type the name of your job (e.g. `/tutorial`) in Claude and you'll see the skill show up in your suggestions (e.g. `/tutorial_writer`).
+Once the skill is created, invoke it via `/deepwork`:
 
-Hit enter to run the skill. Claude will follow the workflow step by step. 
+```
+/deepwork tutorial_writer
+```
+
+Claude will follow the workflow step by step.
 
 ## Some Examples of What Other People Are Building with DeepWork
-=======
-To start the process, just run:
-
-```
-/deepwork_jobs
-```
 
 | Workflow | What It Does | Why it matters|
 |----------|--------------|--------------|
@@ -132,10 +121,10 @@ To start the process, just run:
 
 **2. Easy to define** — Describe what you want in plain English. DeepWork knows how to ask you the right questions to refine your plan.
 ```
-/deepwork_jobs
+/deepwork
 ```
 
-**3. Learns automatically** — Run `/deepwork_jobs.learn` (or ask claude to `run the deepwork learn job`) after any job to automatically capture what worked and improve for next time.
+**3. Learns automatically** — Run `/deepwork deepwork_jobs learn` after any job to automatically capture what worked and improve for next time.
 
 **4. All work happens on Git branches** — Every change can be version-controlled and tracked. You can roll-back to prior versions of the skill or keep skills in-sync and up-to-date across your team.
 
@@ -145,11 +134,11 @@ To start the process, just run:
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| **Claude Code** | Full Support | Recommended. Quality hooks, best DX. |
-| **Gemini CLI** | Partial Support | TOML format, global hooks only |
+| **Claude Code** | Full Support | Recommended. Plugin-based delivery with quality hooks. |
+| **Gemini CLI** | Partial Support | TOML format skill, manual setup |
 | OpenCode | Planned | |
 | GitHub Copilot CLI | Planned | |
-| Others | Planned | We are nailing Claude and Gemini first, then adding others according ot demand |
+| Others | Planned | We are nailing Claude and Gemini first, then adding others according to demand |
 
 **Tip:** Use the terminal (Claude Code CLI), not the VS Code extension. The terminal has full feature support.
 
@@ -159,7 +148,7 @@ To start the process, just run:
 
 For workflows that need to interact with websites, you can use any browser automation tool that works in Claude Code. We generally recommend [Claude in Chrome](https://www.anthropic.com/claude-in-chrome).
 
-**⚠️ Safety note:** Browser automation is still something models can be hit-or-miss on. We recommend using a dedicated Chrome profile for automation.
+**Warning:** Browser automation is still something models can be hit-or-miss on. We recommend using a dedicated Chrome profile for automation.
 
 ---
 
@@ -167,14 +156,10 @@ For workflows that need to interact with websites, you can use any browser autom
 
 Here are some known issues that affect some early users — we're working on improving normal performance on these, but here are some known workarounds.
 
-### Slash Commands don't appear after install
-
-Exit Claude completely and restart.
-
 ### Stop hooks firing unexpectedly
 
 Occasionally, especially after updating a job or running the `deepwork_jobs learn` process after completing a task, Claude will get confused about which workflow it's running checks for. For now, if stop hooks fire when they shouldn't, you can either:
-- Ask claude `do we need to address any of these stop hooks or can we ignore them for now?` 
+- Ask claude `do we need to address any of these stop hooks or can we ignore them for now?`
 - Ignore the stop hooks and keep going until the workflow steps are complete
 - Run the `/clear` command to start a new context window (you'll have to re-run the job after this)
 
@@ -182,10 +167,10 @@ Occasionally, especially after updating a job or running the `deepwork_jobs lear
 
 If Claude attempts to bypass the workflow and do the task on it's own, tell it explicitly to use the skill. You can also manually run the step command:
 ```
-/your_job
+/deepwork your_job
 ```
 
-Tip: Don't say things like "can you do X" while in **defining** a new `/deepwork_jobs` — Claude has a bias towards action and workarounds and may abandon the skill creation workflow and attempt to do your task as a one off. Instead, say something like "create a workflow that..."
+Tip: Don't say things like "can you do X" while **defining** a new job — Claude has a bias towards action and workarounds and may abandon the skill creation workflow and attempt to do your task as a one off. Instead, say something like "create a workflow that..."
 
 ### If you can't solve your issues using the above and need help
 
@@ -199,14 +184,11 @@ Send [@tylerwillis](https://x.com/tylerwillis) a message on X.
 ```
 your-project/
 ├── .deepwork/
-│   ├── config.yml          # Platform configuration
-│   └── jobs/               # Job definitions
+│   ├── tmp/               # Session state (created lazily)
+│   └── jobs/              # Job definitions
 │       └── job_name/
-│           ├── job.yml     # Job metadata
-│           └── steps/      # Step instructions
-├── .claude/                # Generated Claude skills
-│   └── skills/
-└── deepwork-output/        # Job outputs (gitignored)
+│           ├── job.yml    # Job metadata
+│           └── steps/     # Step instructions
 ```
 
 </details>
@@ -214,12 +196,15 @@ your-project/
 <details>
 <summary><strong>Alternative Installation Methods</strong></summary>
 
-**Prerequisites** (for non-Homebrew installs): Python 3.11+, Git
+**Prerequisites** (for non-plugin installs): Python 3.11+, Git
 
-Homebrew is recommended, but you can also use:
+If you prefer to install the `deepwork` CLI directly (for running the MCP server manually):
 
 ```bash
-# uv (Recommended)
+# Homebrew
+brew tap unsupervisedcom/deepwork && brew install deepwork
+
+# uv
 uv tool install deepwork
 
 # pipx
@@ -229,11 +214,7 @@ pipx install deepwork
 pip install deepwork
 ```
 
-Then in your project folder (in terminal, not in Claude Code):
-
-```bash
-deepwork install
-```
+Then configure your AI agent CLI to use `deepwork serve` as an MCP server.
 
 </details>
 
@@ -274,5 +255,3 @@ We're iterating fast. [Open an issue](https://github.com/Unsupervisedcom/deepwor
 ---
 
 <sub>Inspired by [GitHub's spec-kit](https://github.com/github/spec-kit)</sub>
-
-**Code Coverage**: 79.91% (as of 2026-02-13)

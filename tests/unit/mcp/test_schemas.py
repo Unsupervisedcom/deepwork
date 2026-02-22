@@ -301,7 +301,6 @@ class TestActiveStepInfo:
         ]
         step_info = ActiveStepInfo(
             session_id="abc123",
-            branch_name="deepwork/test-main-20240101",
             step_id="step1",
             job_dir="/tmp/test_job",
             step_expected_outputs=expected,
@@ -316,7 +315,7 @@ class TestActiveStepInfo:
         )
 
         assert step_info.session_id == "abc123"
-        assert step_info.branch_name == "deepwork/test-main-20240101"
+
         assert step_info.step_id == "step1"
         assert step_info.job_dir == "/tmp/test_job"
         assert len(step_info.step_expected_outputs) == 1
@@ -332,7 +331,6 @@ class TestActiveStepInfo:
         """Test default empty reviews."""
         step_info = ActiveStepInfo(
             session_id="abc123",
-            branch_name="deepwork/test-main-20240101",
             step_id="step1",
             job_dir="/tmp/test_job",
             step_expected_outputs=[
@@ -359,7 +357,6 @@ class TestStartWorkflowResponse:
         response = StartWorkflowResponse(
             begin_step=ActiveStepInfo(
                 session_id="abc123",
-                branch_name="deepwork/test-main-20240101",
                 step_id="step1",
                 job_dir="/tmp/test_job",
                 step_expected_outputs=[
@@ -377,7 +374,7 @@ class TestStartWorkflowResponse:
         )
 
         assert response.begin_step.session_id == "abc123"
-        assert response.begin_step.branch_name == "deepwork/test-main-20240101"
+
         assert response.begin_step.step_id == "step1"
         assert response.begin_step.step_reviews == []
 
@@ -413,7 +410,6 @@ class TestFinishedStepResponse:
             status=StepStatus.NEXT_STEP,
             begin_step=ActiveStepInfo(
                 session_id="abc123",
-                branch_name="deepwork/test-main-20240101",
                 step_id="step2",
                 job_dir="/tmp/test_job",
                 step_expected_outputs=[
@@ -452,6 +448,8 @@ class TestFinishedStepResponse:
 class TestStepProgress:
     """Tests for StepProgress model."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.18.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_new_step(self) -> None:
         """Test new step progress."""
         progress = StepProgress(step_id="step1")
@@ -466,6 +464,8 @@ class TestStepProgress:
 class TestWorkflowSession:
     """Tests for WorkflowSession model."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.18.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_basic_session(self) -> None:
         """Test basic session creation."""
         session = WorkflowSession(
@@ -473,7 +473,6 @@ class TestWorkflowSession:
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
-            branch_name="deepwork/test-main-20240101",
             current_step_id="step1",
             started_at="2024-01-01T00:00:00Z",
         )
@@ -483,6 +482,8 @@ class TestWorkflowSession:
         assert session.status == "active"
         assert session.completed_at is None
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.18.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_to_dict(self) -> None:
         """Test converting session to dict."""
         session = WorkflowSession(
@@ -490,7 +491,6 @@ class TestWorkflowSession:
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
-            branch_name="deepwork/test-main-20240101",
             current_step_id="step1",
             started_at="2024-01-01T00:00:00Z",
         )
@@ -501,6 +501,8 @@ class TestWorkflowSession:
         assert data["session_id"] == "abc123"
         assert data["job_name"] == "test_job"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.18.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict(self) -> None:
         """Test creating session from dict."""
         data = {
@@ -508,7 +510,6 @@ class TestWorkflowSession:
             "job_name": "test_job",
             "workflow_name": "main",
             "goal": "Complete the task",
-            "branch_name": "deepwork/test-main-20240101",
             "current_step_id": "step1",
             "current_entry_index": 0,
             "step_progress": {},

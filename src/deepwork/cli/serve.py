@@ -3,40 +3,12 @@
 from pathlib import Path
 
 import click
-from rich.console import Console
-
-from deepwork.utils.yaml_utils import load_yaml
-
-console = Console()
 
 
 class ServeError(Exception):
     """Exception raised for serve errors."""
 
     pass
-
-
-def _load_config(project_path: Path) -> dict:
-    """Load DeepWork config from project.
-
-    Args:
-        project_path: Path to project root
-
-    Returns:
-        Config dictionary
-
-    Raises:
-        ServeError: If config not found or invalid
-    """
-    config_file = project_path / ".deepwork" / "config.yml"
-    if not config_file.exists():
-        raise ServeError(f"DeepWork not installed in {project_path}. Run 'deepwork install' first.")
-
-    config = load_yaml(config_file)
-    if config is None:
-        config = {}
-
-    return config
 
 
 @click.command()
@@ -106,10 +78,10 @@ def serve(
     try:
         _serve_mcp(path, not no_quality_gate, transport, port, external_runner)
     except ServeError as e:
-        console.print(f"[red]Error:[/red] {e}")
+        click.echo(f"Error: {e}", err=True)
         raise click.Abort() from e
     except Exception as e:
-        console.print(f"[red]Unexpected error:[/red] {e}")
+        click.echo(f"Unexpected error: {e}", err=True)
         raise
 
 
@@ -133,8 +105,9 @@ def _serve_mcp(
     Raises:
         ServeError: If server fails to start
     """
-    # Validate project has DeepWork installed
-    _load_config(project_path)
+    # Ensure .deepwork/tmp/ exists for session state
+    tmp_dir = project_path / ".deepwork" / "tmp"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
 
     # Create and run server
     from deepwork.mcp.server import create_server

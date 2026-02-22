@@ -127,6 +127,8 @@ class TestWorkflowTools:
         """Test WorkflowTools initialization."""
         assert tools.project_root == project_root
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.2.3, REQ-001.2.4, REQ-001.2.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_get_workflows(self, tools: WorkflowTools) -> None:
         """Test getting all workflows."""
         response = tools.get_workflows()
@@ -156,6 +158,8 @@ class TestWorkflowTools:
 
         assert len(response.jobs) == 0
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.3.2, REQ-001.3.3, REQ-001.3.9, REQ-001.3.10, REQ-001.3.11, REQ-001.3.13, REQ-001.3.14).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow(self, tools: WorkflowTools) -> None:
         """Test starting a workflow."""
         input_data = StartWorkflowInput(
@@ -168,7 +172,6 @@ class TestWorkflowTools:
         response = await tools.start_workflow(input_data)
 
         assert response.begin_step.session_id is not None
-        assert "test-instance" in response.begin_step.branch_name
         assert response.begin_step.step_id == "step1"
         assert "Step 1" in response.begin_step.step_instructions
         outputs = response.begin_step.step_expected_outputs
@@ -180,6 +183,8 @@ class TestWorkflowTools:
         assert response.begin_step.step_reviews[0].run_each == "step"
         assert "Output Valid" in response.begin_step.step_reviews[0].quality_criteria
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.3.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow_invalid_job(self, tools: WorkflowTools) -> None:
         """Test starting workflow with invalid job."""
         input_data = StartWorkflowInput(
@@ -191,6 +196,8 @@ class TestWorkflowTools:
         with pytest.raises(ToolError, match="Job not found"):
             await tools.start_workflow(input_data)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.3.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow_auto_selects_single_workflow(self, tools: WorkflowTools) -> None:
         """Test that a wrong workflow name auto-selects when job has one workflow."""
         input_data = StartWorkflowInput(
@@ -203,6 +210,8 @@ class TestWorkflowTools:
         response = await tools.start_workflow(input_data)
         assert response.begin_step.step_id == "step1"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.3.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow_invalid_workflow_multiple(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -265,6 +274,8 @@ workflows:
         with pytest.raises(ToolError, match="Workflow.*not found.*alpha.*beta"):
             await tools.start_workflow(input_data)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_no_session(self, tools: WorkflowTools) -> None:
         """Test finished_step without active session."""
         input_data = FinishedStepInput(outputs={"output1.md": "output1.md"})
@@ -272,6 +283,8 @@ workflows:
         with pytest.raises(StateError, match="No active workflow session"):
             await tools.finished_step(input_data)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.7, REQ-001.4.15, REQ-001.4.17).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_advances_to_next(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -300,6 +313,8 @@ workflows:
         assert response.begin_step.step_instructions is not None
         assert "Step 2" in response.begin_step.step_instructions
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.15, REQ-001.4.16).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_completes_workflow(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -329,6 +344,8 @@ workflows:
         assert "output1.md" in response.all_outputs
         assert "output2.md" in response.all_outputs
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.8, REQ-001.4.14).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_with_quality_gate_pass(
         self, tools_with_quality: WorkflowTools, project_root: Path
     ) -> None:
@@ -350,6 +367,8 @@ workflows:
         # Should advance to next step
         assert response.status == StepStatus.NEXT_STEP
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.8, REQ-001.4.11, REQ-001.4.12).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_with_quality_gate_fail(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -380,6 +399,8 @@ workflows:
         assert response.feedback == "Needs improvement"
         assert response.failed_reviews is not None
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.13).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_quality_gate_max_attempts(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -413,6 +434,8 @@ workflows:
         with pytest.raises(ToolError, match="Quality gate failed after.*attempts"):
             await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}))
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_quality_gate_override(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -448,6 +471,8 @@ workflows:
         # Quality gate should not have been called
         assert len(failing_gate.evaluations) == 0
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.5.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_validates_unknown_output_keys(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -467,6 +492,8 @@ workflows:
                 FinishedStepInput(outputs={"output1.md": "output1.md", "extra.md": "extra.md"})
             )
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.5.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_validates_missing_output_keys(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -482,6 +509,8 @@ workflows:
         with pytest.raises(ToolError, match="Missing required outputs.*output1.md"):
             await tools.finished_step(FinishedStepInput(outputs={}))
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.5.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_allows_omitting_optional_outputs(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -547,6 +576,8 @@ workflows:
 
         assert response.status == StepStatus.WORKFLOW_COMPLETE
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.5.2, REQ-001.5.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_rejects_missing_required_but_not_optional(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -607,6 +638,8 @@ workflows:
                 FinishedStepInput(outputs={"optional_output.md": "optional_output.md"})
             )
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.5.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_accepts_optional_outputs_when_provided(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -669,6 +702,8 @@ workflows:
 
         assert response.status == StepStatus.WORKFLOW_COMPLETE
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.3.13).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_expected_outputs_include_required_field(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -731,6 +766,8 @@ workflows:
         assert required_out.required is True
         assert optional_out.required is False
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.5.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_validates_file_type_must_be_string(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -747,6 +784,8 @@ workflows:
         with pytest.raises(ToolError, match="type 'file'.*single string path"):
             await tools.finished_step(FinishedStepInput(outputs={"output1.md": ["output1.md"]}))
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.5.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_validates_file_existence(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -811,6 +850,8 @@ workflows:
 
         assert response.status == StepStatus.WORKFLOW_COMPLETE
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.5.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_validates_files_type_output(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -864,6 +905,8 @@ workflows:
         with pytest.raises(ToolError, match="type 'files'.*list of paths"):
             await tools.finished_step(FinishedStepInput(outputs={"reports": "report1.md"}))
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.5.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_validates_files_type_existence(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -920,6 +963,8 @@ workflows:
                 FinishedStepInput(outputs={"reports": ["report1.md", "missing.md"]})
             )
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.5.6, REQ-001.5.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_files_type_success(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -1325,6 +1370,8 @@ workflows:
     def tools(self, project_root: Path, state_manager: StateManager) -> WorkflowTools:
         return WorkflowTools(project_root=project_root, state_manager=state_manager)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_with_session_id_not_on_top(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -1365,6 +1412,8 @@ workflows:
         assert top_session.session_id == session_b_id
         assert top_session.current_step_id == "b_step1"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.6.3, REQ-001.6.5, REQ-001.6.6, REQ-001.6.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_abort_workflow_with_session_id(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -1412,6 +1461,8 @@ class TestExternalRunnerSelfReview:
             external_runner=None,
         )
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_self_review_returns_needs_work(
         self, tools_self_review: WorkflowTools, project_root: Path
     ) -> None:
@@ -1428,6 +1479,8 @@ class TestExternalRunnerSelfReview:
         assert response.status == StepStatus.NEEDS_WORK
         assert response.failed_reviews is None  # No actual review results yet
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_self_review_feedback_contains_instructions(
         self, tools_self_review: WorkflowTools, project_root: Path
     ) -> None:
@@ -1446,6 +1499,8 @@ class TestExternalRunnerSelfReview:
         assert "quality_review_override_reason" in response.feedback
         assert ".deepwork/tmp/quality_review_" in response.feedback
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_self_review_writes_instructions_file(
         self, tools_self_review: WorkflowTools, project_root: Path
     ) -> None:
@@ -1462,6 +1517,8 @@ class TestExternalRunnerSelfReview:
         review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
         assert len(review_files) == 1
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_self_review_file_contains_criteria(
         self, tools_self_review: WorkflowTools, project_root: Path
     ) -> None:
@@ -1501,6 +1558,8 @@ class TestExternalRunnerSelfReview:
         assert "output1.md" in content
         assert "UNIQUE_CONTENT_MARKER_12345" not in content
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_self_review_file_named_with_session_and_step(
         self, tools_self_review: WorkflowTools, project_root: Path
     ) -> None:
@@ -1518,6 +1577,8 @@ class TestExternalRunnerSelfReview:
         expected_file = project_root / ".deepwork" / "tmp" / f"quality_review_{session_id}_step1.md"
         assert expected_file.exists()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.9, REQ-001.4.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_self_review_then_override_completes_workflow(
         self, tools_self_review: WorkflowTools, project_root: Path
     ) -> None:
@@ -1543,6 +1604,8 @@ class TestExternalRunnerSelfReview:
         assert resp2.status == StepStatus.NEXT_STEP
         assert resp2.begin_step.step_id == "step2"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_self_review_skipped_for_steps_without_reviews(
         self, tools_self_review: WorkflowTools, project_root: Path
     ) -> None:
@@ -1591,6 +1654,8 @@ class TestExternalRunnerSelfReview:
 class TestExternalRunnerClaude:
     """Tests that external_runner='claude' uses subprocess evaluation (existing behavior)."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.8, REQ-001.4.14).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_claude_runner_calls_quality_gate_evaluate(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -1638,6 +1703,8 @@ class TestExternalRunnerClaude:
         review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
         assert len(review_files) == 0
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.12).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_claude_runner_failing_gate_returns_feedback(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -1664,6 +1731,8 @@ class TestExternalRunnerClaude:
         assert response.failed_reviews is not None
         assert len(response.failed_reviews) == 1
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.11, REQ-001.4.13).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_claude_runner_records_quality_attempts(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -1696,6 +1765,8 @@ class TestExternalRunnerClaude:
 class TestExternalRunnerInit:
     """Tests for external_runner parameter on WorkflowTools initialization."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.1.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_default_external_runner_is_none(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -1706,6 +1777,8 @@ class TestExternalRunnerInit:
         )
         assert tools.external_runner is None
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.1.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_explicit_external_runner(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -1717,6 +1790,8 @@ class TestExternalRunnerInit:
         )
         assert tools.external_runner == "claude"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.1.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_no_quality_gate_no_external_runner_skips_review(
         self, project_root: Path, state_manager: StateManager
     ) -> None:

@@ -120,12 +120,11 @@ ruff check src/    # Linting works
 
 The `.envrc` file contains `use flake`, which tells direnv to load the Nix flake's development shell. This automatically:
 
-1. Creates `.venv/` if it doesn't exist
-2. Installs all dependencies via `uv sync --all-extras`
-3. Adds `.venv/bin` to your PATH
-4. Sets `PYTHONPATH` and `DEEPWORK_DEV=1`
+1. Provides Python 3.11 with all dependencies via Nix
+2. Installs deepwork as an editable uv tool (so `uvx deepwork` uses local source)
+3. Sets `DEEPWORK_DEV=1`
 
-Every time you `cd` into the directory, the environment is ready instantly (venv is reused, deps are cached).
+Every time you `cd` into the directory, the environment is ready instantly.
 
 #### Manual Flake Usage
 
@@ -208,37 +207,32 @@ export DEEPWORK_DEV=1
 
 ## Installing DeepWork Locally
 
-The development version of DeepWork is installed automatically in **editable mode**, meaning changes to source code are reflected immediately without reinstalling.
+The DeepWork plugin's MCP config uses `uvx deepwork serve` to start the MCP server. By default, `uvx` fetches from PyPI — not your local source. To make `uvx deepwork` resolve to your local code, install it as an editable uv tool:
 
 ### With Nix (Automatic)
 
-If you're using the Nix development environment, DeepWork is already installed in editable mode. No additional steps needed.
+The flake's shellHook runs `uv tool install -e .` automatically. Every time you enter the dev shell, `uvx deepwork` points to your local source. No manual steps needed.
 
 ### Without Nix (Manual)
 
-If you set up manually, the `uv sync --all-extras` command installs DeepWork in editable mode automatically.
-
-Alternatively, you can install explicitly:
-
 ```bash
-# Using uv
-uv pip install -e ".[dev]"
-
-# Or using pip
-pip install -e ".[dev]"
+# Install deepwork as an editable uv tool
+uv tool install -e .
 ```
+
+This registers `deepwork` in uv's tool registry pointing at your local checkout. Now `uvx deepwork serve` (what the MCP config runs) uses your development code.
 
 ### Verify Installation
 
 ```bash
-# Check that the deepwork command is available
-deepwork --help
+# Check that uv tool list shows deepwork pointing to your local path
+uv tool list | grep deepwork
 
-# Verify you're using the local development version
-which deepwork  # Should point to .venv/bin/deepwork
+# Verify the CLI works
+uvx deepwork --version
 
-# Check version
-deepwork --version
+# Test the MCP server starts
+uvx deepwork serve --path . --external-runner claude
 ```
 
 ## Installing Pre-Release Versions
@@ -269,56 +263,39 @@ uv tool install --prerelease=allow deepwork
 
 ## Testing Your Local Installation
 
-To test your local DeepWork installation in a real project:
-
-### 1. Create a Test Project
+### 1. Verify `uvx` Uses Local Source
 
 ```bash
-# Outside the deepwork directory
-mkdir ~/test-deepwork-project
-cd ~/test-deepwork-project
-git init
+# Should show deepwork with an editable path to your checkout
+uv tool list | grep deepwork
+
+# Should run your local version
+uvx deepwork --version
 ```
 
-### 2. Install DeepWork in the Test Project
+### 2. Test the MCP Server
 
-Since you installed DeepWork in editable mode, the `deepwork` command uses your local development version:
+The MCP server is DeepWork's core runtime. Test it directly:
 
 ```bash
-# Run the install command
-deepwork install
-
-# Verify installation
-ls -la .deepwork/
-ls -la .claude/
+uvx deepwork serve --path . --external-runner claude
 ```
 
-### 3. Test Your Changes
+### 3. Test with Claude Code
 
-Any changes you make to the DeepWork source code will be immediately reflected:
-
-```bash
-# Make changes in ~/deepwork/src/deepwork/...
-# Then test in your test project
-deepwork install
-
-# Or test the CLI directly
-deepwork --help
-```
-
-### 4. Test with Claude Code
-
-If you have Claude Code installed, you can test the generated skills:
+Install the plugin in a test project and verify the MCP server connects:
 
 ```bash
-# In your test project
+# In a test project with the DeepWork plugin installed
 claude  # Start Claude Code
 
-# Try the generated skills
-/deepwork.define
+# The /deepwork skill should be available
+/deepwork
 ```
 
-### 5. Test a Feature Branch with One-Off Nix Shell
+Any changes you make to `src/deepwork/` are immediately reflected since the editable install points to your source tree.
+
+### 4. Test a Feature Branch with One-Off Nix Shell
 
 You can test a feature branch directly from GitHub without cloning or modifying your local environment. This is useful for:
 - Reviewing someone else's PR
@@ -331,9 +308,6 @@ nix run github:Unsupervisedcom/deepwork/feature-branch-name -- --help
 
 # Enter a development shell with a specific branch
 nix develop github:Unsupervisedcom/deepwork/feature-branch-name
-
-# Run a specific command from a feature branch
-nix develop github:Unsupervisedcom/deepwork/feature-branch-name --command deepwork install
 
 # Test against a specific commit
 nix run github:Unsupervisedcom/deepwork/abc1234 -- --version
@@ -348,9 +322,9 @@ For example, to test a branch named `feat/new-parser`:
 
 ```bash
 # Quick test of the CLI
-nix run github:Unsupervisedcom/deepwork/feat/new-parser -- install --dry-run
+nix run github:Unsupervisedcom/deepwork/feat/new-parser -- --version
 
-# Or enter a full development shell to run tests and run a specific test
+# Or enter a full development shell to run tests
 nix develop github:Unsupervisedcom/deepwork/feat/new-parser --command pytest tests/unit/core/test_parser.py -v
 ```
 
@@ -491,11 +465,9 @@ mypy src/
 ### 4. Test in a Real Project
 
 ```bash
-# Create or use a test project
-cd ~/test-project/
-deepwork install
-
-# Verify your changes work as expected
+# Verify uvx deepwork uses your local source
+uv tool list | grep deepwork
+uvx deepwork serve --path ~/test-project --external-runner claude
 ```
 
 ### 5. Commit Your Changes
@@ -521,31 +493,37 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/) format:
 ```
 deepwork/
 ├── src/deepwork/          # Source code
-│   ├── cli/              # CLI commands (install, etc.)
-│   │   ├── main.py       # Main CLI entry point
-│   │   └── commands/     # Command implementations
+│   ├── cli/              # CLI commands (serve, hook)
+│   │   └── main.py       # Main CLI entry point
 │   ├── core/             # Core functionality
 │   │   ├── parser.py     # Job definition parsing
-│   │   ├── registry.py   # Job registry management
-│   │   ├── detector.py   # Platform detection
-│   │   └── generator.py  # Skill file generation
-│   ├── templates/        # Jinja2 templates for skill generation
-│   │   ├── claude/       # Claude Code templates
-│   │   ├── gemini/       # Gemini templates
-│   │   └── copilot/      # Copilot templates
+│   │   ├── jobs.py       # Job loading and management
+│   │   └── doc_spec_parser.py  # Document spec parsing
+│   ├── mcp/              # MCP server (core runtime)
+│   ├── hooks/            # Hook scripts and wrappers
+│   ├── standard_jobs/    # Built-in job definitions (auto-discovered)
 │   ├── schemas/          # JSON schemas for validation
 │   └── utils/            # Utility modules
 │       ├── fs.py         # File system operations
 │       ├── yaml.py       # YAML operations
 │       ├── git.py        # Git operations
 │       └── validation.py # Validation utilities
+├── platform/             # Shared platform-agnostic content
+│   └── skill-body.md     # Canonical skill body
+├── plugins/
+│   ├── claude/           # Claude Code plugin
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── skills/       # /deepwork skill
+│   │   ├── hooks/        # hooks.json
+│   │   └── .mcp.json     # MCP server config
+│   └── gemini/           # Gemini CLI extension
+├── library/jobs/         # Reusable example jobs
 ├── tests/
-│   ├── unit/             # Unit tests (147 tests)
-│   ├── integration/      # Integration tests (19 tests)
+│   ├── unit/             # Unit tests
+│   ├── integration/      # Integration tests
 │   └── fixtures/         # Test fixtures and sample data
 ├── doc/                  # Documentation
-│   ├── architecture.md   # Comprehensive architecture doc
-│   └── TEMPLATE_REVIEW.md
+│   └── architecture.md   # Comprehensive architecture doc
 ├── flake.nix             # Nix flake for development environment
 ├── pyproject.toml        # Python project configuration
 ├── CLAUDE.md             # Project context for Claude Code
@@ -578,9 +556,8 @@ deepwork/
    - Add docstrings to new functions/classes
 
 5. **Test in a real project**:
-   - Create a test project
-   - Run `deepwork install`
-   - Verify the feature works end-to-end
+   - Verify `uvx deepwork serve` uses your local version
+   - Test the MCP server and plugin end-to-end
 
 ### Creating a Pull Request
 
@@ -680,11 +657,12 @@ uv sync --all-extras
 uv sync --all-extras
 ```
 
-### Issue: Changes not reflected
-**Solution**: Verify editable install with uv:
+### Issue: `uvx deepwork` uses PyPI version instead of local source
+**Solution**: Install as an editable uv tool:
 ```bash
-uv pip list | grep deepwork
-# Should show: deepwork (editable) with path to your local directory
+uv tool install -e .
+# Verify it points to your local path
+uv tool list | grep deepwork
 ```
 
 ### Issue: Nix environment not loading
@@ -695,11 +673,11 @@ nix --version
 # experimental-features = nix-command flakes
 ```
 
-### Issue: Old venv causing conflicts
-**Solution**: Remove and let Nix recreate it:
+### Issue: Stale uv tool install
+**Solution**: Reinstall the editable tool:
 ```bash
-rm -rf .venv
-nix develop  # Will recreate .venv automatically
+uv tool uninstall deepwork
+uv tool install -e .
 ```
 
 ## License

@@ -3,7 +3,7 @@
 These tests validate that DeepWork MCP-based workflows work correctly.
 The tests can run in two modes:
 
-1. **MCP tools mode** (default): Tests MCP skill generation and workflow tools
+1. **MCP tools mode** (default): Tests MCP workflow tools directly
 2. **Full e2e mode**: Actually executes workflows with Claude Code via MCP
 
 Set ANTHROPIC_API_KEY and DEEPWORK_E2E_FULL=true to run full e2e tests.
@@ -17,8 +17,6 @@ from pathlib import Path
 
 import pytest
 
-from deepwork.core.adapters import ClaudeAdapter
-from deepwork.core.generator import SkillGenerator
 from deepwork.mcp.state import StateManager
 from deepwork.mcp.tools import WorkflowTools
 
@@ -56,95 +54,116 @@ def run_full_e2e() -> bool:
     )
 
 
-class TestMCPSkillGeneration:
-    """Tests for MCP entry point skill generation."""
+class TestPluginSkillStructure:
+    """Tests for plugin-provided skill file structure."""
 
-    def test_generate_deepwork_skill_in_temp_project(self) -> None:
-        """Test generating the /deepwork MCP skill in a realistic project structure."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            project_dir = Path(tmpdir)
+    def test_claude_plugin_skill_exists(self) -> None:
+        """Test that the Claude plugin skill file exists."""
+        plugin_skill = (
+            Path(__file__).parent.parent.parent
+            / "plugins"
+            / "claude"
+            / "skills"
+            / "deepwork"
+            / "SKILL.md"
+        )
+        assert plugin_skill.exists(), f"Plugin skill not found at {plugin_skill}"
 
-            # Set up project structure
-            deepwork_dir = project_dir / ".deepwork" / "jobs"
-            deepwork_dir.mkdir(parents=True)
+    def test_claude_plugin_skill_structure(self) -> None:
+        """Test that the Claude plugin skill has the expected structure."""
+        plugin_skill = (
+            Path(__file__).parent.parent.parent
+            / "plugins"
+            / "claude"
+            / "skills"
+            / "deepwork"
+            / "SKILL.md"
+        )
+        content = plugin_skill.read_text()
 
-            # Copy fruits job fixture (for job discovery testing)
-            fixtures_dir = Path(__file__).parent.parent / "fixtures" / "jobs" / "fruits"
-            shutil.copytree(fixtures_dir, deepwork_dir / "fruits")
+        # Check YAML frontmatter
+        assert content.startswith("---")
+        assert "name: deepwork" in content
 
-            # Initialize git repo (required for some operations)
-            subprocess.run(["git", "init"], cwd=project_dir, capture_output=True)
-            subprocess.run(
-                ["git", "config", "user.email", "test@test.com"],
-                cwd=project_dir,
-                capture_output=True,
-            )
-            subprocess.run(
-                ["git", "config", "user.name", "Test"],
-                cwd=project_dir,
-                capture_output=True,
-            )
+        # Check MCP tool references
+        assert "get_workflows" in content
+        assert "start_workflow" in content
+        assert "finished_step" in content
 
-            # Generate MCP entry point skill
-            generator = SkillGenerator()
-            adapter = ClaudeAdapter(project_root=project_dir)
+        # Check structure sections
+        assert "# DeepWork" in content
+        assert "MCP" in content
 
-            claude_dir = project_dir / ".claude"
-            claude_dir.mkdir()
+    def test_gemini_plugin_skill_exists(self) -> None:
+        """Test that the Gemini plugin skill file exists."""
+        plugin_skill = (
+            Path(__file__).parent.parent.parent
+            / "plugins"
+            / "gemini"
+            / "skills"
+            / "deepwork"
+            / "SKILL.md"
+        )
+        assert plugin_skill.exists(), f"Plugin skill not found at {plugin_skill}"
 
-            skill_path = generator.generate_deepwork_skill(adapter, claude_dir)
+    def test_gemini_plugin_skill_structure(self) -> None:
+        """Test that the Gemini plugin skill has TOML frontmatter."""
+        plugin_skill = (
+            Path(__file__).parent.parent.parent
+            / "plugins"
+            / "gemini"
+            / "skills"
+            / "deepwork"
+            / "SKILL.md"
+        )
+        content = plugin_skill.read_text()
 
-            # Validate skill was generated
-            assert skill_path.exists()
-            expected_path = claude_dir / "skills" / "deepwork" / "SKILL.md"
-            assert skill_path == expected_path
+        # Check TOML frontmatter
+        assert content.startswith("+++")
+        assert 'name = "deepwork"' in content
 
-    def test_deepwork_skill_structure(self) -> None:
-        """Test that the generated /deepwork skill has the expected structure."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            project_dir = Path(tmpdir)
-            claude_dir = project_dir / ".claude"
-            claude_dir.mkdir(parents=True)
+        # Check MCP tool references (body should be same)
+        assert "get_workflows" in content
+        assert "start_workflow" in content
+        assert "finished_step" in content
 
-            generator = SkillGenerator()
-            adapter = ClaudeAdapter(project_root=project_dir)
-            skill_path = generator.generate_deepwork_skill(adapter, claude_dir)
+    def test_plugin_json_exists(self) -> None:
+        """Test that the Claude plugin.json exists and is valid."""
+        import json
 
-            content = skill_path.read_text()
+        plugin_json = (
+            Path(__file__).parent.parent.parent
+            / "plugins"
+            / "claude"
+            / ".claude-plugin"
+            / "plugin.json"
+        )
+        assert plugin_json.exists()
 
-            # Check frontmatter
-            assert "---" in content
-            assert "name: deepwork" in content
+        data = json.loads(plugin_json.read_text())
+        assert data["name"] == "deepwork"
+        assert "version" in data
 
-            # Check MCP tool references
-            assert "get_workflows" in content
-            assert "start_workflow" in content
-            assert "finished_step" in content
+    def test_plugin_mcp_json_exists(self) -> None:
+        """Test that the plugin .mcp.json exists and is valid."""
+        import json
 
-            # Check structure sections
-            assert "# DeepWork" in content
-            assert "MCP" in content
+        mcp_json = Path(__file__).parent.parent.parent / "plugins" / "claude" / ".mcp.json"
+        assert mcp_json.exists()
 
-    def test_deepwork_skill_mcp_instructions(self) -> None:
-        """Test that the /deepwork skill properly instructs use of MCP tools."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            project_dir = Path(tmpdir)
-            claude_dir = project_dir / ".claude"
-            claude_dir.mkdir(parents=True)
+        data = json.loads(mcp_json.read_text())
+        assert "mcpServers" in data
+        assert "deepwork" in data["mcpServers"]
+        assert data["mcpServers"]["deepwork"]["command"] == "uvx"
 
-            generator = SkillGenerator()
-            adapter = ClaudeAdapter(project_root=project_dir)
-            skill_path = generator.generate_deepwork_skill(adapter, claude_dir)
+    def test_platform_skill_body_exists(self) -> None:
+        """Test that the shared platform skill body exists."""
+        skill_body = Path(__file__).parent.parent.parent / "platform" / "skill-body.md"
+        assert skill_body.exists()
 
-            content = skill_path.read_text()
-
-            # Should instruct to use MCP tools, not read files
-            assert "MCP" in content
-            assert "tool" in content.lower()
-
-            # Should describe the workflow execution flow
-            assert "start_workflow" in content
-            assert "finished_step" in content
+        content = skill_body.read_text()
+        assert "get_workflows" in content
+        assert "start_workflow" in content
 
 
 class TestMCPWorkflowTools:
@@ -191,6 +210,8 @@ class TestMCPWorkflowTools:
         # Cleanup
         shutil.rmtree(tmpdir, ignore_errors=True)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.2.3, REQ-001.2.4, REQ-001.2.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_get_workflows_returns_jobs(self, project_with_job: Path) -> None:
         """Test that get_workflows returns available jobs and workflows."""
         state_manager = StateManager(project_with_job)
@@ -213,6 +234,8 @@ class TestMCPWorkflowTools:
         assert full_workflow.name == "full"
         assert full_workflow.summary is not None
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.3.8, REQ-001.3.10, REQ-001.3.11).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow_creates_session(self, project_with_job: Path) -> None:
         """Test that start_workflow creates a new workflow session."""
         state_manager = StateManager(project_with_job)
@@ -239,15 +262,14 @@ class TestMCPWorkflowTools:
 
         # Should return session info
         assert response.begin_step.session_id is not None
-        assert response.begin_step.branch_name is not None
-        assert "deepwork" in response.begin_step.branch_name.lower()
-        assert "fruits" in response.begin_step.branch_name.lower()
 
         # Should return first step instructions
         assert response.begin_step.step_id is not None
         assert response.begin_step.step_instructions is not None
         assert len(response.begin_step.step_instructions) > 0
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.7, REQ-001.4.17).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_workflow_step_progression(self, project_with_job: Path) -> None:
         """Test that finished_step progresses through workflow steps."""
         state_manager = StateManager(project_with_job)
@@ -340,16 +362,36 @@ class TestClaudeCodeMCPExecution:
             capture_output=True,
         )
 
-        # Generate /deepwork skill
-        generator = SkillGenerator()
-        adapter = ClaudeAdapter(project_root=project_dir)
+        # Create skill and MCP config directly (no generator needed)
+        import json
 
         claude_dir = project_dir / ".claude"
         claude_dir.mkdir()
-        generator.generate_deepwork_skill(adapter, claude_dir)
 
-        # Register MCP server
-        adapter.register_mcp_server(project_dir)
+        skills_dir = claude_dir / "skills" / "deepwork"
+        skills_dir.mkdir(parents=True)
+
+        # Copy plugin skill content
+        plugin_skill = (
+            Path(__file__).parent.parent.parent
+            / "plugins"
+            / "claude"
+            / "skills"
+            / "deepwork"
+            / "SKILL.md"
+        )
+        shutil.copy2(plugin_skill, skills_dir / "SKILL.md")
+
+        # Write MCP config
+        mcp_config = {
+            "mcpServers": {
+                "deepwork": {
+                    "command": "deepwork",
+                    "args": ["serve", "--path", ".", "--external-runner", "claude"],
+                }
+            }
+        }
+        (project_dir / ".mcp.json").write_text(json.dumps(mcp_config, indent=2))
 
         yield project_dir
 

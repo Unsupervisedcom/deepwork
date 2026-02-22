@@ -1,0 +1,9 @@
+{
+  "name": "deepwork",
+  "description": "Framework for AI-powered multi-step workflows with quality gates",
+  "version": "0.8.0",
+  "author": {
+    "name": "DeepWork"
+  },
+  "repository": "https://github.com/Unsupervisedcom/deepwork"
+}

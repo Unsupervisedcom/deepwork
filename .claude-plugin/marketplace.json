@@ -9,6 +9,19 @@
   },
   "plugins": [
     {
+      "name": "deepwork",
+      "description": "Framework for AI-powered multi-step workflows with quality gates",
+      "version": "0.8.0",
+      "source": "./plugins/claude",
+      "author": {
+        "name": "DeepWork"
+      },
+      "category": "workflow",
+      "keywords": ["workflow", "automation", "quality-gates", "multi-step", "planning"],
+      "repository": "https://github.com/Unsupervisedcom/deepwork",
+      "license": "BSL-1.1"
+    },
+    {
       "name": "learning-agents",
       "description": "Auto-improving AI sub-agents that learn from their mistakes across sessions",
       "version": "0.1.0",

@@ -67,6 +67,8 @@ class TestRealClaudeIntegration:
     actual Claude Code CLI. If you mock them, you defeat their entire purpose.
     """
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.2.1, REQ-004.2.4, REQ-004.9.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_real_claude_evaluates_passing_criteria(self, project_root: Path) -> None:
         """Test that real Claude CLI correctly evaluates passing criteria.
 
@@ -107,6 +109,8 @@ class TestRealClaudeIntegration:
             assert len(result.criteria_results) > 0
             pytest.skip(f"Model returned fail (may be model variability): {result.feedback}")
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.2.1, REQ-004.2.4, REQ-004.9.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_real_claude_evaluates_failing_criteria(self, project_root: Path) -> None:
         """Test that real Claude CLI correctly identifies missing criteria.
 
