@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-exec claude --plugin-dir "$(dirname "$0")/plugins/claude" --plugin-dir "$(dirname "$0")/learning_agents" "$@"

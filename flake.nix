@@ -21,6 +21,17 @@
             config.allowUnfree = true;
           };
         in
+        let
+          claude-code = claude-code-nix.packages.${system}.default;
+          # Wrapper that auto-loads project plugin dirs.
+          # References the real binary by store path to avoid circular PATH lookup.
+          claude-wrapper = pkgs.writeShellScriptBin "claude" ''
+            exec ${claude-code}/bin/claude \
+              --plugin-dir "$(git rev-parse --show-toplevel)/plugins/claude" \
+              --plugin-dir "$(git rev-parse --show-toplevel)/learning_agents" \
+              "$@"
+          '';
+        in
         {
           default = pkgs.mkShell {
             packages = [
@@ -28,7 +39,7 @@
               pkgs.uv
               pkgs.git
               pkgs.jq
-              claude-code-nix.packages.${system}.default
+              claude-wrapper
               pkgs.gh
             ];
 
