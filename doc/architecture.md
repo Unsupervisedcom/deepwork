@@ -972,7 +972,7 @@ DeepWork includes an MCP (Model Context Protocol) server that provides an altern
 
 The FastMCP server definition that:
 - Creates and configures the MCP server instance
-- Registers the workflow tools and the `review` tool
+- Registers the workflow tools and the `get_review_instructions` tool
 - Provides server instructions for agents
 
 ### Tools (`tools.py`)
@@ -1019,7 +1019,7 @@ Aborts the current workflow and returns to the parent (if nested).
 
 **Returns**: Aborted workflow info, resumed parent info (if any), current stack
 
-#### 5. `review`
+#### 5. `get_review_instructions`
 Runs the `.deepreview`-based code review pipeline. Registered directly in `server.py` (not in `tools.py`) since it operates outside the workflow lifecycle.
 
 **Parameters**:

@@ -13,9 +13,9 @@ If the user is asking to **configure, create, or modify** review rules (e.g., "a
 
 ## How to Run
 
-1. Call the `mcp__deepwork__review` tool:
+1. Call the `mcp__deepwork__get_review_instructions` tool:
    - No arguments needed to review the current branch's changes (detects via git diff).
-   - To review specific files, pass `files`: `mcp__deepwork__review(files=["src/app.py", "src/lib.py"])`
+   - To review specific files, pass `files`: `mcp__deepwork__get_review_instructions(files=["src/app.py", "src/lib.py"])`
 2. The output will list review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields — these map directly to the Task tool parameters. Launch all of them as parallel Task agents.
 3. Collect the results from all review agents.
 
@@ -28,6 +28,6 @@ For each finding from the review agents:
 
 ## Iterate
 
-After making any changes, run the review again by calling `mcp__deepwork__review` with no arguments.
+After making any changes, run the review again by calling `mcp__deepwork__get_review_instructions` with no arguments.
 
 Repeat the full cycle (run → act on results → run again) until a clean run produces no further actionable findings. Note that you don't have to run EVERY task the above outputs after the first time - you can just run the ones that match up to ones that had feedback last time. If you made very large changes, it may be a good idea to run the full reviews set.

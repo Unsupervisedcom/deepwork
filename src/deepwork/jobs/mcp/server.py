@@ -236,9 +236,9 @@ def create_server(
             "changes via git diff against the main branch."
         )
     )
-    def review(files: list[str] | None = None) -> str:
+    def get_review_instructions(files: list[str] | None = None) -> str:
         """Run review pipeline on changed files."""
-        _log_tool_call("review", {"files": files})
+        _log_tool_call("get_review_instructions", {"files": files})
         try:
             return run_review(project_path, review_platform, files)
         except ReviewToolError as e:

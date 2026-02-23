@@ -41,7 +41,7 @@ class TestReviewSkill:
     def test_instructs_to_call_review_mcp_tool(self) -> None:
         """REQ-007.1.4: skill tells agent to call the review MCP tool."""
         content = self.skill_path.read_text(encoding="utf-8")
-        assert "mcp__deepwork__review" in content
+        assert "mcp__deepwork__get_review_instructions" in content
 
     def test_instructs_parallel_tasks(self) -> None:
         """REQ-007.1.5: skill tells agent to launch tasks in parallel."""
@@ -105,7 +105,7 @@ class TestConfigureReviewsSkill:
     def test_instructs_to_test_changes(self) -> None:
         """REQ-007.2.6: skill tells agent to test by calling the review MCP tool."""
         content = self.skill_path.read_text(encoding="utf-8")
-        assert "mcp__deepwork__review" in content
+        assert "mcp__deepwork__get_review_instructions" in content
 
 
 class TestReferenceDocumentation:

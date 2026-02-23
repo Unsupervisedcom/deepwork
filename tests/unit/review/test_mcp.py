@@ -158,7 +158,7 @@ class TestReviewToolRegistration:
             enable_quality_gate=False,
             platform="claude",
         )
-        assert "review" in server._tool_manager._tools
+        assert "get_review_instructions" in server._tool_manager._tools
 
     def test_review_tool_uses_platform_from_create_server(self, tmp_path: Path) -> None:
         """Platform passed to create_server is used by the review tool."""
@@ -169,7 +169,7 @@ class TestReviewToolRegistration:
             enable_quality_gate=False,
             platform="claude",
         )
-        assert "review" in server._tool_manager._tools
+        assert "get_review_instructions" in server._tool_manager._tools
 
     def test_review_tool_defaults_platform_to_claude(self, tmp_path: Path) -> None:
         """When no platform is passed, review defaults to 'claude'."""
@@ -179,4 +179,4 @@ class TestReviewToolRegistration:
             project_root=tmp_path,
             enable_quality_gate=False,
         )
-        assert "review" in server._tool_manager._tools
+        assert "get_review_instructions" in server._tool_manager._tools
