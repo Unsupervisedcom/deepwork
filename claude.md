@@ -64,7 +64,7 @@ deepwork/
 - **Language**: Python 3.11+
 - **Runtime Dependencies**: PyYAML, Click, jsonschema, FastMCP, Pydantic, aiofiles
 - **Dev Dependencies**: Jinja2, GitPython, Rich, pytest, ruff, mypy
-- **Distribution**: uv/pipx/brew for Python package management
+- **Distribution**: uv/pipx for Python package management
 - **Testing**: pytest with pytest-mock
 - **Linting**: ruff
 - **Type Checking**: mypy

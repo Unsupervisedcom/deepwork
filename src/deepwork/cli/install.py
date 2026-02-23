@@ -2,7 +2,7 @@
 
 # DEPRECATION NOTICE: Remove after June 1st, 2026; details in PR https://github.com/Unsupervisedcom/deepwork/pull/227
 # These commands exist only for backwards compatibility with users who
-# have DeepWork installed globally via brew or uv. By June 1st, 2026,
+# have DeepWork installed globally via uv. By June 1st, 2026,
 # all users should have migrated to the Claude plugin distribution model
 # and these commands can be safely deleted.
 """
@@ -23,13 +23,9 @@ distributed as a Claude Code plugin.
 I have auto-installed the DeepWork plugin in this project for you,
 but you must now uninstall the global CLI install you have previously done.
 
-To uninstall, try BOTH of the following to make sure it is fully removed:
+To uninstall, run:
 
-  brew uninstall deepwork
   uv tool uninstall deepwork
-
-(It's safe to run both — one will succeed and the other will simply
-report that it's not installed.)
 
 Once uninstalled, DeepWork will continue to work automatically as a
 Claude Code plugin whenever you use Claude in a project with DeepWork

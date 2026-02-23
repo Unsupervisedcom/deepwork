@@ -26,7 +26,6 @@ class TestInstallCommandOutput:
 
         assert result.exit_code == 0
         assert "no longer installed" in result.output.lower()
-        assert "brew uninstall deepwork" in result.output
         assert "uv tool uninstall deepwork" in result.output
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.4.8).
@@ -38,7 +37,6 @@ class TestInstallCommandOutput:
             result = runner.invoke(sync)
 
         assert result.exit_code == 0
-        assert "brew uninstall deepwork" in result.output
         assert "uv tool uninstall deepwork" in result.output
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.4.2).

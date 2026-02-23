@@ -56,17 +56,3 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-
-  update-homebrew:
-    needs: publish
-    # Only update homebrew for stable releases, not prereleases (alpha, beta, rc)
-    if: github.event_name == 'release' && !github.event.release.prerelease
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Homebrew formula update
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.DEPLOYER_CI_TOKEN }}
-          repository: Unsupervisedcom/homebrew-deepwork
-          event-type: update-formula
-          client-payload: '{"version": "${{ github.event.release.tag_name }}"}'

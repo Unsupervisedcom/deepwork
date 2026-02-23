@@ -203,9 +203,6 @@ your-project/
 If you prefer to install the `deepwork` CLI directly (for running the MCP server manually):
 
 ```bash
-# Homebrew
-brew tap unsupervisedcom/deepwork && brew install deepwork
-
 # uv
 uv tool install deepwork
 
