@@ -13,10 +13,10 @@ from deepwork.review.config import ReviewRule
 from deepwork.review.matcher import (
     GitDiffError,
     _glob_match,
-    match_rule,
     _relative_to_dir,
     get_changed_files,
     match_files_to_rules,
+    match_rule,
 )
 
 

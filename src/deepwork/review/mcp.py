@@ -12,9 +12,9 @@ from deepwork.review.instructions import write_instruction_files
 from deepwork.review.matcher import (
     GitDiffError,
     format_source_location,
-    match_rule,
     get_changed_files,
     match_files_to_rules,
+    match_rule,
 )
 
 FORMATTERS = {
@@ -59,9 +59,7 @@ def run_review(
 
     if not rules:
         if discovery_errors:
-            warnings = "\n".join(
-                f"  - {e.file_path}: {e.error}" for e in discovery_errors
-            )
+            warnings = "\n".join(f"  - {e.file_path}: {e.error}" for e in discovery_errors)
             return f"No valid .deepreview rules found. Parse errors:\n{warnings}"
         return "No .deepreview configuration files found."
 
@@ -94,9 +92,7 @@ def run_review(
     result = formatter(task_files, project_root)
 
     if discovery_errors:
-        warnings = "\n".join(
-            f"  - {e.file_path}: {e.error}" for e in discovery_errors
-        )
+        warnings = "\n".join(f"  - {e.file_path}: {e.error}" for e in discovery_errors)
         result = f"Warning: Some .deepreview files could not be parsed:\n{warnings}\n\n{result}"
 
     return result
