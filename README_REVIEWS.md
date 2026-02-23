@@ -11,6 +11,47 @@ DeepWork Reviews lets you define automated code review policies using `.deeprevi
 
 The outer agent never needs to load the full context of every review. Each sub-agent gets a self-contained instruction file with just its files and instructions.
 
+## What Files Are Considered "Changed"?
+
+When you run a review without explicit `--files`, DeepWork detects changed files using local git operations. Here's exactly what is and isn't included:
+
+### Included
+
+| Change type | Example | Why it's included |
+|-------------|---------|-------------------|
+| **Committed changes on your branch** | You committed a fix 3 commits ago | `git diff` against the merge-base with `main`/`master` catches all commits since the branch diverged |
+| **Staged but not yet committed** | You ran `git add myfile.py` but haven't committed | A separate `git diff --cached` picks up index changes |
+| **Unstaged modifications to tracked files** | You edited a file but haven't staged it | The working-tree diff against the merge-base includes these |
+
+### Not included
+
+| Change type | Why it's excluded |
+|-------------|-------------------|
+| **Untracked files** (new files never added to git) | `git diff` only operates on tracked files. Run `git add` first, or pass them explicitly with `--files`. |
+| **Deleted files** | The `--diff-filter=ACMR` flag excludes deletions — there's nothing to review in a deleted file. |
+
+### Local-only detection
+
+All detection is local. DeepWork does not fetch from or communicate with any remote (GitHub, GitLab, etc.). This means:
+
+- **Commits pushed to the remote but not fetched locally** won't appear. Run `git fetch` first if your local branch is behind.
+- **Commits that are local but not yet pushed** are fully included — pushing has no effect on what DeepWork sees.
+- In practice, if your local branch is up to date, the changed files match what a GitHub PR would show.
+
+### Overriding detection
+
+You can bypass git diff entirely by providing files explicitly:
+
+```bash
+# Explicit file arguments (highest priority)
+deepwork review --instructions-for claude --files src/app.py --files src/lib.py
+
+# Piped from another command (second priority)
+git diff --name-only HEAD~3 | deepwork review --instructions-for claude
+```
+
+When files are provided explicitly, `--base-ref` is ignored.
+
 ## The `.deepreview` Config File
 
 A `.deepreview` file is YAML. It contains one or more named rules, each with a `match` section (what files to trigger on) and a `review` section (how to review them).

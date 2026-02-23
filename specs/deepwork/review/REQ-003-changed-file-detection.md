@@ -11,10 +11,12 @@ DeepWork Reviews needs to determine which files have changed in order to match t
 1. The system MUST provide a `get_changed_files(project_root, base_ref)` function that returns a list of changed file paths relative to the repository root.
 2. The function MUST use `subprocess.run()` to invoke `git diff --name-only` with appropriate flags.
 3. The function MUST use `--diff-filter=ACMR` to include only Added, Copied, Modified, and Renamed files (excluding Deleted files, since deleted files cannot be reviewed).
-4. The function MUST combine both unstaged changes and staged changes into a single deduplicated list.
-5. Changed file paths MUST be returned relative to the git repository root.
-6. The returned list MUST be sorted alphabetically.
-7. The function MUST raise an error if the `git` command fails (e.g., not a git repository, invalid base ref).
+4. The function MUST combine committed changes on the branch (since diverging from the base ref), unstaged modifications to tracked files, and staged-but-not-committed changes into a single deduplicated list.
+5. The function MUST NOT include untracked files (files never added to git). Only files known to git are detected.
+6. The function MUST operate entirely on local git state. It MUST NOT fetch from or communicate with any remote repository.
+7. Changed file paths MUST be returned relative to the git repository root.
+8. The returned list MUST be sorted alphabetically.
+9. The function MUST raise an error if the `git` command fails (e.g., not a git repository, invalid base ref).
 
 ### REQ-003.2: Base Reference
 
