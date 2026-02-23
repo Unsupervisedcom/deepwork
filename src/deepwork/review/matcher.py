@@ -51,26 +51,63 @@ def get_changed_files(project_root: Path, base_ref: str | None = None) -> list[s
 
 
 def _detect_base_ref(project_root: Path) -> str:
-    """Auto-detect the main branch to use as base ref.
+    """Auto-detect the base branch to diff against.
 
-    Checks for 'main' first, then 'master'. Falls back to 'HEAD'.
+    Queries ``git symbolic-ref refs/remotes/origin/HEAD`` to discover the
+    remote's default branch. This works regardless of whether the default
+    branch is called main, master, develop, trunk, etc.
+
+    Falls back to a hardcoded list (origin/main, origin/master, then local
+    main/master) when the symbolic ref is not set, and finally to HEAD.
+
+    Known limitation: this always resolves to the repository's default
+    branch. It does not handle the case where the current branch is based
+    on another feature branch (i.e. stacked PRs / PRs off other PRs).
+    That would require querying the hosting platform (e.g. GitHub) for the
+    PR's base ref.
 
     Args:
         project_root: Path to the project root.
 
     Returns:
-        Branch name to use as base ref.
+        Git ref string to use as base ref.
     """
-    for branch in ("main", "master"):
+    # Try the remote HEAD symbolic ref first — this is the most reliable
+    # way to find the default branch without hardcoding names.
+    try:
+        result = subprocess.run(
+            ["git", "symbolic-ref", "refs/remotes/origin/HEAD"],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        # Returns e.g. "refs/remotes/origin/main" — strip to "origin/main"
+        full_ref = result.stdout.strip()
+        short_ref = full_ref.removeprefix("refs/remotes/")
+        # Verify the ref actually resolves to a commit
+        subprocess.run(
+            ["git", "rev-parse", "--verify", short_ref],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return short_ref
+    except subprocess.CalledProcessError:
+        pass
+
+    # Fallback: try well-known branch names
+    for ref in ("origin/main", "origin/master", "main", "master"):
         try:
             subprocess.run(
-                ["git", "rev-parse", "--verify", branch],
+                ["git", "rev-parse", "--verify", ref],
                 cwd=project_root,
                 capture_output=True,
                 text=True,
                 check=True,
             )
-            return branch
+            return ref
         except subprocess.CalledProcessError:
             continue
     return "HEAD"
