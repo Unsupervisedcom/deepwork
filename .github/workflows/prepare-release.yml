@@ -111,6 +111,17 @@ jobs:
           # Verify the change
           grep "^version = " pyproject.toml
 
+      - name: Update plugin versions
+        run: |
+          VERSION="${{ inputs.version }}"
+
+          # Update all Claude Code plugin versions
+          for PLUGIN_FILE in $(find . -path '*/.claude-plugin/plugin.json'); do
+            sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$PLUGIN_FILE"
+            echo "Updated $PLUGIN_FILE:"
+            grep '"version"' "$PLUGIN_FILE"
+          done
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
@@ -128,7 +139,7 @@ jobs:
       - name: Commit and push
         run: |
           VERSION="${{ inputs.version }}"
-          git add CHANGELOG.md pyproject.toml uv.lock
+          git add CHANGELOG.md pyproject.toml uv.lock $(find . -path '*/.claude-plugin/plugin.json')
           git commit -m "Release v${VERSION}"
           git push -u origin "release/${VERSION}"
 
@@ -145,6 +156,7 @@ jobs:
 
           ### Changes
           - Updated version in pyproject.toml
+          - Updated plugin versions (Claude Code, Learning Agents)
           - Updated CHANGELOG.md
           - Updated uv.lock
 
