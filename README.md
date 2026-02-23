@@ -128,7 +128,7 @@ Claude will follow the workflow step by step.
 
 **4. All work happens on Git branches** — Every change can be version-controlled and tracked. You can roll-back to prior versions of the skill or keep skills in-sync and up-to-date across your team.
 
-**5. Automated code review** — Define `.deepreview` config files to set up review rules (patterns, strategies, instructions). Run `deepwork review --instructions-for claude` to generate parallel review tasks for your changed files.
+**5. Automated change review** — Define `.deepreview` config files to set up review rules (patterns, strategies, instructions). Run `deepwork review --instructions-for claude` to generate parallel review tasks for your changed files. Works wonderfully for code reviews, but can review non-code files as well.
 
 ---
 
