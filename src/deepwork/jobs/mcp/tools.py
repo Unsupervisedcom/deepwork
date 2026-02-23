@@ -287,11 +287,15 @@ class WorkflowTools:
         """
         jobs, load_errors = self._load_all_jobs()
         job_infos = [self._job_to_info(job) for job in jobs]
+        repair_hint = (
+            "\nThis project likely needs `/deepwork:repair` run to correct the issue"
+            " unless the offending file(s) were changed this session and the agent can fix it directly."
+        )
         error_infos = [
             JobLoadErrorInfo(
                 job_name=e.job_name,
                 job_dir=e.job_dir,
-                error=e.error,
+                error=e.error + repair_hint,
             )
             for e in load_errors
         ]
