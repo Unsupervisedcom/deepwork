@@ -223,7 +223,11 @@ def create_server(
 
     # ---- Review tool (outside the workflow lifecycle) ----
 
-    from deepwork.review.mcp import ReviewToolError, run_review
+    from deepwork.review.mcp import (
+        ReviewToolError,
+        get_configured_reviews as get_configured_reviews_fn,
+        run_review,
+    )
 
     review_platform = platform or "claude"
 
@@ -243,6 +247,24 @@ def create_server(
             return run_review(project_path, review_platform, files)
         except ReviewToolError as e:
             return f"Review error: {e}"
+
+    @mcp.tool(
+        description=(
+            "List all configured review rules from .deepreview files. "
+            "Returns each rule's name, description, and defining file. "
+            "Optional: only_rules_matching_files (list of file paths) to filter "
+            "to rules that would apply to those specific files."
+        )
+    )
+    def get_configured_reviews(
+        only_rules_matching_files: list[str] | None = None,
+    ) -> list[dict[str, str]]:
+        """List configured review rules, optionally filtered by file paths."""
+        _log_tool_call(
+            "get_configured_reviews",
+            {"only_rules_matching_files": only_rules_matching_files},
+        )
+        return get_configured_reviews_fn(project_path, only_rules_matching_files)
 
     return mcp
 

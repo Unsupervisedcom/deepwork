@@ -11,8 +11,8 @@ DeepWork Reviews uses `.deepreview` YAML configuration files to define review ru
 1. A `.deepreview` file MUST be a valid YAML document.
 2. The top-level structure MUST be a mapping of rule names to rule objects.
 3. Rule names MUST match the pattern `^[a-zA-Z0-9_-]+$`.
-4. Each rule object MUST contain exactly two required keys: `match` and `review`.
-5. Rule objects MUST NOT contain additional properties beyond `match` and `review`.
+4. Each rule object MUST contain exactly three required keys: `description`, `match`, and `review`.
+5. Rule objects MUST NOT contain additional properties beyond `description`, `match`, and `review`.
 
 ### REQ-001.2: Match Section
 
@@ -68,7 +68,7 @@ DeepWork Reviews uses `.deepreview` YAML configuration files to define review ru
 ### REQ-001.8: Data Model
 
 1. Each parsed rule MUST be represented as a `ReviewRule` dataclass.
-2. The `ReviewRule` MUST contain: `name` (str), `include_patterns` (list[str]), `exclude_patterns` (list[str]), `strategy` (str), `instructions` (str — resolved text), `agent` (dict[str, str] | None), `all_changed_filenames` (bool), `unchanged_matching_files` (bool), `source_dir` (Path), `source_file` (Path), `source_line` (int).
+2. The `ReviewRule` MUST contain: `name` (str), `description` (str), `include_patterns` (list[str]), `exclude_patterns` (list[str]), `strategy` (str), `instructions` (str — resolved text), `agent` (dict[str, str] | None), `all_changed_filenames` (bool), `unchanged_matching_files` (bool), `source_dir` (Path), `source_file` (Path), `source_line` (int).
 3. The `source_dir` field MUST be set to the directory containing the `.deepreview` file (used for resolving relative glob patterns and file references).
 4. The `source_file` field MUST be set to the path of the `.deepreview` file the rule was parsed from.
 5. The `source_line` field MUST be set to the 1-based line number where the rule name appears in the `.deepreview` file.

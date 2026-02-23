@@ -9,7 +9,13 @@ from pathlib import Path
 from deepwork.review.discovery import load_all_rules
 from deepwork.review.formatter import format_for_claude
 from deepwork.review.instructions import write_instruction_files
-from deepwork.review.matcher import GitDiffError, get_changed_files, match_files_to_rules
+from deepwork.review.matcher import (
+    GitDiffError,
+    _format_source_location,
+    _match_rule,
+    get_changed_files,
+    match_files_to_rules,
+)
 
 FORMATTERS = {
     "claude": format_for_claude,
@@ -81,3 +87,36 @@ def run_review(
     # Step 5: Format output
     formatter = FORMATTERS[platform]
     return formatter(task_files, project_root)
+
+
+def get_configured_reviews(
+    project_root: Path,
+    only_rules_matching_files: list[str] | None = None,
+) -> list[dict[str, str]]:
+    """Return metadata for configured review rules.
+
+    Args:
+        project_root: Absolute path to the project root.
+        only_rules_matching_files: When provided, only return rules whose
+            include/exclude patterns match at least one of these files.
+
+    Returns:
+        List of dicts with ``name``, ``description``, and ``defining_file``.
+    """
+    rules, _errors = load_all_rules(project_root)
+
+    if only_rules_matching_files is not None:
+        rules = [
+            rule
+            for rule in rules
+            if _match_rule(only_rules_matching_files, rule, project_root)
+        ]
+
+    return [
+        {
+            "name": rule.name,
+            "description": rule.description,
+            "defining_file": _format_source_location(rule, project_root),
+        }
+        for rule in rules
+    ]

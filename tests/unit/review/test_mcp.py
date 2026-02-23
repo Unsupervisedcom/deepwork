@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from deepwork.review.config import ReviewRule, ReviewTask
-from deepwork.review.mcp import ReviewToolError, run_review
+from deepwork.review.mcp import ReviewToolError, get_configured_reviews, run_review
 
 
 def _make_rule(tmp_path: Path) -> ReviewRule:
@@ -180,3 +180,100 @@ class TestReviewToolRegistration:
             enable_quality_gate=False,
         )
         assert "get_review_instructions" in server._tool_manager._tools
+
+    def test_get_configured_reviews_tool_is_registered(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.1).
+        """get_configured_reviews is registered on the MCP server."""
+        from deepwork.jobs.mcp.server import create_server
+
+        server = create_server(
+            project_root=tmp_path,
+            enable_quality_gate=False,
+        )
+        assert "get_configured_reviews" in server._tool_manager._tools
+
+
+class TestGetConfiguredReviews:
+    """Tests for the get_configured_reviews adapter function — validates REQ-008."""
+
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_returns_all_rules(self, mock_load: object, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.3, REQ-008.2.1, REQ-008.2.2, REQ-008.2.3).
+        rule1 = _make_rule(tmp_path)
+        rule2 = ReviewRule(
+            name="lint_rule",
+            description="Lint rule description.",
+            include_patterns=["**/*.ts"],
+            exclude_patterns=[],
+            strategy="matches_together",
+            instructions="Lint it.",
+            agent=None,
+            all_changed_filenames=False,
+            unchanged_matching_files=False,
+            source_dir=tmp_path,
+            source_file=tmp_path / ".deepreview",
+            source_line=10,
+        )
+        mock_load.return_value = ([rule1, rule2], [])  # type: ignore[union-attr]
+
+        result = get_configured_reviews(tmp_path)
+        assert len(result) == 2
+        assert result[0]["name"] == "test_rule"
+        assert result[0]["description"] == "Test rule description."
+        assert result[0]["defining_file"] == ".deepreview:1"
+        assert result[1]["name"] == "lint_rule"
+        assert result[1]["defining_file"] == ".deepreview:10"
+
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_returns_empty_when_no_rules(self, mock_load: object, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.3).
+        mock_load.return_value = ([], [])  # type: ignore[union-attr]
+        result = get_configured_reviews(tmp_path)
+        assert result == []
+
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_filters_by_matching_files(self, mock_load: object, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.3.1).
+        py_rule = _make_rule(tmp_path)  # includes **/*.py
+        ts_rule = ReviewRule(
+            name="ts_rule",
+            description="TypeScript rule.",
+            include_patterns=["**/*.ts"],
+            exclude_patterns=[],
+            strategy="individual",
+            instructions="Review TS.",
+            agent=None,
+            all_changed_filenames=False,
+            unchanged_matching_files=False,
+            source_dir=tmp_path,
+            source_file=tmp_path / ".deepreview",
+            source_line=5,
+        )
+        mock_load.return_value = ([py_rule, ts_rule], [])  # type: ignore[union-attr]
+
+        result = get_configured_reviews(tmp_path, only_rules_matching_files=["src/app.py"])
+        assert len(result) == 1
+        assert result[0]["name"] == "test_rule"
+
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_no_filter_returns_all(self, mock_load: object, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.3.2).
+        rule = _make_rule(tmp_path)
+        mock_load.return_value = ([rule], [])  # type: ignore[union-attr]
+
+        result = get_configured_reviews(tmp_path, only_rules_matching_files=None)
+        assert len(result) == 1
+        assert result[0]["name"] == "test_rule"
+
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_discovery_errors_still_return_valid_rules(
+        self, mock_load: object, tmp_path: Path
+    ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.4.1, REQ-008.4.2).
+        rule = _make_rule(tmp_path)
+        errors = ["Error parsing /bad/.deepreview: invalid YAML"]
+        mock_load.return_value = ([rule], errors)  # type: ignore[union-attr]
+
+        result = get_configured_reviews(tmp_path)
+        assert len(result) == 1
+        assert result[0]["name"] == "test_rule"

@@ -8,6 +8,16 @@ python_code_review:
     instructions:
       file: .deepwork/review/python_code_review.md
 
+python_lint:
+  description: "Run ruff (lint + format) and mypy on changed Python files."
+  match:
+    include:
+      - "**/*.py"
+  review:
+    strategy: matches_together
+    instructions:
+      file: .deepwork/review/python_lint.md
+
 requirements_traceability:
   description: "Verify requirements traceability between specs, code, and tests."
   match:

@@ -10,7 +10,7 @@ This document describes the Model Context Protocol (MCP) tools exposed by the De
 
 ## Tools
 
-DeepWork exposes five MCP tools:
+DeepWork exposes six MCP tools:
 
 ### 1. `get_workflows`
 
@@ -152,6 +152,30 @@ This tool operates outside the workflow lifecycle — it can be called independe
 A plain string with one of:
 - An informational message (no rules found, no changed files, no matches)
 - Formatted review task list ready for parallel dispatch
+
+---
+
+### 6. `get_configured_reviews`
+
+List all configured review rules from `.deepreview` files. Returns each rule's name, description, and defining file location. Optionally filters to rules matching specific files.
+
+This tool operates outside the workflow lifecycle — it can be called independently at any time.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `only_rules_matching_files` | `string[] \| null` | No | File paths to filter by. When provided, only rules whose include/exclude patterns match at least one file are returned. When omitted, all rules are returned. |
+
+#### Returns
+
+```typescript
+Array<{
+  name: string;           // Rule name from the .deepreview file
+  description: string;    // Rule description
+  defining_file: string;  // Relative path to .deepreview file with line number (e.g., ".deepreview:1")
+}>
+```
 
 ---
 
@@ -353,6 +377,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
+| 1.6.0 | Added `get_configured_reviews` tool for listing configured review rules without running the full pipeline. Supports optional file-based filtering. |
 | 1.5.0 | Added `get_review_instructions` tool (originally named `review`) for running `.deepreview`-based code reviews via MCP. Added `--platform` CLI option to `serve` command. |
 | 1.4.0 | Added optional `session_id` parameter to `finished_step` and `abort_workflow` for concurrent workflow safety. When multiple workflows are active on the stack, callers can pass the `session_id` (returned in `ActiveStepInfo`) to target the correct session. Fully backward compatible — omitting `session_id` preserves existing top-of-stack behavior. |
 | 1.3.0 | `step_expected_outputs` changed from `string[]` to `ExpectedOutput[]` — each entry includes `name`, `type`, `description`, and `syntax_for_finished_step_tool` so agents know exactly what format to use when calling `finished_step`. |
