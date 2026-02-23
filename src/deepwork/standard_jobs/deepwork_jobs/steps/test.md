@@ -26,7 +26,7 @@ Please describe a specific case you want to run through the workflow - ideally s
 
 ### Step 2: Prepare and Run the Workflow
 
-1. **Prepare clean context** - Before invoking the workflow, consider compacting the conversation history (e.g., using `/compact` in Claude Code) to ensure the workflow starts with clean context focused on the test case.
+1. **Prepare clean context** - Before invoking the workflow, compact the conversation history (e.g., using `/compact` in Claude Code) to ensure the workflow starts with clean context focused on the test case. On platforms without a compact command, summarize the prior context before proceeding.
 
 2. **Start the new workflow** - Use `start_workflow` through the DeepWork MCP server with the job name and workflow name to begin executing the workflow.
 
@@ -44,7 +44,7 @@ After the workflow completes, perform a self-critique of the output. **Only iden
 
 1. **Review the final deliverable** - Read through all outputs produced by the workflow
 
-2. **Identify up to 3 top issues** - Look for problems such as:
+2. **Identify up to 3 top issues** - If more than 3 issues exist, prioritize by user impact — surface issues most likely to affect whether the output is usable or trusted. Look for problems such as:
    - Missing information or sections
    - Formatting issues (layout, structure, readability)
    - Quality problems (vague content, errors, inconsistencies)
@@ -79,7 +79,7 @@ After addressing the identified issues:
 
 ### Step 5: Write Test Feedback
 
-Once the user is satisfied, write a summary of the test run to `.deepwork/tmp/test_feedback.md`. This file is consumed by the iterate step. Include:
+Once the user is satisfied, write a summary of the test run to `.deepwork/tmp/test_feedback.md`. This file is consumed by the iterate step. Write each section as a markdown header (`##`) with 2-5 bullet points beneath it. Keep the total file under 500 words. Include:
 
 1. **Test case description** - What was tested
 2. **Issues found during critique** - The problems identified in Step 3

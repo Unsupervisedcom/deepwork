@@ -35,8 +35,16 @@ Read the dependency analysis, then either create a new rule or extend an existin
    - Add the documentation file path to `match.include` if not already covered by existing patterns
    - Ensure `review.additional_context.unchanged_matching_files` is `true`
    - Do NOT change the existing rule's match patterns for source files unless the analysis specifically recommends it
+   - When updating the instructions text, follow the wide (multi-doc) template in Step 4 to ensure all monitored documents are listed
 
 4. **Write the review instructions**
+
+   Replace bracketed placeholders in the templates below with values from the dependency analysis:
+   - `[doc_path]` — the documentation file path from the analysis
+   - `[doc_path_1]`, `[doc_path_2]` — multiple documentation file paths (for wide rules)
+   - `[watched area description]` — a short description of the source file area (e.g., "src/deepwork/core/")
+
+   Use the narrow (single-doc) template when the analysis recommends a narrow strategy with a single documentation file. Use the wide (multi-doc) template when the analysis recommends a wide strategy or when multiple documents are monitored by one rule.
 
    The review instructions should tell the reviewer to:
    - Read the specified documentation file(s)
@@ -72,6 +80,7 @@ Read the dependency analysis, then either create a new rule or extend an existin
    - Ensure all required fields are present: description, match.include, review.strategy, review.instructions
    - Ensure the rule name follows naming conventions (lowercase, underscores/hyphens)
    - Ensure `unchanged_matching_files: true` is set
+   - If any validation check fails, fix the issue before proceeding. Do not output an invalid `.deepreview` file.
 
 ## Output Format
 

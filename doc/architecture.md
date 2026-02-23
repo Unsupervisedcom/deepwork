@@ -57,7 +57,8 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── claude_hook.sh  # Shell wrapper for Claude Code
 │       │   └── gemini_hook.sh  # Shell wrapper for Gemini CLI
 │       ├── standard_jobs/      # Built-in job definitions
-│       │   └── deepwork_jobs/
+│       │   ├── deepwork_jobs/
+│       │   └── deepwork_reviews/
 │       ├── review/             # DeepWork Reviews system
 │       │   ├── config.py       # .deepreview config parsing + data models
 │       │   ├── discovery.py    # Find .deepreview files in project tree
@@ -79,7 +80,10 @@ deepwork/                       # DeepWork tool repository
 ├── plugins/
 │   ├── claude/                 # Claude Code plugin
 │   │   ├── .claude-plugin/plugin.json
-│   │   ├── skills/deepwork/SKILL.md
+│   │   ├── skills/
+│   │   │   ├── deepwork/SKILL.md
+│   │   │   ├── review/SKILL.md
+│   │   │   └── configure_reviews/SKILL.md
 │   │   ├── hooks/              # hooks.json
 │   │   └── .mcp.json           # MCP server config
 │   └── gemini/                 # Gemini CLI extension
@@ -564,97 +568,46 @@ When all steps are done, remind the user they should:
 DeepWork includes a built-in job called `deepwork_jobs` for managing jobs. It provides:
 
 **Workflows** (multi-step sequences):
-- **`new_job`** workflow: `define` → `review_job_spec` → `implement`
-  - Creates complete job definitions through interactive Q&A, validation, and file generation
-
-**Standalone Skills** (can be run anytime):
-- **`/deepwork_jobs.learn`** - Analyzes conversations to improve job instructions and capture learnings
+- **`new_job`** workflow: `define` → `implement` → `test` → `iterate`
+  - Creates complete job definitions through interactive Q&A, implementation, testing, and refinement
+- **`repair`** workflow: `fix_settings` → `fix_jobs` → `errata`
+  - Cleans up and migrates DeepWork configurations from prior versions
+- **`learn`** workflow: `learn`
+  - Analyzes conversation history to improve job instructions and capture learnings
 
 These are auto-discovered at runtime by the MCP server from the Python package.
 
-### The `/deepwork_jobs.define` Command
+### Standard Job: `deepwork_reviews`
 
-When a user runs `/deepwork_jobs.define` in Claude Code:
+DeepWork includes a built-in job called `deepwork_reviews` for managing `.deepreview` rules. It provides:
 
-**What Happens**:
-1. Claude engages in interactive dialog to gather:
-   - Job name
-   - Job description
-   - List of steps (name, description, inputs, outputs)
-   - Dependencies between steps
+**Workflows**:
+- **`discover_rules`** workflow: `add_deepwork_native_reviews` → `migrate_existing_skills` → `add_documentation_rules` → `add_language_reviews`
+  - Sets up a complete suite of `.deepreview` rules for a project
+- **`add_document_update_rule`** workflow: `analyze_dependencies` → `apply_rule`
+  - Adds a review rule to keep a specific documentation file up-to-date when related source files change
 
-2. Claude creates the job definition file:
-   ```
-   .deepwork/jobs/[job-name]/
-   └── job.yml                    # Job metadata only
-   ```
+### MCP-Based Workflow Execution
 
-3. User then runs `/deepwork_jobs.implement` to:
-   - Generate step instruction files (steps/*.md)
-   - Run `deepwork sync` to generate command files
-   - Install commands to `.claude/commands/`
+Users invoke workflows through the `/deepwork` skill, which uses MCP tools:
 
-4. The workflow is now:
-   ```
-   /deepwork_jobs.define     → Creates job.yml
-   /deepwork_jobs.implement  → Creates steps/*.md and syncs commands
-   ```
+1. `get_workflows` — discovers available workflows from all jobs
+2. `start_workflow` — begins a workflow session, creates a git branch, returns first step instructions
+3. `finished_step` — submits step outputs for quality review, returns next step or completion
+4. `abort_workflow` — cancels the current workflow if it cannot be completed
 
-5. The `/deepwork_jobs.define` command contains:
-   - The job definition YAML schema
-   - Interactive question flow
-   - Job.yml creation logic
+**Example: Creating a New Job**
+```
+User: /deepwork new_job
 
-**Skill File Structure**:
-
-The actual skill file `.claude/skills/deepwork_jobs.define.md` contains:
-
-```markdown
----
-description: Create the job.yml specification file by understanding workflow requirements
----
-
-# deepwork_jobs.define
-
-**Step 1 of 3** in the **deepwork_jobs** workflow
-
-## Instructions
-
-[Detailed instructions for Claude on how to run the interactive wizard...]
-
-## Job Definition Schema
-
-When creating job.yml, use this structure:
-[YAML schema embedded here...]
+→ MCP: start_workflow(job_name="deepwork_jobs", workflow_name="new_job")
+→ Step 1 (define): Interactive Q&A to create job.yml
+→ Step 2 (implement): Generate step instruction files
+→ Step 3 (test): Run the workflow on a real use case
+→ Step 4 (iterate): Refine based on test results
 ```
 
-### The `/deepwork_jobs.implement` Command
-
-Generates step instruction files from job.yml and syncs skills:
-
-```
-User: /deepwork_jobs.implement
-
-Claude: Reading job definition from .deepwork/jobs/competitive_research/job.yml...
-        Generating step instruction files...
-        ✓ Created steps/identify_competitors.md
-        ✓ Created steps/primary_research.md
-        ✓ Created steps/secondary_research.md
-        ✓ Created steps/comparative_report.md
-        ✓ Created steps/positioning.md
-
-        Running deepwork sync...
-        ✓ Generated 5 skill files in .claude/skills/
-
-        New skills available:
-        - /competitive_research.identify_competitors
-        - /competitive_research.primary_research
-        - /competitive_research.secondary_research
-        - /competitive_research.comparative_report
-        - /competitive_research.positioning
-```
-
-### The `/deepwork_jobs.learn` Command
+### The `learn` Workflow
 
 Analyzes conversation history to improve job instructions and capture learnings:
 

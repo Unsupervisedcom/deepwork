@@ -26,12 +26,9 @@ Read all `.deepreview` files in the project. Note which documentation files alre
 
 ### 3. For each unprotected documentation file
 
-Launch the `add_document_update_rule` workflow as a nested workflow (via `start_workflow`) for each documentation file that needs a rule. Pass the file path as the `doc_path` input.
+For each unprotected documentation file, call `start_workflow` directly with `job_name: "deepwork_reviews"`, `workflow_name: "add_document_update_rule"`, and the doc path (relative to the repository root, e.g., `doc/architecture.md`) as the goal. Complete each nested workflow's steps (analyze_dependencies, apply_rule) before starting the next.
 
-**Important**: Run each `add_document_update_rule` invocation in a separate Task agent so they can execute in parallel. Each Task should:
-1. Call `start_workflow` with `job_name: "deepwork_reviews"`, `workflow_name: "add_document_update_rule"`, and the `doc_path` as the goal
-2. Follow the workflow steps (analyze_dependencies, apply_rule)
-3. Complete the nested workflow
+**Note**: Nested workflows are session-scoped MCP calls — do not attempt to run them inside separate Task agents, as MCP session context would not be shared. Run them sequentially from this agent.
 
 ### 4. Review the resulting rules for scope efficiency
 

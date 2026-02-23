@@ -18,7 +18,8 @@ Scan the repository to identify which programming languages are used. Use file e
 - `*.java`, `*.kt` → Java/Kotlin
 - `*.swift` → Swift
 - `*.c`, `*.h`, `*.cpp`, `*.hpp` → C/C++
-- etc.
+
+For other languages not listed, use the same pattern: identify by file extension and include any language with 3 or more files.
 
 Count files per language to gauge significance. Skip languages with only 1-2 files (likely config or tooling, not project code). If the project has no code files, report that and finish.
 
@@ -42,7 +43,7 @@ Check `README.md`, `CONTRIBUTING.md`, `CLAUDE.md`, `AGENTS.md`, and similar file
 
 #### c. Extract conventions from existing code
 
-If the above sources don't provide enough conventions, launch an Explore agent (via a separate Task, one per language) to examine existing code files and extract observable patterns:
+If the above sources don't provide enough conventions, launch an Explore agent (via a separate Task, one per language) to examine existing code files and extract observable patterns. The agent prompt should ask it to examine 10-20 representative files and return a bulleted list of observed patterns covering:
 
 - Naming conventions (camelCase vs snake_case, prefixes, suffixes)
 - Import ordering and grouping
@@ -52,7 +53,7 @@ If the above sources don't provide enough conventions, launch an Explore agent (
 - Comment style and documentation patterns
 - Module/package structure conventions
 
-The agent should look at 10-20 representative files to identify consistent patterns.
+Collect the output and use it directly in drafting the conventions file.
 
 ### 3. Create convention files
 
@@ -69,7 +70,7 @@ Each conventions file should be a concise, actionable reference — not an exhau
 
 ### 4. Create `.deepreview` rules
 
-For each language, add a review rule to the top-level `.deepreview` file. Every language review rule must:
+For each language, add a review rule to the top-level `.deepreview` file. If the `.deepreview` file does not yet exist, create it at the project root. Every language review rule must:
 
 - Use `strategy: individual` (one review per changed file)
 - Have `match.include` patterns targeting that language's file extensions

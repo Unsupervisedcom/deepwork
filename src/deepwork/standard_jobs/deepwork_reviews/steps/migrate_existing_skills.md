@@ -14,7 +14,7 @@ Search the project for skill definitions that appear to be about code review, li
 - `.gemini/skills/` — Gemini CLI custom skills
 - Any other skill directories the project may have
 
-**Only target skills that belong to the project itself** — do not touch skills that come from installed plugins (e.g., the `deepwork` skill, `review` skill, or `configure_reviews` skill from the DeepWork plugin). Plugin-provided skills live in plugin directories and should be left alone.
+**Only target skills that belong to the project itself** — do not touch skills that come from installed plugins (e.g., the `deepwork` skill, `review` skill, or `configure_reviews` skill from the DeepWork plugin). Plugin-provided skills live in plugin directories (e.g., inside a `.claude-plugin/` parent or a cloned plugin repo) and should be left alone. When in doubt, check whether the skill directory is inside a plugin directory.
 
 A skill is a candidate for migration if it:
 - Reviews, lints, or checks code quality
@@ -36,12 +36,12 @@ Read the skill's `SKILL.md` (or equivalent definition file) thoroughly. Understa
 
 #### b. Create the `.deepreview` rule
 
-Translate the skill into a `.deepreview` rule. Add the rule to the top-level `.deepreview` file (or a subdirectory `.deepreview` if the rule is scoped to a specific part of the project).
+Translate the skill into a `.deepreview` rule. Prefer the top-level `.deepreview` file unless the original skill was explicitly scoped to a subdirectory (e.g., only reviewed files under `src/`). In that case, place the rule in a `.deepreview` file at that subdirectory root.
 
 - Use a descriptive rule name derived from the skill name
 - Write clear, complete review instructions that capture everything the skill was doing
 - Choose the appropriate strategy (`individual`, `matches_together`, or `all_changed_files`)
-- If the skill's review instructions are long, put them in a file under `.deepwork/review/` and reference it with `instructions: { file: ... }`
+- If the skill's review instructions exceed roughly 200 words, put them in a file under `.deepwork/review/` and reference it with `instructions: { file: ... }`
 
 #### c. Back up the skill
 

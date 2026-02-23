@@ -72,7 +72,7 @@ ls -la .deepwork/tmp/ 2>/dev/null || echo "No tmp folder"
 
 **Be careful with:**
 - Files that might be in-progress work
-- Anything with recent modification times
+- Anything modified within the last 24 hours
 
 ```bash
 # Clean old queue files
@@ -94,10 +94,10 @@ rm -rf .deepwork/jobs/deepwork_rules/ 2>/dev/null
 
 ### Step 4: Update Config Version
 
-Check `.deepwork/config.yml` for outdated version format:
+Check `.deepwork/config.yml` for outdated version format. If the file does not exist, skip this step.
 
 ```bash
-cat .deepwork/config.yml
+cat .deepwork/config.yml 2>/dev/null || echo "No config.yml found — skipping"
 ```
 
 **Old format:**
@@ -172,27 +172,11 @@ Check for and remove other obsolete files:
 |--------------|-------------|--------|
 | `.deepwork/.last_head_ref` | Git state tracking | Keep (used by MCP) |
 | `.deepwork/.last_work_tree` | Git state tracking | Keep (used by MCP) |
-| `.deepwork/.gitignore` | Ignore patterns | Review and update |
+| `.deepwork/.gitignore` | Ignore patterns | Keep (ensure `tmp/` and `*.backup` are listed) |
 | `.claude/commands/` | Generated commands | Keep (current system) |
 | `.claude/settings.local.json` | Local overrides | Keep (user settings) |
 
-### Step 7: Re-install DeepWork
-
-After all cleanup is complete, re-run `deepwork install` to ensure configurations are current and consistent:
-
-```bash
-deepwork install
-```
-
-**Then verify:**
-1. Check that `.deepwork/config.yml` is valid and up to date
-2. Check that `.claude/skills/deepwork/` does NOT exist (it's provided by the plugin now)
-3. Check that all jobs in `.deepwork/jobs/` have valid `job.yml` files
-4. Run `deepwork install` a second time and confirm the output is clean (no errors or warnings)
-
-If any issues are found, fix them before proceeding. The goal is a clean, working DeepWork installation with no residual problems from the repair process.
-
-### Step 8: Verify Git Status
+### Step 7: Verify Git Status
 
 Check that the cleanup hasn't left untracked garbage:
 

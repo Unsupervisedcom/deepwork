@@ -40,7 +40,8 @@ deepwork/
 │   ├── mcp/              # MCP server (the core runtime)
 │   ├── hooks/            # Hook scripts and wrappers
 │   ├── standard_jobs/    # Built-in job definitions (auto-discovered at runtime)
-│   │   └── deepwork_jobs/
+│   │   ├── deepwork_jobs/
+│   │   └── deepwork_reviews/
 │   ├── schemas/          # Job definition schemas
 │   └── utils/            # Utilities (fs, git, yaml, validation)
 ├── platform/             # Shared platform-agnostic content
@@ -48,7 +49,10 @@ deepwork/
 ├── plugins/
 │   ├── claude/           # Claude Code plugin
 │   │   ├── .claude-plugin/plugin.json
-│   │   ├── skills/deepwork/SKILL.md
+│   │   ├── skills/
+│   │   │   ├── deepwork/SKILL.md
+│   │   │   ├── review/SKILL.md
+│   │   │   └── configure_reviews/SKILL.md
 │   │   ├── hooks/        # hooks.json
 │   │   └── .mcp.json     # MCP server config
 │   └── gemini/           # Gemini CLI extension
@@ -181,7 +185,7 @@ my-project/
 
 ### How to Identify Job Types
 
-- **Standard jobs**: Exist in `src/deepwork/standard_jobs/` (currently: `deepwork_jobs`)
+- **Standard jobs**: Exist in `src/deepwork/standard_jobs/` (currently: `deepwork_jobs`, `deepwork_reviews`)
 - **Library jobs**: Exist in `library/jobs/`
 - **Bespoke jobs**: Exist ONLY in `.deepwork/jobs/` with no corresponding standard_jobs entry
 

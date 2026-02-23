@@ -6,7 +6,7 @@ Examine a documentation file's content and filesystem location to determine whic
 
 ## Task
 
-Given a documentation file path, perform a thorough dependency analysis to identify the source files that the document describes or depends on. Produce a structured analysis that will drive the next step's rule creation.
+Given a documentation file path, perform a dependency analysis covering direct, structural, and behavioral dependencies to identify the source files that the document describes or depends on. Produce a structured analysis that will drive the next step's rule creation.
 
 ### Process
 
@@ -20,6 +20,7 @@ Given a documentation file path, perform a thorough dependency analysis to ident
    - Identify sibling files, parent directories, and nearby related files
    - Use `Glob` and `Grep` to find source files that contain identifiers, functions, classes, or concepts mentioned in the document
    - Search for files that import, reference, or implement what the document describes
+   - Search at least 2 directory levels around the document's location. If more than 20 candidate files are found, consider whether a wide strategy is more appropriate rather than continuing to enumerate individually
 
 3. **Build the dependency list**
    - For each identified source file, note WHY it could affect the document's accuracy
@@ -94,16 +95,18 @@ A markdown document with the full dependency analysis and rule recommendation.
 **Rule name**: [update_<name> or update_documents_relating_to_<desc>]
 
 **Match patterns**:
-```yaml
-include:
-  - "[glob/pattern/1]"
-  - "[glob/pattern/2]"
-  - "[doc_path itself]"
-exclude:    # if needed
-  - "[exclusion pattern]"
-```
+
+    include:
+      - "[glob/pattern/1]"
+      - "[glob/pattern/2]"
+      - "[doc_path itself]"
+    exclude:    # if needed
+      - "[exclusion pattern]"
 
 **Review strategy**: [matches_together or all_changed_files]
+
+> `matches_together` — all matched files in a single review pass (use for most documentation rules).
+> `all_changed_files` — reviewer sees all changed files, not just matched ones (use when the doc describes cross-cutting concerns).
 
 ## Existing Rule Assessment
 

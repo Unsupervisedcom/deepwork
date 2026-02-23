@@ -228,28 +228,24 @@ Configure Model Context Protocol servers:
 
 ## DeepWork Integration
 
-DeepWork integrates with Claude Code by:
+DeepWork integrates with Claude Code through the **plugin system**:
 
-1. **Installing commands** to `.claude/commands/` as markdown files
-2. **Generating hooks** in command frontmatter (YAML format)
-3. **Using dot namespacing** for job.step commands (e.g., `/my_job.step_one`)
-4. **Syncing global hooks** to `.claude/settings.json`
+1. **Plugin installation** adds skills (`/deepwork`, `/deepwork:review`, `/deepwork:configure_reviews`), MCP server config, and hooks
+2. **MCP server** (`uvx deepwork serve`) is the core runtime — all workflow state management happens through MCP tool calls
+3. **Skills** invoke MCP tools (`get_workflows`, `start_workflow`, `finished_step`) to drive multi-step workflows
+4. **Reviews** are configured via `.deepreview` files and run through `get_review_instructions` MCP tool
 
-### Generated Command Structure
+### Plugin Structure
 
-```markdown
----
-description: Step description
-hooks:
-  Stop:
-    - hooks:
-        - type: prompt
-          prompt: Quality validation prompt...
----
-
-# job_name.step_id
-
-Step instructions...
+```
+plugins/claude/
+├── .claude-plugin/plugin.json   # Plugin metadata
+├── skills/
+│   ├── deepwork/SKILL.md        # Main workflow skill
+│   ├── review/SKILL.md          # Run automated reviews
+│   └── configure_reviews/SKILL.md  # Set up review rules
+├── hooks/hooks.json             # Hook configuration
+└── .mcp.json                    # MCP server config (uvx deepwork serve)
 ```
 
 ## References
@@ -257,4 +253,3 @@ Step instructions...
 - [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
 - [Claude Code Settings](https://docs.anthropic.com/en/docs/claude-code/settings)
 - [Claude Code Slash Commands](https://docs.anthropic.com/en/docs/claude-code/slash-commands)
-- DeepWork adapter: `src/deepwork/core/adapters.py`

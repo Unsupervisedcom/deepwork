@@ -1,4 +1,12 @@
+# Prompt Best Practices Review
+
 Review this markdown file as a prompt or instruction file, evaluating it against Anthropic's prompt engineering best practices.
+
+## Judgment
+
+Not every file needs every best practice. Use your judgment — a short, focused instruction for a simple task does not need few-shot examples or XML tags. Evaluate proportionally to the complexity and ambiguity of the task the prompt is trying to accomplish. Do not flag issues for best practices that are irrelevant to the file's purpose.
+
+## Output Format
 
 For each issue found, report:
 1. Location (section or line)
@@ -38,10 +46,6 @@ For each issue found, report:
 - Does it avoid burying critical instructions deep in a wall of text?
 - Does it avoid relying on the AI to infer important constraints?
 
-**Variable and placeholder usage**
+**Variable and placeholder usage** (applies only to prompts that parameterize dynamic inputs)
 - Are dynamic inputs clearly marked with placeholders or template variables?
 - Is it clear what each variable represents?
-
-## Judgment
-
-Not every file needs every best practice. Use your judgment — a short, focused instruction for a simple task does not need few-shot examples or XML tags. Evaluate proportionally to the complexity and ambiguity of the task the prompt is trying to accomplish. Do not flag issues for best practices that are irrelevant to the file's purpose.

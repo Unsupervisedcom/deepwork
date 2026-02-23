@@ -8,12 +8,12 @@ Ensure the project's top-level `.deepreview` file contains the two built-in Deep
 
 ### 1. Read the example review instruction files
 
-Read the example review instruction files shipped with the DeepWork plugin to understand what each rule does:
+Read the example review instruction files shipped with the DeepWork plugin to understand what each rule does. These files are located relative to the DeepWork plugin directory (look in `plugins/claude/example_reviews/` or the installed plugin path):
 
 - `example_reviews/suggest_new_reviews.md` — Instructions for a rule that analyzes changesets and suggests new review rules
 - `example_reviews/prompt_best_practices.md` — Instructions for a rule that reviews prompt/instruction files against Anthropic best practices
 
-These files are the canonical examples. Use them as reference when writing the inline rule instructions below.
+If these files are not found, proceed using the inline YAML examples in steps 3 and 4 below as the canonical reference.
 
 ### 2. Check the existing `.deepreview` file
 
@@ -64,7 +64,7 @@ prompt_best_practices:
       Do not flag issues for best practices that are irrelevant to the file's purpose.
 ```
 
-Adapt the `match.include` patterns to the project if needed — for example, if the project has prompt files in other locations (e.g., `.gemini/`, custom agent directories), add those patterns too. The patterns above are the baseline.
+Adapt the `match.include` patterns to the project if needed. Check for directories containing `.md` files that appear to be AI instruction files (e.g., `.gemini/`, `.cursorrules`, custom agent directories). If found, add those patterns too. You may add both missing rules in a single edit to the `.deepreview` file. The patterns above are the baseline.
 
 ### 4. Add the `suggest_new_reviews` rule (if not present)
 
@@ -105,7 +105,7 @@ Ensure the `.deepreview` file is valid YAML. Ensure both rules have all required
 
 ### deepreview_file
 
-The top-level `.deepreview` file containing both native review rules (alongside any pre-existing rules).
+The top-level `.deepreview` file containing both native review rules (alongside any pre-existing rules). If no changes were required (both rules already existed with correct configuration), still provide the `.deepreview` file path as the output to confirm the check was completed.
 
 ## Quality Criteria
 

@@ -6,7 +6,7 @@ You are reviewing a changeset to determine whether any new DeepWork review rules
 
 1. **Get current rules**: Call `mcp__plugin_deepwork_deepwork__get_configured_reviews` to see all currently configured review rules. Understand what's already covered.
 
-2. **Read the reviews README**: Read `README_REVIEWS.md` in the repository root to understand the full range of review capabilities and rule structures.
+2. **Read the reviews README**: Read `@README_REVIEWS.md` (in the repository root) to understand the full range of review capabilities and rule structures.
 
 3. **Analyze the changeset**: Look at all the changed files. For each change, consider:
    - Did this change introduce a type of issue that a review rule could catch?
@@ -18,7 +18,7 @@ You are reviewing a changeset to determine whether any new DeepWork review rules
    - If it's an **addition to an existing rule's `include` list**: edit the existing rule in-place
    - If the rule needs a dedicated instruction file: create it in `.deepwork/review/`
 
-5. **Output**: List each new rule or modification you made, with its name and description. This is your only deliverable.
+5. **Output**: After writing rules to their files, list each new rule or modification you made, with just its name and description. This summary is your final report.
 
 ## CRITICAL: Be Extremely Conservative
 
