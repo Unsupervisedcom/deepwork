@@ -25,7 +25,7 @@ If the user is asking to **configure, create, or modify** review rules (e.g., "a
    ```bash
    printf '%s\n' src/**/*.py | uvx deepwork review --instructions-for claude
    ```
-2. The output will list review tasks to invoke in parallel. Each task has a Name, Agent, and prompt file. Launch all of them as parallel Task agents, passing each task's prompt file as the instruction.
+2. The output will list review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields — these map directly to the Task tool parameters. Launch all of them as parallel Task agents.
 3. Collect the results from all review agents.
 
 ## Acting on Results

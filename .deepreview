@@ -1,0 +1,37 @@
+python_code_review:
+  match:
+    include:
+      - "**/*.py"
+  review:
+    strategy: individual
+    instructions:
+      file: .deepwork/review/python_code_review.md
+
+requirements_traceability:
+  match:
+    include:
+      - "**/*"
+  review:
+    strategy: all_changed_files
+    agent:
+      claude: requirements-reviewer
+    instructions: |
+      Review the changed files for requirements traceability.
+
+      This project keeps formal requirements in `specs/` using the naming pattern
+      `REQ-NNN-<topic>.md` with individually numbered requirements (e.g. REQ-001.1).
+      Tests live in `tests/` and reference requirement IDs via docstrings and
+      traceability comments.
+
+      For this review:
+      1. Check that any new or changed end-user functionality has a corresponding
+         requirement in `specs/`.
+      2. Check that every requirement touched by this change has at least one
+         automated test referencing it in `tests/`.
+      3. Flag any test modifications where the underlying requirement did not
+         also change.
+      4. Verify traceability comments are present and correctly reference
+         requirement IDs.
+
+      Produce a structured review with Coverage Gaps, Test Stability Violations,
+      Traceability Issues, and a Summary with PASS/FAIL verdicts.

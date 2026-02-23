@@ -42,7 +42,7 @@ class TestFormatForClaude:
         task = _make_task(rule_name="py_review", files=["src/app.py"])
         file_path = tmp_path / "instructions.md"
         result = format_for_claude([(task, file_path)], tmp_path)
-        assert 'Name: "py_review review of src/app.py"' in result
+        assert 'name: "py_review review of src/app.py"' in result
 
     # REQ-006.3.3a
     def test_grouped_task_name_includes_file_count(self, tmp_path: Path) -> None:
@@ -51,21 +51,28 @@ class TestFormatForClaude:
         )
         file_path = tmp_path / "instructions.md"
         result = format_for_claude([(task, file_path)], tmp_path)
-        assert 'Name: "py_review review of 3 files"' in result
+        assert 'name: "py_review review of 3 files"' in result
 
     # REQ-006.3.3b
-    def test_default_agent_when_none(self, tmp_path: Path) -> None:
+    def test_default_subagent_type_when_no_agent(self, tmp_path: Path) -> None:
         task = _make_task(agent_name=None)
         file_path = tmp_path / "instructions.md"
         result = format_for_claude([(task, file_path)], tmp_path)
-        assert "Agent: Default" in result
+        assert "subagent_type: general-purpose" in result
 
     # REQ-006.3.3b
-    def test_custom_agent_name(self, tmp_path: Path) -> None:
+    def test_custom_subagent_type(self, tmp_path: Path) -> None:
         task = _make_task(agent_name="security-expert")
         file_path = tmp_path / "instructions.md"
         result = format_for_claude([(task, file_path)], tmp_path)
-        assert "Agent: security-expert" in result
+        assert "subagent_type: security-expert" in result
+
+    # REQ-006.3.3c
+    def test_description_field_present(self, tmp_path: Path) -> None:
+        task = _make_task(rule_name="py_review")
+        file_path = tmp_path / "instructions.md"
+        result = format_for_claude([(task, file_path)], tmp_path)
+        assert "description: Review py_review" in result
 
     # REQ-006.3.3c, REQ-006.3.4
     def test_prompt_references_instruction_file(self, tmp_path: Path) -> None:
@@ -84,5 +91,5 @@ class TestFormatForClaude:
         result = format_for_claude(
             [(task_a, file_a), (task_b, file_b)], tmp_path
         )
-        assert 'Name: "rule_a review of a.py"' in result
-        assert 'Name: "rule_b review of b.py"' in result
+        assert 'name: "rule_a review of a.py"' in result
+        assert 'name: "rule_b review of b.py"' in result

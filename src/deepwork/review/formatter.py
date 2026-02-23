@@ -39,14 +39,28 @@ def format_for_claude(
             rel_path = file_path
 
         name = _task_name(task)
-        agent = task.agent_name or "Default"
+        description = _task_description(task)
+        subagent_type = task.agent_name or "general-purpose"
 
-        lines.append(f'Name: "{name}"')
-        lines.append(f"\tAgent: {agent}")
+        lines.append(f'name: "{name}"')
+        lines.append(f"\tdescription: {description}")
+        lines.append(f"\tsubagent_type: {subagent_type}")
         lines.append(f'\tprompt: "@{rel_path}"')
         lines.append("")
 
     return "\n".join(lines)
+
+
+def _task_description(task: ReviewTask) -> str:
+    """Generate a short description for a review task.
+
+    Args:
+        task: The ReviewTask to describe.
+
+    Returns:
+        Short (3-5 word) description string.
+    """
+    return f"Review {task.rule_name}"
 
 
 def _task_name(task: ReviewTask) -> str:

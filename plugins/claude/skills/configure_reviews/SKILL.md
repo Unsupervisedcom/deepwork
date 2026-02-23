@@ -15,6 +15,7 @@ Help the user set up automated code review rules for their project.
 4. Create or update `.deepreview` YAML config files in the appropriate locations in their project
 5. Test your change. Make a small change that should trigger the affected rule, then run `deepwork review --instructions-for claude` and verify that the text includes output referencing your new rule. Be sure to revert the change.
 6. Summarize your changes.
+7. Ask the user if they'd like you to run a review now using the `/review` skill to try out the new configuration.
 
 ## Important
 

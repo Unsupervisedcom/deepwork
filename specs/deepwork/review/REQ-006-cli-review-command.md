@@ -29,10 +29,11 @@ The `deepwork review` CLI command orchestrates the full DeepWork Reviews pipelin
 
 1. When `--instructions-for claude` is specified, the command MUST output to stdout a structured text block that Claude Code can use to dispatch parallel review agents.
 2. The output MUST begin with a line instructing the agent to invoke tasks in parallel.
-3. For each review task, the output MUST include:
-   a. A `Name` field formatted as `"{rule_name} review of {file_or_scope}"` — for `individual` strategy, this is the single filename; for grouped strategies, this is a summary (e.g., `"3 files"` or `"all changed files"`).
-   b. An `Agent` field set to the agent persona name (from the rule's `agent.claude` value) or `"Default"` if no persona is specified.
-   c. A `prompt` field referencing the instruction file path relative to the project root, prefixed with `@` (e.g., `@.deepwork/tmp/review_instructions/7142141.md`).
+3. For each review task, the output MUST include fields matching the Claude Code `Task` tool parameters:
+   a. A `name` field formatted as `"{rule_name} review of {file_or_scope}"` — for `individual` strategy, this is the single filename; for grouped strategies, this is a summary (e.g., `"3 files"` or `"all changed files"`).
+   b. A `description` field with a short (3-5 word) summary for the task (e.g., `"Review {rule_name}"`).
+   c. A `subagent_type` field set to the agent persona name (from the rule's `agent.claude` value) or `"general-purpose"` if no persona is specified.
+   d. A `prompt` field referencing the instruction file path relative to the project root, prefixed with `@` (e.g., `@.deepwork/tmp/review_instructions/7142141.md`).
 4. The instruction file paths MUST be relative to the project root.
 
 ### REQ-006.4: Empty Results
