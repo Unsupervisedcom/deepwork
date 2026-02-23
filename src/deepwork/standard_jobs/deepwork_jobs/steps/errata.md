@@ -10,7 +10,7 @@ Identify and clean up deprecated files and folders.
 
 ### Step 1: Remove Legacy Job Skill Folders
 
-Old DeepWork versions created individual skill folders for each job and step. These need to be removed while preserving the main `deepwork` skill folder.
+Old DeepWork versions created individual skill folders for each job and step. These need to be removed, including the main `deepwork` skill folder (which is now provided by the plugin system and no longer belongs in the repo).
 
 **Process:**
 
@@ -24,7 +24,7 @@ Old DeepWork versions created individual skill folders for each job and step. Th
      - `{job_name}/` - folder named exactly like the job
      - `{job_name}.*/` - folders starting with the job name followed by a period (e.g., `my_job.step1/`, `my_job.step2/`)
    - Remove each matching folder
-   - **Do NOT remove** `.claude/skills/deepwork/` or `.gemini/skills/deepwork/`
+   - **Also remove** `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` — the `deepwork` skill is now provided by the plugin system and should not exist in the repo
    - Report only: what was removed (one line per folder) or "No legacy folders found"
 
    **Example commands for a job named `competitive_research`:**
@@ -38,13 +38,11 @@ Old DeepWork versions created individual skill folders for each job and step. Th
    rm -rf .gemini/skills/competitive_research.*/ 2>/dev/null
    ```
 
-3. **Verify the `deepwork` skill folder remains:**
+3. **Remove the `deepwork` skill folders** (now provided by the plugin):
    ```bash
-   ls -d .claude/skills/deepwork/ 2>/dev/null || echo "ERROR: deepwork skill missing!"
-   ls -d .gemini/skills/deepwork/ 2>/dev/null || echo "WARNING: gemini deepwork skill missing (may not have been installed)"
+   rm -rf .claude/skills/deepwork/ 2>/dev/null
+   rm -rf .gemini/skills/deepwork/ 2>/dev/null
    ```
-
-   **CRITICAL:** The `deepwork` skill folder in `.claude/skills/deepwork/` MUST still exist after cleanup. If it is missing, something went wrong - do NOT proceed and investigate what happened.
 
 **What this removes:**
 ```
@@ -52,14 +50,12 @@ Old DeepWork versions created individual skill folders for each job and step. Th
 ├── competitive_research/     <- REMOVE (legacy job folder)
 ├── competitive_research.discover/  <- REMOVE (legacy step folder)
 ├── competitive_research.analyze/   <- REMOVE (legacy step folder)
-├── deepwork/                 <- KEEP (current MCP entry point)
+├── deepwork/                 <- REMOVE (now provided by plugin)
 └── some_other_job/           <- REMOVE (legacy job folder)
 ```
 
 **Do NOT remove:**
-- `.claude/skills/deepwork/` - This is the current MCP-based skill entry point
-- `.gemini/skills/deepwork/` - Same for Gemini
-- Any skill folders that don't match job names in `.deepwork/jobs/`
+- Any skill folders that don't match job names in `.deepwork/jobs/` (and aren't `deepwork/`)
 
 ### Step 2: Clean Temp Files
 
@@ -190,7 +186,7 @@ deepwork install
 
 **Then verify:**
 1. Check that `.deepwork/config.yml` is valid and up to date
-2. Check that `.claude/skills/deepwork/` exists and contains the expected skill entry point
+2. Check that `.claude/skills/deepwork/` does NOT exist (it's provided by the plugin now)
 3. Check that all jobs in `.deepwork/jobs/` have valid `job.yml` files
 4. Run `deepwork install` a second time and confirm the output is clean (no errors or warnings)
 

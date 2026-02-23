@@ -245,7 +245,7 @@ steps:
         additional_review_guidance: "You should do this in a small number or turns - tee up every data request you need in your first call. Do not invoke sub-agents."
         quality_criteria:
           "Legacy Job Skills Removed": "Legacy skill folders for each job are removed from `.claude/skills/` and `.gemini/skills/`."
-          "Deepwork Skill Preserved": "The `deepwork` skill folder still exists in `.claude/skills/deepwork/`."
+          "Deepwork Skill Removed": "The `deepwork` skill folder has been removed from `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` (now provided by the plugin system)."
           "Rules Folder Removed": "`.deepwork/rules/` folder is gone."
           "Rules Job Removed": "`.deepwork/jobs/deepwork_rules/` is gone."
           "MCP Server Entry Removed": "The `deepwork serve` entry is removed from `.mcp.json` (or the file is deleted if empty)."
