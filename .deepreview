@@ -1,3 +1,18 @@
+prompt_best_practices:
+  description: "Review prompt/instruction markdown files for Anthropic prompt engineering best practices."
+  match:
+    # Add any known prompt files to the include list
+    include:
+      - "**/CLAUDE.md"
+      - "**/AGENTS.md"
+      - ".claude/**/*.md"
+      - ".deepwork/review/*.md"
+      - ".deepwork/jobs/**/*.md"
+  review:
+    strategy: individual
+    instructions:
+      file: .deepwork/review/prompt_best_practices.md
+
 python_code_review:
   description: "Check Python files for code quality, style, and best practices."
   match:
@@ -17,6 +32,18 @@ python_lint:
     strategy: matches_together
     instructions:
       file: .deepwork/review/python_lint.md
+
+suggest_new_reviews:
+  description: "Analyze all changes and suggest new review rules that would catch issues going forward."
+  match:
+    include:
+      - "**/*"
+    exclude:
+      - ".github/**"
+  review:
+    strategy: matches_together
+    instructions:
+      file: .deepwork/review/suggest_new_reviews.md
 
 requirements_traceability:
   description: "Verify requirements traceability between specs, code, and tests."
@@ -57,3 +84,35 @@ requirements_traceability:
 
       Produce a structured review with Coverage Gaps, Test Stability Violations,
       Traceability Issues, and a Summary with PASS/FAIL verdicts.
+
+update_documents_relating_to_src_deepwork:
+  description: "Ensure architecture documentation stays current when DeepWork source files, plugins, or platform content change."
+  match:
+    include:
+      - "src/deepwork/**"
+      - "plugins/**"
+      - "platform/**"
+      - "pyproject.toml"
+      - "doc/architecture.md"
+    exclude:
+      - "**/__pycache__/**"
+  review:
+    strategy: matches_together
+    instructions: |
+      When source files in src/deepwork/, plugins/, or platform/ change, check whether
+      the following documentation files need updating:
+      - doc/architecture.md
+
+      Read each documentation file and compare its content against the changed source
+      files. Pay particular attention to:
+      - Directory tree listings (do they still match the actual filesystem?)
+      - CLI command descriptions (do flags, behavior descriptions still match?)
+      - MCP tool parameters and return values (do they match the implementation?)
+      - Module/class/function descriptions (do they match what the code actually does?)
+      - Dependency lists (does pyproject.toml still match what the doc says?)
+
+      Flag any sections that are now outdated or inaccurate due to the changes.
+      If the documentation file itself was changed, verify the updates are correct
+      and consistent with the source files.
+    additional_context:
+      unchanged_matching_files: true

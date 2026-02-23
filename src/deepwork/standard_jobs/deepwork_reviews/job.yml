@@ -1,0 +1,132 @@
+name: deepwork_reviews
+version: "1.0.1"
+summary: "Manage .deepreview rules for automated code review"
+common_job_info_provided_to_all_steps_at_runtime: |
+  This job manages .deepreview configuration files, which define automated code review
+  rules for DeepWork Reviews. Reviews are triggered when files matching specified glob
+  patterns change in a PR or commit.
+
+  ## .deepreview File Format
+
+  YAML file at the repository root. Each top-level key is a rule name:
+
+  ```yaml
+  rule_name:
+    description: "Short description of what this rule checks."
+    match:
+      include:
+        - "glob/pattern/**"
+      exclude:           # optional
+        - "glob/to/exclude/**"
+    review:
+      strategy: individual | matches_together | all_changed_files
+      instructions: |
+        Inline review instructions for the reviewer.
+      # OR reference an external file:
+      # instructions:
+      #   file: path/to/instructions.md
+      additional_context:   # optional
+        unchanged_matching_files: true   # include matching files even if not changed
+        all_changed_filenames: true      # include list of all changed files
+  ```
+
+  ## Key Concepts
+
+  - **match.include**: Glob patterns that trigger this rule when matched files change
+  - **match.exclude**: Glob patterns to skip (optional)
+  - **strategy**: How to batch reviews:
+    - `individual`: One review per matched file
+    - `matches_together`: All matched files reviewed together
+    - `all_changed_files`: All changed files (not just matched ones) reviewed together
+  - **additional_context.unchanged_matching_files**: When true, the reviewer gets files
+    matching include patterns even if they didn't change in this PR. Critical for
+    document freshness checks — lets the reviewer see the doc even when only source
+    files changed.
+
+  ## Rule Naming Conventions
+
+  - Narrow rules (specific to one doc): `update_<doc_name_without_extension>`
+  - Wide rules (protecting multiple docs): `update_documents_relating_to_<watched_path_description>`
+
+workflows:
+  - name: add_document_update_rule
+    summary: "Add a review rule ensuring a documentation file stays up-to-date when related source files change"
+    steps:
+      - analyze_dependencies
+      - apply_rule
+
+steps:
+  - id: analyze_dependencies
+    name: "Analyze Document Dependencies"
+    description: "Read the documentation file, examine its content and location, and determine which source files could affect its accuracy. Produce a dependency analysis with recommended match patterns and rule strategy."
+    instructions_file: steps/analyze_dependencies.md
+    inputs:
+      - name: doc_path
+        description: "Path to the documentation file to protect with a review rule"
+    outputs:
+      analysis:
+        type: file
+        description: "Dependency analysis documenting which source files affect the doc, recommended match patterns, narrow vs wide strategy decision, and whether an existing rule should be extended"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: analysis
+        additional_review_guidance: |
+          Read the documentation file referenced in the analysis to verify the dependency
+          reasoning. Check the listed source files and glob patterns against the actual
+          filesystem to confirm they make sense. If the analysis recommends extending an
+          existing rule, read the .deepreview file to verify the overlap claim.
+        quality_criteria:
+          "Accurate Dependencies": >
+            The identified source files and directories are ones that could realistically
+            affect the document's accuracy. No important sources are missed and no
+            irrelevant files are included.
+          "Sound Strategy": >
+            The narrow vs wide decision is well-reasoned. Narrow is chosen only when a
+            small number of specific files are involved. Wide is chosen when a directory
+            or hierarchy of files is relevant.
+          "Correct Glob Patterns": >
+            The proposed match patterns correctly capture the identified source files.
+            Patterns use appropriate wildcards and are neither too broad nor too narrow.
+            Any excluded directories are genuinely irrelevant to the document — directories
+            that appear in the document's directory tree listings are NOT excluded.
+          "Existing Rule Assessment": >
+            If recommending to extend an existing rule, the overlap between the existing
+            rule's match patterns and the proposed patterns is genuine and significant.
+            If recommending a new rule, there is no existing rule that substantially overlaps.
+
+  - id: apply_rule
+    name: "Apply Review Rule"
+    description: "Create or update the .deepreview file based on the approved dependency analysis."
+    instructions_file: steps/apply_rule.md
+    inputs:
+      - file: analysis
+        from_step: analyze_dependencies
+    outputs:
+      deepreview_file:
+        type: file
+        description: "The .deepreview configuration file with the new or updated rule"
+        required: true
+    dependencies:
+      - analyze_dependencies
+    reviews:
+      - run_each: deepreview_file
+        additional_review_guidance: |
+          Read the dependency analysis from the previous step to verify the rule
+          faithfully implements the approved plan. Read the documentation file
+          referenced in the rule's instructions. Check the .deepreview file for
+          valid YAML syntax and consistency with existing rules.
+        quality_criteria:
+          "Faithful Implementation": >
+            The rule accurately implements the dependency analysis from the previous
+            step — same match patterns, same strategy, same rule name convention.
+          "Valid Configuration": >
+            The .deepreview YAML is syntactically valid and follows the schema.
+            All required fields (description, match.include, review.strategy,
+            review.instructions) are present.
+          "Effective Instructions": >
+            Review instructions clearly tell the reviewer to check whether the
+            documentation file is still accurate given the source file changes.
+            The documentation file path is explicitly referenced. Uses
+            additional_context.unchanged_matching_files: true so the reviewer
+            can read the doc even when only source files changed.

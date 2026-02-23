@@ -40,7 +40,7 @@ Please describe a specific case you want to run through the workflow - ideally s
 
 ### Step 3: Critique the Output
 
-After the workflow completes, perform a self-critique of the output:
+After the workflow completes, perform a self-critique of the output. **Only identify issues — do not mention things that went well or are working correctly.** The purpose of the critique is to find problems, not to give a balanced review.
 
 1. **Review the final deliverable** - Read through all outputs produced by the workflow
 
@@ -51,9 +51,9 @@ After the workflow completes, perform a self-critique of the output:
    - Misalignment with what the user likely wanted
    - Technical issues (broken links, malformed data, etc.)
 
-3. **Present each issue to the user** with a specific question asking if they want it fixed. For example:
+3. **Present only the issues to the user** with a specific question asking if they want each fixed. Do not pad the critique with positive observations or compliments about what worked. For example:
    ```
-   I noticed a few things we could improve:
+   I noticed a few issues:
 
    1. **Text overlap**: The PDF has some text overlapping images in a few places - shall I correct that?
 

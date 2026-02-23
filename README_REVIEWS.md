@@ -2,6 +2,15 @@
 
 DeepWork Reviews lets you define automated code review policies using `.deepreview` config files placed anywhere in your project. When you run a review, it detects which files changed on your branch, matches them against your rules, and dispatches parallel review agents — each with focused instructions and only the files it needs to see.
 
+## Examples of What You Can Do with DeepWork Reviews
+
+- **Targeted code reviews** — Match files by language or directory so each review rule focuses on the right code (e.g., Python best practices for `**/*.py`, TypeScript linting for `**/*.ts`)
+- **Prompt and instruction file reviews** — Watch your prompt files, agent definitions, and skill instructions for adherence to prompt engineering best practices
+- **Documentation-code sync checks** — Monitor documentation files alongside the code they describe, and flag when one changes without the other
+- **"Gotcha" regression checkers** — Watch a specific file or module for a known class of mistake that has regressed before, with instructions describing exactly what to look for
+- **Cross-file consistency reviews** — Group a logical set of interrelated files (e.g., API schema + client code + tests) so the reviewer can verify that any individual change makes sense in the wider context
+- **Tone and style reviews for human-facing content** — Review copy, docs, blog posts, or marketing pages for consistent voice, reading level, and style guidelines
+
 ## How It Works
 
 1. You create `.deepreview` files that define review rules (what to match, how to review)

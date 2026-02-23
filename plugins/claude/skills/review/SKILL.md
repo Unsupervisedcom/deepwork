@@ -13,11 +13,12 @@ If the user is asking to **configure, create, or modify** review rules (e.g., "a
 
 ## How to Run
 
-1. Call the `mcp__deepwork__get_review_instructions` tool:
+1. First, call `mcp__deepwork__get_configured_reviews` to see what review rules are configured. This returns each rule's name, description, and which `.deepreview` file defines it. If reviewing specific files, pass `only_rules_matching_files` to see only the rules that apply. Share a brief summary of the active rules with the user before proceeding.
+2. Call the `mcp__deepwork__get_review_instructions` tool:
    - No arguments needed to review the current branch's changes (detects via git diff).
    - To review specific files, pass `files`: `mcp__deepwork__get_review_instructions(files=["src/app.py", "src/lib.py"])`
-2. The output will list review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields — these map directly to the Task tool parameters. Launch all of them as parallel Task agents.
-3. Collect the results from all review agents.
+3. The output will list review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields — these map directly to the Task tool parameters. Launch all of them as parallel Task agents.
+4. Collect the results from all review agents.
 
 ## Acting on Results
 
