@@ -42,7 +42,7 @@ from deepwork.hooks.wrapper import (
 class TestHookInput:
     """Tests for HookInput normalization."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.2.3, REQ-006.4.1, REQ-006.4.2, REQ-006.4.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.2.3, DW-REQ-006.4.1, DW-REQ-006.4.2, DW-REQ-006.4.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_claude_stop_event(self) -> None:
         """Test normalizing Claude Stop event."""
@@ -64,7 +64,7 @@ class TestHookInput:
         assert hook_input.cwd == "/project"
         assert hook_input.raw_input == raw_data
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.2.10, REQ-006.4.1, REQ-006.4.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.2.10, DW-REQ-006.4.1, DW-REQ-006.4.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_gemini_after_agent_event(self) -> None:
         """Test normalizing Gemini AfterAgent event."""
@@ -82,7 +82,7 @@ class TestHookInput:
         assert hook_input.event == NormalizedEvent.AFTER_AGENT
         assert hook_input.session_id == "sess456"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.2.5, REQ-006.3.2, REQ-006.4.2, REQ-006.4.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.2.5, DW-REQ-006.3.2, DW-REQ-006.4.2, DW-REQ-006.4.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_claude_pretooluse_event(self) -> None:
         """Test normalizing Claude PreToolUse event."""
@@ -102,7 +102,7 @@ class TestHookInput:
         assert hook_input.tool_name == "write_file"
         assert hook_input.tool_input["file_path"] == "/path/to/file.txt"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.2.11, REQ-006.3.11, REQ-006.4.2, REQ-006.4.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.2.11, DW-REQ-006.3.11, DW-REQ-006.4.2, DW-REQ-006.4.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_gemini_beforetool_event(self) -> None:
         """Test normalizing Gemini BeforeTool event."""
@@ -121,7 +121,7 @@ class TestHookInput:
         assert hook_input.event == NormalizedEvent.BEFORE_TOOL
         assert hook_input.tool_name == "write_file"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.3.1, REQ-006.3.2, REQ-006.3.3, REQ-006.3.4, REQ-006.3.5, REQ-006.3.6, REQ-006.3.7).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.3.1, DW-REQ-006.3.2, DW-REQ-006.3.3, DW-REQ-006.3.4, DW-REQ-006.3.5, DW-REQ-006.3.6, DW-REQ-006.3.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_tool_name_normalization_claude(self) -> None:
         """Test Claude tool names are normalized to snake_case."""
@@ -142,7 +142,7 @@ class TestHookInput:
             hook_input = HookInput.from_dict(raw_data, Platform.CLAUDE)
             assert hook_input.tool_name == expected, f"Expected {expected} for {claude_name}"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.2.3, REQ-006.2.4, REQ-006.2.5, REQ-006.2.6, REQ-006.2.7, REQ-006.2.8, REQ-006.2.9).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.2.3, DW-REQ-006.2.4, DW-REQ-006.2.5, DW-REQ-006.2.6, DW-REQ-006.2.7, DW-REQ-006.2.8, DW-REQ-006.2.9).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_event_normalization_claude(self) -> None:
         """Test all Claude events are normalized correctly."""
@@ -161,7 +161,7 @@ class TestHookInput:
             hook_input = HookInput.from_dict(raw_data, Platform.CLAUDE)
             assert hook_input.event == expected, f"Expected {expected} for {claude_event}"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.2.10, REQ-006.2.11, REQ-006.2.12, REQ-006.2.13, REQ-006.2.14, REQ-006.2.15, REQ-006.2.16, REQ-006.2.17).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.2.10, DW-REQ-006.2.11, DW-REQ-006.2.12, DW-REQ-006.2.13, DW-REQ-006.2.14, DW-REQ-006.2.15, DW-REQ-006.2.16, DW-REQ-006.2.17).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_event_normalization_gemini(self) -> None:
         """Test all Gemini events are normalized correctly."""
@@ -181,7 +181,7 @@ class TestHookInput:
             hook_input = HookInput.from_dict(raw_data, Platform.GEMINI)
             assert hook_input.event == expected, f"Expected {expected} for {gemini_event}"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.4.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.4.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_empty_input(self) -> None:
         """Test handling of empty input."""
@@ -205,7 +205,7 @@ class TestHookInput:
 class TestHookOutput:
     """Tests for HookOutput denormalization."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.5.2, REQ-006.7.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.5.2, DW-REQ-006.7.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_empty_output_produces_empty_json(self) -> None:
         """Test that empty HookOutput produces empty dict.
@@ -217,7 +217,7 @@ class TestHookOutput:
 
         assert result == {}
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.5.4, REQ-006.5.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.5.4, DW-REQ-006.5.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_block_decision_claude(self) -> None:
         """Test blocking output for Claude.
@@ -231,7 +231,7 @@ class TestHookOutput:
         assert result["decision"] == "block"
         assert result["reason"] == "Must complete X first"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.5.3, REQ-006.5.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.5.3, DW-REQ-006.5.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_block_decision_gemini_converts_to_deny(self) -> None:
         """Test that 'block' is converted to 'deny' for Gemini.
@@ -262,7 +262,7 @@ class TestHookOutput:
 
         assert result["decision"] == "allow"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.5.6, REQ-006.5.7).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.5.6, DW-REQ-006.5.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_continue_false(self) -> None:
         """Test continue=false output."""
@@ -272,7 +272,7 @@ class TestHookOutput:
         assert result["continue"] is False
         assert result["stopReason"] == "Critical error"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.5.8).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.5.8).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_suppress_output(self) -> None:
         """Test suppressOutput flag."""
@@ -281,7 +281,7 @@ class TestHookOutput:
 
         assert result["suppressOutput"] is True
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.6.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_context_for_claude_session_start(self) -> None:
         """Test context handling for Claude SessionStart."""
@@ -292,7 +292,7 @@ class TestHookOutput:
         assert result["hookSpecificOutput"]["hookEventName"] == "SessionStart"
         assert result["hookSpecificOutput"]["additionalContext"] == "Additional context here"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.6.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.6.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_context_for_claude_other_events(self) -> None:
         """Test context handling for Claude non-SessionStart events."""
@@ -301,7 +301,7 @@ class TestHookOutput:
 
         assert result["systemMessage"] == "Warning message"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.6.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.6.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_context_for_gemini(self) -> None:
         """Test context handling for Gemini."""
@@ -311,7 +311,7 @@ class TestHookOutput:
         assert "hookSpecificOutput" in result
         assert result["hookSpecificOutput"]["additionalContext"] == "Additional context"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.7.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.7.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raw_output_merged(self) -> None:
         """Test that raw_output is merged into result."""
@@ -328,7 +328,7 @@ class TestHookOutput:
 class TestNormalizeInput:
     """Tests for the normalize_input function."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.4.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.4.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_valid_json(self) -> None:
         """Test normalizing valid JSON input."""
@@ -338,7 +338,7 @@ class TestNormalizeInput:
         assert hook_input.event == NormalizedEvent.AFTER_AGENT
         assert hook_input.session_id == "123"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.4.4, REQ-006.4.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.4.4, DW-REQ-006.4.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_empty_json(self) -> None:
         """Test normalizing empty JSON input."""
@@ -347,7 +347,7 @@ class TestNormalizeInput:
         assert hook_input.session_id == ""
         assert hook_input.event == NormalizedEvent.AFTER_AGENT  # Default
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.4.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.4.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_empty_string(self) -> None:
         """Test normalizing empty string input."""
@@ -355,7 +355,7 @@ class TestNormalizeInput:
 
         assert hook_input.session_id == ""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.4.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.4.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_whitespace_only(self) -> None:
         """Test normalizing whitespace-only input."""
@@ -363,7 +363,7 @@ class TestNormalizeInput:
 
         assert hook_input.session_id == ""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.4.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.4.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_invalid_json(self) -> None:
         """Test normalizing invalid JSON input."""
@@ -383,7 +383,7 @@ class TestNormalizeInput:
 class TestDenormalizeOutput:
     """Tests for the denormalize_output function."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.7.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.7.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_produces_valid_json(self) -> None:
         """Test that output is valid JSON.
@@ -397,7 +397,7 @@ class TestDenormalizeOutput:
         parsed = json.loads(json_str)
         assert parsed["decision"] == "block"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.7.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.7.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_empty_output_produces_empty_object(self) -> None:
         """Test that empty output produces '{}' (allow response).
@@ -413,7 +413,7 @@ class TestDenormalizeOutput:
 class TestEventMappings:
     """Tests for event name mappings."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.2.3, REQ-006.2.4, REQ-006.2.5, REQ-006.2.6, REQ-006.2.7, REQ-006.2.8, REQ-006.2.9).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.2.3, DW-REQ-006.2.4, DW-REQ-006.2.5, DW-REQ-006.2.6, DW-REQ-006.2.7, DW-REQ-006.2.8, DW-REQ-006.2.9).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_all_claude_events_have_normalized_mapping(self) -> None:
         """Test that all Claude events have normalized mappings."""
@@ -430,7 +430,7 @@ class TestEventMappings:
         for event in claude_events:
             assert event in EVENT_TO_NORMALIZED[Platform.CLAUDE], f"Missing mapping for {event}"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.2.10, REQ-006.2.11, REQ-006.2.12, REQ-006.2.13, REQ-006.2.14, REQ-006.2.15, REQ-006.2.16, REQ-006.2.17).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.2.10, DW-REQ-006.2.11, DW-REQ-006.2.12, DW-REQ-006.2.13, DW-REQ-006.2.14, DW-REQ-006.2.15, DW-REQ-006.2.16, DW-REQ-006.2.17).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_all_gemini_events_have_normalized_mapping(self) -> None:
         """Test that all Gemini events have normalized mappings."""
@@ -448,7 +448,7 @@ class TestEventMappings:
         for event in gemini_events:
             assert event in EVENT_TO_NORMALIZED[Platform.GEMINI], f"Missing mapping for {event}"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.2.18).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.2.18).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_normalized_to_event_roundtrip_claude(self) -> None:
         """Test that Claude events can be normalized and denormalized."""
@@ -463,14 +463,14 @@ class TestEventMappings:
 class TestToolMappings:
     """Tests for tool name mappings."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.3.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.3.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_claude_tools_normalize_to_snake_case(self) -> None:
         """Test Claude tool names normalize to snake_case."""
         for _claude_tool, normalized in TOOL_TO_NORMALIZED[Platform.CLAUDE].items():
             assert "_" in normalized or normalized.islower(), f"{normalized} should be snake_case"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.3.11).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.3.11).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_gemini_tools_are_already_snake_case(self) -> None:
         """Test Gemini tool names are already snake_case."""
@@ -521,7 +521,7 @@ class TestToolMappings:
 class TestIntegration:
     """Integration tests for the full normalization flow."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.2.3, REQ-006.5.4, REQ-006.7.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.2.3, DW-REQ-006.5.4, DW-REQ-006.7.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_claude_stop_hook_flow(self) -> None:
         """Test complete flow for Claude Stop hook.
@@ -552,7 +552,7 @@ class TestIntegration:
         assert result["decision"] == "block"
         assert "Rule X" in result["reason"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.2.10, REQ-006.5.3, REQ-006.7.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.2.10, DW-REQ-006.5.3, DW-REQ-006.7.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_gemini_afteragent_hook_flow(self) -> None:
         """Test complete flow for Gemini AfterAgent hook.
@@ -585,7 +585,7 @@ class TestIntegration:
         assert result["decision"] == "deny"
         assert "Rule Y" in result["reason"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.5.3, REQ-006.5.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.5.3, DW-REQ-006.5.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_cross_platform_same_hook_logic(self) -> None:
         """Test that the same hook logic produces correct output for both platforms.
@@ -631,7 +631,7 @@ class TestHookErrorHandling:
     error information rather than causing a generic "non-blocking status code" error.
     """
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.9.1, REQ-006.9.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.9.1, DW-REQ-006.9.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_format_hook_error_basic(self) -> None:
         """Test that format_hook_error produces blocking JSON with error details."""
@@ -644,7 +644,7 @@ class TestHookErrorHandling:
         assert "Something went wrong" in result["reason"]
         assert "Traceback" in result["reason"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.9.1, REQ-006.9.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.9.1, DW-REQ-006.9.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_format_hook_error_with_context(self) -> None:
         """Test that format_hook_error includes context when provided."""
@@ -657,7 +657,7 @@ class TestHookErrorHandling:
         assert "RuntimeError" in result["reason"]
         assert "Test error" in result["reason"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.9.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.9.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_format_hook_error_includes_traceback(self) -> None:
         """Test that format_hook_error includes the full traceback."""
@@ -671,7 +671,7 @@ class TestHookErrorHandling:
         assert "KeyError" in result["reason"]
         assert "missing_key" in result["reason"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.9.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.9.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_output_hook_error_produces_json(self, capsys: object) -> None:
         """Test that output_hook_error writes valid JSON to stdout."""
@@ -686,7 +686,7 @@ class TestHookErrorHandling:
         assert "TypeError" in result["reason"]
         assert "test context" in result["reason"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.10.3, REQ-006.10.4, REQ-006.10.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.10.3, DW-REQ-006.10.4, DW-REQ-006.10.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_run_hook_catches_hook_function_errors(self, capsys: object) -> None:
         """Test that run_hook outputs JSON when hook function raises an exception."""

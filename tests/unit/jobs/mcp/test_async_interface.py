@@ -59,7 +59,7 @@ class TestAsyncInterfaceRegression:
             "StateManager._session_stack must be a list for nested workflow support"
         )
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.3.1, REQ-001.4.1, REQ-001.6.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.1, JOBS-REQ-001.4.1, JOBS-REQ-001.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_workflow_tools_async_methods(self) -> None:
         """Verify WorkflowTools methods that must be async remain async."""

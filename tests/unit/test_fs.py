@@ -10,7 +10,7 @@ from deepwork.utils.fs import copy_dir, ensure_dir, find_files, safe_read, safe_
 class TestEnsureDir:
     """Tests for ensure_dir function."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.2.1, REQ-010.2.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.2.1, DW-REQ-010.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_new_directory(self, temp_dir: Path) -> None:
         """Test that ensure_dir creates a new directory."""
@@ -23,7 +23,7 @@ class TestEnsureDir:
         assert new_dir.is_dir()
         assert result == new_dir
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.2.1, REQ-010.2.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.2.1, DW-REQ-010.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_nested_directories(self, temp_dir: Path) -> None:
         """Test that ensure_dir creates nested directories."""
@@ -36,7 +36,7 @@ class TestEnsureDir:
         assert nested_dir.is_dir()
         assert result == nested_dir
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.2.2, REQ-010.2.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.2.2, DW-REQ-010.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_handles_existing_directory(self, temp_dir: Path) -> None:
         """Test that ensure_dir works with existing directories."""
@@ -60,7 +60,7 @@ class TestEnsureDir:
 class TestSafeWrite:
     """Tests for safe_write function."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.3.2, REQ-010.3.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.3.2, DW-REQ-010.3.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_writes_content_to_file(self, temp_dir: Path) -> None:
         """Test that safe_write writes content to a file."""
@@ -72,7 +72,7 @@ class TestSafeWrite:
         assert file_path.exists()
         assert file_path.read_text() == content
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.3.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.3.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_parent_directories(self, temp_dir: Path) -> None:
         """Test that safe_write creates parent directories."""
@@ -84,7 +84,7 @@ class TestSafeWrite:
         assert file_path.exists()
         assert file_path.read_text() == content
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.3.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.3.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_overwrites_existing_file(self, temp_dir: Path) -> None:
         """Test that safe_write overwrites existing files."""
@@ -107,7 +107,7 @@ class TestSafeWrite:
 class TestSafeRead:
     """Tests for safe_read function."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.4.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.4.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_reads_existing_file(self, temp_dir: Path) -> None:
         """Test that safe_read reads content from existing file."""
@@ -119,7 +119,7 @@ class TestSafeRead:
 
         assert result == content
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.4.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.4.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_none_for_missing_file(self, temp_dir: Path) -> None:
         """Test that safe_read returns None for missing files."""
@@ -139,7 +139,7 @@ class TestSafeRead:
 
         assert result == content
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.4.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.4.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_reads_unicode_content(self, temp_dir: Path) -> None:
         """Test that safe_read handles unicode content."""
@@ -155,7 +155,7 @@ class TestSafeRead:
 class TestCopyDir:
     """Tests for copy_dir function."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.5.1, REQ-010.5.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.5.1, DW-REQ-010.5.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_copies_directory(self, temp_dir: Path) -> None:
         """Test that copy_dir copies a directory."""
@@ -171,7 +171,7 @@ class TestCopyDir:
         assert (dst / "file1.txt").read_text() == "Content 1"
         assert (dst / "file2.txt").read_text() == "Content 2"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.5.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.5.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_copies_nested_directories(self, temp_dir: Path) -> None:
         """Test that copy_dir copies nested directories."""
@@ -186,7 +186,7 @@ class TestCopyDir:
 
         assert (dst / "nested" / "deep" / "file.txt").read_text() == "Nested content"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.5.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.5.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_ignores_patterns(self, temp_dir: Path) -> None:
         """Test that copy_dir ignores specified patterns."""
@@ -206,7 +206,7 @@ class TestCopyDir:
         assert not (dst / "ignore.log").exists()
         assert not (dst / "__pycache__").exists()
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.5.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.5.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_missing_source(self, temp_dir: Path) -> None:
         """Test that copy_dir raises FileNotFoundError for missing source."""
@@ -216,7 +216,7 @@ class TestCopyDir:
         with pytest.raises(FileNotFoundError, match="Source directory does not exist"):
             copy_dir(src, dst)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.5.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.5.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_non_directory_source(self, temp_dir: Path) -> None:
         """Test that copy_dir raises NotADirectoryError for file source."""
@@ -231,7 +231,7 @@ class TestCopyDir:
 class TestFindFiles:
     """Tests for find_files function."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.6.1, REQ-010.6.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.6.1, DW-REQ-010.6.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_finds_files_with_simple_pattern(self, temp_dir: Path) -> None:
         """Test that find_files finds files with simple pattern."""
@@ -245,7 +245,7 @@ class TestFindFiles:
         assert temp_dir / "file1.txt" in results
         assert temp_dir / "file2.txt" in results
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.6.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_finds_files_with_recursive_pattern(self, temp_dir: Path) -> None:
         """Test that find_files finds files recursively."""
@@ -261,7 +261,7 @@ class TestFindFiles:
 
         assert len(results) == 3
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.6.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_sorted_results(self, temp_dir: Path) -> None:
         """Test that find_files returns sorted results."""
@@ -283,7 +283,7 @@ class TestFindFiles:
 
         assert results == []
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.6.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.6.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_missing_directory(self, temp_dir: Path) -> None:
         """Test that find_files raises FileNotFoundError for missing directory."""
@@ -292,7 +292,7 @@ class TestFindFiles:
         with pytest.raises(FileNotFoundError, match="Directory does not exist"):
             find_files(nonexistent, "*.txt")
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.6.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.6.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_non_directory(self, temp_dir: Path) -> None:
         """Test that find_files raises NotADirectoryError for file path."""

@@ -1,4 +1,4 @@
-# REQ-005: CLI Commands
+# DW-REQ-005: CLI Commands
 
 ## Overview
 
@@ -6,14 +6,14 @@ The DeepWork CLI provides two primary commands: `serve` (starts the MCP server) 
 
 ## Requirements
 
-### REQ-005.1: CLI Entry Point
+### DW-REQ-005.1: CLI Entry Point
 
 1. The CLI MUST be a Click group command named `cli`.
 2. The CLI MUST provide a `--version` option sourced from the `deepwork` package version.
 3. The CLI MUST register `serve`, `hook`, `install`, and `sync` as subcommands.
 4. The CLI MUST be callable as `deepwork` from the command line (via package entry point).
 
-### REQ-005.2: serve Command
+### DW-REQ-005.2: serve Command
 
 1. The `serve` command MUST be a Click command.
 2. The `serve` command MUST accept a `--path` option (default: `"."`, must exist, must be a directory).
@@ -28,7 +28,7 @@ The DeepWork CLI provides two primary commands: `serve` (starts the MCP server) 
 11. The `serve` command MUST catch `ServeError` and print a user-friendly error message to stderr, then abort.
 12. The `serve` command MUST propagate other unexpected exceptions.
 
-### REQ-005.3: hook Command
+### DW-REQ-005.3: hook Command
 
 1. The `hook` command MUST be a Click command.
 2. The `hook` command MUST accept a single positional argument `HOOK_NAME`.
@@ -42,7 +42,7 @@ The DeepWork CLI provides two primary commands: `serve` (starts the MCP server) 
 10. `HookError` exceptions MUST be caught and printed to stderr with exit code 1.
 11. Other unexpected exceptions MUST be caught and printed to stderr with exit code 1.
 
-### REQ-005.4: Deprecated install and sync Commands
+### DW-REQ-005.4: Deprecated install and sync Commands
 
 > **SCHEDULED REMOVAL: June 1st, 2026; details in PR https://github.com/Unsupervisedcom/deepwork/pull/227.** These commands exist only for
 > backwards compatibility with users who installed DeepWork globally via

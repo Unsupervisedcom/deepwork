@@ -47,13 +47,13 @@ workflows:
 class TestGetJobFolders:
     """Tests for get_job_folders."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.1.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_default_folders_include_project_jobs(self, tmp_path: Path) -> None:
         folders = get_job_folders(tmp_path)
         assert tmp_path / ".deepwork" / "jobs" in folders
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.3, REQ-008.1.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.1.3, JOBS-REQ-008.1.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_default_folders_include_standard_jobs(self, tmp_path: Path) -> None:
         from deepwork.jobs.discovery import _STANDARD_JOBS_DIR
@@ -61,7 +61,7 @@ class TestGetJobFolders:
         folders = get_job_folders(tmp_path)
         assert _STANDARD_JOBS_DIR in folders
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.5, REQ-008.1.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.1.5, JOBS-REQ-008.1.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_env_var_appends_folders(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv(ENV_ADDITIONAL_JOBS_FOLDERS, "/extra/a:/extra/b")
@@ -71,7 +71,7 @@ class TestGetJobFolders:
         # Defaults should still be present
         assert tmp_path / ".deepwork" / "jobs" in folders
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.7).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.1.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_env_var_empty_is_ignored(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -81,7 +81,7 @@ class TestGetJobFolders:
         # Should only have the two defaults
         assert len(folders) == 2
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.8).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.1.8).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_env_var_strips_whitespace(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -95,7 +95,7 @@ class TestGetJobFolders:
 class TestLoadAllJobs:
     """Tests for load_all_jobs."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.2.1, REQ-008.2.4, REQ-008.2.7, REQ-008.2.8, REQ-008.2.11).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.2.1, JOBS-REQ-008.2.4, JOBS-REQ-008.2.7, JOBS-REQ-008.2.8, JOBS-REQ-008.2.11).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_loads_from_project_jobs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         jobs_dir = tmp_path / ".deepwork" / "jobs"
@@ -109,7 +109,7 @@ class TestLoadAllJobs:
         assert jobs[0].name == "my_job"
         assert len(errors) == 0
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.2.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.2.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_loads_from_multiple_folders(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -127,7 +127,7 @@ class TestLoadAllJobs:
         assert names == {"job_a", "job_b"}
         assert len(errors) == 0
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.2.5, REQ-008.2.6, REQ-008.4.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.2.5, JOBS-REQ-008.2.6, JOBS-REQ-008.4.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_first_folder_wins_for_duplicate_name(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -150,7 +150,7 @@ class TestLoadAllJobs:
         assert len(jobs) == 1
         assert jobs[0].summary == "Test job same_name"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.2.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.2.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_skips_nonexistent_folders(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -163,7 +163,7 @@ class TestLoadAllJobs:
         assert len(jobs) == 0
         assert len(errors) == 0
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.2.9, REQ-008.2.11, REQ-008.5.1, REQ-008.5.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.2.9, JOBS-REQ-008.2.11, JOBS-REQ-008.5.1, JOBS-REQ-008.5.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_skips_invalid_jobs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         folder = tmp_path / "jobs"
@@ -185,7 +185,7 @@ class TestLoadAllJobs:
 class TestFindJobDir:
     """Tests for find_job_dir."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.3.1, REQ-008.3.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.3.1, JOBS-REQ-008.3.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_finds_in_first_folder(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         folder = tmp_path / "jobs"
@@ -197,7 +197,7 @@ class TestFindJobDir:
         result = find_job_dir(tmp_path, "target")
         assert result == folder / "target"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.3.1, REQ-008.3.2, REQ-008.3.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.3.1, JOBS-REQ-008.3.2, JOBS-REQ-008.3.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_finds_in_second_folder(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         folder_a = tmp_path / "a"
@@ -211,7 +211,7 @@ class TestFindJobDir:
         result = find_job_dir(tmp_path, "target")
         assert result == folder_b / "target"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.3.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.3.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_none_when_not_found(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -223,7 +223,7 @@ class TestFindJobDir:
         result = find_job_dir(tmp_path, "nonexistent")
         assert result is None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.3.1, REQ-008.3.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-008.3.1, JOBS-REQ-008.3.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_prefers_first_folder_on_duplicate(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

@@ -10,7 +10,7 @@ from deepwork.cli.serve import serve
 class TestServeExternalRunnerOption:
     """Tests for --external-runner CLI option on the serve command."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.2.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.serve._serve_mcp")
     def test_default_external_runner_is_none(self, mock_serve: MagicMock, tmp_path: str) -> None:
@@ -26,7 +26,7 @@ class TestServeExternalRunnerOption:
         call_args = mock_serve.call_args
         assert call_args[0][4] is None or call_args.kwargs.get("external_runner") is None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.2.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.serve._serve_mcp")
     def test_external_runner_claude(self, mock_serve: MagicMock, tmp_path: str) -> None:
@@ -42,7 +42,7 @@ class TestServeExternalRunnerOption:
         call_args = mock_serve.call_args[0]
         assert call_args[4] == "claude"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.2.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_external_runner_invalid_choice(self, tmp_path: str) -> None:
         """Test that invalid --external-runner values are rejected."""
@@ -52,7 +52,7 @@ class TestServeExternalRunnerOption:
         assert result.exit_code != 0
         assert "Invalid value" in result.output or "invalid" in result.output.lower()
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.2.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_help_shows_external_runner(self) -> None:
         """Test that --help shows the --external-runner option."""

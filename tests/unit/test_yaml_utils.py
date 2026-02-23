@@ -10,7 +10,7 @@ from deepwork.utils.yaml_utils import YAMLError, load_yaml, save_yaml, validate_
 class TestLoadYAML:
     """Tests for load_yaml function."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.7.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.7.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_loads_valid_yaml(self, temp_dir: Path) -> None:
         """Test that load_yaml loads valid YAML."""
@@ -28,7 +28,7 @@ description: "A test job"
         assert result["version"] == "1.0.0"
         assert result["description"] == "A test job"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.7.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.7.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_loads_nested_yaml(self, temp_dir: Path) -> None:
         """Test that load_yaml loads nested YAML structures."""
@@ -50,7 +50,7 @@ job:
         assert result["job"]["name"] == "test_job"
         assert len(result["job"]["steps"]) == 2
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.7.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.7.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_none_for_missing_file(self, temp_dir: Path) -> None:
         """Test that load_yaml returns None for missing file."""
@@ -60,7 +60,7 @@ job:
 
         assert result is None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.7.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.7.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_empty_dict_for_empty_file(self, temp_dir: Path) -> None:
         """Test that load_yaml returns empty dict for empty file."""
@@ -84,7 +84,7 @@ invalid:
         with pytest.raises(YAMLError, match="Failed to parse YAML file"):
             load_yaml(yaml_file)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.7.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.7.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_non_dict_yaml(self, temp_dir: Path) -> None:
         """Test that load_yaml raises YAMLError for non-dictionary YAML."""
@@ -112,7 +112,7 @@ invalid:
 class TestSaveYAML:
     """Tests for save_yaml function."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.8.1, REQ-010.8.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.8.1, DW-REQ-010.8.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_saves_simple_dict(self, temp_dir: Path) -> None:
         """Test that save_yaml saves simple dictionary."""
@@ -131,7 +131,7 @@ class TestSaveYAML:
         # PyYAML may or may not quote version strings
         assert "version: " in content and "1.0.0" in content
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.8.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.8.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_saves_nested_dict(self, temp_dir: Path) -> None:
         """Test that save_yaml saves nested dictionaries."""
@@ -153,7 +153,7 @@ class TestSaveYAML:
         loaded = load_yaml(yaml_file)
         assert loaded == data
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.8.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.8.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_parent_directories(self, temp_dir: Path) -> None:
         """Test that save_yaml creates parent directories."""
@@ -177,7 +177,7 @@ class TestSaveYAML:
         assert loaded == new_data
         assert "old" not in (loaded or {})
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.8.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.8.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_preserves_order(self, temp_dir: Path) -> None:
         """Test that save_yaml preserves dictionary order."""
@@ -210,7 +210,7 @@ class TestSaveYAML:
 class TestValidateYAMLStructure:
     """Tests for validate_yaml_structure function."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.9.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.9.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validates_required_keys_present(self) -> None:
         """Test that validate_yaml_structure passes when keys present."""
@@ -224,7 +224,7 @@ class TestValidateYAMLStructure:
         # Should not raise
         validate_yaml_structure(data, ["name", "version", "description"])
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.9.1, REQ-010.9.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.9.1, DW-REQ-010.9.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_missing_keys(self) -> None:
         """Test that validate_yaml_structure raises for missing keys."""
@@ -236,7 +236,7 @@ class TestValidateYAMLStructure:
         with pytest.raises(YAMLError, match="Missing required keys: description"):
             validate_yaml_structure(data, ["name", "version", "description"])
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-010.9.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.9.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_multiple_missing_keys(self) -> None:
         """Test that validate_yaml_structure reports multiple missing keys."""

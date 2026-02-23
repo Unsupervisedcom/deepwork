@@ -21,18 +21,34 @@ You review the project to verify that its three-way traceability chain is mainta
 
 ## Project Conventions
 
-This project uses formal requirements documents with RFC 2119 keywords (MUST, SHALL, SHOULD, MAY, etc.) located in the `requirements/` directory. Each file follows the naming pattern `REQ-NNN-<topic>.md` and contains individually numbered requirements like `REQ-001.1`, `REQ-001.2`, etc.
+This project uses formal requirements documents with RFC 2119 keywords (MUST, SHALL, SHOULD, MAY, etc.) located in the `specs/` directory. Specs are organized into domain subdirectories:
 
-Every piece of end-user functionality MUST be documented as a formal requirement. Every requirement MUST have a corresponding automated test that explicitly references it. Tests MUST NOT be modified unless the underlying requirement has changed.
+- `specs/deepwork/` — root DeepWork specs (DW-REQ-005, 006, 007, 010)
+- `specs/deepwork/jobs/` — job-related specs (JOBS-REQ-001, 002, 003, 004, 008, 009)
+- `specs/deepwork/review/` — review-related specs (REVIEW-REQ-001 through 008)
+- `specs/learning-agents/` — learning agent specs (LA-REQ-001 through 012)
+
+Each file follows the naming pattern `{PREFIX}-REQ-NNN-<topic>.md`, where the prefix identifies the domain:
+
+| Prefix | Domain |
+|--------|--------|
+| `DW-REQ` | deepwork root |
+| `JOBS-REQ` | deepwork/jobs |
+| `REVIEW-REQ` | deepwork/review |
+| `LA-REQ` | learning-agents |
+
+Each domain maintains its own independent REQ numbering sequence. Files contain individually numbered sub-requirements like `JOBS-REQ-004.1`, `JOBS-REQ-004.2`, etc.
+
+Every piece of end-user functionality MUST be documented as a formal requirement. Every requirement MUST have a corresponding automated test that explicitly references it using the fully qualified REQ ID. Tests MUST NOT be modified unless the underlying requirement has changed.
 
 ## Traceability Format
 
 Tests reference requirements using two mechanisms:
 
-1. **Module-level docstrings** — e.g. `"""Tests for ClaudeInvocation — validates REQ-004."""`
+1. **Module-level docstrings** — e.g. `"""Tests for ClaudeInvocation — validates JOBS-REQ-004."""`
 2. **Per-test traceability comments** — placed directly above each test method:
    ```python
-   # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.5).
+   # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5).
    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
    def test_system_prompt_text_and_file_mutually_exclusive(self, tmp_path):
        ...
@@ -45,7 +61,7 @@ When asked to review, perform these checks:
 ### 1. Requirements Coverage
 
 For every piece of new or changed end-user functionality in the diff:
-- Verify there is a corresponding requirement in `requirements/REQ-*.md`
+- Verify there is a corresponding requirement in `specs/**/*-REQ-*.md`
 - If functionality is new, check that a new requirement was added
 - If functionality changed, check that the relevant requirement was updated
 - Flag any functional code changes that lack a matching requirement

@@ -1,4 +1,4 @@
-# REQ-001: DeepWork Reviews Configuration Format
+# REVIEW-REQ-001: DeepWork Reviews Configuration Format
 
 ## Overview
 
@@ -6,7 +6,7 @@ DeepWork Reviews uses `.deepreview` YAML configuration files to define review ru
 
 ## Requirements
 
-### REQ-001.1: Configuration File Format
+### REVIEW-REQ-001.1: Configuration File Format
 
 1. A `.deepreview` file MUST be a valid YAML document.
 2. The top-level structure MUST be a mapping of rule names to rule objects.
@@ -14,7 +14,7 @@ DeepWork Reviews uses `.deepreview` YAML configuration files to define review ru
 4. Each rule object MUST contain exactly three required keys: `description`, `match`, and `review`.
 5. Rule objects MUST NOT contain additional properties beyond `description`, `match`, and `review`.
 
-### REQ-001.2: Match Section
+### REVIEW-REQ-001.2: Match Section
 
 1. The `match` section MUST be an object.
 2. The `match` section MUST contain an `include` key with a non-empty array of glob pattern strings.
@@ -22,7 +22,7 @@ DeepWork Reviews uses `.deepreview` YAML configuration files to define review ru
 4. The `match` section MUST NOT contain additional properties beyond `include` and `exclude`.
 5. Glob patterns MUST support standard glob syntax including `**` for recursive directory matching and `*` for filename matching.
 
-### REQ-001.3: Review Section
+### REVIEW-REQ-001.3: Review Section
 
 1. The `review` section MUST be an object.
 2. The `review` section MUST contain a `strategy` key with one of: `"individual"`, `"matches_together"`, or `"all_changed_files"`.
@@ -31,7 +31,7 @@ DeepWork Reviews uses `.deepreview` YAML configuration files to define review ru
 5. The `review` section MAY contain an `additional_context` key.
 6. The `review` section MUST NOT contain additional properties beyond `strategy`, `instructions`, `agent`, and `additional_context`.
 
-### REQ-001.4: Instructions
+### REVIEW-REQ-001.4: Instructions
 
 1. The `instructions` field MUST be one of two forms: an inline string, or an object with a `file` key.
 2. When `instructions` is a string, the string MUST be used directly as the review instruction text.
@@ -40,7 +40,7 @@ DeepWork Reviews uses `.deepreview` YAML configuration files to define review ru
 5. The system MUST raise an error if a referenced instructions file does not exist.
 6. The instructions object MUST NOT contain additional properties beyond `file`.
 
-### REQ-001.5: Agent Configuration
+### REVIEW-REQ-001.5: Agent Configuration
 
 1. The `agent` field, when present, MUST be an object mapping CLI provider names to agent persona strings.
 2. Provider names MUST match the pattern `^[a-zA-Z0-9_-]+$`.
@@ -48,7 +48,7 @@ DeepWork Reviews uses `.deepreview` YAML configuration files to define review ru
 4. The system MUST select the agent persona matching the target platform (e.g., the `claude` key when generating instructions for Claude Code).
 5. When no matching agent key exists for the target platform, the system MUST use the default agent (no persona).
 
-### REQ-001.6: Additional Context
+### REVIEW-REQ-001.6: Additional Context
 
 1. The `additional_context` field, when present, MUST be an object.
 2. The `additional_context` object MAY contain `all_changed_filenames` (boolean).
@@ -57,15 +57,15 @@ DeepWork Reviews uses `.deepreview` YAML configuration files to define review ru
 5. When `all_changed_filenames` is `true`, the system MUST include a list of all files changed in the changeset (not just matched files) as context in the review instructions.
 6. When `unchanged_matching_files` is `true`, the system MUST include the full contents of files that match the `include` patterns but were NOT modified in this changeset.
 
-### REQ-001.7: Schema Validation
+### REVIEW-REQ-001.7: Schema Validation
 
 1. The JSON Schema for `.deepreview` files MUST be bundled with the DeepWork package at `src/deepwork/schemas/deepreview_schema.json`.
 2. The schema MUST be loaded at module import time and stored as a module-level constant.
 3. Every `.deepreview` file MUST be validated against the schema before parsing into data models.
 4. The system MUST raise an error with a descriptive message if schema validation fails, including the validation path and error details.
-5. Schema validation MUST use the `jsonschema` library (same as job definition validation, see REQ-002.2).
+5. Schema validation MUST use the `jsonschema` library (same as job definition validation, see REVIEW-REQ-002.2).
 
-### REQ-001.8: Data Model
+### REVIEW-REQ-001.8: Data Model
 
 1. Each parsed rule MUST be represented as a `ReviewRule` dataclass.
 2. The `ReviewRule` MUST contain: `name` (str), `description` (str), `include_patterns` (list[str]), `exclude_patterns` (list[str]), `strategy` (str), `instructions` (str — resolved text), `agent` (dict[str, str] | None), `all_changed_filenames` (bool), `unchanged_matching_files` (bool), `source_dir` (Path), `source_file` (Path), `source_line` (int).

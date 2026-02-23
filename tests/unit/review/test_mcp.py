@@ -175,7 +175,7 @@ class TestReviewToolRegistration:
         assert "get_review_instructions" in server_default._tool_manager._tools
 
     def test_get_configured_reviews_tool_is_registered(self, tmp_path: Path) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.1).
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-008.1.1).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """get_configured_reviews is registered on the MCP server."""
         from deepwork.jobs.mcp.server import create_server
@@ -188,11 +188,11 @@ class TestReviewToolRegistration:
 
 
 class TestGetConfiguredReviews:
-    """Tests for the get_configured_reviews adapter function — validates REQ-008."""
+    """Tests for the get_configured_reviews adapter function — validates REVIEW-REQ-008."""
 
     @patch("deepwork.review.mcp.load_all_rules")
     def test_returns_all_rules(self, mock_load: Any, tmp_path: Path) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.3, REQ-008.2.1, REQ-008.2.2, REQ-008.2.3).
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-008.1.3, REVIEW-REQ-008.2.1, REVIEW-REQ-008.2.2, REVIEW-REQ-008.2.3).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         rule1 = _make_rule(tmp_path)
         rule2 = ReviewRule(
@@ -221,7 +221,7 @@ class TestGetConfiguredReviews:
 
     @patch("deepwork.review.mcp.load_all_rules")
     def test_returns_empty_when_no_rules(self, mock_load: Any, tmp_path: Path) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.3).
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-008.1.3).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         mock_load.return_value = ([], [])
         result = get_configured_reviews(tmp_path)
@@ -229,7 +229,7 @@ class TestGetConfiguredReviews:
 
     @patch("deepwork.review.mcp.load_all_rules")
     def test_filters_by_matching_files(self, mock_load: Any, tmp_path: Path) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.3.1).
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-008.3.1).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         py_rule = _make_rule(tmp_path)  # includes **/*.py
         ts_rule = ReviewRule(
@@ -254,7 +254,7 @@ class TestGetConfiguredReviews:
 
     @patch("deepwork.review.mcp.load_all_rules")
     def test_no_filter_returns_all(self, mock_load: Any, tmp_path: Path) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.3.2).
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-008.3.2).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         rule = _make_rule(tmp_path)
         mock_load.return_value = ([rule], [])
@@ -267,7 +267,7 @@ class TestGetConfiguredReviews:
     def test_discovery_errors_still_return_valid_rules(
         self, mock_load: Any, tmp_path: Path
     ) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.4.1, REQ-008.4.2).
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-008.4.1, REVIEW-REQ-008.4.2).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         from deepwork.review.discovery import DiscoveryError
 
