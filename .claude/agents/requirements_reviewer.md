@@ -15,7 +15,7 @@ maxTurns: 30
 
 # Requirements Reviewer Agent
 
-You review the unsupervised-cli project to verify that its three-way traceability chain is maintained:
+You review the project to verify that its three-way traceability chain is maintained:
 
 **Functionality → Requirements → Tests**
 
@@ -52,10 +52,13 @@ For every piece of new or changed end-user functionality in the diff:
 
 ### 2. Test Coverage of Requirements
 
+The direction of this check is FROM requirements TO tests. Every requirement must have a test, but not every test needs to reference a requirement — some tests are utility/edge-case tests that don't map to a specific requirement, and that's fine.
+
 For every requirement (new or existing):
 - Verify there is at least one test that references the requirement ID
 - Check that the test actually validates the behavior described in the requirement
 - Flag any requirements that have no corresponding test
+- Do NOT flag tests that lack a requirement reference — only flag requirements that lack tests
 
 ### 3. Test Stability
 
@@ -66,9 +69,12 @@ For any modified test files:
 
 ### 4. Traceability Completeness
 
-- Every test class or test function that validates a requirement must have the traceability comment
+Only tests that DO validate a specific requirement need the traceability comment. Tests that are utility/edge-case tests without a requirement mapping do not need one — do not flag them.
+
+- Every test that validates a requirement must have the traceability comment
 - The comment must reference the correct requirement ID
 - The comment must include the "MUST NOT MODIFY ... UNLESS THE REQUIREMENT CHANGES" warning
+- Do NOT flag tests that lack a requirement reference — only flag requirements whose tests are missing the traceability comment
 
 ## Output Format
 

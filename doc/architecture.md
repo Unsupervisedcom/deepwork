@@ -58,7 +58,15 @@ deepwork/                       # DeepWork tool repository
 │       │   └── gemini_hook.sh  # Shell wrapper for Gemini CLI
 │       ├── standard_jobs/      # Built-in job definitions
 │       │   └── deepwork_jobs/
+│       ├── review/             # DeepWork Reviews system
+│       │   ├── config.py       # .deepreview config parsing + data models
+│       │   ├── discovery.py    # Find .deepreview files in project tree
+│       │   ├── matcher.py      # Git diff + glob matching + strategy grouping
+│       │   ├── instructions.py # Generate review instruction files
+│       │   ├── formatter.py    # Format output for Claude Code
+│       │   └── schema.py       # JSON schema loader
 │       ├── schemas/            # Definition schemas
+│       │   ├── deepreview_schema.json
 │       │   ├── job_schema.py
 │       │   └── doc_spec_schema.py
 │       └── utils/
@@ -85,7 +93,7 @@ deepwork/                       # DeepWork tool repository
 
 ## DeepWork CLI Components
 
-The CLI has been simplified to two commands: `serve` and `hook`. The old `install`, `sync`, adapters, detector, and generator have been replaced by the plugin system.
+The CLI has three primary commands: `serve`, `hook`, and `review`. The old `install`, `sync`, adapters, detector, and generator have been replaced by the plugin system.
 
 ### 1. Serve Command (`serve.py`)
 
@@ -108,7 +116,23 @@ Runs hook scripts by name, used by platform hook wrappers:
 deepwork hook my_hook
 ```
 
-### 3. Plugin System (replaces adapters/detector/generator)
+### 3. Review Command (`review.py`)
+
+Generates review instructions for changed files based on `.deepreview` config files:
+
+```bash
+deepwork review --instructions-for claude
+```
+
+The review command:
+- Discovers `.deepreview` files throughout the project tree
+- Detects changed files via `git diff` against the main branch
+- Matches changed files against rules using include/exclude glob patterns
+- Groups files by review strategy (`individual`, `matches_together`, `all_changed_files`)
+- Generates per-task instruction files in `.deepwork/tmp/review_instructions/`
+- Outputs structured text for Claude Code to dispatch parallel review agents
+
+### 4. Plugin System (replaces adapters/detector/generator)
 
 Platform-specific delivery is now handled by plugins in `plugins/`:
 
@@ -948,12 +972,12 @@ DeepWork includes an MCP (Model Context Protocol) server that provides an altern
 
 The FastMCP server definition that:
 - Creates and configures the MCP server instance
-- Registers the three workflow tools
+- Registers the workflow tools and the `get_review_instructions` tool
 - Provides server instructions for agents
 
 ### Tools (`tools.py`)
 
-Implements the three MCP tools:
+Implements the workflow MCP tools:
 
 #### 1. `get_workflows`
 Lists all available workflows from `.deepwork/jobs/`.
@@ -985,6 +1009,25 @@ Reports step completion and gets next instructions.
 - If `needs_work`: feedback from quality gate, failed criteria
 - If `next_step`: next step instructions
 - If `workflow_complete`: summary of all outputs
+
+#### 4. `abort_workflow`
+Aborts the current workflow and returns to the parent (if nested).
+
+**Parameters**:
+- `explanation: str` - Why the workflow is being aborted
+- `session_id: str | None` - Target a specific workflow session
+
+**Returns**: Aborted workflow info, resumed parent info (if any), current stack
+
+#### 5. `get_review_instructions`
+Runs the `.deepreview`-based code review pipeline. Registered directly in `server.py` (not in `tools.py`) since it operates outside the workflow lifecycle.
+
+**Parameters**:
+- `files: list[str] | None` - Explicit files to review. When omitted, detects changes via git diff.
+
+**Returns**: Formatted review task list or informational message.
+
+The `--platform` CLI option on `serve` controls which formatter is used (defaults to `"claude"`).
 
 ### State Management (`state.py`)
 

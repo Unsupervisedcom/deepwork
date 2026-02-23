@@ -39,6 +39,7 @@ def create_server(
     quality_gate_timeout: int = 120,
     quality_gate_max_attempts: int = 3,
     external_runner: str | None = None,
+    platform: str | None = None,
 ) -> FastMCP:
     """Create and configure the MCP server.
 
@@ -50,6 +51,8 @@ def create_server(
         external_runner: External runner for quality gate reviews.
             "claude" uses Claude CLI subprocess. None means agent self-review
             via instructions file. (default: None)
+        platform: Platform identifier for the review tool (e.g., "claude").
+            Defaults to "claude" if not set. (default: None)
 
     Returns:
         Configured FastMCP server instance
@@ -217,6 +220,53 @@ def create_server(
         input_data = AbortWorkflowInput(explanation=explanation, session_id=session_id)
         response = await tools.abort_workflow(input_data)
         return response.model_dump()
+
+    # ---- Review tool (outside the workflow lifecycle) ----
+
+    from deepwork.review.mcp import (
+        ReviewToolError,
+        run_review,
+    )
+    from deepwork.review.mcp import (
+        get_configured_reviews as get_configured_reviews_fn,
+    )
+
+    review_platform = platform or "claude"
+
+    @mcp.tool(
+        description=(
+            "Run a review of changed files based on .deepreview configuration files. "
+            "Returns a list of review tasks to invoke in parallel. Each task has "
+            "name, description, subagent_type, and prompt fields for the Task tool. "
+            "Optional: files (list of file paths to review). When omitted, detects "
+            "changes via git diff against the main branch."
+        )
+    )
+    def get_review_instructions(files: list[str] | None = None) -> str:
+        """Run review pipeline on changed files."""
+        _log_tool_call("get_review_instructions", {"files": files})
+        try:
+            return run_review(project_path, review_platform, files)
+        except ReviewToolError as e:
+            return f"Review error: {e}"
+
+    @mcp.tool(
+        description=(
+            "List all configured review rules from .deepreview files. "
+            "Returns each rule's name, description, and defining file. "
+            "Optional: only_rules_matching_files (list of file paths) to filter "
+            "to rules that would apply to those specific files."
+        )
+    )
+    def get_configured_reviews(
+        only_rules_matching_files: list[str] | None = None,
+    ) -> list[dict[str, str]]:
+        """List configured review rules, optionally filtered by file paths."""
+        _log_tool_call(
+            "get_configured_reviews",
+            {"only_rules_matching_files": only_rules_matching_files},
+        )
+        return get_configured_reviews_fn(project_path, only_rules_matching_files)
 
     return mcp
 

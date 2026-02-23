@@ -34,8 +34,10 @@ from deepwork.jobs.mcp.quality_gate import QualityGate
 # Skip marker for tests that require real Claude CLI
 # GitHub Actions sets CI=true, as do most other CI systems
 requires_claude_cli = pytest.mark.skipif(
-    os.environ.get("CI") == "true" or os.environ.get("GITHUB_ACTIONS") == "true",
-    reason="Integration tests require Claude CLI - skipped in CI",
+    os.environ.get("CI") == "true"
+    or os.environ.get("GITHUB_ACTIONS") == "true"
+    or os.environ.get("CLAUDECODE") is not None,
+    reason="Integration tests require Claude CLI - skipped in CI and nested Claude sessions",
 )
 
 

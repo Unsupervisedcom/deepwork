@@ -2,7 +2,7 @@
   "mcpServers": {
     "deepwork": {
       "command": "uvx",
-      "args": ["deepwork", "serve", "--path", ".", "--external-runner", "claude"]
+      "args": ["deepwork", "serve", "--path", ".", "--external-runner", "claude", "--platform", "claude"]
     }
   }
 }

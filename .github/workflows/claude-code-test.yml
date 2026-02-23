@@ -45,6 +45,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
+          enable-cache: true
 
       - name: Set up Python
         if: github.event_name != 'pull_request'
@@ -163,6 +164,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
+          enable-cache: true
 
       - name: Set up Python
         if: steps.check-key.outputs.has_key == 'true'
