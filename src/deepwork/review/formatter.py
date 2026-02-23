@@ -58,7 +58,7 @@ def _task_description(task: ReviewTask) -> str:
         task: The ReviewTask to describe.
 
     Returns:
-        Short (3-5 word) description string.
+        Short description string.
     """
     prefix = _scope_prefix(task)
     return f"Review {prefix}{task.rule_name}"

@@ -8,12 +8,45 @@ Ensure the project's top-level `.deepreview` file contains the two built-in Deep
 
 ### 1. Read the example review instruction files
 
-Read the example review instruction files shipped with the DeepWork plugin to understand what each rule does. These files are located relative to the DeepWork plugin directory (look in `plugins/claude/example_reviews/` or the installed plugin path):
+Read these files from the DeepWork plugin:
+- `plugins/claude/example_reviews/prompt_best_practices.md`
+- `plugins/claude/example_reviews/suggest_new_reviews.md`
 
-- `example_reviews/suggest_new_reviews.md` — Instructions for a rule that analyzes changesets and suggests new review rules
-- `example_reviews/prompt_best_practices.md` — Instructions for a rule that reviews prompt/instruction files against Anthropic best practices
+These are the full, detailed versions of the two review instruction prompts. Read them to understand the review's intent, checklist, and tone. The inline YAML rules in steps 3 and 4 below are condensed versions — use the example files to fill in any gaps or to judge whether the inline version captures the key points.
 
-If these files are not found, proceed using the inline YAML examples in steps 3 and 4 below as the canonical reference.
+For reference, this is how the DeepWork project's own `.deepreview` configures these two rules (using `instructions: { file: ... }` to point at the example files above):
+
+```yaml
+prompt_best_practices:
+  description: "Review prompt/instruction markdown files for Anthropic prompt engineering best practices."
+  match:
+    include:
+      - "**/CLAUDE.md"
+      - "**/AGENTS.md"
+      - ".claude/**/*.md"
+      - ".deepwork/review/*.md"
+      - ".deepwork/jobs/**/*.md"
+  review:
+    strategy: individual
+    instructions:
+      file: .deepwork/review/prompt_best_practices.md
+
+suggest_new_reviews:
+  description: "Analyze all changes and suggest new review rules that would catch issues going forward."
+  match:
+    include:
+      - "**/*"
+    exclude:
+      - ".github/**"
+  review:
+    strategy: matches_together
+    instructions:
+      file: .deepwork/review/suggest_new_reviews.md
+```
+
+When creating rules for the target project, adapt the `match.include` patterns to its structure. The inline YAML in steps 3 and 4 uses inline `instructions:` text (suitable for projects that don't have the external instruction files), while the above uses `instructions: { file: ... }` references.
+
+If the example files are not found (e.g., the plugin is installed differently), proceed using the inline YAML in steps 3 and 4 below.
 
 ### 2. Check the existing `.deepreview` file
 

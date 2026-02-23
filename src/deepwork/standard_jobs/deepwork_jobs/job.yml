@@ -242,7 +242,7 @@ steps:
       - fix_jobs
     reviews:
       - run_each: step
-        additional_review_guidance: "You should do this in a small number or turns - tee up every data request you need in your first call. Do not invoke sub-agents."
+        additional_review_guidance: "Complete this review in a small number of turns - tee up every data request you need in your first call."
         quality_criteria:
           "Legacy Job Skills Removed": "Legacy skill folders for each job are removed from `.claude/skills/` and `.gemini/skills/`."
           "Deepwork Skill Removed": "The `deepwork` skill folder has been removed from `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` (now provided by the plugin system)."

@@ -12,6 +12,8 @@ import pytest
 from deepwork.review.config import ReviewRule
 from deepwork.review.matcher import (
     GitDiffError,
+    _detect_base_ref,
+    _get_merge_base,
     _glob_match,
     _relative_to_dir,
     get_changed_files,
@@ -438,8 +440,6 @@ class TestGetChangedFiles:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     def test_detect_base_ref_uses_symbolic_ref(self, mock_run: Any, tmp_path: Path) -> None:
-        from deepwork.review.matcher import _detect_base_ref
-
         def side_effect(cmd: Any, **kwargs: Any) -> Any:
             result = MagicMock()
             result.returncode = 0
@@ -462,8 +462,6 @@ class TestGetChangedFiles:
     def test_detect_base_ref_symbolic_ref_works_for_non_standard_names(
         self, mock_run: Any, tmp_path: Path
     ) -> None:
-        from deepwork.review.matcher import _detect_base_ref
-
         def side_effect(cmd: Any, **kwargs: Any) -> Any:
             result = MagicMock()
             result.returncode = 0
@@ -483,8 +481,6 @@ class TestGetChangedFiles:
     def test_detect_base_ref_falls_back_when_symbolic_ref_not_set(
         self, mock_run: Any, tmp_path: Path
     ) -> None:
-        from deepwork.review.matcher import _detect_base_ref
-
         def side_effect(cmd: Any, **kwargs: Any) -> Any:
             # symbolic-ref fails, but origin/main exists
             if "symbolic-ref" in cmd:
@@ -503,8 +499,6 @@ class TestGetChangedFiles:
     def test_detect_base_ref_falls_back_to_origin_master(
         self, mock_run: Any, tmp_path: Path
     ) -> None:
-        from deepwork.review.matcher import _detect_base_ref
-
         def side_effect(cmd: Any, **kwargs: Any) -> Any:
             if "symbolic-ref" in cmd or "origin/main" in cmd:
                 raise subprocess.CalledProcessError(128, cmd)
@@ -520,8 +514,6 @@ class TestGetChangedFiles:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     def test_detect_base_ref_falls_back_to_local_main(self, mock_run: Any, tmp_path: Path) -> None:
-        from deepwork.review.matcher import _detect_base_ref
-
         def side_effect(cmd: Any, **kwargs: Any) -> Any:
             if "symbolic-ref" in cmd or "origin/main" in cmd or "origin/master" in cmd:
                 raise subprocess.CalledProcessError(128, cmd)
@@ -539,8 +531,6 @@ class TestGetChangedFiles:
     def test_detect_base_ref_falls_back_to_local_master(
         self, mock_run: Any, tmp_path: Path
     ) -> None:
-        from deepwork.review.matcher import _detect_base_ref
-
         def side_effect(cmd: Any, **kwargs: Any) -> Any:
             if (
                 "symbolic-ref" in cmd
@@ -561,8 +551,6 @@ class TestGetChangedFiles:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     def test_detect_base_ref_falls_back_to_head(self, mock_run: Any, tmp_path: Path) -> None:
-        from deepwork.review.matcher import _detect_base_ref
-
         # Nothing works — symbolic-ref fails, no known branches exist
         mock_run.side_effect = subprocess.CalledProcessError(128, "git")
         result = _detect_base_ref(tmp_path)
@@ -572,8 +560,6 @@ class TestGetChangedFiles:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     def test_uses_git_merge_base(self, mock_run: Any, tmp_path: Path) -> None:
-        from deepwork.review.matcher import _get_merge_base
-
         mock_run.return_value.stdout = "deadbeef\n"
         mock_run.return_value.returncode = 0
         result = _get_merge_base(tmp_path, "main")
@@ -618,8 +604,6 @@ class TestGetChangedFiles:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     def test_invalid_base_ref_raises_error(self, mock_run: Any, tmp_path: Path) -> None:
-        from deepwork.review.matcher import _get_merge_base
-
         mock_run.side_effect = subprocess.CalledProcessError(
             128, "git", stderr="fatal: Not a valid object name nonexistent_branch"
         )
@@ -630,8 +614,6 @@ class TestGetChangedFiles:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     def test_stderr_included_in_error_message(self, mock_run: Any, tmp_path: Path) -> None:
-        from deepwork.review.matcher import _get_merge_base
-
         stderr_msg = "fatal: bad revision 'bad_ref'"
         mock_run.side_effect = subprocess.CalledProcessError(128, "git", stderr=stderr_msg)
         with pytest.raises(GitDiffError, match=stderr_msg):
