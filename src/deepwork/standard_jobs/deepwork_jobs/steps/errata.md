@@ -120,7 +120,55 @@ platforms:
 
 Update if needed to match current schema expectations.
 
-### Step 5: Remove Other Obsolete Files
+### Step 5: Remove `deepwork serve` from `.mcp.json`
+
+Old DeepWork versions added a `deepwork serve` MCP server entry directly to the repo's `.mcp.json` file. This is now handled by the plugin system and must be removed.
+
+**Process:**
+
+1. Check if `.mcp.json` exists in the repo root:
+   ```bash
+   cat .mcp.json 2>/dev/null || echo "No .mcp.json found"
+   ```
+
+2. If it exists, look for any entry whose `command` is `deepwork` with `serve` as an argument (e.g., `"command": "deepwork", "args": ["serve"]` or `"command": "uvx", "args": ["deepwork", "serve", ...]`). Remove that entire server entry.
+
+3. If `.mcp.json` becomes empty (no remaining server entries) after removal, delete the file entirely:
+   ```bash
+   rm .mcp.json
+   ```
+
+4. If other MCP servers remain, keep the file with only the `deepwork serve` entry removed.
+
+**Example `.mcp.json` before cleanup:**
+```json
+{
+  "mcpServers": {
+    "deepwork": {
+      "command": "uvx",
+      "args": ["deepwork", "serve"]
+    },
+    "other-server": {
+      "command": "some-tool",
+      "args": ["serve"]
+    }
+  }
+}
+```
+
+**After cleanup (other servers remain):**
+```json
+{
+  "mcpServers": {
+    "other-server": {
+      "command": "some-tool",
+      "args": ["serve"]
+    }
+  }
+}
+```
+
+### Step 6: Remove Other Obsolete Files
 
 Check for and remove other obsolete files:
 
@@ -132,7 +180,7 @@ Check for and remove other obsolete files:
 | `.claude/commands/` | Generated commands | Keep (current system) |
 | `.claude/settings.local.json` | Local overrides | Keep (user settings) |
 
-### Step 6: Re-install DeepWork
+### Step 7: Re-install DeepWork
 
 After all cleanup is complete, re-run `deepwork install` to ensure configurations are current and consistent:
 
@@ -148,7 +196,7 @@ deepwork install
 
 If any issues are found, fix them before proceeding. The goal is a clean, working DeepWork installation with no residual problems from the repair process.
 
-### Step 7: Verify Git Status
+### Step 8: Verify Git Status
 
 Check that the cleanup hasn't left untracked garbage:
 

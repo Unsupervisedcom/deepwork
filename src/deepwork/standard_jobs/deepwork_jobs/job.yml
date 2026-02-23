@@ -248,3 +248,4 @@ steps:
           "Deepwork Skill Preserved": "The `deepwork` skill folder still exists in `.claude/skills/deepwork/`."
           "Rules Folder Removed": "`.deepwork/rules/` folder is gone."
           "Rules Job Removed": "`.deepwork/jobs/deepwork_rules/` is gone."
+          "MCP Server Entry Removed": "The `deepwork serve` entry is removed from `.mcp.json` (or the file is deleted if empty)."
