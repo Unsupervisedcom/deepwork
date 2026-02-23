@@ -23,6 +23,8 @@ requirements_traceability:
   match:
     include:
       - "**/*"
+    exclude:
+      - ".github/**"
   review:
     strategy: all_changed_files
     agent:
