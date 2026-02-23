@@ -36,6 +36,7 @@ def _make_rule(
     """Create a ReviewRule with sensible defaults for testing."""
     return ReviewRule(
         name=name,
+        description="Test rule description.",
         include_patterns=include or ["**/*.py"],
         exclude_patterns=exclude or [],
         strategy=strategy,

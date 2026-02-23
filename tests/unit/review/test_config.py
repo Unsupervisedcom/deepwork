@@ -24,6 +24,7 @@ class TestParseDeepReviewFile:
             tmp_path,
             """
 python_review:
+  description: "Review Python files."
   match:
     include:
       - "**/*.py"
@@ -46,12 +47,14 @@ python_review:
             tmp_path,
             """
 rule_a:
+  description: "Rule A description."
   match:
     include: ["**/*.py"]
   review:
     strategy: individual
     instructions: "Rule A"
 rule_b:
+  description: "Rule B description."
   match:
     include: ["**/*.ts"]
   review:
@@ -71,6 +74,7 @@ rule_b:
             tmp_path,
             """
 my_rule:
+  description: "Test rule."
   match:
     include: ["**/*.py"]
     exclude: ["tests/**/*.py"]
@@ -89,6 +93,7 @@ my_rule:
             tmp_path,
             """
 my_rule:
+  description: "Test rule."
   match:
     include: ["**/*.py"]
   review:
@@ -107,6 +112,7 @@ my_rule:
                 tmp_path,
                 f"""
 rule:
+  description: "Test rule."
   match:
     include: ["**/*.py"]
   review:
@@ -124,6 +130,7 @@ rule:
             tmp_path,
             """
 my_rule:
+  description: "Test rule."
   match:
     include: ["**/*.py"]
   review:
@@ -142,6 +149,7 @@ my_rule:
             tmp_path,
             """
 my_rule:
+  description: "Test rule."
   match:
     include: ["**/*.py"]
   review:
@@ -160,6 +168,7 @@ my_rule:
             tmp_path,
             """
 my_rule:
+  description: "Test rule."
   match:
     include: ["**/*.py"]
   review:
@@ -178,6 +187,7 @@ my_rule:
             tmp_path,
             """
 my_rule:
+  description: "Test rule."
   match:
     include: ["**/*.py"]
   review:
@@ -197,6 +207,7 @@ my_rule:
             tmp_path,
             """
 my_rule:
+  description: "Test rule."
   match:
     include: ["**/*.py"]
   review:
@@ -214,6 +225,7 @@ my_rule:
             tmp_path,
             """
 my_rule:
+  description: "Test rule."
   match:
     include: ["**/*.py"]
   review:
@@ -235,6 +247,7 @@ my_rule:
             tmp_path,
             """
 my_rule:
+  description: "Test rule."
   match:
     include: ["**/*.py"]
   review:
@@ -253,6 +266,7 @@ my_rule:
             tmp_path,
             """
 my_rule:
+  description: "Test rule."
   match:
     include: ["**/*.py"]
   review:
@@ -277,6 +291,7 @@ my_rule:
             tmp_path,
             """
 my_rule:
+  description: "Test rule."
   match:
     include: ["**/*.py"]
   review:
@@ -304,6 +319,7 @@ my_rule:
             tmp_path,
             """
 python_review:
+  description: "Test rule."
   match:
     include:
       - "**/*.py"
@@ -319,6 +335,7 @@ python_review:
         filepath = _write_deepreview(
             tmp_path,
             """python_review:
+  description: "Test rule."
   match:
     include:
       - "**/*.py"
@@ -334,6 +351,7 @@ python_review:
         filepath = _write_deepreview(
             tmp_path,
             """rule_a:
+  description: "Rule A."
   match:
     include:
       - "**/*.py"
@@ -341,6 +359,7 @@ python_review:
     strategy: individual
     instructions: "Review A."
 rule_b:
+  description: "Rule B."
   match:
     include:
       - "**/*.js"
@@ -352,4 +371,4 @@ rule_b:
         rules = parse_deepreview_file(filepath)
         rule_map = {r.name: r for r in rules}
         assert rule_map["rule_a"].source_line == 1
-        assert rule_map["rule_b"].source_line == 8
+        assert rule_map["rule_b"].source_line == 9

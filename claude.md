@@ -71,13 +71,9 @@ deepwork/
 
 ## Development Environment
 
-This project uses Nix for reproducible development environments:
+This project uses `uv` for package management:
 
 ```bash
-# Enter development environment
-nix-shell
-
-# Inside nix-shell, use uv for package management
 uv sync                  # Install dependencies
 uv run pytest           # Run tests
 ```

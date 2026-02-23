@@ -13,6 +13,7 @@ def _make_rule(tmp_path: Path) -> ReviewRule:
     """Create a ReviewRule for testing."""
     return ReviewRule(
         name="test_rule",
+        description="Test rule description.",
         include_patterns=["**/*.py"],
         exclude_patterns=[],
         strategy="individual",

@@ -9,11 +9,17 @@
             "type": "object",
             "description": "A named review rule defining what to match and how to review it.",
             "required": [
+                "description",
                 "match",
                 "review"
             ],
             "additionalProperties": false,
             "properties": {
+                "description": {
+                    "type": "string",
+                    "description": "A short description of what this review rule checks for.",
+                    "maxLength": 256
+                },
                 "match": {
                     "type": "object",
                     "description": "Defines the file glob patterns that trigger this review rule.",

@@ -38,6 +38,7 @@ This lets you keep review policies close to the code they govern. The security t
 
 ```yaml
 rule_name:
+  description: "Short description"  # Required. Under 256 characters.
   match:
     include:
       - "glob/pattern/**/*.ext"    # Required. At least one pattern.
@@ -68,6 +69,7 @@ Best for: file-level linting, per-component checks, style reviews.
 
 ```yaml
 python_review:
+  description: "Review Python source files for code quality and best practices."
   match:
     include:
       - "**/*.py"
@@ -87,6 +89,7 @@ Best for: cross-file consistency checks, migration sequence validation, document
 
 ```yaml
 db_migration_safety:
+  description: "Check database migrations for conflicts, destructive ops, and ordering."
   match:
     include:
       - "alembic/versions/*.py"
@@ -108,6 +111,7 @@ Best for: security audits, broad impact analysis when sensitive areas are touche
 
 ```yaml
 pr_security_review:
+  description: "Security audit triggered by auth or config changes."
   match:
     include:
       - "src/auth/**/*.py"
@@ -134,6 +138,7 @@ Includes a list of every file changed in the branch — even files that don't ma
 
 ```yaml
 ui_component_review:
+  description: "Review React components for accessibility and prop-type safety."
   match:
     include:
       - "src/components/**/*.tsx"
@@ -153,6 +158,7 @@ Includes files that match the `include` patterns but were *not* changed. This is
 
 ```yaml
 versions_in_sync:
+  description: "Ensure version numbers stay in sync across release files."
   match:
     include:
       - "CHANGELOG.md"
@@ -194,6 +200,8 @@ review:
   instructions:
     file: .deepwork/review/python_review.md
 ```
+
+These are snippets showing just the `review` block. In a full rule, the `description` field is also required at the rule level (see Rule Structure above).
 
 The file path is resolved relative to the directory containing the `.deepreview` file. This is useful for longer review guidelines that you want to maintain separately and reuse across rules.
 
@@ -263,6 +271,7 @@ Here is a `.deepreview` file that covers several common review scenarios:
 # Every modified file is reviewed individually.
 # =====================================================================
 python_file_best_practices:
+  description: "Review Python source files for best practices and code quality."
   match:
     include:
       - "**/*.py"
@@ -281,6 +290,7 @@ python_file_best_practices:
 # without the consumers being updated.
 # =====================================================================
 ui_component_review:
+  description: "Review React components for accessibility and prop-type safety."
   match:
     include:
       - "src/components/**/*.tsx"
@@ -299,6 +309,7 @@ ui_component_review:
 # check for sequence conflicts and overall migration safety.
 # =====================================================================
 db_migration_safety:
+  description: "Check database migrations for conflicts, destructive ops, and ordering."
   match:
     include:
       - "alembic/versions/*.py"
@@ -317,6 +328,7 @@ db_migration_safety:
 # including unchanged ones — to verify version strings match.
 # =====================================================================
 versions_in_sync:
+  description: "Ensure version numbers stay in sync across release files."
   match:
     include:
       - "CHANGELOG.md"
@@ -334,6 +346,7 @@ versions_in_sync:
 # in the branch get a security review.
 # =====================================================================
 pr_security_review:
+  description: "Security audit triggered by auth or config changes."
   match:
     include:
       - "src/auth/**/*.py"
@@ -354,6 +367,7 @@ pr_security_review:
 # Each route file is reviewed individually with a security persona.
 # =====================================================================
 api_route_auth_check:
+  description: "Verify API routes have proper auth middleware and RBAC scopes."
   match:
     include:
       - "src/routes/**/*.ts"
@@ -371,6 +385,7 @@ api_route_auth_check:
 # Each container config is reviewed individually for best practices.
 # =====================================================================
 dockerfile_optimization:
+  description: "Check container configs for build optimization and security."
   match:
     include:
       - "**/Dockerfile"
@@ -389,6 +404,7 @@ dockerfile_optimization:
 # All matched workflow files are reviewed together for consistency.
 # =====================================================================
 cicd_pipeline_audit:
+  description: "Audit CI/CD workflows for secret leaks and pinned actions."
   match:
     include:
       - ".github/workflows/*.yml"
@@ -406,6 +422,7 @@ cicd_pipeline_audit:
 # Matched docs are reviewed together for broken links and tone.
 # =====================================================================
 docs_consistency_check:
+  description: "Check documentation for consistent tone, broken links, and syntax."
   match:
     include:
       - "docs/**/*.md"
@@ -423,6 +440,7 @@ docs_consistency_check:
 # before frontend clients stopped using them.
 # =====================================================================
 graphql_schema_evolution:
+  description: "Flag breaking GraphQL schema changes and verify frontend updates."
   match:
     include:
       - "schema/**/*.graphql"

@@ -15,6 +15,7 @@ def _write_deepreview(path: Path, content: str) -> Path:
 
 VALID_CONFIG = """
 my_rule:
+  description: "Test rule for Python files."
   match:
     include: ["**/*.py"]
   review:
@@ -102,6 +103,7 @@ class TestLoadAllRules:
             tmp_path / "src",
             """
 src_rule:
+  description: "Test rule for TypeScript files."
   match:
     include: ["**/*.ts"]
   review:

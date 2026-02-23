@@ -25,6 +25,7 @@ class ReviewRule:
     """A single named review rule from a .deepreview file."""
 
     name: str
+    description: str
     include_patterns: list[str]
     exclude_patterns: list[str]
     strategy: str  # "individual" | "matches_together" | "all_changed_files"
@@ -112,6 +113,7 @@ def _parse_rule(
     Raises:
         ConfigError: If instruction file references cannot be resolved.
     """
+    description = data["description"]
     match_data = data["match"]
     review_data = data["review"]
 
@@ -128,6 +130,7 @@ def _parse_rule(
 
     return ReviewRule(
         name=name,
+        description=description,
         include_patterns=include_patterns,
         exclude_patterns=exclude_patterns,
         strategy=strategy,
