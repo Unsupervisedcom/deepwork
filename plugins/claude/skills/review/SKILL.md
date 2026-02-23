@@ -24,7 +24,7 @@ If the user is asking to **configure, create, or modify** review rules (e.g., "a
 For each finding from the review agents:
 
 - **Obviously good changes with no downsides** (e.g., fixing a typo, removing an unused import, adding a missing null check): make the change immediately without asking.
-- **Everything else** (refactors, style changes, architectural suggestions, anything with trade-offs): use AskUserQuestion to ask the user about each finding **individually** — one question per finding. Do NOT batch all findings into a single question. This lets the user make separate decisions on each item. For each question, provide several concrete fix approaches as options when there are reasonable alternatives (e.g., "Update the spec to match the code" vs "Update the code to match the spec" vs "Skip"). Be concise — quote the key finding, don't dump the full review.
+- **Everything else** (refactors, style changes, architectural suggestions, anything with trade-offs): use AskUserQuestion to ask the user about each finding **individually** — one question per finding. Do NOT batch unrelated findings into a single question. This lets the user make separate decisions on each item. For each question, provide several concrete fix approaches as options when there are reasonable alternatives (e.g., "Update the spec to match the code" vs "Update the code to match the spec" vs "Skip"). Be concise — quote the key finding, don't dump the full review.
 
 ## Iterate
 

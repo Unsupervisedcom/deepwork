@@ -21,8 +21,10 @@ _SKIP_DIRS = {
     ".pytest_cache",
     ".ruff_cache",
     ".eggs",
-    "*.egg-info",
 }
+
+# Suffix patterns that can't be matched via set membership
+_SKIP_SUFFIXES = (".egg-info",)
 
 DEEPREVIEW_FILENAME = ".deepreview"
 
@@ -82,7 +84,11 @@ def _walk_for_file(root: Path, filename: str) -> list[Path]:
     for entry in entries:
         if entry.is_file() and entry.name == filename:
             results.append(entry)
-        elif entry.is_dir() and entry.name not in _SKIP_DIRS:
+        elif (
+            entry.is_dir()
+            and entry.name not in _SKIP_DIRS
+            and not entry.name.endswith(_SKIP_SUFFIXES)
+        ):
             results.extend(_walk_for_file(entry, filename))
 
     return results

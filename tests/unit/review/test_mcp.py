@@ -1,6 +1,7 @@
 """Tests for the review MCP adapter (deepwork.review.mcp)."""
 
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -31,21 +32,23 @@ class TestRunReview:
     """Tests for the run_review adapter function."""
 
     @patch("deepwork.review.mcp.load_all_rules")
-    def test_no_deepreview_files_returns_message(self, mock_load, tmp_path: Path) -> None:
+    def test_no_deepreview_files_returns_message(self, mock_load: Any, tmp_path: Path) -> None:
         mock_load.return_value = ([], [])
         result = run_review(tmp_path, "claude")
         assert "No .deepreview configuration files found" in result
 
     @patch("deepwork.review.mcp.get_changed_files")
     @patch("deepwork.review.mcp.load_all_rules")
-    def test_no_changed_files_git_diff(self, mock_load, mock_diff, tmp_path: Path) -> None:
+    def test_no_changed_files_git_diff(
+        self, mock_load: Any, mock_diff: Any, tmp_path: Path
+    ) -> None:
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_diff.return_value = []
         result = run_review(tmp_path, "claude")
         assert "No changed files detected" in result
 
     @patch("deepwork.review.mcp.load_all_rules")
-    def test_no_changed_files_explicit_empty_list(self, mock_load, tmp_path: Path) -> None:
+    def test_no_changed_files_explicit_empty_list(self, mock_load: Any, tmp_path: Path) -> None:
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         result = run_review(tmp_path, "claude", files=[])
         assert "No changed files detected" in result
@@ -53,7 +56,9 @@ class TestRunReview:
     @patch("deepwork.review.mcp.match_files_to_rules")
     @patch("deepwork.review.mcp.get_changed_files")
     @patch("deepwork.review.mcp.load_all_rules")
-    def test_no_rules_match(self, mock_load, mock_diff, mock_match, tmp_path: Path) -> None:
+    def test_no_rules_match(
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, tmp_path: Path
+    ) -> None:
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_diff.return_value = ["app.ts"]
         mock_match.return_value = []
@@ -63,7 +68,7 @@ class TestRunReview:
     @patch("deepwork.review.mcp.get_changed_files")
     @patch("deepwork.review.mcp.load_all_rules")
     def test_git_diff_error_raises_review_tool_error(
-        self, mock_load, mock_diff, tmp_path: Path
+        self, mock_load: Any, mock_diff: Any, tmp_path: Path
     ) -> None:
         from deepwork.review.matcher import GitDiffError
 
@@ -76,7 +81,7 @@ class TestRunReview:
     @patch("deepwork.review.mcp.get_changed_files")
     @patch("deepwork.review.mcp.load_all_rules")
     def test_explicit_files_bypass_git_diff(
-        self, mock_load, mock_diff, mock_match, tmp_path: Path
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, tmp_path: Path
     ) -> None:
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_match.return_value = []
@@ -91,7 +96,7 @@ class TestRunReview:
     @patch("deepwork.review.mcp.get_changed_files")
     @patch("deepwork.review.mcp.load_all_rules")
     def test_full_pipeline_returns_formatted_output(
-        self, mock_load, mock_diff, mock_match, mock_write, tmp_path: Path
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, mock_write: Any, tmp_path: Path
     ) -> None:
         rule = _make_rule(tmp_path)
         task = ReviewTask(
@@ -116,7 +121,7 @@ class TestRunReview:
     @patch("deepwork.review.mcp.match_files_to_rules")
     @patch("deepwork.review.mcp.load_all_rules")
     def test_files_are_deduplicated_and_sorted(
-        self, mock_load, mock_match, tmp_path: Path
+        self, mock_load: Any, mock_match: Any, tmp_path: Path
     ) -> None:
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_match.return_value = []
@@ -129,7 +134,7 @@ class TestRunReview:
     @patch("deepwork.review.mcp.get_changed_files")
     @patch("deepwork.review.mcp.load_all_rules")
     def test_write_error_raises_review_tool_error(
-        self, mock_load, mock_diff, mock_match, mock_write, tmp_path: Path
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, mock_write: Any, tmp_path: Path
     ) -> None:
         rule = _make_rule(tmp_path)
         task = ReviewTask(
@@ -151,8 +156,10 @@ class TestReviewToolRegistration:
     """Test that the review tool is registered on the MCP server."""
 
     def test_review_tool_is_registered(self, tmp_path: Path) -> None:
+        """Review tool is registered on the MCP server with or without explicit platform."""
         from deepwork.jobs.mcp.server import create_server
 
+        # With explicit platform
         server = create_server(
             project_root=tmp_path,
             enable_quality_gate=False,
@@ -160,29 +167,16 @@ class TestReviewToolRegistration:
         )
         assert "get_review_instructions" in server._tool_manager._tools
 
-    def test_review_tool_uses_platform_from_create_server(self, tmp_path: Path) -> None:
-        """Platform passed to create_server is used by the review tool."""
-        from deepwork.jobs.mcp.server import create_server
-
-        server = create_server(
-            project_root=tmp_path,
-            enable_quality_gate=False,
-            platform="claude",
-        )
-        assert "get_review_instructions" in server._tool_manager._tools
-
-    def test_review_tool_defaults_platform_to_claude(self, tmp_path: Path) -> None:
-        """When no platform is passed, review defaults to 'claude'."""
-        from deepwork.jobs.mcp.server import create_server
-
-        server = create_server(
+        # Without platform (defaults to claude)
+        server_default = create_server(
             project_root=tmp_path,
             enable_quality_gate=False,
         )
-        assert "get_review_instructions" in server._tool_manager._tools
+        assert "get_review_instructions" in server_default._tool_manager._tools
 
     def test_get_configured_reviews_tool_is_registered(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """get_configured_reviews is registered on the MCP server."""
         from deepwork.jobs.mcp.server import create_server
 
@@ -197,8 +191,9 @@ class TestGetConfiguredReviews:
     """Tests for the get_configured_reviews adapter function — validates REQ-008."""
 
     @patch("deepwork.review.mcp.load_all_rules")
-    def test_returns_all_rules(self, mock_load: object, tmp_path: Path) -> None:
+    def test_returns_all_rules(self, mock_load: Any, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.3, REQ-008.2.1, REQ-008.2.2, REQ-008.2.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         rule1 = _make_rule(tmp_path)
         rule2 = ReviewRule(
             name="lint_rule",
@@ -214,7 +209,7 @@ class TestGetConfiguredReviews:
             source_file=tmp_path / ".deepreview",
             source_line=10,
         )
-        mock_load.return_value = ([rule1, rule2], [])  # type: ignore[union-attr]
+        mock_load.return_value = ([rule1, rule2], [])
 
         result = get_configured_reviews(tmp_path)
         assert len(result) == 2
@@ -225,15 +220,17 @@ class TestGetConfiguredReviews:
         assert result[1]["defining_file"] == ".deepreview:10"
 
     @patch("deepwork.review.mcp.load_all_rules")
-    def test_returns_empty_when_no_rules(self, mock_load: object, tmp_path: Path) -> None:
+    def test_returns_empty_when_no_rules(self, mock_load: Any, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.1.3).
-        mock_load.return_value = ([], [])  # type: ignore[union-attr]
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        mock_load.return_value = ([], [])
         result = get_configured_reviews(tmp_path)
         assert result == []
 
     @patch("deepwork.review.mcp.load_all_rules")
-    def test_filters_by_matching_files(self, mock_load: object, tmp_path: Path) -> None:
+    def test_filters_by_matching_files(self, mock_load: Any, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.3.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         py_rule = _make_rule(tmp_path)  # includes **/*.py
         ts_rule = ReviewRule(
             name="ts_rule",
@@ -249,17 +246,18 @@ class TestGetConfiguredReviews:
             source_file=tmp_path / ".deepreview",
             source_line=5,
         )
-        mock_load.return_value = ([py_rule, ts_rule], [])  # type: ignore[union-attr]
+        mock_load.return_value = ([py_rule, ts_rule], [])
 
         result = get_configured_reviews(tmp_path, only_rules_matching_files=["src/app.py"])
         assert len(result) == 1
         assert result[0]["name"] == "test_rule"
 
     @patch("deepwork.review.mcp.load_all_rules")
-    def test_no_filter_returns_all(self, mock_load: object, tmp_path: Path) -> None:
+    def test_no_filter_returns_all(self, mock_load: Any, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.3.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         rule = _make_rule(tmp_path)
-        mock_load.return_value = ([rule], [])  # type: ignore[union-attr]
+        mock_load.return_value = ([rule], [])
 
         result = get_configured_reviews(tmp_path, only_rules_matching_files=None)
         assert len(result) == 1
@@ -267,13 +265,20 @@ class TestGetConfiguredReviews:
 
     @patch("deepwork.review.mcp.load_all_rules")
     def test_discovery_errors_still_return_valid_rules(
-        self, mock_load: object, tmp_path: Path
+        self, mock_load: Any, tmp_path: Path
     ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-008.4.1, REQ-008.4.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        from deepwork.review.discovery import DiscoveryError
+
         rule = _make_rule(tmp_path)
-        errors = ["Error parsing /bad/.deepreview: invalid YAML"]
-        mock_load.return_value = ([rule], errors)  # type: ignore[union-attr]
+        errors = [DiscoveryError(file_path=Path("/bad/.deepreview"), error="invalid YAML")]
+        mock_load.return_value = ([rule], errors)
 
         result = get_configured_reviews(tmp_path)
-        assert len(result) == 1
-        assert result[0]["name"] == "test_rule"
+        # Valid rules are returned, plus parse errors are surfaced
+        valid_rules = [r for r in result if not r["name"].startswith("PARSE_ERROR:")]
+        assert len(valid_rules) == 1
+        assert valid_rules[0]["name"] == "test_rule"
+        error_entries = [r for r in result if r["name"].startswith("PARSE_ERROR:")]
+        assert len(error_entries) == 1

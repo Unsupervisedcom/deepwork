@@ -42,8 +42,16 @@ requirements_traceability:
          automated test referencing it in `tests/`.
       3. Flag any test modifications where the underlying requirement did not
          also change.
-      4. Verify traceability comments are present and correctly reference
-         requirement IDs.
+      4. Verify traceability comments are present, correctly reference
+         requirement IDs, and use the standard two-line format:
+         ```
+         # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-xxx.x.x).
+         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+         ```
+         Both lines are required. They must appear inside the method body
+         (after `def`, before the docstring). If tests have REQ references
+         only in docstrings but are missing the formal comment block, flag
+         them. If the second line is missing, flag that too.
 
       Produce a structured review with Coverage Gaps, Test Stability Violations,
       Traceability Issues, and a Summary with PASS/FAIL verdicts.

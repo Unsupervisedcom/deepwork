@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from deepwork.review.config import ConfigError, ReviewRule, parse_deepreview_file
+from deepwork.review.config import ConfigError, parse_deepreview_file
 
 
 def _write_deepreview(path: Path, content: str) -> Path:
@@ -144,7 +144,9 @@ my_rule:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.1, REQ-001.4.3, REQ-001.4.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_file_reference_instructions(self, tmp_path: Path) -> None:
-        (tmp_path / "review_guide.md").write_text("# Review Guide\nCheck everything.", encoding="utf-8")
+        (tmp_path / "review_guide.md").write_text(
+            "# Review Guide\nCheck everything.", encoding="utf-8"
+        )
         filepath = _write_deepreview(
             tmp_path,
             """

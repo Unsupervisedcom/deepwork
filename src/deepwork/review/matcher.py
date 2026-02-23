@@ -104,14 +104,10 @@ def _get_merge_base(project_root: Path, ref: str) -> str:
         )
         return result.stdout.strip()
     except subprocess.CalledProcessError as e:
-        raise GitDiffError(
-            f"Failed to find merge-base with '{ref}': {e.stderr.strip()}"
-        ) from e
+        raise GitDiffError(f"Failed to find merge-base with '{ref}': {e.stderr.strip()}") from e
 
 
-def _git_diff_name_only(
-    project_root: Path, ref: str | None, *, staged: bool = False
-) -> list[str]:
+def _git_diff_name_only(project_root: Path, ref: str | None, *, staged: bool = False) -> list[str]:
     """Run git diff --name-only and return the list of files.
 
     Args:
@@ -141,9 +137,7 @@ def _git_diff_name_only(
         )
         return [f for f in result.stdout.strip().split("\n") if f]
     except subprocess.CalledProcessError as e:
-        raise GitDiffError(
-            f"git diff failed: {e.stderr.strip()}"
-        ) from e
+        raise GitDiffError(f"git diff failed: {e.stderr.strip()}") from e
 
 
 def match_files_to_rules(
@@ -169,13 +163,13 @@ def match_files_to_rules(
     tasks: list[ReviewTask] = []
 
     for rule in rules:
-        matched = _match_rule(changed_files, rule, project_root)
+        matched = match_rule(changed_files, rule, project_root)
         if not matched:
             continue
 
         agent_name = _resolve_agent(rule, platform)
         all_filenames = changed_files if rule.all_changed_filenames else None
-        source_location = _format_source_location(rule, project_root)
+        source_location = format_source_location(rule, project_root)
 
         if rule.strategy == "individual":
             for filepath in matched:
@@ -193,9 +187,7 @@ def match_files_to_rules(
         elif rule.strategy == "matches_together":
             additional = []
             if rule.unchanged_matching_files:
-                additional = _find_unchanged_matching_files(
-                    changed_files, rule, project_root
-                )
+                additional = _find_unchanged_matching_files(changed_files, rule, project_root)
             tasks.append(
                 ReviewTask(
                     rule_name=rule.name,
@@ -223,9 +215,7 @@ def match_files_to_rules(
     return tasks
 
 
-def _match_rule(
-    changed_files: list[str], rule: ReviewRule, project_root: Path
-) -> list[str]:
+def match_rule(changed_files: list[str], rule: ReviewRule, project_root: Path) -> list[str]:
     """Find changed files that match a rule's include/exclude patterns.
 
     Patterns are resolved relative to the rule's source_dir.
@@ -255,15 +245,11 @@ def _match_rule(
             continue
 
         # Check include patterns
-        if not any(
-            _glob_match(rel_to_source, pattern) for pattern in rule.include_patterns
-        ):
+        if not any(_glob_match(rel_to_source, pattern) for pattern in rule.include_patterns):
             continue
 
         # Check exclude patterns
-        if any(
-            _glob_match(rel_to_source, pattern) for pattern in rule.exclude_patterns
-        ):
+        if any(_glob_match(rel_to_source, pattern) for pattern in rule.exclude_patterns):
             continue
 
         matched.append(filepath)
@@ -289,7 +275,7 @@ def _relative_to_dir(filepath: str, dir_path: str) -> str | None:
 
     prefix = dir_path.rstrip("/") + "/"
     if filepath.startswith(prefix):
-        return filepath[len(prefix):]
+        return filepath[len(prefix) :]
 
     return None
 
@@ -365,7 +351,7 @@ def _resolve_agent(rule: ReviewRule, platform: str) -> str | None:
     return rule.agent.get(platform)
 
 
-def _format_source_location(rule: ReviewRule, project_root: Path) -> str:
+def format_source_location(rule: ReviewRule, project_root: Path) -> str:
     """Format the source location of a rule as 'relative/path:line'.
 
     Args:
@@ -410,7 +396,9 @@ def _find_unchanged_matching_files(
     except ValueError:
         return []
 
-    # Walk the source directory for matching files
+    # Walk the source directory for matching files.
+    # We intentionally follow symlinks here so that symlinked source trees
+    # are included in the unchanged-file search.
     for include_pattern in rule.include_patterns:
         for match_path in source_dir.glob(include_pattern):
             if not match_path.is_file():
@@ -432,10 +420,7 @@ def _find_unchanged_matching_files(
                 continue
 
             # Check exclude patterns
-            if any(
-                _glob_match(rel_to_source, pattern)
-                for pattern in rule.exclude_patterns
-            ):
+            if any(_glob_match(rel_to_source, pattern) for pattern in rule.exclude_patterns):
                 continue
 
             unchanged.append(rel_path)

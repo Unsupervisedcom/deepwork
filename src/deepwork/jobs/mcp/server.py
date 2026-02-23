@@ -225,8 +225,10 @@ def create_server(
 
     from deepwork.review.mcp import (
         ReviewToolError,
-        get_configured_reviews as get_configured_reviews_fn,
         run_review,
+    )
+    from deepwork.review.mcp import (
+        get_configured_reviews as get_configured_reviews_fn,
     )
 
     review_platform = platform or "claude"

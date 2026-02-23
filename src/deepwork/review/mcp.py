@@ -11,8 +11,8 @@ from deepwork.review.formatter import format_for_claude
 from deepwork.review.instructions import write_instruction_files
 from deepwork.review.matcher import (
     GitDiffError,
-    _format_source_location,
-    _match_rule,
+    format_source_location,
+    match_rule,
     get_changed_files,
     match_files_to_rules,
 )
@@ -55,9 +55,14 @@ def run_review(
         )
 
     # Step 1: Discover .deepreview files and parse rules
-    rules, _discovery_errors = load_all_rules(project_root)
+    rules, discovery_errors = load_all_rules(project_root)
 
     if not rules:
+        if discovery_errors:
+            warnings = "\n".join(
+                f"  - {e.file_path}: {e.error}" for e in discovery_errors
+            )
+            return f"No valid .deepreview rules found. Parse errors:\n{warnings}"
         return "No .deepreview configuration files found."
 
     # Step 2: Determine changed files
@@ -86,7 +91,15 @@ def run_review(
 
     # Step 5: Format output
     formatter = FORMATTERS[platform]
-    return formatter(task_files, project_root)
+    result = formatter(task_files, project_root)
+
+    if discovery_errors:
+        warnings = "\n".join(
+            f"  - {e.file_path}: {e.error}" for e in discovery_errors
+        )
+        result = f"Warning: Some .deepreview files could not be parsed:\n{warnings}\n\n{result}"
+
+    return result
 
 
 def get_configured_reviews(
@@ -103,20 +116,30 @@ def get_configured_reviews(
     Returns:
         List of dicts with ``name``, ``description``, and ``defining_file``.
     """
-    rules, _errors = load_all_rules(project_root)
+    rules, errors = load_all_rules(project_root)
 
     if only_rules_matching_files is not None:
         rules = [
-            rule
-            for rule in rules
-            if _match_rule(only_rules_matching_files, rule, project_root)
+            rule for rule in rules if match_rule(only_rules_matching_files, rule, project_root)
         ]
 
-    return [
+    result = [
         {
             "name": rule.name,
             "description": rule.description,
-            "defining_file": _format_source_location(rule, project_root),
+            "defining_file": format_source_location(rule, project_root),
         }
         for rule in rules
     ]
+
+    if errors:
+        for err in errors:
+            result.append(
+                {
+                    "name": f"PARSE_ERROR:{err.file_path}",
+                    "description": err.error,
+                    "defining_file": str(err.file_path),
+                }
+            )
+
+    return result

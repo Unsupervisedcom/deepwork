@@ -1,6 +1,7 @@
 """Tests for the deepwork review CLI command (deepwork.cli.review) — validates REQ-006."""
 
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 from click.testing import CliRunner
@@ -33,7 +34,7 @@ class TestReviewCommand:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.4.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.load_all_rules")
-    def test_no_config_files_found(self, mock_load, tmp_path: Path) -> None:
+    def test_no_config_files_found(self, mock_load: Any, tmp_path: Path) -> None:
         mock_load.return_value = ([], [])
         runner = CliRunner()
         result = runner.invoke(
@@ -47,7 +48,7 @@ class TestReviewCommand:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.get_changed_files")
     @patch("deepwork.cli.review.load_all_rules")
-    def test_no_changed_files(self, mock_load, mock_diff, tmp_path: Path) -> None:
+    def test_no_changed_files(self, mock_load: Any, mock_diff: Any, tmp_path: Path) -> None:
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_diff.return_value = []
         runner = CliRunner()
@@ -63,7 +64,9 @@ class TestReviewCommand:
     @patch("deepwork.cli.review.match_files_to_rules")
     @patch("deepwork.cli.review.get_changed_files")
     @patch("deepwork.cli.review.load_all_rules")
-    def test_no_rules_match(self, mock_load, mock_diff, mock_match, tmp_path: Path) -> None:
+    def test_no_rules_match(
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, tmp_path: Path
+    ) -> None:
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_diff.return_value = ["app.ts"]
         mock_match.return_value = []
@@ -79,7 +82,9 @@ class TestReviewCommand:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.get_changed_files")
     @patch("deepwork.cli.review.load_all_rules")
-    def test_git_error_exits_with_code_1(self, mock_load, mock_diff, tmp_path: Path) -> None:
+    def test_git_error_exits_with_code_1(
+        self, mock_load: Any, mock_diff: Any, tmp_path: Path
+    ) -> None:
         from deepwork.review.matcher import GitDiffError
 
         mock_load.return_value = ([_make_rule(tmp_path)], [])
@@ -94,7 +99,7 @@ class TestReviewCommand:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.5.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.load_all_rules")
-    def test_discovery_errors_reported_but_continues(self, mock_load, tmp_path: Path) -> None:
+    def test_discovery_errors_reported_but_continues(self, mock_load: Any, tmp_path: Path) -> None:
         from deepwork.review.discovery import DiscoveryError
 
         mock_load.return_value = (
@@ -118,7 +123,13 @@ class TestReviewCommand:
     @patch("deepwork.cli.review.get_changed_files")
     @patch("deepwork.cli.review.load_all_rules")
     def test_full_pipeline_produces_output(
-        self, mock_load, mock_diff, mock_match, mock_write, mock_format, tmp_path: Path
+        self,
+        mock_load: Any,
+        mock_diff: Any,
+        mock_match: Any,
+        mock_write: Any,
+        mock_format: Any,
+        tmp_path: Path,
     ) -> None:
         rule = _make_rule(tmp_path)
         task = ReviewTask(
@@ -156,7 +167,7 @@ class TestReviewCommand:
     @patch("deepwork.cli.review.get_changed_files")
     @patch("deepwork.cli.review.load_all_rules")
     def test_files_option_bypasses_git_diff(
-        self, mock_load, mock_diff, mock_match, tmp_path: Path
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, tmp_path: Path
     ) -> None:
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_match.return_value = []
@@ -164,10 +175,14 @@ class TestReviewCommand:
         result = runner.invoke(
             review,
             [
-                "--instructions-for", "claude",
-                "--path", str(tmp_path),
-                "--files", "src/a.py",
-                "--files", "src/b.py",
+                "--instructions-for",
+                "claude",
+                "--path",
+                str(tmp_path),
+                "--files",
+                "src/a.py",
+                "--files",
+                "src/b.py",
             ],
         )
         assert result.exit_code == 0
@@ -184,7 +199,7 @@ class TestReviewCommand:
     @patch("deepwork.cli.review.get_changed_files")
     @patch("deepwork.cli.review.load_all_rules")
     def test_stdin_provides_file_list(
-        self, mock_load, mock_diff, mock_match, tmp_path: Path
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, tmp_path: Path
     ) -> None:
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_match.return_value = []
@@ -206,7 +221,7 @@ class TestReviewCommand:
     @patch("deepwork.cli.review.get_changed_files")
     @patch("deepwork.cli.review.load_all_rules")
     def test_files_option_deduplicates_and_sorts(
-        self, mock_load, mock_diff, mock_match, tmp_path: Path
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, tmp_path: Path
     ) -> None:
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_match.return_value = []
@@ -214,11 +229,16 @@ class TestReviewCommand:
         result = runner.invoke(
             review,
             [
-                "--instructions-for", "claude",
-                "--path", str(tmp_path),
-                "--files", "z.py",
-                "--files", "a.py",
-                "--files", "z.py",
+                "--instructions-for",
+                "claude",
+                "--path",
+                str(tmp_path),
+                "--files",
+                "z.py",
+                "--files",
+                "a.py",
+                "--files",
+                "z.py",
             ],
         )
         assert result.exit_code == 0
@@ -232,7 +252,7 @@ class TestReviewCommand:
     @patch("deepwork.cli.review.get_changed_files")
     @patch("deepwork.cli.review.load_all_rules")
     def test_instruction_write_error_exits_with_code_1(
-        self, mock_load, mock_diff, mock_match, mock_write, tmp_path: Path
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, mock_write: Any, tmp_path: Path
     ) -> None:
         rule = _make_rule(tmp_path)
         task = ReviewTask(
@@ -260,7 +280,7 @@ class TestReviewCommand:
     @patch("deepwork.cli.review.get_changed_files")
     @patch("deepwork.cli.review.load_all_rules")
     def test_files_option_takes_priority_over_stdin(
-        self, mock_load, mock_diff, mock_match, tmp_path: Path
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, tmp_path: Path
     ) -> None:
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_match.return_value = []
@@ -268,9 +288,12 @@ class TestReviewCommand:
         result = runner.invoke(
             review,
             [
-                "--instructions-for", "claude",
-                "--path", str(tmp_path),
-                "--files", "explicit.py",
+                "--instructions-for",
+                "claude",
+                "--path",
+                str(tmp_path),
+                "--files",
+                "explicit.py",
             ],
             input="from_stdin.py\n",
         )

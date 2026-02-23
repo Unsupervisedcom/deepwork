@@ -107,9 +107,7 @@ def build_instruction_file(task: ReviewTask) -> str:
     # Traceability: link back to the source policy
     if task.source_location:
         parts.append("---\n")
-        parts.append(
-            f"This review was requested by the policy at `{task.source_location}`."
-        )
+        parts.append(f"This review was requested by the policy at `{task.source_location}`.")
         parts.append("")
 
     return "\n".join(parts)

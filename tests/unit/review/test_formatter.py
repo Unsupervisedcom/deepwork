@@ -50,9 +50,7 @@ class TestFormatForClaude:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.3.3a).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_grouped_task_name_includes_file_count(self, tmp_path: Path) -> None:
-        task = _make_task(
-            rule_name="py_review", files=["a.py", "b.py", "c.py"]
-        )
+        task = _make_task(rule_name="py_review", files=["a.py", "b.py", "c.py"])
         file_path = tmp_path / "instructions.md"
         result = format_for_claude([(task, file_path)], tmp_path)
         assert 'name: "py_review review of 3 files"' in result
@@ -96,8 +94,6 @@ class TestFormatForClaude:
         task_b = _make_task(rule_name="rule_b", files=["b.py"])
         file_a = tmp_path / "a.md"
         file_b = tmp_path / "b.md"
-        result = format_for_claude(
-            [(task_a, file_a), (task_b, file_b)], tmp_path
-        )
+        result = format_for_claude([(task_a, file_a), (task_b, file_b)], tmp_path)
         assert 'name: "rule_a review of a.py"' in result
         assert 'name: "rule_b review of b.py"' in result

@@ -68,9 +68,7 @@ class TestBuildInstructionFile:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.1.7, REQ-005.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_includes_all_changed_filenames_without_at_prefix(self) -> None:
-        task = _make_task(
-            all_changed_filenames=["src/app.py", "tests/test.py", "README.md"]
-        )
+        task = _make_task(all_changed_filenames=["src/app.py", "tests/test.py", "README.md"])
         content = build_instruction_file(task)
         assert "## All Changed Files" in content
         assert "- src/app.py" in content
@@ -84,7 +82,9 @@ class TestBuildInstructionFile:
             elif line.startswith("##"):
                 all_changed_section = False
             if all_changed_section and line.startswith("- "):
-                assert not line.startswith("- @"), f"Context-only files should not have @ prefix: {line}"
+                assert not line.startswith("- @"), (
+                    f"Context-only files should not have @ prefix: {line}"
+                )
 
     def test_omits_unchanged_section_when_empty(self) -> None:
         task = _make_task(additional_files=[])
@@ -120,9 +120,7 @@ class TestBuildInstructionFile:
         content = build_instruction_file(task)
         lines = content.strip().split("\n")
         # Find the traceability line
-        trace_idx = next(
-            i for i, l in enumerate(lines) if "This review was requested" in l
-        )
+        trace_idx = next(i for i, line in enumerate(lines) if "This review was requested" in line)
         # The line two above should be the horizontal rule (blank line between)
         assert "---" in lines[trace_idx - 2]
 
@@ -136,7 +134,7 @@ class TestBuildInstructionFile:
     def test_traceability_is_at_end(self) -> None:
         task = _make_task(source_location=".deepreview:1")
         content = build_instruction_file(task)
-        last_nonblank = [l for l in content.strip().split("\n") if l.strip()][-1]
+        last_nonblank = [line for line in content.strip().split("\n") if line.strip()][-1]
         assert "This review was requested" in last_nonblank
 
 
@@ -150,7 +148,7 @@ class TestWriteInstructionFiles:
         results = write_instruction_files(tasks, tmp_path)
         assert len(results) == 2
 
-        for task, file_path in results:
+        for _task, file_path in results:
             assert file_path.exists()
             assert file_path.suffix == ".md"
             assert ".deepwork/tmp/review_instructions" in str(file_path)

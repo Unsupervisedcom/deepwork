@@ -4,6 +4,7 @@ import inspect
 import os
 import subprocess
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, call, patch
 
 import pytest
@@ -12,8 +13,7 @@ from deepwork.review.config import ReviewRule
 from deepwork.review.matcher import (
     GitDiffError,
     _glob_match,
-    _glob_to_regex,
-    _match_rule,
+    match_rule,
     _relative_to_dir,
     get_changed_files,
     match_files_to_rules,
@@ -93,13 +93,13 @@ class TestGlobMatch:
 
 
 class TestMatchRule:
-    """Tests for _match_rule."""
+    """Tests for match_rule."""
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.1.1, REQ-004.1.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_matches_include_pattern(self, tmp_path: Path) -> None:
         rule = _make_rule(include=["**/*.py"], source_dir=tmp_path)
-        matched = _match_rule(["src/app.py", "src/lib.ts"], rule, tmp_path)
+        matched = match_rule(["src/app.py", "src/lib.ts"], rule, tmp_path)
         assert matched == ["src/app.py"]
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.1.6, REQ-004.1.7).
@@ -110,9 +110,7 @@ class TestMatchRule:
             exclude=["tests/**/*.py"],
             source_dir=tmp_path,
         )
-        matched = _match_rule(
-            ["src/app.py", "tests/test_app.py"], rule, tmp_path
-        )
+        matched = match_rule(["src/app.py", "tests/test_app.py"], rule, tmp_path)
         assert matched == ["src/app.py"]
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.1.2).
@@ -121,12 +119,12 @@ class TestMatchRule:
         source = tmp_path / "src"
         source.mkdir()
         rule = _make_rule(include=["**/*.py"], source_dir=source)
-        matched = _match_rule(["tests/test.py", "src/app.py"], rule, tmp_path)
+        matched = match_rule(["tests/test.py", "src/app.py"], rule, tmp_path)
         assert matched == ["src/app.py"]
 
     def test_no_matches(self, tmp_path: Path) -> None:
         rule = _make_rule(include=["**/*.py"], source_dir=tmp_path)
-        matched = _match_rule(["app.ts", "lib.js"], rule, tmp_path)
+        matched = match_rule(["app.ts", "lib.js"], rule, tmp_path)
         assert matched == []
 
 
@@ -287,7 +285,7 @@ class TestGetChangedFiles:
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
     @patch("deepwork.review.matcher._get_merge_base", return_value="abc123")
     def test_returns_sorted_deduplicated_files(
-        self, mock_merge_base, mock_detect, mock_run, tmp_path: Path
+        self, mock_merge_base: Any, mock_detect: Any, mock_run: Any, tmp_path: Path
     ) -> None:
         mock_run.return_value.stdout = "b.py\na.py\n"
         mock_run.return_value.returncode = 0
@@ -298,7 +296,9 @@ class TestGetChangedFiles:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher._git_diff_name_only")
     @patch("deepwork.review.matcher._get_merge_base", return_value="abc123")
-    def test_uses_explicit_base_ref(self, mock_merge_base, mock_diff, tmp_path: Path) -> None:
+    def test_uses_explicit_base_ref(
+        self, mock_merge_base: Any, mock_diff: Any, tmp_path: Path
+    ) -> None:
         mock_diff.return_value = ["app.py"]
         get_changed_files(tmp_path, base_ref="develop")
         mock_merge_base.assert_called_once_with(tmp_path, "develop")
@@ -309,7 +309,7 @@ class TestGetChangedFiles:
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
     @patch("deepwork.review.matcher._get_merge_base", return_value="abc123")
     def test_returns_list_of_relative_paths(
-        self, mock_merge_base, mock_detect, mock_diff, tmp_path: Path
+        self, mock_merge_base: Any, mock_detect: Any, mock_diff: Any, tmp_path: Path
     ) -> None:
         mock_diff.return_value = ["src/app.py", "tests/test_app.py"]
         result = get_changed_files(tmp_path)
@@ -324,7 +324,7 @@ class TestGetChangedFiles:
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
     @patch("deepwork.review.matcher._get_merge_base", return_value="abc123")
     def test_uses_diff_filter_acmr(
-        self, mock_merge_base, mock_detect, mock_run, tmp_path: Path
+        self, mock_merge_base: Any, mock_detect: Any, mock_run: Any, tmp_path: Path
     ) -> None:
         mock_run.return_value.stdout = ""
         mock_run.return_value.returncode = 0
@@ -343,7 +343,7 @@ class TestGetChangedFiles:
     @patch("deepwork.review.matcher._get_merge_base", return_value="abc123")
     @patch("deepwork.review.matcher._git_diff_name_only")
     def test_combines_unstaged_and_staged_changes(
-        self, mock_diff, mock_merge_base, mock_detect, tmp_path: Path
+        self, mock_diff: Any, mock_merge_base: Any, mock_detect: Any, tmp_path: Path
     ) -> None:
         # First call is for diff against merge-base (unstaged/committed),
         # second call is for staged changes
@@ -366,7 +366,7 @@ class TestGetChangedFiles:
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
     @patch("deepwork.review.matcher._get_merge_base", return_value="abc123")
     def test_paths_relative_to_repo_root(
-        self, mock_merge_base, mock_detect, mock_diff, tmp_path: Path
+        self, mock_merge_base: Any, mock_detect: Any, mock_diff: Any, tmp_path: Path
     ) -> None:
         mock_diff.return_value = ["src/lib/utils.py", "README.md"]
         result = get_changed_files(tmp_path)
@@ -388,7 +388,7 @@ class TestGetChangedFiles:
     @patch("deepwork.review.matcher._get_merge_base", return_value="abc123")
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
     def test_auto_detects_merge_base_when_base_ref_none(
-        self, mock_detect, mock_merge_base, mock_diff, tmp_path: Path
+        self, mock_detect: Any, mock_merge_base: Any, mock_diff: Any, tmp_path: Path
     ) -> None:
         mock_diff.return_value = []
         get_changed_files(tmp_path, base_ref=None)
@@ -398,9 +398,7 @@ class TestGetChangedFiles:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
-    def test_detect_base_ref_prefers_main_over_master(
-        self, mock_run, tmp_path: Path
-    ) -> None:
+    def test_detect_base_ref_prefers_main_over_master(self, mock_run: Any, tmp_path: Path) -> None:
         from deepwork.review.matcher import _detect_base_ref
 
         # Simulate: 'main' exists (rev-parse succeeds)
@@ -414,12 +412,10 @@ class TestGetChangedFiles:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
-    def test_detect_base_ref_falls_back_to_master(
-        self, mock_run, tmp_path: Path
-    ) -> None:
+    def test_detect_base_ref_falls_back_to_master(self, mock_run: Any, tmp_path: Path) -> None:
         from deepwork.review.matcher import _detect_base_ref
 
-        def side_effect(cmd, **kwargs):
+        def side_effect(cmd: Any, **kwargs: Any) -> Any:
             if "main" in cmd:
                 raise subprocess.CalledProcessError(128, cmd)
             result = MagicMock()
@@ -433,9 +429,7 @@ class TestGetChangedFiles:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.2.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
-    def test_detect_base_ref_falls_back_to_head(
-        self, mock_run, tmp_path: Path
-    ) -> None:
+    def test_detect_base_ref_falls_back_to_head(self, mock_run: Any, tmp_path: Path) -> None:
         from deepwork.review.matcher import _detect_base_ref
 
         # Neither main nor master exists
@@ -446,7 +440,7 @@ class TestGetChangedFiles:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.2.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
-    def test_uses_git_merge_base(self, mock_run, tmp_path: Path) -> None:
+    def test_uses_git_merge_base(self, mock_run: Any, tmp_path: Path) -> None:
         from deepwork.review.matcher import _get_merge_base
 
         mock_run.return_value.stdout = "deadbeef\n"
@@ -464,7 +458,7 @@ class TestGetChangedFiles:
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
     @patch("deepwork.review.matcher._get_merge_base", return_value="abc123")
     def test_git_commands_use_cwd_project_root(
-        self, mock_merge_base, mock_detect, mock_run, tmp_path: Path
+        self, mock_merge_base: Any, mock_detect: Any, mock_run: Any, tmp_path: Path
     ) -> None:
         mock_run.return_value.stdout = "app.py\n"
         mock_run.return_value.returncode = 0
@@ -472,8 +466,7 @@ class TestGetChangedFiles:
         for c in mock_run.call_args_list:
             kwargs = c[1] if c[1] else {}
             assert kwargs.get("cwd") == tmp_path, (
-                f"Expected cwd={tmp_path}, got cwd={kwargs.get('cwd')} "
-                f"for command {c}"
+                f"Expected cwd={tmp_path}, got cwd={kwargs.get('cwd')} for command {c}"
             )
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.3.2).
@@ -482,7 +475,7 @@ class TestGetChangedFiles:
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
     @patch("deepwork.review.matcher._get_merge_base", return_value="abc123")
     def test_does_not_change_process_working_directory(
-        self, mock_merge_base, mock_detect, mock_diff, tmp_path: Path
+        self, mock_merge_base: Any, mock_detect: Any, mock_diff: Any, tmp_path: Path
     ) -> None:
         mock_diff.return_value = ["app.py"]
         cwd_before = os.getcwd()
@@ -493,7 +486,7 @@ class TestGetChangedFiles:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.4.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
-    def test_invalid_base_ref_raises_error(self, mock_run, tmp_path: Path) -> None:
+    def test_invalid_base_ref_raises_error(self, mock_run: Any, tmp_path: Path) -> None:
         from deepwork.review.matcher import _get_merge_base
 
         mock_run.side_effect = subprocess.CalledProcessError(
@@ -505,12 +498,10 @@ class TestGetChangedFiles:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.4.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
-    def test_stderr_included_in_error_message(self, mock_run, tmp_path: Path) -> None:
+    def test_stderr_included_in_error_message(self, mock_run: Any, tmp_path: Path) -> None:
         from deepwork.review.matcher import _get_merge_base
 
         stderr_msg = "fatal: bad revision 'bad_ref'"
-        mock_run.side_effect = subprocess.CalledProcessError(
-            128, "git", stderr=stderr_msg
-        )
+        mock_run.side_effect = subprocess.CalledProcessError(128, "git", stderr=stderr_msg)
         with pytest.raises(GitDiffError, match=stderr_msg):
             _get_merge_base(tmp_path, "bad_ref")
