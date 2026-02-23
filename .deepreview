@@ -1,22 +1,98 @@
-python_code_review:
-  description: "Check Python files for code quality, style, and best practices."
+prompt_best_practices:
+  description: "Review prompt/instruction markdown files for Anthropic prompt engineering best practices."
   match:
+    # Add any known prompt files to the include list
     include:
-      - "**/*.py"
+      - "**/CLAUDE.md"
+      - "**/AGENTS.md"
+      - ".claude/**/*.md"
+      - ".deepwork/review/*.md"
+      - ".deepwork/jobs/**/*.md"
+      - "plugins/**/skills/**/*.md"
+      - "platform/**/*.md"
+      - "src/deepwork/standard_jobs/**/*.md"
+      - "**/.deepreview"       # .deepreview files contain inline agent instructions — prompt-heavy content
   review:
     strategy: individual
     instructions:
-      file: .deepwork/review/python_code_review.md
+      file: .deepwork/review/prompt_best_practices.md
+
+python_code_review:
+  description: "Review Python files against project conventions and best practices."
+  match:
+    include:
+      - "**/*.py"
+    exclude:
+      - "tests/fixtures/**"
+  review:
+    strategy: individual
+    instructions: |
+      Review this Python file against the project's coding conventions
+      documented in doc/code_review_standards.md and the ruff/mypy config
+      in pyproject.toml.
+
+      Check for:
+      - Adherence to project naming conventions (snake_case for functions/variables,
+        PascalCase for classes)
+      - Proper error handling following project patterns
+      - Import ordering (stdlib, third-party, local — enforced by ruff isort)
+      - Type hints on function signatures (enforced by mypy disallow_untyped_defs)
+      - Security concerns (injection, unsafe deserialization, path traversal)
+      - Performance issues (unnecessary computation, resource leaks)
+
+      Additionally, always check:
+      - **DRY violations**: Is there duplicated logic or repeated patterns that
+        should be extracted into a shared function, utility, or module? Look for
+        copy-pasted code with minor variations and similar code blocks differing
+        only in variable names.
+      - **Comment accuracy**: Are all comments, docstrings, and inline
+        documentation still accurate after the changes? Flag any comments that
+        describe behavior that no longer matches the code.
 
 python_lint:
   description: "Run ruff (lint + format) and mypy on changed Python files."
   match:
     include:
       - "**/*.py"
+    exclude:
+      - "tests/fixtures/**"
+  review:
+    strategy: individual
+    instructions: |
+      Run ruff and mypy on this Python file. Fix what you can automatically,
+      then report only issues that remain unresolved.
+
+      Steps:
+      1. Run `uv run ruff check --fix` on this file.
+      2. Run `uv run ruff format` on this file.
+      3. Run `uv run mypy` on this file.
+      4. Fix any remaining issues you can resolve (e.g., adding type annotations,
+         renaming ambiguous variables).
+      5. Re-run all three checks to confirm your fixes are clean.
+
+      Additionally, always check:
+      - **DRY violations**: Is there duplicated logic or repeated patterns that
+        should be extracted into a shared function, utility, or module?
+      - **Comment accuracy**: Are all comments, docstrings, and inline
+        documentation still accurate after the changes? Flag any comments that
+        describe behavior that no longer matches the code.
+
+      Output Format:
+      - PASS: All checks pass (no remaining issues).
+      - FAIL: Unfixable lint errors, type errors, DRY violations, or stale
+        comments remain. List each with file, line, and details.
+
+suggest_new_reviews:
+  description: "Analyze all changes and suggest new review rules that would catch issues going forward."
+  match:
+    include:
+      - "**/*"
+    exclude:
+      - ".github/**"
   review:
     strategy: matches_together
     instructions:
-      file: .deepwork/review/python_lint.md
+      file: .deepwork/review/suggest_new_reviews.md
 
 requirements_traceability:
   description: "Verify requirements traceability between specs, code, and tests."
@@ -32,10 +108,11 @@ requirements_traceability:
     instructions: |
       Review the changed files for requirements traceability.
 
-      This project keeps formal requirements in `specs/` using the naming pattern
-      `REQ-NNN-<topic>.md` with individually numbered requirements (e.g. REQ-001.1).
-      Tests live in `tests/` and reference requirement IDs via docstrings and
-      traceability comments.
+      This project keeps formal requirements in `specs/` organized by domain.
+      Each file follows the naming pattern `{PREFIX}-REQ-NNN-<topic>.md` where
+      PREFIX is one of: DW-REQ, JOBS-REQ, REVIEW-REQ, LA-REQ. Requirements are
+      individually numbered (e.g. JOBS-REQ-004.1). Tests live in `tests/` and
+      reference requirement IDs via docstrings and traceability comments.
 
       For this review:
       1. Check that any new or changed end-user functionality has a corresponding
@@ -47,7 +124,7 @@ requirements_traceability:
       4. Verify traceability comments are present, correctly reference
          requirement IDs, and use the standard two-line format:
          ```
-         # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-xxx.x.x).
+         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5).
          # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
          ```
          Both lines are required. They must appear inside the method body
@@ -57,3 +134,151 @@ requirements_traceability:
 
       Produce a structured review with Coverage Gaps, Test Stability Violations,
       Traceability Issues, and a Summary with PASS/FAIL verdicts.
+
+update_documents_relating_to_src_deepwork:
+  description: "Ensure project documentation stays current when DeepWork source files, plugins, or platform content change."
+  match:
+    include:
+      - "src/deepwork/**"
+      - "plugins/**"
+      - "platform/**"
+      - "pyproject.toml"
+      - "README.md"
+      - "CLAUDE.md"
+      - "doc/architecture.md"
+      - "doc/mcp_interface.md"
+      - "doc/doc-specs.md"
+      - "doc/platforms/**"
+      - "src/deepwork/hooks/README.md"
+    exclude:
+      - "**/__pycache__/**"
+  review:
+    strategy: matches_together
+    instructions: |
+      When source files in src/deepwork/, plugins/, or platform/ change, check whether
+      the following documentation files need updating:
+      - README.md (install instructions, feature descriptions, project overview)
+      - CLAUDE.md (project structure, tech stack, CLI commands, architecture)
+      - doc/architecture.md (detailed architecture, module descriptions, data flow)
+      - doc/mcp_interface.md (MCP tool parameters, return values, server config)
+      - doc/doc-specs.md (doc spec format, parser behavior, quality criteria)
+      - doc/platforms/claude/ (Claude-specific hooks, CLI config, learnings)
+      - doc/platforms/gemini/ (Gemini-specific hooks, CLI config, learnings)
+      - src/deepwork/hooks/README.md (hook system, event mapping, tool mapping)
+
+      Read each documentation file and compare its content against the changed source
+      files. Pay particular attention to:
+      - Directory tree listings (do they still match the actual filesystem?)
+      - CLI command descriptions (do flags, behavior descriptions still match?)
+      - MCP tool parameters and return values (do they match the implementation?)
+      - Module/class/function descriptions (do they match what the code actually does?)
+      - Dependency lists (does pyproject.toml still match what the doc says?)
+      - Install/usage instructions (do they still work?)
+      - Hook event/tool mappings (do tables match the implementation?)
+
+      Flag any sections that are now outdated or inaccurate due to the changes.
+      If the documentation file itself was changed, verify the updates are correct
+      and consistent with the source files.
+    additional_context:
+      unchanged_matching_files: true
+
+update_learning_agents_architecture:
+  description: "Ensure learning agents documentation stays current when the learning_agents plugin changes."
+  match:
+    include:
+      - "learning_agents/**"
+      - "doc/learning_agents_architecture.md"
+    exclude:
+      - "learning_agents/**/transcripts/**"
+  review:
+    strategy: matches_together
+    instructions: |
+      When files in learning_agents/ change, check whether doc/learning_agents_architecture.md
+      needs updating. Read the architecture doc and compare against the changed source files.
+
+      Pay attention to:
+      - Plugin structure listings (do they match the actual directory layout?)
+      - Skill descriptions (do they match what skills actually do?)
+      - Learning cycle descriptions (does the flow still match the implementation?)
+      - File format descriptions (do they match actual file formats used?)
+      - Configuration examples (do they still work?)
+
+      Flag any sections that are now outdated or inaccurate due to the changes.
+      If the doc itself was changed, verify the updates are correct.
+    additional_context:
+      unchanged_matching_files: true
+
+update_github_workflows_readme:
+  description: "Ensure GitHub Actions workflow documentation stays current when workflows change."
+  match:
+    include:
+      - ".github/workflows/*.yml"
+      - ".github/workflows/README.md"
+  review:
+    strategy: matches_together
+    instructions: |
+      When GitHub Actions workflow files (.github/workflows/*.yml) change, check whether
+      .github/workflows/README.md needs updating.
+
+      Pay attention to:
+      - Workflow overview table (are all workflows listed? Are descriptions accurate?)
+      - Merge queue strategy description (does it match the actual triggers?)
+      - Skip pattern table (does it match actual workflow behavior?)
+      - Any workflow-specific documentation sections
+
+      Flag any sections that are now outdated or inaccurate due to the changes.
+      If the README itself was changed, verify the updates are correct.
+    additional_context:
+      unchanged_matching_files: true
+
+update_library_readme:
+  description: "Ensure library jobs README stays current when library jobs change."
+  match:
+    include:
+      - "library/jobs/**"
+  review:
+    strategy: matches_together
+    instructions: |
+      When library job files change, check whether library/jobs/README.md needs updating.
+
+      Pay attention to:
+      - Job structure description (does it match the actual job.yml format?)
+      - Usage instructions (do they reference current CLI commands?)
+      - Directory structure listing (does it match what's actually in library/jobs/?)
+
+      Flag any sections that are now outdated or inaccurate.
+    additional_context:
+      unchanged_matching_files: true
+
+shell_code_review:
+  description: "Review shell scripts for correctness, safety, and project conventions."
+  match:
+    include:
+      - "**/*.sh"
+  review:
+    strategy: individual
+    instructions: |
+      Review this shell script against the project's shell scripting conventions.
+
+      Project shell conventions (observed from existing scripts):
+      - Shebang: #!/bin/bash
+      - Safety: use `set -e` or `set -euo pipefail`
+      - Variables: UPPERCASE_WITH_UNDERSCORES, always quoted ("$VAR")
+      - JSON parsing: use jq with fallback defaults (// empty, // "default")
+      - Header comment block: description, usage, input/output, exit codes
+      - Section markers: # ==== blocks for logical sections in longer scripts
+      - Exit codes: 0 for success, 1 for usage errors, 2 for blocking errors
+
+      Check for:
+      - Unquoted variables that could cause word splitting or globbing
+      - Missing error handling (commands that could fail silently)
+      - Unsafe use of eval, unvalidated user input, or command injection risks
+      - Portability issues (bashisms that break on other shells, if applicable)
+      - Proper use of jq for JSON parsing (not grep/sed on JSON)
+
+      Additionally, always check:
+      - **DRY violations**: Is there duplicated logic or repeated patterns across
+        sections that should be extracted into a function?
+      - **Comment accuracy**: Are all comments (especially header blocks and
+        section markers) still accurate after the changes? Flag any comments
+        that describe behavior that no longer matches the code.

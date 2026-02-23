@@ -145,7 +145,7 @@ This tool operates outside the workflow lifecycle — it can be called independe
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `files` | `string[] \| null` | No | Explicit file paths to review. When omitted, detects changes via git diff against the main branch. |
+| `files` | `string[] \| null` | No | Explicit file paths to review. When omitted, detects changes via git diff against the default branch. |
 
 #### Returns
 

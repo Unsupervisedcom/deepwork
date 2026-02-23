@@ -107,7 +107,8 @@
       "mcp__deepwork__get_workflows",
       "mcp__deepwork__start_workflow",
       "mcp__deepwork__finished_step",
-      "mcp__deepwork__abort_workflow"
+      "mcp__deepwork__abort_workflow",
+      "mcp__plugin_deepwork_deepwork__*"
     ]
   },
   "enabledPlugins": {}

@@ -22,10 +22,11 @@ DeepWork Reviews needs to determine which files have changed in order to match t
 
 1. The `base_ref` parameter MUST default to `None`.
 2. When `base_ref` is `None`, the system MUST auto-detect the merge base by finding the common ancestor between HEAD and the main branch.
-3. The system MUST detect the main branch by checking for `main` first, then `master`, using `git rev-parse --verify`.
-4. If neither `main` nor `master` exists, the system MUST fall back to `HEAD` (uncommitted changes only).
-5. When `base_ref` is provided explicitly (e.g., `"main"`, `"HEAD"`, a commit SHA), the system MUST use it directly as the comparison target.
-6. The system MUST use `git merge-base` to find the common ancestor when comparing against a branch name, to avoid including changes from the target branch itself.
+3. The system MUST detect the base branch by first querying `git symbolic-ref refs/remotes/origin/HEAD` to discover the remote's default branch. This avoids hardcoding branch names and works for any default branch (main, master, develop, trunk, etc.). If the symbolic ref is not set, the system MUST fall back to checking well-known refs in order: `origin/main`, `origin/master`, `main`, `master`. Remote tracking refs are preferred over local branches because local branches can become stale when the user does not check them out and pull.
+4. If none of the candidate refs exist, the system MUST fall back to `HEAD` (uncommitted changes only).
+5. Known limitation: the base ref detection always resolves to the repository's default branch. It does not handle stacked PRs (branches based on other feature branches rather than the default branch).
+6. When `base_ref` is provided explicitly (e.g., `"main"`, `"HEAD"`, a commit SHA), the system MUST use it directly as the comparison target.
+7. The system MUST use `git merge-base` to find the common ancestor when comparing against a branch name, to avoid including changes from the target branch itself.
 
 ### REVIEW-REQ-003.3: Working Directory
 

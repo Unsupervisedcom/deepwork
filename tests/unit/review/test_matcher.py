@@ -292,7 +292,7 @@ class TestGetChangedFiles:
         files = get_changed_files(tmp_path)
         assert files == ["a.py", "b.py"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher._git_diff_name_only")
     @patch("deepwork.review.matcher._get_merge_base", return_value="abc123")
@@ -398,25 +398,117 @@ class TestGetChangedFiles:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
-    def test_detect_base_ref_prefers_main_over_master(self, mock_run: Any, tmp_path: Path) -> None:
+    def test_detect_base_ref_uses_symbolic_ref(self, mock_run: Any, tmp_path: Path) -> None:
         from deepwork.review.matcher import _detect_base_ref
 
-        # Simulate: 'main' exists (rev-parse succeeds)
-        mock_run.return_value.returncode = 0
+        def side_effect(cmd: Any, **kwargs: Any) -> Any:
+            result = MagicMock()
+            result.returncode = 0
+            if "symbolic-ref" in cmd:
+                result.stdout = "refs/remotes/origin/main\n"
+            else:
+                result.stdout = ""
+            return result
+
+        mock_run.side_effect = side_effect
         result = _detect_base_ref(tmp_path)
-        assert result == "main"
-        # Verify it checked 'main' first
+        assert result == "origin/main"
+        # First call should be the symbolic-ref query
         first_call_cmd = mock_run.call_args_list[0][0][0]
-        assert "main" in first_call_cmd
+        assert "symbolic-ref" in first_call_cmd
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
-    def test_detect_base_ref_falls_back_to_master(self, mock_run: Any, tmp_path: Path) -> None:
+    def test_detect_base_ref_symbolic_ref_works_for_non_standard_names(
+        self, mock_run: Any, tmp_path: Path
+    ) -> None:
         from deepwork.review.matcher import _detect_base_ref
 
         def side_effect(cmd: Any, **kwargs: Any) -> Any:
-            if "main" in cmd:
+            result = MagicMock()
+            result.returncode = 0
+            if "symbolic-ref" in cmd:
+                result.stdout = "refs/remotes/origin/develop\n"
+            else:
+                result.stdout = ""
+            return result
+
+        mock_run.side_effect = side_effect
+        result = _detect_base_ref(tmp_path)
+        assert result == "origin/develop"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @patch("deepwork.review.matcher.subprocess.run")
+    def test_detect_base_ref_falls_back_when_symbolic_ref_not_set(
+        self, mock_run: Any, tmp_path: Path
+    ) -> None:
+        from deepwork.review.matcher import _detect_base_ref
+
+        def side_effect(cmd: Any, **kwargs: Any) -> Any:
+            # symbolic-ref fails, but origin/main exists
+            if "symbolic-ref" in cmd:
+                raise subprocess.CalledProcessError(128, cmd)
+            result = MagicMock()
+            result.returncode = 0
+            return result
+
+        mock_run.side_effect = side_effect
+        result = _detect_base_ref(tmp_path)
+        assert result == "origin/main"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @patch("deepwork.review.matcher.subprocess.run")
+    def test_detect_base_ref_falls_back_to_origin_master(
+        self, mock_run: Any, tmp_path: Path
+    ) -> None:
+        from deepwork.review.matcher import _detect_base_ref
+
+        def side_effect(cmd: Any, **kwargs: Any) -> Any:
+            if "symbolic-ref" in cmd or "origin/main" in cmd:
+                raise subprocess.CalledProcessError(128, cmd)
+            result = MagicMock()
+            result.returncode = 0
+            return result
+
+        mock_run.side_effect = side_effect
+        result = _detect_base_ref(tmp_path)
+        assert result == "origin/master"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @patch("deepwork.review.matcher.subprocess.run")
+    def test_detect_base_ref_falls_back_to_local_main(self, mock_run: Any, tmp_path: Path) -> None:
+        from deepwork.review.matcher import _detect_base_ref
+
+        def side_effect(cmd: Any, **kwargs: Any) -> Any:
+            if "symbolic-ref" in cmd or "origin/main" in cmd or "origin/master" in cmd:
+                raise subprocess.CalledProcessError(128, cmd)
+            result = MagicMock()
+            result.returncode = 0
+            return result
+
+        mock_run.side_effect = side_effect
+        result = _detect_base_ref(tmp_path)
+        assert result == "main"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @patch("deepwork.review.matcher.subprocess.run")
+    def test_detect_base_ref_falls_back_to_local_master(
+        self, mock_run: Any, tmp_path: Path
+    ) -> None:
+        from deepwork.review.matcher import _detect_base_ref
+
+        def side_effect(cmd: Any, **kwargs: Any) -> Any:
+            if (
+                "symbolic-ref" in cmd
+                or "origin/main" in cmd
+                or "origin/master" in cmd
+                or cmd[-1] == "main"
+            ):
                 raise subprocess.CalledProcessError(128, cmd)
             result = MagicMock()
             result.returncode = 0
@@ -432,12 +524,12 @@ class TestGetChangedFiles:
     def test_detect_base_ref_falls_back_to_head(self, mock_run: Any, tmp_path: Path) -> None:
         from deepwork.review.matcher import _detect_base_ref
 
-        # Neither main nor master exists
+        # Nothing works — symbolic-ref fails, no known branches exist
         mock_run.side_effect = subprocess.CalledProcessError(128, "git")
         result = _detect_base_ref(tmp_path)
         assert result == "HEAD"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     def test_uses_git_merge_base(self, mock_run: Any, tmp_path: Path) -> None:

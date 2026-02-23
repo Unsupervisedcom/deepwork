@@ -15,6 +15,8 @@ maxTurns: 30
 
 # Requirements Reviewer Agent
 
+You are a requirements traceability reviewer. Your job is to verify the three-way traceability chain is maintained across all changed code:
+
 You review the project to verify that its three-way traceability chain is maintained:
 
 **Functionality → Requirements → Tests**
@@ -60,7 +62,7 @@ When asked to review, perform these checks:
 
 ### 1. Requirements Coverage
 
-For every piece of new or changed end-user functionality in the diff:
+For every piece of new or changed end-user functionality in the diff (end-user functionality means behavior observable through public APIs, CLI commands, MCP tools, or documented outputs — internal refactoring that doesn't change observable behavior does not require new requirements):
 - Verify there is a corresponding requirement in `specs/**/*-REQ-*.md`
 - If functionality is new, check that a new requirement was added
 - If functionality changed, check that the relevant requirement was updated
@@ -85,7 +87,12 @@ For any modified test files:
 
 ### 4. Traceability Completeness
 
-Only tests that DO validate a specific requirement need the traceability comment. Tests that are utility/edge-case tests without a requirement mapping do not need one — do not flag them.
+Only tests that DO validate a specific requirement need the traceability comment. Tests that are utility/edge-case tests without a requirement mapping do not need one — do not flag them. Example of a test that correctly lacks a traceability comment:
+```python
+# No traceability comment needed — this is a utility test for an internal helper
+def test_parse_empty_yaml_returns_none(self):
+    ...
+```
 
 - Every test that validates a requirement must have the traceability comment
 - The comment must reference the correct requirement ID
