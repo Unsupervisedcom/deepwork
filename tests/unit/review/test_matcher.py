@@ -248,6 +248,45 @@ class TestMatchFilesToRules:
         assert tasks[0].rule_name == "rule_a"
         assert tasks[1].rule_name == "rule_b"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.10.1, REVIEW-REQ-004.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_same_name_rules_from_different_dirs_produce_independent_tasks(
+        self, tmp_path: Path
+    ) -> None:
+        """Two .deepreview files defining the same rule name in sibling
+        directories must produce separate tasks scoped to their own directory."""
+        dir_a = tmp_path / "jobs" / "job_a"
+        dir_b = tmp_path / "jobs" / "job_b"
+        dir_a.mkdir(parents=True)
+        dir_b.mkdir(parents=True)
+
+        rule_a = _make_rule(
+            name="job_definition_review",
+            include=["job.yml"],
+            strategy="matches_together",
+            source_dir=dir_a,
+            source_file=dir_a / ".deepreview",
+        )
+        rule_b = _make_rule(
+            name="job_definition_review",
+            include=["job.yml"],
+            strategy="matches_together",
+            source_dir=dir_b,
+            source_file=dir_b / ".deepreview",
+        )
+
+        changed_files = [
+            "jobs/job_a/job.yml",
+            "jobs/job_b/job.yml",
+        ]
+        tasks = match_files_to_rules(changed_files, [rule_a, rule_b], tmp_path)
+
+        assert len(tasks) == 2
+        assert tasks[0].rule_name == "job_definition_review"
+        assert tasks[1].rule_name == "job_definition_review"
+        assert tasks[0].files_to_review == ["jobs/job_a/job.yml"]
+        assert tasks[1].files_to_review == ["jobs/job_b/job.yml"]
+
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.4.3, REVIEW-REQ-004.4.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_unchanged_matching_files(self, tmp_path: Path) -> None:

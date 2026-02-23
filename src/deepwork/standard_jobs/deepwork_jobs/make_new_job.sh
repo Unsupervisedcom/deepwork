@@ -36,6 +36,9 @@ validate_job_name() {
 
 # Main script
 main() {
+    local script_dir
+    script_dir="$(cd "$(dirname "$0")" && pwd)"
+
     if [[ $# -lt 1 ]]; then
         echo "Usage: $0 <job_name>"
         echo ""
@@ -101,6 +104,7 @@ This folder and its subfolders are managed using `deepwork_jobs` workflows.
 
 ```
 .
+├── .deepreview        # Review rules for the job itself using Deepwork Reviews
 ├── AGENTS.md          # This file - project context and guidance
 ├── job.yml            # Job specification (created by define step)
 ├── steps/             # Step instruction files (created by implement step)
@@ -119,8 +123,14 @@ This folder and its subfolders are managed using `deepwork_jobs` workflows.
 2. **Direct edits** are fine for minor instruction tweaks
 EOF
 
+    # Copy .deepreview template if available
+    if [[ -f "$script_dir/template.deepreview" ]]; then
+        cp "$script_dir/template.deepreview" "$job_path/.deepreview"
+    fi
+
     info "Created directory structure:"
     echo "  $job_path/"
+    echo "  ├── .deepreview"
     echo "  ├── AGENTS.md"
     echo "  ├── steps/"
     echo "  ├── hooks/.gitkeep"

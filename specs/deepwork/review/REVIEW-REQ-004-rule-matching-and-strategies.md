@@ -65,3 +65,9 @@ After discovering review rules (REVIEW-REQ-002) and changed files (REVIEW-REQ-00
 1. The system MUST provide a `match_files_to_rules(changed_files, rules, project_root, platform="claude")` function that processes all rules and returns a list of `ReviewTask` objects.
 2. Each rule MUST be processed independently — a file can match multiple rules and appear in multiple tasks.
 3. The function MUST process rules in the order they were discovered.
+
+### REVIEW-REQ-004.10: Directory Isolation
+
+1. Rules with the same name defined in different `.deepreview` files MUST produce independent `ReviewTask` objects. The system MUST NOT merge or combine matched files across rules from different source directories.
+2. When two `.deepreview` files in different directories define a rule with the same name and the same strategy, and changed files match both rules, the system MUST create separate `ReviewTask` objects — one per directory — each containing only the files that matched within its own `source_dir`.
+3. This isolation is a consequence of REVIEW-REQ-004.1.2 (files outside `source_dir` do not match) but is stated explicitly because `.deepreview` files can be templated or symlinked across directories, making same-name rules a common scenario.

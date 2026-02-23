@@ -17,6 +17,7 @@ The `get_configured_reviews` MCP tool allows agents to query which review rules 
 1. Each entry in the returned list MUST include `name` (str) — the rule name from the `.deepreview` file.
 2. Each entry MUST include `description` (str) — the rule's description field.
 3. Each entry MUST include `defining_file` (str) — a relative path to the `.deepreview` file with line number (e.g., `.deepreview:1`).
+4. When multiple rules share the same `name` (e.g., from templated or symlinked `.deepreview` files in different directories), each MUST appear as a separate entry. The `defining_file` field serves as the disambiguator — consumers MUST use `defining_file` to distinguish same-named rules.
 
 ### REVIEW-REQ-008.3: File Filtering
 
