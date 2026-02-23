@@ -1,4 +1,4 @@
-# REQ-003: Changed File Detection
+# REVIEW-REQ-003: Changed File Detection
 
 ## Overview
 
@@ -6,7 +6,7 @@ DeepWork Reviews needs to determine which files have changed in order to match t
 
 ## Requirements
 
-### REQ-003.1: Changed File Retrieval
+### REVIEW-REQ-003.1: Changed File Retrieval
 
 1. The system MUST provide a `get_changed_files(project_root, base_ref)` function that returns a list of changed file paths relative to the repository root.
 2. The function MUST use `subprocess.run()` to invoke `git diff --name-only` with appropriate flags.
@@ -18,7 +18,7 @@ DeepWork Reviews needs to determine which files have changed in order to match t
 8. The returned list MUST be sorted alphabetically.
 9. The function MUST raise an error if the `git` command fails (e.g., not a git repository, invalid base ref).
 
-### REQ-003.2: Base Reference
+### REVIEW-REQ-003.2: Base Reference
 
 1. The `base_ref` parameter MUST default to `None`.
 2. When `base_ref` is `None`, the system MUST auto-detect the merge base by finding the common ancestor between HEAD and the main branch.
@@ -27,12 +27,12 @@ DeepWork Reviews needs to determine which files have changed in order to match t
 5. When `base_ref` is provided explicitly (e.g., `"main"`, `"HEAD"`, a commit SHA), the system MUST use it directly as the comparison target.
 6. The system MUST use `git merge-base` to find the common ancestor when comparing against a branch name, to avoid including changes from the target branch itself.
 
-### REQ-003.3: Working Directory
+### REVIEW-REQ-003.3: Working Directory
 
 1. All git commands MUST be executed with `cwd` set to `project_root`.
 2. The function MUST NOT change the process working directory.
 
-### REQ-003.4: Error Handling
+### REVIEW-REQ-003.4: Error Handling
 
 1. If the project is not a git repository, the function MUST raise an error with a descriptive message.
 2. If the specified `base_ref` does not exist, the function MUST raise an error with a descriptive message.

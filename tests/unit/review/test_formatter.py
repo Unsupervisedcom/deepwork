@@ -1,4 +1,4 @@
-"""Tests for output formatting (deepwork.review.formatter) — validates REQ-006."""
+"""Tests for output formatting (deepwork.review.formatter) — validates REVIEW-REQ-006."""
 
 from pathlib import Path
 
@@ -23,13 +23,13 @@ def _make_task(
 class TestFormatForClaude:
     """Tests for format_for_claude."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.3.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_empty_tasks_returns_no_tasks_message(self, tmp_path: Path) -> None:
         result = format_for_claude([], tmp_path)
         assert "No review tasks" in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.3.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_output_starts_with_invoke_line(self, tmp_path: Path) -> None:
         task = _make_task()
@@ -39,7 +39,7 @@ class TestFormatForClaude:
         result = format_for_claude([(task, file_path)], tmp_path)
         assert result.startswith("Invoke the following list of Tasks in parallel:")
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.3.3a).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3a).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_individual_task_name_includes_filename(self, tmp_path: Path) -> None:
         task = _make_task(rule_name="py_review", files=["src/app.py"])
@@ -47,7 +47,7 @@ class TestFormatForClaude:
         result = format_for_claude([(task, file_path)], tmp_path)
         assert 'name: "py_review review of src/app.py"' in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.3.3a).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3a).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_grouped_task_name_includes_file_count(self, tmp_path: Path) -> None:
         task = _make_task(rule_name="py_review", files=["a.py", "b.py", "c.py"])
@@ -55,7 +55,7 @@ class TestFormatForClaude:
         result = format_for_claude([(task, file_path)], tmp_path)
         assert 'name: "py_review review of 3 files"' in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.3.3b).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3b).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_default_subagent_type_when_no_agent(self, tmp_path: Path) -> None:
         task = _make_task(agent_name=None)
@@ -63,7 +63,7 @@ class TestFormatForClaude:
         result = format_for_claude([(task, file_path)], tmp_path)
         assert "subagent_type: general-purpose" in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.3.3b).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3b).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_custom_subagent_type(self, tmp_path: Path) -> None:
         task = _make_task(agent_name="security-expert")
@@ -71,7 +71,7 @@ class TestFormatForClaude:
         result = format_for_claude([(task, file_path)], tmp_path)
         assert "subagent_type: security-expert" in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.3.3c).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3c).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_description_field_present(self, tmp_path: Path) -> None:
         task = _make_task(rule_name="py_review")
@@ -79,7 +79,7 @@ class TestFormatForClaude:
         result = format_for_claude([(task, file_path)], tmp_path)
         assert "description: Review py_review" in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.3.3c, REQ-006.3.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3c, REVIEW-REQ-006.3.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_prompt_references_instruction_file(self, tmp_path: Path) -> None:
         task = _make_task()

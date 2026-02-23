@@ -1,4 +1,4 @@
-# REQ-005: Review Instruction Generation
+# REVIEW-REQ-005: Review Instruction Generation
 
 ## Overview
 
@@ -6,7 +6,7 @@ For each `ReviewTask`, the system generates a self-contained markdown instructio
 
 ## Requirements
 
-### REQ-005.1: Instruction File Content
+### REVIEW-REQ-005.1: Instruction File Content
 
 1. Each instruction file MUST be a valid markdown document.
 2. The file MUST begin with a heading identifying the review rule and scope (e.g., `# Review: python_file_best_practices — src/app.py`).
@@ -16,13 +16,13 @@ For each `ReviewTask`, the system generates a self-contained markdown instructio
 6. When the task has `additional_files` (unchanged matching files), the file MUST contain an "Unchanged Matching Files" section listing those file paths.
 7. When the task has `all_changed_filenames`, the file MUST contain an "All Changed Files" section listing every changed filename for context.
 
-### REQ-005.2: File Path Formatting
+### REVIEW-REQ-005.2: File Path Formatting
 
 1. File paths in the "Files to Review" section MUST be prefixed with `@` to trigger Claude Code's file-reading behavior (e.g., `@src/app.py`).
 2. File paths in the "Unchanged Matching Files" section MUST also be prefixed with `@`.
 3. File paths in the "All Changed Files" section MUST NOT be prefixed with `@` (they are listed for informational context only, not for the agent to read in full).
 
-### REQ-005.3: File Writing
+### REVIEW-REQ-005.3: File Writing
 
 1. Instruction files MUST be written to `.deepwork/tmp/review_instructions/` under the project root.
 2. The directory MUST be created if it does not exist (with `parents=True, exist_ok=True`).
@@ -31,17 +31,17 @@ For each `ReviewTask`, the system generates a self-contained markdown instructio
 5. The system MUST use `fs.safe_write()` for writing instruction files.
 6. The system MUST return a list of `(ReviewTask, Path)` tuples mapping each task to its generated instruction file path.
 
-### REQ-005.4: Instruction Resolution
+### REVIEW-REQ-005.4: Instruction Resolution
 
 1. When the rule's instructions reference a file (`{file: "path"}`), the system MUST resolve the path relative to the rule's `source_dir` and read the file contents.
 2. The resolved instruction text MUST be included verbatim in the instruction file.
 3. If the referenced file cannot be read, the system MUST raise an error with the file path and reason.
 
-### REQ-005.5: Cleanup
+### REVIEW-REQ-005.5: Cleanup
 
 1. The system SHOULD clear the `.deepwork/tmp/review_instructions/` directory at the start of each `deepwork review` invocation to avoid stale instruction files from previous runs.
 
-### REQ-005.6: Policy Traceability
+### REVIEW-REQ-005.6: Policy Traceability
 
 1. Each instruction file MUST end with a traceability line linking back to the source `.deepreview` file and rule location.
 2. The traceability line MUST be formatted as: `This review was requested by the policy at \`{source_location}\`.` where `source_location` is the relative file path and line number (e.g., `src/.deepreview:5`).

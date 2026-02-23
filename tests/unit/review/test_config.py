@@ -1,4 +1,4 @@
-"""Tests for deepreview configuration parsing (deepwork.review.config) — validates REQ-001."""
+"""Tests for deepreview configuration parsing (deepwork.review.config) — validates REVIEW-REQ-001."""
 
 from pathlib import Path
 
@@ -17,7 +17,7 @@ def _write_deepreview(path: Path, content: str) -> Path:
 class TestParseDeepReviewFile:
     """Tests for parse_deepreview_file."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.1.1, REQ-001.1.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.1.1, REVIEW-REQ-001.1.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parses_valid_yaml_with_single_rule(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(
@@ -40,7 +40,7 @@ python_review:
         assert rules[0].strategy == "individual"
         assert rules[0].instructions == "Review this Python file."
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.1.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.1.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parses_multiple_rules(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(
@@ -67,7 +67,7 @@ rule_b:
         names = {r.name for r in rules}
         assert names == {"rule_a", "rule_b"}
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.2.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parses_exclude_patterns(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(
@@ -86,7 +86,7 @@ my_rule:
         rules = parse_deepreview_file(filepath)
         assert rules[0].exclude_patterns == ["tests/**/*.py"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.8.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.8.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_exclude_defaults_to_empty(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(
@@ -104,7 +104,7 @@ my_rule:
         rules = parse_deepreview_file(filepath)
         assert rules[0].exclude_patterns == []
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.3.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.3.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parses_all_strategies(self, tmp_path: Path) -> None:
         for strategy in ("individual", "matches_together", "all_changed_files"):
@@ -123,7 +123,7 @@ rule:
             rules = parse_deepreview_file(filepath)
             assert rules[0].strategy == strategy
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.1, REQ-001.4.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.4.1, REVIEW-REQ-001.4.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_inline_instructions(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(
@@ -141,7 +141,7 @@ my_rule:
         rules = parse_deepreview_file(filepath)
         assert rules[0].instructions == "Check for bugs."
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.1, REQ-001.4.3, REQ-001.4.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.4.1, REVIEW-REQ-001.4.3, REVIEW-REQ-001.4.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_file_reference_instructions(self, tmp_path: Path) -> None:
         (tmp_path / "review_guide.md").write_text(
@@ -163,7 +163,7 @@ my_rule:
         rules = parse_deepreview_file(filepath)
         assert rules[0].instructions == "# Review Guide\nCheck everything."
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.4.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_file_reference_not_found_raises_error(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(
@@ -182,7 +182,7 @@ my_rule:
         with pytest.raises(ConfigError, match="Instructions file not found"):
             parse_deepreview_file(filepath)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.5.1, REQ-001.5.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.5.1, REVIEW-REQ-001.5.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parses_agent_config(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(
@@ -202,7 +202,7 @@ my_rule:
         rules = parse_deepreview_file(filepath)
         assert rules[0].agent == {"claude": "security-expert"}
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.8.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.8.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_agent_defaults_to_none(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(
@@ -220,7 +220,7 @@ my_rule:
         rules = parse_deepreview_file(filepath)
         assert rules[0].agent is None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.6.2, REQ-001.6.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.6.2, REVIEW-REQ-001.6.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parses_additional_context(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(
@@ -242,7 +242,7 @@ my_rule:
         assert rules[0].all_changed_filenames is True
         assert rules[0].unchanged_matching_files is True
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.8.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.8.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_additional_context_defaults_to_false(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(
@@ -261,7 +261,7 @@ my_rule:
         assert rules[0].all_changed_filenames is False
         assert rules[0].unchanged_matching_files is False
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.8.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.8.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_source_dir_set_to_parent(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(
@@ -279,14 +279,14 @@ my_rule:
         rules = parse_deepreview_file(filepath)
         assert rules[0].source_dir == tmp_path
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.7.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.7.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_invalid_yaml_raises_error(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(tmp_path, "invalid: [yaml")
         with pytest.raises(ConfigError, match="Failed to parse"):
             parse_deepreview_file(filepath)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.7.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.7.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_schema_validation_failure_raises_error(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(
@@ -314,7 +314,7 @@ my_rule:
         with pytest.raises(ConfigError, match="File not found"):
             parse_deepreview_file(filepath)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.8.4, REQ-001.8.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.8.4, REVIEW-REQ-001.8.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_source_file_is_set(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(

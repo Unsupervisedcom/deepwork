@@ -1,4 +1,4 @@
-# REQ-004: Quality Review System
+# JOBS-REQ-004: Quality Review System
 
 ## Overview
 
@@ -6,7 +6,7 @@ The quality review system evaluates step outputs against defined quality criteri
 
 ## Requirements
 
-### REQ-004.1: QualityGate Initialization
+### JOBS-REQ-004.1: QualityGate Initialization
 
 1. The `QualityGate` MUST accept an optional `cli` parameter (`ClaudeCLI` or `None`).
 2. The `QualityGate` MUST accept an optional `max_inline_files` parameter (integer).
@@ -15,7 +15,7 @@ The quality review system evaluates step outputs against defined quality criteri
 5. A `QualityGate` with `cli=None` MUST still support `build_review_instructions_file()` for self-review mode.
 6. A `QualityGate` with `cli=None` MUST raise `QualityGateError` if `evaluate()` is called directly.
 
-### REQ-004.2: Review Modes
+### JOBS-REQ-004.2: Review Modes
 
 #### External Runner Mode (CLI Subprocess)
 
@@ -34,7 +34,7 @@ The quality review system evaluates step outputs against defined quality criteri
 10. The `finished_step` response in self-review mode MUST return `status: "needs_work"` with instructions for spawning a subagent.
 11. The subagent instructions MUST direct the agent to: (a) read the review file, (b) evaluate criteria, (c) fix issues, (d) repeat until passing, (e) call `finished_step` again with `quality_review_override_reason`.
 
-### REQ-004.3: Payload Construction
+### JOBS-REQ-004.3: Payload Construction
 
 1. When the total number of output files is less than or equal to `max_inline_files`, the payload MUST include full file contents inline.
 2. When the total number of output files exceeds `max_inline_files`, the payload MUST switch to path-listing mode showing only file paths.
@@ -45,7 +45,7 @@ The quality review system evaluates step outputs against defined quality criteri
 7. If author notes are provided, they MUST be included in a separate AUTHOR NOTES section.
 8. If no files are provided and no notes exist, the payload MUST return `"[No files provided]"`.
 
-### REQ-004.4: File Reading
+### JOBS-REQ-004.4: File Reading
 
 1. The system MUST read files in an async-friendly way (such as `aiofiles`)
 2. For files that exist and are valid UTF-8, the system MUST include the full text content. [TODO: review this]
@@ -53,7 +53,7 @@ The quality review system evaluates step outputs against defined quality criteri
 4. For files that do not exist, the system MUST include a `"[File not found]"` placeholder.
 5. For files that encounter other read errors, the system MUST include an `"[Error reading file: {error}]"` placeholder.
 
-### REQ-004.5: Review Instruction Building (Self-Review)
+### JOBS-REQ-004.5: Review Instruction Building (Self-Review)
 
 1. The `build_review_instructions_file()` method MUST produce a complete markdown document.
 2. When there are multiple reviews, each review section MUST be numbered and include its scope (e.g., "all outputs together" or "output 'name'").
@@ -63,14 +63,14 @@ The quality review system evaluates step outputs against defined quality criteri
 6. The guidelines section MUST instruct the reviewer to be strict but fair, apply criteria pragmatically, and provide actionable feedback.
 7. The task section MUST list 5 steps: read files, evaluate criteria, report PASS/FAIL, state overall result, provide feedback for failures.
 
-### REQ-004.6: Review Evaluation (External Runner)
+### JOBS-REQ-004.6: Review Evaluation (External Runner)
 
 1. When `quality_criteria` is empty, `evaluate()` MUST return an auto-pass result with `passed=True` and feedback `"No quality criteria defined - auto-passing"`.
 2. When `_cli` is `None`, `evaluate()` MUST raise `QualityGateError`.
-3. The system MUST use a dynamic timeout based on file count (see REQ-004.8).
+3. The system MUST use a dynamic timeout based on file count (see JOBS-REQ-004.8).
 4. ClaudeCLI errors MUST be caught and re-raised as `QualityGateError`.
 
-### REQ-004.7: Multi-Review Evaluation
+### JOBS-REQ-004.7: Multi-Review Evaluation
 
 1. `evaluate_reviews()` MUST process all reviews for a step.
 2. When the `reviews` list is empty, `evaluate_reviews()` MUST return an empty list (no failures).
@@ -81,13 +81,13 @@ The quality review system evaluates step outputs against defined quality criteri
 7. `evaluate_reviews()` MUST return only the failed reviews (where `passed=False`).
 8. The `additional_review_guidance` from each review MUST be passed through to the underlying `evaluate()` call.
 
-### REQ-004.8: Timeout Computation
+### JOBS-REQ-004.8: Timeout Computation
 
 1. The base timeout MUST be 240 seconds (4 minutes).
 2. For file counts of 5 or fewer, the timeout MUST be 240 seconds.
 3. For file counts beyond 5, the timeout MUST increase by 30 seconds per additional file.
 
-### REQ-004.9: Result Parsing
+### JOBS-REQ-004.9: Result Parsing
 
 1. The `_parse_result()` method MUST extract `passed`, `feedback`, and `criteria_results` from the structured output.
 2. If `passed` is missing, it MUST default to `False`.
@@ -95,7 +95,7 @@ The quality review system evaluates step outputs against defined quality criteri
 4. If `criteria_results` is missing, it MUST default to an empty list.
 5. If the data cannot be interpreted, a `QualityGateError` MUST be raised.
 
-### REQ-004.10: Review Instructions Sections
+### JOBS-REQ-004.10: Review Instructions Sections
 
 1. The instructions MUST include a system prompt instructing the reviewer role.
 2. The criteria list MUST be formatted as markdown bold name/question pairs.

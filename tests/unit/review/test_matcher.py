@@ -1,4 +1,4 @@
-"""Tests for changed file detection and rule matching (deepwork.review.matcher) — validates REQ-003, REQ-004."""
+"""Tests for changed file detection and rule matching (deepwork.review.matcher) — validates REVIEW-REQ-003, REVIEW-REQ-004."""
 
 import inspect
 import os
@@ -95,14 +95,14 @@ class TestGlobMatch:
 class TestMatchRule:
     """Tests for match_rule."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.1.1, REQ-004.1.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.1, REVIEW-REQ-004.1.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_matches_include_pattern(self, tmp_path: Path) -> None:
         rule = _make_rule(include=["**/*.py"], source_dir=tmp_path)
         matched = match_rule(["src/app.py", "src/lib.ts"], rule, tmp_path)
         assert matched == ["src/app.py"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.1.6, REQ-004.1.7).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.6, REVIEW-REQ-004.1.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_exclude_pattern_filters_out(self, tmp_path: Path) -> None:
         rule = _make_rule(
@@ -113,7 +113,7 @@ class TestMatchRule:
         matched = match_rule(["src/app.py", "tests/test_app.py"], rule, tmp_path)
         assert matched == ["src/app.py"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.1.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_file_outside_source_dir_not_matched(self, tmp_path: Path) -> None:
         source = tmp_path / "src"
@@ -131,7 +131,7 @@ class TestMatchRule:
 class TestMatchFilesToRules:
     """Tests for match_files_to_rules."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.3.1, REQ-004.3.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.3.1, REVIEW-REQ-004.3.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_individual_strategy_creates_one_task_per_file(self, tmp_path: Path) -> None:
         rule = _make_rule(strategy="individual", source_dir=tmp_path)
@@ -144,7 +144,7 @@ class TestMatchFilesToRules:
         assert tasks[0].files_to_review == ["app.py"]
         assert tasks[1].files_to_review == ["lib.py"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.4.1, REQ-004.4.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.4.1, REVIEW-REQ-004.4.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_matches_together_strategy_creates_single_task(self, tmp_path: Path) -> None:
         rule = _make_rule(strategy="matches_together", source_dir=tmp_path)
@@ -156,7 +156,7 @@ class TestMatchFilesToRules:
         assert len(tasks) == 1
         assert set(tasks[0].files_to_review) == {"app.py", "lib.py"}
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.5.1, REQ-004.5.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.5.1, REVIEW-REQ-004.5.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_all_changed_files_strategy_includes_all(self, tmp_path: Path) -> None:
         rule = _make_rule(strategy="all_changed_files", source_dir=tmp_path)
@@ -168,7 +168,7 @@ class TestMatchFilesToRules:
         assert len(tasks) == 1
         assert set(tasks[0].files_to_review) == {"app.py", "lib.py", "main.ts"}
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.5.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.5.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_all_changed_files_not_triggered_without_match(self, tmp_path: Path) -> None:
         rule = _make_rule(
@@ -183,7 +183,7 @@ class TestMatchFilesToRules:
         )
         assert tasks == []
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.7.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.7.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_no_match_produces_no_tasks(self, tmp_path: Path) -> None:
         rule = _make_rule(include=["**/*.py"], source_dir=tmp_path)
@@ -194,7 +194,7 @@ class TestMatchFilesToRules:
         )
         assert tasks == []
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.6.1, REQ-004.6.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.6.1, REVIEW-REQ-004.6.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_all_changed_filenames_context(self, tmp_path: Path) -> None:
         rule = _make_rule(
@@ -207,7 +207,7 @@ class TestMatchFilesToRules:
         assert len(tasks) == 1  # Only app.py matches
         assert tasks[0].all_changed_filenames == ["app.py", "main.ts"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.8.2, REQ-004.8.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.8.2, REVIEW-REQ-004.8.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_agent_resolution(self, tmp_path: Path) -> None:
         rule = _make_rule(
@@ -217,7 +217,7 @@ class TestMatchFilesToRules:
         tasks = match_files_to_rules(["app.py"], [rule], tmp_path, platform="claude")
         assert tasks[0].agent_name == "security-expert"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.8.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.8.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_agent_resolution_missing_platform(self, tmp_path: Path) -> None:
         rule = _make_rule(
@@ -227,7 +227,7 @@ class TestMatchFilesToRules:
         tasks = match_files_to_rules(["app.py"], [rule], tmp_path, platform="claude")
         assert tasks[0].agent_name is None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.2.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.2.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_source_location_set_on_tasks(self, tmp_path: Path) -> None:
         rule = _make_rule(
@@ -238,7 +238,7 @@ class TestMatchFilesToRules:
         tasks = match_files_to_rules(["app.py"], [rule], tmp_path)
         assert tasks[0].source_location == ".deepreview:3"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.9.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.9.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_multiple_rules_processed_independently(self, tmp_path: Path) -> None:
         rule_a = _make_rule(name="rule_a", include=["**/*.py"], source_dir=tmp_path)
@@ -248,7 +248,7 @@ class TestMatchFilesToRules:
         assert tasks[0].rule_name == "rule_a"
         assert tasks[1].rule_name == "rule_b"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-004.4.3, REQ-004.4.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.4.3, REVIEW-REQ-004.4.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_unchanged_matching_files(self, tmp_path: Path) -> None:
         # Create files on disk for the glob scan
@@ -273,13 +273,13 @@ class TestMatchFilesToRules:
 class TestGetChangedFiles:
     """Tests for get_changed_files."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.1.7).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.1.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_on_non_git_repo(self, tmp_path: Path) -> None:
         with pytest.raises(GitDiffError):
             get_changed_files(tmp_path)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.1.2, REQ-003.1.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.1.2, REVIEW-REQ-003.1.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
@@ -292,7 +292,7 @@ class TestGetChangedFiles:
         files = get_changed_files(tmp_path)
         assert files == ["a.py", "b.py"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.2.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher._git_diff_name_only")
     @patch("deepwork.review.matcher._get_merge_base", return_value="abc123")
@@ -303,7 +303,7 @@ class TestGetChangedFiles:
         get_changed_files(tmp_path, base_ref="develop")
         mock_merge_base.assert_called_once_with(tmp_path, "develop")
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.1.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.1.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher._git_diff_name_only")
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
@@ -318,7 +318,7 @@ class TestGetChangedFiles:
         # Paths should be relative (no leading /)
         assert all(not p.startswith("/") for p in result)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.1.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.1.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
@@ -337,7 +337,7 @@ class TestGetChangedFiles:
                     f"Expected --diff-filter=ACMR in git diff command: {cmd}"
                 )
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.1.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.1.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
     @patch("deepwork.review.matcher._get_merge_base", return_value="abc123")
@@ -360,7 +360,7 @@ class TestGetChangedFiles:
         # Second call: staged changes (ref=None, staged=True)
         assert second_call == call(tmp_path, None, staged=True)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.1.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.1.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher._git_diff_name_only")
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
@@ -375,14 +375,14 @@ class TestGetChangedFiles:
             assert not Path(path).is_absolute(), f"Path should be relative: {path}"
             assert not path.startswith("/"), f"Path should not start with /: {path}"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.2.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_base_ref_defaults_to_none(self) -> None:
         sig = inspect.signature(get_changed_files)
         base_ref_param = sig.parameters["base_ref"]
         assert base_ref_param.default is None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.2.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher._git_diff_name_only")
     @patch("deepwork.review.matcher._get_merge_base", return_value="abc123")
@@ -395,7 +395,7 @@ class TestGetChangedFiles:
         mock_detect.assert_called_once_with(tmp_path)
         mock_merge_base.assert_called_once_with(tmp_path, "main")
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.2.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     def test_detect_base_ref_prefers_main_over_master(self, mock_run: Any, tmp_path: Path) -> None:
@@ -409,7 +409,7 @@ class TestGetChangedFiles:
         first_call_cmd = mock_run.call_args_list[0][0][0]
         assert "main" in first_call_cmd
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.2.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     def test_detect_base_ref_falls_back_to_master(self, mock_run: Any, tmp_path: Path) -> None:
@@ -426,7 +426,7 @@ class TestGetChangedFiles:
         result = _detect_base_ref(tmp_path)
         assert result == "master"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.2.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     def test_detect_base_ref_falls_back_to_head(self, mock_run: Any, tmp_path: Path) -> None:
@@ -437,7 +437,7 @@ class TestGetChangedFiles:
         result = _detect_base_ref(tmp_path)
         assert result == "HEAD"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.2.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.2.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     def test_uses_git_merge_base(self, mock_run: Any, tmp_path: Path) -> None:
@@ -452,7 +452,7 @@ class TestGetChangedFiles:
         assert "main" in cmd
         assert result == "deadbeef"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.3.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.3.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
@@ -469,7 +469,7 @@ class TestGetChangedFiles:
                 f"Expected cwd={tmp_path}, got cwd={kwargs.get('cwd')} for command {c}"
             )
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.3.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.3.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher._git_diff_name_only")
     @patch("deepwork.review.matcher._detect_base_ref", return_value="main")
@@ -483,7 +483,7 @@ class TestGetChangedFiles:
         cwd_after = os.getcwd()
         assert cwd_before == cwd_after
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.4.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.4.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     def test_invalid_base_ref_raises_error(self, mock_run: Any, tmp_path: Path) -> None:
@@ -495,7 +495,7 @@ class TestGetChangedFiles:
         with pytest.raises(GitDiffError, match="nonexistent_branch"):
             _get_merge_base(tmp_path, "nonexistent_branch")
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.4.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.4.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher.subprocess.run")
     def test_stderr_included_in_error_message(self, mock_run: Any, tmp_path: Path) -> None:

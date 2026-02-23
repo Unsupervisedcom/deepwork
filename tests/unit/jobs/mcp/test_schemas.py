@@ -448,7 +448,7 @@ class TestFinishedStepResponse:
 class TestStepProgress:
     """Tests for StepProgress model."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.18.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.18.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_new_step(self) -> None:
         """Test new step progress."""
@@ -464,7 +464,7 @@ class TestStepProgress:
 class TestWorkflowSession:
     """Tests for WorkflowSession model."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.18.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.18.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_basic_session(self) -> None:
         """Test basic session creation."""
@@ -482,7 +482,7 @@ class TestWorkflowSession:
         assert session.status == "active"
         assert session.completed_at is None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.18.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.18.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_to_dict(self) -> None:
         """Test converting session to dict."""
@@ -501,7 +501,7 @@ class TestWorkflowSession:
         assert data["session_id"] == "abc123"
         assert data["job_name"] == "test_job"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-003.18.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.18.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict(self) -> None:
         """Test creating session from dict."""

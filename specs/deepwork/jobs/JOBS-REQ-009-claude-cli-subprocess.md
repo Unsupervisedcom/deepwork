@@ -1,4 +1,4 @@
-# REQ-009: Claude CLI Subprocess Wrapper
+# JOBS-REQ-009: Claude CLI Subprocess Wrapper
 
 ## Overview
 
@@ -6,14 +6,14 @@ The `ClaudeCLI` class wraps the Claude Code CLI as an async subprocess for use i
 
 ## Requirements
 
-### REQ-009.1: Initialization
+### JOBS-REQ-009.1: Initialization
 
 1. The `ClaudeCLI` MUST accept a `timeout` parameter in seconds (default: 120).
 2. The `ClaudeCLI` MUST accept an optional `_test_command` parameter (list of strings) for testing purposes.
 3. When `_test_command` is set, it MUST be used as the base command instead of the `claude` binary.
 4. When `_test_command` is set, the `--json-schema` flag MUST NOT be added to the command (the test mock handles it).
 
-### REQ-009.2: Command Construction
+### JOBS-REQ-009.2: Command Construction
 
 1. The command MUST invoke the `claude` binary.
 2. The command MUST include the `--print` flag for non-interactive mode.
@@ -24,7 +24,7 @@ The `ClaudeCLI` class wraps the Claude Code CLI as an async subprocess for use i
 7. All flags MUST appear BEFORE `-p --` in the command. This ordering is required because `-p` expects a prompt argument and `--` marks the end of flags.
 8. When `_test_command` is provided, the command MUST be `[_test_command..., "--system-prompt", system_prompt]`.
 
-### REQ-009.3: Subprocess Execution
+### JOBS-REQ-009.3: Subprocess Execution
 
 1. `run()` MUST be an async method.
 2. `run()` MUST create the subprocess using `asyncio.create_subprocess_exec`.
@@ -34,7 +34,7 @@ The `ClaudeCLI` class wraps the Claude Code CLI as an async subprocess for use i
 6. The `run()` method MUST accept an optional `timeout` parameter that overrides the instance default for that call.
 7. When no per-call timeout is provided, the instance-level timeout MUST be used.
 
-### REQ-009.4: Response Parsing
+### JOBS-REQ-009.4: Response Parsing
 
 1. The `_parse_wrapper()` method MUST parse the stdout output as JSON.
 2. If the JSON response contains `is_error: true`, the method MUST raise `ClaudeCLIError` with the error result.
@@ -42,7 +42,7 @@ The `ClaudeCLI` class wraps the Claude Code CLI as an async subprocess for use i
 4. If `structured_output` is missing (None), the method MUST raise `ClaudeCLIError` with a truncated excerpt of the response (first 500 characters).
 5. If the stdout is not valid JSON, the method MUST raise `ClaudeCLIError` with parse error details and a truncated excerpt.
 
-### REQ-009.5: Error Handling
+### JOBS-REQ-009.5: Error Handling
 
 1. If the subprocess times out, the system MUST kill the process and raise `ClaudeCLIError` indicating the timeout duration.
 2. If the subprocess exits with a non-zero return code, the system MUST raise `ClaudeCLIError` with the exit code and stderr content.

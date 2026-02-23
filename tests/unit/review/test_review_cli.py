@@ -1,4 +1,4 @@
-"""Tests for the deepwork review CLI command (deepwork.cli.review) — validates REQ-006."""
+"""Tests for the deepwork review CLI command (deepwork.cli.review) — validates REVIEW-REQ-006."""
 
 from pathlib import Path
 from typing import Any
@@ -31,7 +31,7 @@ def _make_rule(tmp_path: Path) -> ReviewRule:
 class TestReviewCommand:
     """Tests for the review CLI command."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.4.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.4.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.load_all_rules")
     def test_no_config_files_found(self, mock_load: Any, tmp_path: Path) -> None:
@@ -44,7 +44,7 @@ class TestReviewCommand:
         assert result.exit_code == 0
         assert "No .deepreview configuration files found" in result.output
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.4.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.4.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.get_changed_files")
     @patch("deepwork.cli.review.load_all_rules")
@@ -59,7 +59,7 @@ class TestReviewCommand:
         assert result.exit_code == 0
         assert "No changed files detected" in result.output
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.4.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.4.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.match_files_to_rules")
     @patch("deepwork.cli.review.get_changed_files")
@@ -78,7 +78,7 @@ class TestReviewCommand:
         assert result.exit_code == 0
         assert "No review rules matched" in result.output
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.5.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.5.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.get_changed_files")
     @patch("deepwork.cli.review.load_all_rules")
@@ -96,7 +96,7 @@ class TestReviewCommand:
         )
         assert result.exit_code == 1
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.5.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.5.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.load_all_rules")
     def test_discovery_errors_reported_but_continues(self, mock_load: Any, tmp_path: Path) -> None:
@@ -115,7 +115,7 @@ class TestReviewCommand:
         assert result.exit_code == 0
         assert "No .deepreview configuration files found" in result.output
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.2.1, REQ-006.3.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.2.1, REVIEW-REQ-006.3.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.format_for_claude")
     @patch("deepwork.cli.review.write_instruction_files")
@@ -153,7 +153,7 @@ class TestReviewCommand:
         assert "Invoke the following" in result.output
         mock_format.assert_called_once()
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.1.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.1.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_instructions_for_is_required(self) -> None:
         runner = CliRunner()
@@ -161,7 +161,7 @@ class TestReviewCommand:
         assert result.exit_code != 0
         assert "Missing option" in result.output or "required" in result.output.lower()
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.6.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.match_files_to_rules")
     @patch("deepwork.cli.review.get_changed_files")
@@ -193,7 +193,7 @@ class TestReviewCommand:
         called_files = mock_match.call_args[0][0]
         assert called_files == ["src/a.py", "src/b.py"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.6.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.6.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.match_files_to_rules")
     @patch("deepwork.cli.review.get_changed_files")
@@ -215,7 +215,7 @@ class TestReviewCommand:
         called_files = mock_match.call_args[0][0]
         assert called_files == ["src/x.py", "src/y.py"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.6.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.6.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.match_files_to_rules")
     @patch("deepwork.cli.review.get_changed_files")
@@ -245,7 +245,7 @@ class TestReviewCommand:
         called_files = mock_match.call_args[0][0]
         assert called_files == ["a.py", "z.py"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.5.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.5.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.write_instruction_files")
     @patch("deepwork.cli.review.match_files_to_rules")
@@ -274,7 +274,7 @@ class TestReviewCommand:
         assert result.exit_code == 1
         assert "Error writing instruction files" in result.output
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-006.6.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.match_files_to_rules")
     @patch("deepwork.cli.review.get_changed_files")

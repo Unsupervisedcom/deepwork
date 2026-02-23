@@ -1,4 +1,4 @@
-# REQ-001: MCP Workflow Tools
+# JOBS-REQ-001: MCP Workflow Tools
 
 ## Overview
 
@@ -6,7 +6,7 @@ The DeepWork MCP server exposes four tools to AI agents via the Model Context Pr
 
 ## Requirements
 
-### REQ-001.1: Server Creation and Configuration
+### JOBS-REQ-001.1: Server Creation and Configuration
 
 1. The system MUST provide a `create_server()` function that returns a configured `FastMCP` instance.
 2. The server MUST accept a `project_root` parameter (Path or str) and resolve it to an absolute path.
@@ -21,7 +21,7 @@ The DeepWork MCP server exposes four tools to AI agents via the Model Context Pr
 11. The server MUST include instructions text describing the workflow lifecycle (Discover, Start, Execute, Checkpoint, Iterate, Continue, Complete).
 12. Every tool call MUST be logged with the tool name and current stack state.
 
-### REQ-001.2: get_workflows Tool
+### JOBS-REQ-001.2: get_workflows Tool
 
 1. The `get_workflows` tool MUST be registered as a synchronous MCP tool.
 2. The tool MUST accept no parameters.
@@ -30,9 +30,9 @@ The DeepWork MCP server exposes four tools to AI agents via the Model Context Pr
 5. Each workflow info object MUST contain `name` and `summary` fields.
 6. The tool MUST also return an `errors` key containing a list of job load error objects for any jobs that failed to parse.
 7. Each job load error object MUST contain `job_name`, `job_dir`, and `error` fields.
-8. The tool MUST load jobs from all configured job folders (see REQ-008).
+8. The tool MUST load jobs from all configured job folders (see JOBS-REQ-008).
 
-### REQ-001.3: start_workflow Tool
+### JOBS-REQ-001.3: start_workflow Tool
 
 1. The `start_workflow` tool MUST be registered as an asynchronous MCP tool.
 2. The tool MUST require the following parameters: `goal` (str), `job_name` (str), `workflow_name` (str).
@@ -49,14 +49,14 @@ The DeepWork MCP server exposes four tools to AI agents via the Model Context Pr
 13. Each expected output in `step_expected_outputs` MUST include `name`, `type`, `description`, `required`, and `syntax_for_finished_step_tool` fields.
 14. The `syntax_for_finished_step_tool` MUST be `"filepath"` for `type: file` outputs and `"array of filepaths for all individual files"` for `type: files` outputs.
 
-### REQ-001.4: finished_step Tool
+### JOBS-REQ-001.4: finished_step Tool
 
 1. The `finished_step` tool MUST be registered as an asynchronous MCP tool.
 2. The tool MUST require an `outputs` parameter: a dict mapping output names to file path(s).
 3. The tool MUST accept optional parameters: `notes` (str), `quality_review_override_reason` (str), `session_id` (str).
 4. The tool MUST raise `StateError` if no active workflow session exists and no `session_id` is provided.
 5. When `session_id` is provided, the tool MUST target the session with that ID rather than the top-of-stack session.
-6. The tool MUST validate submitted outputs against the current step's declared output specifications (see REQ-001.5).
+6. The tool MUST validate submitted outputs against the current step's declared output specifications (see JOBS-REQ-001.5).
 7. The tool MUST return a response with a `status` field that is one of: `"needs_work"`, `"next_step"`, or `"workflow_complete"`.
 
 #### Quality Gate Behavior
@@ -77,7 +77,7 @@ The DeepWork MCP server exposes four tools to AI agents via the Model Context Pr
 18. For concurrent step entries (entries with multiple step IDs), the tool MUST use the first step ID as the primary step and append a message about concurrent execution using the Task tool.
 19. All `finished_step` responses MUST include a `stack` field reflecting the current workflow stack.
 
-### REQ-001.5: Output Validation
+### JOBS-REQ-001.5: Output Validation
 
 1. The system MUST reject submitted output keys that do not match any declared output name. The error MUST list the unknown keys and the valid declared names.
 2. The system MUST reject submissions missing any required output (outputs where `required: true`). The error MUST list the missing required outputs.
@@ -88,7 +88,7 @@ The DeepWork MCP server exposes four tools to AI agents via the Model Context Pr
 7. For outputs declared as `type: "files"`, each element in the list MUST be a string. If not, the system MUST raise `ToolError`.
 8. For outputs declared as `type: "files"`, each file at the specified path (relative to project root) MUST exist. If not, the system MUST raise `ToolError`.
 
-### REQ-001.6: abort_workflow Tool
+### JOBS-REQ-001.6: abort_workflow Tool
 
 1. The `abort_workflow` tool MUST be registered as an asynchronous MCP tool.
 2. The tool MUST require an `explanation` parameter (str).
@@ -99,7 +99,7 @@ The DeepWork MCP server exposes four tools to AI agents via the Model Context Pr
 7. The response MUST contain: `aborted_workflow` (formatted as `"job_name/workflow_name"`), `aborted_step`, `explanation`, `stack`, `resumed_workflow` (or None), and `resumed_step` (or None).
 8. If a parent workflow exists on the stack after abortion, `resumed_workflow` and `resumed_step` MUST reflect that parent's state.
 
-### REQ-001.7: Tool Response Serialization
+### JOBS-REQ-001.7: Tool Response Serialization
 
 1. All tool responses MUST be serialized via Pydantic's `model_dump()` method, returning plain dictionaries.
 2. The `StepStatus` enum values MUST be: `"needs_work"`, `"next_step"`, `"workflow_complete"`.

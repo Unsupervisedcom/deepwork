@@ -210,7 +210,7 @@ class TestMCPWorkflowTools:
         # Cleanup
         shutil.rmtree(tmpdir, ignore_errors=True)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.2.3, REQ-001.2.4, REQ-001.2.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.3, JOBS-REQ-001.2.4, JOBS-REQ-001.2.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_get_workflows_returns_jobs(self, project_with_job: Path) -> None:
         """Test that get_workflows returns available jobs and workflows."""
@@ -234,7 +234,7 @@ class TestMCPWorkflowTools:
         assert full_workflow.name == "full"
         assert full_workflow.summary is not None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.3.8, REQ-001.3.10, REQ-001.3.11).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.8, JOBS-REQ-001.3.10, JOBS-REQ-001.3.11).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow_creates_session(self, project_with_job: Path) -> None:
         """Test that start_workflow creates a new workflow session."""
@@ -268,7 +268,7 @@ class TestMCPWorkflowTools:
         assert response.begin_step.step_instructions is not None
         assert len(response.begin_step.step_instructions) > 0
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-001.4.7, REQ-001.4.17).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.7, JOBS-REQ-001.4.17).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_workflow_step_progression(self, project_with_job: Path) -> None:
         """Test that finished_step progresses through workflow steps."""

@@ -1,4 +1,4 @@
-"""Tests for review instruction file generation (deepwork.review.instructions) — validates REQ-005."""
+"""Tests for review instruction file generation (deepwork.review.instructions) — validates REVIEW-REQ-005."""
 
 from pathlib import Path
 
@@ -33,14 +33,14 @@ def _make_task(
 class TestBuildInstructionFile:
     """Tests for build_instruction_file."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.1.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_includes_rule_name_in_header(self) -> None:
         task = _make_task(rule_name="python_review")
         content = build_instruction_file(task)
         assert "# Review: python_review" in content
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.1.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_includes_review_instructions(self) -> None:
         task = _make_task(instructions="Check for security issues.")
@@ -48,7 +48,7 @@ class TestBuildInstructionFile:
         assert "## Review Instructions" in content
         assert "Check for security issues." in content
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.1.4, REQ-005.2.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.4, REVIEW-REQ-005.2.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_includes_files_to_review_with_at_prefix(self) -> None:
         task = _make_task(files=["src/app.py", "src/lib.py"])
@@ -57,7 +57,7 @@ class TestBuildInstructionFile:
         assert "- @src/app.py" in content
         assert "- @src/lib.py" in content
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.1.6, REQ-005.2.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.6, REVIEW-REQ-005.2.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_includes_unchanged_matching_files(self) -> None:
         task = _make_task(additional_files=["src/unchanged.py"])
@@ -65,7 +65,7 @@ class TestBuildInstructionFile:
         assert "## Unchanged Matching Files" in content
         assert "- @src/unchanged.py" in content
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.1.7, REQ-005.2.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.7, REVIEW-REQ-005.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_includes_all_changed_filenames_without_at_prefix(self) -> None:
         task = _make_task(all_changed_filenames=["src/app.py", "tests/test.py", "README.md"])
@@ -106,14 +106,14 @@ class TestBuildInstructionFile:
         content = build_instruction_file(task)
         assert "3 files" in content.split("\n")[0]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.6.1, REQ-005.6.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.6.1, REVIEW-REQ-005.6.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_includes_traceability_blurb(self) -> None:
         task = _make_task(source_location="src/.deepreview:5")
         content = build_instruction_file(task)
         assert "This review was requested by the policy at `src/.deepreview:5`." in content
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.6.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.6.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_traceability_preceded_by_horizontal_rule(self) -> None:
         task = _make_task(source_location="src/.deepreview:5")
@@ -124,7 +124,7 @@ class TestBuildInstructionFile:
         # The line two above should be the horizontal rule (blank line between)
         assert "---" in lines[trace_idx - 2]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.6.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.6.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_omits_traceability_when_source_location_empty(self) -> None:
         task = _make_task(source_location="")
@@ -141,7 +141,7 @@ class TestBuildInstructionFile:
 class TestWriteInstructionFiles:
     """Tests for write_instruction_files."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.3.1, REQ-005.3.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.3.1, REVIEW-REQ-005.3.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_instruction_files(self, tmp_path: Path) -> None:
         tasks = [_make_task(rule_name="rule_a"), _make_task(rule_name="rule_b")]
@@ -153,7 +153,7 @@ class TestWriteInstructionFiles:
             assert file_path.suffix == ".md"
             assert ".deepwork/tmp/review_instructions" in str(file_path)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.3.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.3.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_unique_filenames(self, tmp_path: Path) -> None:
         tasks = [_make_task() for _ in range(10)]
@@ -161,7 +161,7 @@ class TestWriteInstructionFiles:
         paths = [r[1] for r in results]
         assert len(set(paths)) == 10  # All unique
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.5.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.5.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_clears_previous_files(self, tmp_path: Path) -> None:
         instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
@@ -177,7 +177,7 @@ class TestWriteInstructionFiles:
         files = list(instructions_dir.iterdir())
         assert len(files) == 1
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REQ-005.3.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.3.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_task_path_tuples(self, tmp_path: Path) -> None:
         task = _make_task(rule_name="my_rule")
