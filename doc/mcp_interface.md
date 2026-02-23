@@ -10,7 +10,7 @@ This document describes the Model Context Protocol (MCP) tools exposed by the De
 
 ## Tools
 
-DeepWork exposes four MCP tools:
+DeepWork exposes five MCP tools:
 
 ### 1. `get_workflows`
 
@@ -132,6 +132,26 @@ Abort the current workflow and return to the parent workflow (if nested). Use th
   resumed_step?: string | null;       // The step now active (if any)
 }
 ```
+
+---
+
+### 5. `review`
+
+Run a review of changed files based on `.deepreview` configuration files. Returns a list of review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields for the Task tool.
+
+This tool operates outside the workflow lifecycle — it can be called independently at any time.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `files` | `string[] \| null` | No | Explicit file paths to review. When omitted, detects changes via git diff against the main branch. |
+
+#### Returns
+
+A plain string with one of:
+- An informational message (no rules found, no changed files, no matches)
+- Formatted review task list ready for parallel dispatch
 
 ---
 
@@ -302,10 +322,12 @@ details on how Claude CLI is invoked.
 deepwork serve [OPTIONS]
 
 Options:
-  --path PATH        Project root directory (default: current directory)
-  --no-quality-gate  Disable quality gate evaluation
-  --transport TYPE   Transport type: stdio or sse (default: stdio)
-  --port PORT        Port for SSE transport (default: 8000)
+  --path PATH            Project root directory (default: current directory)
+  --no-quality-gate      Disable quality gate evaluation
+  --transport TYPE       Transport type: stdio or sse (default: stdio)
+  --port PORT            Port for SSE transport (default: 8000)
+  --external-runner TYPE External runner for quality gate reviews (default: None)
+  --platform NAME        Platform identifier (e.g., 'claude'). Used by the review tool to format output.
 ```
 
 ---
@@ -331,6 +353,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
+| 1.5.0 | Added `review` tool for running `.deepreview`-based code reviews via MCP. Added `--platform` CLI option to `serve` command. |
 | 1.4.0 | Added optional `session_id` parameter to `finished_step` and `abort_workflow` for concurrent workflow safety. When multiple workflows are active on the stack, callers can pass the `session_id` (returned in `ActiveStepInfo`) to target the correct session. Fully backward compatible — omitting `session_id` preserves existing top-of-stack behavior. |
 | 1.3.0 | `step_expected_outputs` changed from `string[]` to `ExpectedOutput[]` — each entry includes `name`, `type`, `description`, and `syntax_for_finished_step_tool` so agents know exactly what format to use when calling `finished_step`. |
 | 1.2.0 | Quality gate now includes input files from prior steps in review payload with BEGIN INPUTS/END INPUTS and BEGIN OUTPUTS/END OUTPUTS section headers. Binary files (PDFs, etc.) get a placeholder instead of raw content. |

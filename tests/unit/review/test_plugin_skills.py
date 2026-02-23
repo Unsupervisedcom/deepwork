@@ -1,4 +1,4 @@
-"""Tests for DeepWork Reviews plugin skills and documentation (REQ-007)."""
+"""Tests for DeepWork Reviews plugin skills and documentation — validates REQ-007."""
 
 from pathlib import Path
 
@@ -38,10 +38,10 @@ class TestReviewSkill:
         assert "description" in fm
         assert len(fm["description"]) > 0
 
-    def test_instructs_to_run_review_command(self) -> None:
-        """REQ-007.1.4: skill tells agent to run the review CLI."""
+    def test_instructs_to_call_review_mcp_tool(self) -> None:
+        """REQ-007.1.4: skill tells agent to call the review MCP tool."""
         content = self.skill_path.read_text(encoding="utf-8")
-        assert "uvx deepwork review --instructions-for claude" in content
+        assert "mcp__deepwork__review" in content
 
     def test_instructs_parallel_tasks(self) -> None:
         """REQ-007.1.5: skill tells agent to launch tasks in parallel."""
@@ -103,9 +103,9 @@ class TestConfigureReviewsSkill:
         assert "reuse" in content.lower() or "existing" in content.lower()
 
     def test_instructs_to_test_changes(self) -> None:
-        """REQ-007.2.6: skill tells agent to test by running the review command."""
+        """REQ-007.2.6: skill tells agent to test by calling the review MCP tool."""
         content = self.skill_path.read_text(encoding="utf-8")
-        assert "deepwork review --instructions-for claude" in content
+        assert "mcp__deepwork__review" in content
 
 
 class TestReferenceDocumentation:

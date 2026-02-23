@@ -62,6 +62,6 @@ After discovering review rules (REQ-002) and changed files (REQ-003), the system
 
 ### REQ-004.9: Orchestration
 
-1. The system MUST provide a `match_files_to_rules(changed_files, all_changed_files, rules, project_root, platform)` function that processes all rules and returns a list of `ReviewTask` objects.
+1. The system MUST provide a `match_files_to_rules(changed_files, rules, project_root, platform="claude")` function that processes all rules and returns a list of `ReviewTask` objects.
 2. Each rule MUST be processed independently — a file can match multiple rules and appear in multiple tasks.
 3. The function MUST process rules in the order they were discovered.

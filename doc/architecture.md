@@ -64,9 +64,9 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── matcher.py      # Git diff + glob matching + strategy grouping
 │       │   ├── instructions.py # Generate review instruction files
 │       │   ├── formatter.py    # Format output for Claude Code
-│       │   ├── schema.py       # JSON schema loader
-│       │   └── deepreview_schema.json
+│       │   └── schema.py       # JSON schema loader
 │       ├── schemas/            # Definition schemas
+│       │   ├── deepreview_schema.json
 │       │   ├── job_schema.py
 │       │   └── doc_spec_schema.py
 │       └── utils/
@@ -972,12 +972,12 @@ DeepWork includes an MCP (Model Context Protocol) server that provides an altern
 
 The FastMCP server definition that:
 - Creates and configures the MCP server instance
-- Registers the three workflow tools
+- Registers the workflow tools and the `review` tool
 - Provides server instructions for agents
 
 ### Tools (`tools.py`)
 
-Implements the three MCP tools:
+Implements the workflow MCP tools:
 
 #### 1. `get_workflows`
 Lists all available workflows from `.deepwork/jobs/`.
@@ -1009,6 +1009,25 @@ Reports step completion and gets next instructions.
 - If `needs_work`: feedback from quality gate, failed criteria
 - If `next_step`: next step instructions
 - If `workflow_complete`: summary of all outputs
+
+#### 4. `abort_workflow`
+Aborts the current workflow and returns to the parent (if nested).
+
+**Parameters**:
+- `explanation: str` - Why the workflow is being aborted
+- `session_id: str | None` - Target a specific workflow session
+
+**Returns**: Aborted workflow info, resumed parent info (if any), current stack
+
+#### 5. `review`
+Runs the `.deepreview`-based code review pipeline. Registered directly in `server.py` (not in `tools.py`) since it operates outside the workflow lifecycle.
+
+**Parameters**:
+- `files: list[str] | None` - Explicit files to review. When omitted, detects changes via git diff.
+
+**Returns**: Formatted review task list or informational message.
+
+The `--platform` CLI option on `serve` controls which formatter is used (defaults to `"claude"`).
 
 ### State Management (`state.py`)
 

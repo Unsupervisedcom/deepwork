@@ -42,12 +42,19 @@ class ServeError(Exception):
     default=None,
     help="External runner for quality gate reviews. 'claude' uses Claude CLI subprocess. Default: None (agent self-review).",
 )
+@click.option(
+    "--platform",
+    type=str,
+    default=None,
+    help="Platform identifier (e.g., 'claude'). Used by the review tool to format output.",
+)
 def serve(
     path: Path,
     no_quality_gate: bool,
     transport: str,
     port: int,
     external_runner: str | None,
+    platform: str | None,
 ) -> None:
     """Start the DeepWork MCP server.
 
@@ -76,7 +83,7 @@ def serve(
         deepwork serve --path /path/to/project
     """
     try:
-        _serve_mcp(path, not no_quality_gate, transport, port, external_runner)
+        _serve_mcp(path, not no_quality_gate, transport, port, external_runner, platform)
     except ServeError as e:
         click.echo(f"Error: {e}", err=True)
         raise click.Abort() from e
@@ -91,6 +98,7 @@ def _serve_mcp(
     transport: str,
     port: int,
     external_runner: str | None = None,
+    platform: str | None = None,
 ) -> None:
     """Start the MCP server.
 
@@ -101,6 +109,7 @@ def _serve_mcp(
         port: Port for SSE transport
         external_runner: External runner for quality gate reviews.
             "claude" uses Claude CLI subprocess. None means agent self-review.
+        platform: Platform identifier for the review tool (e.g., "claude").
 
     Raises:
         ServeError: If server fails to start
@@ -116,6 +125,7 @@ def _serve_mcp(
         project_root=project_path,
         enable_quality_gate=enable_quality_gate,
         external_runner=external_runner,
+        platform=platform,
     )
 
     if transport == "stdio":

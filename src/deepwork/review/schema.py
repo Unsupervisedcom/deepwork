@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-_SCHEMA_FILE = Path(__file__).parent / "deepreview_schema.json"
+_SCHEMA_FILE = Path(__file__).parent.parent / "schemas" / "deepreview_schema.json"
 
 
 def _load_schema() -> dict[str, Any]:

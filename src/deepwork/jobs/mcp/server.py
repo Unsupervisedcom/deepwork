@@ -39,6 +39,7 @@ def create_server(
     quality_gate_timeout: int = 120,
     quality_gate_max_attempts: int = 3,
     external_runner: str | None = None,
+    platform: str | None = None,
 ) -> FastMCP:
     """Create and configure the MCP server.
 
@@ -50,6 +51,8 @@ def create_server(
         external_runner: External runner for quality gate reviews.
             "claude" uses Claude CLI subprocess. None means agent self-review
             via instructions file. (default: None)
+        platform: Platform identifier for the review tool (e.g., "claude").
+            Defaults to "claude" if not set. (default: None)
 
     Returns:
         Configured FastMCP server instance
@@ -217,6 +220,29 @@ def create_server(
         input_data = AbortWorkflowInput(explanation=explanation, session_id=session_id)
         response = await tools.abort_workflow(input_data)
         return response.model_dump()
+
+    # ---- Review tool (outside the workflow lifecycle) ----
+
+    from deepwork.review.mcp import ReviewToolError, run_review
+
+    review_platform = platform or "claude"
+
+    @mcp.tool(
+        description=(
+            "Run a review of changed files based on .deepreview configuration files. "
+            "Returns a list of review tasks to invoke in parallel. Each task has "
+            "name, description, subagent_type, and prompt fields for the Task tool. "
+            "Optional: files (list of file paths to review). When omitted, detects "
+            "changes via git diff against the main branch."
+        )
+    )
+    def review(files: list[str] | None = None) -> str:
+        """Run review pipeline on changed files."""
+        _log_tool_call("review", {"files": files})
+        try:
+            return run_review(project_path, review_platform, files)
+        except ReviewToolError as e:
+            return f"Review error: {e}"
 
     return mcp
 
