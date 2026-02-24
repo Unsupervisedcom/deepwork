@@ -6,7 +6,7 @@ suitable for registration as an MCP tool.
 
 from pathlib import Path
 
-from deepwork.review.discovery import load_all_rules
+from deepwork.review.discovery import DiscoveryError, load_all_rules
 from deepwork.review.formatter import format_for_claude
 from deepwork.review.instructions import INSTRUCTIONS_DIR, write_instruction_files
 from deepwork.review.matcher import (
@@ -30,7 +30,7 @@ class ReviewToolError(Exception):
     pass
 
 
-def _format_discovery_warnings(errors: list) -> str:
+def _format_discovery_warnings(errors: list[DiscoveryError]) -> str:
     """Format discovery errors into a bullet-list warning string.
 
     Args:

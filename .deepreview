@@ -49,6 +49,11 @@ python_code_review:
         documentation still accurate after the changes? Flag any comments that
         describe behavior that no longer matches the code.
 
+      Output Format:
+      - PASS: No issues found.
+      - FAIL: Issues found. List each with file, line, severity (high/medium/low),
+        and a concise description.
+
 python_lint:
   description: "Run ruff (lint + format) and mypy on changed Python files."
   match:
@@ -69,13 +74,6 @@ python_lint:
       4. Fix any remaining issues you can resolve (e.g., adding type annotations,
          renaming ambiguous variables).
       5. Re-run all three checks to confirm your fixes are clean.
-
-      Additionally, always check:
-      - **DRY violations**: Is there duplicated logic or repeated patterns that
-        should be extracted into a shared function, utility, or module?
-      - **Comment accuracy**: Are all comments, docstrings, and inline
-        documentation still accurate after the changes? Flag any comments that
-        describe behavior that no longer matches the code.
 
       Output Format:
       - PASS: All checks pass (no remaining issues).

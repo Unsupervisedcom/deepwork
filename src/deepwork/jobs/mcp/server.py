@@ -223,12 +223,9 @@ def create_server(
 
     # ---- Review tool (outside the workflow lifecycle) ----
 
-    from deepwork.review.mcp import (
-        ReviewToolError,
-        get_configured_reviews as get_configured_reviews_fn,
-        mark_passed as mark_passed_fn,
-        run_review,
-    )
+    from deepwork.review.mcp import ReviewToolError, run_review
+    from deepwork.review.mcp import get_configured_reviews as get_configured_reviews_fn
+    from deepwork.review.mcp import mark_passed as mark_passed_fn
 
     review_platform = platform or "claude"
 

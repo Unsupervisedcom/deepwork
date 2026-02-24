@@ -406,7 +406,7 @@ class TestMarkPassed:
 
 
 class TestMarkReviewAsPassedMCPTool:
-    """Tests for mark_review_as_passed tool registration — validates REVIEW-REQ-009.2.1."""
+    """Tests for mark_review_as_passed tool registration — validates REVIEW-REQ-009.2.1, REVIEW-REQ-009.2.2."""
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.2.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -418,6 +418,22 @@ class TestMarkReviewAsPassedMCPTool:
             enable_quality_gate=False,
         )
         assert "mark_review_as_passed" in server._tool_manager._tools
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.2.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_review_id_is_required_string_parameter(self, tmp_path: Path) -> None:
+        """The review_id parameter MUST be a required string."""
+        from deepwork.jobs.mcp.server import create_server
+
+        server = create_server(
+            project_root=tmp_path,
+            enable_quality_gate=False,
+        )
+        tool = server._tool_manager._tools["mark_review_as_passed"]
+        params = tool.parameters
+        assert "review_id" in params["properties"]
+        assert params["properties"]["review_id"]["type"] == "string"
+        assert "review_id" in params["required"]
 
 
 class TestRunReviewPassedFiltering:
