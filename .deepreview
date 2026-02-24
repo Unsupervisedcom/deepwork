@@ -112,24 +112,68 @@ requirements_traceability:
       Each file follows the naming pattern `{PREFIX}-REQ-NNN-<topic>.md` where
       PREFIX is one of: DW-REQ, JOBS-REQ, REVIEW-REQ, LA-REQ, PLUG-REQ.
       Requirements are individually numbered (e.g. JOBS-REQ-004.1). Requirements
-      must be validated by either automated tests OR DeepWork review rules:
+      must be validated by either automated tests OR DeepWork review rules.
 
-      - **Automated tests** (`tests/`): For requirements that can be
-        boolean-verified with code (deterministic pass/fail). Tests reference
-        requirement IDs via docstrings and traceability comments.
-      - **DeepWork review rules** (`.deepreview`): For requirements that require
-        judgement to evaluate (subjective, contextual, or qualitative). Rules
-        reference requirement IDs in their description or instructions.
+      ## Choosing the right validation mechanism
 
-      For this review:
-      1. Check that any new or changed end-user functionality has a corresponding
-         requirement in `specs/`.
-      2. Check that every requirement touched by this change has at least one
-         automated test referencing it in `tests/` OR at least one `.deepreview`
-         rule that validates it. Use the right type: tests for boolean-verifiable
-         requirements, review rules for judgement-based requirements.
-      3. Flag any test modifications where the underlying requirement did not
-         also change.
+      Choosing the right mechanism is critical. The wrong choice creates
+      false confidence (a passing test that doesn't actually verify anything)
+      or wastes reviewer judgment on something a machine can check exactly.
+
+      **Use automated tests** (`tests/`) when the requirement specifies a
+      concrete, machine-verifiable fact:
+      - File exists at a specific path
+      - JSON/YAML field has a specific value
+      - Config contains a specific identifier (e.g., `mcp__deepwork__get_review_instructions`)
+      - File A is byte-identical to file B
+      - A data structure has a required shape
+
+      Tests reference requirement IDs via docstrings and traceability comments.
+
+      **Use review rules** (`.deepreview`) when evaluating the requirement
+      requires reading comprehension, judgment, or context:
+      - "Skill MUST instruct the agent to do X" — does the prose actually
+        convey X clearly enough for an agent to follow?
+      - "Code MUST follow pattern Y" — does the implementation match the
+        spirit of the pattern across multiple files?
+      - "Documentation MUST stay in sync with code" — are the descriptions
+        still accurate after changes?
+
+      Rules reference requirement IDs in their `description` or `instructions`.
+
+      ## Anti-patterns to flag
+
+      **Fragile keyword tests for judgment-based requirements.** A test that
+      checks `"reuse" in content.lower()` to validate "MUST instruct the
+      agent to reuse existing rules" is not deterministic verification — it
+      is a keyword search pretending to be one. The word "reuse" could appear
+      in an unrelated sentence, be negated ("do NOT reuse"), or be absent
+      while the instruction clearly conveys reuse through other wording.
+      These requirements need a review rule that can read and evaluate the
+      instruction's meaning. Other examples of this anti-pattern:
+      - `"parallel" in content` for "MUST launch tasks in parallel"
+      - `"again" in content or "repeat" in content` for "MUST re-run after changes"
+      - `"without asking" in content` for "MUST automatically apply obvious fixes"
+
+      **Review rules for machine-verifiable requirements.** A review rule
+      that asks a reviewer "check whether the config file contains
+      `--platform claude`" is wasting reviewer judgment on something
+      `assert "--platform" in args` can verify exactly. If the requirement
+      specifies a concrete value, path, or structure, use a test.
+
+      See specs/validating_requirements_with_rules.md for more information.
+
+      ## Review checklist
+
+      1. Check that any new or changed end-user functionality has a
+         corresponding requirement in `specs/`.
+      2. Check that every requirement touched by this change has at least
+         one automated test OR at least one `.deepreview` rule validating
+         it. **Verify the mechanism matches the requirement type** — flag
+         keyword-search tests used for judgment requirements, and flag
+         review rules used for machine-verifiable requirements.
+      3. Flag any test modifications where the underlying requirement did
+         not also change.
       4. For test-validated requirements, verify traceability comments are
          present, correctly reference requirement IDs, and use the standard
          two-line format:
@@ -142,11 +186,11 @@ requirements_traceability:
          only in docstrings but are missing the formal comment block, flag
          them. If the second line is missing, flag that too.
       5. For rule-validated requirements, verify the `.deepreview` rule's
-         description or instructions reference the requirement ID and that the
-         rule's scope covers the requirement's intent.
+         description or instructions reference the requirement ID and that
+         the rule's scope covers the requirement's intent.
 
-      Produce a structured review with Coverage Gaps, Test Stability Violations,
-      Traceability Issues, and a Summary with PASS/FAIL verdicts.
+      Produce a structured review with Coverage Gaps, Test Stability
+      Violations, Traceability Issues, and a Summary with PASS/FAIL verdicts.
 
 update_documents_relating_to_src_deepwork:
   description: "Ensure project documentation stays current when DeepWork source files, plugins, or platform content change."
@@ -224,6 +268,61 @@ update_learning_agents_architecture:
       unchanged_matching_files: true
 
 
+claude_plugin_skill_instructions:
+  description: "PLUG-REQ-001 & REVIEW-REQ-007: Verify skill instructions adequately convey behavioral requirements."
+  match:
+    include:
+      - "plugins/claude/skills/**/*.md"
+  review:
+    strategy: matches_together
+    instructions: |
+      Review the Claude Code plugin skill files against behavioral
+      requirements from PLUG-REQ-001 and REVIEW-REQ-007. These requirements
+      specify what the skill instructions must tell the agent to do.
+
+      Read each skill file and check the following:
+
+      ## deepwork skill (plugins/claude/skills/deepwork/SKILL.md)
+
+      - **PLUG-REQ-001.3.4**: The skill must support four intent-parsing
+        modes: (1) discovering available workflows, (2) starting a named
+        workflow, (3) inferring the best workflow from a freeform request,
+        and (4) prompting the user to choose when no context is given.
+        Verify the instructions clearly describe all four modes and an
+        agent following them would handle each case.
+
+      ## review skill (plugins/claude/skills/review/SKILL.md)
+
+      - **PLUG-REQ-001.4.4 / REVIEW-REQ-007.1.5**: The skill must instruct
+        the agent to launch review tasks in parallel. Verify the
+        instructions clearly direct parallel execution, not just mention
+        the word.
+      - **PLUG-REQ-001.4.5 / REVIEW-REQ-007.1.6**: The skill must instruct
+        the agent to automatically apply findings that are obviously correct
+        with no downsides (e.g., typo fixes, unused imports). Verify the
+        instructions clearly distinguish auto-apply cases from cases
+        requiring user input.
+      - **PLUG-REQ-001.4.7 / REVIEW-REQ-007.1.8**: The skill must instruct
+        the agent to re-run reviews after making changes, repeating until
+        no further actionable findings remain. Verify the instructions
+        describe a clear iteration loop, not just a one-shot review.
+      - **PLUG-REQ-001.4.9**: When no review rules are configured, the
+        skill must offer to help the user discover and set up rules rather
+        than silently producing no results. Verify the instructions include
+        explicit handling for the no-rules case.
+
+      ## configure_reviews skill (plugins/claude/skills/configure_reviews/SKILL.md)
+
+      - **PLUG-REQ-001.5.4 / REVIEW-REQ-007.2.5**: The skill must instruct
+        the agent to reuse existing review rules and instructions where
+        possible rather than creating duplicates. Verify the instructions
+        clearly convey a preference for reuse over duplication.
+
+      Output Format:
+      - PASS: All behavioral requirements are adequately conveyed.
+      - FAIL: List each requirement ID that is not adequately covered,
+        with a specific explanation of what is missing or unclear.
+
 shell_code_review:
   description: "Review shell scripts for correctness, safety, and project conventions."
   match:
@@ -258,7 +357,7 @@ shell_code_review:
         that describe behavior that no longer matches the code.
 
 deepreview_config_quality:
-  description: "Review .deepreview configs for rule consolidation, description accuracy, and correct directory placement."
+  description: "Review .deepreview configs for rule consolidation, overly broad rules, description accuracy, and correct directory placement."
   match:
     include:
       - "**/.deepreview"
@@ -268,7 +367,7 @@ deepreview_config_quality:
       unchanged_matching_files: true
     instructions: |
       Review the .deepreview config files for structural quality. Check all
-      three of the following, across ALL .deepreview files (changed and unchanged):
+      four of the following, across ALL .deepreview files (changed and unchanged):
 
       ## 1. Rule Consolidation
 
@@ -294,7 +393,30 @@ deepreview_config_quality:
       - A description that is vague or generic when the instructions are
         specific — flag it and suggest a more accurate description.
 
-      ## 3. Directory Placement
+      ## 3. Overly Broad Rules (Needless Combining)
+
+      The inverse of consolidation: a single rule that matches a broad set of
+      files but whose instructions are actually file-specific or path-specific.
+      This is a sign the rule should be split into multiple narrower rules.
+
+      Indicators to flag:
+      - A rule with a wide `match.include` pattern (e.g., `**/*.py`, `src/**`)
+        but instructions that say things like "For files in src/foo/, check X;
+        for files in src/bar/, check Y" — these should be separate rules with
+        narrower match patterns.
+      - Instructions that enumerate specific filenames or paths and assign
+        different checks to each — the match pattern should be doing this
+        filtering, not the instructions.
+      - A rule whose instructions are mostly conditional on which file is being
+        reviewed, rather than applying uniformly to all matched files.
+
+      Exceptions (do NOT flag these):
+      - Rules where ~70%+ of the instructions apply to all matched files, with
+        only minor per-file notes (e.g., "For test files, also check fixtures").
+      - Rules using `matches_together` strategy where cross-file analysis is
+        the point (e.g., doc-sync rules that compare source and documentation).
+
+      ## 4. Directory Placement
 
       .deepreview files should live as close as possible to the files they
       govern. If ALL of a rule's `match.include` patterns target files within
@@ -315,5 +437,5 @@ deepreview_config_quality:
 
       - PASS: No issues found.
       - FAIL: Issues found. List each with the .deepreview file path,
-        rule name, which check failed (consolidation / description / placement),
+        rule name, which check failed (consolidation / description / overly-broad / placement),
         and a specific recommendation.

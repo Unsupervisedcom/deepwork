@@ -10,6 +10,7 @@ DeepWork Reviews lets you define automated code review policies using `.deeprevi
 - **"Gotcha" regression checkers** — Watch a specific file or module for a known class of mistake that has regressed before, with instructions describing exactly what to look for
 - **Cross-file consistency reviews** — Group a logical set of interrelated files (e.g., API schema + client code + tests) so the reviewer can verify that any individual change makes sense in the wider context
 - **Tone and style reviews for human-facing content** — Review copy, docs, blog posts, or marketing pages for consistent voice, reading level, and style guidelines
+- **Requirements validation** — Verify that code, config, and instruction files satisfy formal requirements that need judgment to evaluate (see below)
 
 ## How It Works
 
