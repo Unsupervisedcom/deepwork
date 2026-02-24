@@ -30,6 +30,18 @@ class ReviewToolError(Exception):
     pass
 
 
+def _format_discovery_warnings(errors: list) -> str:
+    """Format discovery errors into a bullet-list warning string.
+
+    Args:
+        errors: List of DiscoveryError objects.
+
+    Returns:
+        Multi-line string with one ``  - path: error`` entry per error.
+    """
+    return "\n".join(f"  - {e.file_path}: {e.error}" for e in errors)
+
+
 def run_review(
     project_root: Path,
     platform: str,
@@ -59,7 +71,7 @@ def run_review(
 
     if not rules:
         if discovery_errors:
-            warnings = "\n".join(f"  - {e.file_path}: {e.error}" for e in discovery_errors)
+            warnings = _format_discovery_warnings(discovery_errors)
             return f"No valid .deepreview rules found. Parse errors:\n{warnings}"
         return "No .deepreview configuration files found."
 
@@ -92,7 +104,7 @@ def run_review(
     result = formatter(task_files, project_root)
 
     if discovery_errors:
-        warnings = "\n".join(f"  - {e.file_path}: {e.error}" for e in discovery_errors)
+        warnings = _format_discovery_warnings(discovery_errors)
         result = f"Warning: Some .deepreview files could not be parsed:\n{warnings}\n\n{result}"
 
     return result

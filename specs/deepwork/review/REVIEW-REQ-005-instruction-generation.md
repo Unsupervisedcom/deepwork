@@ -27,7 +27,7 @@ For each `ReviewTask`, the system generates a self-contained markdown instructio
 1. Instruction files MUST be written to `.deepwork/tmp/review_instructions/` under the project root.
 2. The directory MUST be created if it does not exist (with `parents=True, exist_ok=True`).
 3. Each file MUST have a unique filename with a `.md` extension.
-4. The filename MUST be a random numeric ID (e.g., `7142141.md`) to avoid collisions.
+4. ~~The filename MUST be a random numeric ID (e.g., `7142141.md`) to avoid collisions.~~ *Superseded by REVIEW-REQ-009.3.4*: filenames MUST be deterministic `{review_id}.md`.
 5. The system MUST use `fs.safe_write()` for writing instruction files.
 6. The system MUST return a list of `(ReviewTask, Path)` tuples mapping each task to its generated instruction file path.
 

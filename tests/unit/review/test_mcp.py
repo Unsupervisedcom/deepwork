@@ -350,14 +350,26 @@ class TestMarkPassed:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_passed_file(self, tmp_path: Path) -> None:
         mark_passed(tmp_path, "rule--file--abc123def456")
-        passed_file = tmp_path / ".deepwork" / "tmp" / "review_instructions" / "rule--file--abc123def456.passed"
+        passed_file = (
+            tmp_path
+            / ".deepwork"
+            / "tmp"
+            / "review_instructions"
+            / "rule--file--abc123def456.passed"
+        )
         assert passed_file.exists()
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_passed_file_is_empty(self, tmp_path: Path) -> None:
         mark_passed(tmp_path, "rule--file--abc123def456")
-        passed_file = tmp_path / ".deepwork" / "tmp" / "review_instructions" / "rule--file--abc123def456.passed"
+        passed_file = (
+            tmp_path
+            / ".deepwork"
+            / "tmp"
+            / "review_instructions"
+            / "rule--file--abc123def456.passed"
+        )
         assert passed_file.read_bytes() == b""
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.2.4).
@@ -441,6 +453,8 @@ class TestRunReviewPassedFiltering:
         result = run_review(tmp_path, "claude")
         assert "No review tasks to execute" in result
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.3.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.mcp.match_files_to_rules")
     @patch("deepwork.review.mcp.get_changed_files")
     @patch("deepwork.review.mcp.load_all_rules")
@@ -469,3 +483,26 @@ class TestRunReviewPassedFiltering:
 
         result = run_review(tmp_path, "claude")
         assert "No review tasks to execute" in result
+
+
+class TestGetConfiguredReviewsUnaffectedByCache:
+    """Tests that get_configured_reviews ignores pass caching — validates REVIEW-REQ-009.6."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.6.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_get_configured_reviews_ignores_passed_markers(
+        self, mock_load: Any, tmp_path: Path
+    ) -> None:
+        """Creating .passed markers does not affect get_configured_reviews output."""
+        rule = _make_rule(tmp_path)
+        mock_load.return_value = ([rule], [])
+
+        # Create a .passed marker
+        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
+        instructions_dir.mkdir(parents=True)
+        (instructions_dir / "test_rule--src-app.py--abc123def456.passed").write_bytes(b"")
+
+        result = get_configured_reviews(tmp_path)
+        assert len(result) == 1
+        assert result[0]["name"] == "test_rule"

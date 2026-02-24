@@ -174,8 +174,8 @@ class TestWriteInstructionFiles:
             assert file_path.suffix == ".md"
             assert ".deepwork/tmp/review_instructions" in str(file_path)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.3.4).
-    # Updated for REVIEW-REQ-009 (deterministic review IDs — distinct tasks produce unique filenames).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.3.4, REVIEW-REQ-009.3.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_unique_filenames(self, tmp_path: Path) -> None:
         tasks = [_make_task(rule_name=f"rule_{i}") for i in range(10)]
         results = write_instruction_files(tasks, tmp_path)
@@ -183,7 +183,7 @@ class TestWriteInstructionFiles:
         assert len(set(paths)) == 10  # All unique
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.5.1, REVIEW-REQ-009.5.1).
-    # Updated for REVIEW-REQ-009 (cleanup deletes .md files only, preserves .passed files).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_clears_previous_files(self, tmp_path: Path) -> None:
         instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
         instructions_dir.mkdir(parents=True)
@@ -345,7 +345,7 @@ class TestComputeReviewId:
 
         assert compute_review_id(task_a, tmp_path) != compute_review_id(task_b, tmp_path)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.1.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.1.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_slashes_replaced_with_dashes(self, tmp_path: Path) -> None:
         (tmp_path / "src" / "app").mkdir(parents=True, exist_ok=True)
@@ -389,3 +389,12 @@ class TestComputeReviewId:
         # Should not raise — uses MISSING placeholder
         review_id = compute_review_id(task, tmp_path)
         assert len(review_id.split("--")) == 3
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.1.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_special_chars_in_rule_name_sanitized(self, tmp_path: Path) -> None:
+        from deepwork.review.instructions import _sanitize_for_id
+
+        assert _sanitize_for_id("my rule@v2!") == "my-rule-v2-"
+        # Also verify it preserves allowed chars: alphanumeric, dash, underscore, dot
+        assert _sanitize_for_id("rule_name-1.0") == "rule_name-1.0"

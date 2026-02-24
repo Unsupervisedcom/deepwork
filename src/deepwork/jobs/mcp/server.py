@@ -225,13 +225,9 @@ def create_server(
 
     from deepwork.review.mcp import (
         ReviewToolError,
-        run_review,
-    )
-    from deepwork.review.mcp import (
         get_configured_reviews as get_configured_reviews_fn,
-    )
-    from deepwork.review.mcp import (
         mark_passed as mark_passed_fn,
+        run_review,
     )
 
     review_platform = platform or "claude"
@@ -275,7 +271,7 @@ def create_server(
         description=(
             "Mark a review as passed so it won't be re-run while reviewed files "
             "remain unchanged. The review_id is provided in the instruction file's "
-            "\"After Review\" section."
+            '"After Review" section.'
         )
     )
     def mark_review_as_passed(review_id: str) -> str:

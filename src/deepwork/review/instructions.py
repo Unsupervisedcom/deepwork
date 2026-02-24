@@ -170,8 +170,7 @@ def build_instruction_file(task: ReviewTask, review_id: str = "") -> str:
     if review_id:
         parts.append("## After Review\n")
         parts.append(
-            "If this review passes with no findings, call the "
-            "`mark_review_as_passed` tool with:\n"
+            "If this review passes with no findings, call the `mark_review_as_passed` tool with:\n"
         )
         parts.append(f'- `review_id`: `"{review_id}"`')
         parts.append("")
