@@ -449,6 +449,7 @@ class TestGetChangedFiles:
                 result.stdout = ""
             return result
 
+
         mock_run.side_effect = side_effect
         result = _detect_base_ref(tmp_path)
         assert result == "origin/main"
