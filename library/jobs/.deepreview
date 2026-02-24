@@ -3,6 +3,8 @@ update_library_readme:
   match:
     include:
       - "**"
+    exclude:
+      - ".deepreview"
   review:
     strategy: matches_together
     instructions: |
@@ -14,5 +16,11 @@ update_library_readme:
       - Directory structure listing (does it match what's actually in library/jobs/?)
 
       Flag any sections that are now outdated or inaccurate.
+
+      Pass this review if the README accurately reflects the current state of
+      all changed files. Fail if any section of the README is factually outdated
+      or references files, commands, or structures that no longer exist.
+
+      For each issue, state the README section name and what is outdated or incorrect.
     additional_context:
       unchanged_matching_files: true

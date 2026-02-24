@@ -10,7 +10,7 @@ DeepWork Reviews lets you define automated code review policies using `.deeprevi
 - **"Gotcha" regression checkers** — Watch a specific file or module for a known class of mistake that has regressed before, with instructions describing exactly what to look for
 - **Cross-file consistency reviews** — Group a logical set of interrelated files (e.g., API schema + client code + tests) so the reviewer can verify that any individual change makes sense in the wider context
 - **Tone and style reviews for human-facing content** — Review copy, docs, blog posts, or marketing pages for consistent voice, reading level, and style guidelines
-- **Requirements validation** — Verify that code, config, and instruction files satisfy formal requirements that need judgment to evaluate (see below)
+- **Requirements validation** — Verify that code, config, and instruction files satisfy formal requirements that need judgment to evaluate (see [Validating Requirements with Review Rules](specs/validating_requirements_with_rules.md))
 
 ## How It Works
 
@@ -32,12 +32,12 @@ When you run a review without explicit `--files`, DeepWork detects changed files
 | **Committed changes on your branch** | You committed a fix 3 commits ago | `git diff` against the merge-base with `main`/`master` catches all commits since the branch diverged |
 | **Staged but not yet committed** | You ran `git add myfile.py` but haven't committed | A separate `git diff --cached` picks up index changes |
 | **Unstaged modifications to tracked files** | You edited a file but haven't staged it | The working-tree diff against the merge-base includes these |
+| **Untracked files** (new files not yet added to git) | You created `new_file.py` but haven't run `git add` | `git ls-files --others --exclude-standard` picks up new files that aren't gitignored |
 
 ### Not included
 
 | Change type | Why it's excluded |
 |-------------|-------------------|
-| **Untracked files** (new files never added to git) | `git diff` only operates on tracked files. Run `git add` first, or pass them explicitly with `--files`. |
 | **Deleted files** | The `--diff-filter=ACMR` flag excludes deletions — there's nothing to review in a deleted file. |
 
 ### Local-only detection

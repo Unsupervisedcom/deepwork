@@ -267,62 +267,6 @@ update_learning_agents_architecture:
     additional_context:
       unchanged_matching_files: true
 
-
-claude_plugin_skill_instructions:
-  description: "PLUG-REQ-001 & REVIEW-REQ-007: Verify skill instructions adequately convey behavioral requirements."
-  match:
-    include:
-      - "plugins/claude/skills/**/*.md"
-  review:
-    strategy: matches_together
-    instructions: |
-      Review the Claude Code plugin skill files against behavioral
-      requirements from PLUG-REQ-001 and REVIEW-REQ-007. These requirements
-      specify what the skill instructions must tell the agent to do.
-
-      Read each skill file and check the following:
-
-      ## deepwork skill (plugins/claude/skills/deepwork/SKILL.md)
-
-      - **PLUG-REQ-001.3.4**: The skill must support four intent-parsing
-        modes: (1) discovering available workflows, (2) starting a named
-        workflow, (3) inferring the best workflow from a freeform request,
-        and (4) prompting the user to choose when no context is given.
-        Verify the instructions clearly describe all four modes and an
-        agent following them would handle each case.
-
-      ## review skill (plugins/claude/skills/review/SKILL.md)
-
-      - **PLUG-REQ-001.4.4 / REVIEW-REQ-007.1.5**: The skill must instruct
-        the agent to launch review tasks in parallel. Verify the
-        instructions clearly direct parallel execution, not just mention
-        the word.
-      - **PLUG-REQ-001.4.5 / REVIEW-REQ-007.1.6**: The skill must instruct
-        the agent to automatically apply findings that are obviously correct
-        with no downsides (e.g., typo fixes, unused imports). Verify the
-        instructions clearly distinguish auto-apply cases from cases
-        requiring user input.
-      - **PLUG-REQ-001.4.7 / REVIEW-REQ-007.1.8**: The skill must instruct
-        the agent to re-run reviews after making changes, repeating until
-        no further actionable findings remain. Verify the instructions
-        describe a clear iteration loop, not just a one-shot review.
-      - **PLUG-REQ-001.4.9**: When no review rules are configured, the
-        skill must offer to help the user discover and set up rules rather
-        than silently producing no results. Verify the instructions include
-        explicit handling for the no-rules case.
-
-      ## configure_reviews skill (plugins/claude/skills/configure_reviews/SKILL.md)
-
-      - **PLUG-REQ-001.5.4 / REVIEW-REQ-007.2.5**: The skill must instruct
-        the agent to reuse existing review rules and instructions where
-        possible rather than creating duplicates. Verify the instructions
-        clearly convey a preference for reuse over duplication.
-
-      Output Format:
-      - PASS: All behavioral requirements are adequately conveyed.
-      - FAIL: List each requirement ID that is not adequately covered,
-        with a specific explanation of what is missing or unclear.
-
 shell_code_review:
   description: "Review shell scripts for correctness, safety, and project conventions."
   match:
