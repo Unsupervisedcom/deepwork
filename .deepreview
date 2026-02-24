@@ -144,6 +144,7 @@ update_documents_relating_to_src_deepwork:
       - "platform/**"
       - "pyproject.toml"
       - "README.md"
+      - "README_REVIEWS.md"   # Documents the review system — must stay in sync with src/deepwork/review/
       - "CLAUDE.md"
       - "doc/architecture.md"
       - "doc/mcp_interface.md"
@@ -158,6 +159,7 @@ update_documents_relating_to_src_deepwork:
       When source files in src/deepwork/, plugins/, or platform/ change, check whether
       the following documentation files need updating:
       - README.md (install instructions, feature descriptions, project overview)
+      - README_REVIEWS.md (review system usage, .deepreview config format, strategies, examples)
       - CLAUDE.md (project structure, tech stack, CLI commands, architecture)
       - doc/architecture.md (detailed architecture, module descriptions, data flow)
       - doc/mcp_interface.md (MCP tool parameters, return values, server config)

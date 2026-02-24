@@ -38,20 +38,25 @@ deepwork/                       # DeepWork tool repository
 ├── src/
 │   └── deepwork/
 │       ├── cli/
-│       │   ├── main.py         # CLI entry point (serve + hook commands)
+│       │   ├── main.py         # CLI entry point
 │       │   ├── serve.py        # MCP server command
-│       │   └── hook.py         # Hook runner command
+│       │   ├── hook.py         # Hook runner command
+│       │   ├── review.py       # Review command (CLI entry for reviews)
+│       │   └── install.py      # Deprecated install/sync (back-compat)
 │       ├── core/
-│       │   ├── parser.py       # Job definition parsing
-│       │   ├── jobs.py         # Job discovery
 │       │   └── doc_spec_parser.py   # Doc spec parsing
-│       ├── mcp/                # MCP server module (the core runtime)
-│       │   ├── server.py       # FastMCP server definition
-│       │   ├── tools.py        # MCP tool implementations
-│       │   ├── state.py        # Workflow session state management
-│       │   ├── schemas.py      # Pydantic models for I/O
-│       │   ├── quality_gate.py # Quality gate with review agent
-│       │   └── claude_cli.py   # Claude CLI subprocess wrapper
+│       ├── jobs/               # Job discovery, parsing, and MCP server
+│       │   ├── discovery.py    # Job discovery
+│       │   ├── parser.py       # Job definition parsing
+│       │   ├── schema.py       # Job schema validation
+│       │   ├── job.schema.json # JSON schema for job definitions
+│       │   └── mcp/            # MCP server module (the core runtime)
+│       │       ├── server.py       # FastMCP server definition
+│       │       ├── tools.py        # MCP tool implementations
+│       │       ├── state.py        # Workflow session state management
+│       │       ├── schemas.py      # Pydantic models for I/O
+│       │       ├── quality_gate.py # Quality gate with review agent
+│       │       └── claude_cli.py   # Claude CLI subprocess wrapper
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── wrapper.py      # Cross-platform input/output normalization
 │       │   ├── claude_hook.sh  # Shell wrapper for Claude Code
@@ -65,10 +70,10 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── matcher.py      # Git diff + glob matching + strategy grouping
 │       │   ├── instructions.py # Generate review instruction files
 │       │   ├── formatter.py    # Format output for Claude Code
+│       │   ├── mcp.py          # MCP adapter for review pipeline
 │       │   └── schema.py       # JSON schema loader
 │       ├── schemas/            # Definition schemas
 │       │   ├── deepreview_schema.json
-│       │   ├── job_schema.py
 │       │   └── doc_spec_schema.py
 │       └── utils/
 │           ├── fs.py
@@ -80,11 +85,15 @@ deepwork/                       # DeepWork tool repository
 ├── plugins/
 │   ├── claude/                 # Claude Code plugin
 │   │   ├── .claude-plugin/plugin.json
+│   │   ├── README_REVIEWS.md   # Review system documentation
+│   │   ├── example_reviews/    # Example review instruction files
+│   │   │   ├── prompt_best_practices.md
+│   │   │   └── suggest_new_reviews.md
 │   │   ├── skills/
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── review/SKILL.md
 │   │   │   └── configure_reviews/SKILL.md
-│   │   ├── hooks/              # hooks.json
+│   │   ├── hooks/              # hooks.json, post_commit_reminder.sh
 │   │   └── .mcp.json           # MCP server config
 │   └── gemini/                 # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md
@@ -97,7 +106,7 @@ deepwork/                       # DeepWork tool repository
 
 ## DeepWork CLI Components
 
-The CLI has three primary commands: `serve`, `hook`, and `review`. The old `install`, `sync`, adapters, detector, and generator have been replaced by the plugin system.
+The CLI has three active commands: `serve`, `hook`, and `review`. Deprecated back-compat commands `install` and `sync` are also registered (hidden) to guide users toward the plugin system. The old adapters, detector, and generator have been replaced by the plugin system.
 
 ### 1. Serve Command (`serve.py`)
 
@@ -628,7 +637,7 @@ Claude: I'll analyze this conversation for DeepWork job executions...
         Bespoke learnings captured:
         ✓ Created AGENTS.md with project-specific notes about this competitive research instance
 
-        Run 'deepwork sync' to update skills with improved instructions.
+        Job instructions updated in place. Changes take effect on next workflow run.
 ```
 
 This standalone skill can be run anytime after executing a job to capture learnings and improve instructions.
@@ -817,9 +826,9 @@ outputs:
     doc_spec: .deepwork/doc_specs/monthly_aws_report.md
 ```
 
-### Generated Skills
+### How Doc Specs Are Used at Runtime
 
-When `deepwork sync` runs, skills with doc spec-referenced outputs include:
+When the MCP server loads a job with doc spec-referenced outputs, the step instructions include:
 - Document name and description
 - Target audience
 - All quality criteria with descriptions
@@ -856,7 +865,7 @@ See `doc/doc-specs.md` for complete documentation.
 ### Language: Python 3.11+
 - **Rationale**: Proven ecosystem for CLI tools (click) and MCP servers (FastMCP)
 - **Alternatives**: TypeScript (more verbose), Go (less flexible)
-- **Runtime Dependencies**: PyYAML (config), Click (CLI), FastMCP (MCP server), jsonschema (validation)
+- **Runtime Dependencies**: PyYAML (config), Click (CLI), FastMCP (MCP server), jsonschema (validation), Pydantic (data models), mcp (protocol), aiofiles (async file I/O)
 
 ### Distribution: uv/pipx
 - **Rationale**: Modern Python tooling, fast, isolated environments
@@ -866,8 +875,8 @@ See `doc/doc-specs.md` for complete documentation.
 - **Rationale**: Transparent, auditable, reviewable, collaborative
 - **Alternatives**: Database (opaque), JSON files (no versioning)
 
-### Template Engine: Jinja2
-- **Rationale**: Industry standard, powerful, well-documented
+### Template Engine: Jinja2 (dev dependency only)
+- **Rationale**: Industry standard, powerful, well-documented; used in development tooling, not at runtime
 - **Alternatives**: Mustache (too simple), custom (NIH syndrome)
 
 ### Validation: JSON Schema + Custom Scripts
@@ -921,14 +930,16 @@ DeepWork includes an MCP (Model Context Protocol) server that provides an altern
 
 ## MCP Server Components
 
-### Server (`server.py`)
+All MCP server code lives in `src/deepwork/jobs/mcp/`.
+
+### Server (`jobs/mcp/server.py`)
 
 The FastMCP server definition that:
 - Creates and configures the MCP server instance
 - Registers the workflow tools and the `get_review_instructions` tool
 - Provides server instructions for agents
 
-### Tools (`tools.py`)
+### Tools (`jobs/mcp/tools.py`)
 
 Implements the workflow MCP tools:
 
@@ -973,7 +984,7 @@ Aborts the current workflow and returns to the parent (if nested).
 **Returns**: Aborted workflow info, resumed parent info (if any), current stack
 
 #### 5. `get_review_instructions`
-Runs the `.deepreview`-based code review pipeline. Registered directly in `server.py` (not in `tools.py`) since it operates outside the workflow lifecycle.
+Runs the `.deepreview`-based code review pipeline. Registered directly in `jobs/mcp/server.py` (not in `tools.py`) since it operates outside the workflow lifecycle.
 
 **Parameters**:
 - `files: list[str] | None` - Explicit files to review. When omitted, detects changes via git diff.
@@ -982,7 +993,7 @@ Runs the `.deepreview`-based code review pipeline. Registered directly in `serve
 
 The `--platform` CLI option on `serve` controls which formatter is used (defaults to `"claude"`).
 
-### State Management (`state.py`)
+### State Management (`jobs/mcp/state.py`)
 
 Manages workflow session state persisted to `.deepwork/tmp/session_[id].json`:
 
@@ -1002,7 +1013,7 @@ Session state includes:
 - Current step and entry index
 - Per-step progress (started_at, completed_at, outputs, quality_attempts)
 
-### Quality Gate (`quality_gate.py`)
+### Quality Gate (`jobs/mcp/quality_gate.py`)
 
 Evaluates step outputs against quality criteria:
 
@@ -1022,7 +1033,7 @@ The quality gate:
 4. Parses the `structured_output` field from the JSON response
 5. Returns pass/fail with per-criterion feedback
 
-### Schemas (`schemas.py`)
+### Schemas (`jobs/mcp/schemas.py`)
 
 Pydantic models for all tool inputs and outputs:
 - `StartWorkflowInput`, `FinishedStepInput`

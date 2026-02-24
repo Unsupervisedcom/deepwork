@@ -58,13 +58,18 @@ def _task_description(task: ReviewTask) -> str:
         task: The ReviewTask to describe.
 
     Returns:
-        Short (3-5 word) description string.
+        Short description string.
     """
-    return f"Review {task.rule_name}"
+    prefix = _scope_prefix(task)
+    return f"Review {prefix}{task.rule_name}"
 
 
 def _task_name(task: ReviewTask) -> str:
     """Generate a descriptive name for a review task.
+
+    Includes a scope prefix derived from the source directory when the
+    rule comes from a subdirectory .deepreview file.  This disambiguates
+    same-named rules from different directories (REVIEW-REQ-004.10).
 
     Args:
         task: The ReviewTask to name.
@@ -72,6 +77,30 @@ def _task_name(task: ReviewTask) -> str:
     Returns:
         Task name string.
     """
+    prefix = _scope_prefix(task)
     if len(task.files_to_review) == 1:
-        return f"{task.rule_name} review of {task.files_to_review[0]}"
-    return f"{task.rule_name} review of {len(task.files_to_review)} files"
+        return f"{prefix}{task.rule_name} review of {task.files_to_review[0]}"
+    return f"{prefix}{task.rule_name} review of {len(task.files_to_review)} files"
+
+
+def _scope_prefix(task: ReviewTask) -> str:
+    """Derive a short scope prefix from the task's source_location.
+
+    Returns ``"dirname/"`` when the .deepreview file lives in a
+    subdirectory, or ``""`` for root-level rules or when no source
+    location is available.
+
+    Args:
+        task: The ReviewTask with source_location set by the matcher.
+
+    Returns:
+        Scope prefix string (e.g., ``"my_job/"`` or ``""``).
+    """
+    if not task.source_location:
+        return ""
+    # source_location is formatted as "relative/path/.deepreview:line"
+    path_part = task.source_location.rsplit(":", 1)[0]
+    parent = Path(path_part).parent
+    if parent == Path("."):
+        return ""
+    return f"{parent.name}/"

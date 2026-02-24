@@ -240,11 +240,17 @@ DeepWork integrates with Claude Code through the **plugin system**:
 ```
 plugins/claude/
 ├── .claude-plugin/plugin.json   # Plugin metadata
+├── README_REVIEWS.md            # Review system documentation
+├── example_reviews/             # Example review instruction files
+│   ├── prompt_best_practices.md
+│   └── suggest_new_reviews.md
 ├── skills/
 │   ├── deepwork/SKILL.md        # Main workflow skill
 │   ├── review/SKILL.md          # Run automated reviews
 │   └── configure_reviews/SKILL.md  # Set up review rules
-├── hooks/hooks.json             # Hook configuration
+├── hooks/                       # Hook configuration
+│   ├── hooks.json
+│   └── post_commit_reminder.sh
 └── .mcp.json                    # MCP server config (uvx deepwork serve)
 ```
 

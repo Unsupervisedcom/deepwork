@@ -264,6 +264,60 @@ class TestGetConfiguredReviews:
         assert result[0]["name"] == "test_rule"
 
     @patch("deepwork.review.mcp.load_all_rules")
+    def test_duplicate_names_from_different_files_appear_separately(
+        self, mock_load: Any, tmp_path: Path
+    ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-008.2.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        """Same-named rules from different .deepreview files each appear as separate entries."""
+        dir_a = tmp_path / "packages" / "alpha"
+        dir_b = tmp_path / "packages" / "beta"
+        dir_a.mkdir(parents=True)
+        dir_b.mkdir(parents=True)
+
+        rule_a = ReviewRule(
+            name="lint",
+            description="Lint check from alpha.",
+            include_patterns=["**/*.py"],
+            exclude_patterns=[],
+            strategy="individual",
+            instructions="Lint alpha.",
+            agent=None,
+            all_changed_filenames=False,
+            unchanged_matching_files=False,
+            source_dir=dir_a,
+            source_file=dir_a / ".deepreview",
+            source_line=1,
+        )
+        rule_b = ReviewRule(
+            name="lint",
+            description="Lint check from beta.",
+            include_patterns=["**/*.py"],
+            exclude_patterns=[],
+            strategy="individual",
+            instructions="Lint beta.",
+            agent=None,
+            all_changed_filenames=False,
+            unchanged_matching_files=False,
+            source_dir=dir_b,
+            source_file=dir_b / ".deepreview",
+            source_line=1,
+        )
+        mock_load.return_value = ([rule_a, rule_b], [])
+
+        result = get_configured_reviews(tmp_path)
+
+        assert len(result) == 2
+        # Both entries share the same name
+        assert result[0]["name"] == "lint"
+        assert result[1]["name"] == "lint"
+        # defining_file disambiguates them
+        assert result[0]["defining_file"] == "packages/alpha/.deepreview:1"
+        assert result[1]["defining_file"] == "packages/beta/.deepreview:1"
+        # The two defining_file values must be distinct
+        assert result[0]["defining_file"] != result[1]["defining_file"]
+
+    @patch("deepwork.review.mcp.load_all_rules")
     def test_discovery_errors_still_return_valid_rules(
         self, mock_load: Any, tmp_path: Path
     ) -> None:

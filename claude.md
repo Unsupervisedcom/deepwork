@@ -35,25 +35,29 @@ Each job consists of reviewable steps with clear inputs and outputs. For example
 ```
 deepwork/
 ├── src/deepwork/
-│   ├── cli/              # CLI commands (serve, hook)
-│   ├── core/             # Core logic (parsing, jobs, doc_spec_parser)
-│   ├── mcp/              # MCP server (the core runtime)
+│   ├── cli/              # CLI commands (serve, hook, review, deprecated install)
+│   ├── core/             # Core logic (doc_spec_parser)
+│   ├── jobs/             # Job discovery, parsing, schema, and MCP server
+│   │   └── mcp/          # MCP server module (the core runtime)
 │   ├── hooks/            # Hook scripts and wrappers
 │   ├── standard_jobs/    # Built-in job definitions (auto-discovered at runtime)
 │   │   ├── deepwork_jobs/
 │   │   └── deepwork_reviews/
-│   ├── schemas/          # Job definition schemas
+│   ├── review/           # DeepWork Reviews system (.deepreview pipeline)
+│   ├── schemas/          # Definition schemas (deepreview, doc_spec)
 │   └── utils/            # Utilities (fs, git, yaml, validation)
 ├── platform/             # Shared platform-agnostic content
 │   └── skill-body.md     # Canonical skill body (source of truth)
 ├── plugins/
 │   ├── claude/           # Claude Code plugin
 │   │   ├── .claude-plugin/plugin.json
+│   │   ├── README_REVIEWS.md
+│   │   ├── example_reviews/
 │   │   ├── skills/
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── review/SKILL.md
 │   │   │   └── configure_reviews/SKILL.md
-│   │   ├── hooks/        # hooks.json
+│   │   ├── hooks/        # hooks.json, post_commit_reminder.sh
 │   │   └── .mcp.json     # MCP server config
 │   └── gemini/           # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md

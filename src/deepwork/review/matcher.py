@@ -18,6 +18,28 @@ class GitDiffError(Exception):
     pass
 
 
+def _run_git(project_root: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    """Run a git command with standard options and return the result.
+
+    Args:
+        project_root: Working directory for the git command.
+        *args: Git subcommand and arguments (e.g., "diff", "--name-only").
+
+    Returns:
+        The completed process result.
+
+    Raises:
+        subprocess.CalledProcessError: If the git command exits non-zero.
+    """
+    return subprocess.run(
+        ["git", *args],
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+
 def get_changed_files(project_root: Path, base_ref: str | None = None) -> list[str]:
     """Get list of changed files relative to the repository root.
 
@@ -75,24 +97,12 @@ def _detect_base_ref(project_root: Path) -> str:
     # Try the remote HEAD symbolic ref first — this is the most reliable
     # way to find the default branch without hardcoding names.
     try:
-        result = subprocess.run(
-            ["git", "symbolic-ref", "refs/remotes/origin/HEAD"],
-            cwd=project_root,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+        result = _run_git(project_root, "symbolic-ref", "refs/remotes/origin/HEAD")
         # Returns e.g. "refs/remotes/origin/main" — strip to "origin/main"
         full_ref = result.stdout.strip()
         short_ref = full_ref.removeprefix("refs/remotes/")
         # Verify the ref actually resolves to a commit
-        subprocess.run(
-            ["git", "rev-parse", "--verify", short_ref],
-            cwd=project_root,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+        _run_git(project_root, "rev-parse", "--verify", short_ref)
         return short_ref
     except subprocess.CalledProcessError:
         pass
@@ -100,13 +110,7 @@ def _detect_base_ref(project_root: Path) -> str:
     # Fallback: try well-known branch names
     for ref in ("origin/main", "origin/master", "main", "master"):
         try:
-            subprocess.run(
-                ["git", "rev-parse", "--verify", ref],
-                cwd=project_root,
-                capture_output=True,
-                text=True,
-                check=True,
-            )
+            _run_git(project_root, "rev-parse", "--verify", ref)
             return ref
         except subprocess.CalledProcessError:
             continue
@@ -132,13 +136,7 @@ def _get_merge_base(project_root: Path, ref: str) -> str:
         return "HEAD"
 
     try:
-        result = subprocess.run(
-            ["git", "merge-base", "HEAD", ref],
-            cwd=project_root,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+        result = _run_git(project_root, "merge-base", "HEAD", ref)
         return result.stdout.strip()
     except subprocess.CalledProcessError as e:
         raise GitDiffError(f"Failed to find merge-base with '{ref}': {e.stderr.strip()}") from e
@@ -158,20 +156,14 @@ def _git_diff_name_only(project_root: Path, ref: str | None, *, staged: bool = F
     Raises:
         GitDiffError: If the git command fails.
     """
-    cmd = ["git", "diff", "--name-only", "--diff-filter=ACMR"]
+    args = ["diff", "--name-only", "--diff-filter=ACMR"]
     if staged:
-        cmd.append("--cached")
+        args.append("--cached")
     if ref is not None:
-        cmd.append(ref)
+        args.append(ref)
 
     try:
-        result = subprocess.run(
-            cmd,
-            cwd=project_root,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+        result = _run_git(project_root, *args)
         return [f for f in result.stdout.strip().split("\n") if f]
     except subprocess.CalledProcessError as e:
         raise GitDiffError(f"git diff failed: {e.stderr.strip()}") from e

@@ -4,6 +4,21 @@
 #
 # Usage: ./make_new_job.sh <job_name>
 #
+# Input:
+#   job_name - Lowercase name using only letters, numbers, and underscores.
+#              Must start with a letter.
+#
+# Output:
+#   Creates .deepwork/jobs/<job_name>/ at the git repository root with
+#   subdirectories: steps/, hooks/, templates/, scripts/, plus AGENTS.md
+#   and optionally .deepreview (if template.deepreview exists alongside
+#   this script).
+#
+# Exit codes:
+#   0 - Success
+#   1 - Usage error (missing args, invalid job name, job already exists,
+#       not a git repository)
+#
 
 set -euo pipefail
 
@@ -36,6 +51,9 @@ validate_job_name() {
 
 # Main script
 main() {
+    local script_dir
+    script_dir="$(cd "$(dirname "$0")" && pwd)"
+
     if [[ $# -lt 1 ]]; then
         echo "Usage: $0 <job_name>"
         echo ""
@@ -52,17 +70,13 @@ main() {
     local job_name="$1"
     validate_job_name "$job_name"
 
-    # Determine the base path - look for .deepwork directory
-    local base_path
-    if [[ -d ".deepwork/jobs" ]]; then
-        base_path=".deepwork/jobs"
-    elif [[ -d "../.deepwork/jobs" ]]; then
-        base_path="../.deepwork/jobs"
-    else
-        # Create from current directory
-        base_path=".deepwork/jobs"
-        mkdir -p "$base_path"
+    # Determine the base path by anchoring to the git repository root
+    local repo_root
+    if ! repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+        error "Not inside a git repository. Run this from within a git repo."
     fi
+    local base_path="${repo_root}/.deepwork/jobs"
+    mkdir -p "$base_path"
 
     local job_path="${base_path}/${job_name}"
 
@@ -74,16 +88,10 @@ main() {
     info "Creating job directory structure for '$job_name'..."
 
     # Create main job directory and subdirectories
-    mkdir -p "$job_path"
-    mkdir -p "$job_path/steps"
-    mkdir -p "$job_path/hooks"
-    mkdir -p "$job_path/templates"
-    mkdir -p "$job_path/scripts"
+    mkdir -p "$job_path"/{steps,hooks,templates,scripts}
 
     # Add .gitkeep files to empty directories
-    touch "$job_path/hooks/.gitkeep"
-    touch "$job_path/templates/.gitkeep"
-    touch "$job_path/scripts/.gitkeep"
+    touch "$job_path"/{hooks,templates,scripts}/.gitkeep
 
     # Create AGENTS.md file
     cat > "$job_path/AGENTS.md" << 'EOF'
@@ -101,6 +109,7 @@ This folder and its subfolders are managed using `deepwork_jobs` workflows.
 
 ```
 .
+├── .deepreview        # Review rules for the job itself using Deepwork Reviews
 ├── AGENTS.md          # This file - project context and guidance
 ├── job.yml            # Job specification (created by define step)
 ├── steps/             # Step instruction files (created by implement step)
@@ -119,8 +128,16 @@ This folder and its subfolders are managed using `deepwork_jobs` workflows.
 2. **Direct edits** are fine for minor instruction tweaks
 EOF
 
+    # Copy .deepreview template if available
+    if [[ -f "$script_dir/template.deepreview" ]]; then
+        cp "$script_dir/template.deepreview" "$job_path/.deepreview"
+    fi
+
     info "Created directory structure:"
     echo "  $job_path/"
+    if [[ -f "$job_path/.deepreview" ]]; then
+        echo "  ├── .deepreview"
+    fi
     echo "  ├── AGENTS.md"
     echo "  ├── steps/"
     echo "  ├── hooks/.gitkeep"

@@ -97,3 +97,39 @@ class TestFormatForClaude:
         result = format_for_claude([(task_a, file_a), (task_b, file_b)], tmp_path)
         assert 'name: "rule_a review of a.py"' in result
         assert 'name: "rule_b review of b.py"' in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3a, REVIEW-REQ-004.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_scope_prefix_from_subdirectory_source(self, tmp_path: Path) -> None:
+        """Rules from subdirectory .deepreview files include scope prefix in name."""
+        task = _make_task(rule_name="job_definition_review", files=["job.yml"])
+        task.source_location = "jobs/my_job/.deepreview:1"
+        file_path = tmp_path / "instructions.md"
+        result = format_for_claude([(task, file_path)], tmp_path)
+        assert 'name: "my_job/job_definition_review review of job.yml"' in result
+        assert "description: Review my_job/job_definition_review" in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3a, REVIEW-REQ-004.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_no_scope_prefix_for_root_level_source(self, tmp_path: Path) -> None:
+        """Rules from the root .deepreview file have no scope prefix."""
+        task = _make_task(rule_name="py_review", files=["app.py"])
+        task.source_location = ".deepreview:5"
+        file_path = tmp_path / "instructions.md"
+        result = format_for_claude([(task, file_path)], tmp_path)
+        assert 'name: "py_review review of app.py"' in result
+        assert "description: Review py_review" in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3a, REVIEW-REQ-004.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_same_name_rules_disambiguated_by_scope(self, tmp_path: Path) -> None:
+        """Same-named rules from different directories produce distinct names."""
+        task_a = _make_task(rule_name="job_definition_review", files=["a/job.yml"])
+        task_a.source_location = "jobs/job_a/.deepreview:1"
+        task_b = _make_task(rule_name="job_definition_review", files=["b/job.yml"])
+        task_b.source_location = "jobs/job_b/.deepreview:1"
+        file_a = tmp_path / "a.md"
+        file_b = tmp_path / "b.md"
+        result = format_for_claude([(task_a, file_a), (task_b, file_b)], tmp_path)
+        assert 'name: "job_a/job_definition_review review of a/job.yml"' in result
+        assert 'name: "job_b/job_definition_review review of b/job.yml"' in result
