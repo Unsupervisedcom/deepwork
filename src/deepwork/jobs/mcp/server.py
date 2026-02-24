@@ -230,6 +230,9 @@ def create_server(
     from deepwork.review.mcp import (
         get_configured_reviews as get_configured_reviews_fn,
     )
+    from deepwork.review.mcp import (
+        mark_passed as mark_passed_fn,
+    )
 
     review_platform = platform or "claude"
 
@@ -267,6 +270,21 @@ def create_server(
             {"only_rules_matching_files": only_rules_matching_files},
         )
         return get_configured_reviews_fn(project_path, only_rules_matching_files)
+
+    @mcp.tool(
+        description=(
+            "Mark a review as passed so it won't be re-run while reviewed files "
+            "remain unchanged. The review_id is provided in the instruction file's "
+            "\"After Review\" section."
+        )
+    )
+    def mark_review_as_passed(review_id: str) -> str:
+        """Mark a review as passed by creating a .passed marker file."""
+        _log_tool_call("mark_review_as_passed", {"review_id": review_id})
+        try:
+            return mark_passed_fn(project_path, review_id)
+        except ValueError as e:
+            return f"Validation error: {e}"
 
     return mcp
 

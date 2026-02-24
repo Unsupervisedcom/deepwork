@@ -7,7 +7,12 @@ from unittest.mock import patch
 import pytest
 
 from deepwork.review.config import ReviewRule, ReviewTask
-from deepwork.review.mcp import ReviewToolError, get_configured_reviews, run_review
+from deepwork.review.mcp import (
+    ReviewToolError,
+    get_configured_reviews,
+    mark_passed,
+    run_review,
+)
 
 
 def _make_rule(tmp_path: Path) -> ReviewRule:
@@ -336,3 +341,131 @@ class TestGetConfiguredReviews:
         assert valid_rules[0]["name"] == "test_rule"
         error_entries = [r for r in result if r["name"].startswith("PARSE_ERROR:")]
         assert len(error_entries) == 1
+
+
+class TestMarkPassed:
+    """Tests for the mark_passed adapter function — validates REVIEW-REQ-009.2."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.2.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_creates_passed_file(self, tmp_path: Path) -> None:
+        mark_passed(tmp_path, "rule--file--abc123def456")
+        passed_file = tmp_path / ".deepwork" / "tmp" / "review_instructions" / "rule--file--abc123def456.passed"
+        assert passed_file.exists()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.2.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_passed_file_is_empty(self, tmp_path: Path) -> None:
+        mark_passed(tmp_path, "rule--file--abc123def456")
+        passed_file = tmp_path / ".deepwork" / "tmp" / "review_instructions" / "rule--file--abc123def456.passed"
+        assert passed_file.read_bytes() == b""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.2.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_creates_directory_if_missing(self, tmp_path: Path) -> None:
+        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
+        assert not instructions_dir.exists()
+
+        mark_passed(tmp_path, "rule--file--abc123def456")
+
+        assert instructions_dir.exists()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.2.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_returns_confirmation_message(self, tmp_path: Path) -> None:
+        result = mark_passed(tmp_path, "rule--file--abc123def456")
+        assert "rule--file--abc123def456" in result
+        assert "marked as passed" in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.2.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_rejects_empty_review_id(self, tmp_path: Path) -> None:
+        with pytest.raises(ValueError, match="must not be empty"):
+            mark_passed(tmp_path, "")
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.2.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_rejects_path_traversal(self, tmp_path: Path) -> None:
+        with pytest.raises(ValueError, match="path traversal"):
+            mark_passed(tmp_path, "../etc/passwd")
+
+        with pytest.raises(ValueError, match="path traversal"):
+            mark_passed(tmp_path, "/absolute/path")
+
+
+class TestMarkReviewAsPassedMCPTool:
+    """Tests for mark_review_as_passed tool registration — validates REVIEW-REQ-009.2.1."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.2.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_tool_is_registered(self, tmp_path: Path) -> None:
+        from deepwork.jobs.mcp.server import create_server
+
+        server = create_server(
+            project_root=tmp_path,
+            enable_quality_gate=False,
+        )
+        assert "mark_review_as_passed" in server._tool_manager._tools
+
+
+class TestRunReviewPassedFiltering:
+    """Test that passed reviews are excluded from run_review output — validates REVIEW-REQ-009.0, REVIEW-REQ-009.3."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.0.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @patch("deepwork.review.mcp.match_files_to_rules")
+    @patch("deepwork.review.mcp.get_changed_files")
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_passed_review_not_rerun_when_files_unchanged(
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, tmp_path: Path
+    ) -> None:
+        """A review that passed is not re-run while the triggering files remain unchanged."""
+        from deepwork.review.instructions import compute_review_id
+
+        rule = _make_rule(tmp_path)
+        task = ReviewTask(
+            rule_name="test_rule",
+            files_to_review=["app.py"],
+            instructions="Review it.",
+            agent_name=None,
+        )
+        mock_load.return_value = ([rule], [])
+        mock_diff.return_value = ["app.py"]
+        mock_match.return_value = [task]
+
+        # Simulate: the review passed and the agent called mark_review_as_passed
+        review_id = compute_review_id(task, tmp_path)
+        mark_passed(tmp_path, review_id)
+
+        # Subsequent run with unchanged files → review is skipped
+        result = run_review(tmp_path, "claude")
+        assert "No review tasks to execute" in result
+
+    @patch("deepwork.review.mcp.match_files_to_rules")
+    @patch("deepwork.review.mcp.get_changed_files")
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_passed_reviews_excluded_from_output(
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, tmp_path: Path
+    ) -> None:
+        """When all reviews have .passed markers, write_instruction_files returns empty → 'No review tasks'."""
+        from deepwork.review.instructions import compute_review_id
+
+        rule = _make_rule(tmp_path)
+        task = ReviewTask(
+            rule_name="test_rule",
+            files_to_review=["app.py"],
+            instructions="Review it.",
+            agent_name=None,
+        )
+        mock_load.return_value = ([rule], [])
+        mock_diff.return_value = ["app.py"]
+        mock_match.return_value = [task]
+
+        # Pre-create the .passed marker for this task
+        review_id = compute_review_id(task, tmp_path)
+        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
+        instructions_dir.mkdir(parents=True)
+        (instructions_dir / f"{review_id}.passed").write_bytes(b"")
+
+        result = run_review(tmp_path, "claude")
+        assert "No review tasks to execute" in result

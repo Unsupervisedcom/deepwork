@@ -10,7 +10,7 @@ This document describes the Model Context Protocol (MCP) tools exposed by the De
 
 ## Tools
 
-DeepWork exposes six MCP tools:
+DeepWork exposes seven MCP tools:
 
 ### 1. `get_workflows`
 
@@ -176,6 +176,26 @@ Array<{
   defining_file: string;  // Relative path to .deepreview file with line number (e.g., ".deepreview:1")
 }>
 ```
+
+---
+
+### 7. `mark_review_as_passed`
+
+Mark a review as passed so it won't be re-run while reviewed files remain unchanged. The `review_id` is provided in the instruction file's "After Review" section.
+
+This tool operates outside the workflow lifecycle — it can be called independently at any time.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `review_id` | `string` | Yes | The deterministic review ID from the instruction file. Encodes rule name, file paths, and a content hash. |
+
+#### Returns
+
+A plain string with either:
+- A confirmation message (e.g., `"Review 'rule--file--hash' marked as passed."`)
+- A validation error if `review_id` is empty or contains path traversal
 
 ---
 
@@ -377,6 +397,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
+| 1.7.0 | Added `mark_review_as_passed` tool for review pass caching. Instruction files now include an "After Review" section with the review ID. Reviews with a `.passed` marker are automatically skipped by `get_review_instructions`. |
 | 1.6.0 | Added `get_configured_reviews` tool for listing configured review rules without running the full pipeline. Supports optional file-based filtering. |
 | 1.5.0 | Added `get_review_instructions` tool (originally named `review`) for running `.deepreview`-based code reviews via MCP. Added `--platform` CLI option to `serve` command. |
 | 1.4.0 | Added optional `session_id` parameter to `finished_step` and `abort_workflow` for concurrent workflow safety. When multiple workflows are active on the stack, callers can pass the `session_id` (returned in `ActiveStepInfo`) to target the correct session. Fully backward compatible — omitting `session_id` preserves existing top-of-stack behavior. |

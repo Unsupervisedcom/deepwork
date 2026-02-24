@@ -936,7 +936,7 @@ All MCP server code lives in `src/deepwork/jobs/mcp/`.
 
 The FastMCP server definition that:
 - Creates and configures the MCP server instance
-- Registers the workflow tools and the `get_review_instructions` tool
+- Registers the workflow tools and review tools (`get_review_instructions`, `get_configured_reviews`, `mark_review_as_passed`)
 - Provides server instructions for agents
 
 ### Tools (`jobs/mcp/tools.py`)
@@ -992,6 +992,30 @@ Runs the `.deepreview`-based code review pipeline. Registered directly in `jobs/
 **Returns**: Formatted review task list or informational message.
 
 The `--platform` CLI option on `serve` controls which formatter is used (defaults to `"claude"`).
+
+#### 6. `get_configured_reviews`
+Lists configured review rules from `.deepreview` files without running the pipeline.
+
+**Parameters**:
+- `only_rules_matching_files: list[str] | None` - Filter to rules matching these files.
+
+**Returns**: List of rule summaries (name, description, defining_file).
+
+#### 7. `mark_review_as_passed`
+Marks a review as passed so it is skipped on subsequent runs while the reviewed files remain unchanged. Part of the **review pass caching** mechanism.
+
+**Parameters**:
+- `review_id: str` - The deterministic review ID from the instruction file's "After Review" section.
+
+**Returns**: Confirmation string or validation error.
+
+### Review Pass Caching
+
+Each review task is assigned a deterministic `review_id` encoding the rule name, file paths, and a SHA-256 content hash (first 12 hex chars). When `get_review_instructions` generates instruction files, it names them `{review_id}.md` and checks for a corresponding `{review_id}.passed` marker. If the marker exists, the review is skipped.
+
+After a review passes, the reviewing agent calls `mark_review_as_passed` with the `review_id` (included in the instruction file's "After Review" section). This creates the `.passed` marker in `.deepwork/tmp/review_instructions/`. When file contents change, the content hash changes, producing a new `review_id` with no matching marker — so the review runs again automatically.
+
+Cleanup between runs deletes only `.md` files, preserving `.passed` markers across runs.
 
 ### State Management (`jobs/mcp/state.py`)
 

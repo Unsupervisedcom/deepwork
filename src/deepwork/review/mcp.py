@@ -8,7 +8,7 @@ from pathlib import Path
 
 from deepwork.review.discovery import load_all_rules
 from deepwork.review.formatter import format_for_claude
-from deepwork.review.instructions import write_instruction_files
+from deepwork.review.instructions import INSTRUCTIONS_DIR, write_instruction_files
 from deepwork.review.matcher import (
     GitDiffError,
     format_source_location,
@@ -139,3 +139,30 @@ def get_configured_reviews(
             )
 
     return result
+
+
+def mark_passed(project_root: Path, review_id: str) -> str:
+    """Create a ``.passed`` marker for a review so it is skipped on re-runs.
+
+    Args:
+        project_root: Absolute path to the project root.
+        review_id: The deterministic review ID returned in the instruction file.
+
+    Returns:
+        Confirmation message.
+
+    Raises:
+        ValueError: If ``review_id`` is empty or contains path traversal.
+    """
+    if not review_id or not review_id.strip():
+        raise ValueError("review_id must not be empty.")
+    if ".." in review_id or review_id.startswith("/"):
+        raise ValueError("review_id must not contain path traversal sequences.")
+
+    instructions_dir = project_root / INSTRUCTIONS_DIR
+    instructions_dir.mkdir(parents=True, exist_ok=True)
+
+    passed_file = instructions_dir / f"{review_id}.passed"
+    passed_file.write_bytes(b"")
+
+    return f"Review '{review_id}' marked as passed."
