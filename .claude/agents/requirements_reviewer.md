@@ -1,11 +1,6 @@
 ---
 name: requirements-reviewer
 description: "Reviews that all end-user functionality is covered by RFC 2119 requirements and that all requirements have traceable automated tests"
-tools:
-  - Read
-  - Glob
-  - Grep
-  - Bash
 disallowedTools:
   - Edit
   - Write

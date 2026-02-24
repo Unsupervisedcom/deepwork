@@ -6,9 +6,9 @@ suitable for registration as an MCP tool.
 
 from pathlib import Path
 
-from deepwork.review.discovery import load_all_rules
+from deepwork.review.discovery import DiscoveryError, load_all_rules
 from deepwork.review.formatter import format_for_claude
-from deepwork.review.instructions import write_instruction_files
+from deepwork.review.instructions import INSTRUCTIONS_DIR, write_instruction_files
 from deepwork.review.matcher import (
     GitDiffError,
     format_source_location,
@@ -28,6 +28,18 @@ class ReviewToolError(Exception):
     """Exception raised for review tool errors (git failures, write failures)."""
 
     pass
+
+
+def _format_discovery_warnings(errors: list[DiscoveryError]) -> str:
+    """Format discovery errors into a bullet-list warning string.
+
+    Args:
+        errors: List of DiscoveryError objects.
+
+    Returns:
+        Multi-line string with one ``  - path: error`` entry per error.
+    """
+    return "\n".join(f"  - {e.file_path}: {e.error}" for e in errors)
 
 
 def run_review(
@@ -59,7 +71,7 @@ def run_review(
 
     if not rules:
         if discovery_errors:
-            warnings = "\n".join(f"  - {e.file_path}: {e.error}" for e in discovery_errors)
+            warnings = _format_discovery_warnings(discovery_errors)
             return f"No valid .deepreview rules found. Parse errors:\n{warnings}"
         return "No .deepreview configuration files found."
 
@@ -92,7 +104,7 @@ def run_review(
     result = formatter(task_files, project_root)
 
     if discovery_errors:
-        warnings = "\n".join(f"  - {e.file_path}: {e.error}" for e in discovery_errors)
+        warnings = _format_discovery_warnings(discovery_errors)
         result = f"Warning: Some .deepreview files could not be parsed:\n{warnings}\n\n{result}"
 
     return result
@@ -139,3 +151,30 @@ def get_configured_reviews(
             )
 
     return result
+
+
+def mark_passed(project_root: Path, review_id: str) -> str:
+    """Create a ``.passed`` marker for a review so it is skipped on re-runs.
+
+    Args:
+        project_root: Absolute path to the project root.
+        review_id: The deterministic review ID returned in the instruction file.
+
+    Returns:
+        Confirmation message.
+
+    Raises:
+        ValueError: If ``review_id`` is empty or contains path traversal.
+    """
+    if not review_id or not review_id.strip():
+        raise ValueError("review_id must not be empty.")
+    if ".." in review_id or review_id.startswith("/"):
+        raise ValueError("review_id must not contain path traversal sequences.")
+
+    instructions_dir = project_root / INSTRUCTIONS_DIR
+    instructions_dir.mkdir(parents=True, exist_ok=True)
+
+    passed_file = instructions_dir / f"{review_id}.passed"
+    passed_file.write_bytes(b"")
+
+    return f"Review '{review_id}' marked as passed."
