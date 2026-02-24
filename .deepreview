@@ -55,7 +55,7 @@ python_code_review:
         and a concise description.
 
 python_lint:
-  description: "Run ruff (lint + format) and mypy on changed Python files."
+  description: "Auto-fix lint and format issues, then report anything unresolvable."
   match:
     include:
       - "**/*.py"
@@ -64,6 +64,8 @@ python_lint:
   review:
     strategy: matches_together
     instructions: |
+      This is an auto-fix rule — you SHOULD edit files to resolve issues.
+
       Run ruff and mypy on the changed Python files listed below. Fix what you
       can automatically, then report only issues that remain unresolved.
 
@@ -108,19 +110,29 @@ requirements_traceability:
 
       This project keeps formal requirements in `specs/` organized by domain.
       Each file follows the naming pattern `{PREFIX}-REQ-NNN-<topic>.md` where
-      PREFIX is one of: DW-REQ, JOBS-REQ, REVIEW-REQ, LA-REQ. Requirements are
-      individually numbered (e.g. JOBS-REQ-004.1). Tests live in `tests/` and
-      reference requirement IDs via docstrings and traceability comments.
+      PREFIX is one of: DW-REQ, JOBS-REQ, REVIEW-REQ, LA-REQ, PLUG-REQ.
+      Requirements are individually numbered (e.g. JOBS-REQ-004.1). Requirements
+      must be validated by either automated tests OR DeepWork review rules:
+
+      - **Automated tests** (`tests/`): For requirements that can be
+        boolean-verified with code (deterministic pass/fail). Tests reference
+        requirement IDs via docstrings and traceability comments.
+      - **DeepWork review rules** (`.deepreview`): For requirements that require
+        judgement to evaluate (subjective, contextual, or qualitative). Rules
+        reference requirement IDs in their description or instructions.
 
       For this review:
       1. Check that any new or changed end-user functionality has a corresponding
          requirement in `specs/`.
       2. Check that every requirement touched by this change has at least one
-         automated test referencing it in `tests/`.
+         automated test referencing it in `tests/` OR at least one `.deepreview`
+         rule that validates it. Use the right type: tests for boolean-verifiable
+         requirements, review rules for judgement-based requirements.
       3. Flag any test modifications where the underlying requirement did not
          also change.
-      4. Verify traceability comments are present, correctly reference
-         requirement IDs, and use the standard two-line format:
+      4. For test-validated requirements, verify traceability comments are
+         present, correctly reference requirement IDs, and use the standard
+         two-line format:
          ```
          # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5).
          # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -129,6 +141,9 @@ requirements_traceability:
          (after `def`, before the docstring). If tests have REQ references
          only in docstrings but are missing the formal comment block, flag
          them. If the second line is missing, flag that too.
+      5. For rule-validated requirements, verify the `.deepreview` rule's
+         description or instructions reference the requirement ID and that the
+         rule's scope covers the requirement's intent.
 
       Produce a structured review with Coverage Gaps, Test Stability Violations,
       Traceability Issues, and a Summary with PASS/FAIL verdicts.
@@ -208,47 +223,6 @@ update_learning_agents_architecture:
     additional_context:
       unchanged_matching_files: true
 
-update_github_workflows_readme:
-  description: "Ensure GitHub Actions workflow documentation stays current when workflows change."
-  match:
-    include:
-      - ".github/workflows/*.yml"
-      - ".github/workflows/README.md"
-  review:
-    strategy: matches_together
-    instructions: |
-      When GitHub Actions workflow files (.github/workflows/*.yml) change, check whether
-      .github/workflows/README.md needs updating.
-
-      Pay attention to:
-      - Workflow overview table (are all workflows listed? Are descriptions accurate?)
-      - Merge queue strategy description (does it match the actual triggers?)
-      - Skip pattern table (does it match actual workflow behavior?)
-      - Any workflow-specific documentation sections
-
-      Flag any sections that are now outdated or inaccurate due to the changes.
-      If the README itself was changed, verify the updates are correct.
-    additional_context:
-      unchanged_matching_files: true
-
-update_library_readme:
-  description: "Ensure library jobs README stays current when library jobs change."
-  match:
-    include:
-      - "library/jobs/**"
-  review:
-    strategy: matches_together
-    instructions: |
-      When library job files change, check whether library/jobs/README.md needs updating.
-
-      Pay attention to:
-      - Job structure description (does it match the actual job.yml format?)
-      - Usage instructions (do they reference current CLI commands?)
-      - Directory structure listing (does it match what's actually in library/jobs/?)
-
-      Flag any sections that are now outdated or inaccurate.
-    additional_context:
-      unchanged_matching_files: true
 
 shell_code_review:
   description: "Review shell scripts for correctness, safety, and project conventions."
@@ -282,3 +256,64 @@ shell_code_review:
       - **Comment accuracy**: Are all comments (especially header blocks and
         section markers) still accurate after the changes? Flag any comments
         that describe behavior that no longer matches the code.
+
+deepreview_config_quality:
+  description: "Review .deepreview configs for rule consolidation, description accuracy, and correct directory placement."
+  match:
+    include:
+      - "**/.deepreview"
+  review:
+    strategy: matches_together
+    additional_context:
+      unchanged_matching_files: true
+    instructions: |
+      Review the .deepreview config files for structural quality. Check all
+      three of the following, across ALL .deepreview files (changed and unchanged):
+
+      ## 1. Rule Consolidation
+
+      Rules that match the same (or nearly the same) set of files SHOULD be
+      combined into a single rule — unless merging their instructions would
+      make the reviewer's context too large or unfocused. Specifically:
+
+      - Flag rules in the same .deepreview file (or across files at the same
+        directory level) whose `match.include` patterns overlap substantially.
+      - "Too large" means the combined instructions would exceed ~2000 words
+        or cover unrelated concerns that would confuse a single reviewer.
+      - If two rules match identical files but one uses a specialized `agent`
+        persona, that is a valid reason to keep them separate.
+
+      ## 2. Description Accuracy
+
+      Each rule's `description` field must accurately reflect what the rule
+      actually checks. Compare the description to the `instructions` (inline
+      or referenced file) and flag any mismatches. For example:
+
+      - A description saying "Review Python files for security" when the
+        instructions only check formatting — flag it.
+      - A description that is vague or generic when the instructions are
+        specific — flag it and suggest a more accurate description.
+
+      ## 3. Directory Placement
+
+      .deepreview files should live as close as possible to the files they
+      govern. If ALL of a rule's `match.include` patterns target files within
+      a single subdirectory (e.g., `learning_agents/**`), then the rule
+      should likely live in that subdirectory's `.deepreview` file instead
+      of the project root. Flag rules that could be moved closer to their
+      target files.
+
+      Exceptions (do NOT flag these):
+      - Rules that intentionally match files across multiple top-level
+        directories (e.g., `src/**` AND `tests/**`).
+      - Rules using `all_changed_files` strategy, which are project-wide
+        by nature.
+      - Rules that reference `additional_context.unchanged_matching_files`
+        with patterns spanning multiple directories.
+
+      ## Output Format
+
+      - PASS: No issues found.
+      - FAIL: Issues found. List each with the .deepreview file path,
+        rule name, which check failed (consolidation / description / placement),
+        and a specific recommendation.

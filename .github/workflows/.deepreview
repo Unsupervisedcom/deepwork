@@ -1,0 +1,22 @@
+update_github_workflows_readme:
+  description: "Ensure GitHub Actions workflow documentation stays current when workflows change."
+  match:
+    include:
+      - "*.yml"
+      - "README.md"
+  review:
+    strategy: matches_together
+    instructions: |
+      When GitHub Actions workflow files (.github/workflows/*.yml) change, check whether
+      .github/workflows/README.md needs updating.
+
+      Pay attention to:
+      - Workflow overview table (are all workflows listed? Are descriptions accurate?)
+      - Merge queue strategy description (does it match the actual triggers?)
+      - Skip pattern table (does it match actual workflow behavior?)
+      - Any workflow-specific documentation sections
+
+      Flag any sections that are now outdated or inaccurate due to the changes.
+      If the README itself was changed, verify the updates are correct.
+    additional_context:
+      unchanged_matching_files: true

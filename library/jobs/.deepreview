@@ -1,0 +1,18 @@
+update_library_readme:
+  description: "Ensure library jobs README stays current when library jobs change."
+  match:
+    include:
+      - "**"
+  review:
+    strategy: matches_together
+    instructions: |
+      When library job files change, check whether library/jobs/README.md needs updating.
+
+      Pay attention to:
+      - Job structure description (does it match the actual job.yml format?)
+      - Usage instructions (do they reference current CLI commands?)
+      - Directory structure listing (does it match what's actually in library/jobs/?)
+
+      Flag any sections that are now outdated or inaccurate.
+    additional_context:
+      unchanged_matching_files: true
