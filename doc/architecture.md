@@ -139,7 +139,7 @@ deepwork review --instructions-for claude
 
 The review command:
 - Discovers `.deepreview` files throughout the project tree
-- Detects changed files via `git diff` against the default branch
+- Detects changed files via `git diff` against the default branch, plus untracked files via `git ls-files`
 - Matches changed files against rules using include/exclude glob patterns
 - Groups files by review strategy (`individual`, `matches_together`, `all_changed_files`)
 - Generates per-task instruction files in `.deepwork/tmp/review_instructions/`

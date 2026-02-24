@@ -104,20 +104,29 @@ steps:
     dependencies:
       - add_deepwork_native_reviews
     reviews:
-      - run_each: migrated_skill_backups
+      - run_each: step
         additional_review_guidance: |
-          For each backed-up skill, read its original SKILL.md content. Then read
-          all .deepreview files to find the corresponding rule. Verify the rule's
-          instructions capture the skill's review intent and that the match patterns
-          target the same file types the skill was designed to review.
+          This step migrates review-like skills into .deepreview rules. Two kinds of
+          output files exist:
+
+          - **deepreview_files**: The NEW .deepreview rules. These are what you are evaluating.
+          - **migrated_skill_backups**: Backups of DELETED skills in .deepwork/tmp/migrated_skills/.
+            These are REFERENCE ONLY. Do NOT give feedback on these files — they are dead.
+            Use them solely to verify the new .deepreview rules faithfully capture the
+            original skill's intent.
+
+          Read each backup to understand what the old skill did, then find and evaluate
+          the corresponding new .deepreview rule. All feedback should be about the new
+          rules, never about the old skills.
         quality_criteria:
-          "Skill Content Preserved": >
-            Each migrated skill's review logic is faithfully captured in the
-            corresponding .deepreview rule. No significant review checks from
-            the original skill are missing from the new rule's instructions.
-          "Match Patterns Appropriate": >
-            The match.include patterns in each new rule target the same file
-            types and scopes that the original skill was designed to review.
+          "Replacement Rules Capture Skill Intent": >
+            Every migrated skill has a corresponding .deepreview rule whose instructions
+            faithfully capture the original skill's review logic. No significant review
+            checks are missing. The backup skill files are reference material only — do
+            not give feedback on them, only use them to verify the new rules are complete.
+          "Replacement Rule Match Patterns Appropriate": >
+            The match.include patterns in each new .deepreview rule target the same
+            file types and scopes that the original skill was designed to review.
             Patterns are neither too broad nor too narrow.
 
   - id: add_documentation_rules

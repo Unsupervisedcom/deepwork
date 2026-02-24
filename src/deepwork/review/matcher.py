@@ -44,7 +44,8 @@ def get_changed_files(project_root: Path, base_ref: str | None = None) -> list[s
     """Get list of changed files relative to the repository root.
 
     Uses git diff to detect Added, Copied, Modified, and Renamed files.
-    Combines unstaged and staged changes into a deduplicated list.
+    Combines unstaged changes, staged changes, and untracked files into
+    a deduplicated list.
 
     Args:
         project_root: Path to the project (must be in a git repo).
@@ -69,7 +70,10 @@ def get_changed_files(project_root: Path, base_ref: str | None = None) -> list[s
     # Also get staged changes (not yet committed)
     staged_files = _git_diff_name_only(project_root, None, staged=True)
 
-    return sorted(set(diff_files + staged_files))
+    # Also get untracked files (new files not yet added to git)
+    untracked_files = _git_untracked_files(project_root)
+
+    return sorted(set(diff_files + staged_files + untracked_files))
 
 
 def _detect_base_ref(project_root: Path) -> str:
@@ -167,6 +171,25 @@ def _git_diff_name_only(project_root: Path, ref: str | None, *, staged: bool = F
         return [f for f in result.stdout.strip().split("\n") if f]
     except subprocess.CalledProcessError as e:
         raise GitDiffError(f"git diff failed: {e.stderr.strip()}") from e
+
+
+def _git_untracked_files(project_root: Path) -> list[str]:
+    """Get untracked files (respecting .gitignore).
+
+    Args:
+        project_root: Path to the project root.
+
+    Returns:
+        List of untracked file paths relative to the repo root.
+
+    Raises:
+        GitDiffError: If the git command fails.
+    """
+    try:
+        result = _run_git(project_root, "ls-files", "--others", "--exclude-standard")
+        return [f for f in result.stdout.strip().split("\n") if f]
+    except subprocess.CalledProcessError as e:
+        raise GitDiffError(f"git ls-files failed: {e.stderr.strip()}") from e
 
 
 def match_files_to_rules(

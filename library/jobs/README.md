@@ -16,17 +16,18 @@ Each job in this library follows the same structure as the `.deepwork/jobs` subf
 
 ```
 library/jobs/
-├── [job-name]/
-│   ├── job.yml              # Job definition (name, steps, dependencies)
-│   └── steps/
-│       ├── step_one.md      # Instructions for step one
-│       ├── step_two.md      # Instructions for step two
-│       └── ...
-├── [another-job]/
-│   ├── job.yml
-│   └── steps/
-│       └── ...
-└── README.md
+├── .deepreview              # Review rules for library job quality
+├── README.md
+└── spec_driven_development/
+    ├── job.yml              # Job definition (name, steps, dependencies)
+    ├── readme.md            # Job-specific documentation
+    └── steps/
+        ├── constitution.md  # Instructions for each step
+        ├── specify.md
+        ├── clarify.md
+        ├── plan.md
+        ├── tasks.md
+        └── implement.md
 ```
 
 ### job.yml
@@ -36,7 +37,7 @@ The job definition file contains:
 - `name`: Unique identifier for the job
 - `version`: Semantic version (e.g., "1.0.0")
 - `summary`: Brief description (under 200 characters)
-- `description`: Detailed explanation of the job's purpose
+- `common_job_info_provided_to_all_steps_at_runtime`: Detailed context provided to all steps at runtime
 - `workflows`: Named sequences of steps (optional)
   - `name`: Workflow identifier
   - `summary`: What the workflow accomplishes
@@ -45,10 +46,11 @@ The job definition file contains:
   - `id`: Step identifier
   - `name`: Human-readable step name
   - `description`: What this step accomplishes
+  - `hidden`: Whether the step is hidden from direct invocation (optional, default false)
   - `instructions_file`: Path to the step's markdown instructions
-  - `inputs`: What the step requires
-  - `outputs`: What the step produces
-  - `dependencies`: Other steps that must complete first
+  - `inputs`: What the step requires — each input has `name`/`description`, or `file`/`from_step` to reference outputs from prior steps
+  - `outputs`: Map of output names to objects with `type` (`file` or `files`), `description`, and `required` fields
+  - `dependencies`: Other step IDs that must complete first
   - `quality_criteria`: Measurable criteria for step completion
 
 ### steps/
@@ -64,8 +66,7 @@ Each step has a markdown file with detailed instructions that guide the AI agent
 
 1. Browse the jobs in this directory
 2. Copy the job folder to your project's `.deepwork/jobs/` directory
-3. Run `/deepwork_jobs.refine` to customize it for your needs
-4. Run `deepwork sync` to generate the slash commands
+3. Run `/deepwork` to start the job — the MCP server will discover it automatically
 
 ## Contributing
 

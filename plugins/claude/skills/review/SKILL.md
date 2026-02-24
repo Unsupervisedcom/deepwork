@@ -12,7 +12,7 @@ Run automated code reviews on the current branch based on `.deepreview` config f
 **STOP and redirect** if either of these applies:
 
 - User wants to **configure, create, or modify** review rules (e.g., "add a security review", "set up reviews for our API layer") → use the `configure_reviews` skill instead
-- User wants to **add a doc-sync rule** (keep a documentation file in sync with source files) → run the `/deepwork` skill with the `deepwork_reviews` job's `add_document_update_rule` workflow
+- User wants to **add a doc-sync rule** (keep a documentation file in sync with source files) → call `start_workflow` with `job_name="deepwork_reviews"` and `workflow_name="add_document_update_rule"`
 
 Only proceed past this section if the user wants to **run** reviews.
 
@@ -21,8 +21,8 @@ Only proceed past this section if the user wants to **run** reviews.
 1. First, call `mcp__deepwork__get_configured_reviews` to see what review rules are configured. This returns each rule's name, description, and which `.deepreview` file defines it. If reviewing specific files, pass `only_rules_matching_files` to see only the rules that apply. Share a brief summary of the active rules with the user before proceeding.
    - **If no rules are configured**: Use AskUserQuestion to tell the user there are no `.deepreview` rules set up yet, and ask if they'd like the agent to auto-discover and suggest rules for this project. If they say yes, invoke the `/deepwork` skill with the `deepwork_reviews` job's `discover_rules` workflow (which sets up native reviews, skill migration, documentation rules, and language-specific code review). Stop here — do not proceed with running reviews if there are no rules.
 2. Call the `mcp__deepwork__get_review_instructions` tool:
-   - No arguments needed to review the current branch's changes (detects via git diff).
-   - To review specific files, pass `files`: `mcp__deepwork__get_review_instructions(files=["src/app.py", "src/lib.py"])`
+   - **No arguments** to review the current branch's changes (auto-detects via git diff against the main branch).
+   - **With `files`** to review only specific files: `mcp__deepwork__get_review_instructions(files=["src/app.py", "src/lib.py"])`. When provided, only reviews whose include/exclude patterns match the given files will be returned. Use this when the user asks to review a particular file or set of files rather than the whole branch.
 3. The output will list review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields — these map directly to the Task tool parameters. Launch all of them as parallel Task agents.
 4. Collect the results from all review agents.
 
@@ -35,6 +35,6 @@ For each finding from the review agents:
 
 ## Iterate
 
-After making any changes, run the review again by calling `mcp__deepwork__get_review_instructions` with no arguments.
+After making any changes, run the review again by calling `mcp__deepwork__get_review_instructions` (pass the same `files` argument if the original review was file-scoped, otherwise no arguments).
 
 Repeat the full cycle (run → act on results → run again) until a clean run produces no further actionable findings. A clean run is one where all review agents return no findings, or all remaining findings have been explicitly skipped by the user. Note that you don't have to run EVERY task the above outputs after the first time - you can just run the ones that match up to ones that had feedback last time. If you made very large changes, it may be a good idea to run the full reviews set. Subsequent runs automatically skip reviews that already passed, as long as the reviewed files remain unchanged.
