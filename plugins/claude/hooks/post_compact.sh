@@ -10,6 +10,7 @@
 #   0 - Always (failures produce empty {} response)
 
 set -euo pipefail
+trap 'echo "{}"; exit 0' ERR
 
 INPUT=$(cat)
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
@@ -26,7 +27,7 @@ STACK_JSON=$(deepwork jobs get-stack --path "$CWD" 2>/dev/null) || {
 }
 
 # Check if there are active sessions
-SESSION_COUNT=$(echo "$STACK_JSON" | jq '.active_sessions | length // 0')
+SESSION_COUNT=$(echo "$STACK_JSON" | jq '(.active_sessions // []) | length')
 if [ "$SESSION_COUNT" -eq 0 ]; then
   echo '{}'
   exit 0

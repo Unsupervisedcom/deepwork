@@ -1,4 +1,4 @@
-"""Tests for the `deepwork jobs get-stack` CLI command."""
+"""Tests for the `deepwork jobs get-stack` CLI command -- validates DW-REQ-005.4."""
 
 from __future__ import annotations
 
@@ -88,6 +88,8 @@ workflows:
 class TestGetStackNoSessions:
     """Tests when no sessions exist."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.11).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_no_deepwork_dir(self, tmp_path: Path) -> None:
         """No .deepwork/tmp/ directory -> empty list."""
         runner = CliRunner()
@@ -96,6 +98,8 @@ class TestGetStackNoSessions:
         data = json.loads(result.output)
         assert data == {"active_sessions": []}
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.11).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_empty_sessions_dir(self, tmp_path: Path) -> None:
         """Empty .deepwork/tmp/ directory -> empty list."""
         (tmp_path / ".deepwork" / "tmp").mkdir(parents=True)
@@ -109,6 +113,8 @@ class TestGetStackNoSessions:
 class TestGetStackActiveSessions:
     """Tests for active sessions with loadable jobs."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.6, DW-REQ-005.4.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_single_active_session_with_job(self, tmp_path: Path) -> None:
         """Active session with matching job -> includes common_job_info and step instructions."""
         sessions_dir = tmp_path / ".deepwork" / "tmp"
@@ -131,6 +137,8 @@ class TestGetStackActiveSessions:
         assert session["common_job_info"] == "Common info for my_job"
         assert "Instructions for step1" in session["current_step_instructions"]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_session_with_instance_id(self, tmp_path: Path) -> None:
         """Session with instance_id is included in output."""
         sessions_dir = tmp_path / ".deepwork" / "tmp"
@@ -145,6 +153,8 @@ class TestGetStackActiveSessions:
         session = data["active_sessions"][0]
         assert session["instance_id"] == "acme"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_completed_steps_extracted(self, tmp_path: Path) -> None:
         """Completed steps are extracted from step_progress."""
         sessions_dir = tmp_path / ".deepwork" / "tmp"
@@ -183,6 +193,8 @@ class TestGetStackActiveSessions:
         assert "step1" in session["completed_steps"]
         assert "step2" not in session["completed_steps"]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_step_position_included(self, tmp_path: Path) -> None:
         """Step position (step N of M) is included when job is loadable."""
         sessions_dir = tmp_path / ".deepwork" / "tmp"
@@ -209,6 +221,8 @@ class TestGetStackActiveSessions:
 class TestGetStackMixedStatuses:
     """Tests with mixed session statuses."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_only_active_returned(self, tmp_path: Path) -> None:
         """Only active sessions are returned, completed and aborted are filtered out."""
         sessions_dir = tmp_path / ".deepwork" / "tmp"
@@ -228,6 +242,8 @@ class TestGetStackMixedStatuses:
 class TestGetStackJobNotFound:
     """Tests when job definition cannot be loaded."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_session_without_job_has_null_fields(self, tmp_path: Path) -> None:
         """Session with no matching job dir -> null common_job_info and instructions."""
         sessions_dir = tmp_path / ".deepwork" / "tmp"
@@ -250,6 +266,8 @@ class TestGetStackJobNotFound:
 class TestGetStackJsonOutput:
     """Tests for valid JSON output."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_output_is_valid_json(self, tmp_path: Path) -> None:
         """Output is always valid JSON even with no sessions."""
         runner = CliRunner()
