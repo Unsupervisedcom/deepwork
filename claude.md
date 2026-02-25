@@ -35,7 +35,7 @@ Each job consists of reviewable steps with clear inputs and outputs. For example
 ```
 deepwork/
 ├── src/deepwork/
-│   ├── cli/              # CLI commands (serve, hook, review, deprecated install)
+│   ├── cli/              # CLI commands (serve, hook, review, jobs, deprecated install)
 │   ├── core/             # Core logic (doc_spec_parser)
 │   ├── jobs/             # Job discovery, parsing, schema, and MCP server
 │   │   └── mcp/          # MCP server module (the core runtime)
@@ -57,7 +57,7 @@ deepwork/
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── review/SKILL.md
 │   │   │   └── configure_reviews/SKILL.md
-│   │   ├── hooks/        # hooks.json, post_commit_reminder.sh
+│   │   ├── hooks/        # hooks.json, post_commit_reminder.sh, post_compact.sh
 │   │   └── .mcp.json     # MCP server config
 │   └── gemini/           # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md

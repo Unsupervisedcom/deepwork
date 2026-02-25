@@ -2,7 +2,7 @@
 
 ## Overview
 
-The DeepWork CLI provides two primary commands: `serve` (starts the MCP server) and `hook` (runs hook scripts), plus two deprecated back-compat commands: `install` and `sync`. The CLI is built with Click and serves as the entry point for `deepwork` executable. The `serve` command is the primary runtime entry point, while `hook` provides a generic mechanism for running Python hook modules.
+The DeepWork CLI provides four active commands: `serve` (starts the MCP server), `hook` (runs hook scripts), `jobs` (job inspection), and `review` (review instructions), plus two deprecated back-compat commands: `install` and `sync`. The CLI is built with Click and serves as the entry point for `deepwork` executable. The `serve` command is the primary runtime entry point, `hook` provides a generic mechanism for running Python hook modules, and `jobs` provides subcommands for inspecting active workflow sessions.
 
 ## Requirements
 
@@ -10,7 +10,7 @@ The DeepWork CLI provides two primary commands: `serve` (starts the MCP server) 
 
 1. The CLI MUST be a Click group command named `cli`.
 2. The CLI MUST provide a `--version` option sourced from the `deepwork` package version.
-3. The CLI MUST register `serve`, `hook`, `install`, and `sync` as subcommands.
+3. The CLI MUST register `serve`, `hook`, `jobs`, `review`, `install`, and `sync` as subcommands.
 4. The CLI MUST be callable as `deepwork` from the command line (via package entry point).
 
 ### DW-REQ-005.2: serve Command
@@ -42,7 +42,21 @@ The DeepWork CLI provides two primary commands: `serve` (starts the MCP server) 
 10. `HookError` exceptions MUST be caught and printed to stderr with exit code 1.
 11. Other unexpected exceptions MUST be caught and printed to stderr with exit code 1.
 
-### DW-REQ-005.4: Deprecated install and sync Commands
+### DW-REQ-005.4: jobs Command
+
+1. The `jobs` command MUST be a Click group command.
+2. The `jobs` group MUST provide a `get-stack` subcommand.
+3. The `get-stack` subcommand MUST accept a `--path` option (default: `"."`, must exist) specifying the project root directory.
+4. The `get-stack` subcommand MUST read session files from `.deepwork/tmp/` under the specified path.
+5. The `get-stack` subcommand MUST filter for sessions with `status == "active"` only.
+6. For each active session, the subcommand MUST include `session_id`, `job_name`, `workflow_name`, `goal`, `current_step_id`, `instance_id`, and `completed_steps` in the output.
+7. For each active session, the subcommand SHOULD enrich the output with `common_job_info` and `current_step_instructions` from the job definition when the job directory is found.
+8. For each active session, the subcommand SHOULD include `step_number` and `total_steps` when the step's position can be determined from the workflow.
+9. If the job directory is not found or the job definition cannot be parsed, the subcommand MUST still include the session with `null` for enrichment fields (graceful degradation).
+10. The subcommand MUST output valid JSON to stdout with an `active_sessions` array.
+11. If no `.deepwork/tmp/` directory exists or no active sessions are found, the subcommand MUST output `{"active_sessions": []}`.
+
+### DW-REQ-005.5: Deprecated install and sync Commands
 
 > **SCHEDULED REMOVAL: June 1st, 2026; details in PR https://github.com/Unsupervisedcom/deepwork/pull/227.** These commands exist only for
 > backwards compatibility with users who installed DeepWork globally via

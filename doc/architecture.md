@@ -41,6 +41,7 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── main.py         # CLI entry point
 │       │   ├── serve.py        # MCP server command
 │       │   ├── hook.py         # Hook runner command
+│       │   ├── jobs.py         # Job inspection commands (get-stack)
 │       │   ├── review.py       # Review command (CLI entry for reviews)
 │       │   └── install.py      # Deprecated install/sync (back-compat)
 │       ├── core/
@@ -93,7 +94,7 @@ deepwork/                       # DeepWork tool repository
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── review/SKILL.md
 │   │   │   └── configure_reviews/SKILL.md
-│   │   ├── hooks/              # hooks.json, post_commit_reminder.sh
+│   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh
 │   │   └── .mcp.json           # MCP server config
 │   └── gemini/                 # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md
@@ -106,7 +107,7 @@ deepwork/                       # DeepWork tool repository
 
 ## DeepWork CLI Components
 
-The CLI has three active commands: `serve`, `hook`, and `review`. Deprecated back-compat commands `install` and `sync` are also registered (hidden) to guide users toward the plugin system. The old adapters, detector, and generator have been replaced by the plugin system.
+The CLI has four active commands: `serve`, `hook`, `review`, and `jobs`. Deprecated back-compat commands `install` and `sync` are also registered (hidden) to guide users toward the plugin system. The old adapters, detector, and generator have been replaced by the plugin system.
 
 ### 1. Serve Command (`serve.py`)
 
@@ -145,7 +146,21 @@ The review command:
 - Generates per-task instruction files in `.deepwork/tmp/review_instructions/`
 - Outputs structured text for Claude Code to dispatch parallel review agents
 
-### 4. Plugin System (replaces adapters/detector/generator)
+### 4. Jobs Command (`jobs.py`)
+
+Provides subcommands for inspecting active workflow sessions:
+
+```bash
+deepwork jobs get-stack --path .
+```
+
+The `get-stack` subcommand:
+- Reads session files from `.deepwork/tmp/`
+- Filters for active sessions only
+- Enriches each session with job definition context (common info, step instructions, step position)
+- Outputs JSON to stdout — used by the post-compaction hook to restore workflow context
+
+### 5. Plugin System (replaces adapters/detector/generator)
 
 Platform-specific delivery is now handled by plugins in `plugins/`:
 

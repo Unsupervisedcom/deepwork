@@ -466,3 +466,68 @@ class TestMCPConfiguresClaude:
             "Expected either 'settings' or 'allowedTools' in plugin.json, "
             "or a separate settings.json in the .claude-plugin directory."
         )
+
+
+# ---------------------------------------------------------------------------
+# PLUG-REQ-001.11: Post-Compaction Context Restoration
+# ---------------------------------------------------------------------------
+
+
+class TestPostCompactionHook:
+    """Tests for the post-compaction context restoration hook (PLUG-REQ-001.11)."""
+
+    hooks_json_path = PLUGIN_DIR / "hooks" / "hooks.json"
+    hook_script_path = PLUGIN_DIR / "hooks" / "post_compact.sh"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.11.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_hooks_json_registers_session_start_compact(self) -> None:
+        """PLUG-REQ-001.11.1: hooks.json registers SessionStart hook with matcher 'compact'."""
+        data = json.loads(self.hooks_json_path.read_text())
+        session_start = data["hooks"]["SessionStart"]
+        assert any(entry.get("matcher") == "compact" for entry in session_start), (
+            "hooks.json must have a SessionStart entry with matcher 'compact'"
+        )
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.11.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_hooks_json_compact_points_to_post_compact_sh(self) -> None:
+        """PLUG-REQ-001.11.1: compact matcher hook points to post_compact.sh."""
+        data = json.loads(self.hooks_json_path.read_text())
+        session_start = data["hooks"]["SessionStart"]
+        compact_entry = next(e for e in session_start if e.get("matcher") == "compact")
+        commands = [h["command"] for h in compact_entry["hooks"]]
+        assert any("post_compact.sh" in cmd for cmd in commands)
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.11.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_hook_script_calls_get_stack(self) -> None:
+        """PLUG-REQ-001.11.2: hook script calls 'deepwork jobs get-stack'."""
+        content = self.hook_script_path.read_text()
+        assert "deepwork jobs get-stack" in content
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.11.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_hook_script_outputs_additional_context(self) -> None:
+        """PLUG-REQ-001.11.3: hook script outputs hookSpecificOutput with additionalContext."""
+        content = self.hook_script_path.read_text()
+        assert "additionalContext" in content
+        assert "hookSpecificOutput" in content
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.11.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_hook_script_outputs_empty_json_on_failure(self) -> None:
+        """PLUG-REQ-001.11.4: hook script outputs empty {} on failure."""
+        content = self.hook_script_path.read_text()
+        # Script must have fallback patterns that output {}
+        assert content.count("echo '{}'") >= 1, "Script must output '{}' on failure paths"
+        assert "trap" in content, "Script must have an ERR trap for graceful degradation"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.11.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_hook_script_always_exits_zero(self) -> None:
+        """PLUG-REQ-001.11.5: hook script never produces non-zero exit codes."""
+        content = self.hook_script_path.read_text()
+        # ERR trap must exit 0
+        assert "exit 0" in content
+        assert "trap" in content
