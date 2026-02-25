@@ -72,3 +72,11 @@ The Claude Code plugin is the primary distribution mechanism for DeepWork on the
 ### PLUG-REQ-001.10: MCP configures Claude Code
 
 1. When the MCP server starts, it MUST configure Claude Code settings to allow the invocation of the MCP tool without user prompts.
+
+### PLUG-REQ-001.11: Post-Compaction Context Restoration
+
+1. The plugin MUST register a `SessionStart` hook with matcher `"compact"` via `plugins/claude/hooks/hooks.json`.
+2. When Claude Code compacts context, the hook MUST call `deepwork jobs get-stack` to retrieve active workflow sessions.
+3. If active sessions are found, the hook MUST inject workflow context (session ID, workflow name, goal, current step, completed steps, common job info, and step instructions) as `additionalContext` in the `SessionStart` hook response.
+4. If no active sessions are found or the `deepwork` command fails, the hook MUST output an empty JSON object `{}` (graceful degradation).
+5. The hook MUST NOT produce errors or non-zero exit codes under any failure condition.

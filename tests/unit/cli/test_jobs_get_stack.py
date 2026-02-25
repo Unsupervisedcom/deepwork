@@ -134,9 +134,7 @@ class TestGetStackActiveSessions:
     def test_session_with_instance_id(self, tmp_path: Path) -> None:
         """Session with instance_id is included in output."""
         sessions_dir = tmp_path / ".deepwork" / "tmp"
-        _create_session_file(
-            sessions_dir, "def67890", job_name="my_job", instance_id="acme"
-        )
+        _create_session_file(sessions_dir, "def67890", job_name="my_job", instance_id="acme")
         _create_minimal_job(tmp_path / ".deepwork" / "jobs", "my_job")
 
         runner = CliRunner()
@@ -174,9 +172,7 @@ class TestGetStackActiveSessions:
                 },
             },
         )
-        _create_minimal_job(
-            tmp_path / ".deepwork" / "jobs", "my_job", steps=["step1", "step2"]
-        )
+        _create_minimal_job(tmp_path / ".deepwork" / "jobs", "my_job", steps=["step1", "step2"])
 
         runner = CliRunner()
         result = runner.invoke(get_stack, ["--path", str(tmp_path)])

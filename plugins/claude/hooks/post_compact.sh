@@ -1,7 +1,13 @@
 #!/bin/bash
-# Post-compaction context restoration hook
-# Fires on SessionStart with matcher "compact" to inject active
-# DeepWork workflow context after Claude Code compacts its context.
+# post_compact.sh - Post-compaction context restoration hook
+#
+# Restores DeepWork workflow context after Claude Code compacts its context.
+# Registered as a SessionStart hook with matcher "compact" in hooks.json.
+#
+# Input (stdin):  JSON from Claude Code SessionStart hook (contains .cwd)
+# Output (stdout): JSON with hookSpecificOutput.additionalContext, or empty {}
+# Exit codes:
+#   0 - Always (failures produce empty {} response)
 
 set -euo pipefail
 
@@ -20,8 +26,8 @@ STACK_JSON=$(deepwork jobs get-stack --path "$CWD" 2>/dev/null) || {
 }
 
 # Check if there are active sessions
-SESSION_COUNT=$(echo "$STACK_JSON" | jq '.active_sessions | length')
-if [ "$SESSION_COUNT" -eq 0 ] 2>/dev/null; then
+SESSION_COUNT=$(echo "$STACK_JSON" | jq '.active_sessions | length // 0')
+if [ "$SESSION_COUNT" -eq 0 ]; then
   echo '{}'
   exit 0
 fi
@@ -34,17 +40,21 @@ Call \`finished_step\` with your outputs when you complete the current step.
 "
 
 for i in $(seq 0 $((SESSION_COUNT - 1))); do
-  SESSION_ID=$(echo "$STACK_JSON" | jq -r ".active_sessions[$i].session_id")
-  JOB_NAME=$(echo "$STACK_JSON" | jq -r ".active_sessions[$i].job_name")
-  WORKFLOW_NAME=$(echo "$STACK_JSON" | jq -r ".active_sessions[$i].workflow_name")
-  GOAL=$(echo "$STACK_JSON" | jq -r ".active_sessions[$i].goal")
-  CURRENT_STEP=$(echo "$STACK_JSON" | jq -r ".active_sessions[$i].current_step_id")
-  INSTANCE_ID=$(echo "$STACK_JSON" | jq -r ".active_sessions[$i].instance_id // empty")
-  STEP_NUM=$(echo "$STACK_JSON" | jq -r ".active_sessions[$i].step_number // empty")
-  TOTAL_STEPS=$(echo "$STACK_JSON" | jq -r ".active_sessions[$i].total_steps // empty")
-  COMPLETED=$(echo "$STACK_JSON" | jq -r ".active_sessions[$i].completed_steps | join(\", \")")
-  COMMON_INFO=$(echo "$STACK_JSON" | jq -r ".active_sessions[$i].common_job_info // empty")
-  STEP_INSTRUCTIONS=$(echo "$STACK_JSON" | jq -r ".active_sessions[$i].current_step_instructions // empty")
+  # Extract all fields in a single jq call, null-delimited
+  eval "$(echo "$STACK_JSON" | jq -r --argjson i "$i" '
+    .active_sessions[$i] |
+    @sh "SESSION_ID=\(.session_id)",
+    @sh "JOB_NAME=\(.job_name)",
+    @sh "WORKFLOW_NAME=\(.workflow_name)",
+    @sh "GOAL=\(.goal)",
+    @sh "CURRENT_STEP=\(.current_step_id)",
+    @sh "INSTANCE_ID=\(.instance_id // "")",
+    @sh "STEP_NUM=\(.step_number // "")",
+    @sh "TOTAL_STEPS=\(.total_steps // "")",
+    @sh "COMPLETED=\(.completed_steps | join(", "))",
+    @sh "COMMON_INFO=\(.common_job_info // "")",
+    @sh "STEP_INSTRUCTIONS=\(.current_step_instructions // "")"
+  ')"
 
   STEP_LABEL="$CURRENT_STEP"
   if [ -n "$STEP_NUM" ] && [ -n "$TOTAL_STEPS" ]; then

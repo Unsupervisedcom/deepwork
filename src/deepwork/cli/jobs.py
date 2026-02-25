@@ -88,9 +88,7 @@ def _get_active_sessions(project_root: Path) -> dict[str, Any]:
     for session in active:
         # Determine completed steps from step_progress
         completed_steps = [
-            sp.step_id
-            for sp in session.step_progress.values()
-            if sp.completed_at is not None
+            sp.step_id for sp in session.step_progress.values() if sp.completed_at is not None
         ]
 
         entry: dict[str, Any] = {
@@ -110,29 +108,23 @@ def _get_active_sessions(project_root: Path) -> dict[str, Any]:
         if job_dir:
             try:
                 job_def = parse_job_definition(job_dir)
-                entry["common_job_info"] = (
-                    job_def.common_job_info_provided_to_all_steps_at_runtime
-                )
+                entry["common_job_info"] = job_def.common_job_info_provided_to_all_steps_at_runtime
 
                 step = job_def.get_step(session.current_step_id)
                 if step:
                     instructions_path = job_dir / step.instructions_file
                     if instructions_path.exists():
-                        entry["current_step_instructions"] = (
-                            instructions_path.read_text(encoding="utf-8")
+                        entry["current_step_instructions"] = instructions_path.read_text(
+                            encoding="utf-8"
                         )
 
                     # Add step position in workflow
-                    position = job_def.get_step_position_in_workflow(
-                        session.current_step_id
-                    )
+                    position = job_def.get_step_position_in_workflow(session.current_step_id)
                     if position:
                         entry["step_number"] = position[0]
                         entry["total_steps"] = position[1]
             except ParseError:
-                logger.warning(
-                    "Could not parse job definition for '%s'", session.job_name
-                )
+                logger.warning("Could not parse job definition for '%s'", session.job_name)
 
         sessions_out.append(entry)
 
