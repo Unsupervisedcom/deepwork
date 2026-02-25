@@ -5,9 +5,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import click
 from click.testing import CliRunner
 
-from deepwork.cli.jobs import get_stack
+from deepwork.cli.jobs import get_stack, jobs
+from deepwork.cli.main import cli
 
 
 def _create_session_file(
@@ -85,6 +87,38 @@ workflows:
     return job_dir
 
 
+class TestJobsCommandStructure:
+    """Tests for the structural requirements of the jobs CLI command."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_jobs_is_click_group(self) -> None:
+        """The jobs command must be a Click group command."""
+        assert isinstance(jobs, click.Group)
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_get_stack_is_subcommand_of_jobs(self) -> None:
+        """The jobs group must provide a get-stack subcommand."""
+        assert "get-stack" in jobs.commands
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_get_stack_has_path_option(self) -> None:
+        """The get-stack subcommand must accept a --path option with default '.'."""
+        cmd = jobs.commands["get-stack"]
+        param_names = [p.name for p in cmd.params]
+        assert "path" in param_names
+        path_param = next(p for p in cmd.params if p.name == "path")
+        assert path_param.default == "."
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.1.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_jobs_registered_as_cli_subcommand(self) -> None:
+        """The jobs command must be registered as a subcommand of the main CLI."""
+        assert "jobs" in cli.commands
+
+
 class TestGetStackNoSessions:
     """Tests when no sessions exist."""
 
@@ -113,7 +147,7 @@ class TestGetStackNoSessions:
 class TestGetStackActiveSessions:
     """Tests for active sessions with loadable jobs."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.6, DW-REQ-005.4.7).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.4, DW-REQ-005.4.6, DW-REQ-005.4.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_single_active_session_with_job(self, tmp_path: Path) -> None:
         """Active session with matching job -> includes common_job_info and step instructions."""

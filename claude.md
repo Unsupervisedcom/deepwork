@@ -57,7 +57,7 @@ deepwork/
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── review/SKILL.md
 │   │   │   └── configure_reviews/SKILL.md
-│   │   ├── hooks/        # hooks.json, post_commit_reminder.sh
+│   │   ├── hooks/        # hooks.json, post_commit_reminder.sh, post_compact.sh
 │   │   └── .mcp.json     # MCP server config
 │   └── gemini/           # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md

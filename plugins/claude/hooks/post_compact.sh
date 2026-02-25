@@ -12,6 +12,7 @@
 set -euo pipefail
 trap 'echo "{}"; exit 0' ERR
 
+# ==== Parse input ====
 INPUT=$(cat)
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 
@@ -20,42 +21,54 @@ if [ -z "$CWD" ]; then
   exit 0
 fi
 
-# Get active workflow sessions
+# ==== Fetch active sessions ====
 STACK_JSON=$(deepwork jobs get-stack --path "$CWD" 2>/dev/null) || {
   echo '{}'
   exit 0
 }
 
-# Check if there are active sessions
+# ==== Check for active sessions ====
 SESSION_COUNT=$(echo "$STACK_JSON" | jq '(.active_sessions // []) | length')
 if [ "$SESSION_COUNT" -eq 0 ]; then
   echo '{}'
   exit 0
 fi
 
-# Build markdown context from active sessions
+# ==== Build markdown context from active sessions ====
 CONTEXT="# DeepWork Workflow Context (Restored After Compaction)
 
 You are in the middle of a DeepWork workflow. Use the DeepWork MCP tools to continue.
 Call \`finished_step\` with your outputs when you complete the current step.
 "
 
-for i in $(seq 0 $((SESSION_COUNT - 1))); do
-  # Extract all fields in a single jq call, null-delimited
-  eval "$(echo "$STACK_JSON" | jq -r --argjson i "$i" '
+for ((i = 0; i < SESSION_COUNT; i++)); do
+  # Extract all fields in a single jq call, null-delimited (no eval)
+  {
+    IFS= read -r -d '' SESSION_ID
+    IFS= read -r -d '' JOB_NAME
+    IFS= read -r -d '' WORKFLOW_NAME
+    IFS= read -r -d '' GOAL
+    IFS= read -r -d '' CURRENT_STEP
+    IFS= read -r -d '' INSTANCE_ID
+    IFS= read -r -d '' STEP_NUM
+    IFS= read -r -d '' TOTAL_STEPS
+    IFS= read -r -d '' COMPLETED
+    IFS= read -r -d '' COMMON_INFO
+    IFS= read -r -d '' STEP_INSTRUCTIONS
+  } < <(echo "$STACK_JSON" | jq -r -j --argjson i "$i" '
     .active_sessions[$i] |
-    @sh "SESSION_ID=\(.session_id)",
-    @sh "JOB_NAME=\(.job_name)",
-    @sh "WORKFLOW_NAME=\(.workflow_name)",
-    @sh "GOAL=\(.goal)",
-    @sh "CURRENT_STEP=\(.current_step_id)",
-    @sh "INSTANCE_ID=\(.instance_id // "")",
-    @sh "STEP_NUM=\(.step_number // "")",
-    @sh "TOTAL_STEPS=\(.total_steps // "")",
-    @sh "COMPLETED=\(.completed_steps | join(", "))",
-    @sh "COMMON_INFO=\(.common_job_info // "")",
-    @sh "STEP_INSTRUCTIONS=\(.current_step_instructions // "")"
-  ')"
+    ((.session_id // ""), "\u0000",
+     (.job_name // ""), "\u0000",
+     (.workflow_name // ""), "\u0000",
+     (.goal // ""), "\u0000",
+     (.current_step_id // ""), "\u0000",
+     (.instance_id // ""), "\u0000",
+     (.step_number // ""), "\u0000",
+     (.total_steps // ""), "\u0000",
+     ((.completed_steps // []) | join(", ")), "\u0000",
+     (.common_job_info // ""), "\u0000",
+     (.current_step_instructions // ""), "\u0000")
+  ')
 
   STEP_LABEL="$CURRENT_STEP"
   if [ -n "$STEP_NUM" ] && [ -n "$TOTAL_STEPS" ]; then
@@ -96,6 +109,5 @@ $STEP_INSTRUCTIONS"
 "
 done
 
-# Output hook response with additionalContext
-# Use jq to properly escape the markdown for JSON
+# ==== Output hook response ====
 echo "$CONTEXT" | jq -Rs '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: .}}'
