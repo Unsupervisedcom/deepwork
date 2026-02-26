@@ -80,6 +80,7 @@ Job definitions are YAML files (`job.yml`) that declare multi-step workflows for
 5. Each workflow step entry MUST be either a step ID string (sequential execution) or an array of step ID strings (concurrent execution).
 6. When a step entry is a string, it SHALL be parsed as a `WorkflowStepEntry` with `is_concurrent=False`.
 7. When a step entry is a list, it SHALL be parsed as a `WorkflowStepEntry` with `is_concurrent=True`.
+8. Workflows MAY have an optional `agent` field. When present, it MUST be a non-empty string specifying the agent type for delegating the entire workflow to a sub-agent.
 
 ### JOBS-REQ-002.9: Semantic Validation - Dependencies
 

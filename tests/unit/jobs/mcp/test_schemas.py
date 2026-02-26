@@ -26,9 +26,9 @@ class TestStepStatus:
 
     def test_enum_values(self) -> None:
         """Test that enum has expected values."""
-        assert StepStatus.NEEDS_WORK == "needs_work"
-        assert StepStatus.NEXT_STEP == "next_step"
-        assert StepStatus.WORKFLOW_COMPLETE == "workflow_complete"
+        assert StepStatus.NEEDS_WORK.value == "needs_work"
+        assert StepStatus.NEXT_STEP.value == "next_step"
+        assert StepStatus.WORKFLOW_COMPLETE.value == "workflow_complete"
 
 
 class TestStepInfo:
@@ -94,6 +94,8 @@ class TestWorkflowInfo:
         assert workflow.summary == "A test workflow"
         assert workflow.how_to_invoke is None
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_workflow_with_how_to_invoke(self) -> None:
         """Test workflow info with how_to_invoke field."""
         workflow = WorkflowInfo(

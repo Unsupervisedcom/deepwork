@@ -1,5 +1,7 @@
 """Tests for validation utilities."""
 
+from pathlib import Path
+
 import pytest
 
 from deepwork.jobs.schema import JOB_SCHEMA
@@ -247,7 +249,7 @@ class TestValidateAgainstSchema:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.10.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_validates_complex_job(self, fixtures_dir) -> None:
+    def test_validates_complex_job(self, fixtures_dir: Path) -> None:
         """Test validation of complex job fixture."""
         from deepwork.utils.yaml_utils import load_yaml
 
@@ -353,6 +355,8 @@ class TestValidateAgainstSchema:
         with pytest.raises(ValidationError):
             validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.8.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_validates_workflow_with_agent(self) -> None:
         """Test that optional agent field on workflow passes validation."""
         job_data = {
@@ -384,6 +388,8 @@ class TestValidateAgainstSchema:
 
         validate_against_schema(job_data, JOB_SCHEMA)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.8.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_workflow_agent_empty_string(self) -> None:
         """Test that empty string agent on workflow fails validation."""
         job_data = {
