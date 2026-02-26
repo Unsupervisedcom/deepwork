@@ -161,10 +161,12 @@ class TestWorkflowTools:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.8).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_get_workflows_without_agent(self, tools: WorkflowTools) -> None:
-        """Test that workflows without agent have no how_to_invoke."""
+        """Test that workflows without agent have direct MCP invocation instructions."""
         response = tools.get_workflows()
         workflow = response.jobs[0].workflows[0]
-        assert workflow.how_to_invoke is None
+        assert "start_workflow" in workflow.how_to_invoke
+        assert "test_job" in workflow.how_to_invoke
+        assert "main" in workflow.how_to_invoke
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -216,7 +218,6 @@ workflows:
 
         response = tools.get_workflows()
         workflow = response.jobs[0].workflows[0]
-        assert workflow.how_to_invoke is not None
         assert "general-purpose" in workflow.how_to_invoke
         assert "agent_job" in workflow.how_to_invoke
         assert "run" in workflow.how_to_invoke

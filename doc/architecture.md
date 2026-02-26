@@ -963,7 +963,7 @@ Lists all available workflows from `.deepwork/jobs/`.
 
 **Parameters**: None
 
-**Returns**: List of jobs with their workflows, steps, and summaries. Each `WorkflowInfo` may include a `how_to_invoke` field when the workflow's `agent` field is set in job.yml, instructing callers to delegate the entire workflow to a sub-agent via the Task tool.
+**Returns**: List of jobs with their workflows, steps, and summaries. Each `WorkflowInfo` includes a `how_to_invoke` field with invocation instructions: when the workflow's `agent` field is set in job.yml, it directs callers to delegate via the Task tool; otherwise, it directs callers to use the `start_workflow` MCP tool directly.
 
 #### 2. `start_workflow`
 Begins a new workflow session.

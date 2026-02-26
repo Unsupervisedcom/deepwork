@@ -83,29 +83,32 @@ class TestWorkflowStepEntryInfo:
 class TestWorkflowInfo:
     """Tests for WorkflowInfo model."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_basic_workflow(self) -> None:
-        """Test basic workflow info."""
+        """Test basic workflow info with how_to_invoke."""
         workflow = WorkflowInfo(
             name="test_workflow",
             summary="A test workflow",
+            how_to_invoke="Call the `start_workflow` DeepWork MCP tool",
         )
 
         assert workflow.name == "test_workflow"
         assert workflow.summary == "A test workflow"
-        assert workflow.how_to_invoke is None
+        assert "start_workflow" in workflow.how_to_invoke
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_workflow_with_how_to_invoke(self) -> None:
-        """Test workflow info with how_to_invoke field."""
+    def test_workflow_with_agent_how_to_invoke(self) -> None:
+        """Test workflow info with agent-based how_to_invoke."""
         workflow = WorkflowInfo(
             name="test_workflow",
             summary="A test workflow",
             how_to_invoke='Invoke as a Task using subagent_type="general-purpose"',
         )
 
-        assert workflow.how_to_invoke is not None
         assert "general-purpose" in workflow.how_to_invoke
+        assert "Task" in workflow.how_to_invoke
 
 
 class TestJobInfo:

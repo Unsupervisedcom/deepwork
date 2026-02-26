@@ -28,9 +28,9 @@ The DeepWork MCP server exposes four tools to AI agents via the Model Context Pr
 3. The tool MUST return a dictionary with a `jobs` key containing a list of job info objects.
 4. Each job info object MUST contain `name`, `summary`, and `workflows` fields.
 5. Each workflow info object MUST contain `name` and `summary` fields.
-6. Each workflow info object MAY contain a `how_to_invoke` field (string or null, default null).
-7. When a workflow's `agent` field is set in job.yml, `how_to_invoke` MUST be populated with instructions for delegating the workflow to a sub-agent of the specified type via the Task tool. The instructions MUST include the agent type, job name, and workflow name.
-8. When a workflow's `agent` field is not set, `how_to_invoke` MUST be null.
+6. Each workflow info object MUST contain a `how_to_invoke` field (string) with invocation instructions.
+7. When a workflow's `agent` field is set in job.yml, `how_to_invoke` MUST contain instructions for delegating the workflow to a sub-agent of the specified type via the Task tool. The instructions MUST include the agent type, job name, and workflow name.
+8. When a workflow's `agent` field is not set, `how_to_invoke` MUST contain instructions to call the `start_workflow` MCP tool directly with the job name and workflow name.
 9. The tool MUST also return an `errors` key containing a list of job load error objects for any jobs that failed to parse.
 10. Each job load error object MUST contain `job_name`, `job_dir`, and `error` fields.
 11. The tool MUST load jobs from all configured job folders (see JOBS-REQ-008).
