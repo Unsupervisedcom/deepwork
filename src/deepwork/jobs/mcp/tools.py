@@ -102,13 +102,14 @@ class WorkflowTools:
             if wf.agent:
                 how_to_invoke = (
                     f'Invoke as a Task using subagent_type="{wf.agent}" with a prompt '
-                    f"giving full context needed and instructions to invoke this workflow "
-                    f'with deepwork (job_name="{job.name}", workflow_name="{wf.name}"). '
+                    f"giving full context needed and instructions to call "
+                    f"`mcp__plugin_deepwork_deepwork__start_workflow` "
+                    f'(job_name="{job.name}", workflow_name="{wf.name}"). '
                     f"If you do not have Task as an available tool, invoke the workflow directly."
                 )
             else:
                 how_to_invoke = (
-                    f"Call the `start_workflow` DeepWork MCP tool with "
+                    f"Call `mcp__plugin_deepwork_deepwork__start_workflow` with "
                     f'job_name="{job.name}" and workflow_name="{wf.name}", '
                     f"then follow the step instructions it returns."
                 )

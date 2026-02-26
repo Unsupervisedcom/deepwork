@@ -164,7 +164,7 @@ class TestWorkflowTools:
         """Test that workflows without agent have direct MCP invocation instructions."""
         response = tools.get_workflows()
         workflow = response.jobs[0].workflows[0]
-        assert "start_workflow" in workflow.how_to_invoke
+        assert "mcp__plugin_deepwork_deepwork__start_workflow" in workflow.how_to_invoke
         assert "test_job" in workflow.how_to_invoke
         assert "main" in workflow.how_to_invoke
 
@@ -219,6 +219,7 @@ workflows:
         response = tools.get_workflows()
         workflow = response.jobs[0].workflows[0]
         assert "general-purpose" in workflow.how_to_invoke
+        assert "mcp__plugin_deepwork_deepwork__start_workflow" in workflow.how_to_invoke
         assert "agent_job" in workflow.how_to_invoke
         assert "run" in workflow.how_to_invoke
         assert "Task" in workflow.how_to_invoke
