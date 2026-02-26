@@ -41,6 +41,7 @@ interface JobInfo {
 interface WorkflowInfo {
   name: string;              // Workflow identifier
   summary: string;           // Short description
+  how_to_invoke: string;        // Instructions for how to invoke this workflow
 }
 ```
 
@@ -397,6 +398,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
+| 1.8.0 | Added `how_to_invoke` field to `WorkflowInfo` in `get_workflows` response. Always populated with invocation instructions: when a workflow's `agent` field is set, directs callers to delegate via the Task tool; otherwise, directs callers to use the `start_workflow` MCP tool directly. Also added optional `agent` field to workflow definitions in job.yml. |
 | 1.7.0 | Added `mark_review_as_passed` tool for review pass caching. Instruction files now include an "After Review" section with the review ID. Reviews with a `.passed` marker are automatically skipped by `get_review_instructions`. |
 | 1.6.0 | Added `get_configured_reviews` tool for listing configured review rules without running the full pipeline. Supports optional file-based filtering. |
 | 1.5.0 | Added `get_review_instructions` tool (originally named `review`) for running `.deepreview`-based code reviews via MCP. Added `--platform` CLI option to `serve` command. |

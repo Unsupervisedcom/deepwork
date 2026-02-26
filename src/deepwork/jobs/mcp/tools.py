@@ -97,13 +97,29 @@ class WorkflowTools:
             JobInfo with workflow details
         """
         # Convert workflows
-        workflows = [
-            WorkflowInfo(
-                name=wf.name,
-                summary=wf.summary,
+        workflows = []
+        for wf in job.workflows:
+            if wf.agent:
+                how_to_invoke = (
+                    f'Invoke as a Task using subagent_type="{wf.agent}" with a prompt '
+                    f"giving full context needed and instructions to call "
+                    f"`mcp__plugin_deepwork_deepwork__start_workflow` "
+                    f'(job_name="{job.name}", workflow_name="{wf.name}"). '
+                    f"If you do not have Task as an available tool, invoke the workflow directly."
+                )
+            else:
+                how_to_invoke = (
+                    f"Call `mcp__plugin_deepwork_deepwork__start_workflow` with "
+                    f'job_name="{job.name}" and workflow_name="{wf.name}", '
+                    f"then follow the step instructions it returns."
+                )
+            workflows.append(
+                WorkflowInfo(
+                    name=wf.name,
+                    summary=wf.summary,
+                    how_to_invoke=how_to_invoke,
+                )
             )
-            for wf in job.workflows
-        ]
 
         return JobInfo(
             name=job.name,

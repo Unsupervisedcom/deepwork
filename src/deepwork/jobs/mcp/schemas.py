@@ -59,6 +59,9 @@ class WorkflowInfo(BaseModel):
 
     name: str = Field(description="Workflow identifier")
     summary: str = Field(description="Short description of workflow")
+    how_to_invoke: str = Field(
+        description="Instructions for how to invoke this workflow (e.g., directly via MCP tools, or delegated to a sub-agent)",
+    )
 
 
 class JobInfo(BaseModel):

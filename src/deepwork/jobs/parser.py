@@ -240,6 +240,10 @@ class Workflow:
     summary: str
     step_entries: list[WorkflowStepEntry]  # List of step entries (sequential or concurrent)
 
+    # Agent type for this workflow (e.g., "general-purpose"). When set, the entire
+    # workflow should be delegated to a sub-agent of this type via the Task tool.
+    agent: str | None = None
+
     @property
     def steps(self) -> list[str]:
         """Get flattened list of all step IDs for backward compatibility."""
@@ -270,6 +274,7 @@ class Workflow:
             name=data["name"],
             summary=data["summary"],
             step_entries=step_entries,
+            agent=data.get("agent"),
         )
 
 

@@ -158,6 +158,72 @@ class TestWorkflowTools:
 
         assert len(response.jobs) == 0
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_get_workflows_without_agent(self, tools: WorkflowTools) -> None:
+        """Test that workflows without agent have direct MCP invocation instructions."""
+        response = tools.get_workflows()
+        workflow = response.jobs[0].workflows[0]
+        assert "mcp__plugin_deepwork_deepwork__start_workflow" in workflow.how_to_invoke
+        assert "test_job" in workflow.how_to_invoke
+        assert "main" in workflow.how_to_invoke
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_get_workflows_with_agent(self, tmp_path: Path) -> None:
+        """Test that workflows with agent field populate how_to_invoke."""
+        deepwork_dir = tmp_path / ".deepwork"
+        deepwork_dir.mkdir()
+        (deepwork_dir / "tmp").mkdir()
+        jobs_dir = deepwork_dir / "jobs"
+        jobs_dir.mkdir()
+        job_dir = jobs_dir / "agent_job"
+        job_dir.mkdir()
+
+        job_yml = """
+name: agent_job
+version: "1.0.0"
+summary: A job with agent workflow
+common_job_info_provided_to_all_steps_at_runtime: Test job
+
+steps:
+  - id: step1
+    name: First Step
+    description: The first step
+    instructions_file: steps/step1.md
+    outputs:
+      output1.md:
+        type: file
+        description: Output
+        required: true
+    reviews: []
+
+workflows:
+  - name: run
+    summary: Run the workflow
+    agent: "general-purpose"
+    steps:
+      - step1
+"""
+        (job_dir / "job.yml").write_text(job_yml)
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step1.md").write_text("# Step 1\nDo the thing.")
+
+        state_manager = StateManager(tmp_path)
+        tools = WorkflowTools(
+            project_root=tmp_path,
+            state_manager=state_manager,
+        )
+
+        response = tools.get_workflows()
+        workflow = response.jobs[0].workflows[0]
+        assert "general-purpose" in workflow.how_to_invoke
+        assert "mcp__plugin_deepwork_deepwork__start_workflow" in workflow.how_to_invoke
+        assert "agent_job" in workflow.how_to_invoke
+        assert "run" in workflow.how_to_invoke
+        assert "Task" in workflow.how_to_invoke
+
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.2, JOBS-REQ-001.3.3, JOBS-REQ-001.3.9, JOBS-REQ-001.3.10, JOBS-REQ-001.3.11, JOBS-REQ-001.3.13, JOBS-REQ-001.3.14).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow(self, tools: WorkflowTools) -> None:
@@ -901,7 +967,7 @@ workflows:
         )
         await tools.start_workflow(start_input)
 
-        # type: files requires a list, not a string
+        # output type "files" requires a list, not a string
         with pytest.raises(ToolError, match="type 'files'.*list of paths"):
             await tools.finished_step(FinishedStepInput(outputs={"reports": "report1.md"}))
 
@@ -1442,8 +1508,9 @@ workflows:
 
         # Stack should only have session_b now
         assert tools.state_manager.get_stack_depth() == 1
-        assert tools.state_manager.get_active_session() is not None
-        assert tools.state_manager.get_active_session().session_id == session_b_id
+        active_session = tools.state_manager.get_active_session()
+        assert active_session is not None
+        assert active_session.session_id == session_b_id
 
 
 class TestExternalRunnerSelfReview:
@@ -1494,6 +1561,7 @@ class TestExternalRunnerSelfReview:
             FinishedStepInput(outputs={"output1.md": "output1.md"})
         )
 
+        assert response.feedback is not None
         assert "Quality review required" in response.feedback
         assert "subagent" in response.feedback.lower()
         assert "quality_review_override_reason" in response.feedback
@@ -1602,6 +1670,7 @@ class TestExternalRunnerSelfReview:
             )
         )
         assert resp2.status == StepStatus.NEXT_STEP
+        assert resp2.begin_step is not None
         assert resp2.begin_step.step_id == "step2"
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.8).
