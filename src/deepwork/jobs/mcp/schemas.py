@@ -59,6 +59,10 @@ class WorkflowInfo(BaseModel):
 
     name: str = Field(description="Workflow identifier")
     summary: str = Field(description="Short description of workflow")
+    how_to_invoke: str | None = Field(
+        default=None,
+        description="When present, describes how this workflow should be invoked (e.g., via a sub-agent)",
+    )
 
 
 class JobInfo(BaseModel):

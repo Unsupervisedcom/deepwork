@@ -158,6 +158,66 @@ class TestWorkflowTools:
 
         assert len(response.jobs) == 0
 
+    def test_get_workflows_without_agent(self, tools: WorkflowTools) -> None:
+        """Test that workflows without agent have no how_to_invoke."""
+        response = tools.get_workflows()
+        workflow = response.jobs[0].workflows[0]
+        assert workflow.how_to_invoke is None
+
+    def test_get_workflows_with_agent(self, tmp_path: Path) -> None:
+        """Test that workflows with agent field populate how_to_invoke."""
+        deepwork_dir = tmp_path / ".deepwork"
+        deepwork_dir.mkdir()
+        (deepwork_dir / "tmp").mkdir()
+        jobs_dir = deepwork_dir / "jobs"
+        jobs_dir.mkdir()
+        job_dir = jobs_dir / "agent_job"
+        job_dir.mkdir()
+
+        job_yml = """
+name: agent_job
+version: "1.0.0"
+summary: A job with agent workflow
+common_job_info_provided_to_all_steps_at_runtime: Test job
+
+steps:
+  - id: step1
+    name: First Step
+    description: The first step
+    instructions_file: steps/step1.md
+    outputs:
+      output1.md:
+        type: file
+        description: Output
+        required: true
+    reviews: []
+
+workflows:
+  - name: run
+    summary: Run the workflow
+    agent: "general-purpose"
+    steps:
+      - step1
+"""
+        (job_dir / "job.yml").write_text(job_yml)
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step1.md").write_text("# Step 1\nDo the thing.")
+
+        state_manager = StateManager(tmp_path)
+        tools = WorkflowTools(
+            project_root=tmp_path,
+            state_manager=state_manager,
+        )
+
+        response = tools.get_workflows()
+        workflow = response.jobs[0].workflows[0]
+        assert workflow.how_to_invoke is not None
+        assert "general-purpose" in workflow.how_to_invoke
+        assert "agent_job" in workflow.how_to_invoke
+        assert "run" in workflow.how_to_invoke
+        assert "Task" in workflow.how_to_invoke
+
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.2, JOBS-REQ-001.3.3, JOBS-REQ-001.3.9, JOBS-REQ-001.3.10, JOBS-REQ-001.3.11, JOBS-REQ-001.3.13, JOBS-REQ-001.3.14).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow(self, tools: WorkflowTools) -> None:

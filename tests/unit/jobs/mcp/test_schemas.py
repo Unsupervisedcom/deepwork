@@ -92,6 +92,18 @@ class TestWorkflowInfo:
 
         assert workflow.name == "test_workflow"
         assert workflow.summary == "A test workflow"
+        assert workflow.how_to_invoke is None
+
+    def test_workflow_with_how_to_invoke(self) -> None:
+        """Test workflow info with how_to_invoke field."""
+        workflow = WorkflowInfo(
+            name="test_workflow",
+            summary="A test workflow",
+            how_to_invoke='Invoke as a Task using subagent_type="general-purpose"',
+        )
+
+        assert workflow.how_to_invoke is not None
+        assert "general-purpose" in workflow.how_to_invoke
 
 
 class TestJobInfo:

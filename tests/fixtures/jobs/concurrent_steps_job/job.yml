@@ -9,6 +9,7 @@ common_job_info_provided_to_all_steps_at_runtime: |
 workflows:
   - name: full_analysis
     summary: "Complete analysis workflow with parallel research phase"
+    agent: "general-purpose"
     steps:
       - setup
       - [research_web, research_docs, research_interviews]

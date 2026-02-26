@@ -846,3 +846,17 @@ class TestConcurrentSteps:
 
         result = job.get_concurrent_step_info("research_interviews")
         assert result == (3, 3)
+
+    def test_workflow_agent_parsed(self, fixtures_dir: Path) -> None:
+        """Test that workflow agent field is parsed from job.yml."""
+        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
+        job = parse_job_definition(job_dir)
+
+        assert job.workflows[0].agent == "general-purpose"
+
+    def test_workflow_agent_defaults_to_none(self, fixtures_dir: Path) -> None:
+        """Test that workflow agent defaults to None when not specified."""
+        job_dir = fixtures_dir / "jobs" / "fruits"
+        job = parse_job_definition(job_dir)
+
+        assert job.workflows[0].agent is None

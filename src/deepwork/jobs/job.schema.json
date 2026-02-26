@@ -84,6 +84,11 @@
           "items": {
             "$ref": "#/$defs/workflowStepEntry"
           }
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Agent type to run the entire workflow in (e.g., 'general-purpose'). When set, the workflow is designed to be delegated wholesale to a sub-agent of this type via the Task tool. This is for workflows where the entire execution should happen in a sub-agent — not for delegating individual steps within a workflow (use step-level 'agent' for that)."
         }
       }
     },
