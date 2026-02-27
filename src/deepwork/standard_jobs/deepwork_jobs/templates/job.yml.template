@@ -21,6 +21,16 @@ workflows:
     steps:
       - [step_id]
       - [another_step]
+      # Iterative loop pattern: A later step can call go_to_step to loop
+      # back to an earlier step. This clears progress from the target step
+      # onward and re-executes those steps. Add loop logic in the step's
+      # instruction file, not in job.yml. Example:
+      # steps:
+      #   - gather_data
+      #   - write_draft
+      #   - review_draft    # Instructions tell agent to call go_to_step
+      #                     # back to gather_data or write_draft if needed
+      #   - finalize
 
 steps:
   - id: [step_id]

@@ -24,6 +24,7 @@ from deepwork.jobs.mcp.quality_gate import QualityGate
 from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     FinishedStepInput,
+    GoToStepInput,
     StartWorkflowInput,
 )
 from deepwork.jobs.mcp.state import StateManager
@@ -221,6 +222,31 @@ def create_server(
         response = await tools.abort_workflow(input_data)
         return response.model_dump()
 
+    @mcp.tool(
+        description=(
+            "Navigate back to a prior step in the current workflow. "
+            "Clears all progress from the target step onward, forcing re-execution "
+            "of subsequent steps to ensure consistency. "
+            "Use this when earlier outputs need revision or quality issues are discovered. "
+            "Files on disk are NOT deleted — only session tracking state is cleared. "
+            "Required: step_id (the step to go back to). "
+            "Optional: session_id to target a specific workflow session "
+            "(use when multiple workflows are active concurrently)."
+        )
+    )
+    async def go_to_step(
+        step_id: str,
+        session_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Navigate back to a prior step, clearing subsequent progress."""
+        _log_tool_call(
+            "go_to_step",
+            {"step_id": step_id, "session_id": session_id},
+        )
+        input_data = GoToStepInput(step_id=step_id, session_id=session_id)
+        response = await tools.go_to_step(input_data)
+        return response.model_dump()
+
     # ---- Review tool (outside the workflow lifecycle) ----
 
     from deepwork.review.mcp import ReviewToolError, run_review
@@ -326,6 +352,14 @@ If a workflow cannot be completed, use `abort_workflow` with an explanation:
 - The current workflow is marked as aborted and popped from the stack
 - If there was a parent workflow, it becomes active again
 - The explanation is saved for debugging and audit purposes
+
+## Going Back
+
+Use `go_to_step` to navigate back to a prior step when earlier outputs need revision:
+- All progress from the target step onward is cleared (outputs, timestamps, quality attempts)
+- The agent must re-execute all steps from the target onward
+- Files on disk are NOT deleted — only session tracking state is cleared
+- Cannot go forward — use `finished_step` to advance
 
 ## Best Practices
 

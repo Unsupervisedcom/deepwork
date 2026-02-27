@@ -298,6 +298,38 @@ class StateManager:
             session.current_entry_index = entry_index
             await self._save_session_unlocked(session)
 
+    async def go_to_step(
+        self,
+        step_id: str,
+        entry_index: int,
+        invalidate_step_ids: list[str],
+        session_id: str | None = None,
+    ) -> None:
+        """Navigate back to a prior step, clearing progress from that step onward.
+
+        Args:
+            step_id: Step ID to navigate to
+            entry_index: Index of the target entry in workflow step_entries
+            invalidate_step_ids: Step IDs whose progress should be cleared
+            session_id: Optional session ID to target a specific session
+
+        Raises:
+            StateError: If no active session or session_id not found
+        """
+        async with self._lock:
+            session = self._resolve_session(session_id)
+
+            # Clear progress for all invalidated steps
+            for sid in invalidate_step_ids:
+                if sid in session.step_progress:
+                    del session.step_progress[sid]
+
+            # Update position
+            session.current_step_id = step_id
+            session.current_entry_index = entry_index
+
+            await self._save_session_unlocked(session)
+
     async def complete_workflow(self, session_id: str | None = None) -> WorkflowSession | None:
         """Mark the workflow as complete and remove from stack.
 

@@ -132,6 +132,20 @@ class AbortWorkflowInput(BaseModel):
     )
 
 
+class GoToStepInput(BaseModel):
+    """Input for go_to_step tool."""
+
+    step_id: str = Field(description="ID of the step to navigate back to")
+    session_id: str | None = Field(
+        default=None,
+        description=(
+            "Optional session ID to target a specific workflow session. "
+            "Use this when multiple workflows are active concurrently to ensure "
+            "the correct session is updated. If omitted, operates on the top-of-stack session."
+        ),
+    )
+
+
 # =============================================================================
 # Quality Gate Models
 # =============================================================================
@@ -301,6 +315,20 @@ class AbortWorkflowResponse(BaseModel):
         default=None, description="The workflow now active (if any)"
     )
     resumed_step: str | None = Field(default=None, description="The step now active (if any)")
+
+
+class GoToStepResponse(BaseModel):
+    """Response from go_to_step tool."""
+
+    begin_step: ActiveStepInfo = Field(
+        description="Information about the step to begin working on"
+    )
+    invalidated_steps: list[str] = Field(
+        description="Step IDs whose progress was cleared (from target step onward)"
+    )
+    stack: list[StackEntry] = Field(
+        default_factory=list, description="Current workflow stack after navigation"
+    )
 
 
 # =============================================================================

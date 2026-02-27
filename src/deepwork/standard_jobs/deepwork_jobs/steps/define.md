@@ -165,6 +165,38 @@ The `research_all` step's instructions should tell the agent to:
 
 **When to recognize this pattern:** Look for language like "for each X, do Y" where Y involves more than one logical phase. If Y is a single simple action, a regular step with a loop is fine. If Y is itself a multi-step process with intermediate outputs worth reviewing, split it into a sub-workflow.
 
+### Iterative Loop Pattern (go_to_step)
+
+When a workflow needs to repeat a group of steps based on feedback or evolving requirements (e.g., draft → review → revise cycles, or research → analyze → check coverage → research more), use the `go_to_step` MCP tool to create a loop.
+
+**How it works:** A later step in the workflow evaluates the work so far and decides whether to loop back. If a loop is needed, the step's instructions tell the agent to call `go_to_step` with the step ID to return to. This clears all progress from that step onward and re-presents the step's instructions, so the agent re-executes the target step and all subsequent steps with fresh context.
+
+**How to structure it in `job.yml`:**
+
+```yaml
+workflows:
+  - name: iterative_report
+    summary: "Create a report with iterative refinement"
+    steps:
+      - gather_data
+      - write_draft
+      - review_draft       # This step may loop back to gather_data or write_draft
+      - finalize
+```
+
+The `review_draft` step's instructions should tell the agent to:
+- Evaluate the draft against acceptance criteria
+- If data gaps are found: call `go_to_step` with `step_id: "gather_data"` to collect more data and re-draft
+- If the draft needs revision but data is sufficient: call `go_to_step` with `step_id: "write_draft"` to revise
+- If the draft meets all criteria: proceed normally by calling `finished_step`
+
+**Important design considerations:**
+- **Keep loops bounded**: The decision step's instructions should include a maximum iteration count or clear exit criteria to prevent infinite loops
+- **State is cleared**: When `go_to_step` navigates back, all progress from the target step onward is cleared (outputs, timestamps, quality attempts). The agent must re-execute those steps. Files on disk are NOT deleted — only session tracking state is reset.
+- **Use for multi-step loops only**: If only a single step needs to retry, the quality review system (`needs_work` from `finished_step`) already handles that. Use `go_to_step` when the loop spans multiple steps.
+
+**When to recognize this pattern:** Look for language like "keep refining until X", "iterate until satisfied", "go back and redo Y if Z", or any cycle where later steps may invalidate earlier work. If the iteration involves just one step retrying its own output, rely on quality reviews instead.
+
 ### Step 3: Validate the Workflow
 
 After gathering information about all steps:
