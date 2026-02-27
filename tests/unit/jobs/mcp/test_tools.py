@@ -1958,9 +1958,7 @@ workflows:
     def tools(self, project_root: Path, state_manager: StateManager) -> WorkflowTools:
         return WorkflowTools(project_root=project_root, state_manager=state_manager)
 
-    async def _start_and_advance_to_step3(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> str:
+    async def _start_and_advance_to_step3(self, tools: WorkflowTools, project_root: Path) -> str:
         """Helper: start workflow and advance to step3, returning session_id."""
         resp = await tools.start_workflow(
             StartWorkflowInput(
@@ -1973,21 +1971,17 @@ workflows:
 
         # Complete step1
         (project_root / "output1.md").write_text("Step 1 output")
-        await tools.finished_step(
-            FinishedStepInput(outputs={"output1.md": "output1.md"})
-        )
+        await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}))
 
         # Complete step2
         (project_root / "output2.md").write_text("Step 2 output")
-        await tools.finished_step(
-            FinishedStepInput(outputs={"output2.md": "output2.md"})
-        )
+        await tools.finished_step(FinishedStepInput(outputs={"output2.md": "output2.md"}))
 
         return session_id
 
-    async def test_go_back_to_prior_step(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_go_back_to_prior_step(self, tools: WorkflowTools, project_root: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.13).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test navigating back to a prior step returns step info."""
         await self._start_and_advance_to_step3(tools, project_root)
 
@@ -2001,6 +1995,8 @@ workflows:
     async def test_go_back_clears_subsequent_progress(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.9).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that going back clears progress for target step and all subsequent."""
         await self._start_and_advance_to_step3(tools, project_root)
 
@@ -2023,9 +2019,9 @@ workflows:
         assert session.step_progress["step2"].outputs == {}  # no outputs yet
         assert "step3" not in session.step_progress  # cleared
 
-    async def test_restart_current_step(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_restart_current_step(self, tools: WorkflowTools, project_root: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.8).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test going to the current step restarts it."""
         await self._start_and_advance_to_step3(tools, project_root)
 
@@ -2038,18 +2034,18 @@ workflows:
         assert "step1" not in response.invalidated_steps
         assert "step2" not in response.invalidated_steps
 
-    async def test_invalid_step_id_error(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_invalid_step_id_error(self, tools: WorkflowTools, project_root: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that an invalid step_id raises ToolError."""
         await self._start_and_advance_to_step3(tools, project_root)
 
         with pytest.raises(ToolError, match="Step 'nonexistent' not found in workflow"):
             await tools.go_to_step(GoToStepInput(step_id="nonexistent"))
 
-    async def test_forward_navigation_error(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_forward_navigation_error(self, tools: WorkflowTools, project_root: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that going forward raises ToolError."""
         # Start workflow — currently at step1 (entry_index=0)
         await tools.start_workflow(
@@ -2064,6 +2060,8 @@ workflows:
             await tools.go_to_step(GoToStepInput(step_id="step2"))
 
     async def test_no_session_error(self, tools: WorkflowTools) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that go_to_step with no active session raises StateError."""
         with pytest.raises(StateError, match="No active workflow session"):
             await tools.go_to_step(GoToStepInput(step_id="step1"))
@@ -2071,6 +2069,8 @@ workflows:
     async def test_step_reviews_included_in_response(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.13).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that reviews are included when going back to a step with reviews."""
         await self._start_and_advance_to_step3(tools, project_root)
 
@@ -2084,6 +2084,8 @@ workflows:
     async def test_stack_included_in_response(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.15).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that the workflow stack is included in the response."""
         await self._start_and_advance_to_step3(tools, project_root)
 
@@ -2096,6 +2098,8 @@ workflows:
     async def test_go_to_step_then_finish_step_advances(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.12).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that after go_to_step, finishing the step advances normally."""
         await self._start_and_advance_to_step3(tools, project_root)
 

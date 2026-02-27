@@ -619,6 +619,7 @@ Users invoke workflows through the `/deepwork` skill, which uses MCP tools:
 2. `start_workflow` — begins a workflow session, creates a git branch, returns first step instructions
 3. `finished_step` — submits step outputs for quality review, returns next step or completion
 4. `abort_workflow` — cancels the current workflow if it cannot be completed
+5. `go_to_step` — navigates back to a prior step, clearing progress from that step onward
 
 **Example: Creating a New Job**
 ```
@@ -932,7 +933,8 @@ DeepWork includes an MCP (Model Context Protocol) server that provides an altern
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                   DeepWork MCP Server                        │
-│  Tools: get_workflows | start_workflow | finished_step      │
+│  Tools: get_workflows | start_workflow | finished_step |    │
+│         abort_workflow | go_to_step | review tools          │
 │  State: session tracking, step progress, outputs            │
 │  Quality Gate: invokes review agent for validation          │
 └─────────────────────────────────────────────────────────────┘
@@ -998,7 +1000,23 @@ Aborts the current workflow and returns to the parent (if nested).
 
 **Returns**: Aborted workflow info, resumed parent info (if any), current stack
 
-#### 5. `get_review_instructions`
+#### 5. `go_to_step`
+Navigates back to a prior step, clearing progress from that step onward.
+
+**Parameters**:
+- `step_id: str` - ID of the step to navigate back to
+- `session_id: str | None` - Target a specific workflow session
+
+**Returns**: `begin_step` (step info for the target step), `invalidated_steps` (step IDs whose progress was cleared), `stack` (current workflow stack)
+
+**Behavior**:
+- Validates the target step exists in the workflow
+- Rejects forward navigation (target entry index > current entry index)
+- Clears session tracking state for all steps from target onward (files on disk are not deleted)
+- For concurrent entries, navigates to the first step in the entry
+- Marks the target step as started
+
+#### 6. `get_review_instructions`
 Runs the `.deepreview`-based code review pipeline. Registered directly in `jobs/mcp/server.py` (not in `tools.py`) since it operates outside the workflow lifecycle.
 
 **Parameters**:
@@ -1008,7 +1026,7 @@ Runs the `.deepreview`-based code review pipeline. Registered directly in `jobs/
 
 The `--platform` CLI option on `serve` controls which formatter is used (defaults to `"claude"`).
 
-#### 6. `get_configured_reviews`
+#### 7. `get_configured_reviews`
 Lists configured review rules from `.deepreview` files without running the pipeline.
 
 **Parameters**:
@@ -1016,7 +1034,7 @@ Lists configured review rules from `.deepreview` files without running the pipel
 
 **Returns**: List of rule summaries (name, description, defining_file).
 
-#### 7. `mark_review_as_passed`
+#### 8. `mark_review_as_passed`
 Marks a review as passed so it is skipped on subsequent runs while the reviewed files remain unchanged. Part of the **review pass caching** mechanism.
 
 **Parameters**:
@@ -1043,6 +1061,7 @@ class StateManager:
     def start_step(step_id) -> None
     def complete_step(step_id, outputs, notes) -> None
     def advance_to_step(step_id, entry_index) -> None
+    def go_to_step(step_id, entry_index, invalidate_step_ids) -> None
     def complete_workflow() -> None
 ```
 
@@ -1075,8 +1094,8 @@ The quality gate:
 ### Schemas (`jobs/mcp/schemas.py`)
 
 Pydantic models for all tool inputs and outputs:
-- `StartWorkflowInput`, `FinishedStepInput`
-- `GetWorkflowsResponse`, `StartWorkflowResponse`, `FinishedStepResponse`
+- `StartWorkflowInput`, `FinishedStepInput`, `AbortWorkflowInput`, `GoToStepInput`
+- `GetWorkflowsResponse`, `StartWorkflowResponse`, `FinishedStepResponse`, `AbortWorkflowResponse`, `GoToStepResponse`
 - `WorkflowSession`, `StepProgress`
 - `QualityGateResult`, `QualityCriteriaResult`
 
