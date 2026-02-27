@@ -1,7 +1,7 @@
 {
   "name": "deepwork",
   "description": "Framework for AI-powered multi-step workflows with quality gates",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "author": {
     "name": "DeepWork"
   },

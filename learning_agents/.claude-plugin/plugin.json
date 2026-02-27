@@ -1,7 +1,7 @@
 {
   "name": "learning-agents",
   "description": "Auto-improving AI sub-agents that learn from their mistakes across sessions",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "author": {
     "name": "DeepWork"
   },
