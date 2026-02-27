@@ -347,7 +347,7 @@ workflows:
         """Test finished_step without active session."""
         input_data = FinishedStepInput(outputs={"output1.md": "output1.md"})
 
-        with pytest.raises(StateError, match="No active workflow session"):
+        with pytest.raises(ToolError, match="No active workflow session"):
             await tools.finished_step(input_data)
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.7, JOBS-REQ-001.4.15, JOBS-REQ-001.4.17).

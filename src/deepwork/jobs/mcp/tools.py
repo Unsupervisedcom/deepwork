@@ -33,7 +33,7 @@ from deepwork.jobs.mcp.schemas import (
     StepStatus,
     WorkflowInfo,
 )
-from deepwork.jobs.mcp.state import StateManager
+from deepwork.jobs.mcp.state import StateError, StateManager
 from deepwork.jobs.parser import (
     JobDefinition,
     OutputSpec,
@@ -395,7 +395,15 @@ class WorkflowTools:
             StateError: If no active session
             ToolError: If quality gate fails after max attempts
         """
-        session = self.state_manager._resolve_session(input_data.session_id)
+        try:
+            session = self.state_manager._resolve_session(input_data.session_id)
+        except StateError:
+            raise ToolError(
+                "No active workflow session. "
+                "The finished_step tool reports completion of a step within a running workflow. "
+                "If you want to resume a workflow, just start it again and call finished_step "
+                "with quality_review_override_reason until you get back to your prior step."
+            )
         sid = session.session_id
         current_step_id = session.current_step_id
 
