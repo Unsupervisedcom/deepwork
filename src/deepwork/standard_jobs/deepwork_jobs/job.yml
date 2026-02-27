@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: deepwork_jobs
-version: "1.4.0"
+version: "1.5.0"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, testing, or improving DeepWork jobs."
 common_job_info_provided_to_all_steps_at_runtime: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step

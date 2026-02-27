@@ -627,3 +627,166 @@ class TestSessionIdRouting:
         top = state_manager.get_active_session()
         assert top is not None
         assert "s1" not in top.step_progress
+
+
+class TestGoToStep:
+    """Tests for go_to_step in StateManager."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project root with .deepwork directory."""
+        deepwork_dir = tmp_path / ".deepwork"
+        deepwork_dir.mkdir()
+        (deepwork_dir / "tmp").mkdir()
+        return tmp_path
+
+    @pytest.fixture
+    def state_manager(self, project_root: Path) -> StateManager:
+        """Create a StateManager instance."""
+        return StateManager(project_root)
+
+    async def test_go_to_step_clears_invalidated_progress(
+        self, state_manager: StateManager
+    ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        """Test that go_to_step clears step_progress for invalidated steps."""
+        await state_manager.create_session(
+            job_name="test_job",
+            workflow_name="main",
+            goal="Test",
+            first_step_id="step1",
+        )
+
+        # Simulate completing step1 and step2
+        await state_manager.complete_step("step1", {"out1": "out1.md"})
+        await state_manager.complete_step("step2", {"out2": "out2.md"})
+
+        session = state_manager.get_active_session()
+        assert session is not None
+        assert "step1" in session.step_progress
+        assert "step2" in session.step_progress
+
+        # Go back to step1 — both step1 and step2 should be cleared
+        await state_manager.go_to_step(
+            step_id="step1",
+            entry_index=0,
+            invalidate_step_ids=["step1", "step2"],
+        )
+
+        session = state_manager.get_active_session()
+        assert session is not None
+        assert "step1" not in session.step_progress
+        assert "step2" not in session.step_progress
+
+    async def test_go_to_step_preserves_earlier_progress(self, state_manager: StateManager) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        """Test that go_to_step preserves progress for steps before the target."""
+        await state_manager.create_session(
+            job_name="test_job",
+            workflow_name="main",
+            goal="Test",
+            first_step_id="step1",
+        )
+
+        await state_manager.complete_step("step1", {"out1": "out1.md"})
+        await state_manager.complete_step("step2", {"out2": "out2.md"})
+        await state_manager.complete_step("step3", {"out3": "out3.md"})
+
+        # Go back to step2 — only step2 and step3 should be cleared
+        await state_manager.go_to_step(
+            step_id="step2",
+            entry_index=1,
+            invalidate_step_ids=["step2", "step3"],
+        )
+
+        session = state_manager.get_active_session()
+        assert session is not None
+        assert "step1" in session.step_progress  # preserved
+        assert "step2" not in session.step_progress  # cleared
+        assert "step3" not in session.step_progress  # cleared
+
+    async def test_go_to_step_updates_position(self, state_manager: StateManager) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.8, JOBS-REQ-003.19.9).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        """Test that go_to_step updates current_step_id and current_entry_index."""
+        await state_manager.create_session(
+            job_name="test_job",
+            workflow_name="main",
+            goal="Test",
+            first_step_id="step1",
+        )
+
+        # Advance position
+        await state_manager.advance_to_step("step3", 2)
+
+        # Go back to step1
+        await state_manager.go_to_step(
+            step_id="step1",
+            entry_index=0,
+            invalidate_step_ids=["step1", "step2", "step3"],
+        )
+
+        session = state_manager.get_active_session()
+        assert session is not None
+        assert session.current_step_id == "step1"
+        assert session.current_entry_index == 0
+
+    async def test_go_to_step_persists_to_disk(self, state_manager: StateManager) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.10).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        """Test that go_to_step persists changes to the session file."""
+        session = await state_manager.create_session(
+            job_name="test_job",
+            workflow_name="main",
+            goal="Test",
+            first_step_id="step1",
+        )
+        session_id = session.session_id
+
+        await state_manager.complete_step("step1", {"out1": "out1.md"})
+        await state_manager.advance_to_step("step2", 1)
+
+        await state_manager.go_to_step(
+            step_id="step1",
+            entry_index=0,
+            invalidate_step_ids=["step1", "step2"],
+        )
+
+        # Load from disk with a new manager
+        new_manager = StateManager(state_manager.project_root)
+        loaded = await new_manager.load_session(session_id)
+
+        assert loaded.current_step_id == "step1"
+        assert loaded.current_entry_index == 0
+        assert "step1" not in loaded.step_progress
+
+    async def test_go_to_step_with_session_id(self, state_manager: StateManager) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        """Test that go_to_step works with explicit session_id."""
+        session1 = await state_manager.create_session(
+            job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
+        )
+        await state_manager.create_session(
+            job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
+        )
+
+        await state_manager.complete_step("s1", {"out": "out.md"}, session_id=session1.session_id)
+
+        # Go back on session1 using session_id
+        await state_manager.go_to_step(
+            step_id="s1",
+            entry_index=0,
+            invalidate_step_ids=["s1"],
+            session_id=session1.session_id,
+        )
+
+        assert session1.current_step_id == "s1"
+        assert "s1" not in session1.step_progress
+
+        # session2 (top) should be unaffected
+        top = state_manager.get_active_session()
+        assert top is not None
+        assert top.current_step_id == "s2"

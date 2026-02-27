@@ -2,7 +2,7 @@
 
 ## Overview
 
-The DeepWork MCP server exposes four tools to AI agents via the Model Context Protocol (MCP): `get_workflows`, `start_workflow`, `finished_step`, and `abort_workflow`. These tools constitute the primary runtime interface through which agents discover, execute, and manage multi-step workflows. The server is built on FastMCP and all tool responses are serialized as dictionaries via Pydantic `model_dump()`.
+The DeepWork MCP server exposes five workflow tools to AI agents via the Model Context Protocol (MCP): `get_workflows`, `start_workflow`, `finished_step`, `abort_workflow`, and `go_to_step`. These tools constitute the primary runtime interface through which agents discover, execute, and manage multi-step workflows. The server is built on FastMCP and all tool responses are serialized as dictionaries via Pydantic `model_dump()`.
 
 ## Requirements
 
@@ -18,7 +18,7 @@ The DeepWork MCP server exposes four tools to AI agents via the Model Context Pr
 8. When `enable_quality_gate` is `True` and `external_runner` is `None`, the system MUST create a `QualityGate` with `cli=None` and `max_inline_files=0`.
 9. When `enable_quality_gate` is `False`, the system MUST NOT create a `QualityGate` instance.
 10. The server MUST be named `"deepwork"`.
-11. The server MUST include instructions text describing the workflow lifecycle (Discover, Start, Execute, Checkpoint, Iterate, Continue, Complete).
+11. The server MUST include instructions text describing the workflow lifecycle (Discover, Start, Execute, Checkpoint, Iterate, Continue, Complete, Going Back).
 12. Every tool call MUST be logged with the tool name and current stack state.
 
 ### JOBS-REQ-001.2: get_workflows Tool
@@ -102,7 +102,25 @@ The DeepWork MCP server exposes four tools to AI agents via the Model Context Pr
 7. The response MUST contain: `aborted_workflow` (formatted as `"job_name/workflow_name"`), `aborted_step`, `explanation`, `stack`, `resumed_workflow` (or None), and `resumed_step` (or None).
 8. If a parent workflow exists on the stack after abortion, `resumed_workflow` and `resumed_step` MUST reflect that parent's state.
 
-### JOBS-REQ-001.7: Tool Response Serialization
+### JOBS-REQ-001.7: go_to_step Tool
+
+1. The `go_to_step` tool MUST be registered as an asynchronous MCP tool.
+2. The tool MUST require a `step_id` parameter (str).
+3. The tool MUST accept an optional `session_id` parameter (str, default: None).
+4. The tool MUST raise `StateError` if no active workflow session exists and no `session_id` is provided.
+5. When `session_id` is provided, the tool MUST target the session with that ID rather than the top-of-stack session.
+6. The tool MUST raise `ToolError` if the specified `step_id` does not exist in the workflow. The error message MUST list the available step names.
+7. The tool MUST raise `ToolError` if the target step's entry index is greater than the current entry index (forward navigation). The error message MUST direct the agent to use `finished_step` to advance forward.
+8. The tool MUST allow navigating to the current step (target entry index == current entry index) to restart it.
+9. The tool MUST collect all step IDs from the target entry index through the end of the workflow as invalidated steps.
+10. The tool MUST clear session tracking state (step progress) for all invalidated step IDs via the StateManager. Files on disk MUST NOT be deleted.
+11. For concurrent step entries, the tool MUST navigate to the first step ID in the entry.
+12. The tool MUST mark the target step as started after clearing invalidated progress.
+13. The response MUST contain a `begin_step` object with: `session_id`, `step_id`, `job_dir`, `step_expected_outputs`, `step_reviews`, `step_instructions`, and `common_job_info`.
+14. The response MUST contain an `invalidated_steps` field listing all step IDs whose progress was cleared.
+15. The response MUST contain a `stack` field reflecting the current workflow stack after navigation.
+
+### JOBS-REQ-001.8: Tool Response Serialization
 
 1. All tool responses MUST be serialized via Pydantic's `model_dump()` method, returning plain dictionaries.
 2. The `StepStatus` enum values MUST be: `"needs_work"`, `"next_step"`, `"workflow_complete"`.
