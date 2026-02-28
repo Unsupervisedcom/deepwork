@@ -4,14 +4,52 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    # Claude Code with pre-built native binaries (hourly updates)
-    claude-code-nix.url = "github:sadjow/claude-code-nix";
+    pyproject-nix = {
+      url = "github:pyproject-nix/pyproject.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    uv2nix = {
+      url = "github:pyproject-nix/uv2nix";
+      inputs.pyproject-nix.follows = "pyproject-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    pyproject-build-systems = {
+      url = "github:pyproject-nix/build-system-pkgs";
+      inputs.pyproject-nix.follows = "pyproject-nix";
+      inputs.uv2nix.follows = "uv2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, claude-code-nix, ... }:
+  outputs = { self, nixpkgs, pyproject-nix, uv2nix, pyproject-build-systems, ... }:
     let
       inherit (nixpkgs) lib;
       forAllSystems = lib.genAttrs [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+
+      # Load the uv workspace from uv.lock
+      workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
+
+      # Create overlay from uv.lock - prefer wheels for faster builds
+      overlay = workspace.mkPyprojectOverlay { sourcePreference = "wheel"; };
+
+      # Build Python package sets for each system
+      pythonSets = forAllSystems (system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
+          python = pkgs.python311;
+        in
+        (pkgs.callPackage pyproject-nix.build.packages { inherit python; }).overrideScope
+          (lib.composeManyExtensions [
+            pyproject-build-systems.overlays.default
+            overlay
+          ])
+      );
+
     in
     {
       devShells = forAllSystems (system:
@@ -21,17 +59,6 @@
             config.allowUnfree = true;
           };
         in
-        let
-          claude-code = claude-code-nix.packages.${system}.default;
-          # Wrapper that auto-loads project plugin dirs.
-          # References the real binary by store path to avoid circular PATH lookup.
-          claude-wrapper = pkgs.writeShellScriptBin "claude" ''
-            exec ${claude-code}/bin/claude \
-              --plugin-dir "$(git rev-parse --show-toplevel)/plugins/claude" \
-              --plugin-dir "$(git rev-parse --show-toplevel)/learning_agents" \
-              "$@"
-          '';
-        in
         {
           default = pkgs.mkShell {
             packages = [
@@ -39,7 +66,6 @@
               pkgs.uv
               pkgs.git
               pkgs.jq
-              claude-wrapper
               pkgs.gh
             ];
 
@@ -71,7 +97,6 @@
                 echo "  pytest             Run tests"
                 echo "  ruff check src/    Lint code"
                 echo "  mypy src/          Type check"
-                echo "  claude             Claude Code CLI"
                 echo "  gh                 GitHub CLI"
                 echo ""
               fi
@@ -79,5 +104,32 @@
           };
         }
       );
+
+      packages = forAllSystems (system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
+          venv = pythonSets.${system}.mkVirtualEnv "deepwork-env" workspace.deps.default;
+          wrapped = pkgs.runCommand "deepwork-wrapped" {
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+          } ''
+            mkdir -p $out/bin
+            makeWrapper ${venv}/bin/deepwork $out/bin/deepwork \
+              --unset PYTHONPATH
+          '';
+        in {
+          default = wrapped;
+          deepwork = wrapped;
+        }
+      );
+
+      apps = forAllSystems (system: {
+        default = {
+          type = "app";
+          program = "${self.packages.${system}.default}/bin/deepwork";
+        };
+      });
     };
 }
