@@ -4,9 +4,6 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    # Claude Code with pre-built native binaries (hourly updates)
-    claude-code-nix.url = "github:sadjow/claude-code-nix";
-
     pyproject-nix = {
       url = "github:pyproject-nix/pyproject.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -26,7 +23,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, claude-code-nix, pyproject-nix, uv2nix, pyproject-build-systems, ... }:
+  outputs = { self, nixpkgs, pyproject-nix, uv2nix, pyproject-build-systems, ... }:
     let
       inherit (nixpkgs) lib;
       forAllSystems = lib.genAttrs [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
@@ -62,17 +59,6 @@
             config.allowUnfree = true;
           };
         in
-        let
-          claude-code = claude-code-nix.packages.${system}.default;
-          # Wrapper that auto-loads project plugin dirs.
-          # References the real binary by store path to avoid circular PATH lookup.
-          claude-wrapper = pkgs.writeShellScriptBin "claude" ''
-            exec ${claude-code}/bin/claude \
-              --plugin-dir "$(git rev-parse --show-toplevel)/plugins/claude" \
-              --plugin-dir "$(git rev-parse --show-toplevel)/learning_agents" \
-              "$@"
-          '';
-        in
         {
           default = pkgs.mkShell {
             packages = [
@@ -80,7 +66,6 @@
               pkgs.uv
               pkgs.git
               pkgs.jq
-              claude-wrapper
               pkgs.gh
             ];
 
@@ -112,7 +97,6 @@
                 echo "  pytest             Run tests"
                 echo "  ruff check src/    Lint code"
                 echo "  mypy src/          Type check"
-                echo "  claude             Claude Code CLI"
                 echo "  gh                 GitHub CLI"
                 echo ""
               fi
