@@ -57,7 +57,7 @@ The DeepWork MCP server exposes five workflow tools to AI agents via the Model C
 1. The `finished_step` tool MUST be registered as an asynchronous MCP tool.
 2. The tool MUST require an `outputs` parameter: a dict mapping output names to file path(s).
 3. The tool MUST accept optional parameters: `notes` (str), `quality_review_override_reason` (str), `session_id` (str).
-4. The tool MUST raise `StateError` if no active workflow session exists and no `session_id` is provided.
+4. The tool MUST raise `ToolError` if no active workflow session exists and no `session_id` is provided. The error message MUST explain what the tool does and provide guidance on how to resume a workflow.
 5. When `session_id` is provided, the tool MUST target the session with that ID rather than the top-of-stack session.
 6. The tool MUST validate submitted outputs against the current step's declared output specifications (see JOBS-REQ-001.5).
 7. The tool MUST return a response with a `status` field that is one of: `"needs_work"`, `"next_step"`, or `"workflow_complete"`.
