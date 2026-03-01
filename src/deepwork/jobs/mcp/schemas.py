@@ -320,9 +320,7 @@ class AbortWorkflowResponse(BaseModel):
 class GoToStepResponse(BaseModel):
     """Response from go_to_step tool."""
 
-    begin_step: ActiveStepInfo = Field(
-        description="Information about the step to begin working on"
-    )
+    begin_step: ActiveStepInfo = Field(description="Information about the step to begin working on")
     invalidated_steps: list[str] = Field(
         description="Step IDs whose progress was cleared (from target step onward)"
     )

@@ -397,13 +397,13 @@ class WorkflowTools:
         """
         try:
             session = self.state_manager._resolve_session(input_data.session_id)
-        except StateError:
+        except StateError as err:
             raise ToolError(
                 "No active workflow session. "
                 "The finished_step tool reports completion of a step within a running workflow. "
                 "If you want to resume a workflow, just start it again and call finished_step "
                 "with quality_review_override_reason until you get back to your prior step."
-            )
+            ) from err
         sid = session.session_id
         current_step_id = session.current_step_id
 
