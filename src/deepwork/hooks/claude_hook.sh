@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # claude_hook.sh - Claude Code hook wrapper
 #
 # This script wraps Python hooks to work with Claude Code's hook system.

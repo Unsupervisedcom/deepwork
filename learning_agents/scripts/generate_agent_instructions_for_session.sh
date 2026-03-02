@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # generate_agent_instructions_for_session.sh - Generate agent instructions from a session folder
 #
 # Usage: generate_agent_instructions_for_session.sh <session_log_folder>

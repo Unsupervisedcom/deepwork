@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # generate_agent_instructions.sh - Generate dynamic agent instructions for a LearningAgent
 #
 # Usage: generate_agent_instructions.sh <agent-name>

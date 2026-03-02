@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # session_stop.sh - Stop hook for session end
 #
 # Checks if any LearningAgents were used during the session and suggests

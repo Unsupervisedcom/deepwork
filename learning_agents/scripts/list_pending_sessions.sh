@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # list_pending_sessions.sh - List session log folders that need learning, grouped by agent
 #
 # Usage: list_pending_sessions.sh

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # gemini_hook.sh - Gemini CLI hook wrapper
 #
 # This script wraps Python hooks to work with Gemini CLI's hook system.
