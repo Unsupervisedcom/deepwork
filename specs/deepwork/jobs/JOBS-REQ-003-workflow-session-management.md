@@ -56,10 +56,10 @@ The StateManager manages workflow session state with support for stack-based nes
 
 ### JOBS-REQ-003.7: Session ID Routing
 
-1. `_resolve_session(session_id)` MUST search the entire stack for a session matching the provided `session_id`.
-2. If `session_id` is provided but not found in the stack, `_resolve_session()` MUST raise `StateError`.
-3. If `session_id` is `None`, `_resolve_session()` MUST fall back to `require_active_session()` (top-of-stack).
-4. All state-modifying methods that accept `session_id` (start_step, complete_step, record_quality_attempt, advance_to_step, complete_workflow, abort_workflow, go_to_step) MUST use `_resolve_session()` for session lookup.
+1. `resolve_session(session_id)` MUST search the entire stack for a session matching the provided `session_id`.
+2. If `session_id` is provided but not found in the stack, `resolve_session()` MUST raise `StateError`.
+3. If `session_id` is `None`, `resolve_session()` MUST fall back to `require_active_session()` (top-of-stack).
+4. All state-modifying methods that accept `session_id` (start_step, complete_step, record_quality_attempt, advance_to_step, complete_workflow, abort_workflow, go_to_step) MUST use `resolve_session()` for session lookup.
 
 ### JOBS-REQ-003.8: Step Progress Tracking
 
@@ -149,7 +149,7 @@ The StateManager manages workflow session state with support for stack-based nes
 2. `go_to_step()` MUST acquire the async lock before modifying state.
 3. `go_to_step()` MUST accept a `step_id` parameter (str), an `entry_index` parameter (int), and an `invalidate_step_ids` parameter (list of str).
 4. `go_to_step()` MUST accept an optional `session_id` parameter (str or None, default: None).
-5. `go_to_step()` MUST use `_resolve_session()` for session lookup when `session_id` is provided.
+5. `go_to_step()` MUST use `resolve_session()` for session lookup when `session_id` is provided.
 6. `go_to_step()` MUST delete `step_progress` entries for all step IDs in `invalidate_step_ids`.
 7. `go_to_step()` MUST preserve `step_progress` entries for steps not in `invalidate_step_ids`.
 8. `go_to_step()` MUST update `current_step_id` to the provided `step_id`.

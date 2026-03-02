@@ -488,7 +488,9 @@ class TestSessionIdRouting:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    async def test_resolve_session_none_falls_back_to_active(self, state_manager: StateManager) -> None:
+    async def test_resolve_session_none_falls_back_to_active(
+        self, state_manager: StateManager
+    ) -> None:
         """Test resolve_session with None falls back to top-of-stack."""
         await state_manager.create_session(
             job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
@@ -591,11 +593,11 @@ class TestSessionIdRouting:
 class TestGoToStep:
     """Tests for go_to_step in StateManager."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_go_to_step_clears_invalidated_progress(
         self, state_manager: StateManager
     ) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.6).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that go_to_step clears step_progress for invalidated steps."""
         await state_manager.create_session(
             job_name="test_job",
@@ -625,9 +627,9 @@ class TestGoToStep:
         assert "step1" not in session.step_progress
         assert "step2" not in session.step_progress
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_go_to_step_preserves_earlier_progress(self, state_manager: StateManager) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.7).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that go_to_step preserves progress for steps before the target."""
         await state_manager.create_session(
             job_name="test_job",
@@ -653,9 +655,9 @@ class TestGoToStep:
         assert "step2" not in session.step_progress  # cleared
         assert "step3" not in session.step_progress  # cleared
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.8, JOBS-REQ-003.19.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_go_to_step_updates_position(self, state_manager: StateManager) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.8, JOBS-REQ-003.19.9).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that go_to_step updates current_step_id and current_entry_index."""
         await state_manager.create_session(
             job_name="test_job",
@@ -679,9 +681,9 @@ class TestGoToStep:
         assert session.current_step_id == "step1"
         assert session.current_entry_index == 0
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_go_to_step_persists_to_disk(self, state_manager: StateManager) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.10).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that go_to_step persists changes to the session file."""
         session = await state_manager.create_session(
             job_name="test_job",
@@ -708,9 +710,9 @@ class TestGoToStep:
         assert loaded.current_entry_index == 0
         assert "step1" not in loaded.step_progress
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_go_to_step_with_session_id(self, state_manager: StateManager) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.5).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that go_to_step works with explicit session_id."""
         session1 = await state_manager.create_session(
             job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
