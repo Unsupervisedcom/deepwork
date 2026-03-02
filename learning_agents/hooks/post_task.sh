@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # post_task.sh - PostToolUse hook for Task tool
 #
 # Detects when a LearningAgent is used via Task and creates session tracking

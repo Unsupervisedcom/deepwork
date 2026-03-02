@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # post_compact.sh - Post-compaction context restoration hook
 #
 # Restores DeepWork workflow context after Claude Code compacts its context.
