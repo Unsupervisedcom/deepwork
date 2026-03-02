@@ -244,7 +244,10 @@ steps:
       - name: product_category
         description: "Product category"
     outputs:
-      - competitors.md
+      competitors.md:
+        type: file
+        description: "List of competitors with descriptions"
+        required: true
     dependencies: []
 
   - id: primary_research
@@ -255,8 +258,10 @@ steps:
       - file: competitors.md
         from_step: identify_competitors
     outputs:
-      - primary_research.md
-      - competitor_profiles/
+      primary_research.md:
+        type: file
+        description: "Primary research findings"
+        required: true
     dependencies:
       - identify_competitors
 
@@ -619,6 +624,7 @@ Users invoke workflows through the `/deepwork` skill, which uses MCP tools:
 2. `start_workflow` — begins a workflow session, creates a git branch, returns first step instructions
 3. `finished_step` — submits step outputs for quality review, returns next step or completion
 4. `abort_workflow` — cancels the current workflow if it cannot be completed
+5. `go_to_step` — navigates back to a prior step, clearing progress from that step onward
 
 **Example: Creating a New Job**
 ```
@@ -932,7 +938,8 @@ DeepWork includes an MCP (Model Context Protocol) server that provides an altern
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                   DeepWork MCP Server                        │
-│  Tools: get_workflows | start_workflow | finished_step      │
+│  Tools: get_workflows | start_workflow | finished_step |    │
+│         abort_workflow | go_to_step | review tools          │
 │  State: session tracking, step progress, outputs            │
 │  Quality Gate: invokes review agent for validation          │
 └─────────────────────────────────────────────────────────────┘
@@ -980,8 +987,10 @@ Begins a new workflow session.
 Reports step completion and gets next instructions.
 
 **Parameters**:
-- `outputs: list[str]` - List of output file paths created
+- `outputs: dict[str, str | list[str]]` - Map of output names to file path(s)
 - `notes: str | None` - Optional notes about work done
+- `quality_review_override_reason: str | None` - If provided, skips quality review
+- `session_id: str | None` - Target a specific workflow session
 
 **Returns**:
 - `status: "needs_work" | "next_step" | "workflow_complete"`
@@ -998,7 +1007,23 @@ Aborts the current workflow and returns to the parent (if nested).
 
 **Returns**: Aborted workflow info, resumed parent info (if any), current stack
 
-#### 5. `get_review_instructions`
+#### 5. `go_to_step`
+Navigates back to a prior step, clearing progress from that step onward.
+
+**Parameters**:
+- `step_id: str` - ID of the step to navigate back to
+- `session_id: str | None` - Target a specific workflow session
+
+**Returns**: `begin_step` (step info for the target step), `invalidated_steps` (step IDs whose progress was cleared), `stack` (current workflow stack)
+
+**Behavior**:
+- Validates the target step exists in the workflow
+- Rejects forward navigation (target entry index > current entry index)
+- Clears session tracking state for all steps from target onward (files on disk are not deleted)
+- For concurrent entries, navigates to the first step in the entry
+- Marks the target step as started
+
+#### 6. `get_review_instructions`
 Runs the `.deepreview`-based code review pipeline. Registered directly in `jobs/mcp/server.py` (not in `tools.py`) since it operates outside the workflow lifecycle.
 
 **Parameters**:
@@ -1008,7 +1033,7 @@ Runs the `.deepreview`-based code review pipeline. Registered directly in `jobs/
 
 The `--platform` CLI option on `serve` controls which formatter is used (defaults to `"claude"`).
 
-#### 6. `get_configured_reviews`
+#### 7. `get_configured_reviews`
 Lists configured review rules from `.deepreview` files without running the pipeline.
 
 **Parameters**:
@@ -1016,7 +1041,7 @@ Lists configured review rules from `.deepreview` files without running the pipel
 
 **Returns**: List of rule summaries (name, description, defining_file).
 
-#### 7. `mark_review_as_passed`
+#### 8. `mark_review_as_passed`
 Marks a review as passed so it is skipped on subsequent runs while the reviewed files remain unchanged. Part of the **review pass caching** mechanism.
 
 **Parameters**:
@@ -1038,12 +1063,17 @@ Manages workflow session state persisted to `.deepwork/tmp/session_[id].json`:
 
 ```python
 class StateManager:
-    def create_session(...) -> WorkflowSession
-    def load_session(session_id) -> WorkflowSession
-    def start_step(step_id) -> None
-    def complete_step(step_id, outputs, notes) -> None
-    def advance_to_step(step_id, entry_index) -> None
-    def complete_workflow() -> None
+    async def create_session(...) -> WorkflowSession
+    def resolve_session(session_id=None) -> WorkflowSession
+    async def start_step(step_id, session_id=None) -> None
+    async def complete_step(step_id, outputs, notes, session_id=None) -> None
+    async def advance_to_step(step_id, entry_index, session_id=None) -> None
+    async def go_to_step(step_id, entry_index, invalidate_step_ids, session_id=None) -> None
+    async def complete_workflow(session_id=None) -> None
+    async def abort_workflow(explanation, session_id=None) -> tuple
+    async def record_quality_attempt(step_id, session_id=None) -> int
+    def get_all_outputs(session_id=None) -> dict
+    def get_stack() -> list[StackEntry]
 ```
 
 Session state includes:
@@ -1058,25 +1088,34 @@ Evaluates step outputs against quality criteria:
 
 ```python
 class QualityGate:
-    def evaluate(
-        quality_criteria: list[str],
-        outputs: list[str],
+    async def evaluate_reviews(
+        reviews: list[dict],
+        outputs: dict[str, str | list[str]],
+        output_specs: dict[str, str],
         project_root: Path,
-    ) -> QualityGateResult
+        notes: str | None = None,
+    ) -> list[ReviewResult]
+
+    async def build_review_instructions_file(
+        reviews: list[dict],
+        outputs: dict[str, str | list[str]],
+        output_specs: dict[str, str],
+        project_root: Path,
+        notes: str | None = None,
+    ) -> str
 ```
 
-The quality gate:
-1. Builds a review prompt with criteria and output file contents
-2. Invokes Claude Code via subprocess with proper flag ordering (see `doc/reference/calling_claude_in_print_mode.md`)
-3. Uses `--json-schema` for structured output conformance
-4. Parses the `structured_output` field from the JSON response
-5. Returns pass/fail with per-criterion feedback
+The quality gate supports two modes:
+- **External runner** (`evaluate_reviews`): Invokes Claude Code via subprocess to evaluate each review, returns list of failed `ReviewResult` objects
+- **Self-review** (`build_review_instructions_file`): Generates a review instructions file for the agent to spawn a subagent for self-review
 
 ### Schemas (`jobs/mcp/schemas.py`)
 
 Pydantic models for all tool inputs and outputs:
-- `StartWorkflowInput`, `FinishedStepInput`
-- `GetWorkflowsResponse`, `StartWorkflowResponse`, `FinishedStepResponse`
+- `StartWorkflowInput`, `FinishedStepInput`, `AbortWorkflowInput`, `GoToStepInput`
+- `GetWorkflowsResponse`, `StartWorkflowResponse`, `FinishedStepResponse`, `AbortWorkflowResponse`, `GoToStepResponse`
+- `ActiveStepInfo`, `ExpectedOutput`, `ReviewInfo`, `ReviewResult`, `StackEntry`
+- `JobInfo`, `WorkflowInfo`, `JobLoadErrorInfo`
 - `WorkflowSession`, `StepProgress`
 - `QualityGateResult`, `QualityCriteriaResult`
 

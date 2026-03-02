@@ -181,8 +181,8 @@ requirements_traceability:
          # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5).
          # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
          ```
-         Both lines are required. They must appear inside the method body
-         (after `def`, before the docstring). If tests have REQ references
+         Both lines are required. They must appear immediately before the
+         `def` line (not inside the method body). If tests have REQ references
          only in docstrings but are missing the formal comment block, flag
          them. If the second line is missing, flag that too.
       5. For rule-validated requirements, verify the `.deepreview` rule's

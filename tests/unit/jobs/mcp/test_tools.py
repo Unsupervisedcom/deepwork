@@ -8,6 +8,7 @@ from deepwork.jobs.mcp.quality_gate import MockQualityGate
 from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     FinishedStepInput,
+    GoToStepInput,
     StartWorkflowInput,
     StepStatus,
 )
@@ -346,7 +347,7 @@ workflows:
         """Test finished_step without active session."""
         input_data = FinishedStepInput(outputs={"output1.md": "output1.md"})
 
-        with pytest.raises(StateError, match="No active workflow session"):
+        with pytest.raises(ToolError, match="No active workflow session"):
             await tools.finished_step(input_data)
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.7, JOBS-REQ-001.4.15, JOBS-REQ-001.4.17).
@@ -1873,3 +1874,391 @@ class TestExternalRunnerInit:
         )
         assert tools.quality_gate is None
         assert tools.external_runner is None
+
+
+class TestGoToStep:
+    """Tests for go_to_step tool."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project with a 3-step test job."""
+        deepwork_dir = tmp_path / ".deepwork"
+        deepwork_dir.mkdir()
+        (deepwork_dir / "tmp").mkdir()
+        jobs_dir = deepwork_dir / "jobs"
+        jobs_dir.mkdir()
+
+        job_dir = jobs_dir / "three_step_job"
+        job_dir.mkdir()
+
+        job_yml = """
+name: three_step_job
+version: "1.0.0"
+summary: A three-step test job
+common_job_info_provided_to_all_steps_at_runtime: Test job for go_to_step
+
+steps:
+  - id: step1
+    name: First Step
+    description: The first step
+    instructions_file: steps/step1.md
+    outputs:
+      output1.md:
+        type: file
+        description: First step output
+        required: true
+    reviews:
+      - run_each: step
+        quality_criteria:
+          "Valid": "Is the output valid?"
+  - id: step2
+    name: Second Step
+    description: The second step
+    instructions_file: steps/step2.md
+    outputs:
+      output2.md:
+        type: file
+        description: Second step output
+        required: true
+    reviews: []
+  - id: step3
+    name: Third Step
+    description: The third step
+    instructions_file: steps/step3.md
+    outputs:
+      output3.md:
+        type: file
+        description: Third step output
+        required: true
+    reviews: []
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - step1
+      - step2
+      - step3
+"""
+        (job_dir / "job.yml").write_text(job_yml)
+
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "step1.md").write_text("# Step 1\n\nDo the first thing.")
+        (steps_dir / "step2.md").write_text("# Step 2\n\nDo the second thing.")
+        (steps_dir / "step3.md").write_text("# Step 3\n\nDo the third thing.")
+
+        return tmp_path
+
+    @pytest.fixture
+    def state_manager(self, project_root: Path) -> StateManager:
+        return StateManager(project_root)
+
+    @pytest.fixture
+    def tools(self, project_root: Path, state_manager: StateManager) -> WorkflowTools:
+        return WorkflowTools(project_root=project_root, state_manager=state_manager)
+
+    async def _start_and_advance_to_step3(self, tools: WorkflowTools, project_root: Path) -> str:
+        """Helper: start workflow and advance to step3, returning session_id."""
+        resp = await tools.start_workflow(
+            StartWorkflowInput(
+                goal="Test go_to_step",
+                job_name="three_step_job",
+                workflow_name="main",
+            )
+        )
+        session_id = resp.begin_step.session_id
+
+        # Complete step1
+        (project_root / "output1.md").write_text("Step 1 output")
+        await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}))
+
+        # Complete step2
+        (project_root / "output2.md").write_text("Step 2 output")
+        await tools.finished_step(FinishedStepInput(outputs={"output2.md": "output2.md"}))
+
+        return session_id
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.13).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_go_back_to_prior_step(self, tools: WorkflowTools, project_root: Path) -> None:
+        """Test navigating back to a prior step returns step info."""
+        await self._start_and_advance_to_step3(tools, project_root)
+
+        response = await tools.go_to_step(GoToStepInput(step_id="step1"))
+
+        assert response.begin_step.step_id == "step1"
+        assert "Step 1" in response.begin_step.step_instructions
+        assert len(response.begin_step.step_expected_outputs) == 1
+        assert response.begin_step.step_expected_outputs[0].name == "output1.md"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.9, JOBS-REQ-001.7.14).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_go_back_clears_subsequent_progress(
+        self, tools: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that going back clears progress for target step and all subsequent."""
+        await self._start_and_advance_to_step3(tools, project_root)
+
+        response = await tools.go_to_step(GoToStepInput(step_id="step2"))
+
+        # step2 and step3 should be invalidated
+        assert "step2" in response.invalidated_steps
+        assert "step3" in response.invalidated_steps
+        # step1 should NOT be invalidated
+        assert "step1" not in response.invalidated_steps
+
+        # Verify session state: step1 progress preserved, step3 cleared
+        # step2 has fresh progress from start_step (started_at set, no completed_at)
+        session = tools.state_manager.get_active_session()
+        assert session is not None
+        assert "step1" in session.step_progress
+        assert session.step_progress["step1"].completed_at is not None  # preserved
+        assert "step2" in session.step_progress  # re-created by start_step
+        assert session.step_progress["step2"].completed_at is None  # fresh, not completed
+        assert session.step_progress["step2"].outputs == {}  # no outputs yet
+        assert "step3" not in session.step_progress  # cleared
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_restart_current_step(self, tools: WorkflowTools, project_root: Path) -> None:
+        """Test going to the current step restarts it."""
+        await self._start_and_advance_to_step3(tools, project_root)
+
+        # Currently at step3 (entry_index=2), go_to_step("step3") should work
+        response = await tools.go_to_step(GoToStepInput(step_id="step3"))
+
+        assert response.begin_step.step_id == "step3"
+        assert "step3" in response.invalidated_steps
+        # step1 and step2 should be preserved
+        assert "step1" not in response.invalidated_steps
+        assert "step2" not in response.invalidated_steps
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_invalid_step_id_error(self, tools: WorkflowTools, project_root: Path) -> None:
+        """Test that an invalid step_id raises ToolError."""
+        await self._start_and_advance_to_step3(tools, project_root)
+
+        with pytest.raises(ToolError, match="Step 'nonexistent' not found in workflow"):
+            await tools.go_to_step(GoToStepInput(step_id="nonexistent"))
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_forward_navigation_error(self, tools: WorkflowTools, project_root: Path) -> None:
+        """Test that going forward raises ToolError."""
+        # Start workflow — currently at step1 (entry_index=0)
+        await tools.start_workflow(
+            StartWorkflowInput(
+                goal="Test",
+                job_name="three_step_job",
+                workflow_name="main",
+            )
+        )
+
+        with pytest.raises(ToolError, match="Cannot go forward"):
+            await tools.go_to_step(GoToStepInput(step_id="step2"))
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_no_session_error(self, tools: WorkflowTools) -> None:
+        """Test that go_to_step with no active session raises StateError."""
+        with pytest.raises(StateError, match="No active workflow session"):
+            await tools.go_to_step(GoToStepInput(step_id="step1"))
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.13).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_step_reviews_included_in_response(
+        self, tools: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that reviews are included when going back to a step with reviews."""
+        await self._start_and_advance_to_step3(tools, project_root)
+
+        # step1 has reviews defined
+        response = await tools.go_to_step(GoToStepInput(step_id="step1"))
+
+        assert len(response.begin_step.step_reviews) == 1
+        assert response.begin_step.step_reviews[0].run_each == "step"
+        assert "Valid" in response.begin_step.step_reviews[0].quality_criteria
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.15).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_stack_included_in_response(
+        self, tools: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that the workflow stack is included in the response."""
+        await self._start_and_advance_to_step3(tools, project_root)
+
+        response = await tools.go_to_step(GoToStepInput(step_id="step1"))
+
+        assert len(response.stack) == 1
+        assert response.stack[0].workflow == "three_step_job/main"
+        assert response.stack[0].step == "step1"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.12).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_go_to_step_then_finish_step_advances(
+        self, tools: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that after go_to_step, finishing the step advances normally."""
+        await self._start_and_advance_to_step3(tools, project_root)
+
+        # Go back to step1
+        await tools.go_to_step(GoToStepInput(step_id="step1"))
+
+        # Finish step1 again — should advance to step2
+        (project_root / "output1.md").write_text("Revised step 1 output")
+        response = await tools.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"})
+        )
+
+        assert response.status == StepStatus.NEXT_STEP
+        assert response.begin_step is not None
+        assert response.begin_step.step_id == "step2"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_go_to_step_with_session_id(
+        self, tools: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that go_to_step targets a specific session when session_id is provided."""
+        # Start first workflow and advance
+        session_id = await self._start_and_advance_to_step3(tools, project_root)
+
+        # Start a second (nested) workflow — this becomes top-of-stack
+        await tools.start_workflow(
+            StartWorkflowInput(
+                goal="Nested",
+                job_name="three_step_job",
+                workflow_name="main",
+            )
+        )
+
+        # go_to_step targeting the first session by session_id
+        response = await tools.go_to_step(GoToStepInput(step_id="step1", session_id=session_id))
+
+        # Should navigate the first session, not the top-of-stack
+        assert response.begin_step.step_id == "step1"
+        assert response.begin_step.session_id == session_id
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_go_to_step_preserves_files_on_disk(
+        self, tools: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that go_to_step does not delete files on disk."""
+        await self._start_and_advance_to_step3(tools, project_root)
+
+        # Verify files exist before go_to_step
+        assert (project_root / "output1.md").exists()
+        assert (project_root / "output2.md").exists()
+
+        # Go back to step1 — should clear session state but NOT delete files
+        await tools.go_to_step(GoToStepInput(step_id="step1"))
+
+        # Files must still exist on disk
+        assert (project_root / "output1.md").exists()
+        assert (project_root / "output2.md").exists()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.11).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_go_to_step_concurrent_entry(self, tmp_path: Path) -> None:
+        """Test that go_to_step on a concurrent entry navigates to the first step."""
+        # Set up a job with a concurrent step entry
+        deepwork_dir = tmp_path / ".deepwork"
+        deepwork_dir.mkdir()
+        (deepwork_dir / "tmp").mkdir()
+        jobs_dir = deepwork_dir / "jobs"
+        jobs_dir.mkdir()
+        job_dir = jobs_dir / "concurrent_job"
+        job_dir.mkdir()
+
+        job_yml = """
+name: concurrent_job
+version: "1.0.0"
+summary: Job with concurrent steps
+common_job_info_provided_to_all_steps_at_runtime: Test
+
+steps:
+  - id: setup
+    name: Setup
+    description: Setup step
+    instructions_file: steps/setup.md
+    outputs:
+      setup.md:
+        type: file
+        description: Setup output
+        required: true
+    reviews: []
+  - id: task_a
+    name: Task A
+    description: Concurrent task A
+    instructions_file: steps/task_a.md
+    outputs:
+      task_a.md:
+        type: file
+        description: Task A output
+        required: true
+    reviews: []
+  - id: task_b
+    name: Task B
+    description: Concurrent task B
+    instructions_file: steps/task_b.md
+    outputs:
+      task_b.md:
+        type: file
+        description: Task B output
+        required: true
+    reviews: []
+  - id: finalize
+    name: Finalize
+    description: Final step
+    instructions_file: steps/finalize.md
+    outputs:
+      final.md:
+        type: file
+        description: Final output
+        required: true
+    reviews: []
+
+workflows:
+  - name: main
+    summary: Main workflow
+    steps:
+      - setup
+      - [task_a, task_b]
+      - finalize
+"""
+        (job_dir / "job.yml").write_text(job_yml)
+        steps_dir = job_dir / "steps"
+        steps_dir.mkdir()
+        (steps_dir / "setup.md").write_text("# Setup\n\nDo setup.")
+        (steps_dir / "task_a.md").write_text("# Task A\n\nDo task A.")
+        (steps_dir / "task_b.md").write_text("# Task B\n\nDo task B.")
+        (steps_dir / "finalize.md").write_text("# Finalize\n\nFinalize.")
+
+        state_manager = StateManager(tmp_path)
+        tools = WorkflowTools(project_root=tmp_path, state_manager=state_manager)
+
+        # Start workflow and advance past the concurrent entry to finalize
+        await tools.start_workflow(
+            StartWorkflowInput(goal="Test", job_name="concurrent_job", workflow_name="main")
+        )
+        (tmp_path / "setup.md").write_text("Setup done")
+        await tools.finished_step(FinishedStepInput(outputs={"setup.md": "setup.md"}))
+        # Now at the concurrent entry [task_a, task_b] — current step is task_a
+        (tmp_path / "task_a.md").write_text("Task A done")
+        (tmp_path / "task_b.md").write_text("Task B done")
+        await tools.finished_step(FinishedStepInput(outputs={"task_a.md": "task_a.md"}))
+        # Now at finalize (entry_index=2)
+
+        # Go back to the concurrent entry — should navigate to task_a (first in entry)
+        response = await tools.go_to_step(GoToStepInput(step_id="task_a"))
+
+        assert response.begin_step.step_id == "task_a"
+        # Both task_a, task_b, and finalize should be invalidated
+        assert "task_a" in response.invalidated_steps
+        assert "task_b" in response.invalidated_steps
+        assert "finalize" in response.invalidated_steps
+        # setup should NOT be invalidated
+        assert "setup" not in response.invalidated_steps
