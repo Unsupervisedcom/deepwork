@@ -316,19 +316,6 @@ class TestStateManager:
 class TestStateManagerStack:
     """Tests for stack-based workflow nesting."""
 
-    @pytest.fixture
-    def project_root(self, tmp_path: Path) -> Path:
-        """Create a temporary project root with .deepwork directory."""
-        deepwork_dir = tmp_path / ".deepwork"
-        deepwork_dir.mkdir()
-        (deepwork_dir / "tmp").mkdir()
-        return tmp_path
-
-    @pytest.fixture
-    def state_manager(self, project_root: Path) -> StateManager:
-        """Create a StateManager instance."""
-        return StateManager(project_root)
-
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.13.1, JOBS-REQ-003.13.2, JOBS-REQ-003.13.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_nested_workflows_stack(self, state_manager: StateManager) -> None:
@@ -468,37 +455,19 @@ class TestStateManagerStack:
 class TestSessionIdRouting:
     """Tests for session_id-based routing in StateManager."""
 
-    @pytest.fixture
-    def project_root(self, tmp_path: Path) -> Path:
-        """Create a temporary project root with .deepwork directory."""
-        deepwork_dir = tmp_path / ".deepwork"
-        deepwork_dir.mkdir()
-        (deepwork_dir / "tmp").mkdir()
-        return tmp_path
-
-    @pytest.fixture
-    def state_manager(self, project_root: Path) -> StateManager:
-        """Create a StateManager instance."""
-        return StateManager(project_root)
-
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def testresolve_session_by_id(self, state_manager: StateManager) -> None:
+    async def test_resolve_session_by_id(self, state_manager: StateManager) -> None:
         """Test resolve_session finds the correct session in a multi-session stack."""
-        import asyncio
-
-        async def setup() -> None:
-            await state_manager.create_session(
-                job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
-            )
-            await state_manager.create_session(
-                job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
-            )
-            await state_manager.create_session(
-                job_name="job3", workflow_name="wf3", goal="G3", first_step_id="s3"
-            )
-
-        asyncio.get_event_loop().run_until_complete(setup())
+        await state_manager.create_session(
+            job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
+        )
+        await state_manager.create_session(
+            job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
+        )
+        await state_manager.create_session(
+            job_name="job3", workflow_name="wf3", goal="G3", first_step_id="s3"
+        )
 
         # Stack has 3 sessions; resolve the middle one by ID
         middle_session = state_manager._session_stack[1]
@@ -508,14 +477,10 @@ class TestSessionIdRouting:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def testresolve_session_invalid_id(self, state_manager: StateManager) -> None:
+    async def test_resolve_session_invalid_id(self, state_manager: StateManager) -> None:
         """Test resolve_session raises StateError for unknown session ID."""
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(
-            state_manager.create_session(
-                job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
-            )
+        await state_manager.create_session(
+            job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
         )
 
         with pytest.raises(StateError, match="Session 'nonexistent' not found"):
@@ -523,19 +488,13 @@ class TestSessionIdRouting:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def testresolve_session_none_falls_back_to_active(self, state_manager: StateManager) -> None:
+    async def test_resolve_session_none_falls_back_to_active(self, state_manager: StateManager) -> None:
         """Test resolve_session with None falls back to top-of-stack."""
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(
-            state_manager.create_session(
-                job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
-            )
+        await state_manager.create_session(
+            job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
         )
-        asyncio.get_event_loop().run_until_complete(
-            state_manager.create_session(
-                job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
-            )
+        await state_manager.create_session(
+            job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
         )
 
         resolved = state_manager.resolve_session(None)
@@ -631,19 +590,6 @@ class TestSessionIdRouting:
 
 class TestGoToStep:
     """Tests for go_to_step in StateManager."""
-
-    @pytest.fixture
-    def project_root(self, tmp_path: Path) -> Path:
-        """Create a temporary project root with .deepwork directory."""
-        deepwork_dir = tmp_path / ".deepwork"
-        deepwork_dir.mkdir()
-        (deepwork_dir / "tmp").mkdir()
-        return tmp_path
-
-    @pytest.fixture
-    def state_manager(self, project_root: Path) -> StateManager:
-        """Create a StateManager instance."""
-        return StateManager(project_root)
 
     async def test_go_to_step_clears_invalidated_progress(
         self, state_manager: StateManager

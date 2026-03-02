@@ -238,6 +238,11 @@ update_documents_relating_to_src_deepwork:
       Flag any sections that are now outdated or inaccurate due to the changes.
       If the documentation file itself was changed, verify the updates are correct
       and consistent with the source files.
+
+      Output Format:
+      - PASS: All documentation is current and accurate.
+      - FAIL: Issues found. List each with the doc file path, section name, and
+        what is outdated or inaccurate.
     additional_context:
       unchanged_matching_files: true
 
@@ -264,6 +269,11 @@ update_learning_agents_architecture:
 
       Flag any sections that are now outdated or inaccurate due to the changes.
       If the doc itself was changed, verify the updates are correct.
+
+      Output Format:
+      - PASS: All documentation is current and accurate.
+      - FAIL: Issues found. List each with the doc section name and what is
+        outdated or inaccurate.
     additional_context:
       unchanged_matching_files: true
 
@@ -300,8 +310,13 @@ shell_code_review:
         section markers) still accurate after the changes? Flag any comments
         that describe behavior that no longer matches the code.
 
+      Output Format:
+      - PASS: No issues found.
+      - FAIL: Issues found. List each with file, line, severity (high/medium/low),
+        and a concise description.
+
 deepreview_config_quality:
-  description: "Review .deepreview configs for rule consolidation, overly broad rules, description accuracy, and correct directory placement."
+  description: "Review .deepreview configs for rule consolidation, description accuracy, overly broad rules, directory placement, valid configuration, and effective instructions."
   match:
     include:
       - "**/.deepreview"
@@ -461,7 +476,7 @@ job_yml_quality:
         and a specific description.
 
 step_instruction_quality:
-  description: "Review step instruction files for completeness, specificity, output examples, quality criteria, and conciseness."
+  description: "Review step instruction files for completeness, specificity, output examples, quality criteria, structured questions, conciseness, and no promise tags."
   match:
     include:
       - ".deepwork/jobs/**/steps/*.md"

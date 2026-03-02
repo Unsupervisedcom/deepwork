@@ -18,5 +18,10 @@ update_github_workflows_readme:
 
       Flag any sections that are now outdated or inaccurate due to the changes.
       If the README itself was changed, verify the updates are correct.
+
+      Output Format:
+      - PASS: README accurately reflects all workflows.
+      - FAIL: Issues found. List each with the README section name and what is
+        outdated or inaccurate.
     additional_context:
       unchanged_matching_files: true
