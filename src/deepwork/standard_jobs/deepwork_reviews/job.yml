@@ -1,5 +1,5 @@
 name: deepwork_reviews
-version: "1.0.1"
+version: "1.1.0"
 summary: "Manage .deepreview rules for automated code review"
 common_job_info_provided_to_all_steps_at_runtime: |
   This job manages .deepreview configuration files, which define automated code review
@@ -150,24 +150,10 @@ steps:
       - run_each: deepreview_files
         additional_review_guidance: |
           Read each .deepreview file and the documentation files its rules protect.
-          Verify that the trigger scope of each rule is as narrow as possible —
-          it should only fire when files that could actually affect the doc's accuracy
-          change. Consider whether having more separate reviews with narrower scope
-          is actually more efficient than a slightly wider, shared review — each
-          review spawns a sub-agent with material overhead.
         quality_criteria:
           "Documentation Covered": >
             Every project documentation file that describes the project itself has
             a corresponding rule (either newly created or pre-existing).
-          "Trigger Scope Minimal": >
-            Each rule's match.include patterns are as narrow as possible while still
-            catching changes that could affect the protected documentation. Rules are
-            not overly broad (e.g., matching all files when only a specific directory matters).
-          "Efficient Rule Count": >
-            Where multiple narrow rules have substantially overlapping triggers, they
-            have been merged into shared rules. The total number of rules is the minimum
-            needed for adequate coverage. Separate narrow rules are only used when their
-            trigger sets are genuinely disjoint.
 
   - id: add_language_reviews
     name: "Add Language-Specific Code Review Rules"
@@ -267,20 +253,8 @@ steps:
       - run_each: deepreview_file
         additional_review_guidance: |
           Read the dependency analysis from the previous step to verify the rule
-          faithfully implements the approved plan. Read the documentation file
-          referenced in the rule's instructions. Check the .deepreview file for
-          valid YAML syntax and consistency with existing rules.
+          faithfully implements the approved plan.
         quality_criteria:
           "Faithful Implementation": >
             The rule accurately implements the dependency analysis from the previous
             step — same match patterns, same strategy, same rule name convention.
-          "Valid Configuration": >
-            The .deepreview YAML is syntactically valid and follows the schema.
-            All required fields (description, match.include, review.strategy,
-            review.instructions) are present.
-          "Effective Instructions": >
-            Review instructions clearly tell the reviewer to check whether the
-            documentation file is still accurate given the source file changes.
-            The documentation file path is explicitly referenced. Uses
-            additional_context.unchanged_matching_files: true so the reviewer
-            can read the doc even when only source files changed.

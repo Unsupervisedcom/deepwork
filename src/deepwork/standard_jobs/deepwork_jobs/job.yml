@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: deepwork_jobs
-version: "1.5.0"
+version: "1.6.0"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, testing, or improving DeepWork jobs."
 common_job_info_provided_to_all_steps_at_runtime: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -51,14 +51,7 @@ steps:
         description: "Definition of the job and its workflows"
         required: true
     dependencies: []
-    reviews:
-      - run_each: job.yml
-        quality_criteria:
-          "Intermediate Deliverables": "The job breaks out across logical steps with reviewable intermediate deliverables."
-          "Reviews": |
-            Reviews are defined for each step. Particularly critical documents have their own reviews.
-            Note that the reviewers do not have transcript access, so if the criteria are about the conversation,
-            then add a `.deepwork/tmp/[step_summary].md` step output file so the agent has a communication channel to the reviewer.
+    reviews: []
 
   - id: implement
     name: "Implement Job Steps"
@@ -74,17 +67,7 @@ steps:
         required: true
     dependencies:
       - define
-    reviews:
-      - run_each: step_instruction_files
-        additional_review_guidance: "Read the job.yml file in the same job directory for context on how this instruction file fits into the larger workflow."
-        quality_criteria:
-          "Complete Instructions": "The instruction file is complete (no stubs or placeholders)."
-          "Specific & Actionable": "Instructions are tailored to the step's purpose, not generic."
-          "Output Examples": "The instruction file shows what good output looks like. This can be either template examples, or negative examples of what not to do. Only required if the step has outputs."
-          "Quality Criteria": "The instruction file defines quality criteria for its outputs."
-          "Ask Structured Questions": "If this step gathers user input, instructions explicitly use the phrase 'ask structured questions'. If the step has no user inputs, this criterion passes automatically."
-          "Prompt Engineering": "The instruction file follows Anthropic's best practices for prompt engineering."
-          "No Redundant Info": "The instruction file avoids duplicating information that belongs in the job.yml's common_job_info_provided_to_all_steps_at_runtime section. Shared context (project background, terminology, conventions) is in common_job_info, not repeated in each step."
+    reviews: []
 
   - id: test
     name: "Test the New Workflow"
@@ -171,8 +154,6 @@ steps:
           "Conversation Analyzed": "The agent reviewed the conversation for DeepWork job executions."
           "Confusion Identified": "The agent identified points of confusion, errors, or inefficiencies."
           "Instructions Improved": "Job instructions were updated to address identified issues."
-          "Instructions Concise": "Instructions are free of redundancy and unnecessary verbosity."
-          "Shared Content Extracted": "Lengthy/duplicated content is extracted into referenced files."
           "Bespoke Learnings Captured": "Run-specific learnings were added to AGENTS.md."
           "File References Used": "AGENTS.md entries reference other files where appropriate."
           "Working Folder Correct": "AGENTS.md is in the correct working folder for the job."
@@ -225,8 +206,6 @@ steps:
           "Exposed Field Addressed": "`exposed: true` fields are removed or noted as deprecated."
           "Stop Hooks Migrated": "`stop_hooks` are migrated to `hooks.after_agent` format."
           "Removed Steps Cleaned": "References to removed steps (like `review_job_spec`) are updated."
-          "Orphaned Steps Fixed": "For jobs with no workflows, there is a single workflow (named after the job) containing all steps. For jobs with existing workflows, each orphan gets its own workflow (named after the step)."
-          "Promise Lines Removed": "Step instructions do not include anything about `<promise>Quality Criteria Met</promise>`."
           "job.ymls are readable": "Calling `get_workflows` from the Deepwork tool shows all expected jobs. If any are missing, its YML is likely bad."
 
   - id: errata

@@ -377,9 +377,156 @@ deepreview_config_quality:
       - Rules that reference `additional_context.unchanged_matching_files`
         with patterns spanning multiple directories.
 
+      ## 5. Valid Configuration
+
+      Each rule must be syntactically valid YAML and structurally correct:
+      - Required fields present: `description`, `match.include`, `review.strategy`,
+        `review.instructions` (either inline string or `file:` reference).
+      - Field types correct: `match.include` and `match.exclude` are lists of
+        strings, `review.strategy` is one of `individual`, `matches_together`,
+        or `all_changed_files`, `description` is a string.
+      - No unknown top-level fields inside a rule (valid fields: `description`,
+        `match`, `review`).
+      - If `review.instructions.file` is used, the referenced file path exists.
+
+      ## 6. Effective Instructions
+
+      Review instructions must give the reviewer enough context to do useful work:
+      - Instructions include concrete checks — not just "review this file" but
+        specific things to look for (e.g., "check that X matches Y", "verify Z
+        is present").
+      - If the rule protects a documentation file, the doc path is explicitly
+        referenced in the instructions so the reviewer knows what to read.
+      - If the rule uses `additional_context.unchanged_matching_files: true`,
+        the instructions explain why unchanged files are needed (e.g., "compare
+        the doc against source changes").
+      - Instructions specify the output format (PASS/FAIL with details).
+
       ## Output Format
 
       - PASS: No issues found.
       - FAIL: Issues found. List each with the .deepreview file path,
-        rule name, which check failed (consolidation / description / overly-broad / placement),
+        rule name, which check failed (consolidation / description / overly-broad /
+        placement / valid-configuration / effective-instructions),
         and a specific recommendation.
+
+job_yml_quality:
+  description: "Review job.yml files for structural quality: logical step decomposition, review coverage, no orphaned steps, and no promise tags."
+  match:
+    include:
+      - ".deepwork/jobs/**/job.yml"
+      - "src/deepwork/standard_jobs/**/job.yml"
+      - "library/jobs/**/job.yml"
+    exclude:
+      - "tests/fixtures/**"
+  review:
+    strategy: individual
+    instructions: |
+      Review this job.yml file for intrinsic structural quality.
+
+      Check all of the following:
+
+      ## 1. Intermediate Deliverables
+
+      The job breaks work into logical steps with reviewable intermediate
+      deliverables. Each step should produce a tangible output that can be
+      reviewed before proceeding. Flag jobs where steps are too coarse
+      (doing too much in one step) or too fine (splitting trivially).
+
+      ## 2. Review Coverage
+
+      Reviews are defined for each step that produces outputs. Particularly
+      critical documents should have their own dedicated reviews. Note that
+      reviewers do NOT have transcript access — if criteria need to evaluate
+      conversation behavior, the step must include an output file (e.g.,
+      `.deepwork/tmp/[summary].md`) as a communication channel to the reviewer.
+
+      ## 3. No Orphaned Steps
+
+      Every step defined in the `steps` list must appear in at least one
+      workflow. Flag any step that is defined but not referenced by any
+      workflow's `steps` list.
+
+      ## 4. No Promise Tags
+
+      The job.yml file must not contain `<promise>` tags anywhere in its
+      content (these are a deprecated pattern).
+
+      # Output Format
+      You should return one of the following:
+
+      - PASS: No issues found.
+      - FAIL: Issues found. List each with the check name
+        (deliverables / review-coverage / orphaned-steps / promise-tags)
+        and a specific description.
+
+step_instruction_quality:
+  description: "Review step instruction files for completeness, specificity, output examples, quality criteria, and conciseness."
+  match:
+    include:
+      - ".deepwork/jobs/**/steps/*.md"
+      - "src/deepwork/standard_jobs/**/steps/*.md"
+      - "library/jobs/**/steps/*.md"
+    exclude:
+      - "tests/fixtures/**"
+  review:
+    strategy: individual
+    instructions: |
+      Review this step instruction file for intrinsic quality.
+
+      IMPORTANT: Read the job.yml file in the same job directory for context on
+      how this instruction file fits into the larger workflow — particularly
+      which outputs the step declares and whether it has user inputs.
+
+      Check all of the following:
+
+      ## 1. Complete
+
+      The instruction file is complete — no stubs, placeholders, TODO markers,
+      or sections saying "to be written". Every section has substantive content.
+
+      ## 2. Specific & Actionable
+
+      Instructions are tailored to this step's specific purpose, not generic
+      boilerplate that could apply to any step. The agent should know exactly
+      what to do after reading the instructions.
+
+      ## 3. Output Examples
+
+      If the step declares outputs (check the job.yml), the instruction file
+      shows what good output looks like. This can be template examples, worked
+      examples, or negative examples of what NOT to do. If the step has no
+      outputs, this check passes automatically.
+
+      ## 4. Quality Criteria Defined
+
+      The instruction file defines quality criteria or acceptance criteria for
+      its outputs, either explicitly in a dedicated section or woven into the
+      instructions. The agent should understand what "done well" looks like.
+
+      ## 5. Ask Structured Questions
+
+      If this step gathers user input (check the job.yml for `inputs` with
+      `name` fields rather than `file` references), the instructions explicitly
+      tell the agent to ask structured questions. If the step has no user
+      inputs, this check passes automatically.
+
+      ## 6. Concise, No Redundancy
+
+      Instructions are free of unnecessary verbosity and do not duplicate
+      content that belongs in the job.yml's `common_job_info_provided_to_all_steps_at_runtime`
+      section. Shared context (project background, terminology, conventions)
+      should be in common_job_info, not repeated in each step file.
+
+      ## 7. No Promise Lines
+
+      The instruction file must not contain `<promise>Quality Criteria Met</promise>`
+      or similar promise tag patterns (these are a deprecated pattern).
+
+      ## Output Format
+
+      - PASS: No issues found.
+      - FAIL: Issues found. List each with the check name
+        (complete / specific / output-examples / quality-criteria /
+        structured-questions / conciseness / promise-lines)
+        and a specific description.
