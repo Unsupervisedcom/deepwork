@@ -172,12 +172,12 @@ class StateManager:
             raise StateError("No active workflow session. Use start_workflow to begin a workflow.")
         return self._session_stack[-1]
 
-    def _resolve_session(self, session_id: str | None = None) -> WorkflowSession:
+    def resolve_session(self, session_id: str | None = None) -> WorkflowSession:
         """Resolve a session by ID or fall back to top-of-stack.
 
-        This is used internally (called inside locked blocks or sync methods)
-        to find a specific session when session_id is provided, or fall back
-        to the default top-of-stack behavior.
+        Looks up a specific session when session_id is provided, or falls back
+        to the default top-of-stack behavior. This is a synchronous method that
+        reads the session stack without acquiring the async lock.
 
         Args:
             session_id: Optional session ID to look up. If None, returns top-of-stack.
@@ -206,7 +206,7 @@ class StateManager:
             StateError: If no active session or session_id not found
         """
         async with self._lock:
-            session = self._resolve_session(session_id)
+            session = self.resolve_session(session_id)
             now = datetime.now(UTC).isoformat()
 
             if step_id not in session.step_progress:
@@ -239,7 +239,7 @@ class StateManager:
             StateError: If no active session or session_id not found
         """
         async with self._lock:
-            session = self._resolve_session(session_id)
+            session = self.resolve_session(session_id)
             now = datetime.now(UTC).isoformat()
 
             if step_id not in session.step_progress:
@@ -269,7 +269,7 @@ class StateManager:
             StateError: If no active session or session_id not found
         """
         async with self._lock:
-            session = self._resolve_session(session_id)
+            session = self.resolve_session(session_id)
 
             if step_id not in session.step_progress:
                 session.step_progress[step_id] = StepProgress(step_id=step_id)
@@ -293,7 +293,7 @@ class StateManager:
             StateError: If no active session or session_id not found
         """
         async with self._lock:
-            session = self._resolve_session(session_id)
+            session = self.resolve_session(session_id)
             session.current_step_id = step_id
             session.current_entry_index = entry_index
             await self._save_session_unlocked(session)
@@ -317,7 +317,7 @@ class StateManager:
             StateError: If no active session or session_id not found
         """
         async with self._lock:
-            session = self._resolve_session(session_id)
+            session = self.resolve_session(session_id)
 
             # Clear progress for all invalidated steps
             for sid in invalidate_step_ids:
@@ -344,7 +344,7 @@ class StateManager:
             StateError: If no active session or session_id not found
         """
         async with self._lock:
-            session = self._resolve_session(session_id)
+            session = self.resolve_session(session_id)
             now = datetime.now(UTC).isoformat()
             session.completed_at = now
             session.status = "completed"
@@ -375,7 +375,7 @@ class StateManager:
             StateError: If no active session or session_id not found
         """
         async with self._lock:
-            session = self._resolve_session(session_id)
+            session = self.resolve_session(session_id)
             now = datetime.now(UTC).isoformat()
             session.completed_at = now
             session.status = "aborted"
@@ -403,7 +403,7 @@ class StateManager:
         Raises:
             StateError: If no active session or session_id not found
         """
-        session = self._resolve_session(session_id)
+        session = self.resolve_session(session_id)
         all_outputs: dict[str, str | list[str]] = {}
         for progress in session.step_progress.values():
             all_outputs.update(progress.outputs)

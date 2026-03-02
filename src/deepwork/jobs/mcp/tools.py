@@ -4,6 +4,8 @@ This module provides the core tools for guiding agents through workflows:
 - get_workflows: List all available workflows
 - start_workflow: Initialize a workflow session
 - finished_step: Report step completion and get next instructions
+- abort_workflow: Abort the current workflow
+- go_to_step: Navigate back to a prior step
 """
 
 from __future__ import annotations
@@ -38,7 +40,9 @@ from deepwork.jobs.parser import (
     JobDefinition,
     OutputSpec,
     ParseError,
+    Step,
     Workflow,
+    WorkflowStepEntry,
     parse_job_definition,
 )
 
@@ -293,6 +297,44 @@ class WorkflowTools:
             for out in outputs
         ]
 
+    def _build_active_step_info(
+        self,
+        session_id: str,
+        step_id: str,
+        job: JobDefinition,
+        step: Step,
+        instructions: str,
+        step_outputs: list[ExpectedOutput],
+    ) -> ActiveStepInfo:
+        """Build an ActiveStepInfo from a step definition and its context."""
+        return ActiveStepInfo(
+            session_id=session_id,
+            step_id=step_id,
+            job_dir=str(job.job_dir),
+            step_expected_outputs=step_outputs,
+            step_reviews=[
+                ReviewInfo(
+                    run_each=r.run_each,
+                    quality_criteria=r.quality_criteria,
+                    additional_review_guidance=r.additional_review_guidance,
+                )
+                for r in step.reviews
+            ],
+            step_instructions=instructions,
+            common_job_info=job.common_job_info_provided_to_all_steps_at_runtime,
+        )
+
+    @staticmethod
+    def _append_concurrent_info(instructions: str, entry: WorkflowStepEntry) -> str:
+        """Append concurrent step info to instructions if applicable."""
+        if entry.is_concurrent and len(entry.step_ids) > 1:
+            instructions += (
+                f"\n\n**CONCURRENT STEPS**: This entry has {len(entry.step_ids)} "
+                f"steps that can run in parallel: {', '.join(entry.step_ids)}\n"
+                f"Use the Task tool to execute them concurrently."
+            )
+        return instructions
+
     # =========================================================================
     # Tool Implementations
     # =========================================================================
@@ -363,21 +405,8 @@ class WorkflowTools:
         step_outputs = self._build_expected_outputs(first_step.outputs)
 
         return StartWorkflowResponse(
-            begin_step=ActiveStepInfo(
-                session_id=session.session_id,
-                step_id=first_step_id,
-                job_dir=str(job.job_dir),
-                step_expected_outputs=step_outputs,
-                step_reviews=[
-                    ReviewInfo(
-                        run_each=r.run_each,
-                        quality_criteria=r.quality_criteria,
-                        additional_review_guidance=r.additional_review_guidance,
-                    )
-                    for r in first_step.reviews
-                ],
-                step_instructions=instructions,
-                common_job_info=job.common_job_info_provided_to_all_steps_at_runtime,
+            begin_step=self._build_active_step_info(
+                session.session_id, first_step_id, job, first_step, instructions, step_outputs
             ),
             stack=self.state_manager.get_stack(),
         )
@@ -396,7 +425,7 @@ class WorkflowTools:
             ToolError: If quality gate fails after max attempts
         """
         try:
-            session = self.state_manager._resolve_session(input_data.session_id)
+            session = self.state_manager.resolve_session(input_data.session_id)
         except StateError as err:
             raise ToolError(
                 "No active workflow session. "
@@ -552,34 +581,12 @@ class WorkflowTools:
         step_outputs = self._build_expected_outputs(next_step.outputs)
 
         # Add info about concurrent steps if this is a concurrent entry
-        if next_entry.is_concurrent and len(next_entry.step_ids) > 1:
-            concurrent_info = (
-                f"\n\n**CONCURRENT STEPS**: This entry has {len(next_entry.step_ids)} "
-                f"steps that can run in parallel: {', '.join(next_entry.step_ids)}\n"
-                f"Use the Task tool to execute them concurrently."
-            )
-            instructions = instructions + concurrent_info
-
-        # Reload session to get current state after advance
-        session = self.state_manager._resolve_session(sid)
+        instructions = self._append_concurrent_info(instructions, next_entry)
 
         return FinishedStepResponse(
             status=StepStatus.NEXT_STEP,
-            begin_step=ActiveStepInfo(
-                session_id=session.session_id,
-                step_id=next_step_id,
-                job_dir=str(job.job_dir),
-                step_expected_outputs=step_outputs,
-                step_reviews=[
-                    ReviewInfo(
-                        run_each=r.run_each,
-                        quality_criteria=r.quality_criteria,
-                        additional_review_guidance=r.additional_review_guidance,
-                    )
-                    for r in next_step.reviews
-                ],
-                step_instructions=instructions,
-                common_job_info=job.common_job_info_provided_to_all_steps_at_runtime,
+            begin_step=self._build_active_step_info(
+                sid, next_step_id, job, next_step, instructions, step_outputs
             ),
             stack=self.state_manager.get_stack(),
         )
@@ -628,7 +635,7 @@ class WorkflowTools:
             StateError: If no active session
             ToolError: If step not found or forward navigation attempted
         """
-        session = self.state_manager._resolve_session(input_data.session_id)
+        session = self.state_manager.resolve_session(input_data.session_id)
         sid = session.session_id
 
         # Load job and workflow
@@ -686,30 +693,11 @@ class WorkflowTools:
         step_outputs = self._build_expected_outputs(nav_step.outputs)
 
         # Add concurrent step info if applicable
-        if target_entry.is_concurrent and len(target_entry.step_ids) > 1:
-            concurrent_info = (
-                f"\n\n**CONCURRENT STEPS**: This entry has {len(target_entry.step_ids)} "
-                f"steps that can run in parallel: {', '.join(target_entry.step_ids)}\n"
-                f"Use the Task tool to execute them concurrently."
-            )
-            instructions = instructions + concurrent_info
+        instructions = self._append_concurrent_info(instructions, target_entry)
 
         return GoToStepResponse(
-            begin_step=ActiveStepInfo(
-                session_id=sid,
-                step_id=nav_step_id,
-                job_dir=str(job.job_dir),
-                step_expected_outputs=step_outputs,
-                step_reviews=[
-                    ReviewInfo(
-                        run_each=r.run_each,
-                        quality_criteria=r.quality_criteria,
-                        additional_review_guidance=r.additional_review_guidance,
-                    )
-                    for r in nav_step.reviews
-                ],
-                step_instructions=instructions,
-                common_job_info=job.common_job_info_provided_to_all_steps_at_runtime,
+            begin_step=self._build_active_step_info(
+                sid, nav_step_id, job, nav_step, instructions, step_outputs
             ),
             invalidated_steps=invalidate_step_ids,
             stack=self.state_manager.get_stack(),

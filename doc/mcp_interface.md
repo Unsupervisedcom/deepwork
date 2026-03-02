@@ -24,7 +24,8 @@ None.
 
 ```typescript
 {
-  jobs: JobInfo[]
+  jobs: JobInfo[];
+  errors: JobLoadErrorInfo[];  // Jobs that failed to parse
 }
 ```
 
@@ -34,8 +35,13 @@ Where `JobInfo` is:
 interface JobInfo {
   name: string;              // Job identifier
   summary: string;           // Short summary of the job
-  description: string | null; // Full description (optional)
   workflows: WorkflowInfo[];  // Named workflows in the job
+}
+
+interface JobLoadErrorInfo {
+  job_name: string;          // Name of the job that failed
+  job_dir: string;           // Path to the job directory
+  error: string;             // Error message
 }
 
 interface WorkflowInfo {
@@ -250,11 +256,13 @@ interface ActiveStepInfo {
   step_expected_outputs: ExpectedOutput[]; // Expected outputs with type and format hints
   step_reviews: ReviewInfo[];      // Reviews to run when step completes
   step_instructions: string;       // Instructions for the step
+  common_job_info: string;         // Common context shared across all steps in this job
 }
 
 interface ReviewInfo {
   run_each: string;                // 'step' or output name to review
   quality_criteria: Record<string, string>; // Map of criterion name to question
+  additional_review_guidance: string | null; // Optional guidance for the reviewer
 }
 
 interface ReviewResult {
@@ -372,22 +380,6 @@ Workflows can be nested — starting a new workflow while one is active pushes o
 - Each stack entry shows `{workflow: "job/workflow", step: "current_step"}`
 - When a workflow completes, it pops from the stack and resumes the parent
 - Use `abort_workflow` to cancel the current workflow and return to parent
-
----
-
-## Configuration
-
-The MCP server is configured via `.deepwork/config.yml`:
-
-```yaml
-version: "1.0"
-platforms:
-  - claude
-```
-
-Quality gate is enabled by default and uses Claude Code to evaluate step outputs
-against quality criteria. See `doc/reference/calling_claude_in_print_mode.md` for
-details on how Claude CLI is invoked.
 
 ---
 

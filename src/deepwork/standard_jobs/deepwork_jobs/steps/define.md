@@ -52,60 +52,7 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Where should each output be saved? (filename/path)
    - Should outputs be organized in subdirectories? (e.g., `reports/`, `data/`, `drafts/`)
    - Will other steps need this output?
-   #### Work Product Storage Guidelines
-
-   **Key principle**: Job outputs belong in the main repository directory structure, not in dot-directories. The `.deepwork/` directory is for job definitions and configuration only.
-
-   **Why this matters**:
-   - **Version control**: Work products in the main repo are tracked by git and visible in PRs
-   - **Discoverability**: Team members can find outputs without knowing about DeepWork internals
-   - **Tooling compatibility**: IDEs, search tools, and CI/CD work naturally with standard paths
-   - **Glob patterns**: Well-structured paths enable powerful file matching (e.g., `competitive_research/**/*.md`)
-
-   **Good output path patterns**:
-   ```
-   competitive_research/competitors_list.md
-   competitive_research/acme_corp/research.md
-   operations/reports/2026-01/spending_analysis.md
-   docs/api/endpoints.md
-   ```
-
-   **Avoid these patterns**:
-   ```
-   .deepwork/outputs/report.md          # Hidden in dot-directory
-   output.md                            # Too generic, no context
-   research.md                          # Unclear which research
-   temp/draft.md                        # Transient-sounding paths
-   ```
-
-   **Organizing multi-file outputs**:
-   - Use the job name as a top-level folder when outputs are job-specific
-   - Use parameterized paths for per-entity outputs: `competitive_research/[competitor_name]/`
-   - Match existing project conventions when extending a codebase
-
-   **When to include dates in paths**:
-   - **Include date** for periodic outputs where each version is retained (e.g., monthly reports, quarterly reviews, weekly summaries). These accumulate over time and historical versions remain useful.
-     ```
-     operations/reports/2026-01/spending_analysis.md              # Monthly report - keep history
-     hr/employees/[employee_name]/quarterly_reviews/2026-Q1.pdf   # Per-employee quarterly review
-     ```
-   - **Omit date** for current-state outputs that represent the latest understanding and get updated in place. Previous versions live in git history, not separate files.
-     ```
-     competitive_research/acme_corp/swot.md  # Current SWOT - updated over time
-     docs/architecture/overview.md           # Living document
-     ```
-
-   **Supporting materials and intermediate outputs**:
-   - Content generated in earlier steps to support the final output (research notes, data extracts, drafts) should be placed in a `_dataroom` folder that is a peer to the final output
-   - Name the dataroom folder by replacing the file extension with `_dataroom`
-     ```
-     operations/reports/2026-01/spending_analysis.md           # Final output
-     operations/reports/2026-01/spending_analysis_dataroom/    # Supporting materials
-         raw_data.csv
-         vendor_breakdown.md
-         notes.md
-     ```
-   - This keeps supporting materials organized and discoverable without cluttering the main output location
+   - When discussing output paths, follow the **Work Product Storage Guidelines** in the reference section below.
 
 4. **Step Dependencies**
    - Which previous steps must complete before this one?
@@ -305,16 +252,16 @@ Only after you have complete understanding, create the job directory and `job.ym
 **First, create the directory structure** using the `make_new_job.sh` script located in this job's directory (the `job_dir` path from the workflow response):
 
 ```bash
-<job_dir>/make_new_job.sh [job_name]
+[job_dir]/make_new_job.sh [job_name]
 ```
 
 **Then create the job.yml file** at `.deepwork/jobs/[job_name]/job.yml`
 
-(Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`. Replace `<job_dir>` with the actual `job_dir` path from the workflow response.)
+(Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`. Replace `[job_dir]` with the actual `job_dir` path from the workflow response.)
 
-**Template reference**: See `<job_dir>/templates/job.yml.template` for the standard structure.
+**Template reference**: See `[job_dir]/templates/job.yml.template` for the standard structure.
 
-**Complete example**: See `<job_dir>/templates/job.yml.example` for a fully worked example.
+**Complete example**: See `[job_dir]/templates/job.yml.example` for a fully worked example.
 
 **Important**:
 - Use lowercase with underscores for job name and step IDs
@@ -471,4 +418,61 @@ After creating the file:
 1. Inform the user that the specification is complete
 2. Recommend that they review the job.yml file
 3. Tell them the next step is to implement the job (generate step instruction files)
+
+---
+
+## Reference: Work Product Storage Guidelines
+
+**Key principle**: Job outputs belong in the main repository directory structure, not in dot-directories. The `.deepwork/` directory is for job definitions and configuration only.
+
+**Why this matters**:
+- **Version control**: Work products in the main repo are tracked by git and visible in PRs
+- **Discoverability**: Team members can find outputs without knowing about DeepWork internals
+- **Tooling compatibility**: IDEs, search tools, and CI/CD work naturally with standard paths
+- **Glob patterns**: Well-structured paths enable powerful file matching (e.g., `competitive_research/**/*.md`)
+
+**Good output path patterns**:
+```
+competitive_research/competitors_list.md
+competitive_research/acme_corp/research.md
+operations/reports/2026-01/spending_analysis.md
+docs/api/endpoints.md
+```
+
+**Avoid these patterns**:
+```
+.deepwork/outputs/report.md          # Hidden in dot-directory
+output.md                            # Too generic, no context
+research.md                          # Unclear which research
+temp/draft.md                        # Transient-sounding paths
+```
+
+**Organizing multi-file outputs**:
+- Use the job name as a top-level folder when outputs are job-specific
+- Use parameterized paths for per-entity outputs: `competitive_research/[competitor_name]/`
+- Match existing project conventions when extending a codebase
+
+**When to include dates in paths**:
+- **Include date** for periodic outputs where each version is retained (e.g., monthly reports, quarterly reviews, weekly summaries). These accumulate over time and historical versions remain useful.
+  ```
+  operations/reports/2026-01/spending_analysis.md              # Monthly report - keep history
+  hr/employees/[employee_name]/quarterly_reviews/2026-Q1.pdf   # Per-employee quarterly review
+  ```
+- **Omit date** for current-state outputs that represent the latest understanding and get updated in place. Previous versions live in git history, not separate files.
+  ```
+  competitive_research/acme_corp/swot.md  # Current SWOT - updated over time
+  docs/architecture/overview.md           # Living document
+  ```
+
+**Supporting materials and intermediate outputs**:
+- Content generated in earlier steps to support the final output (research notes, data extracts, drafts) should be placed in a `_dataroom` folder that is a peer to the final output
+- Name the dataroom folder by replacing the file extension with `_dataroom`
+  ```
+  operations/reports/2026-01/spending_analysis.md           # Final output
+  operations/reports/2026-01/spending_analysis_dataroom/    # Supporting materials
+      raw_data.csv
+      vendor_breakdown.md
+      notes.md
+  ```
+- This keeps supporting materials organized and discoverable without cluttering the main output location
 

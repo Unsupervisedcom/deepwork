@@ -244,7 +244,10 @@ steps:
       - name: product_category
         description: "Product category"
     outputs:
-      - competitors.md
+      competitors.md:
+        type: file
+        description: "List of competitors with descriptions"
+        required: true
     dependencies: []
 
   - id: primary_research
@@ -255,8 +258,10 @@ steps:
       - file: competitors.md
         from_step: identify_competitors
     outputs:
-      - primary_research.md
-      - competitor_profiles/
+      primary_research.md:
+        type: file
+        description: "Primary research findings"
+        required: true
     dependencies:
       - identify_competitors
 
@@ -982,8 +987,10 @@ Begins a new workflow session.
 Reports step completion and gets next instructions.
 
 **Parameters**:
-- `outputs: list[str]` - List of output file paths created
+- `outputs: dict[str, str | list[str]]` - Map of output names to file path(s)
 - `notes: str | None` - Optional notes about work done
+- `quality_review_override_reason: str | None` - If provided, skips quality review
+- `session_id: str | None` - Target a specific workflow session
 
 **Returns**:
 - `status: "needs_work" | "next_step" | "workflow_complete"`
@@ -1056,13 +1063,17 @@ Manages workflow session state persisted to `.deepwork/tmp/session_[id].json`:
 
 ```python
 class StateManager:
-    def create_session(...) -> WorkflowSession
-    def load_session(session_id) -> WorkflowSession
-    def start_step(step_id) -> None
-    def complete_step(step_id, outputs, notes) -> None
-    def advance_to_step(step_id, entry_index) -> None
-    def go_to_step(step_id, entry_index, invalidate_step_ids) -> None
-    def complete_workflow() -> None
+    async def create_session(...) -> WorkflowSession
+    def resolve_session(session_id=None) -> WorkflowSession
+    async def start_step(step_id, session_id=None) -> None
+    async def complete_step(step_id, outputs, notes, session_id=None) -> None
+    async def advance_to_step(step_id, entry_index, session_id=None) -> None
+    async def go_to_step(step_id, entry_index, invalidate_step_ids, session_id=None) -> None
+    async def complete_workflow(session_id=None) -> None
+    async def abort_workflow(explanation, session_id=None) -> tuple
+    async def record_quality_attempt(step_id, session_id=None) -> int
+    def get_all_outputs(session_id=None) -> dict
+    def get_stack() -> list[StackEntry]
 ```
 
 Session state includes:
@@ -1077,25 +1088,34 @@ Evaluates step outputs against quality criteria:
 
 ```python
 class QualityGate:
-    def evaluate(
-        quality_criteria: list[str],
-        outputs: list[str],
+    async def evaluate_reviews(
+        reviews: list[dict],
+        outputs: dict[str, str | list[str]],
+        output_specs: dict[str, str],
         project_root: Path,
-    ) -> QualityGateResult
+        notes: str | None = None,
+    ) -> list[ReviewResult]
+
+    async def build_review_instructions_file(
+        reviews: list[dict],
+        outputs: dict[str, str | list[str]],
+        output_specs: dict[str, str],
+        project_root: Path,
+        notes: str | None = None,
+    ) -> str
 ```
 
-The quality gate:
-1. Builds a review prompt with criteria and output file contents
-2. Invokes Claude Code via subprocess with proper flag ordering (see `doc/reference/calling_claude_in_print_mode.md`)
-3. Uses `--json-schema` for structured output conformance
-4. Parses the `structured_output` field from the JSON response
-5. Returns pass/fail with per-criterion feedback
+The quality gate supports two modes:
+- **External runner** (`evaluate_reviews`): Invokes Claude Code via subprocess to evaluate each review, returns list of failed `ReviewResult` objects
+- **Self-review** (`build_review_instructions_file`): Generates a review instructions file for the agent to spawn a subagent for self-review
 
 ### Schemas (`jobs/mcp/schemas.py`)
 
 Pydantic models for all tool inputs and outputs:
 - `StartWorkflowInput`, `FinishedStepInput`, `AbortWorkflowInput`, `GoToStepInput`
 - `GetWorkflowsResponse`, `StartWorkflowResponse`, `FinishedStepResponse`, `AbortWorkflowResponse`, `GoToStepResponse`
+- `ActiveStepInfo`, `ExpectedOutput`, `ReviewInfo`, `ReviewResult`, `StackEntry`
+- `JobInfo`, `WorkflowInfo`, `JobLoadErrorInfo`
 - `WorkflowSession`, `StepProgress`
 - `QualityGateResult`, `QualityCriteriaResult`
 

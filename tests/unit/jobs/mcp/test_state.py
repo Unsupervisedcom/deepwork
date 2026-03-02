@@ -483,8 +483,8 @@ class TestSessionIdRouting:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_resolve_session_by_id(self, state_manager: StateManager) -> None:
-        """Test _resolve_session finds the correct session in a multi-session stack."""
+    def testresolve_session_by_id(self, state_manager: StateManager) -> None:
+        """Test resolve_session finds the correct session in a multi-session stack."""
         import asyncio
 
         async def setup() -> None:
@@ -502,14 +502,14 @@ class TestSessionIdRouting:
 
         # Stack has 3 sessions; resolve the middle one by ID
         middle_session = state_manager._session_stack[1]
-        resolved = state_manager._resolve_session(middle_session.session_id)
+        resolved = state_manager.resolve_session(middle_session.session_id)
         assert resolved.session_id == middle_session.session_id
         assert resolved.job_name == "job2"
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_resolve_session_invalid_id(self, state_manager: StateManager) -> None:
-        """Test _resolve_session raises StateError for unknown session ID."""
+    def testresolve_session_invalid_id(self, state_manager: StateManager) -> None:
+        """Test resolve_session raises StateError for unknown session ID."""
         import asyncio
 
         asyncio.get_event_loop().run_until_complete(
@@ -519,12 +519,12 @@ class TestSessionIdRouting:
         )
 
         with pytest.raises(StateError, match="Session 'nonexistent' not found"):
-            state_manager._resolve_session("nonexistent")
+            state_manager.resolve_session("nonexistent")
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_resolve_session_none_falls_back_to_active(self, state_manager: StateManager) -> None:
-        """Test _resolve_session with None falls back to top-of-stack."""
+    def testresolve_session_none_falls_back_to_active(self, state_manager: StateManager) -> None:
+        """Test resolve_session with None falls back to top-of-stack."""
         import asyncio
 
         asyncio.get_event_loop().run_until_complete(
@@ -538,7 +538,7 @@ class TestSessionIdRouting:
             )
         )
 
-        resolved = state_manager._resolve_session(None)
+        resolved = state_manager.resolve_session(None)
         assert resolved.job_name == "job2"  # top-of-stack
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.4, JOBS-REQ-003.11.4, JOBS-REQ-003.13.5).
