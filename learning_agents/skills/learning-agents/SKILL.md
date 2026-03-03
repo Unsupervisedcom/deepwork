@@ -11,6 +11,10 @@ Manage auto-improving AI sub-agents that learn from their mistakes across sessio
 
 `$ARGUMENTS` is the text after `/learning-agents` (e.g., for `/learning-agents create foo`, `$ARGUMENTS` is `create foo`).
 
+## Existing Learning Agents
+
+!`ls -1 .deepwork/learning-agents/ 2>/dev/null || echo "(none)"`
+
 ## Setup Check
 
 Before routing, check if `.claude/session_log_folder_info.md` exists. If it does **not** exist, run `Skill learning-agents:setup` first, then continue with routing below.
@@ -21,13 +25,14 @@ Only perform this check once per session — after the setup skill completes (or
 
 Split `$ARGUMENTS` on the first whitespace. The first token is the sub-command (case-insensitive); the remainder is passed to the sub-skill. Accept both underscores and dashes in sub-command names (e.g., `report_issue` and `report-issue` are equivalent).
 
-### `create <name>`
+### `create <name> [template-path]`
 
-Create a new LearningAgent scaffold.
+Create a new LearningAgent scaffold. If a template path is provided, the new agent is seeded with the template agent's knowledge files as a starting point.
 
-Invoke: `Skill learning-agents:create-agent <name>`
+Invoke: `Skill learning-agents:create-agent <name> [template-path]`
 
 Example: `$ARGUMENTS = "create rails-activejob"` → `Skill learning-agents:create-agent rails-activejob`
+Example: `$ARGUMENTS = "create new-agent .deepwork/learning-agents/existing-agent"` → `Skill learning-agents:create-agent new-agent .deepwork/learning-agents/existing-agent`
 
 ### `learn`
 
@@ -53,12 +58,13 @@ Display available sub-commands:
 LearningAgents - Auto-improving AI sub-agents
 
 Available commands:
-  /learning-agents create <name>                    Create a new LearningAgent
-  /learning-agents learn                            Run learning cycle on pending sessions
-  /learning-agents report_issue <agentId> <details>      Report an issue with an agent
+  /learning-agents create <name> [template-path]          Create a new LearningAgent
+  /learning-agents learn                                  Run learning cycle on pending sessions
+  /learning-agents report_issue <agentId> <details>       Report an issue with an agent
 
 Examples:
   /learning-agents create rails-activejob
+  /learning-agents create new-agent .deepwork/learning-agents/existing-agent
   /learning-agents learn
   /learning-agents report_issue abc123 "Used wrong retry strategy for background jobs"
 ```
