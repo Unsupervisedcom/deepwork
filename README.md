@@ -4,7 +4,7 @@ Triage email, give feedback to your team, make tutorials/documentation, QA your 
 
 ## Install
 
-In Claude Code, run:
+### Claude Code (Terminal)
 ```
 /plugin marketplace add https://github.com/Unsupervisedcom/deepwork
 /plugin install deepwork@deepwork-plugins
@@ -15,7 +15,16 @@ Then start a new session and define your first job:
 /deepwork Make a job for doing competitive research. It will take the URL of the competitor as an input, and should make report including a SWOT analysis for that competitor.
 ```
 
-> **Note:** DeepWork stores job definitions in `.deepwork/jobs/` and creates work branches in Git. Your project folder should be a Git repository. If it isn't, run `git init` first.
+### Claude Desktop
+
+1. Enter Cowork mode (toggle at top of screen)
+2. Select `Customize with plugins` at the bottom of the page.
+3. Select `Personal`, click the `+`, and select `Add marketplace from GitHub'`
+4. Set the URL to ```Unsupervisedcom/deepwork``` and press Sync. (adding a marketplace currently fails on Windows)
+5. Select the deepwork plugin and click Install.
+6. In Cowork mode, select 'Start a deepwork workflow'
+
+> **Note:** DeepWork stores job definitions in `.deepwork/jobs/` and creates work branches in Git. Your project folder should be a Git repository. If it isn't, run `git init` first, or ask Claude to do so.
 
 DeepWork is an open-source plugin for Claude Code (and other CLI agents). It:
 - teaches Claude to follow strict workflows consistently
