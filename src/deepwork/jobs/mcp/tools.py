@@ -4,6 +4,8 @@ This module provides the core tools for guiding agents through workflows:
 - get_workflows: List all available workflows
 - start_workflow: Initialize a workflow session
 - finished_step: Report step completion and get next instructions
+- abort_workflow: Abort the current workflow
+- go_to_step: Navigate back to a prior step
 """
 
 from __future__ import annotations
@@ -23,6 +25,8 @@ from deepwork.jobs.mcp.schemas import (
     FinishedStepInput,
     FinishedStepResponse,
     GetWorkflowsResponse,
+    GoToStepInput,
+    GoToStepResponse,
     JobInfo,
     JobLoadErrorInfo,
     ReviewInfo,
@@ -31,12 +35,14 @@ from deepwork.jobs.mcp.schemas import (
     StepStatus,
     WorkflowInfo,
 )
-from deepwork.jobs.mcp.state import StateManager
+from deepwork.jobs.mcp.state import StateError, StateManager
 from deepwork.jobs.parser import (
     JobDefinition,
     OutputSpec,
     ParseError,
+    Step,
     Workflow,
+    WorkflowStepEntry,
     parse_job_definition,
 )
 
@@ -291,6 +297,44 @@ class WorkflowTools:
             for out in outputs
         ]
 
+    def _build_active_step_info(
+        self,
+        session_id: str,
+        step_id: str,
+        job: JobDefinition,
+        step: Step,
+        instructions: str,
+        step_outputs: list[ExpectedOutput],
+    ) -> ActiveStepInfo:
+        """Build an ActiveStepInfo from a step definition and its context."""
+        return ActiveStepInfo(
+            session_id=session_id,
+            step_id=step_id,
+            job_dir=str(job.job_dir),
+            step_expected_outputs=step_outputs,
+            step_reviews=[
+                ReviewInfo(
+                    run_each=r.run_each,
+                    quality_criteria=r.quality_criteria,
+                    additional_review_guidance=r.additional_review_guidance,
+                )
+                for r in step.reviews
+            ],
+            step_instructions=instructions,
+            common_job_info=job.common_job_info_provided_to_all_steps_at_runtime,
+        )
+
+    @staticmethod
+    def _append_concurrent_info(instructions: str, entry: WorkflowStepEntry) -> str:
+        """Append concurrent step info to instructions if applicable."""
+        if entry.is_concurrent and len(entry.step_ids) > 1:
+            instructions += (
+                f"\n\n**CONCURRENT STEPS**: This entry has {len(entry.step_ids)} "
+                f"steps that can run in parallel: {', '.join(entry.step_ids)}\n"
+                f"Use the Task tool to execute them concurrently."
+            )
+        return instructions
+
     # =========================================================================
     # Tool Implementations
     # =========================================================================
@@ -361,21 +405,8 @@ class WorkflowTools:
         step_outputs = self._build_expected_outputs(first_step.outputs)
 
         return StartWorkflowResponse(
-            begin_step=ActiveStepInfo(
-                session_id=session.session_id,
-                step_id=first_step_id,
-                job_dir=str(job.job_dir),
-                step_expected_outputs=step_outputs,
-                step_reviews=[
-                    ReviewInfo(
-                        run_each=r.run_each,
-                        quality_criteria=r.quality_criteria,
-                        additional_review_guidance=r.additional_review_guidance,
-                    )
-                    for r in first_step.reviews
-                ],
-                step_instructions=instructions,
-                common_job_info=job.common_job_info_provided_to_all_steps_at_runtime,
+            begin_step=self._build_active_step_info(
+                session.session_id, first_step_id, job, first_step, instructions, step_outputs
             ),
             stack=self.state_manager.get_stack(),
         )
@@ -393,7 +424,15 @@ class WorkflowTools:
             StateError: If no active session
             ToolError: If quality gate fails after max attempts
         """
-        session = self.state_manager._resolve_session(input_data.session_id)
+        try:
+            session = self.state_manager.resolve_session(input_data.session_id)
+        except StateError as err:
+            raise ToolError(
+                "No active workflow session. "
+                "The finished_step tool reports completion of a step within a running workflow. "
+                "If you want to resume a workflow, just start it again and call finished_step "
+                "with quality_review_override_reason until you get back to your prior step."
+            ) from err
         sid = session.session_id
         current_step_id = session.current_step_id
 
@@ -542,34 +581,12 @@ class WorkflowTools:
         step_outputs = self._build_expected_outputs(next_step.outputs)
 
         # Add info about concurrent steps if this is a concurrent entry
-        if next_entry.is_concurrent and len(next_entry.step_ids) > 1:
-            concurrent_info = (
-                f"\n\n**CONCURRENT STEPS**: This entry has {len(next_entry.step_ids)} "
-                f"steps that can run in parallel: {', '.join(next_entry.step_ids)}\n"
-                f"Use the Task tool to execute them concurrently."
-            )
-            instructions = instructions + concurrent_info
-
-        # Reload session to get current state after advance
-        session = self.state_manager._resolve_session(sid)
+        instructions = self._append_concurrent_info(instructions, next_entry)
 
         return FinishedStepResponse(
             status=StepStatus.NEXT_STEP,
-            begin_step=ActiveStepInfo(
-                session_id=session.session_id,
-                step_id=next_step_id,
-                job_dir=str(job.job_dir),
-                step_expected_outputs=step_outputs,
-                step_reviews=[
-                    ReviewInfo(
-                        run_each=r.run_each,
-                        quality_criteria=r.quality_criteria,
-                        additional_review_guidance=r.additional_review_guidance,
-                    )
-                    for r in next_step.reviews
-                ],
-                step_instructions=instructions,
-                common_job_info=job.common_job_info_provided_to_all_steps_at_runtime,
+            begin_step=self._build_active_step_info(
+                sid, next_step_id, job, next_step, instructions, step_outputs
             ),
             stack=self.state_manager.get_stack(),
         )
@@ -599,4 +616,89 @@ class WorkflowTools:
                 f"{new_active.job_name}/{new_active.workflow_name}" if new_active else None
             ),
             resumed_step=new_active.current_step_id if new_active else None,
+        )
+
+    async def go_to_step(self, input_data: GoToStepInput) -> GoToStepResponse:
+        """Navigate back to a prior step, clearing progress from that step onward.
+
+        This allows re-executing a step and all subsequent steps when earlier
+        outputs need revision. Only session tracking state is cleared — files
+        on disk are not deleted (Git handles file versioning).
+
+        Args:
+            input_data: GoToStepInput with step_id and optional session_id
+
+        Returns:
+            GoToStepResponse with step info, invalidated steps, and stack
+
+        Raises:
+            StateError: If no active session
+            ToolError: If step not found or forward navigation attempted
+        """
+        session = self.state_manager.resolve_session(input_data.session_id)
+        sid = session.session_id
+
+        # Load job and workflow
+        job = self._get_job(session.job_name)
+        workflow = self._get_workflow(job, session.workflow_name)
+
+        # Validate target step exists in workflow
+        target_entry_index = workflow.get_entry_index_for_step(input_data.step_id)
+        if target_entry_index is None:
+            raise ToolError(
+                f"Step '{input_data.step_id}' not found in workflow '{workflow.name}'. "
+                f"Available steps: {', '.join(workflow.steps)}"
+            )
+
+        # Validate not going forward (use finished_step for that)
+        current_entry_index = session.current_entry_index
+        if target_entry_index > current_entry_index:
+            raise ToolError(
+                f"Cannot go forward to step '{input_data.step_id}' "
+                f"(entry index {target_entry_index} > current {current_entry_index}). "
+                f"Use finished_step to advance forward."
+            )
+
+        # Validate step definition exists
+        target_step = job.get_step(input_data.step_id)
+        if target_step is None:
+            raise ToolError(f"Step definition not found: {input_data.step_id}")
+
+        # Collect all step IDs from target entry index through end of workflow
+        invalidate_step_ids: list[str] = []
+        for i in range(target_entry_index, len(workflow.step_entries)):
+            entry = workflow.step_entries[i]
+            invalidate_step_ids.extend(entry.step_ids)
+
+        # For concurrent entries, navigate to the first step in the entry
+        target_entry = workflow.step_entries[target_entry_index]
+        nav_step_id = target_entry.step_ids[0]
+        nav_step = job.get_step(nav_step_id)
+        if nav_step is None:
+            raise ToolError(f"Step definition not found: {nav_step_id}")
+
+        # Clear progress and update position
+        await self.state_manager.go_to_step(
+            step_id=nav_step_id,
+            entry_index=target_entry_index,
+            invalidate_step_ids=invalidate_step_ids,
+            session_id=sid,
+        )
+
+        # Mark target step as started
+        await self.state_manager.start_step(nav_step_id, session_id=sid)
+
+        # Get step instructions
+        instructions = self._get_step_instructions(job, nav_step_id)
+        step_outputs = self._build_expected_outputs(nav_step.outputs)
+
+        # Add concurrent step info if applicable
+        instructions = self._append_concurrent_info(instructions, target_entry)
+
+        return GoToStepResponse(
+            begin_step=self._build_active_step_info(
+                sid, nav_step_id, job, nav_step, instructions, step_outputs
+            ),
+            invalidated_steps=invalidate_step_ids,
+            stack=self.state_manager.get_stack(),
         )

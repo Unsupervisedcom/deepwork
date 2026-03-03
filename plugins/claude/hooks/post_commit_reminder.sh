@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Post-commit reminder hook
 # Triggers after Bash tool uses that contain "git commit" to remind
 # the agent to run the review skill.

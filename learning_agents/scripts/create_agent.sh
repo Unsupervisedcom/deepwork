@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # create_agent.sh - Create a new LearningAgent scaffold
 #
 # Usage: create_agent.sh <agent-name> [template-agent-path]

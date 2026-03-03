@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # cat_agent_guideline.sh - Print an agent's additional learning guideline file
 #
 # Usage: cat_agent_guideline.sh <session_log_folder> <guideline_name>

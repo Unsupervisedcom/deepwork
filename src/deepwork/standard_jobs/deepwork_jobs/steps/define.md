@@ -52,60 +52,7 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Where should each output be saved? (filename/path)
    - Should outputs be organized in subdirectories? (e.g., `reports/`, `data/`, `drafts/`)
    - Will other steps need this output?
-   #### Work Product Storage Guidelines
-
-   **Key principle**: Job outputs belong in the main repository directory structure, not in dot-directories. The `.deepwork/` directory is for job definitions and configuration only.
-
-   **Why this matters**:
-   - **Version control**: Work products in the main repo are tracked by git and visible in PRs
-   - **Discoverability**: Team members can find outputs without knowing about DeepWork internals
-   - **Tooling compatibility**: IDEs, search tools, and CI/CD work naturally with standard paths
-   - **Glob patterns**: Well-structured paths enable powerful file matching (e.g., `competitive_research/**/*.md`)
-
-   **Good output path patterns**:
-   ```
-   competitive_research/competitors_list.md
-   competitive_research/acme_corp/research.md
-   operations/reports/2026-01/spending_analysis.md
-   docs/api/endpoints.md
-   ```
-
-   **Avoid these patterns**:
-   ```
-   .deepwork/outputs/report.md          # Hidden in dot-directory
-   output.md                            # Too generic, no context
-   research.md                          # Unclear which research
-   temp/draft.md                        # Transient-sounding paths
-   ```
-
-   **Organizing multi-file outputs**:
-   - Use the job name as a top-level folder when outputs are job-specific
-   - Use parameterized paths for per-entity outputs: `competitive_research/[competitor_name]/`
-   - Match existing project conventions when extending a codebase
-
-   **When to include dates in paths**:
-   - **Include date** for periodic outputs where each version is retained (e.g., monthly reports, quarterly reviews, weekly summaries). These accumulate over time and historical versions remain useful.
-     ```
-     operations/reports/2026-01/spending_analysis.md              # Monthly report - keep history
-     hr/employees/[employee_name]/quarterly_reviews/2026-Q1.pdf   # Per-employee quarterly review
-     ```
-   - **Omit date** for current-state outputs that represent the latest understanding and get updated in place. Previous versions live in git history, not separate files.
-     ```
-     competitive_research/acme_corp/swot.md  # Current SWOT - updated over time
-     docs/architecture/overview.md           # Living document
-     ```
-
-   **Supporting materials and intermediate outputs**:
-   - Content generated in earlier steps to support the final output (research notes, data extracts, drafts) should be placed in a `_dataroom` folder that is a peer to the final output
-   - Name the dataroom folder by replacing the file extension with `_dataroom`
-     ```
-     operations/reports/2026-01/spending_analysis.md           # Final output
-     operations/reports/2026-01/spending_analysis_dataroom/    # Supporting materials
-         raw_data.csv
-         vendor_breakdown.md
-         notes.md
-     ```
-   - This keeps supporting materials organized and discoverable without cluttering the main output location
+   - When discussing output paths, follow the **Work Product Storage Guidelines** in the reference section below.
 
 4. **Step Dependencies**
    - Which previous steps must complete before this one?
@@ -164,6 +111,38 @@ The `research_all` step's instructions should tell the agent to:
 - Collect the results and confirm all runs completed
 
 **When to recognize this pattern:** Look for language like "for each X, do Y" where Y involves more than one logical phase. If Y is a single simple action, a regular step with a loop is fine. If Y is itself a multi-step process with intermediate outputs worth reviewing, split it into a sub-workflow.
+
+### Iterative Loop Pattern (go_to_step)
+
+When a workflow needs to repeat a group of steps based on feedback or evolving requirements (e.g., draft → review → revise cycles, or research → analyze → check coverage → research more), use the `go_to_step` MCP tool to create a loop.
+
+**How it works:** A later step in the workflow evaluates the work so far and decides whether to loop back. If a loop is needed, the step's instructions tell the agent to call `go_to_step` with the step ID to return to. This clears all progress from that step onward and re-presents the step's instructions, so the agent re-executes the target step and all subsequent steps with fresh context.
+
+**How to structure it in `job.yml`:**
+
+```yaml
+workflows:
+  - name: iterative_report
+    summary: "Create a report with iterative refinement"
+    steps:
+      - gather_data
+      - write_draft
+      - review_draft       # This step may loop back to gather_data or write_draft
+      - finalize
+```
+
+The `review_draft` step's instructions should tell the agent to:
+- Evaluate the draft against acceptance criteria
+- If data gaps are found: call `go_to_step` with `step_id: "gather_data"` to collect more data and re-draft
+- If the draft needs revision but data is sufficient: call `go_to_step` with `step_id: "write_draft"` to revise
+- If the draft meets all criteria: proceed normally by calling `finished_step`
+
+**Important design considerations:**
+- **Keep loops bounded**: The decision step's instructions should include a maximum iteration count or clear exit criteria to prevent infinite loops
+- **State is cleared**: When `go_to_step` navigates back, all progress from the target step onward is cleared (outputs, timestamps, quality attempts). The agent must re-execute those steps. Files on disk are NOT deleted — only session tracking state is reset.
+- **Use for multi-step loops only**: If only a single step needs to retry, the quality review system (`needs_work` from `finished_step`) already handles that. Use `go_to_step` when the loop spans multiple steps.
+
+**When to recognize this pattern:** Look for language like "keep refining until X", "iterate until satisfied", "go back and redo Y if Z", or any cycle where later steps may invalidate earlier work. If the iteration involves just one step retrying its own output, rely on quality reviews instead.
 
 ### Step 3: Validate the Workflow
 
@@ -273,16 +252,16 @@ Only after you have complete understanding, create the job directory and `job.ym
 **First, create the directory structure** using the `make_new_job.sh` script located in this job's directory (the `job_dir` path from the workflow response):
 
 ```bash
-<job_dir>/make_new_job.sh [job_name]
+[job_dir]/make_new_job.sh [job_name]
 ```
 
 **Then create the job.yml file** at `.deepwork/jobs/[job_name]/job.yml`
 
-(Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`. Replace `<job_dir>` with the actual `job_dir` path from the workflow response.)
+(Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`. Replace `[job_dir]` with the actual `job_dir` path from the workflow response.)
 
-**Template reference**: See `<job_dir>/templates/job.yml.template` for the standard structure.
+**Template reference**: See `[job_dir]/templates/job.yml.template` for the standard structure.
 
-**Complete example**: See `<job_dir>/templates/job.yml.example` for a fully worked example.
+**Complete example**: See `[job_dir]/templates/job.yml.example` for a fully worked example.
 
 **Important**:
 - Use lowercase with underscores for job name and step IDs
@@ -439,4 +418,61 @@ After creating the file:
 1. Inform the user that the specification is complete
 2. Recommend that they review the job.yml file
 3. Tell them the next step is to implement the job (generate step instruction files)
+
+---
+
+## Reference: Work Product Storage Guidelines
+
+**Key principle**: Job outputs belong in the main repository directory structure, not in dot-directories. The `.deepwork/` directory is for job definitions and configuration only.
+
+**Why this matters**:
+- **Version control**: Work products in the main repo are tracked by git and visible in PRs
+- **Discoverability**: Team members can find outputs without knowing about DeepWork internals
+- **Tooling compatibility**: IDEs, search tools, and CI/CD work naturally with standard paths
+- **Glob patterns**: Well-structured paths enable powerful file matching (e.g., `competitive_research/**/*.md`)
+
+**Good output path patterns**:
+```
+competitive_research/competitors_list.md
+competitive_research/acme_corp/research.md
+operations/reports/2026-01/spending_analysis.md
+docs/api/endpoints.md
+```
+
+**Avoid these patterns**:
+```
+.deepwork/outputs/report.md          # Hidden in dot-directory
+output.md                            # Too generic, no context
+research.md                          # Unclear which research
+temp/draft.md                        # Transient-sounding paths
+```
+
+**Organizing multi-file outputs**:
+- Use the job name as a top-level folder when outputs are job-specific
+- Use parameterized paths for per-entity outputs: `competitive_research/[competitor_name]/`
+- Match existing project conventions when extending a codebase
+
+**When to include dates in paths**:
+- **Include date** for periodic outputs where each version is retained (e.g., monthly reports, quarterly reviews, weekly summaries). These accumulate over time and historical versions remain useful.
+  ```
+  operations/reports/2026-01/spending_analysis.md              # Monthly report - keep history
+  hr/employees/[employee_name]/quarterly_reviews/2026-Q1.pdf   # Per-employee quarterly review
+  ```
+- **Omit date** for current-state outputs that represent the latest understanding and get updated in place. Previous versions live in git history, not separate files.
+  ```
+  competitive_research/acme_corp/swot.md  # Current SWOT - updated over time
+  docs/architecture/overview.md           # Living document
+  ```
+
+**Supporting materials and intermediate outputs**:
+- Content generated in earlier steps to support the final output (research notes, data extracts, drafts) should be placed in a `_dataroom` folder that is a peer to the final output
+- Name the dataroom folder by replacing the file extension with `_dataroom`
+  ```
+  operations/reports/2026-01/spending_analysis.md           # Final output
+  operations/reports/2026-01/spending_analysis_dataroom/    # Supporting materials
+      raw_data.csv
+      vendor_breakdown.md
+      notes.md
+  ```
+- This keeps supporting materials organized and discoverable without cluttering the main output location
 

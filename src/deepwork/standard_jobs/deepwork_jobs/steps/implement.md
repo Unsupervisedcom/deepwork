@@ -82,6 +82,41 @@ If a step in the job.yml has `reviews` defined, the generated instruction file s
 
 This alignment ensures the AI agent knows exactly what will be validated and can self-check before completing.
 
+### Writing Loop Instructions (go_to_step)
+
+If a step in the job.yml is designed as a decision point that may loop back to an earlier step (see the "Iterative Loop Pattern" in the define step), the instruction file for that step must include clear guidance on when and how to use `go_to_step`.
+
+**What to include in the instruction file:**
+
+1. **Evaluation criteria** — Explicit conditions that determine whether to loop back or proceed
+2. **Which step to go back to** — The specific `step_id` to pass to `go_to_step`, and why that step (not an earlier or later one)
+3. **Maximum iterations** — A bound to prevent infinite loops (e.g., "After 3 iterations, proceed to the next step regardless and note remaining issues")
+4. **How to call it** — Tell the agent to call the `go_to_step` MCP tool with the target `step_id`
+
+**Example instruction snippet for a review/decision step:**
+
+```markdown
+## Evaluation
+
+Review the draft against the acceptance criteria defined in the job description.
+
+### If the draft needs more data:
+Call `go_to_step` with `step_id: "gather_data"` to loop back and collect additional
+information. This will clear progress from gather_data onward — you will re-execute
+gather_data, write_draft, and this review step with the new data.
+
+### If the draft needs revision but data is sufficient:
+Call `go_to_step` with `step_id: "write_draft"` to revise the draft.
+
+### If the draft meets all criteria:
+Proceed normally by calling `finished_step` with the review output.
+
+**Maximum iterations**: If this is the 3rd review cycle, proceed to the next step
+regardless and document any remaining issues in the output.
+```
+
+**Important**: Only add `go_to_step` instructions to steps that are explicitly designed as loop decision points in the workflow. Most steps should NOT reference `go_to_step`.
+
 ### Using Supplementary Reference Files
 
 Step instructions can include additional `.md` files in the `steps/` directory for detailed examples, templates, or reference material. Reference them using the full path from the project root.

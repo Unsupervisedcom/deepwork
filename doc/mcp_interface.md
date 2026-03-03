@@ -10,7 +10,7 @@ This document describes the Model Context Protocol (MCP) tools exposed by the De
 
 ## Tools
 
-DeepWork exposes seven MCP tools:
+DeepWork exposes eight MCP tools:
 
 ### 1. `get_workflows`
 
@@ -24,7 +24,8 @@ None.
 
 ```typescript
 {
-  jobs: JobInfo[]
+  jobs: JobInfo[];
+  errors: JobLoadErrorInfo[];  // Jobs that failed to parse
 }
 ```
 
@@ -34,8 +35,13 @@ Where `JobInfo` is:
 interface JobInfo {
   name: string;              // Job identifier
   summary: string;           // Short summary of the job
-  description: string | null; // Full description (optional)
   workflows: WorkflowInfo[];  // Named workflows in the job
+}
+
+interface JobLoadErrorInfo {
+  job_name: string;          // Name of the job that failed
+  job_dir: string;           // Path to the job directory
+  error: string;             // Error message
 }
 
 interface WorkflowInfo {
@@ -136,7 +142,37 @@ Abort the current workflow and return to the parent workflow (if nested). Use th
 
 ---
 
-### 5. `get_review_instructions`
+### 5. `go_to_step`
+
+Navigate back to a prior step in the current workflow. Clears all progress from the target step onward, forcing re-execution of subsequent steps to ensure consistency. Use this when earlier outputs need revision or quality issues are discovered in later steps.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `step_id` | `string` | Yes | ID of the step to navigate back to. Must exist in the current workflow. |
+| `session_id` | `string \| null` | No | Target a specific workflow session by ID. Use when multiple workflows are active concurrently. If omitted, operates on the top-of-stack session. |
+
+#### Returns
+
+```typescript
+{
+  begin_step: ActiveStepInfo;       // Information about the step to begin working on
+  invalidated_steps: string[];      // Step IDs whose progress was cleared (from target onward)
+  stack: StackEntry[];              // Current workflow stack after navigation
+}
+```
+
+#### Behavior
+
+- **Backward/current only**: The target step's entry index must be <= the current entry index. To go forward, use `finished_step`.
+- **Clears subsequent progress**: All `step_progress` entries from the target step onward are deleted (outputs, timestamps, quality attempts). The agent must re-execute all affected steps.
+- **Files preserved**: Only session tracking state is cleared. Files on disk are not deleted — Git handles file versioning.
+- **Concurrent entries**: When targeting a step in a concurrent entry, navigation goes to the first step in that entry, and all steps in the group are invalidated.
+
+---
+
+### 6. `get_review_instructions`
 
 Run a review of changed files based on `.deepreview` configuration files. Returns a list of review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields for the Task tool.
 
@@ -156,7 +192,7 @@ A plain string with one of:
 
 ---
 
-### 6. `get_configured_reviews`
+### 7. `get_configured_reviews`
 
 List all configured review rules from `.deepreview` files. Returns each rule's name, description, and defining file location. Optionally filters to rules matching specific files.
 
@@ -180,7 +216,7 @@ Array<{
 
 ---
 
-### 7. `mark_review_as_passed`
+### 8. `mark_review_as_passed`
 
 Mark a review as passed so it won't be re-run while reviewed files remain unchanged. The `review_id` is provided in the instruction file's "After Review" section.
 
@@ -220,11 +256,13 @@ interface ActiveStepInfo {
   step_expected_outputs: ExpectedOutput[]; // Expected outputs with type and format hints
   step_reviews: ReviewInfo[];      // Reviews to run when step completes
   step_instructions: string;       // Instructions for the step
+  common_job_info: string;         // Common context shared across all steps in this job
 }
 
 interface ReviewInfo {
   run_each: string;                // 'step' or output name to review
   quality_criteria: Record<string, string>; // Map of criterion name to question
+  additional_review_guidance: string | null; // Optional guidance for the reviewer
 }
 
 interface ReviewResult {
@@ -345,22 +383,6 @@ Workflows can be nested — starting a new workflow while one is active pushes o
 
 ---
 
-## Configuration
-
-The MCP server is configured via `.deepwork/config.yml`:
-
-```yaml
-version: "1.0"
-platforms:
-  - claude
-```
-
-Quality gate is enabled by default and uses Claude Code to evaluate step outputs
-against quality criteria. See `doc/reference/calling_claude_in_print_mode.md` for
-details on how Claude CLI is invoked.
-
----
-
 ## Server CLI Options
 
 ```bash
@@ -398,6 +420,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
+| 1.9.0 | Added `go_to_step` tool for navigating back to prior steps. Clears all step progress from the target step onward, forcing re-execution of subsequent steps. Supports `session_id` for concurrent workflow safety. |
 | 1.8.0 | Added `how_to_invoke` field to `WorkflowInfo` in `get_workflows` response. Always populated with invocation instructions: when a workflow's `agent` field is set, directs callers to delegate via the Task tool; otherwise, directs callers to use the `start_workflow` MCP tool directly. Also added optional `agent` field to workflow definitions in job.yml. |
 | 1.7.0 | Added `mark_review_as_passed` tool for review pass caching. Instruction files now include an "After Review" section with the review ID. Reviews with a `.passed` marker are automatically skipped by `get_review_instructions`. |
 | 1.6.0 | Added `get_configured_reviews` tool for listing configured review rules without running the full pipeline. Supports optional file-based filtering. |
