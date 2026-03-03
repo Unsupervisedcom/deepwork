@@ -9,6 +9,8 @@ prompt_best_practices:
       - ".deepwork/review/*.md"
       - ".deepwork/jobs/**/*.md"
       - "plugins/**/skills/**/*.md"
+      - "learning_agents/skills/**/*.md"   # learning_agents plugin skills are prompt-heavy
+      - "learning_agents/agents/**/*.md"   # agent persona definitions
       - "platform/**/*.md"
       - "src/deepwork/standard_jobs/**/*.md"
       - "**/.deepreview"       # .deepreview files contain inline agent instructions — prompt-heavy content
@@ -278,7 +280,7 @@ shell_code_review:
       Review this shell script against the project's shell scripting conventions.
 
       Project shell conventions (observed from existing scripts):
-      - Shebang: #!/bin/bash
+      - Shebang: `#!/usr/bin/env bash` (NOT `#!/bin/bash` — required for NixOS compatibility)
       - Safety: use `set -e` or `set -euo pipefail`
       - Variables: UPPERCASE_WITH_UNDERSCORES, always quoted ("$VAR")
       - JSON parsing: use jq with fallback defaults (// empty, // "default")
@@ -287,6 +289,7 @@ shell_code_review:
       - Exit codes: 0 for success, 1 for usage errors, 2 for blocking errors
 
       Check for:
+      - Hardcoded shebang paths (e.g., `#!/bin/bash`) — must use `#!/usr/bin/env bash`
       - Unquoted variables that could cause word splitting or globbing
       - Missing error handling (commands that could fail silently)
       - Unsafe use of eval, unvalidated user input, or command injection risks

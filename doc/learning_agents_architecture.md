@@ -28,16 +28,23 @@ Temporary per-session records in `.deepwork/tmp/agent_sessions/` that track whic
 learning_agents/
 ├── .claude-plugin/
 │   └── plugin.json                        # Plugin manifest
+├── .deepreview                              # Review rules for dispatch skill sync
 ├── skills/
 │   ├── learning-agents/SKILL.md           # Dispatch skill (user-facing)
 │   ├── create-agent/SKILL.md              # Create new LearningAgent
 │   ├── learn/SKILL.md                     # Run learning cycle on all pending sessions
+│   ├── setup/SKILL.md                     # [hidden] Configure project permissions
+│   ├── prompt-review/SKILL.md             # Review prompts for best practices (user-facing)
 │   ├── identify/SKILL.md                  # [hidden] Find issues in a session transcript
 │   ├── report-issue/SKILL.md              # [hidden] Create an issue file
 │   ├── investigate-issues/SKILL.md        # [hidden] Research issue root causes
 │   └── incorporate-learnings/SKILL.md     # [hidden] Integrate learnings into agent
 ├── scripts/
-│   └── create_agent.sh                    # Setup script for new LearningAgent scaffolding
+│   ├── create_agent.sh                    # Setup script for new LearningAgent scaffolding
+│   ├── cat_agent_guideline.sh             # Print agent guideline content
+│   ├── generate_agent_instructions.sh     # Regenerate all agent instruction files
+│   ├── generate_agent_instructions_for_session.sh  # Regenerate instructions for one session
+│   └── list_pending_sessions.sh           # List sessions needing learning
 ├── hooks/
 │   ├── hooks.json                         # Hook configuration
 │   ├── post_task.sh                       # After Task: track LearningAgent usage
@@ -172,13 +179,13 @@ Fires when the main agent finishes responding. The script:
 ### User-Facing Skills
 
 #### learning-agents (dispatch)
-Entry point skill. Parses user intent and dispatches to the appropriate sub-skill:
-- `/learning-agents create <name>` → invokes `create-agent`
+Entry point skill. Dynamically lists existing LearningAgents at load time, then parses user intent and dispatches to the appropriate sub-skill:
+- `/learning-agents create <name> [template-path]` → invokes `create-agent`
 - `/learning-agents learn` → invokes `learn`
 - `/learning-agents report_issue <agent_id> <details>` → invokes `report-issue`
 
 #### create-agent
-Creates a new LearningAgent. The skill first invokes a setup script, then guides the user through filling in the content.
+Creates a new LearningAgent. Accepts an optional `template-path` argument — when provided, the new agent is seeded with the template agent's `core-knowledge.md`, `topics/`, and `learnings/` as a starting point. The skill first invokes a setup script, then guides the user through filling in the content.
 
 **Step 1 — Setup script (`scripts/create_agent.sh`)**
 
@@ -238,6 +245,12 @@ Runs the full learning cycle on all sessions needing it. Workflow:
 1. Uses `!`find ...`` to inject a list of all paths containing a `needs_learning_as_of_timestamp` file into the prompt
 2. For each such folder, spawns a Task with the `LearningAgentExpert` agent using **Sonnet model** to run the `identify` skill
 3. After identification completes, spawns a Task with the `LearningAgentExpert` to run `investigate-issues` then `incorporate-learnings` in sequence
+
+#### setup
+Configures project permissions for the LearningAgents plugin. Adds required Bash and file access rules to `.claude/settings.json` so hooks and scripts can run without manual approval.
+
+#### prompt-review
+Standalone skill (not routed through the `/learning-agents` dispatcher). Reviews prompt/instruction files against Anthropic prompt engineering best practices. Can be invoked directly as `/learning-agents:prompt-review`.
 
 ### Hidden Skills (used by LearningAgentExpert during learning)
 
