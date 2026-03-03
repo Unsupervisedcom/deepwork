@@ -9,6 +9,8 @@ prompt_best_practices:
       - ".deepwork/review/*.md"
       - ".deepwork/jobs/**/*.md"
       - "plugins/**/skills/**/*.md"
+      - "learning_agents/skills/**/*.md"   # learning_agents plugin skills are prompt-heavy
+      - "learning_agents/agents/**/*.md"   # agent persona definitions
       - "platform/**/*.md"
       - "src/deepwork/standard_jobs/**/*.md"
       - "**/.deepreview"       # .deepreview files contain inline agent instructions — prompt-heavy content

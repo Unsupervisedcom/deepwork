@@ -1,0 +1,53 @@
+update_dispatch_skill:
+  description: "Ensure the main dispatch skill (learning-agents/SKILL.md) stays in sync when sub-skills, scripts, hooks, or docs change."
+  match:
+    include:
+      - "skills/*/SKILL.md"
+      - "scripts/**"
+      - "hooks/**"
+      - "doc/**"
+      - "agents/**"
+      - ".claude-plugin/plugin.json"
+    exclude:
+      - "skills/learning-agents/SKILL.md"
+  review:
+    strategy: all_changed_files
+    instructions: |
+      The dispatch skill at `learning_agents/skills/learning-agents/SKILL.md` is the
+      main entry point that routes `/learning-agents <subcommand>` to the appropriate
+      sub-skill. It must accurately reflect the available sub-commands, their arguments,
+      and their descriptions.
+
+      Check whether any of the following in the dispatch skill need updating due to
+      the changed files:
+
+      1. **Routing table**: Does the dispatch skill list all sub-commands that correspond
+         to sub-skills in `skills/*/SKILL.md`? Are any new sub-skills missing from the
+         routing section? Are any removed sub-skills still listed?
+
+      2. **Argument signatures**: Do the `create`, `learn`, `report_issue` (and any other)
+         command signatures match what the underlying sub-skills and scripts actually accept?
+         For example, if `scripts/create_agent.sh` added or removed a parameter, the
+         dispatch skill's `create` command signature should reflect that.
+
+      3. **Help text**: Does the help text block (shown when no arguments are given) match
+         the current set of commands, their arguments, and their descriptions?
+
+      4. **Skill invocation lines**: Do the `Invoke: Skill learning-agents:<name> ...`
+         lines reference the correct sub-skill names and pass the right arguments?
+
+      5. **Description accuracy**: If a sub-skill's purpose changed (visible from its
+         SKILL.md frontmatter or content), does the dispatch skill's description of that
+         command still match?
+
+      Read `learning_agents/skills/learning-agents/SKILL.md` and compare it against
+      the changed files to check the above.
+
+      ## Output Format
+
+      - PASS: The dispatch skill is consistent with the changed files, or the changes
+        don't affect anything the dispatch skill references.
+      - FAIL: List each inconsistency with the specific section of the dispatch skill
+        that needs updating and what the correct content should be.
+    additional_context:
+      unchanged_matching_files: true

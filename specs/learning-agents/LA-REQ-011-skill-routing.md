@@ -20,7 +20,7 @@ The skill MUST accept both underscores and dashes in sub-command names as equiva
 
 ### LA-REQ-011.4: Create Sub-Command
 
-The `create <name>` sub-command MUST invoke `Skill learning-agents:create-agent <name>`.
+The `create <name> [template-path]` sub-command MUST invoke `Skill learning-agents:create-agent <name> [template-path]`. The `template-path` argument is optional; when provided, it MUST be passed through to the sub-skill.
 
 ### LA-REQ-011.5: Learn Sub-Command
 
@@ -68,3 +68,7 @@ The plugin MUST provide the following skills, each in its own directory under `s
 ### LA-REQ-011.12: Prompt Review Skill Independence
 
 The `prompt-review` skill MUST be independently invocable (it is NOT routed through the `/learning-agents` dispatcher). It MUST be a separate, standalone skill.
+
+### LA-REQ-011.13: Existing Agents Listing
+
+The dispatch skill MUST display a list of existing LearningAgents by listing the contents of `.deepwork/learning-agents/`. If no agents exist, it MUST display a fallback indicator (e.g., "(none)"). This listing MUST be generated dynamically at skill load time.
