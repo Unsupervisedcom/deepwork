@@ -291,6 +291,7 @@ jobs:
           - Do not ask questions - just make the job.
           - Rules are explicitly not desired. Tell the review agents that.
           - Do not give long commentary of what you did - just make the job with no commentary.
+          - NEVER start the "repair" or "learn" workflows. Only use "new_job". If a quality review fails, fix the issues in the files and resubmit — do not switch workflows.
           - IMPORTANT: Once the job.yml and step instruction files have been created (i.e. after the "define" and "implement" steps are done), STOP. Do NOT continue into the "test" or "iterate" steps. Abort the workflow at that point. We only need the job definition files created, not the full workflow run.
           PROMPT_EOF
 
