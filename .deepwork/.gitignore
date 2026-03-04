@@ -2,6 +2,7 @@
 # These files are generated during sessions and should not be committed
 .last_work_tree
 .last_head_ref
+job.schema.json
 
 # Temporary files (but keep the directory via .gitkeep)
 tmp/*

@@ -14,6 +14,7 @@ in sync with the implementation.
 from __future__ import annotations
 
 import logging
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +33,26 @@ from deepwork.jobs.mcp.tools import WorkflowTools
 
 # Configure logging
 logger = logging.getLogger("deepwork.jobs.mcp")
+
+
+def _ensure_schema_available(project_root: Path) -> None:
+    """Copy job.schema.json to .deepwork/ so agents have a stable reference path.
+
+    The schema file is bundled with the DeepWork package at an install-dependent
+    location. This copies it to .deepwork/job.schema.json on every server start
+    so that agents and step instructions can always reference it at a known path.
+    """
+    from deepwork.jobs.schema import get_schema_path
+
+    schema_source = get_schema_path()
+    target_dir = project_root / ".deepwork"
+    target = target_dir / "job.schema.json"
+
+    try:
+        target_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(schema_source, target)
+    except OSError:
+        logger.warning("Could not copy schema to %s", target)
 
 
 def create_server(
@@ -59,6 +80,9 @@ def create_server(
         Configured FastMCP server instance
     """
     project_path = Path(project_root).resolve()
+
+    # Copy the job schema to a stable location so agents can always reference it
+    _ensure_schema_available(project_path)
 
     # Initialize components
     state_manager = StateManager(project_path)
