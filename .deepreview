@@ -386,3 +386,45 @@ deepreview_config_quality:
       - FAIL: Issues found. List each with the .deepreview file path,
         rule name, which check failed (consolidation / description / overly-broad / placement),
         and a specific recommendation.
+
+job_schema_instruction_compatibility:
+  description: "Verify deepwork_jobs instruction files, templates, and examples are compatible with the job schema."
+  match:
+    include:
+      - "src/deepwork/jobs/job.schema.json"
+      - "src/deepwork/standard_jobs/deepwork_jobs/steps/*.md"
+      - "src/deepwork/standard_jobs/deepwork_jobs/templates/*"
+      - "src/deepwork/standard_jobs/deepwork_jobs/job.yml"
+  review:
+    strategy: matches_together
+    additional_context:
+      unchanged_matching_files: true
+    instructions: |
+      When the job schema or deepwork_jobs instruction files change, verify they
+      are still compatible with each other.
+
+      Read src/deepwork/jobs/job.schema.json to understand the current schema.
+      Then read each instruction file, template, and example in
+      src/deepwork/standard_jobs/deepwork_jobs/ and check:
+
+      1. **Field references**: Every field name mentioned in prose instructions,
+         templates, or examples must exist in the schema at the correct level.
+         Pay special attention to root-level vs step-level fields — a field
+         that exists on steps may not exist at the root, and vice versa.
+
+      2. **Required vs optional**: If instructions say a field is required,
+         verify the schema agrees. If instructions say a field is optional,
+         verify the schema doesn't require it.
+
+      3. **Schema structure**: Template files and examples that show YAML
+         structure must match the schema's property names and nesting.
+
+      4. **Terminology consistency**: Instructions should use the same field
+         names as the schema (e.g., if the schema uses
+         "common_job_info_provided_to_all_steps_at_runtime", instructions
+         should not call it "description" or "job_description").
+
+      Output Format:
+      - PASS: All instruction files are compatible with the schema.
+      - FAIL: Incompatibilities found. List each with the file path, line
+        reference, the incompatible content, and what the schema actually says.

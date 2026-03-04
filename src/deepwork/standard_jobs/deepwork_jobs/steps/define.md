@@ -161,7 +161,7 @@ After gathering information about all steps:
 3. **Confirm details**
    - Job name (lowercase, underscores, descriptive)
    - Job summary (one clear sentence, max 200 chars)
-   - Job description (detailed multi-line explanation)
+   - Common job info provided to all steps at runtime (detailed multi-line context shared across all steps)
    - Version number (start with 1.0.0)
 
 ### Step 4: Define Quality Reviews
@@ -331,7 +331,7 @@ Claude: Let me summarize the workflow I've designed based on our conversation:
 **Job: competitive_research**
 Summary: Systematic competitive analysis workflow for product positioning
 
-Description:
+Common job info (shared context for all steps):
 A comprehensive workflow for analyzing competitors in your market segment. This job helps product teams understand the competitive landscape by systematically identifying competitors, researching their offerings, creating comparison matrices, and developing strategic positioning recommendations.
 
 The workflow produces:
@@ -384,7 +384,7 @@ Implement the job to generate step instruction files.
 
 1. **Focus on specification only** - Don't create instruction files yet
 2. **Ask structured questions** - Never skip the discovery phase; use the AskUserQuestion tool
-3. **Rich context in description** - This helps with future refinement
+3. **Rich context in common_job_info_provided_to_all_steps_at_runtime** - This helps with future refinement
 4. **Validate understanding** - Summarize and confirm before creating
 5. **Use examples** - Help users understand what good specifications look like
 6. **Understand file organization** - Always ask structured questions about where outputs should be saved and if subdirectories are needed
@@ -395,7 +395,7 @@ Before creating the job.yml, ensure:
 - Job name: lowercase, underscores, no spaces
 - Version: semantic versioning (1.0.0)
 - Summary: concise, under 200 characters
-- Description: detailed, provides context
+- Common job info: detailed, provides shared context for all steps
 - Step IDs: unique, descriptive, lowercase with underscores
 - Dependencies: must reference existing step IDs
 - File inputs: `from_step` must be in dependencies

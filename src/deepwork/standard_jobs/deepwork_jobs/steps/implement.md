@@ -15,13 +15,13 @@ Read the `job.yml` specification file created by the define step and generate co
    - Parse the YAML content
 
 2. **Validate the specification**
-   - Ensure it follows the schema (name, version, summary, description, steps)
+   - Ensure it follows the schema (name, version, summary, common_job_info_provided_to_all_steps_at_runtime, steps)
    - Check that all dependencies reference existing steps
    - Verify no circular dependencies
    - Confirm file inputs match dependencies
 
 3. **Extract key information**
-   - Job name, version, summary, description
+   - Job name, version, summary, common_job_info_provided_to_all_steps_at_runtime
    - List of all steps with their details
    - Understand the workflow structure
 
@@ -42,7 +42,7 @@ For each step in the job.yml, create a comprehensive instruction file at `.deepw
 
 **Guidelines for generating instructions:**
 
-1. **Use the job description** - The detailed description from job.yml provides crucial context
+1. **Use the common job info** - The `common_job_info_provided_to_all_steps_at_runtime` from job.yml provides crucial context
 2. **Be specific** - Don't write generic instructions; tailor them to the step's purpose
 3. **Provide output format examples** - Include a markdown code block in an "Output Format" section showing the expected file structure. A template with `[bracket placeholders]` is acceptable. For complex outputs, also include a concrete filled-in example showing realistic data — this is especially valuable for the first step in a workflow where there's no prior output to reference.
 4. **Explain the "why"** - Help the user understand the step's role in the workflow
@@ -137,11 +137,11 @@ For a complete worked example showing a job.yml and corresponding step instructi
 
 ## Important Guidelines
 
-1. **Read the spec carefully** - Understand the job's intent from the description
+1. **Read the spec carefully** - Understand the job's intent from the common job info and summary
 2. **Generate complete instructions** - Don't create placeholder or stub files
 3. **Maintain consistency** - Use the same structure for all step instruction files
 4. **Provide examples** - Show what good output looks like
-5. **Use context** - The job description provides valuable context for each step
+5. **Use context** - The `common_job_info_provided_to_all_steps_at_runtime` provides valuable context for each step
 6. **Be specific** - Tailor instructions to the specific step, not generic advice
 
 ## Completion Checklist
