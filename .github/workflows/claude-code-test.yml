@@ -267,7 +267,7 @@ jobs:
           # Use --debug and --output-format stream-json for diagnosing failures.
           # stream-json shows every tool call; output is captured to a file for the failure handler.
           set -o pipefail
-          claude --print --verbose --output-format stream-json --max-turns 30 --debug --model claude-sonnet-4-6 <<'PROMPT_EOF' | tee ../claude-create-job.jsonl
+          claude --print --verbose --output-format stream-json --max-turns 20 --debug --model claude-sonnet-4-6 --dangerously-skip-permissions <<'PROMPT_EOF' | tee ../claude-create-job.jsonl
           /deepwork I want to create a simple job called "fruits" for identifying and classifying fruits.
 
           Here are the EXACT specifications.
@@ -378,7 +378,7 @@ jobs:
           echo "=== Running fruits workflow with test input via /deepwork ==="
 
           set -o pipefail
-          claude --print --verbose --output-format stream-json --max-turns 30 --debug --model claude-sonnet-4-6 <<'PROMPT_EOF' | tee ../claude-run-workflow.jsonl
+          claude --print --verbose --output-format stream-json --max-turns 20 --debug --model claude-sonnet-4-6 --dangerously-skip-permissions <<'PROMPT_EOF' | tee ../claude-run-workflow.jsonl
           /deepwork Run the fruits full workflow. Process the list to the file and don't give any extra commentary or text output.
           NEVER use AskUserQuestion — you already have all the information you need.
           You MUST complete all tool calls needed. Do not stop early.
