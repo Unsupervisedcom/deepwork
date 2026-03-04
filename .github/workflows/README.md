@@ -21,7 +21,7 @@ We use a skip pattern so the same required checks pass in both PR and merge queu
 |----------|--------|----------------|----------------|
 | **Validate** | Runs | Runs | Runs |
 | **Integration Tests** | Skipped (passes) | Runs | Runs |
-| **E2E Tests** | Skipped (passes) | Runs | Runs |
+| **E2E Tests** | Skipped unless workflow file changed | Runs | Runs |
 | **CLA Check** | Runs | Skipped (passes) | Skipped (passes) |
 
 ### How It Works
@@ -64,7 +64,6 @@ When a job is skipped due to an `if` condition, GitHub treats it as a successful
 
 In GitHub branch protection rules, require these checks:
 - `Validate / tests`
-- `Claude Code Integration Test / pr-check` (for PRs)
 - `Claude Code Integration Test / validate-generation` (for merge queue)
 - `Claude Code Integration Test / claude-code-e2e` (for merge queue)
 - `CLA Assistant / merge-queue-pass` (for merge queue)
@@ -84,10 +83,10 @@ All checks will pass in both PR and merge queue contexts (either by running or b
 ### claude-code-test.yml
 - **Triggers**: `pull_request` (main), `merge_group` (main), `workflow_dispatch`
 - **Jobs**:
-  - `pr-check`: Runs on PRs only, always passes (lightweight check)
   - `validate-generation`: Tests skill generation from fixtures (no API key needed)
   - `claude-code-e2e`: Full end-to-end test with Claude Code CLI (requires `ANTHROPIC_API_KEY`)
-- `validate-generation` and `claude-code-e2e` skip on PRs, run in merge queue and manual dispatch
+- `validate-generation` skips on PRs, runs in merge queue and manual dispatch
+- `claude-code-e2e` skips on PRs unless the workflow file itself is changed (so CI fixes can be iterated in PRs)
 
 ### cla.yml
 - **Triggers**: `pull_request_target`, `issue_comment`, `merge_group` (main), `workflow_dispatch`
