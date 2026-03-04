@@ -20,6 +20,7 @@ The DeepWork MCP server exposes five workflow tools to AI agents via the Model C
 10. The server MUST be named `"deepwork"`.
 11. The server MUST include instructions text describing the workflow lifecycle (Discover, Start, Execute, Checkpoint, Iterate, Continue, Complete, Going Back).
 12. Every tool call MUST be logged with the tool name and current stack state.
+13. On startup, the server MUST copy `job.schema.json` from its package-bundled location to `.deepwork/job.schema.json` under the project root, overwriting any existing file at that path. If the copy fails (e.g., permission error), the server MUST log a warning and continue without error.
 
 ### JOBS-REQ-001.2: get_workflows Tool
 
