@@ -144,6 +144,8 @@ The `review_draft` step's instructions should tell the agent to:
 
 **When to recognize this pattern:** Look for language like "keep refining until X", "iterate until satisfied", "go back and redo Y if Z", or any cycle where later steps may invalidate earlier work. If the iteration involves just one step retrying its own output, rely on quality reviews instead.
 
+**After defining all steps**, check whether any step matches the Parallel Sub-Workflow or Iterative Loop patterns above. If so, discuss the pattern with the user and restructure the workflow accordingly before proceeding to validation.
+
 ### Step 3: Validate the Workflow
 
 After gathering information about all steps:
@@ -166,13 +168,15 @@ After gathering information about all steps:
 
 ### Step 4: Define Quality Reviews
 
+**Constraint: Every step producing a written final deliverable MUST have at least one review defined.**
+
 For each step, define **reviews** that evaluate the step's outputs. Reviews run automatically when a step completes and provide quality validation loops.
 
 For intermediate outputs between steps, reviews let you make sure you don't go too far down the wrong path. Add reviews that confirm things that could cause problems later. For example, in a report creation process, you might have an intermediate step that performs a number of queries on the data and records the results so that later report-writing steps can synthesize that information into a coherent narrative. In this case, you would want to add a review that checks that the queries SQL matches up with the description of the queries in the job description.
 
-For final outputs, reviews let you make sure the output meets the user's expectations. For example, with a data-centric report job, you might have one review on the final output for consistency with style guidelines and tone and such, and a totally separate review on the data-backing to make sure the claims in the report are supported by the data from earlier steps and all have citations. 
+For final outputs, reviews let you make sure the output meets the user's expectations. For example, with a data-centric report job, you might have one review on the final output for consistency with style guidelines and tone and such, and a totally separate review on the data-backing to make sure the claims in the report are supported by the data from earlier steps and all have citations.
 
-**Any jobs with written final output must always have reviews**. Some suggested ones are:
+Some suggested review types for final outputs:
 - Ensure claims have citations and the citations are not hallucinated
 - Ensure the output follows the style guidelines and tone
 - Ensure the output is well-organized and easy to read
@@ -247,9 +251,11 @@ reviews: []
 
 ### Step 5: Create the Job Directory and Specification
 
-Only after you have complete understanding, create the job directory and `job.yml` file:
+Only after you have complete understanding, create the job directory and `job.yml` file.
 
-**First, create the directory structure** using the `make_new_job.sh` script located in this job's directory (the `job_dir` path from the workflow response):
+**Note**: `[job_dir]` refers to the `job_dir` path returned in the workflow response when this workflow was started. It points to the directory containing this job's definition, scripts, and templates.
+
+**First, create the directory structure** using the `make_new_job.sh` script:
 
 ```bash
 [job_dir]/make_new_job.sh [job_name]
@@ -384,7 +390,7 @@ Implement the job to generate step instruction files.
 
 1. **Focus on specification only** - Don't create instruction files yet
 2. **Ask structured questions** - Never skip the discovery phase; use the AskUserQuestion tool
-3. **Rich context in common_job_info_provided_to_all_steps_at_runtime** - This helps with future refinement
+3. **Rich context in common_job_info_provided_to_all_steps_at_runtime** - Include the job's purpose, what the workflow produces, the intended audience, and domain-specific context that steps will need (see the example dialog for a reference)
 4. **Validate understanding** - Summarize and confirm before creating
 5. **Use examples** - Help users understand what good specifications look like
 6. **Understand file organization** - Always ask structured questions about where outputs should be saved and if subdirectories are needed

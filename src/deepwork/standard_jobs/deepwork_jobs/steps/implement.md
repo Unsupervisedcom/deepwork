@@ -8,6 +8,8 @@ Generate step instruction files for each step based on the `job.yml` specificati
 
 Read the `job.yml` specification file created by the define step and generate comprehensive instruction files for each step. The define step has already created the job directory structure.
 
+**Note**: Throughout this document, `<job_dir>` refers to the `job_dir` path returned in the workflow response when this workflow was started. It points to the directory containing this job's definition and templates.
+
 ### Step 1: Read and Validate the Specification
 
 1. **Locate the job.yml file**
@@ -51,7 +53,7 @@ For each step in the job.yml, create a comprehensive instruction file at `.deepw
 7. **Ask structured questions (when applicable)** - When a step has user-provided inputs (name/description inputs in job.yml), the instructions MUST explicitly tell the agent to "ask structured questions" using the AskUserQuestion tool. Steps that only have file inputs from prior steps do NOT need this phrase — they process data without user interaction.
 8. **Handle edge cases** - If inputs might be missing, ambiguous, or incomplete, tell the agent to ask structured questions to clarify how to proceed rather than guessing
 
-### Handling Reviews
+#### Handling Reviews
 
 If a step in the job.yml has `reviews` defined, the generated instruction file should:
 
@@ -82,7 +84,7 @@ If a step in the job.yml has `reviews` defined, the generated instruction file s
 
 This alignment ensures the AI agent knows exactly what will be validated and can self-check before completing.
 
-### Writing Loop Instructions (go_to_step)
+#### Writing Loop Instructions (go_to_step)
 
 If a step in the job.yml is designed as a decision point that may loop back to an earlier step (see the "Iterative Loop Pattern" in the define step), the instruction file for that step must include clear guidance on when and how to use `go_to_step`.
 
@@ -117,7 +119,7 @@ regardless and document any remaining issues in the output.
 
 **Important**: Only add `go_to_step` instructions to steps that are explicitly designed as loop decision points in the workflow. Most steps should NOT reference `go_to_step`.
 
-### Using Supplementary Reference Files
+#### Using Supplementary Reference Files
 
 Step instructions can include additional `.md` files in the `steps/` directory for detailed examples, templates, or reference material. Reference them using the full path from the project root.
 
@@ -135,21 +137,15 @@ For a complete worked example showing a job.yml and corresponding step instructi
 - **Job specification**: `<job_dir>/templates/job.yml.example`
 - **Step instruction**: `<job_dir>/templates/step_instruction.md.example`
 
-## Important Guidelines
-
-1. **Read the spec carefully** - Understand the job's intent from the common job info and summary
-2. **Generate complete instructions** - Don't create placeholder or stub files
-3. **Maintain consistency** - Use the same structure for all step instruction files
-4. **Provide examples** - Show what good output looks like
-5. **Use context** - The `common_job_info_provided_to_all_steps_at_runtime` provides valuable context for each step
-6. **Be specific** - Tailor instructions to the specific step, not generic advice
-
 ## Completion Checklist
 
 Before marking this step complete, ensure:
 - [ ] job.yml validated and in job directory
 - [ ] All step instruction files created
-- [ ] Each instruction file is complete and actionable
+- [ ] Each instruction file uses the same structure (consistent with the template)
+- [ ] Each instruction file has an Output Format section with examples
+- [ ] Quality criteria in instruction files align with reviews defined in job.yml
+- [ ] Steps with user-provided inputs include guidance to ask structured questions
 
 ## Note: Workflow Availability
 
