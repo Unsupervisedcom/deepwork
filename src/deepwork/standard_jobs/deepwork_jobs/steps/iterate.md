@@ -210,7 +210,6 @@ I identified the following issues from the test run:
 
 **`.deepwork/jobs/monthly_report/job.yml`:**
 - Version bumped to 1.0.1
-- Added changelog: "Improved visual design guidance and audience-appropriate writing based on test feedback"
 
 Done! The workflow has been updated. Changes are immediately available through the MCP server.
 
