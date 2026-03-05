@@ -382,6 +382,7 @@ jobs:
           /deepwork Run the fruits full workflow. Process the list to the file and don't give any extra commentary or text output.
           NEVER use AskUserQuestion — you already have all the information you need.
           You MUST complete all tool calls needed. Do not stop early.
+          CRITICAL: All output files MUST be written relative to the current working directory (the project root), NOT inside .deepwork/jobs/. For example, write to ./fruits/identified_fruits.md, NOT .deepwork/jobs/fruits/identified_fruits.md.
           raw_items: apple, car, banana, chair, orange, table, mango, laptop, grape, bicycle
           PROMPT_EOF
           
