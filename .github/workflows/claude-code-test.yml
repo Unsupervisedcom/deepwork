@@ -130,16 +130,32 @@ jobs:
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
-      # For PRs: just pass quickly (actual tests run in merge queue)
-      - name: Skip on PR
-        if: github.event_name == 'pull_request'
-        run: echo "E2E tests will run in merge queue. Passing for PR."
+      # Determine whether to run the full e2e test suite.
+      # Always runs in merge_group and workflow_dispatch.
+      # For PRs, only runs if the workflow file itself was changed (so we can iterate on CI fixes).
+      - name: Determine if tests should run
+        id: should-run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+          else
+            FILES=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files --jq '.[].filename' 2>/dev/null || echo "")
+            if echo "$FILES" | grep -q '^\.github/workflows/claude-code-test\.yml$'; then
+              echo "run=true" >> $GITHUB_OUTPUT
+              echo "Workflow file changed in PR - running e2e tests"
+            else
+              echo "run=false" >> $GITHUB_OUTPUT
+              echo "E2E tests will run in merge queue. Passing for PR."
+            fi
+          fi
 
       - uses: actions/checkout@v4
-        if: github.event_name != 'pull_request'
+        if: steps.should-run.outputs.run == 'true'
 
       - name: Check for API key
-        if: github.event_name != 'pull_request'
+        if: steps.should-run.outputs.run == 'true'
         id: check-key
         run: |
           if [ -z "$ANTHROPIC_API_KEY" ]; then
@@ -221,7 +237,8 @@ jobs:
                   'allow': [
                       'Bash(*)', 'Read(./**)', 'Edit(./**)', 'Write(./**)', 'Skill(*)',
                       'mcp__deepwork__get_workflows', 'mcp__deepwork__start_workflow',
-                      'mcp__deepwork__finished_step', 'mcp__deepwork__abort_workflow'
+                      'mcp__deepwork__finished_step', 'mcp__deepwork__abort_workflow',
+                      'mcp__deepwork__go_to_step'
                   ]
               }
           }
@@ -247,9 +264,10 @@ jobs:
           echo "=== Running /deepwork to create fruits job ==="
           mkdir fruits
 
-          # Use --debug to capture detailed logs for diagnosing failures.
-          # The debug log is dumped in the failure handler below.
-          claude --print --debug --model claude-sonnet-4-5 <<'PROMPT_EOF'
+          # Use --debug and --output-format stream-json for diagnosing failures.
+          # stream-json shows every tool call; output is captured to a file for the failure handler.
+          set -o pipefail
+          claude --print --verbose --output-format stream-json --max-turns 20 --debug --model claude-sonnet-4-6 --dangerously-skip-permissions <<'PROMPT_EOF' | tee ../claude-create-job.jsonl
           /deepwork I want to create a simple job called "fruits" for identifying and classifying fruits.
 
           Here are the EXACT specifications.
@@ -268,9 +286,12 @@ jobs:
              **CRITICAL**: must put the classified fruit list in `./fruits/classified_fruits.md`.
 
           **Key Instructions:**
-          - Do not ask questions - just make the job
+          - NEVER use AskUserQuestion — you already have all the information you need above.
+          - You MUST complete all tool calls needed to create the files. Do not stop early.
+          - Do not ask questions - just make the job.
           - Rules are explicitly not desired. Tell the review agents that.
           - Do not give long commentary of what you did - just make the job with no commentary.
+          - NEVER start the "repair" or "learn" workflows. Only use "new_job". If a quality review fails, fix the issues in the files and resubmit — do not switch workflows.
           - IMPORTANT: Once the job.yml and step instruction files have been created (i.e. after the "define" and "implement" steps are done), STOP. Do NOT continue into the "test" or "iterate" steps. Abort the workflow at that point. We only need the job definition files created, not the full workflow run.
           PROMPT_EOF
 
@@ -309,6 +330,22 @@ jobs:
         if: failure() && steps.check-key.outputs.has_key == 'true'
         working-directory: test_project
         run: |
+          echo "=== Claude stream-json output (create job) ==="
+          if [ -f "../claude-create-job.jsonl" ]; then
+            echo "--- Last 100 lines ---"
+            tail -100 ../claude-create-job.jsonl
+          else
+            echo "No stream-json output captured for create job step"
+          fi
+          echo ""
+          echo "=== Claude stream-json output (run workflow) ==="
+          if [ -f "../claude-run-workflow.jsonl" ]; then
+            echo "--- Last 100 lines ---"
+            tail -100 ../claude-run-workflow.jsonl
+          else
+            echo "No stream-json output captured for run workflow step"
+          fi
+          echo ""
           echo "=== Claude debug log ==="
           # Claude --debug writes to ~/.claude/debug.log
           if [ -f "$HOME/.claude/debug.log" ]; then
@@ -340,8 +377,12 @@ jobs:
         run: |
           echo "=== Running fruits workflow with test input via /deepwork ==="
 
-          claude --print --model claude-sonnet-4-5 <<'PROMPT_EOF'
+          set -o pipefail
+          claude --print --verbose --output-format stream-json --max-turns 20 --debug --model claude-sonnet-4-6 --dangerously-skip-permissions <<'PROMPT_EOF' | tee ../claude-run-workflow.jsonl
           /deepwork Run the fruits full workflow. Process the list to the file and don't give any extra commentary or text output.
+          NEVER use AskUserQuestion — you already have all the information you need.
+          You MUST complete all tool calls needed. Do not stop early.
+          CRITICAL: All output files MUST be written relative to the current working directory (the project root), NOT inside .deepwork/jobs/. For example, write to ./fruits/identified_fruits.md, NOT .deepwork/jobs/fruits/identified_fruits.md.
           raw_items: apple, car, banana, chair, orange, table, mango, laptop, grape, bicycle
           PROMPT_EOF
           
@@ -405,4 +446,6 @@ jobs:
             test_project/.claude/skills/deepwork/
             test_project/fruits/identified_fruits.md
             test_project/fruits/classified_fruits.md
+            claude-create-job.jsonl
+            claude-run-workflow.jsonl
           retention-days: 7

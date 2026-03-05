@@ -16,6 +16,24 @@ common_job_info_provided_to_all_steps_at_runtime: |
   confusion or inefficiencies, and improves job instructions. It also captures bespoke
   learnings specific to the current run into AGENTS.md files in the working folder.
 
+  ## Job Schema (CRITICAL)
+
+  Before creating or editing any `job.yml` file, you MUST read the JSON schema at
+  `.deepwork/job.schema.json`. This schema is the authoritative source of truth for
+  all valid fields, types, and structures. The schema uses `additionalProperties: false`
+  at every level, so any extra or misspelled fields will cause validation failures.
+
+  Key schema rules that agents commonly get wrong:
+  - **Inputs use `oneOf`** — there are exactly two input formats, with no extra fields allowed:
+    - User parameter: `{name: str, description: str}` — ONLY these two fields
+    - File from prior step: `{file: str, from_step: str}` — ONLY these two fields
+  - **No `type` field on inputs** — do NOT add `type: "user_provided"` or `type: "file"` to inputs
+  - **No `path` field on inputs** — file paths are resolved by the framework, not specified in inputs
+  - **Output keys** are the output name; values have `{type: "file"|"files", description: str, required: bool}`
+  - **No `description` field at root level** — use `common_job_info_provided_to_all_steps_at_runtime` instead
+
+  Always read the schema file and validate your job.yml structure against it.
+
 workflows:
   - name: new_job
     summary: "Create a new DeepWork job from scratch through definition, implementation, testing, and iteration"
