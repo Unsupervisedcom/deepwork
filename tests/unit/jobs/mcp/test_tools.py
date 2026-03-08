@@ -367,8 +367,8 @@ workflows:
             goal="Complete task",
             job_name="test_job",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools.start_workflow(start_input)
 
         # Create output file
@@ -378,8 +378,8 @@ workflows:
         finish_input = FinishedStepInput(
             outputs={"output1.md": "output1.md"},
             notes="Completed step 1",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         response = await tools.finished_step(finish_input)
 
         assert response.status == StepStatus.NEXT_STEP
@@ -399,13 +399,15 @@ workflows:
             goal="Complete task",
             job_name="test_job",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools.start_workflow(start_input)
 
         # Complete first step
         (project_root / "output1.md").write_text("Output 1")
-        await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID))
+        await tools.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID)
+        )
 
         # Complete second (last) step
         (project_root / "output2.md").write_text("Output 2")
@@ -431,8 +433,8 @@ workflows:
             goal="Complete task",
             job_name="test_job",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools_with_quality.start_workflow(start_input)
 
         # Create output and finish step
@@ -463,8 +465,8 @@ workflows:
             goal="Complete task",
             job_name="test_job",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools.start_workflow(start_input)
 
         # Create output and finish step
@@ -495,8 +497,8 @@ workflows:
             goal="Complete task",
             job_name="test_job",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools.start_workflow(start_input)
 
         # Create output
@@ -511,7 +513,9 @@ workflows:
 
         # Third attempt should raise error
         with pytest.raises(ToolError, match="Quality gate failed after.*attempts"):
-            await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID))
+            await tools.finished_step(
+                FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID)
+            )
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.9).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -533,8 +537,8 @@ workflows:
             goal="Complete task",
             job_name="test_job",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools.start_workflow(start_input)
 
         # Create output and finish step with override reason
@@ -543,8 +547,8 @@ workflows:
             FinishedStepInput(
                 outputs={"output1.md": "output1.md"},
                 quality_review_override_reason="Manual review completed offline",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
 
         # Should advance to next step despite failing quality gate config
@@ -562,8 +566,8 @@ workflows:
             goal="Complete task",
             job_name="test_job",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools.start_workflow(start_input)
 
         (project_root / "output1.md").write_text("content")
@@ -571,7 +575,10 @@ workflows:
 
         with pytest.raises(ToolError, match="Unknown output names.*extra.md"):
             await tools.finished_step(
-                FinishedStepInput(outputs={"output1.md": "output1.md", "extra.md": "extra.md"}, session_id=SESSION_ID)
+                FinishedStepInput(
+                    outputs={"output1.md": "output1.md", "extra.md": "extra.md"},
+                    session_id=SESSION_ID,
+                )
             )
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.2).
@@ -584,8 +591,8 @@ workflows:
             goal="Complete task",
             job_name="test_job",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools.start_workflow(start_input)
 
         # Step1 declares output1.md, but we provide empty dict
@@ -648,8 +655,8 @@ workflows:
                 goal="Produce outputs",
                 job_name="optional_job",
                 workflow_name="main",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
 
         # Only provide the required output, omit optional ones
@@ -712,15 +719,17 @@ workflows:
                 goal="Produce outputs",
                 job_name="mixed_job",
                 workflow_name="main",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
 
         # Provide only the optional output, not the required one
         (project_root / "optional_output.md").write_text("Optional content")
         with pytest.raises(ToolError, match="Missing required outputs.*required_output.md"):
             await tools.finished_step(
-                FinishedStepInput(outputs={"optional_output.md": "optional_output.md"}, session_id=SESSION_ID)
+                FinishedStepInput(
+                    outputs={"optional_output.md": "optional_output.md"}, session_id=SESSION_ID
+                )
             )
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.3).
@@ -775,15 +784,17 @@ workflows:
                 goal="Produce outputs",
                 job_name="optional_provided_job",
                 workflow_name="main",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
 
         # Provide both required and optional
         (project_root / "main.md").write_text("Main content")
         (project_root / "bonus.md").write_text("Bonus content")
         response = await tools.finished_step(
-            FinishedStepInput(outputs={"main.md": "main.md", "bonus.md": "bonus.md"}, session_id=SESSION_ID)
+            FinishedStepInput(
+                outputs={"main.md": "main.md", "bonus.md": "bonus.md"}, session_id=SESSION_ID
+            )
         )
 
         assert response.status == StepStatus.WORKFLOW_COMPLETE
@@ -840,8 +851,8 @@ workflows:
                 goal="Produce outputs",
                 job_name="req_field_job",
                 workflow_name="main",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
 
         outputs = response.begin_step.step_expected_outputs
@@ -863,14 +874,16 @@ workflows:
             goal="Complete task",
             job_name="test_job",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools.start_workflow(start_input)
 
         (project_root / "output1.md").write_text("content")
 
         with pytest.raises(ToolError, match="type 'file'.*single string path"):
-            await tools.finished_step(FinishedStepInput(outputs={"output1.md": ["output1.md"]}, session_id=SESSION_ID))
+            await tools.finished_step(
+                FinishedStepInput(outputs={"output1.md": ["output1.md"]}, session_id=SESSION_ID)
+            )
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -882,13 +895,15 @@ workflows:
             goal="Complete task",
             job_name="test_job",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools.start_workflow(start_input)
 
         # Don't create the file
         with pytest.raises(ToolError, match="file not found at.*nonexistent.md"):
-            await tools.finished_step(FinishedStepInput(outputs={"output1.md": "nonexistent.md"}, session_id=SESSION_ID))
+            await tools.finished_step(
+                FinishedStepInput(outputs={"output1.md": "nonexistent.md"}, session_id=SESSION_ID)
+            )
 
     async def test_finished_step_empty_outputs_for_step_with_no_outputs(
         self, project_root: Path, state_manager: StateManager
@@ -932,8 +947,8 @@ workflows:
             goal="Run cleanup",
             job_name="no_output_job",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools.start_workflow(start_input)
 
         response = await tools.finished_step(FinishedStepInput(outputs={}, session_id=SESSION_ID))
@@ -988,13 +1003,15 @@ workflows:
             goal="Generate reports",
             job_name="files_job",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools.start_workflow(start_input)
 
         # output type "files" requires a list, not a string
         with pytest.raises(ToolError, match="type 'files'.*list of paths"):
-            await tools.finished_step(FinishedStepInput(outputs={"reports": "report1.md"}, session_id=SESSION_ID))
+            await tools.finished_step(
+                FinishedStepInput(outputs={"reports": "report1.md"}, session_id=SESSION_ID)
+            )
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.8).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -1043,8 +1060,8 @@ workflows:
             goal="Generate reports",
             job_name="files_job2",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools.start_workflow(start_input)
 
         # Create one file but not the other
@@ -1052,7 +1069,9 @@ workflows:
 
         with pytest.raises(ToolError, match="file not found at.*missing.md"):
             await tools.finished_step(
-                FinishedStepInput(outputs={"reports": ["report1.md", "missing.md"]}, session_id=SESSION_ID)
+                FinishedStepInput(
+                    outputs={"reports": ["report1.md", "missing.md"]}, session_id=SESSION_ID
+                )
             )
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.6, JOBS-REQ-001.5.8).
@@ -1102,15 +1121,17 @@ workflows:
             goal="Generate reports",
             job_name="files_job3",
             workflow_name="main",
-                    session_id=SESSION_ID,
-)
+            session_id=SESSION_ID,
+        )
         await tools.start_workflow(start_input)
 
         (project_root / "report1.md").write_text("Report 1")
         (project_root / "report2.md").write_text("Report 2")
 
         response = await tools.finished_step(
-            FinishedStepInput(outputs={"reports": ["report1.md", "report2.md"]}, session_id=SESSION_ID)
+            FinishedStepInput(
+                outputs={"reports": ["report1.md", "report2.md"]}, session_id=SESSION_ID
+            )
         )
 
         assert response.status == StepStatus.WORKFLOW_COMPLETE
@@ -1208,17 +1229,21 @@ workflows:
                 goal="Test input filtering",
                 job_name="chain_job",
                 workflow_name="main",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
 
         # Complete step1
         (project_root / "step1_output.md").write_text("STEP1_CONTENT_MARKER")
-        await tools.finished_step(FinishedStepInput(outputs={"step1_output.md": "step1_output.md"}, session_id=SESSION_ID))
+        await tools.finished_step(
+            FinishedStepInput(outputs={"step1_output.md": "step1_output.md"}, session_id=SESSION_ID)
+        )
 
         # Complete step2
         (project_root / "step2_output.md").write_text("STEP2_CONTENT_MARKER")
-        await tools.finished_step(FinishedStepInput(outputs={"step2_output.md": "step2_output.md"}, session_id=SESSION_ID))
+        await tools.finished_step(
+            FinishedStepInput(outputs={"step2_output.md": "step2_output.md"}, session_id=SESSION_ID)
+        )
 
         # Complete step3 — quality gate runs here
         (project_root / "step3_output.md").write_text("STEP3_CONTENT_MARKER")
@@ -1292,12 +1317,14 @@ workflows:
                 goal="Write report",
                 job_name="guided_job",
                 workflow_name="main",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
 
         (project_root / "report.md").write_text("Report content")
-        response = await tools.finished_step(FinishedStepInput(outputs={"report.md": "report.md"}, session_id=SESSION_ID))
+        response = await tools.finished_step(
+            FinishedStepInput(outputs={"report.md": "report.md"}, session_id=SESSION_ID)
+        )
 
         assert response.status == StepStatus.WORKFLOW_COMPLETE
         assert len(mock_gate.evaluations) == 1
@@ -1355,8 +1382,8 @@ workflows:
                 goal="Analyze data",
                 job_name="guided_job2",
                 workflow_name="main",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
 
         reviews = response.begin_step.step_reviews
@@ -1474,11 +1501,15 @@ workflows:
         """Test finished_step operates on top-of-stack workflow."""
         # Start two workflows — job_a is below job_b on the stack
         await tools.start_workflow(
-            StartWorkflowInput(goal="Do A", job_name="job_a", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Do A", job_name="job_a", workflow_name="main", session_id=SESSION_ID
+            )
         )
 
-        resp_b = await tools.start_workflow(
-            StartWorkflowInput(goal="Do B", job_name="job_b", workflow_name="main", session_id=SESSION_ID)
+        await tools.start_workflow(
+            StartWorkflowInput(
+                goal="Do B", job_name="job_b", workflow_name="main", session_id=SESSION_ID
+            )
         )
 
         assert tools.state_manager.get_stack_depth(SESSION_ID) == 2
@@ -1511,11 +1542,15 @@ workflows:
         """Test abort_workflow aborts top-of-stack workflow."""
         # Start two workflows
         await tools.start_workflow(
-            StartWorkflowInput(goal="Do A", job_name="job_a", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Do A", job_name="job_a", workflow_name="main", session_id=SESSION_ID
+            )
         )
 
         await tools.start_workflow(
-            StartWorkflowInput(goal="Do B", job_name="job_b", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Do B", job_name="job_b", workflow_name="main", session_id=SESSION_ID
+            )
         )
 
         assert tools.state_manager.get_stack_depth(SESSION_ID) == 2
@@ -1560,7 +1595,9 @@ class TestExternalRunnerSelfReview:
     ) -> None:
         """Test that self-review mode returns NEEDS_WORK with instructions."""
         await tools_self_review.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         (project_root / "output1.md").write_text("Some output")
 
@@ -1578,7 +1615,9 @@ class TestExternalRunnerSelfReview:
     ) -> None:
         """Test that feedback contains subagent and override instructions."""
         await tools_self_review.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         (project_root / "output1.md").write_text("Some output")
 
@@ -1599,7 +1638,9 @@ class TestExternalRunnerSelfReview:
     ) -> None:
         """Test that an instructions file is written to .deepwork/tmp/."""
         await tools_self_review.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         (project_root / "output1.md").write_text("Some output")
 
@@ -1617,7 +1658,9 @@ class TestExternalRunnerSelfReview:
     ) -> None:
         """Test that the instructions file contains the quality criteria from the job."""
         await tools_self_review.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         (project_root / "output1.md").write_text("Some output")
 
@@ -1637,7 +1680,9 @@ class TestExternalRunnerSelfReview:
     ) -> None:
         """Test that the instructions file lists output paths, not inline content."""
         await tools_self_review.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         (project_root / "output1.md").write_text("UNIQUE_CONTENT_MARKER_12345")
 
@@ -1658,7 +1703,9 @@ class TestExternalRunnerSelfReview:
     ) -> None:
         """Test that review file name includes session and step IDs."""
         resp = await tools_self_review.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         session_id = resp.begin_step.session_id
         (project_root / "output1.md").write_text("output")
@@ -1667,7 +1714,9 @@ class TestExternalRunnerSelfReview:
             FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID)
         )
 
-        expected_file = project_root / ".deepwork" / "tmp" / f"quality_review_{session_id}_step1.md"
+        expected_file = (
+            project_root / ".deepwork" / "tmp" / f"quality_review_{session_id}_main_step1.md"
+        )
         assert expected_file.exists()
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.9, JOBS-REQ-001.4.10).
@@ -1677,7 +1726,9 @@ class TestExternalRunnerSelfReview:
     ) -> None:
         """Test that calling finished_step with override after self-review advances the workflow."""
         await tools_self_review.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         (project_root / "output1.md").write_text("output")
 
@@ -1692,8 +1743,8 @@ class TestExternalRunnerSelfReview:
             FinishedStepInput(
                 outputs={"output1.md": "output1.md"},
                 quality_review_override_reason="Self-review passed: all criteria met",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
         assert resp2.status == StepStatus.NEXT_STEP
         assert resp2.begin_step is not None
@@ -1706,7 +1757,9 @@ class TestExternalRunnerSelfReview:
     ) -> None:
         """Test that steps without reviews skip self-review entirely."""
         await tools_self_review.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         (project_root / "output1.md").write_text("output")
 
@@ -1715,8 +1768,8 @@ class TestExternalRunnerSelfReview:
             FinishedStepInput(
                 outputs={"output1.md": "output1.md"},
                 quality_review_override_reason="Skip",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
 
         # step2 has no reviews, so it should complete without self-review
@@ -1731,7 +1784,9 @@ class TestExternalRunnerSelfReview:
     ) -> None:
         """Test that agent notes are included in the review instructions file."""
         await tools_self_review.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         (project_root / "output1.md").write_text("output")
 
@@ -1739,8 +1794,8 @@ class TestExternalRunnerSelfReview:
             FinishedStepInput(
                 outputs={"output1.md": "output1.md"},
                 notes="I used the XYZ library for this step.",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
 
         review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
@@ -1766,7 +1821,9 @@ class TestExternalRunnerClaude:
         )
 
         await tools.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         (project_root / "output1.md").write_text("output")
 
@@ -1791,11 +1848,15 @@ class TestExternalRunnerClaude:
         )
 
         await tools.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         (project_root / "output1.md").write_text("output")
 
-        await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID))
+        await tools.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID)
+        )
 
         review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
         assert len(review_files) == 0
@@ -1815,7 +1876,9 @@ class TestExternalRunnerClaude:
         )
 
         await tools.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         (project_root / "output1.md").write_text("output")
 
@@ -1843,7 +1906,9 @@ class TestExternalRunnerClaude:
         )
 
         await tools.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         (project_root / "output1.md").write_text("output")
 
@@ -1856,7 +1921,9 @@ class TestExternalRunnerClaude:
 
         # Third attempt: raises ToolError
         with pytest.raises(ToolError, match="Quality gate failed after.*attempts"):
-            await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID))
+            await tools.finished_step(
+                FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID)
+            )
 
 
 class TestExternalRunnerInit:
@@ -1992,18 +2059,22 @@ workflows:
                 goal="Test go_to_step",
                 job_name="three_step_job",
                 workflow_name="main",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
         session_id = resp.begin_step.session_id
 
         # Complete step1
         (project_root / "output1.md").write_text("Step 1 output")
-        await tools.finished_step(FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID))
+        await tools.finished_step(
+            FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID)
+        )
 
         # Complete step2
         (project_root / "output2.md").write_text("Step 2 output")
-        await tools.finished_step(FinishedStepInput(outputs={"output2.md": "output2.md"}, session_id=SESSION_ID))
+        await tools.finished_step(
+            FinishedStepInput(outputs={"output2.md": "output2.md"}, session_id=SESSION_ID)
+        )
 
         return session_id
 
@@ -2081,8 +2152,8 @@ workflows:
                 goal="Test",
                 job_name="three_step_job",
                 workflow_name="main",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
 
         with pytest.raises(ToolError, match="Cannot go forward"):
@@ -2160,8 +2231,8 @@ workflows:
                 goal="Nested",
                 job_name="three_step_job",
                 workflow_name="main",
-                            session_id=SESSION_ID,
-)
+                session_id=SESSION_ID,
+            )
         )
 
         # go_to_step targeting the first session by session_id
@@ -2272,14 +2343,20 @@ workflows:
 
         # Start workflow and advance past the concurrent entry to finalize
         await tools.start_workflow(
-            StartWorkflowInput(goal="Test", job_name="concurrent_job", workflow_name="main", session_id=SESSION_ID)
+            StartWorkflowInput(
+                goal="Test", job_name="concurrent_job", workflow_name="main", session_id=SESSION_ID
+            )
         )
         (tmp_path / "setup.md").write_text("Setup done")
-        await tools.finished_step(FinishedStepInput(outputs={"setup.md": "setup.md"}, session_id=SESSION_ID))
+        await tools.finished_step(
+            FinishedStepInput(outputs={"setup.md": "setup.md"}, session_id=SESSION_ID)
+        )
         # Now at the concurrent entry [task_a, task_b] — current step is task_a
         (tmp_path / "task_a.md").write_text("Task A done")
         (tmp_path / "task_b.md").write_text("Task B done")
-        await tools.finished_step(FinishedStepInput(outputs={"task_a.md": "task_a.md"}, session_id=SESSION_ID))
+        await tools.finished_step(
+            FinishedStepInput(outputs={"task_a.md": "task_a.md"}, session_id=SESSION_ID)
+        )
         # Now at finalize (entry_index=2)
 
         # Go back to the concurrent entry — should navigate to task_a (first in entry)

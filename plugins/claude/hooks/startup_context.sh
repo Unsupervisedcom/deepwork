@@ -28,7 +28,7 @@ AGENT_ID=$(echo "$INPUT" | jq -r '.agent_id // empty')
 # ==== Build context string ====
 CTX="CLAUDE_CODE_SESSION_ID=$SESSION_ID"
 if [ -n "$AGENT_ID" ]; then
-  CTX="${CTX}\nCLAUDE_CODE_AGENT_ID=$AGENT_ID"
+  CTX="${CTX}"$'\n'"CLAUDE_CODE_AGENT_ID=$AGENT_ID"
 fi
 
 # ==== Output hook response ====

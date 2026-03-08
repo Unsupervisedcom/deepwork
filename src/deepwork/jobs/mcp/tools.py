@@ -485,7 +485,8 @@ class WorkflowTools:
                 # Write instructions to .deepwork/tmp/
                 tmp_dir = self.project_root / ".deepwork" / "tmp"
                 tmp_dir.mkdir(parents=True, exist_ok=True)
-                review_filename = f"quality_review_{sid}_{current_step_id}.md"
+                wf_name = session.workflow_name
+                review_filename = f"quality_review_{sid}_{wf_name}_{current_step_id}.md"
                 review_file_path = tmp_dir / review_filename
                 async with aiofiles.open(review_file_path, "w", encoding="utf-8") as f:
                     await f.write(review_content)

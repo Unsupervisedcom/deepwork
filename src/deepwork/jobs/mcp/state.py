@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -119,8 +121,21 @@ class StateManager:
         data = {"workflow_stack": [s.to_dict() for s in stack]}
         content = json.dumps(data, indent=2)
 
-        async with aiofiles.open(state_file, "w", encoding="utf-8") as f:
-            await f.write(content)
+        # Write to a temp file then atomically rename to avoid partial reads
+        fd, tmp_path = tempfile.mkstemp(
+            dir=str(state_file.parent), suffix=".tmp"
+        )
+        try:
+            async with aiofiles.open(fd, "w", encoding="utf-8", closefd=True) as f:
+                await f.write(content)
+            os.replace(tmp_path, state_file)
+        except BaseException:
+            # Clean up temp file on failure
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
 
     async def create_session(
         self,
@@ -191,8 +206,8 @@ class StateManager:
         content = state_file.read_text(encoding="utf-8")
         try:
             data = json.loads(content)
-        except json.JSONDecodeError:
-            raise StateError("No active workflow session. Use start_workflow to begin a workflow.")
+        except json.JSONDecodeError as exc:
+            raise StateError("No active workflow session. Use start_workflow to begin a workflow.") from exc
 
         stack_data = data.get("workflow_stack", [])
         if not stack_data:

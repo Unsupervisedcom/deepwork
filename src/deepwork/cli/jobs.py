@@ -49,13 +49,13 @@ def _list_sessions_sync(sessions_base: Path) -> list[WorkflowSession]:
     """Read all session state files synchronously.
 
     Scans .deepwork/tmp/sessions/<platform>/session-<id>/state.json files
-    and extracts the top-of-stack workflow session from each.
+    and extracts all workflow sessions from each stack.
 
     Args:
         sessions_base: Path to .deepwork/tmp/sessions/ directory.
 
     Returns:
-        List of top-of-stack WorkflowSession objects, sorted by started_at descending.
+        List of all WorkflowSession objects across all stacks, sorted by started_at descending.
     """
     if not sessions_base.exists():
         return []
