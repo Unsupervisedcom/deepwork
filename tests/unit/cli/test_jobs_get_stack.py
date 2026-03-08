@@ -22,10 +22,15 @@ def _create_session_file(
     goal: str = "Test goal",
     instance_id: str | None = None,
     step_progress: dict | None = None,
+    platform: str = "claude",
 ) -> Path:
-    """Create a session JSON file for testing."""
-    sessions_dir.mkdir(parents=True, exist_ok=True)
-    data = {
+    """Create a session JSON file for testing.
+
+    Writes to the new persistent state path structure:
+    sessions_dir/sessions/<platform>/session-<id>/state.json
+    with the workflow_stack format.
+    """
+    session_data = {
         "session_id": session_id,
         "job_name": job_name,
         "workflow_name": workflow_name,
@@ -39,8 +44,10 @@ def _create_session_file(
         "status": status,
         "abort_reason": None,
     }
-    path = sessions_dir / f"session_{session_id}.json"
-    path.write_text(json.dumps(data))
+    state_dir = sessions_dir / "sessions" / platform / f"session-{session_id}"
+    state_dir.mkdir(parents=True, exist_ok=True)
+    path = state_dir / "state.json"
+    path.write_text(json.dumps({"workflow_stack": [session_data]}))
     return path
 
 

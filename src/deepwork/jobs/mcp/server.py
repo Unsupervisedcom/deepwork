@@ -85,7 +85,7 @@ def create_server(
     _ensure_schema_available(project_path)
 
     # Initialize components
-    state_manager = StateManager(project_path)
+    state_manager = StateManager(project_root=project_path, platform=platform or "claude")
 
     quality_gate: QualityGate | None = None
     if enable_quality_gate:
@@ -118,14 +118,21 @@ def create_server(
     # descriptions), update doc/mcp_interface.md to keep documentation in sync.
     # =========================================================================
 
-    def _log_tool_call(tool_name: str, params: dict[str, Any] | None = None) -> None:
+    def _log_tool_call(
+        tool_name: str,
+        params: dict[str, Any] | None = None,
+        session_id: str | None = None,
+        agent_id: str | None = None,
+    ) -> None:
         """Log a tool call with stack information."""
-        stack = [entry.model_dump() for entry in state_manager.get_stack()]
-        log_data = {
-            "tool": tool_name,
-            "stack": stack,
-            "stack_depth": len(stack),
-        }
+        log_data: dict[str, Any] = {"tool": tool_name}
+        if session_id:
+            stack = [
+                entry.model_dump()
+                for entry in state_manager.get_stack(session_id, agent_id)
+            ]
+            log_data["stack"] = stack
+            log_data["stack_depth"] = len(stack)
         if params:
             log_data["params"] = params
         logger.info("MCP tool call: %s", log_data)
@@ -146,10 +153,11 @@ def create_server(
     @mcp.tool(
         description=(
             "Start a new workflow session. "
-            "Creates a git branch, initializes state tracking, and returns "
-            "the first step's instructions. "
-            "Required parameters: goal (what user wants), job_name, workflow_name. "
-            "Optional: instance_id for naming (e.g., 'acme', 'q1-2026'). "
+            "Initializes state tracking and returns the first step's instructions. "
+            "Required parameters: goal (what user wants), job_name, workflow_name, "
+            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Optional: instance_id for naming (e.g., 'acme', 'q1-2026'), "
+            "agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents). "
             "Supports nested workflows - starting a workflow while one is active "
             "pushes onto the stack. Use abort_workflow to cancel and return to parent."
         )
@@ -158,6 +166,8 @@ def create_server(
         goal: str,
         job_name: str,
         workflow_name: str,
+        session_id: str,
+        agent_id: str | None = None,
         instance_id: str | None = None,
     ) -> dict[str, Any]:
         """Start a workflow and get first step instructions."""
@@ -168,12 +178,17 @@ def create_server(
                 "job_name": job_name,
                 "workflow_name": workflow_name,
                 "instance_id": instance_id,
+                "agent_id": agent_id,
             },
+            session_id=session_id,
+            agent_id=agent_id,
         )
         input_data = StartWorkflowInput(
             goal=goal,
             job_name=job_name,
             workflow_name=workflow_name,
+            session_id=session_id,
+            agent_id=agent_id,
             instance_id=instance_id,
         )
         response = await tools.start_workflow(input_data)
@@ -187,22 +202,23 @@ def create_server(
             "'needs_work' with feedback to fix issues, "
             "'next_step' with instructions for the next step, or "
             "'workflow_complete' when finished (pops from stack if nested). "
-            "Required: outputs (map of output names to file paths created). "
+            "Required: outputs (map of output names to file paths created), "
+            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
             "For outputs with type 'file': pass a single string path. "
             "For outputs with type 'files': pass a list of string paths. "
             "Outputs marked required: true must be provided; required: false outputs can be omitted. "
             "Check step_expected_outputs in the response to see each output's type and required status. "
             "Optional: notes about work done. "
             "Optional: quality_review_override_reason to skip quality review (must explain why). "
-            "Optional: session_id to target a specific workflow session "
-            "(use when multiple workflows are active concurrently)."
+            "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents)."
         )
     )
     async def finished_step(
         outputs: dict[str, str | list[str]],
+        session_id: str,
         notes: str | None = None,
         quality_review_override_reason: str | None = None,
-        session_id: str | None = None,
+        agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Report step completion and get next instructions."""
         _log_tool_call(
@@ -211,14 +227,17 @@ def create_server(
                 "outputs": outputs,
                 "notes": notes,
                 "quality_review_override_reason": quality_review_override_reason,
-                "session_id": session_id,
+                "agent_id": agent_id,
             },
+            session_id=session_id,
+            agent_id=agent_id,
         )
         input_data = FinishedStepInput(
             outputs=outputs,
             notes=notes,
             quality_review_override_reason=quality_review_override_reason,
             session_id=session_id,
+            agent_id=agent_id,
         )
         response = await tools.finished_step(input_data)
         return response.model_dump()
@@ -227,22 +246,27 @@ def create_server(
         description=(
             "Abort the current workflow and return to the parent workflow (if nested). "
             "Use this when a workflow cannot be completed and needs to be abandoned. "
-            "Required: explanation (why the workflow is being aborted). "
-            "Optional: session_id to target a specific workflow session "
-            "(use when multiple workflows are active concurrently). "
+            "Required: explanation (why the workflow is being aborted), "
+            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents). "
             "Returns the aborted workflow info and the resumed parent workflow (if any)."
         )
     )
     async def abort_workflow(
         explanation: str,
-        session_id: str | None = None,
+        session_id: str,
+        agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Abort the current workflow and return to parent."""
         _log_tool_call(
             "abort_workflow",
-            {"explanation": explanation, "session_id": session_id},
+            {"explanation": explanation, "agent_id": agent_id},
+            session_id=session_id,
+            agent_id=agent_id,
         )
-        input_data = AbortWorkflowInput(explanation=explanation, session_id=session_id)
+        input_data = AbortWorkflowInput(
+            explanation=explanation, session_id=session_id, agent_id=agent_id
+        )
         response = await tools.abort_workflow(input_data)
         return response.model_dump()
 
@@ -253,21 +277,26 @@ def create_server(
             "of subsequent steps to ensure consistency. "
             "Use this when earlier outputs need revision or quality issues are discovered. "
             "Files on disk are NOT deleted — only session tracking state is cleared. "
-            "Required: step_id (the step to go back to). "
-            "Optional: session_id to target a specific workflow session "
-            "(use when multiple workflows are active concurrently)."
+            "Required: step_id (the step to go back to), "
+            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents)."
         )
     )
     async def go_to_step(
         step_id: str,
-        session_id: str | None = None,
+        session_id: str,
+        agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Navigate back to a prior step, clearing subsequent progress."""
         _log_tool_call(
             "go_to_step",
-            {"step_id": step_id, "session_id": session_id},
+            {"step_id": step_id, "agent_id": agent_id},
+            session_id=session_id,
+            agent_id=agent_id,
         )
-        input_data = GoToStepInput(step_id=step_id, session_id=session_id)
+        input_data = GoToStepInput(
+            step_id=step_id, session_id=session_id, agent_id=agent_id
+        )
         response = await tools.go_to_step(input_data)
         return response.model_dump()
 
@@ -342,12 +371,17 @@ def _get_server_instructions() -> str:
 
 This MCP server guides you through multi-step workflows with quality gates.
 
+## Session Identity
+
+All workflow tools require `session_id` (your CLAUDE_CODE_SESSION_ID from startup context).
+If you are a sub-agent, also pass `agent_id` (your CLAUDE_CODE_AGENT_ID from startup context).
+
 ## Workflow
 
 1. **Discover**: Call `get_workflows` to see available workflows
-2. **Start**: Call `start_workflow` with your goal, job_name, and workflow_name
+2. **Start**: Call `start_workflow` with your goal, job_name, workflow_name, and session_id
 3. **Execute**: Follow the step instructions returned
-4. **Checkpoint**: Call `finished_step` with your outputs when done with each step
+4. **Checkpoint**: Call `finished_step` with your outputs and session_id when done with each step
 5. **Iterate**: If `needs_work`, fix issues and call `finished_step` again
 6. **Continue**: If `next_step`, execute new instructions and repeat
 7. **Complete**: When `workflow_complete`, the workflow is done

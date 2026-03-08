@@ -14,6 +14,8 @@ from deepwork.jobs.mcp.quality_gate import MockQualityGate, QualityGate
 from deepwork.jobs.mcp.state import StateManager
 from deepwork.jobs.mcp.tools import WorkflowTools
 
+SESSION_ID = "async-test-session"
+
 
 class TestAsyncInterfaceRegression:
     """Tests that verify async interface contract is maintained."""
@@ -22,16 +24,13 @@ class TestAsyncInterfaceRegression:
         """Verify StateManager methods that must be async remain async."""
         async_methods = [
             "create_session",
-            "load_session",
             "start_step",
             "complete_step",
             "record_quality_attempt",
             "advance_to_step",
             "complete_workflow",
             "abort_workflow",
-            "list_sessions",
-            "find_active_sessions_for_workflow",
-            "delete_session",
+            "go_to_step",
         ]
 
         for method_name in async_methods:
@@ -43,20 +42,11 @@ class TestAsyncInterfaceRegression:
 
     def test_state_manager_has_lock(self, tmp_path: Path) -> None:
         """Verify StateManager has an asyncio.Lock for thread safety."""
-        manager = StateManager(tmp_path)
+        manager = StateManager(project_root=tmp_path, platform="test")
 
         assert hasattr(manager, "_lock"), "StateManager must have _lock attribute"
         assert isinstance(manager._lock, asyncio.Lock), (
             "StateManager._lock must be an asyncio.Lock for async concurrency safety"
-        )
-
-    def test_state_manager_has_session_stack(self, tmp_path: Path) -> None:
-        """Verify StateManager uses a session stack for nested workflows."""
-        manager = StateManager(tmp_path)
-
-        assert hasattr(manager, "_session_stack"), "StateManager must have _session_stack attribute"
-        assert isinstance(manager._session_stack, list), (
-            "StateManager._session_stack must be a list for nested workflow support"
         )
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.1, JOBS-REQ-001.4.1, JOBS-REQ-001.6.1).
@@ -115,10 +105,11 @@ class TestAsyncInterfaceRegression:
         deepwork_dir.mkdir()
         (deepwork_dir / "tmp").mkdir()
 
-        manager = StateManager(tmp_path)
+        manager = StateManager(project_root=tmp_path, platform="test")
 
         # Create initial session
         await manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Test goal",
@@ -127,7 +118,7 @@ class TestAsyncInterfaceRegression:
 
         # Run multiple concurrent quality attempt recordings
         async def record_attempt() -> int:
-            return await manager.record_quality_attempt("step1")
+            return await manager.record_quality_attempt(SESSION_ID, "step1")
 
         # Execute 10 concurrent recordings
         results = await asyncio.gather(*[record_attempt() for _ in range(10)])
@@ -139,62 +130,77 @@ class TestAsyncInterfaceRegression:
         )
 
         # Verify final count is correct
-        final_session = manager.get_active_session()
-        assert final_session is not None
+        final_session = manager.resolve_session(SESSION_ID)
         assert final_session.step_progress["step1"].quality_attempts == 10
 
-    async def test_concurrent_workflows_with_session_id_routing(self, tmp_path: Path) -> None:
-        """Test that two concurrent sessions can be routed correctly via session_id.
+    async def test_concurrent_workflows_with_agent_isolation(self, tmp_path: Path) -> None:
+        """Test that two concurrent agents can operate independently.
 
-        Two sessions are created on the stack. Concurrent finished_step-like
-        operations (complete_step) target different sessions via session_id
-        and don't interfere with each other.
+        Two agents create workflows scoped to their agent IDs. Concurrent
+        operations don't interfere with each other.
         """
         deepwork_dir = tmp_path / ".deepwork"
         deepwork_dir.mkdir()
         (deepwork_dir / "tmp").mkdir()
 
-        manager = StateManager(tmp_path)
+        manager = StateManager(project_root=tmp_path, platform="test")
 
-        # Create two sessions on the stack
-        session1 = await manager.create_session(
+        # Create a main workflow
+        await manager.create_session(
+            session_id=SESSION_ID,
+            job_name="main_job",
+            workflow_name="main_wf",
+            goal="Main goal",
+            first_step_id="step1",
+        )
+
+        # Create agent-scoped workflows
+        await manager.create_session(
+            session_id=SESSION_ID,
             job_name="job1",
             workflow_name="wf1",
             goal="Goal 1",
             first_step_id="step_a",
+            agent_id="agent-1",
         )
-        session2 = await manager.create_session(
+        await manager.create_session(
+            session_id=SESSION_ID,
             job_name="job2",
             workflow_name="wf2",
             goal="Goal 2",
             first_step_id="step_x",
+            agent_id="agent-2",
         )
 
-        # Concurrent complete_step calls targeting different sessions
-        async def complete_session1() -> None:
+        # Concurrent complete_step calls targeting different agents
+        async def complete_agent1() -> None:
             await manager.complete_step(
+                session_id=SESSION_ID,
                 step_id="step_a",
                 outputs={"out1": "file1.md"},
-                session_id=session1.session_id,
+                agent_id="agent-1",
             )
 
-        async def complete_session2() -> None:
+        async def complete_agent2() -> None:
             await manager.complete_step(
+                session_id=SESSION_ID,
                 step_id="step_x",
                 outputs={"out2": "file2.md"},
-                session_id=session2.session_id,
+                agent_id="agent-2",
             )
 
         # Run concurrently
-        await asyncio.gather(complete_session1(), complete_session2())
+        await asyncio.gather(complete_agent1(), complete_agent2())
 
-        # Verify each session got the right updates
-        assert "step_a" in session1.step_progress
-        assert session1.step_progress["step_a"].outputs == {"out1": "file1.md"}
+        # Verify each agent got the right updates
+        agent1_session = manager.resolve_session(SESSION_ID, "agent-1")
+        assert "step_a" in agent1_session.step_progress
+        assert agent1_session.step_progress["step_a"].outputs == {"out1": "file1.md"}
 
-        assert "step_x" in session2.step_progress
-        assert session2.step_progress["step_x"].outputs == {"out2": "file2.md"}
+        agent2_session = manager.resolve_session(SESSION_ID, "agent-2")
+        assert "step_x" in agent2_session.step_progress
+        assert agent2_session.step_progress["step_x"].outputs == {"out2": "file2.md"}
 
-        # Cross-check: session1 should NOT have step_x, session2 should NOT have step_a
-        assert "step_x" not in session1.step_progress
-        assert "step_a" not in session2.step_progress
+        # Cross-check: agents don't have each other's steps
+        assert "step_x" not in agent1_session.step_progress
+        assert "step_a" not in agent2_session.step_progress

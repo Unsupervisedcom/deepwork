@@ -1,5 +1,36 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/startup_context.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post_compact.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/startup_context.sh"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Bash",
@@ -7,17 +38,6 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post_commit_reminder.sh"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "compact",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post_compact.sh"
           }
         ]
       }

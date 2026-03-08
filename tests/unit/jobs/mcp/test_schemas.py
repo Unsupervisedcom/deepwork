@@ -135,11 +135,13 @@ class TestStartWorkflowInput:
             goal="Complete a task",
             job_name="test_job",
             workflow_name="main",
+            session_id="test-session",
         )
 
         assert input_data.goal == "Complete a task"
         assert input_data.job_name == "test_job"
         assert input_data.workflow_name == "main"
+        assert input_data.session_id == "test-session"
         assert input_data.instance_id is None
 
     def test_with_instance_id(self) -> None:
@@ -148,6 +150,7 @@ class TestStartWorkflowInput:
             goal="Complete a task",
             job_name="test_job",
             workflow_name="main",
+            session_id="test-session",
             instance_id="acme",
         )
 
@@ -160,7 +163,8 @@ class TestFinishedStepInput:
     def test_with_outputs(self) -> None:
         """Test with structured outputs."""
         input_data = FinishedStepInput(
-            outputs={"report": "report.md", "data_files": ["a.csv", "b.csv"]}
+            outputs={"report": "report.md", "data_files": ["a.csv", "b.csv"]},
+            session_id="test-session",
         )
 
         assert input_data.outputs == {"report": "report.md", "data_files": ["a.csv", "b.csv"]}
@@ -168,7 +172,7 @@ class TestFinishedStepInput:
 
     def test_with_empty_outputs(self) -> None:
         """Test with empty outputs dict (for steps with no outputs)."""
-        input_data = FinishedStepInput(outputs={})
+        input_data = FinishedStepInput(outputs={}, session_id="test-session")
 
         assert input_data.outputs == {}
 
@@ -177,6 +181,7 @@ class TestFinishedStepInput:
         input_data = FinishedStepInput(
             outputs={"output": "output.md"},
             notes="Completed successfully",
+            session_id="test-session",
         )
 
         assert input_data.notes == "Completed successfully"

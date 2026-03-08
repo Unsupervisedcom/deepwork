@@ -214,7 +214,7 @@ class TestMCPWorkflowTools:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_get_workflows_returns_jobs(self, project_with_job: Path) -> None:
         """Test that get_workflows returns available jobs and workflows."""
-        state_manager = StateManager(project_with_job)
+        state_manager = StateManager(project_root=project_with_job, platform="test")
         tools = WorkflowTools(project_with_job, state_manager)
 
         response = tools.get_workflows()
@@ -238,7 +238,7 @@ class TestMCPWorkflowTools:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow_creates_session(self, project_with_job: Path) -> None:
         """Test that start_workflow creates a new workflow session."""
-        state_manager = StateManager(project_with_job)
+        state_manager = StateManager(project_root=project_with_job, platform="test")
         tools = WorkflowTools(project_with_job, state_manager)
 
         # Get available workflows first
@@ -255,6 +255,7 @@ class TestMCPWorkflowTools:
             goal="Test identifying and classifying fruits",
             job_name="fruits",
             workflow_name=workflow_name,
+            session_id="test-e2e-session",
             instance_id="test-instance",
         )
 
@@ -272,7 +273,7 @@ class TestMCPWorkflowTools:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_workflow_step_progression(self, project_with_job: Path) -> None:
         """Test that finished_step progresses through workflow steps."""
-        state_manager = StateManager(project_with_job)
+        state_manager = StateManager(project_root=project_with_job, platform="test")
         tools = WorkflowTools(project_with_job, state_manager)
 
         # Get workflows and start
@@ -289,6 +290,7 @@ class TestMCPWorkflowTools:
             goal="Test workflow progression",
             job_name="fruits",
             workflow_name=workflow_name,
+            session_id="test-e2e-session-2",
         )
         await tools.start_workflow(start_input)
 
@@ -300,6 +302,7 @@ class TestMCPWorkflowTools:
         finish_input = FinishedStepInput(
             outputs={"identified_fruits.md": str(output_file)},
             notes="Identified fruits from test input",
+            session_id="test-e2e-session-2",
         )
         finish_response = await tools.finished_step(finish_input)
 

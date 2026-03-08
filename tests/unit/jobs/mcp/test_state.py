@@ -6,6 +6,11 @@ import pytest
 
 from deepwork.jobs.mcp.state import StateError, StateManager
 
+SESSION_ID = "test-session-001"
+SESSION_ID_2 = "test-session-002"
+AGENT_ID = "agent-abc"
+AGENT_ID_2 = "agent-xyz"
+
 
 @pytest.fixture
 def project_root(tmp_path: Path) -> Path:
@@ -19,7 +24,7 @@ def project_root(tmp_path: Path) -> Path:
 @pytest.fixture
 def state_manager(project_root: Path) -> StateManager:
     """Create a StateManager instance."""
-    return StateManager(project_root)
+    return StateManager(project_root=project_root, platform="test")
 
 
 class TestStateManager:
@@ -30,24 +35,16 @@ class TestStateManager:
     def test_init(self, state_manager: StateManager, project_root: Path) -> None:
         """Test StateManager initialization."""
         assert state_manager.project_root == project_root
-        assert state_manager.sessions_dir == project_root / ".deepwork" / "tmp"
-        assert state_manager._session_stack == []
-        assert state_manager.get_stack_depth() == 0
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.2.1, JOBS-REQ-003.2.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_generate_session_id(self, state_manager: StateManager) -> None:
-        """Test session ID generation."""
-        session_id = state_manager._generate_session_id()
-
-        assert isinstance(session_id, str)
-        assert len(session_id) == 8
+        assert state_manager.platform == "test"
+        assert state_manager.sessions_dir == project_root / ".deepwork" / "tmp" / "sessions" / "test"
+        assert state_manager.get_stack_depth(SESSION_ID) == 0
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.3.4, JOBS-REQ-003.3.5, JOBS-REQ-003.3.8, JOBS-REQ-003.3.10).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_create_session(self, state_manager: StateManager) -> None:
         """Test creating a new session."""
         session = await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
@@ -55,6 +52,7 @@ class TestStateManager:
             instance_id="acme",
         )
 
+        assert session.session_id == SESSION_ID
         assert session.job_name == "test_job"
         assert session.workflow_name == "main"
         assert session.goal == "Complete the task"
@@ -62,76 +60,81 @@ class TestStateManager:
         assert session.instance_id == "acme"
         assert session.status == "active"
 
-        # Verify session file was created
-        session_file = state_manager._session_file(session.session_id)
-        assert session_file.exists()
+        # Verify state file was created
+        state_file = state_manager._state_file(SESSION_ID)
+        assert state_file.exists()
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.5.1, JOBS-REQ-003.5.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    async def test_load_session(self, state_manager: StateManager) -> None:
-        """Test loading an existing session."""
-        # Create a session first
-        created_session = await state_manager.create_session(
+    async def test_state_persists_across_manager_instances(
+        self, state_manager: StateManager, project_root: Path
+    ) -> None:
+        """Test state persists across StateManager instances."""
+        await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
             first_step_id="step1",
         )
 
-        # Create a new state manager and load the session
-        new_manager = StateManager(state_manager.project_root)
-        loaded_session = await new_manager.load_session(created_session.session_id)
+        # Create a new state manager and resolve the session
+        new_manager = StateManager(project_root=project_root, platform="test")
+        loaded = new_manager.resolve_session(SESSION_ID)
 
-        assert loaded_session.session_id == created_session.session_id
-        assert loaded_session.job_name == "test_job"
-        assert loaded_session.goal == "Complete the task"
+        assert loaded.session_id == SESSION_ID
+        assert loaded.job_name == "test_job"
+        assert loaded.goal == "Complete the task"
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.5.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    async def test_load_session_not_found(self, state_manager: StateManager) -> None:
-        """Test loading non-existent session."""
-        with pytest.raises(StateError, match="Session not found"):
-            await state_manager.load_session("nonexistent")
+    def test_resolve_session_not_found(self, state_manager: StateManager) -> None:
+        """Test resolving non-existent session."""
+        with pytest.raises(StateError, match="No active workflow session"):
+            state_manager.resolve_session("nonexistent")
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    async def test_get_active_session(self, state_manager: StateManager) -> None:
-        """Test getting active session."""
+    async def test_resolve_session(self, state_manager: StateManager) -> None:
+        """Test resolving the active session."""
         # No active session initially
-        assert state_manager.get_active_session() is None
+        with pytest.raises(StateError):
+            state_manager.resolve_session(SESSION_ID)
 
         # Create session
         session = await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
             first_step_id="step1",
         )
 
-        assert state_manager.get_active_session() == session
+        resolved = state_manager.resolve_session(SESSION_ID)
+        assert resolved.job_name == session.job_name
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.2, JOBS-REQ-003.6.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_require_active_session(self, state_manager: StateManager) -> None:
-        """Test require_active_session raises when no session."""
+    def test_resolve_session_no_session(self, state_manager: StateManager) -> None:
+        """Test resolve_session raises when no session."""
         with pytest.raises(StateError, match="No active workflow session"):
-            state_manager.require_active_session()
+            state_manager.resolve_session(SESSION_ID)
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.8.1, JOBS-REQ-003.8.2, JOBS-REQ-003.8.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_step(self, state_manager: StateManager) -> None:
         """Test marking a step as started."""
         await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
             first_step_id="step1",
         )
 
-        await state_manager.start_step("step2")
-        session = state_manager.get_active_session()
+        await state_manager.start_step(SESSION_ID, "step2")
+        session = state_manager.resolve_session(SESSION_ID)
 
-        assert session is not None
         assert session.current_step_id == "step2"
         assert "step2" in session.step_progress
         assert session.step_progress["step2"].started_at is not None
@@ -141,6 +144,7 @@ class TestStateManager:
     async def test_complete_step(self, state_manager: StateManager) -> None:
         """Test marking a step as completed."""
         await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
@@ -148,13 +152,13 @@ class TestStateManager:
         )
 
         await state_manager.complete_step(
+            session_id=SESSION_ID,
             step_id="step1",
             outputs={"report": "output1.md", "data": "output2.md"},
             notes="Done!",
         )
 
-        session = state_manager.get_active_session()
-        assert session is not None
+        session = state_manager.resolve_session(SESSION_ID)
         progress = session.step_progress["step1"]
 
         assert progress.completed_at is not None
@@ -166,6 +170,7 @@ class TestStateManager:
     async def test_record_quality_attempt(self, state_manager: StateManager) -> None:
         """Test recording quality gate attempts."""
         await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
@@ -173,11 +178,11 @@ class TestStateManager:
         )
 
         # First attempt
-        attempts = await state_manager.record_quality_attempt("step1")
+        attempts = await state_manager.record_quality_attempt(SESSION_ID, "step1")
         assert attempts == 1
 
         # Second attempt
-        attempts = await state_manager.record_quality_attempt("step1")
+        attempts = await state_manager.record_quality_attempt(SESSION_ID, "step1")
         assert attempts == 2
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.10.1, JOBS-REQ-003.10.2).
@@ -185,16 +190,16 @@ class TestStateManager:
     async def test_advance_to_step(self, state_manager: StateManager) -> None:
         """Test advancing to a new step."""
         await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
             first_step_id="step1",
         )
 
-        await state_manager.advance_to_step("step2", 1)
-        session = state_manager.get_active_session()
+        await state_manager.advance_to_step(SESSION_ID, "step2", 1)
+        session = state_manager.resolve_session(SESSION_ID)
 
-        assert session is not None
         assert session.current_step_id == "step2"
         assert session.current_entry_index == 1
 
@@ -202,42 +207,43 @@ class TestStateManager:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_complete_workflow(self, state_manager: StateManager) -> None:
         """Test marking workflow as complete pops from stack."""
-        session = await state_manager.create_session(
+        await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
             first_step_id="step1",
         )
-        session_id = session.session_id
 
-        # Complete workflow - should pop from stack
-        new_active = await state_manager.complete_workflow()
+        # Complete workflow — should pop from stack
+        new_active = await state_manager.complete_workflow(SESSION_ID)
 
         # No active session after completion
         assert new_active is None
-        assert state_manager.get_active_session() is None
-        assert state_manager.get_stack_depth() == 0
+        assert state_manager.get_stack_depth(SESSION_ID) == 0
 
-        # But completed session should be persisted to disk
-        loaded = await state_manager.load_session(session_id)
-        assert loaded.status == "completed"
-        assert loaded.completed_at is not None
+        # State file should still exist (stack is empty but file persists)
+        state_file = state_manager._state_file(SESSION_ID)
+        assert state_file.exists()
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.14.1, JOBS-REQ-003.14.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_get_all_outputs(self, state_manager: StateManager) -> None:
         """Test getting all outputs from completed steps."""
         await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Complete the task",
             first_step_id="step1",
         )
 
-        await state_manager.complete_step("step1", {"report": "output1.md"})
-        await state_manager.complete_step("step2", {"data_files": ["output2.md", "output3.md"]})
+        await state_manager.complete_step(SESSION_ID, "step1", {"report": "output1.md"})
+        await state_manager.complete_step(
+            SESSION_ID, "step2", {"data_files": ["output2.md", "output3.md"]}
+        )
 
-        outputs = state_manager.get_all_outputs()
+        outputs = state_manager.get_all_outputs(SESSION_ID)
 
         assert outputs == {
             "report": "output1.md",
@@ -245,80 +251,12 @@ class TestStateManager:
         }
         assert len(outputs) == 2
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.15.1).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    async def test_list_sessions(self, state_manager: StateManager) -> None:
-        """Test listing all sessions."""
-        # Create multiple sessions
-        await state_manager.create_session(
-            job_name="job1",
-            workflow_name="main",
-            goal="Goal 1",
-            first_step_id="step1",
-        )
-        await state_manager.create_session(
-            job_name="job2",
-            workflow_name="main",
-            goal="Goal 2",
-            first_step_id="step1",
-        )
-
-        sessions = await state_manager.list_sessions()
-
-        assert len(sessions) == 2
-        job_names = {s.job_name for s in sessions}
-        assert "job1" in job_names
-        assert "job2" in job_names
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.15.4).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    async def test_find_active_sessions_for_workflow(self, state_manager: StateManager) -> None:
-        """Test finding active sessions for a workflow."""
-        # Create sessions for different workflows
-        await state_manager.create_session(
-            job_name="test_job",
-            workflow_name="main",
-            goal="Goal 1",
-            first_step_id="step1",
-        )
-        await state_manager.create_session(
-            job_name="test_job",
-            workflow_name="other",
-            goal="Goal 2",
-            first_step_id="step1",
-        )
-
-        sessions = await state_manager.find_active_sessions_for_workflow("test_job", "main")
-
-        assert len(sessions) == 1
-        assert sessions[0].workflow_name == "main"
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.16.1, JOBS-REQ-003.16.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    async def test_delete_session(self, state_manager: StateManager) -> None:
-        """Test deleting a session."""
-        session = await state_manager.create_session(
-            job_name="test_job",
-            workflow_name="main",
-            goal="Goal",
-            first_step_id="step1",
-        )
-
-        session_file = state_manager._session_file(session.session_id)
-        assert session_file.exists()
-
-        await state_manager.delete_session(session.session_id)
-
-        assert not session_file.exists()
-        assert state_manager.get_active_session() is None
-
 
 class TestStateManagerStack:
     """Tests for stack-based workflow nesting."""
 
     @pytest.fixture
     def project_root(self, tmp_path: Path) -> Path:
-        """Create a temporary project root with .deepwork directory."""
         deepwork_dir = tmp_path / ".deepwork"
         deepwork_dir.mkdir()
         (deepwork_dir / "tmp").mkdir()
@@ -326,91 +264,92 @@ class TestStateManagerStack:
 
     @pytest.fixture
     def state_manager(self, project_root: Path) -> StateManager:
-        """Create a StateManager instance."""
-        return StateManager(project_root)
+        return StateManager(project_root=project_root, platform="test")
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.13.1, JOBS-REQ-003.13.2, JOBS-REQ-003.13.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_nested_workflows_stack(self, state_manager: StateManager) -> None:
         """Test that starting workflows pushes onto the stack."""
-        # Start first workflow
-        session1 = await state_manager.create_session(
+        await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="job1",
             workflow_name="workflow1",
             goal="Goal 1",
             first_step_id="step1",
         )
 
-        assert state_manager.get_stack_depth() == 1
-        assert state_manager.get_active_session() == session1
+        assert state_manager.get_stack_depth(SESSION_ID) == 1
 
-        # Start nested workflow
-        session2 = await state_manager.create_session(
+        # Start nested workflow (same session_id, pushes onto stack)
+        await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="job2",
             workflow_name="workflow2",
             goal="Goal 2",
             first_step_id="stepA",
         )
 
-        assert state_manager.get_stack_depth() == 2
-        assert state_manager.get_active_session() == session2
+        assert state_manager.get_stack_depth(SESSION_ID) == 2
 
         # Start another nested workflow
-        session3 = await state_manager.create_session(
+        await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="job3",
             workflow_name="workflow3",
             goal="Goal 3",
             first_step_id="stepX",
         )
 
-        assert state_manager.get_stack_depth() == 3
-        assert state_manager.get_active_session() == session3
+        assert state_manager.get_stack_depth(SESSION_ID) == 3
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.11.4, JOBS-REQ-003.11.5, JOBS-REQ-003.13.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_complete_workflow_pops_stack(self, state_manager: StateManager) -> None:
         """Test that completing a workflow pops from stack and resumes parent."""
-        # Start two nested workflows
-        session1 = await state_manager.create_session(
+        await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="job1",
             workflow_name="workflow1",
             goal="Goal 1",
             first_step_id="step1",
         )
         await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="job2",
             workflow_name="workflow2",
             goal="Goal 2",
             first_step_id="stepA",
         )
 
-        assert state_manager.get_stack_depth() == 2
+        assert state_manager.get_stack_depth(SESSION_ID) == 2
 
         # Complete inner workflow
-        resumed = await state_manager.complete_workflow()
+        resumed = await state_manager.complete_workflow(SESSION_ID)
 
-        assert state_manager.get_stack_depth() == 1
-        assert resumed == session1
-        assert state_manager.get_active_session() == session1
+        assert state_manager.get_stack_depth(SESSION_ID) == 1
+        assert resumed is not None
+        assert resumed.job_name == "job1"
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.13.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_get_stack(self, state_manager: StateManager) -> None:
         """Test get_stack returns workflow/step info."""
         await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="job1",
             workflow_name="wf1",
             goal="Goal 1",
             first_step_id="step1",
         )
         await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="job2",
             workflow_name="wf2",
             goal="Goal 2",
             first_step_id="stepA",
         )
 
-        stack = state_manager.get_stack()
+        stack = state_manager.get_stack(SESSION_ID)
 
         assert len(stack) == 2
         assert stack[0].workflow == "job1/wf1"
@@ -422,13 +361,15 @@ class TestStateManagerStack:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_abort_workflow(self, state_manager: StateManager) -> None:
         """Test abort_workflow marks as aborted and pops from stack."""
-        session1 = await state_manager.create_session(
+        await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="job1",
             workflow_name="wf1",
             goal="Goal 1",
             first_step_id="step1",
         )
-        session2 = await state_manager.create_session(
+        await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="job2",
             workflow_name="wf2",
             goal="Goal 2",
@@ -436,41 +377,42 @@ class TestStateManagerStack:
         )
 
         # Abort inner workflow
-        aborted, resumed = await state_manager.abort_workflow("Something went wrong")
+        aborted, resumed = await state_manager.abort_workflow(
+            SESSION_ID, "Something went wrong"
+        )
 
-        assert aborted.session_id == session2.session_id
+        assert aborted.session_id == SESSION_ID
         assert aborted.status == "aborted"
         assert aborted.abort_reason == "Something went wrong"
-        assert resumed == session1
-        assert state_manager.get_stack_depth() == 1
-        assert state_manager.get_active_session() == session1
+        assert resumed is not None
+        assert resumed.job_name == "job1"
+        assert state_manager.get_stack_depth(SESSION_ID) == 1
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.12.2, JOBS-REQ-003.12.5, JOBS-REQ-003.12.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_abort_workflow_no_parent(self, state_manager: StateManager) -> None:
         """Test abort_workflow with no parent workflow."""
-        session = await state_manager.create_session(
+        await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="job1",
             workflow_name="wf1",
             goal="Goal 1",
             first_step_id="step1",
         )
 
-        aborted, resumed = await state_manager.abort_workflow("Cancelled")
+        aborted, resumed = await state_manager.abort_workflow(SESSION_ID, "Cancelled")
 
-        assert aborted.session_id == session.session_id
+        assert aborted.session_id == SESSION_ID
         assert aborted.status == "aborted"
         assert resumed is None
-        assert state_manager.get_stack_depth() == 0
-        assert state_manager.get_active_session() is None
+        assert state_manager.get_stack_depth(SESSION_ID) == 0
 
 
-class TestSessionIdRouting:
-    """Tests for session_id-based routing in StateManager."""
+class TestAgentIsolation:
+    """Tests for sub-agent workflow isolation."""
 
     @pytest.fixture
     def project_root(self, tmp_path: Path) -> Path:
-        """Create a temporary project root with .deepwork directory."""
         deepwork_dir = tmp_path / ".deepwork"
         deepwork_dir.mkdir()
         (deepwork_dir / "tmp").mkdir()
@@ -478,155 +420,142 @@ class TestSessionIdRouting:
 
     @pytest.fixture
     def state_manager(self, project_root: Path) -> StateManager:
-        """Create a StateManager instance."""
-        return StateManager(project_root)
+        return StateManager(project_root=project_root, platform="test")
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.1).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def testresolve_session_by_id(self, state_manager: StateManager) -> None:
-        """Test resolve_session finds the correct session in a multi-session stack."""
-        import asyncio
-
-        async def setup() -> None:
-            await state_manager.create_session(
-                job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
-            )
-            await state_manager.create_session(
-                job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
-            )
-            await state_manager.create_session(
-                job_name="job3", workflow_name="wf3", goal="G3", first_step_id="s3"
-            )
-
-        asyncio.get_event_loop().run_until_complete(setup())
-
-        # Stack has 3 sessions; resolve the middle one by ID
-        middle_session = state_manager._session_stack[1]
-        resolved = state_manager.resolve_session(middle_session.session_id)
-        assert resolved.session_id == middle_session.session_id
-        assert resolved.job_name == "job2"
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def testresolve_session_invalid_id(self, state_manager: StateManager) -> None:
-        """Test resolve_session raises StateError for unknown session ID."""
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(
-            state_manager.create_session(
-                job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
-            )
-        )
-
-        with pytest.raises(StateError, match="Session 'nonexistent' not found"):
-            state_manager.resolve_session("nonexistent")
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.3).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def testresolve_session_none_falls_back_to_active(self, state_manager: StateManager) -> None:
-        """Test resolve_session with None falls back to top-of-stack."""
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(
-            state_manager.create_session(
-                job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
-            )
-        )
-        asyncio.get_event_loop().run_until_complete(
-            state_manager.create_session(
-                job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
-            )
-        )
-
-        resolved = state_manager.resolve_session(None)
-        assert resolved.job_name == "job2"  # top-of-stack
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.4, JOBS-REQ-003.11.4, JOBS-REQ-003.13.5).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    async def test_complete_workflow_by_session_id(self, state_manager: StateManager) -> None:
-        """Test complete_workflow removes a specific session from middle of stack."""
-        session1 = await state_manager.create_session(
-            job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
-        )
-        session2 = await state_manager.create_session(
-            job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
-        )
-        session3 = await state_manager.create_session(
-            job_name="job3", workflow_name="wf3", goal="G3", first_step_id="s3"
-        )
-
-        assert state_manager.get_stack_depth() == 3
-
-        # Complete the middle session by ID
-        new_active = await state_manager.complete_workflow(session_id=session2.session_id)
-
-        assert state_manager.get_stack_depth() == 2
-        # Stack should have session1 and session3; top is session3
-        assert new_active is not None
-        assert new_active.session_id == session3.session_id
-        assert state_manager.get_active_session() == session3
-        remaining_ids = [s.session_id for s in state_manager._session_stack]
-        assert session1.session_id in remaining_ids
-        assert session2.session_id not in remaining_ids
-        assert session3.session_id in remaining_ids
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.4, JOBS-REQ-003.12.2, JOBS-REQ-003.12.5).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    async def test_abort_workflow_by_session_id(self, state_manager: StateManager) -> None:
-        """Test abort_workflow removes a specific session from middle of stack."""
-        session1 = await state_manager.create_session(
-            job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
-        )
-        session2 = await state_manager.create_session(
-            job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
-        )
-        session3 = await state_manager.create_session(
-            job_name="job3", workflow_name="wf3", goal="G3", first_step_id="s3"
-        )
-
-        # Abort the middle session
-        aborted, new_active = await state_manager.abort_workflow(
-            "Testing mid-stack abort", session_id=session2.session_id
-        )
-
-        assert aborted.session_id == session2.session_id
-        assert aborted.status == "aborted"
-        assert state_manager.get_stack_depth() == 2
-        # Top of stack should still be session3
-        assert new_active is not None
-        assert new_active.session_id == session3.session_id
-        remaining_ids = [s.session_id for s in state_manager._session_stack]
-        assert session1.session_id in remaining_ids
-        assert session2.session_id not in remaining_ids
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.4, JOBS-REQ-003.8.5, JOBS-REQ-003.8.6, JOBS-REQ-003.8.7).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    async def test_complete_step_with_session_id(self, state_manager: StateManager) -> None:
-        """Test complete_step operates on a non-top session when session_id is given."""
-        session1 = await state_manager.create_session(
-            job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
-        )
+    async def test_agent_workflow_isolated_from_main(
+        self, state_manager: StateManager
+    ) -> None:
+        """Agent workflow doesn't appear in the main stack."""
         await state_manager.create_session(
-            job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
+            session_id=SESSION_ID,
+            job_name="main_job",
+            workflow_name="main_wf",
+            goal="Main goal",
+            first_step_id="step1",
         )
 
-        # Complete step on session1 (not on top) using session_id
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="agent_job",
+            workflow_name="agent_wf",
+            goal="Agent goal",
+            first_step_id="agent_step1",
+            agent_id=AGENT_ID,
+        )
+
+        main_stack = state_manager.get_stack(SESSION_ID)
+        assert len(main_stack) == 1
+        assert main_stack[0].workflow == "main_job/main_wf"
+
+    async def test_agent_stack_includes_main(
+        self, state_manager: StateManager
+    ) -> None:
+        """get_stack with agent_id returns main stack + agent stack."""
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="main_job",
+            workflow_name="main_wf",
+            goal="Main goal",
+            first_step_id="step1",
+        )
+
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="agent_job",
+            workflow_name="agent_wf",
+            goal="Agent goal",
+            first_step_id="agent_step1",
+            agent_id=AGENT_ID,
+        )
+
+        agent_stack = state_manager.get_stack(SESSION_ID, AGENT_ID)
+        assert len(agent_stack) == 2
+        assert agent_stack[0].workflow == "main_job/main_wf"
+        assert agent_stack[1].workflow == "agent_job/agent_wf"
+
+    async def test_concurrent_agents_isolated(
+        self, state_manager: StateManager
+    ) -> None:
+        """Two agents don't see each other's workflows."""
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="main_job",
+            workflow_name="main_wf",
+            goal="Main goal",
+            first_step_id="step1",
+        )
+
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="agent_a_job",
+            workflow_name="agent_a_wf",
+            goal="Agent A goal",
+            first_step_id="a_step1",
+            agent_id=AGENT_ID,
+        )
+
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="agent_b_job",
+            workflow_name="agent_b_wf",
+            goal="Agent B goal",
+            first_step_id="b_step1",
+            agent_id=AGENT_ID_2,
+        )
+
+        stack_a = state_manager.get_stack(SESSION_ID, AGENT_ID)
+        assert len(stack_a) == 2
+        assert stack_a[1].workflow == "agent_a_job/agent_a_wf"
+
+        stack_b = state_manager.get_stack(SESSION_ID, AGENT_ID_2)
+        assert len(stack_b) == 2
+        assert stack_b[1].workflow == "agent_b_job/agent_b_wf"
+
+        main_stack = state_manager.get_stack(SESSION_ID)
+        assert len(main_stack) == 1
+
+    async def test_agent_operations_target_agent_stack(
+        self, state_manager: StateManager
+    ) -> None:
+        """Operations with agent_id target the agent's stack, not main."""
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="main_job",
+            workflow_name="main_wf",
+            goal="Main goal",
+            first_step_id="step1",
+        )
+
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="agent_job",
+            workflow_name="agent_wf",
+            goal="Agent goal",
+            first_step_id="agent_step1",
+            agent_id=AGENT_ID,
+        )
+
         await state_manager.complete_step(
-            step_id="s1",
-            outputs={"report": "report.md"},
-            notes="Done",
-            session_id=session1.session_id,
+            session_id=SESSION_ID,
+            step_id="agent_step1",
+            outputs={"out": "agent_out.md"},
+            agent_id=AGENT_ID,
         )
 
-        # Verify session1 was updated
-        progress = session1.step_progress["s1"]
-        assert progress.completed_at is not None
-        assert progress.outputs == {"report": "report.md"}
+        agent_session = state_manager.resolve_session(SESSION_ID, AGENT_ID)
+        assert "agent_step1" in agent_session.step_progress
 
-        # Verify session2 (top) was not affected
-        top = state_manager.get_active_session()
-        assert top is not None
-        assert "s1" not in top.step_progress
+        main_session = state_manager.resolve_session(SESSION_ID)
+        assert "agent_step1" not in main_session.step_progress
+
+    async def test_agent_state_file_path(self, state_manager: StateManager) -> None:
+        """Agent state is stored in a separate file."""
+        main_file = state_manager._state_file(SESSION_ID)
+        agent_file = state_manager._state_file(SESSION_ID, AGENT_ID)
+
+        assert main_file.name == "state.json"
+        assert agent_file.name == f"agent_{AGENT_ID}.json"
+        assert main_file.parent == agent_file.parent
 
 
 class TestGoToStep:
@@ -634,7 +563,6 @@ class TestGoToStep:
 
     @pytest.fixture
     def project_root(self, tmp_path: Path) -> Path:
-        """Create a temporary project root with .deepwork directory."""
         deepwork_dir = tmp_path / ".deepwork"
         deepwork_dir.mkdir()
         (deepwork_dir / "tmp").mkdir()
@@ -642,8 +570,7 @@ class TestGoToStep:
 
     @pytest.fixture
     def state_manager(self, project_root: Path) -> StateManager:
-        """Create a StateManager instance."""
-        return StateManager(project_root)
+        return StateManager(project_root=project_root, platform="test")
 
     async def test_go_to_step_clears_invalidated_progress(
         self, state_manager: StateManager
@@ -652,57 +579,57 @@ class TestGoToStep:
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that go_to_step clears step_progress for invalidated steps."""
         await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Test",
             first_step_id="step1",
         )
 
-        # Simulate completing step1 and step2
-        await state_manager.complete_step("step1", {"out1": "out1.md"})
-        await state_manager.complete_step("step2", {"out2": "out2.md"})
+        await state_manager.complete_step(SESSION_ID, "step1", {"out1": "out1.md"})
+        await state_manager.complete_step(SESSION_ID, "step2", {"out2": "out2.md"})
 
-        session = state_manager.get_active_session()
-        assert session is not None
+        session = state_manager.resolve_session(SESSION_ID)
         assert "step1" in session.step_progress
         assert "step2" in session.step_progress
 
-        # Go back to step1 — both step1 and step2 should be cleared
         await state_manager.go_to_step(
+            session_id=SESSION_ID,
             step_id="step1",
             entry_index=0,
             invalidate_step_ids=["step1", "step2"],
         )
 
-        session = state_manager.get_active_session()
-        assert session is not None
+        session = state_manager.resolve_session(SESSION_ID)
         assert "step1" not in session.step_progress
         assert "step2" not in session.step_progress
 
-    async def test_go_to_step_preserves_earlier_progress(self, state_manager: StateManager) -> None:
+    async def test_go_to_step_preserves_earlier_progress(
+        self, state_manager: StateManager
+    ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.7).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that go_to_step preserves progress for steps before the target."""
         await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Test",
             first_step_id="step1",
         )
 
-        await state_manager.complete_step("step1", {"out1": "out1.md"})
-        await state_manager.complete_step("step2", {"out2": "out2.md"})
-        await state_manager.complete_step("step3", {"out3": "out3.md"})
+        await state_manager.complete_step(SESSION_ID, "step1", {"out1": "out1.md"})
+        await state_manager.complete_step(SESSION_ID, "step2", {"out2": "out2.md"})
+        await state_manager.complete_step(SESSION_ID, "step3", {"out3": "out3.md"})
 
-        # Go back to step2 — only step2 and step3 should be cleared
         await state_manager.go_to_step(
+            session_id=SESSION_ID,
             step_id="step2",
             entry_index=1,
             invalidate_step_ids=["step2", "step3"],
         )
 
-        session = state_manager.get_active_session()
-        assert session is not None
+        session = state_manager.resolve_session(SESSION_ID)
         assert "step1" in session.step_progress  # preserved
         assert "step2" not in session.step_progress  # cleared
         assert "step3" not in session.step_progress  # cleared
@@ -712,81 +639,54 @@ class TestGoToStep:
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that go_to_step updates current_step_id and current_entry_index."""
         await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Test",
             first_step_id="step1",
         )
 
-        # Advance position
-        await state_manager.advance_to_step("step3", 2)
+        await state_manager.advance_to_step(SESSION_ID, "step3", 2)
 
-        # Go back to step1
         await state_manager.go_to_step(
+            session_id=SESSION_ID,
             step_id="step1",
             entry_index=0,
             invalidate_step_ids=["step1", "step2", "step3"],
         )
 
-        session = state_manager.get_active_session()
-        assert session is not None
+        session = state_manager.resolve_session(SESSION_ID)
         assert session.current_step_id == "step1"
         assert session.current_entry_index == 0
 
-    async def test_go_to_step_persists_to_disk(self, state_manager: StateManager) -> None:
+    async def test_go_to_step_persists_to_disk(
+        self, state_manager: StateManager, project_root: Path
+    ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.10).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-        """Test that go_to_step persists changes to the session file."""
-        session = await state_manager.create_session(
+        """Test that go_to_step persists changes to the state file."""
+        await state_manager.create_session(
+            session_id=SESSION_ID,
             job_name="test_job",
             workflow_name="main",
             goal="Test",
             first_step_id="step1",
         )
-        session_id = session.session_id
 
-        await state_manager.complete_step("step1", {"out1": "out1.md"})
-        await state_manager.advance_to_step("step2", 1)
+        await state_manager.complete_step(SESSION_ID, "step1", {"out1": "out1.md"})
+        await state_manager.advance_to_step(SESSION_ID, "step2", 1)
 
         await state_manager.go_to_step(
+            session_id=SESSION_ID,
             step_id="step1",
             entry_index=0,
             invalidate_step_ids=["step1", "step2"],
         )
 
         # Load from disk with a new manager
-        new_manager = StateManager(state_manager.project_root)
-        loaded = await new_manager.load_session(session_id)
+        new_manager = StateManager(project_root=project_root, platform="test")
+        loaded = new_manager.resolve_session(SESSION_ID)
 
         assert loaded.current_step_id == "step1"
         assert loaded.current_entry_index == 0
         assert "step1" not in loaded.step_progress
-
-    async def test_go_to_step_with_session_id(self, state_manager: StateManager) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.19.5).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-        """Test that go_to_step works with explicit session_id."""
-        session1 = await state_manager.create_session(
-            job_name="job1", workflow_name="wf1", goal="G1", first_step_id="s1"
-        )
-        await state_manager.create_session(
-            job_name="job2", workflow_name="wf2", goal="G2", first_step_id="s2"
-        )
-
-        await state_manager.complete_step("s1", {"out": "out.md"}, session_id=session1.session_id)
-
-        # Go back on session1 using session_id
-        await state_manager.go_to_step(
-            step_id="s1",
-            entry_index=0,
-            invalidate_step_ids=["s1"],
-            session_id=session1.session_id,
-        )
-
-        assert session1.current_step_id == "s1"
-        assert "s1" not in session1.step_progress
-
-        # session2 (top) should be unaffected
-        top = state_manager.get_active_session()
-        assert top is not None
-        assert top.current_step_id == "s2"
