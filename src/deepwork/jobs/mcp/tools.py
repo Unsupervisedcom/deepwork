@@ -14,8 +14,6 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import aiofiles
-
 from deepwork.jobs.discovery import JobLoadError, find_job_dir, load_all_jobs
 from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
@@ -466,46 +464,44 @@ class WorkflowTools:
             output_specs = {out.name: out.type for out in current_step.outputs}
 
             if self.external_runner is None:
-                # Self-review mode: build instructions file and return guidance
-                # to the agent to verify its own work via a subagent.
-                review_content = await self.quality_gate.build_review_instructions_file(
+                # Self-review mode: use the Deepwork Reviews mechanism to
+                # generate instruction files and formatted output.
+                # This adapter bridges Jobs review data into ReviewTask objects
+                # that the Reviews pipeline can consume.
+                from deepwork.jobs.mcp.quality_gate import adapt_reviews_to_review_tasks
+                from deepwork.review.formatter import format_for_claude
+                from deepwork.review.instructions import write_instruction_files
+
+                review_tasks = adapt_reviews_to_review_tasks(
                     reviews=review_dicts,
                     outputs=input_data.outputs,
                     output_specs=output_specs,
-                    project_root=self.project_root,
+                    step_id=current_step_id,
                     notes=input_data.notes,
                 )
 
-                # Write instructions to .deepwork/tmp/
-                tmp_dir = self.project_root / ".deepwork" / "tmp"
-                tmp_dir.mkdir(parents=True, exist_ok=True)
-                review_filename = f"quality_review_{sid}_{current_step_id}.md"
-                review_file_path = tmp_dir / review_filename
-                async with aiofiles.open(review_file_path, "w", encoding="utf-8") as f:
-                    await f.write(review_content)
+                task_files = write_instruction_files(review_tasks, self.project_root)
 
-                relative_path = f".deepwork/tmp/{review_filename}"
-                feedback = (
-                    f"Quality review required. Review instructions have been written to: "
-                    f"{relative_path}\n\n"
-                    f"Verify the quality of your work:\n"
-                    f'1. Spawn a subagent with the prompt: "Read the file at '
-                    f"{relative_path} and follow the instructions in it. "
-                    f"Review the referenced output files and evaluate them against "
-                    f'the criteria specified. Report your detailed findings."\n'
-                    f"2. Review the subagent's findings\n"
-                    f"3. Fix any issues identified by the subagent\n"
-                    f"4. Repeat steps 1-3 until all criteria pass\n"
-                    f"5. Once all criteria pass, call finished_step again with "
-                    f"quality_review_override_reason set to describe the "
-                    f"review outcome (e.g. 'Self-review passed: all criteria met')"
-                )
+                if task_files:
+                    formatted = format_for_claude(task_files, self.project_root)
+                    feedback = (
+                        f"Quality review required.\n\n"
+                        f"{formatted}\n"
+                        f"After reviewing, fix any issues found, then call finished_step "
+                        f"again with quality_review_override_reason set to describe the "
+                        f"review outcome (e.g. 'Self-review passed: all criteria met')"
+                    )
+                else:
+                    # All reviews already passed (cached .passed markers)
+                    feedback = None
 
-                return FinishedStepResponse(
-                    status=StepStatus.NEEDS_WORK,
-                    feedback=feedback,
-                    stack=self.state_manager.get_stack(),
-                )
+                if feedback:
+                    return FinishedStepResponse(
+                        status=StepStatus.NEEDS_WORK,
+                        feedback=feedback,
+                        stack=self.state_manager.get_stack(),
+                    )
+                # If no feedback (all cached), fall through to step completion
             else:
                 # External runner mode: use quality gate subprocess evaluation
                 attempts = await self.state_manager.record_quality_attempt(

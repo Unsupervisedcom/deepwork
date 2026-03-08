@@ -54,6 +54,165 @@ class QualityGateError(Exception):
     pass
 
 
+# =========================================================================
+# Adapter: Jobs review data → Deepwork Reviews ReviewTask objects
+#
+# This adapter bridges the Jobs quality-gate review format into the
+# ReviewTask dataclass used by Deepwork Reviews (deepwork.review.config).
+# The Deepwork Reviews code is the canonical implementation and is NOT
+# modified here; instead we wrap it by producing ReviewTask objects that
+# its instruction/formatting pipeline can consume.
+# =========================================================================
+
+
+def adapt_reviews_to_review_tasks(
+    reviews: list[dict[str, Any]],
+    outputs: dict[str, str | list[str]],
+    output_specs: dict[str, str],
+    step_id: str = "quality-review",
+    notes: str | None = None,
+) -> list["ReviewTask"]:
+    """Convert Jobs review dicts into ReviewTask objects for the Reviews pipeline.
+
+    This is adapter logic that wraps the Deepwork Reviews mechanism so that
+    Jobs self-review can reuse the same instruction-file generation and
+    formatting code.
+
+    Args:
+        reviews: List of review dicts with ``run_each``, ``quality_criteria``,
+            and optional ``additional_review_guidance``.
+        outputs: Map of output names to file path(s) as submitted by the agent.
+        output_specs: Map of output names to their type (``"file"`` or ``"files"``).
+        step_id: Identifier for the step being reviewed (used in rule_name).
+        notes: Optional notes from the agent about work done.
+
+    Returns:
+        List of ReviewTask objects suitable for ``write_instruction_files``
+        and ``format_for_claude``.
+    """
+    from deepwork.review.config import ReviewTask
+
+    tasks: list[ReviewTask] = []
+
+    for review in reviews:
+        run_each: str = review["run_each"]
+        quality_criteria: dict[str, str] = review["quality_criteria"]
+        guidance: str | None = review.get("additional_review_guidance")
+
+        # Build instruction text from quality criteria (adapter: translating
+        # Jobs quality_criteria dict into the free-text instructions field
+        # that ReviewTask expects).
+        instructions = _build_review_instructions_text(quality_criteria, guidance, notes)
+
+        if run_each == "step":
+            # Review all outputs together — collect every file path
+            all_paths = _flatten_output_paths(outputs)
+            tasks.append(
+                ReviewTask(
+                    rule_name=f"{step_id}-quality-review",
+                    files_to_review=all_paths,
+                    instructions=instructions,
+                    agent_name=None,
+                )
+            )
+        elif run_each in outputs:
+            output_type = output_specs.get(run_each, "file")
+            output_value = outputs[run_each]
+
+            if output_type == "files" and isinstance(output_value, list):
+                # Per-file review: one ReviewTask per file
+                for file_path in output_value:
+                    tasks.append(
+                        ReviewTask(
+                            rule_name=f"{step_id}-quality-review-{run_each}",
+                            files_to_review=[file_path],
+                            instructions=instructions,
+                            agent_name=None,
+                        )
+                    )
+            else:
+                # Single file review
+                path = output_value if isinstance(output_value, str) else str(output_value)
+                tasks.append(
+                    ReviewTask(
+                        rule_name=f"{step_id}-quality-review-{run_each}",
+                        files_to_review=[path],
+                        instructions=instructions,
+                        agent_name=None,
+                    )
+                )
+
+    return tasks
+
+
+def _build_review_instructions_text(
+    quality_criteria: dict[str, str],
+    guidance: str | None = None,
+    notes: str | None = None,
+) -> str:
+    """Build instruction text from Jobs quality criteria for a ReviewTask.
+
+    Adapter logic: translates the Jobs structured quality_criteria dict
+    into the free-text instructions string that ReviewTask.instructions expects.
+
+    Args:
+        quality_criteria: Map of criterion name to question.
+        guidance: Optional additional review guidance.
+        notes: Optional author notes.
+
+    Returns:
+        Markdown instruction text.
+    """
+    parts: list[str] = []
+
+    parts.append(
+        "You are an editor responsible for reviewing the files listed below. "
+        "Evaluate whether the outputs meet the specified quality criteria."
+    )
+    parts.append("")
+
+    parts.append("## Criteria to Evaluate")
+    parts.append("")
+    for name, question in quality_criteria.items():
+        parts.append(f"- **{name}**: {question}")
+    parts.append("")
+
+    if guidance:
+        parts.append("## Additional Context")
+        parts.append("")
+        parts.append(guidance)
+        parts.append("")
+
+    if notes:
+        parts.append("## Author Notes")
+        parts.append("")
+        parts.append(notes)
+        parts.append("")
+
+    parts.append("## Guidelines")
+    parts.append("")
+    parts.append("- Be strict but fair")
+    parts.append(
+        "- Apply criteria pragmatically. If a criterion is not applicable "
+        "to this step's purpose, pass it."
+    )
+    parts.append("- Only mark a criterion as passed if it is clearly met or not applicable.")
+    parts.append("- Provide specific, actionable feedback for failed criteria.")
+
+    return "\n".join(parts)
+
+
+def _flatten_output_paths(outputs: dict[str, str | list[str]]) -> list[str]:
+    """Flatten outputs dict into a list of file paths (adapter helper)."""
+    paths: list[str] = []
+    for value in outputs.values():
+        if isinstance(value, list):
+            paths.extend(value)
+        else:
+            paths.append(value)
+    return paths
+
+
 class QualityGate:
     """Evaluates step outputs against quality criteria.
 
