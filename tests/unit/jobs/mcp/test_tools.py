@@ -2481,9 +2481,7 @@ class TestStatusWriterIntegration:
             )
         )
         # Now at step2, go back to step1
-        await tools_with_status.go_to_step(
-            GoToStepInput(step_id="step1", session_id=SESSION_ID)
-        )
+        await tools_with_status.go_to_step(GoToStepInput(step_id="step1", session_id=SESSION_ID))
         assert tools_with_status.status_writer is not None
         session_file = tools_with_status.status_writer.sessions_dir / f"{SESSION_ID}.yml"
         assert session_file.exists()
