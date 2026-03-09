@@ -13,6 +13,7 @@ from deepwork.jobs.mcp.schemas import (
     StepStatus,
 )
 from deepwork.jobs.mcp.state import StateError, StateManager
+from deepwork.jobs.mcp.status import StatusWriter
 from deepwork.jobs.mcp.tools import ToolError, WorkflowTools
 
 SESSION_ID = "test-session"
@@ -2368,3 +2369,164 @@ workflows:
         assert "finalize" in response.invalidated_steps
         # setup should NOT be invalidated
         assert "setup" not in response.invalidated_steps
+
+
+class TestStatusWriterIntegration:
+    """Tests that StatusWriter is called from WorkflowTools."""
+
+    @pytest.fixture
+    def tools_with_status(self, project_root: Path, state_manager: StateManager) -> WorkflowTools:
+        status_writer = StatusWriter(project_root)
+        return WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+            status_writer=status_writer,
+        )
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.3.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_get_workflows_writes_manifest(self, tools_with_status: WorkflowTools) -> None:
+        tools_with_status.get_workflows()
+        assert tools_with_status.status_writer is not None
+        assert tools_with_status.status_writer.manifest_path.exists()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.6.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_start_workflow_writes_session_status(
+        self, tools_with_status: WorkflowTools, project_root: Path
+    ) -> None:
+        (project_root / "output1.md").write_text("test")
+        await tools_with_status.start_workflow(
+            StartWorkflowInput(
+                goal="Test",
+                job_name="test_job",
+                workflow_name="main",
+                session_id=SESSION_ID,
+            )
+        )
+        assert tools_with_status.status_writer is not None
+        session_file = tools_with_status.status_writer.sessions_dir / f"{SESSION_ID}.yml"
+        assert session_file.exists()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.6.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_finished_step_writes_session_status(
+        self, tools_with_status: WorkflowTools, project_root: Path
+    ) -> None:
+        (project_root / "output1.md").write_text("test")
+        (project_root / "output2.md").write_text("test")
+        await tools_with_status.start_workflow(
+            StartWorkflowInput(
+                goal="Test",
+                job_name="test_job",
+                workflow_name="main",
+                session_id=SESSION_ID,
+            )
+        )
+        response = await tools_with_status.finished_step(
+            FinishedStepInput(
+                outputs={"output1.md": "output1.md"},
+                session_id=SESSION_ID,
+                quality_review_override_reason="skip",
+            )
+        )
+        assert response.status == StepStatus.NEXT_STEP
+        assert tools_with_status.status_writer is not None
+        session_file = tools_with_status.status_writer.sessions_dir / f"{SESSION_ID}.yml"
+        assert session_file.exists()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.6.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_abort_workflow_writes_session_status(
+        self, tools_with_status: WorkflowTools, project_root: Path
+    ) -> None:
+        await tools_with_status.start_workflow(
+            StartWorkflowInput(
+                goal="Test",
+                job_name="test_job",
+                workflow_name="main",
+                session_id=SESSION_ID,
+            )
+        )
+        await tools_with_status.abort_workflow(
+            AbortWorkflowInput(
+                explanation="Done",
+                session_id=SESSION_ID,
+            )
+        )
+        assert tools_with_status.status_writer is not None
+        session_file = tools_with_status.status_writer.sessions_dir / f"{SESSION_ID}.yml"
+        assert session_file.exists()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.6.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_go_to_step_writes_session_status(
+        self, tools_with_status: WorkflowTools, project_root: Path
+    ) -> None:
+        (project_root / "output1.md").write_text("test")
+        (project_root / "output2.md").write_text("test")
+        await tools_with_status.start_workflow(
+            StartWorkflowInput(
+                goal="Test",
+                job_name="test_job",
+                workflow_name="main",
+                session_id=SESSION_ID,
+            )
+        )
+        await tools_with_status.finished_step(
+            FinishedStepInput(
+                outputs={"output1.md": "output1.md"},
+                session_id=SESSION_ID,
+                quality_review_override_reason="skip",
+            )
+        )
+        # Now at step2, go back to step1
+        await tools_with_status.go_to_step(GoToStepInput(step_id="step1", session_id=SESSION_ID))
+        assert tools_with_status.status_writer is not None
+        session_file = tools_with_status.status_writer.sessions_dir / f"{SESSION_ID}.yml"
+        assert session_file.exists()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.12.1, JOBS-REQ-010.12.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_status_writer_failure_does_not_break_tool(
+        self, project_root: Path, state_manager: StateManager
+    ) -> None:
+        """StatusWriter errors are swallowed — tools should still work."""
+        from unittest.mock import MagicMock
+
+        broken_writer = MagicMock(spec=StatusWriter)
+        broken_writer.write_session_status.side_effect = RuntimeError("disk full")
+        broken_writer.write_manifest.side_effect = RuntimeError("disk full")
+
+        tools = WorkflowTools(
+            project_root=project_root,
+            state_manager=state_manager,
+            status_writer=broken_writer,
+        )
+
+        # get_workflows should still work
+        response = tools.get_workflows()
+        assert len(response.jobs) >= 1
+
+        # start_workflow should still work
+        await tools.start_workflow(
+            StartWorkflowInput(
+                goal="Test",
+                job_name="test_job",
+                workflow_name="main",
+                session_id=SESSION_ID,
+            )
+        )
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.3.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_startup_writes_manifest(self, project_root: Path, state_manager: StateManager) -> None:
+        """StatusWriter.write_manifest is called during create_server startup."""
+        from unittest.mock import MagicMock, patch
+
+        mock_status_writer = MagicMock(spec=StatusWriter)
+        with patch("deepwork.jobs.mcp.server.StatusWriter", return_value=mock_status_writer):
+            from deepwork.jobs.mcp.server import create_server
+
+            create_server(project_root=project_root, external_runner=None)
+            mock_status_writer.write_manifest.assert_called_once()

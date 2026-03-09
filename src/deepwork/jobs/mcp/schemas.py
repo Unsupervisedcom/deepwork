@@ -8,6 +8,7 @@ the implementation.
 
 from enum import StrEnum
 from typing import Any
+from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
@@ -375,6 +376,22 @@ class StepProgress(BaseModel):
     )
     notes: str | None = Field(default=None, description="Notes from agent")
     quality_attempts: int = Field(default=0, description="Number of quality gate attempts")
+    sub_workflow_instance_ids: list[str] = Field(
+        default_factory=list,
+        description="Instance IDs of sub-workflows started from this step",
+    )
+
+
+class StepHistoryEntry(BaseModel):
+    """An entry in the step execution history."""
+
+    step_id: str = Field(description="Step identifier")
+    started_at: str | None = Field(default=None, description="ISO timestamp when started")
+    finished_at: str | None = Field(default=None, description="ISO timestamp when finished")
+    sub_workflow_instance_ids: list[str] = Field(
+        default_factory=list,
+        description="Instance IDs of sub-workflows started during this step execution",
+    )
 
 
 class WorkflowSession(BaseModel):
@@ -386,6 +403,10 @@ class WorkflowSession(BaseModel):
             "This is the same session ID the agent received at startup."
         )
     )
+    workflow_instance_id: str = Field(
+        default_factory=lambda: uuid4().hex,
+        description="Unique identifier for this workflow instance",
+    )
     job_name: str = Field(description="Name of the job")
     workflow_name: str = Field(description="Name of the workflow")
     goal: str = Field(description="User's goal for this workflow")
@@ -395,6 +416,9 @@ class WorkflowSession(BaseModel):
     )
     step_progress: dict[str, StepProgress] = Field(
         default_factory=dict, description="Progress for each step"
+    )
+    step_history: list[StepHistoryEntry] = Field(
+        default_factory=list, description="Ordered history of step executions"
     )
     started_at: str = Field(description="ISO timestamp when session started")
     completed_at: str | None = Field(default=None, description="ISO timestamp when completed")

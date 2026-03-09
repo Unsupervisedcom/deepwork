@@ -29,6 +29,7 @@ from deepwork.jobs.mcp.schemas import (
     StartWorkflowInput,
 )
 from deepwork.jobs.mcp.state import StateManager
+from deepwork.jobs.mcp.status import StatusWriter
 from deepwork.jobs.mcp.tools import WorkflowTools
 
 # Configure logging
@@ -97,13 +98,22 @@ def create_server(
             # Self-review mode: no CLI, always reference files by path (0 inline)
             quality_gate = QualityGate(cli=None, max_inline_files=0)
 
+    status_writer = StatusWriter(project_path)
+
     tools = WorkflowTools(
         project_root=project_path,
         state_manager=state_manager,
         quality_gate=quality_gate,
         max_quality_attempts=quality_gate_max_attempts,
         external_runner=external_runner,
+        status_writer=status_writer,
     )
+
+    # Write initial manifest at startup
+    try:
+        tools._write_manifest()
+    except Exception:
+        logger.warning("Failed to write initial job manifest", exc_info=True)
 
     # Create MCP server
     mcp = FastMCP(

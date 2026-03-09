@@ -57,7 +57,8 @@ deepwork/                       # DeepWork tool repository
 │       │       ├── state.py        # Workflow session state management
 │       │       ├── schemas.py      # Pydantic models for I/O
 │       │       ├── quality_gate.py # Quality gate with review agent
-│       │       └── claude_cli.py   # Claude CLI subprocess wrapper
+│       │       ├── claude_cli.py   # Claude CLI subprocess wrapper
+│       │       └── status.py       # Status file writer for external consumers
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── wrapper.py      # Cross-platform input/output normalization
 │       │   ├── claude_hook.sh  # Shell wrapper for Claude Code
@@ -1080,6 +1081,7 @@ class StateManager:
     def get_all_outputs(session_id, agent_id=None) -> dict
     def get_stack(session_id, agent_id=None) -> list[StackEntry]
     def get_stack_depth(session_id, agent_id=None) -> int
+    def get_all_session_data(session_id) -> dict[agent_id, (active_stack, completed_workflows)]
 ```
 
 Session state includes:
@@ -1115,6 +1117,31 @@ The quality gate supports two modes:
 - **External runner** (`evaluate_reviews`): Invokes Claude Code via subprocess to evaluate each review, returns list of failed `ReviewResult` objects
 - **Self-review** (`build_review_instructions_file`): Generates a review instructions file for the agent to spawn a subagent for self-review
 
+### Status Writer (`jobs/mcp/status.py`)
+
+Writes file-based status projections for external consumers (UIs, dashboards, monitoring). Status files are written to `.deepwork/tmp/status/v1/` and are a **stable external interface** — the file format must not change without versioning.
+
+```python
+class StatusWriter:
+    def __init__(self, project_root: Path)
+
+    def write_manifest(self, jobs: list[JobDefinition]) -> None
+        """Write job_manifest.yml with all available jobs, workflows, and steps."""
+
+    def write_session_status(self, session_id: str, state_manager: StateManager, job_loader: Callable) -> None
+        """Write sessions/<session_id>.yml from current state."""
+```
+
+**Output files:**
+- `job_manifest.yml` — catalog of all jobs/workflows/steps, sorted alphabetically
+- `sessions/<session_id>.yml` — per-session workflow execution status including active workflow, step history, and completed/aborted workflows
+
+**Write triggers:**
+- Manifest: MCP server startup, `get_workflows`
+- Session status: `start_workflow`, `finished_step`, `go_to_step`, `abort_workflow`
+
+Status writes are fire-and-forget: failures are logged as warnings and never fail the MCP tool call.
+
 ### Schemas (`jobs/mcp/schemas.py`)
 
 Pydantic models for all tool inputs and outputs:
@@ -1122,7 +1149,7 @@ Pydantic models for all tool inputs and outputs:
 - `GetWorkflowsResponse`, `StartWorkflowResponse`, `FinishedStepResponse`, `AbortWorkflowResponse`, `GoToStepResponse`
 - `ActiveStepInfo`, `ExpectedOutput`, `ReviewInfo`, `ReviewResult`, `StackEntry`
 - `JobInfo`, `WorkflowInfo`, `JobLoadErrorInfo`
-- `WorkflowSession`, `StepProgress`
+- `WorkflowSession`, `StepProgress`, `StepHistoryEntry`
 - `QualityGateResult`, `QualityCriteriaResult`
 
 ## MCP Server Registration

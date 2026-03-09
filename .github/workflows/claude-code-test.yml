@@ -436,6 +436,29 @@ jobs:
           echo "Workflow tested: /deepwork fruits full - Executed full fruits workflow (identify + classify)"
           echo ""
 
+      - name: Display status files
+        if: steps.check-key.outputs.has_key == 'true' && always()
+        working-directory: test_project
+        run: |
+          echo "=== Status Files ==="
+          STATUS_DIR=".deepwork/tmp/status/v1"
+          if [ -d "$STATUS_DIR" ]; then
+            echo "--- job_manifest.yml ---"
+            cat "$STATUS_DIR/job_manifest.yml" 2>/dev/null || echo "(not found)"
+            echo ""
+            if [ -d "$STATUS_DIR/sessions" ]; then
+              for f in "$STATUS_DIR/sessions"/*.yml; do
+                echo "--- $(basename "$f") ---"
+                cat "$f"
+                echo ""
+              done
+            else
+              echo "(no session status files)"
+            fi
+          else
+            echo "(status directory not found)"
+          fi
+
       - name: Upload test artifacts
         if: steps.check-key.outputs.has_key == 'true' && always()
         uses: actions/upload-artifact@v4
@@ -443,6 +466,7 @@ jobs:
           name: claude-code-e2e-outputs
           path: |
             test_project/.deepwork/jobs/fruits/
+            test_project/.deepwork/tmp/status/
             test_project/.claude/skills/deepwork/
             test_project/fruits/identified_fruits.md
             test_project/fruits/classified_fruits.md
