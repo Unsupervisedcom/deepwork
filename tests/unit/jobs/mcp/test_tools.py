@@ -2375,9 +2375,7 @@ class TestStatusWriterIntegration:
     """Tests that StatusWriter is called from WorkflowTools."""
 
     @pytest.fixture
-    def tools_with_status(
-        self, project_root: Path, state_manager: StateManager
-    ) -> WorkflowTools:
+    def tools_with_status(self, project_root: Path, state_manager: StateManager) -> WorkflowTools:
         status_writer = StatusWriter(project_root)
         return WorkflowTools(
             project_root=project_root,
@@ -2385,13 +2383,15 @@ class TestStatusWriterIntegration:
             status_writer=status_writer,
         )
 
-    async def test_get_workflows_writes_manifest(
-        self, tools_with_status: WorkflowTools
-    ) -> None:
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.3.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_get_workflows_writes_manifest(self, tools_with_status: WorkflowTools) -> None:
         tools_with_status.get_workflows()
         assert tools_with_status.status_writer is not None
         assert tools_with_status.status_writer.manifest_path.exists()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.6.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow_writes_session_status(
         self, tools_with_status: WorkflowTools, project_root: Path
     ) -> None:
@@ -2408,6 +2408,8 @@ class TestStatusWriterIntegration:
         session_file = tools_with_status.status_writer.sessions_dir / f"{SESSION_ID}.yml"
         assert session_file.exists()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.6.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_finished_step_writes_session_status(
         self, tools_with_status: WorkflowTools, project_root: Path
     ) -> None:
@@ -2433,6 +2435,8 @@ class TestStatusWriterIntegration:
         session_file = tools_with_status.status_writer.sessions_dir / f"{SESSION_ID}.yml"
         assert session_file.exists()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.6.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_abort_workflow_writes_session_status(
         self, tools_with_status: WorkflowTools, project_root: Path
     ) -> None:
@@ -2454,6 +2458,38 @@ class TestStatusWriterIntegration:
         session_file = tools_with_status.status_writer.sessions_dir / f"{SESSION_ID}.yml"
         assert session_file.exists()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.6.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_go_to_step_writes_session_status(
+        self, tools_with_status: WorkflowTools, project_root: Path
+    ) -> None:
+        (project_root / "output1.md").write_text("test")
+        (project_root / "output2.md").write_text("test")
+        await tools_with_status.start_workflow(
+            StartWorkflowInput(
+                goal="Test",
+                job_name="test_job",
+                workflow_name="main",
+                session_id=SESSION_ID,
+            )
+        )
+        await tools_with_status.finished_step(
+            FinishedStepInput(
+                outputs={"output1.md": "output1.md"},
+                session_id=SESSION_ID,
+                quality_review_override_reason="skip",
+            )
+        )
+        # Now at step2, go back to step1
+        await tools_with_status.go_to_step(
+            GoToStepInput(step_id="step1", session_id=SESSION_ID)
+        )
+        assert tools_with_status.status_writer is not None
+        session_file = tools_with_status.status_writer.sessions_dir / f"{SESSION_ID}.yml"
+        assert session_file.exists()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.12.1, JOBS-REQ-010.12.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_status_writer_failure_does_not_break_tool(
         self, project_root: Path, state_manager: StateManager
     ) -> None:

@@ -814,6 +814,8 @@ class TestWorkflowInstanceId:
     def state_manager(self, project_root: Path) -> StateManager:
         return StateManager(project_root=project_root, platform="test")
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.7.1, JOBS-REQ-010.7.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_workflow_instance_id_generated(self, state_manager: StateManager) -> None:
         """Each session gets a unique workflow_instance_id."""
         session = await state_manager.create_session(
@@ -826,6 +828,8 @@ class TestWorkflowInstanceId:
         assert session.workflow_instance_id
         assert len(session.workflow_instance_id) == 32  # uuid4().hex
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.7.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_workflow_instance_ids_unique(self, state_manager: StateManager) -> None:
         """Two sessions get different instance IDs."""
         s1 = await state_manager.create_session(
@@ -844,6 +848,8 @@ class TestWorkflowInstanceId:
         )
         assert s1.workflow_instance_id != s2.workflow_instance_id
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.7.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_workflow_instance_id_persists(
         self, state_manager: StateManager, project_root: Path
     ) -> None:
@@ -873,6 +879,8 @@ class TestStepHistory:
     def state_manager(self, project_root: Path) -> StateManager:
         return StateManager(project_root=project_root, platform="test")
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.8.1, JOBS-REQ-010.8.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_step_appends_history(self, state_manager: StateManager) -> None:
         """start_step appends to step_history."""
         await state_manager.create_session(
@@ -889,6 +897,8 @@ class TestStepHistory:
         assert session.step_history[0].step_id == "step1"
         assert session.step_history[0].started_at is not None
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.8.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_complete_step_sets_finished_at(self, state_manager: StateManager) -> None:
         """complete_step updates the last history entry's finished_at."""
         await state_manager.create_session(
@@ -904,9 +914,9 @@ class TestStepHistory:
         session = state_manager.resolve_session(SESSION_ID)
         assert session.step_history[0].finished_at is not None
 
-    async def test_go_to_step_creates_duplicate_history(
-        self, state_manager: StateManager
-    ) -> None:
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.8.4, JOBS-REQ-010.8.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_go_to_step_creates_duplicate_history(self, state_manager: StateManager) -> None:
         """go_to_step + start_step creates a second entry for the same step."""
         await state_manager.create_session(
             session_id=SESSION_ID,
@@ -931,6 +941,8 @@ class TestStepHistory:
         assert len(session.step_history) == 2
         assert all(h.step_id == "step1" for h in session.step_history)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.8.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_multi_step_history_ordering(self, state_manager: StateManager) -> None:
         """Steps appear in history in execution order."""
         await state_manager.create_session(
@@ -964,6 +976,8 @@ class TestCompletedWorkflows:
     def state_manager(self, project_root: Path) -> StateManager:
         return StateManager(project_root=project_root, platform="test")
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.10.1, JOBS-REQ-010.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_complete_workflow_preserves_in_completed(
         self, state_manager: StateManager
     ) -> None:
@@ -986,9 +1000,9 @@ class TestCompletedWorkflows:
         assert data["completed_workflows"][0]["workflow_instance_id"] == instance_id
         assert data["completed_workflows"][0]["status"] == "completed"
 
-    async def test_abort_workflow_preserves_in_completed(
-        self, state_manager: StateManager
-    ) -> None:
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.10.1, JOBS-REQ-010.10.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_abort_workflow_preserves_in_completed(self, state_manager: StateManager) -> None:
         """Aborted workflow is moved to completed_workflows list."""
         session = await state_manager.create_session(
             session_id=SESSION_ID,
@@ -1007,6 +1021,8 @@ class TestCompletedWorkflows:
         assert data["completed_workflows"][0]["workflow_instance_id"] == instance_id
         assert data["completed_workflows"][0]["status"] == "aborted"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.10.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_multiple_completed_workflows(self, state_manager: StateManager) -> None:
         """Multiple completed workflows accumulate."""
         await state_manager.create_session(
@@ -1046,10 +1062,14 @@ class TestGetAllSessionData:
     def state_manager(self, project_root: Path) -> StateManager:
         return StateManager(project_root=project_root, platform="test")
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.11.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_returns_empty_for_missing_session(self, state_manager: StateManager) -> None:
         result = state_manager.get_all_session_data("nonexistent")
         assert result == {}
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.11.1, JOBS-REQ-010.11.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_returns_main_stack(self, state_manager: StateManager) -> None:
         await state_manager.create_session(
             session_id=SESSION_ID,
@@ -1065,6 +1085,8 @@ class TestGetAllSessionData:
         assert len(active_stack) == 1
         assert len(completed) == 0
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.11.1, JOBS-REQ-010.11.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_returns_agent_stacks(self, state_manager: StateManager) -> None:
         await state_manager.create_session(
             session_id=SESSION_ID,
@@ -1089,6 +1111,8 @@ class TestGetAllSessionData:
         assert len(active) == 1
         assert active[0].job_name == "agent_job"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.11.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_includes_completed_workflows(self, state_manager: StateManager) -> None:
         await state_manager.create_session(
             session_id=SESSION_ID,
@@ -1120,6 +1144,8 @@ class TestSubWorkflowInstanceIds:
     def state_manager(self, project_root: Path) -> StateManager:
         return StateManager(project_root=project_root, platform="test")
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.9.1, JOBS-REQ-010.9.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_nested_workflow_records_instance_on_parent_step_progress(
         self, state_manager: StateManager
     ) -> None:
@@ -1149,6 +1175,8 @@ class TestSubWorkflowInstanceIds:
             in parent_data["step_progress"]["step1"]["sub_workflow_instance_ids"]
         )
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.9.2, JOBS-REQ-010.9.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_nested_workflow_records_instance_on_parent_step_history(
         self, state_manager: StateManager
     ) -> None:

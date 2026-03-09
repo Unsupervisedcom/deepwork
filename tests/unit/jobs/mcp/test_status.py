@@ -1,6 +1,9 @@
 """Tests for MCP status file writer."""
 
+from __future__ import annotations
+
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -61,31 +64,57 @@ def _make_job(
 
 
 class TestDeriveDisplayName:
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.4.1, JOBS-REQ-010.4.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_underscore(self) -> None:
         assert _derive_display_name("competitive_research") == "Competitive Research"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.4.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_hyphen(self) -> None:
         assert _derive_display_name("ad-campaign") == "Ad Campaign"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.4.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_mixed(self) -> None:
         assert _derive_display_name("my_job-name") == "My Job Name"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.4.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_single_word(self) -> None:
         assert _derive_display_name("report") == "Report"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.4.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_already_title(self) -> None:
         assert _derive_display_name("Report") == "Report"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.4.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_empty(self) -> None:
         assert _derive_display_name("") == ""
 
 
+class TestStatusDirectoryStructure:
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.1.1, JOBS-REQ-010.1.4, JOBS-REQ-010.13.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_status_dir_uses_v1_path(self, status_writer: StatusWriter, project_root: Path) -> None:
+        """Status directory uses versioned v1 path."""
+        assert status_writer.status_dir == project_root / ".deepwork" / "tmp" / "status" / "v1"
+        assert status_writer.manifest_path == status_writer.status_dir / "job_manifest.yml"
+        assert status_writer.sessions_dir == status_writer.status_dir / "sessions"
+
+
 class TestWriteManifest:
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.1.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_manifest_file(self, status_writer: StatusWriter) -> None:
         jobs = [_make_job()]
         status_writer.write_manifest(jobs)
         assert status_writer.manifest_path.exists()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.2.1, JOBS-REQ-010.2.2, JOBS-REQ-010.2.3, JOBS-REQ-010.2.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_manifest_structure(self, status_writer: StatusWriter) -> None:
         jobs = [_make_job()]
         status_writer.write_manifest(jobs)
@@ -108,6 +137,8 @@ class TestWriteManifest:
         assert wf["steps"][0]["name"] == "step1"
         assert wf["steps"][0]["display_name"] == "Step1"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.2.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_manifest_sorted_by_name(self, status_writer: StatusWriter) -> None:
         jobs = [
             _make_job(name="zebra_job", summary="Z job"),
@@ -119,6 +150,8 @@ class TestWriteManifest:
         assert data["jobs"][0]["name"] == "alpha_job"
         assert data["jobs"][1]["name"] == "zebra_job"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.2.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_manifest_multiple_workflows_sorted(self, status_writer: StatusWriter) -> None:
         wf_b = Workflow(
             name="beta_wf",
@@ -144,16 +177,20 @@ class TestWriteManifest:
 
 
 class TestWriteSessionStatus:
-    def _job_loader(self, jobs: list[JobDefinition] | None = None):
+    def _job_loader(
+        self, jobs: list[JobDefinition] | None = None
+    ) -> Callable[[], tuple[list[JobDefinition], list[str]]]:
         """Return a callable that returns the provided jobs."""
         if jobs is None:
             jobs = [_make_job()]
 
-        def loader():
+        def loader() -> tuple[list[JobDefinition], list[str]]:
             return jobs, []
 
         return loader
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.1.3, JOBS-REQ-010.5.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_writes_session_file(
         self,
         status_writer: StatusWriter,
@@ -178,6 +215,8 @@ class TestWriteSessionStatus:
         assert data["active_workflow"] is not None
         assert len(data["workflows"]) == 1
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.5.1, JOBS-REQ-010.5.2, JOBS-REQ-010.5.4, JOBS-REQ-010.5.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_session_status_structure(
         self,
         status_writer: StatusWriter,
@@ -194,9 +233,7 @@ class TestWriteSessionStatus:
 
         status_writer.write_session_status(SESSION_ID, state_manager, self._job_loader())
 
-        data = yaml.safe_load(
-            (status_writer.sessions_dir / f"{SESSION_ID}.yml").read_text()
-        )
+        data = yaml.safe_load((status_writer.sessions_dir / f"{SESSION_ID}.yml").read_text())
 
         wf = data["workflows"][0]
         assert wf["workflow_instance_id"] == session.workflow_instance_id
@@ -209,6 +246,8 @@ class TestWriteSessionStatus:
         assert wf["steps"][0]["step_name"] == "step1"
         assert wf["steps"][0]["started_at"] is not None
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.5.2, JOBS-REQ-010.5.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_completed_workflow_preserved(
         self,
         status_writer: StatusWriter,
@@ -227,13 +266,13 @@ class TestWriteSessionStatus:
 
         status_writer.write_session_status(SESSION_ID, state_manager, self._job_loader())
 
-        data = yaml.safe_load(
-            (status_writer.sessions_dir / f"{SESSION_ID}.yml").read_text()
-        )
+        data = yaml.safe_load((status_writer.sessions_dir / f"{SESSION_ID}.yml").read_text())
         assert data["active_workflow"] is None
         assert len(data["workflows"]) == 1
         assert data["workflows"][0]["status"] == "completed"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.5.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_aborted_workflow_preserved(
         self,
         status_writer: StatusWriter,
@@ -251,11 +290,11 @@ class TestWriteSessionStatus:
 
         status_writer.write_session_status(SESSION_ID, state_manager, self._job_loader())
 
-        data = yaml.safe_load(
-            (status_writer.sessions_dir / f"{SESSION_ID}.yml").read_text()
-        )
+        data = yaml.safe_load((status_writer.sessions_dir / f"{SESSION_ID}.yml").read_text())
         assert data["workflows"][0]["status"] == "aborted"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.5.2, JOBS-REQ-010.5.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_nested_workflows(
         self,
         status_writer: StatusWriter,
@@ -281,13 +320,13 @@ class TestWriteSessionStatus:
 
         status_writer.write_session_status(SESSION_ID, state_manager, self._job_loader())
 
-        data = yaml.safe_load(
-            (status_writer.sessions_dir / f"{SESSION_ID}.yml").read_text()
-        )
+        data = yaml.safe_load((status_writer.sessions_dir / f"{SESSION_ID}.yml").read_text())
         assert len(data["workflows"]) == 2
         # Active workflow should be the top of stack (last one pushed)
         assert data["active_workflow"] == data["workflows"][1]["workflow_instance_id"]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.5.4, JOBS-REQ-010.5.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_multi_agent_workflows(
         self,
         status_writer: StatusWriter,
@@ -314,14 +353,14 @@ class TestWriteSessionStatus:
 
         status_writer.write_session_status(SESSION_ID, state_manager, self._job_loader())
 
-        data = yaml.safe_load(
-            (status_writer.sessions_dir / f"{SESSION_ID}.yml").read_text()
-        )
+        data = yaml.safe_load((status_writer.sessions_dir / f"{SESSION_ID}.yml").read_text())
         assert len(data["workflows"]) == 2
         agent_ids = [w["agent_id"] for w in data["workflows"]]
         assert None in agent_ids
         assert AGENT_ID in agent_ids
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.8.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_step_history_ordering(
         self,
         status_writer: StatusWriter,
@@ -349,9 +388,7 @@ class TestWriteSessionStatus:
 
         status_writer.write_session_status(SESSION_ID, state_manager, self._job_loader())
 
-        data = yaml.safe_load(
-            (status_writer.sessions_dir / f"{SESSION_ID}.yml").read_text()
-        )
+        data = yaml.safe_load((status_writer.sessions_dir / f"{SESSION_ID}.yml").read_text())
         steps = data["workflows"][0]["steps"]
         # step1 appears twice in history (original + re-execution)
         step_names = [s["step_name"] for s in steps]
@@ -372,6 +409,8 @@ class TestWriteSessionStatus:
 class TestSubWorkflowInstanceTracking:
     """Tests for sub_workflow_instance_ids in status output."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.9.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_nested_workflow_records_sub_instance_id(
         self,
         status_writer: StatusWriter,

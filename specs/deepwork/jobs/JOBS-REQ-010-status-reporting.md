@@ -91,8 +91,8 @@ DeepWork provides a file-based external interface for reporting the current stat
 
 ### JOBS-REQ-010.13: External Interface Stability
 
-1. The file format of `job_manifest.yml` and `sessions/<session_id>.yml` is a stable external contract.
-2. Field additions are permitted (backward-compatible).
+1. The file format of `job_manifest.yml` and `sessions/<session_id>.yml` MUST be treated as a stable external contract.
+2. Field additions MAY be made (backward-compatible).
 3. Field removals, renames, or semantic changes MUST NOT be made without incrementing the version path (e.g., `v2/`).
 
 ## Test Coverage
