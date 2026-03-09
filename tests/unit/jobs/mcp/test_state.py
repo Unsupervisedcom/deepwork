@@ -1047,6 +1047,37 @@ class TestCompletedWorkflows:
         data = json.loads(state_file.read_text())
         assert len(data["completed_workflows"]) == 2
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.10.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_write_stack_preserves_completed_workflows(
+        self, state_manager: StateManager
+    ) -> None:
+        """_write_stack preserves existing completed_workflows when not explicitly provided."""
+        # Complete a workflow so completed_workflows exists
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="job1",
+            workflow_name="wf1",
+            goal="Goal",
+            first_step_id="step1",
+        )
+        await state_manager.complete_workflow(SESSION_ID)
+
+        # Start a new workflow — _write_stack is called without completed_workflows param
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="job2",
+            workflow_name="wf2",
+            goal="Goal 2",
+            first_step_id="step1",
+        )
+
+        # Verify completed_workflows was preserved
+        state_file = state_manager._state_file(SESSION_ID)
+        data = json.loads(state_file.read_text())
+        assert len(data["completed_workflows"]) == 1
+        assert len(data["workflow_stack"]) == 1
+
 
 class TestGetAllSessionData:
     """Tests for get_all_session_data."""
@@ -1201,6 +1232,45 @@ class TestSubWorkflowInstanceIds:
         state_file = state_manager._state_file(SESSION_ID)
         data = json.loads(state_file.read_text())
         parent_data = data["workflow_stack"][0]
+        assert (
+            child.workflow_instance_id
+            in parent_data["step_history"][-1]["sub_workflow_instance_ids"]
+        )
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.9.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_cross_agent_sub_workflow_records_on_main_stack(
+        self, state_manager: StateManager
+    ) -> None:
+        """Cross-agent sub-workflow records instance ID on main stack parent's step."""
+        # Create parent on main stack
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="parent_job",
+            workflow_name="parent_wf",
+            goal="Parent",
+            first_step_id="step1",
+        )
+        await state_manager.start_step(SESSION_ID, "step1")
+
+        # Create child on agent stack — this should also update main stack parent
+        child = await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="child_job",
+            workflow_name="child_wf",
+            goal="Child",
+            first_step_id="child_step1",
+            agent_id=AGENT_ID,
+        )
+
+        # Verify main stack parent has the child's instance ID
+        main_state_file = state_manager._state_file(SESSION_ID, agent_id=None)
+        main_data = json.loads(main_state_file.read_text())
+        parent_data = main_data["workflow_stack"][0]
+        assert (
+            child.workflow_instance_id
+            in parent_data["step_progress"]["step1"]["sub_workflow_instance_ids"]
+        )
         assert (
             child.workflow_instance_id
             in parent_data["step_history"][-1]["sub_workflow_instance_ids"]

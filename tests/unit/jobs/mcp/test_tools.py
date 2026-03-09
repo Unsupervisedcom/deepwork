@@ -2517,3 +2517,16 @@ class TestStatusWriterIntegration:
                 session_id=SESSION_ID,
             )
         )
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.3.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_startup_writes_manifest(self, project_root: Path, state_manager: StateManager) -> None:
+        """StatusWriter.write_manifest is called during create_server startup."""
+        from unittest.mock import MagicMock, patch
+
+        mock_status_writer = MagicMock(spec=StatusWriter)
+        with patch("deepwork.jobs.mcp.server.StatusWriter", return_value=mock_status_writer):
+            from deepwork.jobs.mcp.server import create_server
+
+            create_server(project_root=project_root, external_runner=None)
+            mock_status_writer.write_manifest.assert_called_once()

@@ -394,6 +394,35 @@ class TestWriteSessionStatus:
         step_names = [s["step_name"] for s in steps]
         assert step_names == ["step1", "step1"]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.5.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_last_updated_at_is_iso8601_utc(
+        self,
+        status_writer: StatusWriter,
+        state_manager: StateManager,
+    ) -> None:
+        """last_updated_at must be an ISO 8601 timestamp in UTC."""
+        from datetime import datetime, timedelta
+
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="test_job",
+            workflow_name="main",
+            goal="Test goal",
+            first_step_id="step1",
+        )
+        await state_manager.start_step(SESSION_ID, "step1")
+
+        status_writer.write_session_status(SESSION_ID, state_manager, self._job_loader())
+
+        data = yaml.safe_load((status_writer.sessions_dir / f"{SESSION_ID}.yml").read_text())
+        ts = data["last_updated_at"]
+        # Must parse as ISO 8601
+        parsed = datetime.fromisoformat(ts)
+        # Must be UTC (offset +00:00)
+        assert parsed.tzinfo is not None
+        assert parsed.utcoffset() == timedelta(0)
+
     def test_no_session_data_is_noop(
         self,
         status_writer: StatusWriter,

@@ -101,14 +101,16 @@ DeepWork provides a file-based external interface for reporting the current stat
 |-------------|-----------|-----------|
 | JOBS-REQ-010.1 | test_status.py | TestWriteManifest::test_creates_manifest_file |
 | JOBS-REQ-010.2 | test_status.py | TestWriteManifest::test_manifest_structure |
-| JOBS-REQ-010.3 | test_tools.py | TestStatusWriterIntegration::test_get_workflows_writes_manifest |
+| JOBS-REQ-010.3.1 | test_tools.py | TestStatusWriterIntegration::test_startup_writes_manifest |
+| JOBS-REQ-010.3.2 | test_tools.py | TestStatusWriterIntegration::test_get_workflows_writes_manifest |
 | JOBS-REQ-010.4 | test_status.py | TestDeriveDisplayName::* |
-| JOBS-REQ-010.5 | test_status.py | TestWriteSessionStatus::test_session_status_structure |
+| JOBS-REQ-010.5 | test_status.py | TestWriteSessionStatus::test_session_status_structure, test_last_updated_at_is_iso8601_utc |
 | JOBS-REQ-010.6 | test_tools.py | TestStatusWriterIntegration::test_start_workflow_writes_session_status, test_finished_step_writes_session_status, test_abort_workflow_writes_session_status |
 | JOBS-REQ-010.7 | test_state.py | TestWorkflowInstanceId::* |
 | JOBS-REQ-010.8 | test_state.py | TestStepHistory::* |
-| JOBS-REQ-010.9 | test_state.py | TestSubWorkflowInstanceIds::* |
-| JOBS-REQ-010.10 | test_state.py | TestCompletedWorkflows::* |
+| JOBS-REQ-010.9 | test_state.py | TestSubWorkflowInstanceIds::* (incl. test_cross_agent_sub_workflow_records_on_main_stack) |
+| JOBS-REQ-010.10 | test_state.py | TestCompletedWorkflows::* (incl. test_write_stack_preserves_completed_workflows) |
 | JOBS-REQ-010.11 | test_state.py | TestGetAllSessionData::* |
-| JOBS-REQ-010.12 | test_tools.py | TestStatusWriterIntegration::test_status_writer_failure_does_not_break_tool |
+| JOBS-REQ-010.12.1, .12.2 | test_tools.py | TestStatusWriterIntegration::test_status_writer_failure_does_not_break_tool |
+| JOBS-REQ-010.12.3 | (Code review — synchronous write is acceptable since it's fire-and-forget) |
 | JOBS-REQ-010.13 | (Manual review — structural contract) |
