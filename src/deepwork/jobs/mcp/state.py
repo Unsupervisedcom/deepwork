@@ -21,10 +21,16 @@ import os
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import aiofiles
 
-from deepwork.jobs.mcp.schemas import StackEntry, StepProgress, WorkflowSession
+from deepwork.jobs.mcp.schemas import (
+    StackEntry,
+    StepHistoryEntry,
+    StepProgress,
+    WorkflowSession,
+)
 
 
 class StateError(Exception):
@@ -102,11 +108,39 @@ class StateManager:
         stack_data = data.get("workflow_stack", [])
         return [WorkflowSession.from_dict(entry) for entry in stack_data]
 
+    async def _read_completed_workflows(
+        self, session_id: str, agent_id: str | None = None
+    ) -> list[WorkflowSession]:
+        """Read completed/aborted workflows from disk.
+
+        Args:
+            session_id: Claude Code session ID
+            agent_id: Optional agent ID for sub-agent scoped state
+
+        Returns:
+            List of completed/aborted WorkflowSession objects
+        """
+        state_file = self._state_file(session_id, agent_id)
+        if not state_file.exists():
+            return []
+
+        async with aiofiles.open(state_file, encoding="utf-8") as f:
+            content = await f.read()
+
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError:
+            return []
+
+        completed_data = data.get("completed_workflows", [])
+        return [WorkflowSession.from_dict(entry) for entry in completed_data]
+
     async def _write_stack(
         self,
         session_id: str,
         stack: list[WorkflowSession],
         agent_id: str | None = None,
+        completed_workflows: list[WorkflowSession] | None = None,
     ) -> None:
         """Write the workflow stack to disk.
 
@@ -114,11 +148,26 @@ class StateManager:
             session_id: Claude Code session ID
             stack: List of WorkflowSession objects to persist
             agent_id: Optional agent ID for sub-agent scoped state
+            completed_workflows: Optional list of completed/aborted workflows to persist.
+                If None, preserves existing completed_workflows from the file.
         """
         state_file = self._state_file(session_id, agent_id)
         state_file.parent.mkdir(parents=True, exist_ok=True)
 
-        data = {"workflow_stack": [s.to_dict() for s in stack]}
+        data: dict[str, Any] = {"workflow_stack": [s.to_dict() for s in stack]}
+
+        if completed_workflows is not None:
+            data["completed_workflows"] = [s.to_dict() for s in completed_workflows]
+        else:
+            # Preserve existing completed_workflows if present
+            if state_file.exists():
+                try:
+                    existing = json.loads(state_file.read_text(encoding="utf-8"))
+                    if "completed_workflows" in existing:
+                        data["completed_workflows"] = existing["completed_workflows"]
+                except (json.JSONDecodeError, OSError):
+                    pass
+
         content = json.dumps(data, indent=2)
 
         # Write to a temp file then atomically rename to avoid partial reads
@@ -172,6 +221,37 @@ class StateManager:
                 started_at=now,
                 status="active",
             )
+
+            # If there's a parent workflow on the stack, record this sub-workflow's
+            # instance ID on the parent's current step
+            if stack:
+                parent = stack[-1]
+                parent_step_id = parent.current_step_id
+                # Update step_progress
+                if parent_step_id in parent.step_progress:
+                    parent.step_progress[parent_step_id].sub_workflow_instance_ids.append(
+                        session.workflow_instance_id
+                    )
+                # Update last step_history entry if it matches
+                if parent.step_history and parent.step_history[-1].step_id == parent_step_id:
+                    parent.step_history[-1].sub_workflow_instance_ids.append(
+                        session.workflow_instance_id
+                    )
+            elif agent_id:
+                # Cross-agent sub-workflow: also update main stack's parent
+                main_stack = await self._read_stack(session_id, agent_id=None)
+                if main_stack:
+                    parent = main_stack[-1]
+                    parent_step_id = parent.current_step_id
+                    if parent_step_id in parent.step_progress:
+                        parent.step_progress[parent_step_id].sub_workflow_instance_ids.append(
+                            session.workflow_instance_id
+                        )
+                    if parent.step_history and parent.step_history[-1].step_id == parent_step_id:
+                        parent.step_history[-1].sub_workflow_instance_ids.append(
+                            session.workflow_instance_id
+                        )
+                    await self._write_stack(session_id, main_stack, agent_id=None)
 
             stack.append(session)
             await self._write_stack(session_id, stack, agent_id)
@@ -241,6 +321,11 @@ class StateManager:
             else:
                 session.step_progress[step_id].started_at = now
 
+            # Append to step history
+            session.step_history.append(
+                StepHistoryEntry(step_id=step_id, started_at=now)
+            )
+
             session.current_step_id = step_id
             await self._write_stack(session_id, stack, agent_id)
 
@@ -284,6 +369,10 @@ class StateManager:
             progress.completed_at = now
             progress.outputs = outputs
             progress.notes = notes
+
+            # Update the last step_history entry's finished_at
+            if session.step_history and session.step_history[-1].step_id == step_id:
+                session.step_history[-1].finished_at = now
 
             await self._write_stack(session_id, stack, agent_id)
 
@@ -360,6 +449,9 @@ class StateManager:
     ) -> None:
         """Navigate back to a prior step, clearing progress from that step onward.
 
+        Step history is preserved (not cleared) — the step will appear again
+        in history when start_step is called, showing the re-execution.
+
         Args:
             session_id: Claude Code session ID
             step_id: Step ID to navigate to
@@ -395,6 +487,9 @@ class StateManager:
     ) -> WorkflowSession | None:
         """Mark the workflow as complete and remove from stack.
 
+        The completed session is preserved in the completed_workflows list
+        for status reporting.
+
         Args:
             session_id: Claude Code session ID
             agent_id: Optional agent ID for sub-agent scoped state
@@ -417,9 +512,11 @@ class StateManager:
             session.completed_at = now
             session.status = "completed"
 
-            # Pop the completed session from the stack
+            # Move from stack to completed_workflows
+            completed = await self._read_completed_workflows(session_id, agent_id)
+            completed.append(session)
             stack.pop()
-            await self._write_stack(session_id, stack, agent_id)
+            await self._write_stack(session_id, stack, agent_id, completed_workflows=completed)
 
             return stack[-1] if stack else None
 
@@ -427,6 +524,9 @@ class StateManager:
         self, session_id: str, explanation: str, agent_id: str | None = None
     ) -> tuple[WorkflowSession, WorkflowSession | None]:
         """Abort a workflow and remove from stack.
+
+        The aborted session is preserved in the completed_workflows list
+        for status reporting.
 
         Args:
             session_id: Claude Code session ID
@@ -452,9 +552,11 @@ class StateManager:
             session.status = "aborted"
             session.abort_reason = explanation
 
-            # Pop the aborted session from the stack
+            # Move from stack to completed_workflows
+            completed = await self._read_completed_workflows(session_id, agent_id)
+            completed.append(session)
             stack.pop()
-            await self._write_stack(session_id, stack, agent_id)
+            await self._write_stack(session_id, stack, agent_id, completed_workflows=completed)
 
             new_active = stack[-1] if stack else None
             return session, new_active
@@ -539,3 +641,52 @@ class StateManager:
             Number of active workflow sessions on the stack
         """
         return len(self.get_stack(session_id, agent_id))
+
+    def get_all_session_data(
+        self, session_id: str
+    ) -> dict[str | None, tuple[list[WorkflowSession], list[WorkflowSession]]]:
+        """Return all stacks and completed workflows for a session.
+
+        Scans the session directory for state.json and agent_*.json files.
+
+        Args:
+            session_id: Claude Code session ID
+
+        Returns:
+            Dict mapping agent_id (None for main) to
+            (active_stack, completed_workflows) tuples
+        """
+        session_dir = self.sessions_dir / f"session-{session_id}"
+        result: dict[str | None, tuple[list[WorkflowSession], list[WorkflowSession]]] = {}
+
+        if not session_dir.exists():
+            return result
+
+        for state_file in sorted(session_dir.iterdir()):
+            if not state_file.suffix == ".json":
+                continue
+
+            try:
+                data = json.loads(state_file.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                continue
+
+            stack = [
+                WorkflowSession.from_dict(entry)
+                for entry in data.get("workflow_stack", [])
+            ]
+            completed = [
+                WorkflowSession.from_dict(entry)
+                for entry in data.get("completed_workflows", [])
+            ]
+
+            if state_file.name == "state.json":
+                agent_id = None
+            elif state_file.name.startswith("agent_") and state_file.name.endswith(".json"):
+                agent_id = state_file.name[len("agent_"):-len(".json")]
+            else:
+                continue
+
+            result[agent_id] = (stack, completed)
+
+        return result

@@ -50,6 +50,7 @@ logger = logging.getLogger("deepwork.jobs.mcp")
 
 if TYPE_CHECKING:
     from deepwork.jobs.mcp.quality_gate import QualityGate
+    from deepwork.jobs.mcp.status import StatusWriter
 
 
 class ToolError(Exception):
@@ -68,6 +69,7 @@ class WorkflowTools:
         quality_gate: QualityGate | None = None,
         max_quality_attempts: int = 3,
         external_runner: str | None = None,
+        status_writer: StatusWriter | None = None,
     ):
         """Initialize workflow tools.
 
@@ -78,12 +80,39 @@ class WorkflowTools:
             max_quality_attempts: Maximum attempts before failing quality gate
             external_runner: External runner for quality gate reviews.
                 "claude" uses Claude CLI subprocess. None means agent self-review.
+            status_writer: Optional status writer for external status files.
         """
         self.project_root = project_root
         self.state_manager = state_manager
         self.quality_gate = quality_gate
         self.max_quality_attempts = max_quality_attempts
         self.external_runner = external_runner
+        self.status_writer = status_writer
+
+    def _write_session_status(self, session_id: str) -> None:
+        """Write session status file if status_writer is configured.
+
+        Fire-and-forget: exceptions are logged as warnings and never propagated.
+        """
+        if self.status_writer:
+            try:
+                self.status_writer.write_session_status(
+                    session_id, self.state_manager, self._load_all_jobs
+                )
+            except Exception:
+                logger.warning("Failed to write session status", exc_info=True)
+
+    def _write_manifest(self) -> None:
+        """Write job manifest file if status_writer is configured.
+
+        Fire-and-forget: exceptions are logged as warnings and never propagated.
+        """
+        if self.status_writer:
+            try:
+                jobs, _ = self._load_all_jobs()
+                self.status_writer.write_manifest(jobs)
+            except Exception:
+                logger.warning("Failed to write job manifest", exc_info=True)
 
     def _load_all_jobs(self) -> tuple[list[JobDefinition], list[JobLoadError]]:
         """Load all job definitions from all configured job folders.
@@ -361,6 +390,13 @@ class WorkflowTools:
             for e in load_errors
         ]
 
+        # Write manifest for external consumers
+        if self.status_writer:
+            try:
+                self.status_writer.write_manifest(jobs)
+            except Exception:
+                logger.warning("Failed to write job manifest", exc_info=True)
+
         return GetWorkflowsResponse(jobs=job_infos, errors=error_infos)
 
     async def start_workflow(self, input_data: StartWorkflowInput) -> StartWorkflowResponse:
@@ -409,12 +445,14 @@ class WorkflowTools:
         # Get expected outputs
         step_outputs = self._build_expected_outputs(first_step.outputs)
 
-        return StartWorkflowResponse(
+        response = StartWorkflowResponse(
             begin_step=self._build_active_step_info(
                 session.session_id, first_step_id, job, first_step, instructions, step_outputs
             ),
             stack=self.state_manager.get_stack(sid, aid),
         )
+        self._write_session_status(sid)
+        return response
 
     async def finished_step(self, input_data: FinishedStepInput) -> FinishedStepResponse:
         """Report step completion and get next instructions.
@@ -507,11 +545,13 @@ class WorkflowTools:
                     f"review outcome (e.g. 'Self-review passed: all criteria met')"
                 )
 
-                return FinishedStepResponse(
+                response = FinishedStepResponse(
                     status=StepStatus.NEEDS_WORK,
                     feedback=feedback,
                     stack=self.state_manager.get_stack(sid, aid),
                 )
+                self._write_session_status(sid)
+                return response
             else:
                 # External runner mode: use quality gate subprocess evaluation
                 attempts = await self.state_manager.record_quality_attempt(
@@ -537,12 +577,14 @@ class WorkflowTools:
 
                     # Return needs_work status
                     combined_feedback = "; ".join(r.feedback for r in failed_reviews)
-                    return FinishedStepResponse(
+                    response = FinishedStepResponse(
                         status=StepStatus.NEEDS_WORK,
                         feedback=combined_feedback,
                         failed_reviews=failed_reviews,
                         stack=self.state_manager.get_stack(sid, aid),
                     )
+                    self._write_session_status(sid)
+                    return response
 
         # Mark step as completed
         await self.state_manager.complete_step(
@@ -562,12 +604,14 @@ class WorkflowTools:
             all_outputs = self.state_manager.get_all_outputs(sid, aid)
             await self.state_manager.complete_workflow(sid, aid)
 
-            return FinishedStepResponse(
+            response = FinishedStepResponse(
                 status=StepStatus.WORKFLOW_COMPLETE,
                 summary=f"Workflow '{workflow.name}' completed successfully!",
                 all_outputs=all_outputs,
                 stack=self.state_manager.get_stack(sid, aid),
             )
+            self._write_session_status(sid)
+            return response
 
         # Get next step
         next_entry = workflow.step_entries[next_entry_index]
@@ -591,13 +635,15 @@ class WorkflowTools:
         # Add info about concurrent steps if this is a concurrent entry
         instructions = self._append_concurrent_info(instructions, next_entry)
 
-        return FinishedStepResponse(
+        response = FinishedStepResponse(
             status=StepStatus.NEXT_STEP,
             begin_step=self._build_active_step_info(
                 sid, next_step_id, job, next_step, instructions, step_outputs
             ),
             stack=self.state_manager.get_stack(sid, aid),
         )
+        self._write_session_status(sid)
+        return response
 
     async def abort_workflow(self, input_data: AbortWorkflowInput) -> AbortWorkflowResponse:
         """Abort the current workflow and return to the previous one.
@@ -617,7 +663,7 @@ class WorkflowTools:
             sid, input_data.explanation, agent_id=aid
         )
 
-        return AbortWorkflowResponse(
+        response = AbortWorkflowResponse(
             aborted_workflow=f"{aborted_session.job_name}/{aborted_session.workflow_name}",
             aborted_step=aborted_session.current_step_id,
             explanation=input_data.explanation,
@@ -627,6 +673,8 @@ class WorkflowTools:
             ),
             resumed_step=new_active.current_step_id if new_active else None,
         )
+        self._write_session_status(sid)
+        return response
 
     async def go_to_step(self, input_data: GoToStepInput) -> GoToStepResponse:
         """Navigate back to a prior step, clearing progress from that step onward.
@@ -707,10 +755,12 @@ class WorkflowTools:
         # Add concurrent step info if applicable
         instructions = self._append_concurrent_info(instructions, target_entry)
 
-        return GoToStepResponse(
+        response = GoToStepResponse(
             begin_step=self._build_active_step_info(
                 sid, nav_step_id, job, nav_step, instructions, step_outputs
             ),
             invalidated_steps=invalidate_step_ids,
             stack=self.state_manager.get_stack(sid, aid),
         )
+        self._write_session_status(sid)
+        return response
