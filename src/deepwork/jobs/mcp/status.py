@@ -72,23 +72,29 @@ class StatusWriter:
             for wf in sorted_workflows:
                 steps_list: list[dict[str, str]] = []
                 for step_id in wf.steps:
-                    steps_list.append({
-                        "name": step_id,
-                        "display_name": _derive_display_name(step_id),
-                    })
-                wf_list.append({
-                    "name": wf.name,
-                    "display_name": _derive_display_name(wf.name),
-                    "summary": wf.summary,
-                    "steps": steps_list,
-                })
+                    steps_list.append(
+                        {
+                            "name": step_id,
+                            "display_name": _derive_display_name(step_id),
+                        }
+                    )
+                wf_list.append(
+                    {
+                        "name": wf.name,
+                        "display_name": _derive_display_name(wf.name),
+                        "summary": wf.summary,
+                        "steps": steps_list,
+                    }
+                )
 
-            manifest_jobs.append({
-                "name": job.name,
-                "display_name": _derive_display_name(job.name),
-                "summary": job.summary,
-                "workflows": wf_list,
-            })
+            manifest_jobs.append(
+                {
+                    "name": job.name,
+                    "display_name": _derive_display_name(job.name),
+                    "summary": job.summary,
+                    "workflows": wf_list,
+                }
+            )
 
         save_yaml(self.manifest_path, {"jobs": manifest_jobs})
 

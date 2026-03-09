@@ -322,9 +322,7 @@ class StateManager:
                 session.step_progress[step_id].started_at = now
 
             # Append to step history
-            session.step_history.append(
-                StepHistoryEntry(step_id=step_id, started_at=now)
-            )
+            session.step_history.append(StepHistoryEntry(step_id=step_id, started_at=now))
 
             session.current_step_id = step_id
             await self._write_stack(session_id, stack, agent_id)
@@ -671,19 +669,15 @@ class StateManager:
             except (json.JSONDecodeError, OSError):
                 continue
 
-            stack = [
-                WorkflowSession.from_dict(entry)
-                for entry in data.get("workflow_stack", [])
-            ]
+            stack = [WorkflowSession.from_dict(entry) for entry in data.get("workflow_stack", [])]
             completed = [
-                WorkflowSession.from_dict(entry)
-                for entry in data.get("completed_workflows", [])
+                WorkflowSession.from_dict(entry) for entry in data.get("completed_workflows", [])
             ]
 
             if state_file.name == "state.json":
                 agent_id = None
             elif state_file.name.startswith("agent_") and state_file.name.endswith(".json"):
-                agent_id = state_file.name[len("agent_"):-len(".json")]
+                agent_id = state_file.name[len("agent_") : -len(".json")]
             else:
                 continue
 
