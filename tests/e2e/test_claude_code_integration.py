@@ -300,8 +300,8 @@ class TestMCPWorkflowTools:
 
         # Report first step completion
         finish_input = FinishedStepInput(
-            outputs={"identified_fruits.md": str(output_file)},
-            notes="Identified fruits from test input",
+            outputs={"identified_fruits": str(output_file)},
+            work_summary="Identified fruits from test input",
             session_id="test-e2e-session-2",
         )
         finish_response = await tools.finished_step(finish_input)
@@ -390,7 +390,7 @@ class TestClaudeCodeMCPExecution:
             "mcpServers": {
                 "deepwork": {
                     "command": "deepwork",
-                    "args": ["serve", "--path", ".", "--external-runner", "claude"],
+                    "args": ["serve", "--path", "."],
                 }
             }
         }

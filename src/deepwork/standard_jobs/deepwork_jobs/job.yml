@@ -1,196 +1,1996 @@
-# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: deepwork_jobs
-version: "1.7.0"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, testing, or improving DeepWork jobs."
-common_job_info_provided_to_all_steps_at_runtime: |
-  Core commands for managing DeepWork jobs. These commands help you define new multi-step
-  workflows, test them on real use cases, and learn from running them.
 
-  The `new_job` workflow guides you through the full lifecycle of creating a new job:
-  1. **Define**: Gather requirements through structured questions and create job.yml
-  2. **Implement**: Generate step instruction files and sync slash commands
-  3. **Test**: Run the workflow on a real use case, critique output, and iterate with user
-  4. **Iterate**: Review what happened and improve the job definition based on learnings
+step_arguments:
+  - name: job_purpose
+    description: "What complex task or workflow are you trying to accomplish?"
+    type: string
 
-  The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
-  confusion or inefficiencies, and improves job instructions. It also captures bespoke
-  learnings specific to the current run into AGENTS.md files in the working folder.
+  - name: job.yml
+    description: "Definition of the job and its workflows"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Evaluate the output against these criteria:
+        - Intermediate Deliverables: The job breaks out across logical steps with reviewable intermediate deliverables.
+        - Reviews: Reviews are defined for each step. Particularly critical documents have their own reviews. Note that the reviewers do not have transcript access, so if the criteria are about the conversation, then add a `.deepwork/tmp/[step_summary].md` step output file so the agent has a communication channel to the reviewer.
 
-  ## Job Schema (CRITICAL)
+  - name: step_instruction_files
+    description: "Instruction Markdown files for each step"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Read the job.yml file in the same job directory for context on how this instruction file fits into the larger workflow.
 
-  Before creating or editing any `job.yml` file, you MUST read the JSON schema at
-  `.deepwork/job.schema.json`. This schema is the authoritative source of truth for
-  all valid fields, types, and structures. The schema uses `additionalProperties: false`
-  at every level, so any extra or misspelled fields will cause validation failures.
+        Evaluate the output against these criteria:
+        - Complete Instructions: The instruction file is complete (no stubs or placeholders).
+        - Specific & Actionable: Instructions are tailored to the step's purpose, not generic.
+        - Output Examples: The instruction file shows what good output looks like. This can be either template examples, or negative examples of what not to do. Only required if the step has outputs.
+        - Quality Criteria: The instruction file defines quality criteria for its outputs.
+        - Ask Structured Questions: If this step gathers user input, instructions explicitly use the phrase 'ask structured questions'. If the step has no user inputs, this criterion passes automatically.
+        - Prompt Engineering: The instruction file follows Anthropic's best practices for prompt engineering.
+        - No Redundant Info: The instruction file avoids duplicating information that belongs in the job.yml's common_job_info_provided_to_all_steps_at_runtime section. Shared context (project background, terminology, conventions) is in common_job_info, not repeated in each step.
 
-  Key schema rules that agents commonly get wrong:
-  - **Inputs use `oneOf`** — there are exactly two input formats, with no extra fields allowed:
-    - User parameter: `{name: str, description: str}` — ONLY these two fields
-    - File from prior step: `{file: str, from_step: str}` — ONLY these two fields
-  - **No `type` field on inputs** — do NOT add `type: "user_provided"` or `type: "file"` to inputs
-  - **No `path` field on inputs** — file paths are resolved by the framework, not specified in inputs
-  - **Output keys** are the output name; values have `{type: "file"|"files", description: str, required: bool}`
-  - **No `description` field at root level** — use `common_job_info_provided_to_all_steps_at_runtime` instead
+  - name: test_feedback
+    description: "Feedback from testing the workflow on a real use case"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Evaluate the output against these criteria:
+        - Test Case Documented: The feedback file describes what test case was used and what the workflow produced.
+        - Issues Identified: The feedback file lists specific issues found during output critique.
+        - Feedback Captured: User feedback and requested corrections are documented with enough detail for the iterate step to act on.
 
-  Always read the schema file and validate your job.yml structure against it.
+  - name: job_name
+    description: "Name of the job that was run (optional - will auto-detect from conversation)"
+    type: string
+
+  - name: AGENTS.md
+    description: "Bespoke learnings and run-specific context for the working folder"
+    type: file_path
+
+  - name: scripts
+    description: "Scripts to run parts of the job more efficiently"
+    type: file_path
+
+  - name: settings.json
+    description: "Cleaned up Claude settings file with legacy permissions removed"
+    type: file_path
+
+  - name: job_definitions
+    description: "Updated job.yml files in current DeepWork format"
+    type: file_path
 
 workflows:
-  - name: new_job
+  new_job:
     summary: "Create a new DeepWork job from scratch through definition, implementation, testing, and iteration"
-    steps:
-      - define
-      - implement
-      - test
-      - iterate
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Core commands for managing DeepWork jobs. These commands help you define new multi-step
+      workflows, test them on real use cases, and learn from running them.
 
-  - name: repair
+      The `new_job` workflow guides you through the full lifecycle of creating a new job:
+      1. **Define**: Gather requirements through structured questions and create job.yml
+      2. **Implement**: Generate step instruction files and sync slash commands
+      3. **Test**: Run the workflow on a real use case, critique output, and iterate with user
+      4. **Iterate**: Review what happened and improve the job definition based on learnings
+
+      The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
+      confusion or inefficiencies, and improves job instructions. It also captures bespoke
+      learnings specific to the current run into AGENTS.md files in the working folder.
+
+      ## Job Schema (CRITICAL)
+
+      Before creating or editing any `job.yml` file, you MUST read the JSON schema at
+      `.deepwork/job.schema.json`. This schema is the authoritative source of truth for
+      all valid fields, types, and structures.
+
+      Key schema rules:
+      - `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` and `json_schema`
+      - `workflows` is an object keyed by workflow name, each with {summary, steps[]}
+      - Each step has {name, instructions (inline string), inputs, outputs, process_quality_attributes}
+      - Inputs/outputs reference step_arguments by name
+      - No `version`, no root-level `steps[]`, no `instructions_file`, no hooks, no dependencies
+
+      Always read the schema file and validate your job.yml structure against it.
+    steps:
+      - name: define
+        instructions: |
+          # Define Job Specification
+
+          ## Objective
+
+          Create a `job.yml` specification file that defines the structure of a new DeepWork job by thoroughly understanding the user's workflow requirements through an interactive question-and-answer process.
+
+          ## Task
+
+          Guide the user through defining a job specification by asking structured questions. **Do not attempt to create the specification without first fully understanding the user's needs.**
+
+          **Important**: Use the AskUserQuestion tool to ask structured questions when gathering information from the user. This provides a better user experience with clear options and guided choices.
+
+          The output of this step is **only** the `job.yml` file - a complete specification of the workflow. The actual step instruction files will be created in the next step (`implement`).
+
+          ### Step 1: Understand the Job Purpose
+
+          Start by asking structured questions to understand what the user wants to accomplish:
+
+          1. **What is the overall goal of this workflow?**
+             - What complex task are they trying to accomplish?
+             - What domain is this in? (e.g., research, marketing, development, reporting)
+             - How often will they run this workflow?
+
+          2. **What does success look like?**
+             - What's the final deliverable or outcome?
+             - Who is the audience for the output?
+             - What quality criteria matter most?
+
+          3. **What are the major phases?**
+             - Ask them to describe the workflow at a high level
+             - What are the distinct stages from start to finish?
+             - Are there any dependencies between phases?
+
+          ### Step 2: Define Each Step
+
+          For each major phase they mentioned, ask structured questions to gather details:
+
+          1. **Step Purpose**
+             - What exactly does this step accomplish?
+             - What is the input to this step?
+             - What is the output from this step?
+
+          2. **Step Inputs**
+             - What information is needed to start this step?
+             - Does it need user-provided parameters? (e.g., topic, target audience)
+             - Does it need files from previous steps?
+             - What format should inputs be in?
+
+          **CRITICAL — Confirm what varies vs. what's fixed**: When the user describes a process, they will mention multiple things the process operates on (files, data sources, criteria, parameters, templates, etc.). You MUST distinguish between:
+          - **Variable inputs** (change each run) → these become job inputs (`name`/`description` user parameters)
+          - **Fixed context** (same every run) → these get baked into step instructions or `common_job_info_provided_to_all_steps_at_runtime`
+
+          **Do not assume which is which.** If the user describes a process involving e.g. "a file and a set of criteria", either one could be the variable input. Use the AskUserQuestion tool to explicitly confirm, for example:
+
+          ```
+          AskUserQuestion:
+            question: "When you run this job each time, what changes between runs?"
+            header: "Job inputs"
+            multiSelect: true
+            options:
+              - label: "The vendor data file"
+                description: "A different file each run — the criteria stay the same"
+              - label: "The filtering criteria"
+                description: "Different criteria each run — the file stays the same"
+              - label: "Both change each run"
+                description: "Both the file and the criteria vary between runs"
+          ```
+
+          Adapt the options to list every artifact/parameter the user mentioned. Items they select become job inputs; items they don't select get baked into instructions.
+
+          Getting this wrong produces a fundamentally broken job — the entire workflow will be structured around the wrong axis of variation.
+
+          3. **Step Outputs**
+             - What files or artifacts does this step produce?
+             - What format should the output be in? (markdown, YAML, JSON, etc.)
+             - Where should each output be saved? (filename/path)
+             - Should outputs be organized in subdirectories? (e.g., `reports/`, `data/`, `drafts/`)
+             - Will other steps need this output?
+             - When discussing output paths, follow the **Work Product Storage Guidelines** in the reference section below.
+
+          4. **Step Process** (high-level understanding)
+             - What are the key activities in this step?
+             - Are there any quality checks or validation needed?
+             - What makes a good vs. bad output for this step?
+
+             **Important**: When skills are generated, quality criteria are automatically included in the output. Do not duplicate them in step instructions or details—this causes redundancy and confusion.
+
+          **Note**: You're gathering this information to understand what instructions will be needed, but you won't create the instruction files yet - that happens in the `implement` step.
+
+          ### Capability Considerations
+
+          When defining steps, identify any that require specialized tools:
+
+          **Browser Automation**: If any step involves web scraping, form filling, interactive browsing, UI testing, or research requiring website visits, ask the user what browser tools they have available. For Claude Code users, **Claude in Chrome** (Anthropic's browser extension) has been tested with DeepWork and is recommended for new users. Don't assume a default—confirm the tool before designing browser-dependent steps.
+
+          ### Parallel Sub-Workflow Pattern
+
+          When a workflow needs to apply a multi-step process to many items independently (e.g., research each of 5 competitors, review each of 12 pull requests, analyze each file in a directory), **do not inline the repeated logic as a single step**. Instead, use the parallel sub-workflow pattern:
+
+          1. **Define a separate workflow** for the process that will be repeated. This workflow handles one item at a time (e.g., `research_one_competitor` with steps like `gather_data` → `analyze` → `write_summary`).
+
+          2. **In the main workflow**, add a step whose instructions tell the agent to launch the sub-workflow once per item using sub-agents (via the Task tool). Since each item is independent, these sub-workflow runs execute in parallel.
+
+          **Why this matters:**
+          - **Parallelism**: Independent items are processed concurrently instead of sequentially, dramatically reducing wall-clock time
+          - **Quality gates**: Each sub-workflow run goes through its own review cycle, so a bad result for one item doesn't block the others
+          - **Reusability**: The sub-workflow can be invoked on its own for ad-hoc single-item runs
+
+          **How to structure it in `job.yml`:**
+
+          ```yaml
+          workflows:
+            full_analysis:
+              summary: "Research all competitors end-to-end"
+              steps:
+                - name: identify_competitors
+                  ...
+                - name: research_all          # This step launches research_one in parallel
+                  ...
+                - name: synthesize
+                  ...
+
+            research_one:
+              summary: "Deep-dive research on a single competitor"
+              steps:
+                - name: gather_data
+                  ...
+                - name: analyze
+                  ...
+                - name: write_summary
+                  ...
+          ```
+
+          The `research_all` step's instructions should tell the agent to:
+          - Read the list of items from the prior step's output
+          - Launch `research_one` as a sub-workflow for each item using parallel sub-agents (Task tool)
+          - Collect the results and confirm all runs completed
+
+          **When to recognize this pattern:** Look for language like "for each X, do Y" where Y involves more than one logical phase. If Y is a single simple action, a regular step with a loop is fine. If Y is itself a multi-step process with intermediate outputs worth reviewing, split it into a sub-workflow.
+
+          ### Iterative Loop Pattern (go_to_step)
+
+          When a workflow needs to repeat a group of steps based on feedback or evolving requirements (e.g., draft → review → revise cycles, or research → analyze → check coverage → research more), use the `go_to_step` MCP tool to create a loop.
+
+          **How it works:** A later step in the workflow evaluates the work so far and decides whether to loop back. If a loop is needed, the step's instructions tell the agent to call `go_to_step` with the step ID to return to. This clears all progress from that step onward and re-presents the step's instructions, so the agent re-executes the target step and all subsequent steps with fresh context.
+
+          **How to structure it in `job.yml`:**
+
+          ```yaml
+          workflows:
+            iterative_report:
+              summary: "Create a report with iterative refinement"
+              steps:
+                - name: gather_data
+                  ...
+                - name: write_draft
+                  ...
+                - name: review_draft       # This step may loop back to gather_data or write_draft
+                  ...
+                - name: finalize
+                  ...
+          ```
+
+          The `review_draft` step's instructions should tell the agent to:
+          - Evaluate the draft against acceptance criteria
+          - If data gaps are found: call `go_to_step` with `step_id: "gather_data"` to collect more data and re-draft
+          - If the draft needs revision but data is sufficient: call `go_to_step` with `step_id: "write_draft"` to revise
+          - If the draft meets all criteria: proceed normally by calling `finished_step`
+
+          **Important design considerations:**
+          - **Keep loops bounded**: The decision step's instructions should include a maximum iteration count or clear exit criteria to prevent infinite loops
+          - **State is cleared**: When `go_to_step` navigates back, all progress from the target step onward is cleared (outputs, timestamps, quality attempts). The agent must re-execute those steps. Files on disk are NOT deleted — only session tracking state is reset.
+          - **Use for multi-step loops only**: If only a single step needs to retry, the quality review system (`needs_work` from `finished_step`) already handles that. Use `go_to_step` when the loop spans multiple steps.
+
+          **When to recognize this pattern:** Look for language like "keep refining until X", "iterate until satisfied", "go back and redo Y if Z", or any cycle where later steps may invalidate earlier work. If the iteration involves just one step retrying its own output, rely on quality reviews instead.
+
+          **After defining all steps**, check whether any step matches the Parallel Sub-Workflow or Iterative Loop patterns above. If so, discuss the pattern with the user and restructure the workflow accordingly before proceeding to validation.
+
+          ### Step 3: Validate the Workflow
+
+          After gathering information about all steps:
+
+          1. **Review the flow**
+             - Summarize the complete workflow
+             - Show how outputs from one step feed into the next
+             - Ask if anything is missing
+
+          2. **Check for gaps**
+             - Are there any steps where the input isn't clearly defined?
+             - Are there any outputs that aren't used by later steps?
+
+          3. **Confirm details**
+             - Job name (lowercase, underscores, descriptive)
+             - Job summary (one clear sentence, max 200 chars)
+             - Common job info provided to all steps at runtime (detailed multi-line context shared across all steps)
+
+          ### Step 4: Define Quality Reviews
+
+          **Constraint: Every step producing a written final deliverable MUST have at least one review defined.**
+
+          For each step, define reviews that evaluate the step's outputs. Reviews run automatically when a step completes and provide quality validation loops.
+
+          For intermediate outputs between steps, reviews let you make sure you don't go too far down the wrong path. Add reviews that confirm things that could cause problems later. For example, in a report creation process, you might have an intermediate step that performs a number of queries on the data and records the results so that later report-writing steps can synthesize that information into a coherent narrative. In this case, you would want to add a review that checks that the queries SQL matches up with the description of the queries in the job description.
+
+          For final outputs, reviews let you make sure the output meets the user's expectations. For example, with a data-centric report job, you might have one review on the final output for consistency with style guidelines and tone and such, and a totally separate review on the data-backing to make sure the claims in the report are supported by the data from earlier steps and all have citations.
+
+          Some suggested review types for final outputs:
+          - Ensure claims have citations and the citations are not hallucinated
+          - Ensure the output follows the style guidelines and tone
+          - Ensure the output is well-organized and easy to read
+          - Ensure obvious questions the content raises have answers provided
+          - Visual formatting is correct (for things like PDF or HTML where the visual output matters)
+          - That the content matches what the intended audience expects (i.e. executives vs engineers)
+
+          **Reviews can be defined in two places:**
+
+          1. **Output-level reviews** — defined on the `step_arguments` entry or on the step's `outputs` block, with a `review` containing `strategy` and `instructions`:
+             - `strategy: individual` — each file in the output is reviewed separately
+             - `strategy: matches_together` — all files in the output are reviewed together as a group
+
+          2. **Process quality attributes** — defined on the step via `process_quality_attributes`, a map of attribute name to statement. These review the *work done* in the step (not individual output files), using the `work_summary` provided when calling `finished_step`.
+
+          ```yaml
+          steps:
+            - name: research_competitors
+              instructions: |
+                ...
+              inputs:
+                competitors_list: {}
+              outputs:
+                research_notes:
+                  review:
+                    strategy: individual
+                    instructions: |
+                      Evaluate the output against these criteria:
+                      - Sufficient Data: Each competitor has at least 3 data points.
+                      - Sources Cited: Sources are cited for key claims.
+                      - Current Information: Information is current (within last year).
+              process_quality_attributes:
+                "Consistent Style": "All research notes follow the same structure."
+          ```
+
+          **Reviews are particularly valuable for:**
+          - Steps with complex outputs that need multiple quality checks
+          - Steps where quality is critical (final deliverables)
+          - Steps with subjective quality criteria that benefit from AI self-review
+          - Steps producing multiple files where each file needs individual review
+
+          **Quality review timeout considerations:**
+          Each individual quality review call has a 120-second timeout. For output reviews with `strategy: individual`, each file gets its own separate review call — so having many files does NOT cause timeout accumulation. Timeout risk is only for individual reviews that are complex, such as:
+          - Reviewing a single very large file (500+ lines) with many criteria
+          - Review criteria that require cross-referencing large amounts of context
+          For these cases:
+          - Keep review criteria focused and efficient to evaluate
+          - The agent can use `quality_review_override_reason` to bypass a timed-out review, but this loses the quality gate benefit
+
+          **For steps with no quality checks needed, omit `process_quality_attributes` and output-level reviews.**
+
+          ### Step 5: Create the Job Directory and Specification
+
+          Only after you have complete understanding, create the job directory and `job.yml` file.
+
+          **Note**: `[job_dir]` refers to the `job_dir` path returned in the workflow response when this workflow was started. It points to the directory containing this job's definition, scripts, and templates.
+
+          **First, create the directory structure** using the `make_new_job.sh` script:
+
+          ```bash
+          [job_dir]/make_new_job.sh [job_name]
+          ```
+
+          **Then create the job.yml file** at `.deepwork/jobs/[job_name]/job.yml`
+
+          (Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`. Replace `[job_dir]` with the actual `job_dir` path from the workflow response.)
+
+          **Template reference**: See `[job_dir]/templates/job.yml.template` for the standard structure.
+
+          **Complete example**: See `[job_dir]/templates/job.yml.example` for a fully worked example.
+
+          **Important**:
+          - Use lowercase with underscores for job name and step names
+          - At least one output per step
+          - The `summary` should be concise (max 200 chars)
+          - The `common_job_info_provided_to_all_steps_at_runtime` should provide rich context shared across all steps
+
+          ## Example Dialog
+
+          ```
+          Claude: I'll help you define a new DeepWork job. Let's start by understanding what you're trying to accomplish.
+
+          What complex task or workflow are you trying to create? What's the overall goal?
+
+          User: I want to create competitive research reports for my company
+
+          Claude: Great! Let's dig into that. A few questions:
+
+          1. What's the final deliverable? Is it a written report, a presentation, or something else?
+          2. Who is the audience? Your team, executives, clients?
+          3. How comprehensive should these reports be?
+
+          User: It's a written report for our product team. Should be comprehensive - analyzing 3-5 competitors.
+
+          Claude: Perfect. Now let's think about the major phases of creating this report. What are the main stages you go through? For example:
+          - Identifying which competitors to analyze?
+          - Gathering information about them?
+          - Analyzing the data?
+          - Writing the report?
+
+          Or is your process different?
+
+          User: Yes, that's close. I would say:
+          1. Identify competitors
+          2. Research each one
+          3. Create comparison analysis
+          4. Write positioning recommendations
+
+          Claude: Excellent! Now let's define each step in detail. Starting with "Identify competitors":
+
+          1. What inputs do you need to start? Do you already have a market segment in mind, or do you need to specify that?
+          2. What should the output look like? A list of competitor names? More detailed?
+          3. How many competitors should be identified?
+
+          User: I need to specify the market segment and product category as inputs. The output should be a markdown file with 5-7 competitors and brief descriptions of each.
+
+          Claude: Perfect. A few more questions about that output:
+          1. What should the file be called? Something like `competitors_list.md`?
+          2. Should it go in the project root, or in a subdirectory like `research/` or `data/`?
+
+          User: Just call it `competitors_list.md` in the project root.
+
+          Claude: Great. Now for the "Research each one" step:
+          1. Does it use the competitor list from the first step as input?
+          2. What kind of research - product features, pricing, marketing, all of the above?
+          3. What format should the research output be in?
+          4. Where should that research be saved?
+
+          [continues for each step...]
+
+          [After gathering all information:]
+
+          Claude: Let me summarize the workflow I've designed based on our conversation:
+
+          **Job: competitive_research**
+          Summary: Systematic competitive analysis workflow for product positioning
+
+          Common job info (shared context for all steps):
+          A comprehensive workflow for analyzing competitors in your market segment. This job helps product teams understand the competitive landscape by systematically identifying competitors, researching their offerings, creating comparison matrices, and developing strategic positioning recommendations.
+
+          The workflow produces:
+          - A vetted list of key competitors
+          - Detailed research notes on each competitor
+          - A comparison matrix highlighting key differentiators
+          - Strategic positioning recommendations
+
+          Designed for product teams conducting quarterly competitive analysis.
+
+          **Steps:**
+
+          Step 1: identify_competitors
+          - Input: market_segment (user), product_category (user)
+          - Output: competitors_list.md (5-7 competitors with descriptions)
+
+          Step 2: research_competitors
+          - Input: competitors_list.md (from step 1)
+          - Output: research_notes.md (detailed findings for each competitor)
+
+          Step 3: comparative_analysis
+          - Input: research_notes.md (from step 2)
+          - Output: comparison_matrix.md (side-by-side analysis)
+
+          Step 4: positioning_recommendations
+          - Input: comparison_matrix.md (from step 3)
+          - Output: positioning_report.md (strategic recommendations)
+
+          Does this accurately capture your workflow? Any changes needed?
+
+          User: Yes, that's perfect!
+
+          Claude: Great! Creating the job.yml specification now...
+
+          [Creates .deepwork/jobs/competitive_research/job.yml with the complete spec]
+
+          Done! Job specification created.
+
+          **File created:**
+          - .deepwork/jobs/competitive_research/job.yml
+
+          **Next step:**
+          Implement the job to generate step instruction files.
+          ```
+
+          ## Important Guidelines
+
+          1. **Focus on specification only** - Don't create instruction files yet
+          2. **Ask structured questions** - Never skip the discovery phase; use the AskUserQuestion tool
+          3. **Rich context in common_job_info_provided_to_all_steps_at_runtime** - Include the job's purpose, what the workflow produces, the intended audience, and domain-specific context that steps will need (see the example dialog for a reference)
+          4. **Validate understanding** - Summarize and confirm before creating
+          5. **Use examples** - Help users understand what good specifications look like
+          6. **Understand file organization** - Always ask structured questions about where outputs should be saved and if subdirectories are needed
+
+          ## Validation Rules
+
+          Before creating the job.yml, ensure:
+          - Job name: lowercase, underscores, no spaces
+          - Summary: concise, under 200 characters
+          - Common job info: detailed, provides shared context for all steps
+          - Step names: unique, descriptive, lowercase with underscores
+          - Inputs/outputs reference valid step_arguments by name
+          - At least one output per step
+          - Outputs can be filenames (e.g., `report.md`) or paths (e.g., `reports/analysis.md`)
+          - File paths in outputs should match where files will actually be created
+
+          ## Output Format
+
+          ### job.yml
+
+          The complete YAML specification file (example shown in Step 5 above).
+
+          **Location**: `.deepwork/jobs/[job_name]/job.yml`
+
+          (Where `[job_name]` is the name of the new job being created)
+
+          After creating the file:
+          1. Inform the user that the specification is complete
+          2. Recommend that they review the job.yml file
+          3. Tell them the next step is to implement the job (generate step instruction files)
+
+          ---
+
+          ## Reference: Work Product Storage Guidelines
+
+          **Key principle**: Job outputs belong in the main repository directory structure, not in dot-directories. The `.deepwork/` directory is for job definitions and configuration only.
+
+          **Why this matters**:
+          - **Version control**: Work products in the main repo are tracked by git and visible in PRs
+          - **Discoverability**: Team members can find outputs without knowing about DeepWork internals
+          - **Tooling compatibility**: IDEs, search tools, and CI/CD work naturally with standard paths
+          - **Glob patterns**: Well-structured paths enable powerful file matching (e.g., `competitive_research/**/*.md`)
+
+          **Good output path patterns**:
+          ```
+          competitive_research/competitors_list.md
+          competitive_research/acme_corp/research.md
+          operations/reports/2026-01/spending_analysis.md
+          docs/api/endpoints.md
+          ```
+
+          **Avoid these patterns**:
+          ```
+          .deepwork/outputs/report.md          # Hidden in dot-directory
+          output.md                            # Too generic, no context
+          research.md                          # Unclear which research
+          temp/draft.md                        # Transient-sounding paths
+          ```
+
+          **Organizing multi-file outputs**:
+          - Use the job name as a top-level folder when outputs are job-specific
+          - Use parameterized paths for per-entity outputs: `competitive_research/[competitor_name]/`
+          - Match existing project conventions when extending a codebase
+
+          **When to include dates in paths**:
+          - **Include date** for periodic outputs where each version is retained (e.g., monthly reports, quarterly reviews, weekly summaries). These accumulate over time and historical versions remain useful.
+            ```
+            operations/reports/2026-01/spending_analysis.md              # Monthly report - keep history
+            hr/employees/[employee_name]/quarterly_reviews/2026-Q1.pdf   # Per-employee quarterly review
+            ```
+          - **Omit date** for current-state outputs that represent the latest understanding and get updated in place. Previous versions live in git history, not separate files.
+            ```
+            competitive_research/acme_corp/swot.md  # Current SWOT - updated over time
+            docs/architecture/overview.md           # Living document
+            ```
+
+          **Supporting materials and intermediate outputs**:
+          - Content generated in earlier steps to support the final output (research notes, data extracts, drafts) should be placed in a `_dataroom` folder that is a peer to the final output
+          - Name the dataroom folder by replacing the file extension with `_dataroom`
+            ```
+            operations/reports/2026-01/spending_analysis.md           # Final output
+            operations/reports/2026-01/spending_analysis_dataroom/    # Supporting materials
+                raw_data.csv
+                vendor_breakdown.md
+                notes.md
+            ```
+          - This keeps supporting materials organized and discoverable without cluttering the main output location
+        inputs:
+          job_purpose:
+            required: true
+        outputs:
+          job.yml:
+            required: true
+
+      - name: implement
+        instructions: |
+          # Implement Job Steps
+
+          ## Objective
+
+          Generate step instruction files for each step based on the `job.yml` specification from the define step.
+
+          ## Task
+
+          Read the `job.yml` specification file created by the define step and generate comprehensive instruction files for each step. The define step has already created the job directory structure.
+
+          **Note**: Throughout this document, `<job_dir>` refers to the `job_dir` path returned in the workflow response when this workflow was started. It points to the directory containing this job's definition and templates.
+
+          ### Step 1: Read and Validate the Specification
+
+          1. **Locate the job.yml file**
+             - Read `.deepwork/jobs/[job_name]/job.yml` from the define step
+             - Parse the YAML content
+
+          2. **Validate the specification**
+             - Ensure it follows the schema (name, summary, step_arguments, workflows)
+             - Check that inputs/outputs reference valid step_arguments
+             - Verify the workflow structure
+
+          3. **Extract key information**
+             - Job name, summary, common_job_info_provided_to_all_steps_at_runtime
+             - List of all steps with their details
+             - Understand the workflow structure
+
+          ### Step 2: Generate Step Instruction Files
+
+          For each step in the job.yml, create a comprehensive instruction file at `.deepwork/jobs/[job_name]/steps/[step_name].md`.
+
+          **Template reference**: See `<job_dir>/templates/step_instruction.md.template` for the standard structure.
+
+          **Complete example**: See `<job_dir>/templates/step_instruction.md.example` for a fully worked example.
+
+          **Available templates in `<job_dir>/templates/`** (replace `<job_dir>` with the `job_dir` path from the workflow response):
+          - `job.yml.template` - Job specification structure
+          - `step_instruction.md.template` - Step instruction file structure
+          - `agents.md.template` - AGENTS.md file structure
+          - `job.yml.example` - Complete job specification example
+          - `step_instruction.md.example` - Complete step instruction example
+
+          **Guidelines for generating instructions:**
+
+          1. **Use the common job info** - The `common_job_info_provided_to_all_steps_at_runtime` from job.yml provides crucial context
+          2. **Be specific** - Don't write generic instructions; tailor them to the step's purpose
+          3. **Provide output format examples** - Include a markdown code block in an "Output Format" section showing the expected file structure. A template with `[bracket placeholders]` is acceptable. For complex outputs, also include a concrete filled-in example showing realistic data — this is especially valuable for the first step in a workflow where there's no prior output to reference.
+          4. **Explain the "why"** - Help the user understand the step's role in the workflow
+          5. **Quality over quantity** - Detailed, actionable instructions are better than vague ones
+          6. **Align with reviews** - If the step has output-level reviews or process_quality_attributes defined, ensure the quality criteria in the instruction file match the review criteria
+          7. **Ask structured questions (when applicable)** - When a step has string-type inputs, the instructions MUST explicitly tell the agent to "ask structured questions" using the AskUserQuestion tool. Steps that only have file_path inputs do NOT need this phrase — they process data without user interaction.
+          8. **Handle edge cases** - If inputs might be missing, ambiguous, or incomplete, tell the agent to ask structured questions to clarify how to proceed rather than guessing
+
+          #### Handling Reviews
+
+          If a step in the job.yml has reviews defined (either output-level reviews or process_quality_attributes), the generated instruction file should:
+
+          1. **Mirror the quality criteria** - The "Quality Criteria" section should match what the reviews will validate
+          2. **Be explicit about success** - Help the agent understand when the step is truly complete
+          3. **Explain what's reviewed** - If reviews target specific outputs, mention which outputs will be reviewed
+
+          This alignment ensures the AI agent knows exactly what will be validated and can self-check before completing.
+
+          #### Writing Loop Instructions (go_to_step)
+
+          If a step in the job.yml is designed as a decision point that may loop back to an earlier step (see the "Iterative Loop Pattern" in the define step), the instruction file for that step must include clear guidance on when and how to use `go_to_step`.
+
+          **What to include in the instruction file:**
+
+          1. **Evaluation criteria** — Explicit conditions that determine whether to loop back or proceed
+          2. **Which step to go back to** — The specific step name to pass to `go_to_step`, and why that step (not an earlier or later one)
+          3. **Maximum iterations** — A bound to prevent infinite loops (e.g., "After 3 iterations, proceed to the next step regardless and note remaining issues")
+          4. **How to call it** — Tell the agent to call the `go_to_step` MCP tool with the target step name
+
+          **Example instruction snippet for a review/decision step:**
+
+          ```markdown
+          ## Evaluation
+
+          Review the draft against the acceptance criteria defined in the job description.
+
+          ### If the draft needs more data:
+          Call `go_to_step` with `step_id: "gather_data"` to loop back and collect additional
+          information. This will clear progress from gather_data onward — you will re-execute
+          gather_data, write_draft, and this review step with the new data.
+
+          ### If the draft needs revision but data is sufficient:
+          Call `go_to_step` with `step_id: "write_draft"` to revise the draft.
+
+          ### If the draft meets all criteria:
+          Proceed normally by calling `finished_step` with the review output.
+
+          **Maximum iterations**: If this is the 3rd review cycle, proceed to the next step
+          regardless and document any remaining issues in the output.
+          ```
+
+          **Important**: Only add `go_to_step` instructions to steps that are explicitly designed as loop decision points in the workflow. Most steps should NOT reference `go_to_step`.
+
+          #### Using Supplementary Reference Files
+
+          Step instructions can include additional `.md` files in the `steps/` directory for detailed examples, templates, or reference material. Reference them using the full path from the project root.
+
+          ### Step 3: Verify Files
+
+          Verify that all files are in their correct locations:
+          - `job.yml` at `.deepwork/jobs/[job_name]/job.yml` (created by define step)
+          - Step instruction files at `.deepwork/jobs/[job_name]/steps/[step_name].md`
+
+          ## Example Implementation
+
+          For a complete worked example showing a job.yml and corresponding step instruction file, see:
+          - **Job specification**: `<job_dir>/templates/job.yml.example`
+          - **Step instruction**: `<job_dir>/templates/step_instruction.md.example`
+
+          ## Completion Checklist
+
+          Before marking this step complete, ensure:
+          - [ ] job.yml validated and in job directory
+          - [ ] All step instruction files created
+          - [ ] Each instruction file uses the same structure (consistent with the template)
+          - [ ] Each instruction file has an Output Format section with examples
+          - [ ] Quality criteria in instruction files align with reviews defined in job.yml
+          - [ ] Steps with string-type inputs include guidance to ask structured questions
+
+          ## Note: Workflow Availability
+
+          Once the job.yml and step instruction files are created, the workflow is immediately available through the DeepWork MCP server. The MCP server reads job definitions directly from `.deepwork/jobs/` - no separate sync or installation step is required.
+        inputs:
+          job.yml:
+            required: true
+        outputs:
+          step_instruction_files:
+            required: true
+
+      - name: test
+        instructions: |
+          # Test the New Workflow
+
+          ## Objective
+
+          Run the newly created workflow on a real use case chosen by the user, critique the output, and iterate until the user is satisfied with the results. This step validates that the workflow works as intended before finalizing it.
+
+          ## Task
+
+          Guide the user through testing their new workflow by running it on a real example, then critically evaluating the output and refining it based on user feedback.
+
+          ### Step 1: Announce Readiness and Gather Test Case
+
+          The workflow is now implemented and ready to test. Use the AskUserQuestion tool to:
+
+          1. **Inform the user** that the workflow is ready for a test run
+          2. **Ask what they'd like to test it on** - Get a specific, real use case
+
+          Example question to ask:
+          ```
+          Your new workflow is ready to try out! What would you like to use it on for the first test run?
+
+          Please describe a specific case you want to run through the workflow - ideally something you actually need done, so we can validate the workflow produces useful results.
+          ```
+
+          **Important**: Get a concrete, specific test case. Vague responses like "just test it" should be followed up with clarifying questions to understand what inputs/context the workflow needs.
+
+          ### Step 2: Prepare and Run the Workflow
+
+          1. **Prepare clean context** - Before invoking the workflow, compact the conversation history (e.g., using `/compact` in Claude Code) to ensure the workflow starts with clean context focused on the test case. On platforms without a compact command, summarize the prior context before proceeding.
+
+          2. **Start the new workflow** - Use `start_workflow` through the DeepWork MCP server with the job name and workflow name to begin executing the workflow.
+
+          3. **Complete the full workflow** - Continue through all steps of the workflow until it produces its final output. Use `finished_step` to progress through each step.
+
+          4. **Note any issues during execution** - Pay attention to:
+             - Confusion or ambiguity in instructions
+             - Missing information that had to be asked for
+             - Steps that took longer than expected
+             - Awkward tool usage or process flow
+
+          ### Step 3: Critique the Output
+
+          After the workflow completes, perform a self-critique of the output. **Only identify issues — do not mention things that went well or are working correctly.** The purpose of the critique is to find problems, not to give a balanced review.
+
+          1. **Review the final deliverable** - Read through all outputs produced by the workflow
+
+          2. **Identify up to 3 top issues** - If more than 3 issues exist, prioritize by user impact — surface issues most likely to affect whether the output is usable or trusted. Look for problems such as:
+             - Missing information or sections
+             - Formatting issues (layout, structure, readability)
+             - Quality problems (vague content, errors, inconsistencies)
+             - Misalignment with what the user likely wanted
+             - Technical issues (broken links, malformed data, etc.)
+
+          3. **Present only the issues to the user** with a specific question asking if they want each fixed. Do not pad the critique with positive observations or compliments about what worked. For example:
+             ```
+             I noticed a few issues:
+
+             1. **Text overlap**: The PDF has some text overlapping images in a few places - shall I correct that?
+
+             2. **Missing summary**: The report doesn't have an executive summary at the top - would you like me to add one?
+
+             3. **Data formatting**: The numbers aren't consistently formatted (some have commas, some don't) - should I standardize them?
+             ```
+
+          4. **Make corrections** for any issues the user confirms they want fixed
+
+          ### Step 4: Gather Additional Feedback
+
+          After addressing the identified issues:
+
+          1. **Ask if the user has more comments** on the output:
+             ```
+             I've made those corrections. Is there anything else you'd like me to change about the output?
+             ```
+
+          2. **Iterate on feedback** - Keep making corrections based on user feedback until they indicate they're satisfied
+
+          3. **Confirm completion** - When the user says the output is good, confirm that testing is complete
+
+          ### Step 5: Write Test Feedback
+
+          Once the user is satisfied, write a summary of the test run to `.deepwork/tmp/test_feedback.md`. This file is consumed by the iterate step. Write each section as a markdown header (`##`) with 2-5 bullet points beneath it. Keep the total file under 500 words. Include:
+
+          1. **Test case description** - What was tested
+          2. **Issues found during critique** - The problems identified in Step 3
+          3. **User feedback** - What the user requested changed and why
+          4. **Corrections applied** - What was fixed
+          5. **Final outcome** - Whether the user was satisfied and any remaining concerns
+
+          This file is the primary record of what happened during testing and what needs to improve in the workflow.
+
+          ### Loop Behavior
+
+          The feedback loop (Steps 3-4) should continue until the user explicitly indicates satisfaction. Look for signals like:
+          - "Looks good"
+          - "That's fine"
+          - "I'm happy with it"
+          - "No more changes"
+          - "Perfect"
+
+          If the user provides more feedback, address it and ask again. Don't assume satisfaction without explicit confirmation.
+
+          ## Example Dialog
+
+          ```
+          Claude: Your new workflow is ready to try out!
+
+          The `monthly_report` workflow has been implemented with these steps:
+          1. gather_data - Collects metrics from various sources
+          2. analyze_trends - Identifies patterns and insights
+          3. generate_report - Creates the final PDF report
+
+          What would you like to use it on for the first test run? Please describe a specific report you need - for example, which month's data and any particular focus areas.
+
+          User: Let's do the January 2026 engineering report, focusing on deployment frequency and incident response times.
+
+          Claude: Great, let me run the workflow on your January 2026 engineering report.
+
+          [Starting the monthly_report workflow via MCP...]
+
+          [... workflow runs through all steps ...]
+
+          Claude: The January 2026 Engineering Report has been generated. Let me review it for any issues.
+
+          I noticed a few things we could improve:
+
+          1. **Chart readability**: The deployment frequency chart uses very similar colors for different teams - shall I change to a more distinct color palette?
+
+          2. **Missing context**: The incident response times don't include comparison to the previous month - would you like me to add month-over-month comparison?
+
+          3. **Executive summary**: The summary is quite technical - should I add a simpler high-level overview for non-technical stakeholders?
+
+          User: Yes to all three, please.
+
+          Claude: Done! I've updated the report with:
+          - Distinct color palette for the deployment chart
+          - Month-over-month comparison for incident response times
+          - Added a non-technical executive summary
+
+          Is there anything else you'd like me to change about the report?
+
+          User: Can you make the tables larger? They're a bit hard to read.
+
+          Claude: I've increased the table sizes for better readability. The font is now larger and there's more padding around cells.
+
+          Is there anything else you'd like me to adjust?
+
+          User: No, that looks great!
+
+          Claude: Excellent! The test run is complete. The workflow successfully generated your January 2026 Engineering Report with all the refinements applied.
+
+          **Test Summary:**
+          - Workflow ran successfully through all 3 steps
+          - Output required adjustments to chart colors, comparisons, and table sizing
+          - User is satisfied with the final result
+
+          Ready to proceed to the iterate step to improve the workflow based on what we learned.
+          ```
+
+          ## Important Guidelines
+
+          1. **Use real test cases** - Testing with actual data/needs validates the workflow better than hypothetical examples
+          2. **Be specific in critiques** - Don't say "formatting issues" - say exactly what's wrong and where
+          3. **Limit initial critique to 3 issues** - Too many issues at once is overwhelming; address more in the feedback loop
+          4. **Don't assume what user wants fixed** - Always ask before making corrections
+          5. **Iterate until satisfied** - Don't rush to completion; the user's satisfaction is the goal
+        inputs:
+          job.yml:
+            required: true
+          step_instruction_files:
+            required: true
+        outputs:
+          test_feedback:
+            required: true
+
+      - name: iterate
+        instructions: |
+          # Iterate on Workflow Design
+
+          ## Objective
+
+          Review the test run conversation and improve the job definition based on what happened. This step closes the feedback loop by incorporating learnings from the test into the workflow itself, making future runs more efficient and producing better results.
+
+          ## Task
+
+          Analyze the conversation history from the test step, identify areas for improvement, and update the job definition and step instructions accordingly.
+
+          ### Step 1: Review the Conversation History
+
+          Carefully analyze the conversation from the test step, looking for:
+
+          1. **Process Inefficiencies**
+             - Steps that took multiple attempts to complete
+             - Questions the agent had to ask that should have been necessary
+             - Unnecessary back-and-forth with the user
+             - Information that had to be repeated
+
+          2. **Output Quality Issues**
+             - Issues identified during critique (from Step 3 of test)
+             - Corrections requested by the user
+             - Patterns in user feedback (what did they consistently want changed?)
+
+          3. **Tool Usage Problems**
+             - Tools that didn't work as expected
+             - Missing tools that would have helped
+             - Inefficient tool sequences
+
+          4. **Missing or Unclear Instructions**
+             - Ambiguities that led to wrong outputs
+             - Missing guidance that caused confusion
+             - Quality criteria that weren't clear enough
+
+          ### Step 2: Plan Improvements
+
+          For each issue identified, determine the appropriate fix:
+
+          | Issue Type | Solution Location |
+          |------------|-------------------|
+          | Process inefficiency | Update step instructions with clearer guidance |
+          | Output quality | Update quality criteria or add examples |
+          | Missing information | Add to step inputs or instructions |
+          | Tool problems | Suggest different tools in instructions |
+          | Unclear criteria | Rewrite quality criteria to be specific |
+
+          **Prioritize improvements** that will have the most impact on future runs. Focus on:
+          - Issues that caused multiple iterations
+          - Problems that affected the final output quality
+          - Confusion that could be eliminated with clearer instructions
+
+          ### Step 3: Update Step Instructions
+
+          For each step that needs improvement:
+
+          1. **Read the current instruction file** at `.deepwork/jobs/[job_name]/steps/[step_name].md`
+
+          2. **Make targeted improvements**:
+             - Add missing context or clarification
+             - Include examples of good output (use what worked in the test)
+             - Clarify ambiguous instructions
+             - Add tool recommendations if a different approach would be better
+             - Update quality criteria to match user expectations
+
+          3. **Keep instructions concise**:
+             - Avoid redundancy
+             - Be direct and actionable
+             - Use bullet points where appropriate
+
+          ### Step 4: Update Reviews
+
+          Review and update quality reviews in two places:
+
+          1. **In step instruction files** - The "Quality Criteria" section should reflect what the user actually cared about during testing
+
+          2. **In job.yml** - Update the output-level `review` blocks and `process_quality_attributes` on each step to:
+             - Remove criteria that weren't relevant
+             - Add criteria based on user feedback
+             - Make existing criteria more specific
+             - Adjust review strategy if outputs should be reviewed differently
+
+          ### Step 5: Consider Alternative Tools
+
+          If any tools didn't work well during the test:
+
+          1. **Identify the problem** - What went wrong? (slow, wrong output, hard to use)
+
+          2. **Research alternatives** - What other tools could accomplish the same goal?
+
+          3. **Update instructions** - If a better tool exists, update the step instructions to recommend it
+
+          Examples:
+          - If web scraping was unreliable, suggest a specific browser automation approach
+          - If data processing was slow, suggest a different method or tool
+          - If file generation had issues, recommend a different library or format
+
+          ### Step 6: Create or Fix Scripts
+
+          Review the test run for opportunities to add or improve scripts in the job's `scripts/` directory:
+
+          1. **Fix existing scripts** - If any scripts were used during the test and had problems (wrong output, errors, edge cases), fix them now.
+
+          2. **Create new scripts** - If any process during the test was manual, repetitive, or error-prone, and would be faster or more reliable as a script, create one. Good candidates:
+             - Data fetching or transformation that had to be done by hand
+             - File generation with specific formatting requirements
+             - Validation or checking steps that could be automated
+             - Setup or teardown tasks that will repeat on every run
+
+          3. **Test the scripts** - Run any new or modified scripts to verify they work correctly.
+
+          4. **Reference from instructions** - Update the relevant step instruction files to reference the new scripts so future runs use them.
+
+          ### Step 7: Provide Recap
+
+          Summarize the improvements made:
+
+          1. **List the issues identified** from the test run
+
+          2. **Describe the changes made** to address each issue
+
+          3. **Explain the expected impact** on future runs
+
+          Example recap format:
+          ```
+          ## Iteration Summary
+
+          ### Issues Identified
+          1. Chart colors were hard to distinguish
+          2. Tables were too small to read
+          3. Executive summary was too technical
+
+          ### Changes Made
+
+          **gather_data step:**
+          - Added instruction to use distinct color palettes for charts
+          - Updated quality criteria to require readable table formatting
+
+          **generate_report step:**
+          - Added example of good executive summary
+          - Updated quality criteria: "Summary understandable by non-technical stakeholders"
+
+          ### Expected Impact
+          Future runs should produce reports with better visual design and clearer summaries, reducing the need for post-generation corrections.
+          ```
+
+          ## Example Dialog
+
+          ```
+          Claude: Let me review our test run and improve the workflow based on what happened.
+
+          **Analyzing Test Conversation...**
+
+          I identified the following issues from the test run:
+
+          ### Issues Found
+
+          1. **Chart readability (gather_data step)**: The instructions didn't specify how to handle color choices for visualizations. During the test, we had to fix colors that were too similar.
+
+          2. **Missing month-over-month comparison (analyze_trends step)**: The user wanted comparisons to previous periods, but this wasn't in the instructions. We had to add it after the fact.
+
+          3. **Technical executive summary (generate_report step)**: The summary was too technical for non-technical stakeholders. The quality criteria didn't specify the audience clearly.
+
+          4. **Table formatting (generate_report step)**: Tables were hard to read. No guidance on sizing or padding.
+
+          ### Changes Made
+
+          **`.deepwork/jobs/monthly_report/steps/gather_data.md`:**
+          - Added: "Use distinct, high-contrast colors for chart data series. Avoid similar shades for different categories."
+          - Added to Quality Criteria: "Charts use visually distinct colors that are accessible to colorblind readers"
+
+          **`.deepwork/jobs/monthly_report/steps/analyze_trends.md`:**
+          - Added: "Always include comparison to the same period in the previous month/quarter"
+          - Added input: "previous_period_data" to formalize this requirement
+
+          **`.deepwork/jobs/monthly_report/steps/generate_report.md`:**
+          - Added example of good executive summary targeting non-technical readers
+          - Added: "Format tables with sufficient padding (at least 8px) and readable font size (minimum 11pt)"
+          - Updated Quality Criteria:
+            - "Executive summary is understandable by non-technical stakeholders"
+            - "Tables are readable with adequate padding and font size"
+
+          Done! The workflow has been updated. Changes are immediately available through the MCP server.
+
+          ### Expected Impact
+
+          Future monthly reports should:
+          - Have better chart color choices from the start
+          - Include month-over-month comparisons automatically
+          - Have clearer executive summaries for leadership
+          - Have more readable tables
+
+          This should significantly reduce the number of corrections needed after the initial output.
+          ```
+
+          ## Important Guidelines
+
+          1. **Be specific** - Don't just note "instructions were unclear" - explain exactly what was unclear and how you fixed it
+          2. **Use test results as examples** - If something worked well in the test, add it as an example in the instructions
+          3. **Don't over-engineer** - Only add improvements that address actual problems from the test
+          4. **Maintain consistency** - Keep the same structure and style in instruction files
+          5. **Test-driven improvement** - Every change should trace back to something that happened in the test
+        inputs:
+          job.yml:
+            required: true
+          step_instruction_files:
+            required: true
+          test_feedback:
+            required: true
+        outputs:
+          job.yml:
+            required: true
+          step_instruction_files:
+            required: true
+          scripts:
+            required: false
+
+  repair:
     summary: "Clean up and migrate DeepWork configurations from prior versions"
-    steps:
-      - fix_settings
-      - fix_jobs
-      - errata
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Core commands for managing DeepWork jobs. These commands help you define new multi-step
+      workflows, test them on real use cases, and learn from running them.
 
-  - name: learn
+      The `repair` workflow cleans up legacy DeepWork configurations:
+      1. **Fix Settings**: Remove deprecated permissions, hooks, and hardcoded paths from settings
+      2. **Fix Jobs**: Migrate job.yml files to the current format
+      3. **Errata**: Remove obsolete files and folders
+
+      ## Job Schema (CRITICAL)
+
+      Before creating or editing any `job.yml` file, you MUST read the JSON schema at
+      `.deepwork/job.schema.json`. This schema is the authoritative source of truth for
+      all valid fields, types, and structures.
+
+      Key schema rules:
+      - `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` and `json_schema`
+      - `workflows` is an object keyed by workflow name, each with {summary, steps[]}
+      - Each step has {name, instructions (inline string), inputs, outputs, process_quality_attributes}
+      - Inputs/outputs reference step_arguments by name
+      - No `version`, no root-level `steps[]`, no `instructions_file`, no hooks, no dependencies
+
+      Always read the schema file and validate your job.yml structure against it.
+    steps:
+      - name: fix_settings
+        instructions: |
+          # Fix Settings Files
+
+          ## Objective
+
+          Clean up `.claude/settings.json` and related configuration files, removing legacy artifacts from prior DeepWork versions. This step ensures the Claude Code settings are free of deprecated permissions, duplicate hooks, and hardcoded paths.
+
+          ## Task
+
+          Audit and repair the `.claude/settings.json` file, removing gunk accumulated from older DeepWork implementations.
+
+          ### Step 1: Create Backup
+
+          Before making any changes, create a backup:
+
+          ```bash
+          cp .claude/settings.json .claude/settings.json.backup
+          ```
+
+          ### Step 2: Inventory DeepWork Jobs
+
+          First, get the list of jobs that exist in `.deepwork/jobs/`:
+
+          ```bash
+          ls .deepwork/jobs/
+          ```
+
+          Note these job names - you will use them to identify which `Skill(...)` entries to remove.
+
+          ### Step 3: Remove DeepWork Skill Permissions
+
+          Look for and **remove** `Skill(...)` permission entries that match DeepWork jobs. Only remove entries where the skill name matches a job in `.deepwork/jobs/`.
+
+          **What to look for:**
+          ```json
+          "permissions": {
+            "allow": [
+              "Skill(deepwork_jobs)",           // Remove if 'deepwork_jobs' is in .deepwork/jobs/
+              "Skill(deepwork_jobs.define)",    // Remove - matches job_name.step pattern
+              "Skill(competitive_research)",    // Remove if 'competitive_research' is in .deepwork/jobs/
+              "Skill(my_custom_skill)",         // KEEP - not a DeepWork job
+              ...
+            ]
+          }
+          ```
+
+          **IMPORTANT:** Only remove skills that:
+          - Exactly match a job name in `.deepwork/jobs/` (e.g., `Skill(job_name)`)
+          - Match the pattern `job_name.step_name` where `job_name` is in `.deepwork/jobs/`
+
+          **DO NOT remove** skills that don't match DeepWork jobs - the user may have created these manually for other purposes.
+
+          ### Step 4: Remove Duplicate Hooks
+
+          Check for duplicate hook entries in the `hooks` section. Prior versions sometimes added the same hook multiple times.
+
+          **Example of duplicates to consolidate:**
+          ```json
+          "hooks": {
+            "UserPromptSubmit": [
+              {
+                "matcher": "",
+                "hooks": [{ "type": "command", "command": "some_command" }]
+              },
+              {
+                "matcher": "",
+                "hooks": [{ "type": "command", "command": "some_command" }]  // DUPLICATE
+              }
+            ]
+          }
+          ```
+
+          Keep only one instance of each unique hook.
+
+          ### Step 5: Remove Hardcoded User Paths
+
+          Search for and remove any hardcoded paths that reference specific user directories:
+
+          **Patterns to find and remove:**
+          - `/Users/username/.local/pipx/venvs/deepwork/bin/python`
+          - `/home/username/.local/...`
+          - Any path containing a specific username
+
+          These should either be removed or replaced with relative paths.
+
+          ### Step 6: Remove DeepWork Rules Hooks (Fully Deprecated)
+
+          DeepWork Rules have been completely removed from the system. Remove ALL hooks related to rules:
+
+          **Hooks to remove entirely:**
+          - Any hook with command `deepwork hook rules_check`
+          - Any hook with command containing `rules_check`
+          - Any hook referencing `.deepwork/jobs/deepwork_rules/hooks/`
+          - Any hook referencing `.deepwork/rules/`
+
+          **Also remove these permissions if present:**
+          - `Skill(deepwork_rules)`
+          - `Skill(deepwork_rules.define)`
+          - `Bash(rm -rf .deepwork/tmp/rules/queue/*.json)`
+
+          ### Step 7: Remove Other Deprecated Commands
+
+          Remove hooks referencing other deprecated DeepWork commands:
+
+          **Commands to remove:**
+          - `deepwork hook *` - The entire hook subcommand is deprecated
+          - References to any `.deepwork/jobs/*/hooks/` scripts
+
+          ### Step 8: Clean Up Empty Sections
+
+          If after cleanup any sections are empty, consider removing them:
+
+          ```json
+          // Remove if empty:
+          "hooks": {
+            "Stop": []  // Remove this empty array
+          }
+          ```
+
+          ### Step 9: Validate JSON
+
+          After all edits, ensure the file is valid JSON:
+
+          ```bash
+          python -c "import json; json.load(open('.claude/settings.json'))"
+          ```
+
+          If there are syntax errors, fix them before proceeding.
+
+          ## Example Before/After
+
+          ### Before (with gunk):
+          ```json
+          {
+            "hooks": {
+              "UserPromptSubmit": [
+                { "matcher": "", "hooks": [{ "type": "command", "command": ".deepwork/jobs/deepwork_rules/hooks/user_prompt_submit.sh" }] },
+                { "matcher": "", "hooks": [{ "type": "command", "command": ".deepwork/jobs/deepwork_rules/hooks/user_prompt_submit.sh" }] }
+              ],
+              "Stop": [
+                { "matcher": "", "hooks": [{ "type": "command", "command": "deepwork hook rules_check" }] }
+              ],
+              "SubagentStop": [
+                { "matcher": "", "hooks": [{ "type": "command", "command": "/Users/tyler/.local/pipx/venvs/deepwork/bin/python -m deepwork.hooks.rules_check" }] }
+              ]
+            },
+            "permissions": {
+              "allow": [
+                "Skill(competitive_research)",
+                "Skill(competitive_research.discover_competitors)",
+                "Skill(deepwork_jobs)",
+                "Skill(deepwork_jobs.define)",
+                "Read(./.deepwork/**)",
+                "WebSearch"
+              ]
+            }
+          }
+          ```
+
+          ### After (cleaned):
+          ```json
+          {
+            "hooks": {},
+            "permissions": {
+              "allow": [
+                "Read(./.deepwork/**)",
+                "WebSearch"
+              ]
+            }
+          }
+          ```
+
+          ## Important Notes
+
+          1. **Don't remove non-DeepWork permissions** - Keep permissions like `WebSearch`, `Read(...)`, `Bash(...)` that aren't related to old DeepWork skills
+          2. **Remove stale `make_new_job.sh` permissions** - Remove any `Bash(...)` permission referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` — this script now lives in the package and is accessed via the `job_dir` path
+          3. **Be conservative** - If unsure whether something is legacy, ask the user
+          4. **Document changes** - Note what was removed for the final summary
+        inputs: {}
+        outputs:
+          settings.json:
+            required: true
+        process_quality_attributes:
+          "DeepWork Skills Removed": "`Skill(...)` entries matching jobs in `.deepwork/jobs/` are removed."
+          "Non-DeepWork Skills Preserved": "Skills NOT matching DeepWork jobs are left intact."
+          "Stale make_new_job.sh Removed": "Stale `Bash(...)` permissions referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` are removed."
+          "Rules Hooks Removed": "All DeepWork Rules hooks and permissions are removed."
+          "Duplicate Hooks Removed": "Duplicate hook entries are consolidated or removed."
+          "Hardcoded Paths Removed": "User-specific hardcoded paths (like `/Users/*/...`) are removed."
+          "Deprecated Commands Removed": "Deprecated commands like `deepwork hook *` are removed."
+          "Backup Created": "A backup of the original settings was created before modifications."
+
+      - name: fix_jobs
+        instructions: |
+          # Fix Job Definitions
+
+          ## Objective
+
+          Update all job.yml files and step instructions in `.deepwork/jobs/` to the current DeepWork format. Any job.yml that does not fully parse into the new format must be rewritten.
+
+          ## Task
+
+          Audit every job definition and rewrite any that use the old format.
+
+          ### Step 1: Inventory All Jobs
+
+          List all jobs in the project:
+
+          ```bash
+          ls -la .deepwork/jobs/
+          ```
+
+          For each job directory, check the `job.yml` file.
+
+          ### Step 1.5: Process Jobs in Parallel
+
+          **For each job** (except `deepwork_jobs` which should be updated via `deepwork install`), kick off a sub-agent to audit and repair that job's `job.yml` file. The sub-agent should:
+
+          1. Read the job's `job.yml` file
+          2. Attempt to parse it against the current schema
+          3. If it doesn't parse, rewrite it into the new format
+          4. Validate the YAML is still valid after changes
+          5. Report what was changed
+
+          **Run sub-agents in parallel** - one for each job to speed up the process.
+
+          **Example prompt for sub-agent:**
+          ```
+          Be concise. Output minimal text — only report changes made or confirm no changes needed. Do not echo back file contents, do not explain what each migration rule means, and do not narrate your process.
+
+          First, read the job.yml JSON Schema at `.deepwork/job.schema.json` to understand the current valid structure. Use it as the source of truth.
+
+          Then audit and repair the job at `.deepwork/jobs/[job_name]/job.yml`. The current format requires:
+
+          1. Root fields: `name`, `summary`, `step_arguments`, `workflows`
+          2. NO `version` field
+          3. NO root-level `steps[]` array
+          4. NO `instructions_file` references — all instructions must be inlined in the step using YAML literal block scalar (`|`)
+          5. NO `hooks` or `dependencies` fields on steps
+          6. NO `exposed` or `hidden` fields
+          7. `workflows` is an OBJECT keyed by workflow name (not an array)
+          8. Each workflow has: `summary`, optional `common_job_info_provided_to_all_steps_at_runtime`, `steps[]`, optional `post_workflow_instructions`
+          9. Each step has: `name`, `instructions` (inline string), `inputs` (object referencing step_arguments), `outputs` (object referencing step_arguments), optional `process_quality_attributes`
+          10. `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` {strategy, instructions} and optional `json_schema`
+          11. Old `reviews` with `run_each: step` and `quality_criteria` → convert to `process_quality_attributes` on the step
+          12. Old `reviews` with `run_each: <output>` where output type was `file` → convert to output-level `review` with `strategy: matches_together`
+          13. Old `reviews` with `run_each: <output>` where output type was `files` → convert to output-level `review` with `strategy: individual`
+          14. Convert quality_criteria dicts into review instruction text
+          15. If the step had `instructions_file`, read that file and inline its full content as the `instructions` value
+          16. Remove any `<promise>Quality Criteria Met</promise>` lines from instructions
+
+          Report only: which checks passed with no changes, and which changes were made (one line each).
+          ```
+
+          ### Step 2: Validate All Jobs Parse
+
+          After all sub-agents complete, verify that calling `get_workflows` from the DeepWork MCP tool shows all expected jobs. If any are missing, their YAML is likely malformed — fix and retry.
+
+          ## Common Migration Patterns
+
+          ### Old Format → New Format
+
+          **Old root-level `steps[]` array → Inline in workflows:**
+          ```yaml
+          # OLD
+          steps:
+            - id: my_step
+              name: "My Step"
+              instructions_file: steps/my_step.md
+              inputs:
+                - name: topic
+                  description: "What to research"
+              outputs:
+                report.md:
+                  type: file
+                  description: "The report"
+              dependencies:
+                - prior_step
+              reviews:
+                - run_each: step
+                  quality_criteria:
+                    "Complete": "The report covers all topics."
+
+          # NEW
+          workflows:
+            my_workflow:
+              summary: "..."
+              steps:
+                - name: my_step
+                  instructions: |
+                    [full content of steps/my_step.md inlined here]
+                  inputs:
+                    topic:
+                      required: true
+                  outputs:
+                    report.md:
+                      required: true
+                  process_quality_attributes:
+                    "Complete": "The report covers all topics."
+          ```
+
+          **Old `reviews` with `run_each: <output>` → Output-level review:**
+          ```yaml
+          # OLD
+          reviews:
+            - run_each: report_files
+              quality_criteria:
+                "Well Written": "Content is clear."
+
+          # NEW (in step_arguments)
+          step_arguments:
+            - name: report_files
+              type: file_path
+              review:
+                strategy: individual
+                instructions: |
+                  Evaluate the output against these criteria:
+                  - Well Written: Content is clear.
+          ```
+
+          **Old `reviews` with `run_each: step` → `process_quality_attributes`:**
+          ```yaml
+          # OLD
+          reviews:
+            - run_each: step
+              quality_criteria:
+                "Thorough": "All areas were investigated."
+
+          # NEW (on the step)
+          process_quality_attributes:
+            "Thorough": "All areas were investigated."
+          ```
+
+          ## Important Notes
+
+          1. **Preserve custom logic** - When migrating, preserve the intent of instructions and reviews
+          2. **Test after changes** - Validate YAML syntax after each job fix to catch errors early
+          3. **Read step files** - When inlining instructions, read the full content of the referenced .md file
+        inputs:
+          settings.json:
+            required: true
+        outputs:
+          job_definitions:
+            required: true
+          step_instruction_files:
+            required: true
+        process_quality_attributes:
+          "New Format Used": "All job.yml files use the new format with step_arguments, workflows{} object, and inline step instructions."
+          "No Legacy Fields": "No job.yml contains version, root-level steps[], instructions_file, hooks, dependencies, or exposed/hidden fields."
+          "Reviews Migrated": "Old review formats are converted to output-level review blocks or process_quality_attributes."
+          "Instructions Inlined": "All step instructions are inlined in the job.yml — no instructions_file references remain."
+          "Jobs Parse Successfully": "Calling `get_workflows` from the Deepwork tool shows all expected jobs."
+
+      - name: errata
+        instructions: |
+          # Clean Up Errata
+
+          ## Objective
+
+          Remove obsolete files and folders from prior DeepWork versions. This final step cleans up artifacts that are no longer used by the MCP-based system.
+
+          ## Task
+
+          Identify and clean up deprecated files and folders.
+
+          ### Step 1: Remove Legacy Job Skill Folders
+
+          Old DeepWork versions created individual skill folders for each job and step. These need to be removed, including the main `deepwork` skill folder (which is now provided by the plugin system and no longer belongs in the repo).
+
+          **Process:**
+
+          1. **List all jobs** in `.deepwork/jobs/`:
+             ```bash
+             ls .deepwork/jobs/
+             ```
+
+          2. **Kick off a single sub-agent** to remove all legacy skill folders for every job at once. Be concise — output minimal text, only reporting what was removed or confirming nothing was found. The sub-agent should:
+             - For each job in `.deepwork/jobs/`, search in both `.claude/skills/` and `.gemini/skills/` for folders matching:
+               - `{job_name}/` - folder named exactly like the job
+               - `{job_name}.*/` - folders starting with the job name followed by a period (e.g., `my_job.step1/`, `my_job.step2/`)
+             - Remove each matching folder
+             - **Also remove** `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` — the `deepwork` skill is now provided by the plugin system and should not exist in the repo
+             - Report only: what was removed (one line per folder) or "No legacy folders found"
+
+             **Example commands for a job named `competitive_research`:**
+             ```bash
+             # Find and remove from .claude/skills/
+             rm -rf .claude/skills/competitive_research/ 2>/dev/null
+             rm -rf .claude/skills/competitive_research.*/ 2>/dev/null
+
+             # Find and remove from .gemini/skills/
+             rm -rf .gemini/skills/competitive_research/ 2>/dev/null
+             rm -rf .gemini/skills/competitive_research.*/ 2>/dev/null
+             ```
+
+          3. **Remove the `deepwork` skill folders** (now provided by the plugin):
+             ```bash
+             rm -rf .claude/skills/deepwork/ 2>/dev/null
+             rm -rf .gemini/skills/deepwork/ 2>/dev/null
+             ```
+
+          **What this removes:**
+          ```
+          .claude/skills/
+          ├── competitive_research/     <- REMOVE (legacy job folder)
+          ├── competitive_research.discover/  <- REMOVE (legacy step folder)
+          ├── competitive_research.analyze/   <- REMOVE (legacy step folder)
+          ├── deepwork/                 <- REMOVE (now provided by plugin)
+          └── some_other_job/           <- REMOVE (legacy job folder)
+          ```
+
+          **Do NOT remove:**
+          - Any skill folders that don't match job names in `.deepwork/jobs/` (and aren't `deepwork/`)
+
+          ### Step 2: Clean Temp Files
+
+          Check `.deepwork/tmp/` for accumulated temporary files:
+
+          ```bash
+          ls -la .deepwork/tmp/ 2>/dev/null || echo "No tmp folder"
+          ```
+
+          **Safe to delete:**
+          - `.deepwork/tmp/rules/queue/*.json` - Old rules queue files
+          - Any files older than 7 days
+          - Empty subdirectories
+
+          **Be careful with:**
+          - Files that might be in-progress work
+          - Anything modified within the last 24 hours
+
+          ```bash
+          # Clean old queue files
+          rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null
+
+          # Remove empty directories
+          find .deepwork/tmp -type d -empty -delete 2>/dev/null
+          ```
+
+          ### Step 3: Remove Rules Folder (Fully Deprecated)
+
+          DeepWork Rules have been completely removed from the system. Delete the `.deepwork/rules/` folder and all related items:
+
+          ```bash
+          rm -rf .deepwork/rules/ 2>/dev/null
+          rm -rf .deepwork/tmp/rules/ 2>/dev/null
+          rm -rf .deepwork/jobs/deepwork_rules/ 2>/dev/null
+          ```
+
+          ### Step 4: Update Config Version
+
+          Check `.deepwork/config.yml` for outdated version format. If the file does not exist, skip this step.
+
+          ```bash
+          cat .deepwork/config.yml 2>/dev/null || echo "No config.yml found — skipping"
+          ```
+
+          **Old format:**
+          ```yaml
+          version: 1.0.0
+          platforms:
+          - claude
+          ```
+
+          **Current format:**
+          ```yaml
+          version: "1.0"
+          platforms:
+            - claude
+          ```
+
+          Update if needed to match current schema expectations.
+
+          ### Step 5: Remove `deepwork serve` from `.mcp.json`
+
+          Old DeepWork versions added a `deepwork serve` MCP server entry directly to the repo's `.mcp.json` file. This is now handled by the plugin system and must be removed.
+
+          **Process:**
+
+          1. Check if `.mcp.json` exists in the repo root:
+             ```bash
+             cat .mcp.json 2>/dev/null || echo "No .mcp.json found"
+             ```
+
+          2. If it exists, look for any entry whose `command` is `deepwork` with `serve` as an argument (e.g., `"command": "deepwork", "args": ["serve"]` or `"command": "uvx", "args": ["deepwork", "serve", ...]`). Remove that entire server entry.
+
+          3. If `.mcp.json` becomes empty (no remaining server entries) after removal, delete the file entirely:
+             ```bash
+             rm .mcp.json
+             ```
+
+          4. If other MCP servers remain, keep the file with only the `deepwork serve` entry removed.
+
+          ### Step 6: Remove Other Obsolete Files
+
+          Check for and remove other obsolete files:
+
+          | File/Pattern | Description | Action |
+          |--------------|-------------|--------|
+          | `.deepwork/.last_head_ref` | Git state tracking | Keep (used by MCP) |
+          | `.deepwork/.last_work_tree` | Git state tracking | Keep (used by MCP) |
+          | `.deepwork/.gitignore` | Ignore patterns | Keep (ensure `tmp/` and `*.backup` are listed) |
+          | `.claude/commands/` | Generated commands | Keep (current system) |
+          | `.claude/settings.local.json` | Local overrides | Keep (user settings) |
+
+          ### Step 7: Verify Git Status
+
+          Check that the cleanup hasn't left untracked garbage:
+
+          ```bash
+          git status
+          ```
+
+          **Review:**
+          - Deleted files should show as deleted
+          - No new untracked files should appear (unless intentionally created)
+          - Backup files (`.backup`) should be in `.gitignore` or cleaned up
+
+          ## Quality Criteria
+
+          - Legacy skill folders for each job are removed from `.claude/skills/` and `.gemini/skills/`
+          - The `deepwork` skill folder has been removed from `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` (now provided by the plugin system)
+          - `.deepwork/rules/` folder is gone
+          - `.deepwork/jobs/deepwork_rules/` is gone
+          - The `deepwork serve` entry is removed from `.mcp.json` (or the file is deleted if empty)
+
+          ## Important Notes
+
+          1. **Always back up before deleting** - User data is irreplaceable
+          2. **Ask before destructive actions** - When in doubt, ask the user
+          3. **Don't auto-commit** - Let the user review and commit changes themselves
+        inputs:
+          job_definitions:
+            required: true
+        outputs: {}
+        process_quality_attributes:
+          "Legacy Job Skills Removed": "Legacy skill folders for each job are removed from `.claude/skills/` and `.gemini/skills/`."
+          "Deepwork Skill Removed": "The `deepwork` skill folder has been removed from `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` (now provided by the plugin system)."
+          "Rules Folder Removed": "`.deepwork/rules/` folder is gone."
+          "Rules Job Removed": "`.deepwork/jobs/deepwork_rules/` is gone."
+          "MCP Server Entry Removed": "The `deepwork serve` entry is removed from `.mcp.json` (or the file is deleted if empty)."
+
+  learn:
     summary: "Analyze conversation history to improve job instructions and capture learnings"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Core commands for managing DeepWork jobs. These commands help you define new multi-step
+      workflows, test them on real use cases, and learn from running them.
+
+      The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
+      confusion or inefficiencies, and improves job instructions. It also captures bespoke
+      learnings specific to the current run into AGENTS.md files in the working folder.
+
+      ## Job Schema (CRITICAL)
+
+      Before creating or editing any `job.yml` file, you MUST read the JSON schema at
+      `.deepwork/job.schema.json`. This schema is the authoritative source of truth for
+      all valid fields, types, and structures.
+
+      Key schema rules:
+      - `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` and `json_schema`
+      - `workflows` is an object keyed by workflow name, each with {summary, steps[]}
+      - Each step has {name, instructions (inline string), inputs, outputs, process_quality_attributes}
+      - Inputs/outputs reference step_arguments by name
+      - No `version`, no root-level `steps[]`, no `instructions_file`, no hooks, no dependencies
+
+      Always read the schema file and validate your job.yml structure against it.
     steps:
-      - learn
+      - name: learn
+        instructions: |
+          # Learn from Job Execution
 
-  - name: shared_jobs
-    summary: "Install library jobs from the DeepWork shared job library into the project"
-    steps:
-      - sync_shared_jobs
+          ## Objective
 
-steps:
-  - id: define
-    name: "Define Job Specification"
-    description: "Creates a job.yml specification by gathering workflow requirements through structured questions. Use when starting a new multi-step workflow."
-    instructions_file: steps/define.md
-    inputs:
-      - name: job_purpose
-        description: "What complex task or workflow are you trying to accomplish?"
-    outputs:
-      job.yml:
-        type: file
-        description: "Definition of the job and its workflows"
-        required: true
-    dependencies: []
-    reviews:
-      - run_each: job.yml
-        quality_criteria:
-          "Intermediate Deliverables": "The job breaks out across logical steps with reviewable intermediate deliverables."
-          "Reviews": |
-            Reviews are defined for each step. Particularly critical documents have their own reviews.
-            Note that the reviewers do not have transcript access, so if the criteria are about the conversation,
-            then add a `.deepwork/tmp/[step_summary].md` step output file so the agent has a communication channel to the reviewer.
+          Think deeply about this task. Reflect on the current conversation to identify learnings from DeepWork job executions, improve job instructions with generalizable insights, and capture bespoke (run-specific) learnings in AGENTS.md files in the deepest common folder that would contain all work on the topic in the future.
 
-  - id: implement
-    name: "Implement Job Steps"
-    description: "Generates step instruction files and syncs slash commands from the job.yml specification. Use after defining a job."
-    instructions_file: steps/implement.md
-    inputs:
-      - file: job.yml
-        from_step: define
-    outputs:
-      step_instruction_files:
-        type: files
-        description: "Instruction Markdown files for each step"
-        required: true
-    dependencies:
-      - define
-    reviews:
-      - run_each: step_instruction_files
-        additional_review_guidance: "Read the job.yml file in the same job directory for context on how this instruction file fits into the larger workflow."
-        quality_criteria:
-          "Complete Instructions": "The instruction file is complete (no stubs or placeholders)."
-          "Specific & Actionable": "Instructions are tailored to the step's purpose, not generic."
-          "Output Examples": "The instruction file shows what good output looks like. This can be either template examples, or negative examples of what not to do. Only required if the step has outputs."
-          "Quality Criteria": "The instruction file defines quality criteria for its outputs."
-          "Ask Structured Questions": "If this step gathers user input, instructions explicitly use the phrase 'ask structured questions'. If the step has no user inputs, this criterion passes automatically."
-          "Prompt Engineering": "The instruction file follows Anthropic's best practices for prompt engineering."
-          "No Redundant Info": "The instruction file avoids duplicating information that belongs in the job.yml's common_job_info_provided_to_all_steps_at_runtime section. Shared context (project background, terminology, conventions) is in common_job_info, not repeated in each step."
+          ## Task
 
-  - id: test
-    name: "Test the New Workflow"
-    description: "Tests the newly created workflow by running it on a real use case, critiquing the output, and iterating until the user is satisfied. Use after implementing a job."
-    instructions_file: steps/test.md
-    inputs:
-      - file: job.yml
-        from_step: define
-      - file: step_instruction_files
-        from_step: implement
-    outputs:
-      .deepwork/tmp/test_feedback.md:
-        type: file
-        description: "Feedback from testing the workflow on a real use case"
-        required: true
-    dependencies:
-      - define
-      - implement
-    reviews:
-      - run_each: .deepwork/tmp/test_feedback.md
-        quality_criteria:
-          "Test Case Documented": "The feedback file describes what test case was used and what the workflow produced."
-          "Issues Identified": "The feedback file lists specific issues found during output critique."
-          "Feedback Captured": "User feedback and requested corrections are documented with enough detail for the iterate step to act on."
+          Analyze the conversation history to extract learnings and improvements, then apply them appropriately:
+          - **Generalizable learnings** → Update job instruction files
+          - **Bespoke learnings** (specific to this run) → Add to AGENTS.md in the deepest common folder for the topic
 
-  - id: iterate
-    name: "Iterate on Workflow Design"
-    description: "Reviews the test run conversation and improves the job definition based on what happened. Use after testing a newly created job."
-    instructions_file: steps/iterate.md
-    inputs:
-      - file: job.yml
-        from_step: define
-      - file: step_instruction_files
-        from_step: implement
-      - file: .deepwork/tmp/test_feedback.md
-        from_step: test
-    outputs:
-      job.yml:
-        type: file
-        description: "Updated job definition with improvements from test run"
-        required: true
-      step_instruction_files:
-        type: files
-        description: "Updated instruction Markdown files for each step"
-        required: true
-      scripts:
-        type: files
-        description: "Updated scripts to run parts of the job more efficiently"
-        required: false
-    dependencies:
-      - define
-      - implement
-      - test
-    reviews: []
+          ### Step 1: Analyze Conversation for Job Executions
 
-  - id: learn
-    name: "Learn from Job Execution"
-    description: "Analyzes conversation history to improve job instructions and capture learnings. Use after running a job to refine it."
-    instructions_file: steps/learn.md
-    inputs:
-      - name: job_name
-        description: "Name of the job that was run (optional - will auto-detect from conversation)"
-    outputs:
-      AGENTS.md:
-        type: file
-        description: "Bespoke learnings and run-specific context for the working folder"
-        required: true
-      job.yml:
-        type: file
-        description: "Updated job definition with improvements from test run"
-        required: true
-      step_instruction_files:
-        type: files
-        description: "Updated instruction Markdown files for each step"
-        required: true
-      scripts:
-        type: files
-        description: "Updated scripts to run parts of the job more efficiently"
-        required: false
-    dependencies: []
-    reviews:
-      - run_each: step
-        quality_criteria:
+          1. **Scan the conversation** for DeepWork slash commands that were run
+             - Look for patterns like `/job_name.step_id`
+             - Identify which jobs and steps were executed
+             - Note the order of execution
+
+          2. **Identify the target folder**
+             - This should be the deepest common folder that would contain all work on the topic in the future
+             - Should be clear from conversation history where work was done
+             - If unclear, run `git diff` to see where changes were made on the branch
+
+          3. **If no job was specified**, ask the user:
+             - "Which DeepWork job would you like me to learn from?"
+             - List available jobs from `.deepwork/jobs/`
+
+          ### Step 2: Identify Points of Confusion and Inefficiency
+
+          Review the conversation for:
+
+          1. **Confusion signals**
+             - Questions the agent asked that shouldn't have been necessary
+             - Misunderstandings about what a step required
+             - Incorrect outputs that needed correction
+             - Ambiguous instructions that led to wrong interpretations
+
+          2. **Inefficiency signals**
+             - Extra steps or iterations that were needed
+             - Information that had to be repeated
+             - Context that was missing from instructions
+             - Dependencies that weren't clear
+
+          3. **Error patterns**
+             - Failed validations and why they failed
+             - Quality criteria that were misunderstood
+             - Edge cases that weren't handled
+
+          4. **Success patterns**
+             - What worked particularly well
+             - Efficient approaches worth preserving
+             - Good examples that could be added to instructions
+
+          ### Step 3: Classify Learnings
+
+          For each learning identified, determine if it is:
+
+          **Generalizable** (should improve instructions):
+          - Would help ANY future run of this job
+          - Addresses unclear or missing guidance
+          - Fixes incorrect assumptions in instructions
+          - Adds helpful examples or context
+          - Examples:
+            - "Step instructions should mention that X format is required"
+            - "Quality criteria should include checking for Y"
+            - "Add example of correct output format"
+
+          **Bespoke** (should go in AGENTS.md):
+          - Specific to THIS project/codebase/run
+          - Depends on local conventions or structure
+          - References specific files or paths
+          - Would not apply to other uses of this job
+          - Examples:
+            - "In this codebase, API endpoints are in `src/api/`"
+            - "This project uses camelCase for function names"
+            - "The main config file is at `config/settings.yml`"
+
+          ### Step 4: Update Job Instructions (Generalizable Learnings)
+
+          For each generalizable learning:
+
+          1. **Locate the instruction file**
+             - Path: `.deepwork/jobs/[job_name]/steps/[step_name].md`
+
+          2. **Make targeted improvements**
+             - Add missing context or clarification
+             - Include helpful examples
+             - Clarify ambiguous instructions
+             - Update quality criteria if needed
+             - If you identify problems in the outcomes of steps, those usually should be reflected in an update to the output-level `review` blocks or `process_quality_attributes` for that step in `job.yml`
+
+          3. **Keep instructions concise**
+             - Avoid redundancy - don't repeat the same guidance in multiple places
+             - Be direct - remove verbose explanations that don't add value
+             - Prefer bullet points over paragraphs where appropriate
+
+          4. **Preserve instruction structure**
+             - Keep existing sections (Objective, Task, Process, Output Format, Quality Criteria)
+             - Add to appropriate sections rather than restructuring
+             - Maintain consistency with other steps
+
+          ### Step 4b: Extract Shared Content into Referenced Files
+
+          Review all instruction files for the job and identify content that:
+          - Appears in multiple step instructions (duplicated)
+          - Is lengthy and could be extracted for clarity
+          - Would benefit from being maintained in one place
+
+          **Extract to shared files:**
+
+          1. **Create shared files** in `.deepwork/jobs/[job_name]/steps/shared/`
+             - `conventions.md` - Coding/formatting conventions used across steps
+             - `examples.md` - Common examples referenced by multiple steps
+             - `schemas.md` - Data structures or formats used throughout
+
+          2. **Reference from instructions** using markdown includes or explicit references:
+             ```markdown
+             ## Conventions
+
+             Follow the conventions defined in `shared/conventions.md`.
+             ```
+
+          3. **Benefits of extraction:**
+             - Single source of truth - update once, applies everywhere
+             - Shorter instruction files - easier to read and maintain
+             - Consistent guidance across steps
+
+          ### Step 5: Create/Update AGENTS.md (Bespoke Learnings)
+
+          The AGENTS.md file captures project-specific knowledge that helps future agent runs.
+
+          1. **Determine the correct location**
+             - Place AGENTS.md in the deepest common folder that would contain all work on the topic in the future
+             - This ensures the knowledge is available when working in that context
+             - If uncertain, place at the project root
+
+          2. **Use file references where possible**
+             - Instead of duplicating information, reference source files
+             - This keeps AGENTS.md in sync as the codebase evolves
+             - Pattern: "See `path/to/file.ext` for [description]"
+
+          3. **AGENTS.md structure**: See `<job_dir>/templates/agents.md.template` for the standard format.
+
+          4. **Writing entries**
+             - Be concise but specific
+             - Always prefer file references over inline content
+             - Use line numbers when referencing specific code: `file.ext:42`
+             - Group related learnings together
+
+          ### Step 6: Create or Fix Scripts
+
+          Review the conversation for opportunities to add or improve scripts in the job's `scripts/` directory:
+
+          1. **Fix existing scripts** - If any scripts were used during execution and had problems (wrong output, errors, edge cases), fix them now.
+
+          2. **Create new scripts** - If any process during execution was manual, repetitive, or error-prone, and would be faster or more reliable as a script, create one. Good candidates:
+             - Data fetching or transformation that had to be done by hand
+             - File generation with specific formatting requirements
+             - Validation or checking steps that could be automated
+             - Setup or teardown tasks that will repeat on every run
+
+          3. **Test the scripts** - Run any new or modified scripts to verify they work correctly.
+
+          4. **Reference from instructions** - Update the relevant step instruction files to reference the new scripts so future runs use them.
+
+          ## File Reference Patterns
+
+          When adding entries to AGENTS.md, prefer these patterns:
+
+          **Good (references)**:
+          ```markdown
+          - API endpoints follow REST conventions. See `src/api/routes.ts` for examples.
+          - Error handling pattern: See `src/utils/errors.ts:15-30`
+          - Configuration schema: Defined in `config/schema.json`
+          ```
+
+          **Avoid (duplicating)**:
+          ```markdown
+          - API endpoints should return JSON with this format: { status: ..., data: ... }
+          - Error handling should use try/catch with custom error classes
+          - Configuration requires these fields: name, version, ...
+          ```
+
+          ## Example Dialog
+
+          ```
+          User: [Invokes the learn workflow via MCP]
+
+          Claude: I'll analyze this conversation for learnings from DeepWork job executions.
+
+          **Conversation Analysis**
+
+          I found the following job executions:
+          1. `/competitive_research.identify_competitors` - Completed
+          2. `/competitive_research.research_competitors` - Completed with 2 iterations
+          3. `/competitive_research.comparative_analysis` - Completed
+
+          **Identified Issues**
+
+          1. **Confusion in step 2**: The instructions didn't specify that competitor research should include pricing information. This caused an extra iteration.
+
+          2. **Missing context**: The agent had to ask about the industry focus, which should have been carried forward from step 1.
+
+          **Classification**
+
+          - Generalizable: Add pricing to research requirements in instructions
+          - Bespoke: This project focuses on B2B SaaS in the HR tech space
+
+          **Actions Taken**
+
+          1. Updated `.deepwork/jobs/competitive_research/steps/research_competitors.md`:
+             - Added "Include pricing information (tiers, models, approximate ranges)" to research requirements
+             - Added note about carrying forward industry context from previous step
+
+          2. Created `./competitive_research_output/AGENTS.md`:
+             ```markdown
+             # Project Context for Competitive Research
+
+             ## Job-Specific Context
+
+             ### competitive_research
+
+             #### Industry Focus
+             - Domain: B2B SaaS, HR Technology sector
+             - See `identify_competitors_output.md` for market definition
+
+             #### Competitors Identified
+             - Reference: `competitor_list.md` for full details
+
+             ## Last Updated
+             - Date: 2024-01-15
+             - From conversation about: Initial competitive analysis run
+             ```
+
+          **Summary**
+
+          Updated job instructions and created AGENTS.md with bespoke learnings.
+          ```
+
+          ## Handling Edge Cases
+
+          **No job executions found**:
+          - Ask user which job they'd like to analyze
+          - Or offer to review available jobs
+
+          **Multiple jobs executed**:
+          - Analyze each job separately
+          - Create separate AGENTS.md entries or files as appropriate
+
+          **AGENTS.md already exists**:
+          - Read existing content
+          - Append new learnings to appropriate sections
+          - Update "Last Updated" section
+
+          **No issues found**:
+          - Document what worked well
+          - Consider if any successful patterns should be added to instructions as examples
+
+          **Sensitive information**:
+          - Never include secrets, credentials, or PII in AGENTS.md
+          - Reference config files instead of including values
+        inputs:
+          job_name:
+            required: false
+        outputs:
+          AGENTS.md:
+            required: true
+          job.yml:
+            required: true
+          step_instruction_files:
+            required: true
+          scripts:
+            required: false
+        process_quality_attributes:
           "Conversation Analyzed": "The agent reviewed the conversation for DeepWork job executions."
           "Confusion Identified": "The agent identified points of confusion, errors, or inefficiencies."
           "Instructions Improved": "Job instructions were updated to address identified issues."
@@ -199,95 +1999,3 @@ steps:
           "Bespoke Learnings Captured": "Run-specific learnings were added to AGENTS.md."
           "File References Used": "AGENTS.md entries reference other files where appropriate."
           "Working Folder Correct": "AGENTS.md is in the correct working folder for the job."
-          "External Repo Handled": "If the job lives in an external repo (via DEEPWORK_ADDITIONAL_JOBS_FOLDERS), changes were committed and pushed per the user's preference. If the job is local, this criterion auto-passes."
-
-  - id: fix_settings
-    name: "Fix Settings Files"
-    description: "Cleans up .claude/settings.json and related configuration files, removing legacy permissions, duplicate hooks, and hardcoded paths from prior DeepWork versions."
-    instructions_file: steps/fix_settings.md
-    inputs: []
-    outputs:
-      settings.json:
-        type: file
-        description: "Cleaned up Claude settings file with legacy permissions removed"
-        required: true
-    dependencies: []
-    reviews:
-      - run_each: step
-        quality_criteria:
-          "Stale make_new_job.sh Removed": "Stale `Bash(...)` permissions referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` are removed."
-          "Rules Hooks Removed": "All DeepWork Rules hooks and permissions are removed."
-          "Duplicate Hooks Removed": "Duplicate hook entries are consolidated or removed."
-          "Hardcoded Paths Removed": "User-specific hardcoded paths (like `/Users/*/...`) are removed."
-          "Deprecated Commands Removed": "Deprecated commands like `deepwork hook *` are removed."
-          "Backup Created": "A backup of the original settings was created before modifications."
-
-  - id: fix_jobs
-    name: "Fix Job Definitions"
-    description: "Updates job.yml files and step instructions to current DeepWork format, removing deprecated fields and migrating to new structures."
-    instructions_file: steps/fix_jobs.md
-    inputs:
-      - file: settings.json
-        from_step: fix_settings
-    outputs:
-      job_definitions:
-        type: files
-        description: "Updated job.yml files and step instructions in current DeepWork format"
-        required: true
-      step_instruction_files:
-        type: files
-        description: "Updated step instruction files"
-        required: true
-    dependencies:
-      - fix_settings
-    reviews:
-      - run_each: step
-        additional_review_guidance: "Read the .claude/settings.json file for context on what settings were cleaned up in the prior step."
-        quality_criteria:
-          "Exposed Field Addressed": "`exposed: true` fields are removed or noted as deprecated."
-          "Stop Hooks Migrated": "`stop_hooks` are migrated to `hooks.after_agent` format."
-          "Removed Steps Cleaned": "References to removed steps (like `review_job_spec`) are updated."
-          "Orphaned Steps Fixed": "For jobs with no workflows, there is a single workflow (named after the job) containing all steps. For jobs with existing workflows, each orphan gets its own workflow (named after the step)."
-          "Promise Lines Removed": "Step instructions do not include anything about `<promise>Quality Criteria Met</promise>`."
-          "job.ymls are readable": "Calling `get_workflows` from the Deepwork tool shows all expected jobs. If any are missing, its YML is likely bad."
-
-  - id: errata
-    name: "Clean Up Errata"
-    description: "Removes obsolete files and folders from prior DeepWork versions, including temp files and deprecated configurations."
-    instructions_file: steps/errata.md
-    outputs: {}
-    inputs:
-      - file: job_definitions
-        from_step: fix_jobs
-    dependencies:
-      - fix_settings
-      - fix_jobs
-    reviews:
-      - run_each: step
-        additional_review_guidance: "Complete this review in a small number of turns - tee up every data request you need in your first call."
-        quality_criteria:
-          "Rules Folder Removed": "`.deepwork/rules/` folder is gone."
-          "Rules Job Removed": "`.deepwork/jobs/deepwork_rules/` is gone."
-          "MCP Server Entry Removed": "The `deepwork serve` entry is removed from `.mcp.json` (or the file is deleted if empty)."
-          "Library Jobs Offered": "If a flake.nix exists without DEEPWORK_ADDITIONAL_JOBS_FOLDERS, the user was offered library job setup. If no flake.nix exists, the Nix devshell option was mentioned. If already configured, nothing was said."
-
-  - id: sync_shared_jobs
-    name: "Sync Shared Jobs"
-    description: "Configures DEEPWORK_ADDITIONAL_JOBS_FOLDERS to reference library jobs from a local checkout or sparse clone. Never copies jobs into .deepwork/jobs/."
-    instructions_file: steps/sync_shared_jobs.md
-    inputs:
-      - name: source
-        description: "Source for library jobs: 'local' for an existing deepwork checkout, 'remote' for sparse-checkout clone, or a custom path"
-    outputs:
-      available_jobs:
-        type: files
-        description: "The job.yml files available via the configured library path"
-        required: true
-    dependencies: []
-    reviews:
-      - run_each: available_jobs
-        quality_criteria:
-          "Valid Job Definition": "The job.yml is valid YAML with required fields (name, version, summary, steps)."
-          "Step Files Present": "All instructions_file paths referenced in job.yml exist."
-          "Referenced Not Copied": "Library jobs are referenced via DEEPWORK_ADDITIONAL_JOBS_FOLDERS, not copied into .deepwork/jobs/."
-          "Env Var Configured": "DEEPWORK_ADDITIONAL_JOBS_FOLDERS is set for persistence (flake.nix, shellHook, or equivalent)."

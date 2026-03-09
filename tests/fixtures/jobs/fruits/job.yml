@@ -1,47 +1,40 @@
-# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: fruits
-version: "1.0.0"
 summary: "Identify and classify fruits from a mixed list of items"
-common_job_info_provided_to_all_steps_at_runtime: |
-  A simple, deterministic job for CI testing of the DeepWork framework.
-  This job takes a list of mixed items (fruits and non-fruits) and identifies
-  and classifies them. Designed to produce predictable, verifiable outputs.
-
+step_arguments:
+  - name: raw_items
+    description: "Comma-separated list of items to filter (e.g., 'apple, car, banana, chair')"
+    type: string
+  - name: identified_fruits
+    description: "List of identified fruits from the input items"
+    type: file_path
+  - name: classified_fruits
+    description: "Fruits organized into categories"
+    type: file_path
 workflows:
-  - name: full
+  full:
     summary: "Run the complete fruits identification and classification"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      A simple, deterministic job for CI testing of the DeepWork framework.
+      This job takes a list of mixed items (fruits and non-fruits) and identifies
+      and classifies them. Designed to produce predictable, verifiable outputs.
     steps:
-      - identify
-      - classify
-
-steps:
-  - id: identify
-    name: "Identify Fruits"
-    description: "Filter a list of items to identify only the fruits"
-    instructions_file: steps/identify.md
-    inputs:
-      - name: raw_items
-        description: "Comma-separated list of items to filter (e.g., 'apple, car, banana, chair')"
-    outputs:
-      identified_fruits.md:
-        type: file
-        description: "List of identified fruits from the input items"
-        required: true
-    dependencies: []
-    reviews: []
-
-  - id: classify
-    name: "Classify Fruits"
-    description: "Organize identified fruits into categories"
-    instructions_file: steps/classify.md
-    inputs:
-      - file: identified_fruits.md
-        from_step: identify
-    outputs:
-      classified_fruits.md:
-        type: file
-        description: "Fruits organized into categories"
-        required: true
-    dependencies:
-      - identify
-    reviews: []
+      - name: identify
+        instructions: |
+          Filter the provided list of items to identify only the fruits.
+          Write the identified fruits to the output file, one per line.
+        inputs:
+          raw_items:
+            required: true
+        outputs:
+          identified_fruits:
+            required: true
+      - name: classify
+        instructions: |
+          Organize the identified fruits into categories such as citrus,
+          tropical, berries, etc. Write the classification to the output file.
+        inputs:
+          identified_fruits:
+            required: true
+        outputs:
+          classified_fruits:
+            required: true

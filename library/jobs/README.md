@@ -108,15 +108,8 @@ library/jobs/
 │       ├── analyze.md
 │       └── plan.md
 └── spec_driven_development/
-    ├── job.yml              # Job definition (name, steps, workflows)
-    ├── readme.md            # Job-specific documentation
-    └── steps/
-        ├── constitution.md
-        ├── specify.md
-        ├── clarify.md
-        ├── plan.md
-        ├── tasks.md
-        └── implement.md
+    ├── job.yml              # Job definition (self-contained with inline instructions)
+    └── readme.md            # Job-specific documentation
 ```
 
 ### job.yml
@@ -124,32 +117,27 @@ library/jobs/
 The job definition file contains:
 
 - `name`: Unique identifier for the job
-- `version`: Semantic version (e.g., "1.0.0")
 - `summary`: Brief description (under 200 characters)
-- `common_job_info_provided_to_all_steps_at_runtime`: Detailed context provided to all steps at runtime
-- `workflows`: Named sequences of steps (optional)
-  - `name`: Workflow identifier
+- `step_arguments`: Shared data definitions that flow between steps
+  - `name`: Argument identifier
+  - `description`: What this data represents
+  - `type`: `string` or `file_path`
+  - `review`: Optional review block for quality validation
+  - `json_schema`: Optional JSON schema for file validation
+- `workflows`: Named sequences of steps, keyed by workflow name
   - `summary`: What the workflow accomplishes
-  - `steps`: Ordered list of step IDs to execute
-- `steps`: Array of step definitions with:
-  - `id`: Step identifier
-  - `name`: Human-readable step name
-  - `description`: What this step accomplishes
-  - `hidden`: Whether the step is hidden from direct invocation (optional, default false)
-  - `instructions_file`: Path to the step's markdown instructions
-  - `inputs`: What the step requires — each input has `name`/`description`, or `file`/`from_step` to reference outputs from prior steps
-  - `outputs`: Map of output names to objects with `type` (`file` or `files`), `description`, and `required` fields
-  - `dependencies`: Other step IDs that must complete first
-  - `reviews`: Quality reviews to run when step completes — array of objects with `run_each` (output name or `step`), `quality_criteria` (map of criterion name to expected state), and optional `additional_review_guidance` (context for the reviewer)
+  - `agent`: Optional agent type for the workflow
+  - `common_job_info_provided_to_all_steps_at_runtime`: Detailed context provided to all steps
+  - `steps`: Ordered list of step definitions
+    - `name`: Step identifier
+    - `instructions`: Inline step instructions (YAML `|` block scalar)
+    - `sub_workflow`: Alternative to instructions — delegates to another workflow
+    - `inputs`: Map of step_argument names used as inputs
+    - `outputs`: Map of step_argument names produced as outputs
+    - `process_quality_attributes`: Optional quality criteria for the work process
+  - `post_workflow_instructions`: Optional instructions shown after workflow completes
 
-### steps/
-
-Each step has a markdown file with detailed instructions that guide the AI agent through executing that step. These files include:
-
-- Context and goals for the step
-- Specific actions to take
-- Expected outputs and quality criteria
-- Examples of good output
+All step instructions are inlined directly in `job.yml` — there are no separate step instruction files.
 
 ## Using a Job from the Library
 
@@ -278,4 +266,4 @@ gh pr create --title "feat(library): improve repo job step description" \
 
 ## Contributing
 
-To add a job to the library, ensure it follows the structure above and includes clear, actionable instructions in each step file.
+To add a job to the library, ensure it follows the structure above and includes clear, actionable instructions in each step.

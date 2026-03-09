@@ -6,18 +6,13 @@ from deepwork.jobs.mcp.schemas import (
     FinishedStepInput,
     FinishedStepResponse,
     JobInfo,
-    QualityCriteriaResult,
-    QualityGateResult,
-    ReviewInfo,
-    ReviewResult,
     StartWorkflowInput,
     StartWorkflowResponse,
-    StepInfo,
+    StepInputInfo,
     StepProgress,
     StepStatus,
     WorkflowInfo,
     WorkflowSession,
-    WorkflowStepEntryInfo,
 )
 
 
@@ -31,60 +26,9 @@ class TestStepStatus:
         assert StepStatus.WORKFLOW_COMPLETE.value == "workflow_complete"
 
 
-class TestStepInfo:
-    """Tests for StepInfo model."""
-
-    def test_basic_step(self) -> None:
-        """Test creating basic step info."""
-        step = StepInfo(
-            id="step1",
-            name="First Step",
-            description="Does something",
-        )
-
-        assert step.id == "step1"
-        assert step.name == "First Step"
-        assert step.description == "Does something"
-        assert step.dependencies == []
-
-    def test_step_with_dependencies(self) -> None:
-        """Test step with dependencies."""
-        step = StepInfo(
-            id="step2",
-            name="Second Step",
-            description="Depends on step1",
-            dependencies=["step1"],
-        )
-
-        assert step.dependencies == ["step1"]
-
-
-class TestWorkflowStepEntryInfo:
-    """Tests for WorkflowStepEntryInfo model."""
-
-    def test_sequential_entry(self) -> None:
-        """Test sequential step entry."""
-        entry = WorkflowStepEntryInfo(step_ids=["step1"])
-
-        assert entry.step_ids == ["step1"]
-        assert entry.is_concurrent is False
-
-    def test_concurrent_entry(self) -> None:
-        """Test concurrent step entry."""
-        entry = WorkflowStepEntryInfo(
-            step_ids=["step1", "step2"],
-            is_concurrent=True,
-        )
-
-        assert entry.step_ids == ["step1", "step2"]
-        assert entry.is_concurrent is True
-
-
 class TestWorkflowInfo:
     """Tests for WorkflowInfo model."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.6).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_basic_workflow(self) -> None:
         """Test basic workflow info with how_to_invoke."""
         workflow = WorkflowInfo(
@@ -97,8 +41,6 @@ class TestWorkflowInfo:
         assert workflow.summary == "A test workflow"
         assert "start_workflow" in workflow.how_to_invoke
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.7).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_workflow_with_agent_how_to_invoke(self) -> None:
         """Test workflow info with agent-based how_to_invoke."""
         workflow = WorkflowInfo(
@@ -142,6 +84,21 @@ class TestStartWorkflowInput:
         assert input_data.job_name == "test_job"
         assert input_data.workflow_name == "main"
         assert input_data.session_id == "test-session"
+        assert input_data.inputs is None
+
+    def test_with_inputs(self) -> None:
+        """Test with inputs parameter."""
+        input_data = StartWorkflowInput(
+            goal="Complete a task",
+            job_name="test_job",
+            workflow_name="main",
+            session_id="test-session",
+            inputs={"source_file": "src/main.py", "targets": ["a.py", "b.py"]},
+        )
+
+        assert input_data.inputs is not None
+        assert input_data.inputs["source_file"] == "src/main.py"
+        assert input_data.inputs["targets"] == ["a.py", "b.py"]
 
 
 class TestFinishedStepInput:
@@ -155,7 +112,7 @@ class TestFinishedStepInput:
         )
 
         assert input_data.outputs == {"report": "report.md", "data_files": ["a.csv", "b.csv"]}
-        assert input_data.notes is None
+        assert input_data.work_summary is None
 
     def test_with_empty_outputs(self) -> None:
         """Test with empty outputs dict (for steps with no outputs)."""
@@ -163,135 +120,76 @@ class TestFinishedStepInput:
 
         assert input_data.outputs == {}
 
-    def test_with_notes(self) -> None:
-        """Test with notes."""
+    def test_with_work_summary(self) -> None:
+        """Test with work_summary field."""
         input_data = FinishedStepInput(
             outputs={"output": "output.md"},
-            notes="Completed successfully",
+            work_summary="Completed the analysis using approach X",
             session_id="test-session",
         )
 
-        assert input_data.notes == "Completed successfully"
+        assert input_data.work_summary == "Completed the analysis using approach X"
 
-
-class TestQualityCriteriaResult:
-    """Tests for QualityCriteriaResult model."""
-
-    def test_passed_criterion(self) -> None:
-        """Test passed criterion."""
-        result = QualityCriteriaResult(
-            criterion="Output must be valid",
-            passed=True,
+    def test_with_quality_review_override_reason(self) -> None:
+        """Test with quality_review_override_reason field."""
+        input_data = FinishedStepInput(
+            outputs={"output": "output.md"},
+            quality_review_override_reason="Review timed out after 120s",
+            session_id="test-session",
         )
 
-        assert result.passed is True
-        assert result.feedback is None
+        assert input_data.quality_review_override_reason == "Review timed out after 120s"
 
-    def test_failed_criterion(self) -> None:
-        """Test failed criterion with feedback."""
-        result = QualityCriteriaResult(
-            criterion="Output must be valid",
-            passed=False,
-            feedback="Output was incomplete",
+
+class TestStepInputInfo:
+    """Tests for StepInputInfo model."""
+
+    def test_basic_creation(self) -> None:
+        """Test creating a basic step input info."""
+        info = StepInputInfo(
+            name="source_file",
+            type="file_path",
+            description="The source file to analyze",
         )
 
-        assert result.passed is False
-        assert result.feedback == "Output was incomplete"
+        assert info.name == "source_file"
+        assert info.type == "file_path"
+        assert info.description == "The source file to analyze"
+        assert info.value is None
+        assert info.required is True
 
-
-class TestQualityGateResult:
-    """Tests for QualityGateResult model."""
-
-    def test_passed_gate(self) -> None:
-        """Test passed quality gate."""
-        result = QualityGateResult(
-            passed=True,
-            feedback="All criteria met",
-            criteria_results=[
-                QualityCriteriaResult(criterion="Test 1", passed=True),
-            ],
+    def test_with_value(self) -> None:
+        """Test step input info with a value."""
+        info = StepInputInfo(
+            name="source_file",
+            type="file_path",
+            description="The source file to analyze",
+            value="src/main.py",
         )
 
-        assert result.passed is True
-        assert len(result.criteria_results) == 1
+        assert info.value == "src/main.py"
 
-    def test_failed_gate(self) -> None:
-        """Test failed quality gate."""
-        result = QualityGateResult(
-            passed=False,
-            feedback="Some criteria failed",
-            criteria_results=[
-                QualityCriteriaResult(criterion="Test 1", passed=True),
-                QualityCriteriaResult(
-                    criterion="Test 2",
-                    passed=False,
-                    feedback="Failed check",
-                ),
-            ],
+    def test_with_list_value(self) -> None:
+        """Test step input info with a list value."""
+        info = StepInputInfo(
+            name="targets",
+            type="file_path",
+            description="Target files",
+            value=["a.py", "b.py"],
         )
 
-        assert result.passed is False
-        assert len(result.criteria_results) == 2
+        assert info.value == ["a.py", "b.py"]
 
-
-class TestReviewInfo:
-    """Tests for ReviewInfo model."""
-
-    def test_step_review(self) -> None:
-        """Test step-level review info."""
-        review = ReviewInfo(
-            run_each="step",
-            quality_criteria={"Complete": "Is it complete?"},
+    def test_optional_input(self) -> None:
+        """Test step input info that is not required."""
+        info = StepInputInfo(
+            name="config",
+            type="string",
+            description="Optional config",
+            required=False,
         )
 
-        assert review.run_each == "step"
-        assert review.quality_criteria == {"Complete": "Is it complete?"}
-
-    def test_output_review(self) -> None:
-        """Test output-specific review info."""
-        review = ReviewInfo(
-            run_each="reports",
-            quality_criteria={
-                "Valid": "Is it valid?",
-                "Complete": "Is it complete?",
-            },
-        )
-
-        assert review.run_each == "reports"
-        assert len(review.quality_criteria) == 2
-
-
-class TestReviewResult:
-    """Tests for ReviewResult model."""
-
-    def test_passed_review(self) -> None:
-        """Test passed review result."""
-        result = ReviewResult(
-            review_run_each="step",
-            target_file=None,
-            passed=True,
-            feedback="All good",
-        )
-
-        assert result.passed is True
-        assert result.target_file is None
-
-    def test_failed_per_file_review(self) -> None:
-        """Test failed per-file review result."""
-        result = ReviewResult(
-            review_run_each="reports",
-            target_file="report1.md",
-            passed=False,
-            feedback="Issues found",
-            criteria_results=[
-                QualityCriteriaResult(criterion="Valid", passed=False, feedback="Not valid"),
-            ],
-        )
-
-        assert result.passed is False
-        assert result.target_file == "report1.md"
-        assert result.review_run_each == "reports"
-        assert len(result.criteria_results) == 1
+        assert info.required is False
 
 
 class TestActiveStepInfo:
@@ -308,36 +206,39 @@ class TestActiveStepInfo:
                 syntax_for_finished_step_tool="filepath",
             )
         ]
+        step_inputs = [
+            StepInputInfo(
+                name="source",
+                type="file_path",
+                description="Source file",
+                value="src/main.py",
+            )
+        ]
         step_info = ActiveStepInfo(
             session_id="abc123",
             step_id="step1",
             job_dir="/tmp/test_job",
             step_expected_outputs=expected,
-            step_reviews=[
-                ReviewInfo(
-                    run_each="step",
-                    quality_criteria={"Complete": "Is it complete?"},
-                )
-            ],
+            step_inputs=step_inputs,
             step_instructions="Do something",
             common_job_info="Test job info",
         )
 
         assert step_info.session_id == "abc123"
-
         assert step_info.step_id == "step1"
         assert step_info.job_dir == "/tmp/test_job"
         assert len(step_info.step_expected_outputs) == 1
         assert step_info.step_expected_outputs[0].name == "output.md"
         assert step_info.step_expected_outputs[0].type == "file"
         assert step_info.step_expected_outputs[0].syntax_for_finished_step_tool == "filepath"
-        assert len(step_info.step_reviews) == 1
-        assert step_info.step_reviews[0].run_each == "step"
+        assert len(step_info.step_inputs) == 1
+        assert step_info.step_inputs[0].name == "source"
+        assert step_info.step_inputs[0].value == "src/main.py"
         assert step_info.step_instructions == "Do something"
         assert step_info.common_job_info == "Test job info"
 
-    def test_default_reviews(self) -> None:
-        """Test default empty reviews."""
+    def test_default_step_inputs(self) -> None:
+        """Test default empty step_inputs."""
         step_info = ActiveStepInfo(
             session_id="abc123",
             step_id="step1",
@@ -352,10 +253,29 @@ class TestActiveStepInfo:
                 )
             ],
             step_instructions="Do something",
-            common_job_info="Test job info",
         )
 
-        assert step_info.step_reviews == []
+        assert step_info.step_inputs == []
+
+    def test_default_common_job_info(self) -> None:
+        """Test common_job_info defaults to empty string."""
+        step_info = ActiveStepInfo(
+            session_id="abc123",
+            step_id="step1",
+            job_dir="/tmp/test_job",
+            step_expected_outputs=[
+                ExpectedOutput(
+                    name="output.md",
+                    type="file",
+                    description="Test output",
+                    required=True,
+                    syntax_for_finished_step_tool="filepath",
+                )
+            ],
+            step_instructions="Do something",
+        )
+
+        assert step_info.common_job_info == ""
 
 
 class TestStartWorkflowResponse:
@@ -378,39 +298,27 @@ class TestStartWorkflowResponse:
                     )
                 ],
                 step_instructions="Do something",
-                common_job_info="Test job info",
             )
         )
 
         assert response.begin_step.session_id == "abc123"
-
         assert response.begin_step.step_id == "step1"
-        assert response.begin_step.step_reviews == []
+        assert response.begin_step.step_inputs == []
+        assert response.begin_step.common_job_info == ""
 
 
 class TestFinishedStepResponse:
     """Tests for FinishedStepResponse model."""
 
     def test_needs_work_status(self) -> None:
-        """Test needs_work response."""
+        """Test needs_work response with feedback."""
         response = FinishedStepResponse(
             status=StepStatus.NEEDS_WORK,
-            feedback="Fix the issues",
-            failed_reviews=[
-                ReviewResult(
-                    review_run_each="step",
-                    target_file=None,
-                    passed=False,
-                    feedback="Issues found",
-                    criteria_results=[
-                        QualityCriteriaResult(criterion="Test", passed=False, feedback="Failed"),
-                    ],
-                ),
-            ],
+            feedback="Fix the issues found in the output",
         )
 
         assert response.status == StepStatus.NEEDS_WORK
-        assert response.feedback is not None
+        assert response.feedback == "Fix the issues found in the output"
         assert response.begin_step is None
 
     def test_next_step_status(self) -> None:
@@ -441,26 +349,34 @@ class TestFinishedStepResponse:
         assert response.summary is None
 
     def test_workflow_complete_status(self) -> None:
-        """Test workflow_complete response."""
+        """Test workflow_complete response with post_workflow_instructions."""
         response = FinishedStepResponse(
             status=StepStatus.WORKFLOW_COMPLETE,
             summary="Workflow completed!",
             all_outputs={"output1": "output1.md", "output2": "output2.md"},
+            post_workflow_instructions="Create a PR with the results",
         )
 
         assert response.status == StepStatus.WORKFLOW_COMPLETE
-        assert response.summary is not None
-        assert response.all_outputs is not None
+        assert response.summary == "Workflow completed!"
         assert response.all_outputs == {"output1": "output1.md", "output2": "output2.md"}
+        assert response.post_workflow_instructions == "Create a PR with the results"
+
+    def test_workflow_complete_no_post_instructions(self) -> None:
+        """Test workflow_complete without post_workflow_instructions."""
+        response = FinishedStepResponse(
+            status=StepStatus.WORKFLOW_COMPLETE,
+            summary="Done",
+        )
+
+        assert response.post_workflow_instructions is None
 
 
 class TestStepProgress:
     """Tests for StepProgress model."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.16.5).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_new_step(self) -> None:
-        """Test new step progress."""
+        """Test new step progress with defaults."""
         progress = StepProgress(step_id="step1")
 
         assert progress.step_id == "step1"
@@ -468,13 +384,32 @@ class TestStepProgress:
         assert progress.completed_at is None
         assert progress.outputs == {}
         assert progress.quality_attempts == 0
+        assert progress.work_summary is None
+        assert progress.input_values == {}
+
+    def test_with_work_summary(self) -> None:
+        """Test step progress with work_summary."""
+        progress = StepProgress(
+            step_id="step1",
+            work_summary="Analyzed the codebase and produced report",
+        )
+
+        assert progress.work_summary == "Analyzed the codebase and produced report"
+
+    def test_with_input_values(self) -> None:
+        """Test step progress with input_values."""
+        progress = StepProgress(
+            step_id="step1",
+            input_values={"source": "main.py", "targets": ["a.py", "b.py"]},
+        )
+
+        assert progress.input_values["source"] == "main.py"
+        assert progress.input_values["targets"] == ["a.py", "b.py"]
 
 
 class TestWorkflowSession:
     """Tests for WorkflowSession model."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.16.3).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_basic_session(self) -> None:
         """Test basic session creation."""
         session = WorkflowSession(
@@ -490,9 +425,22 @@ class TestWorkflowSession:
         assert session.job_name == "test_job"
         assert session.status == "active"
         assert session.completed_at is None
+        assert session.current_step_index == 0
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.16.1).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_current_step_index(self) -> None:
+        """Test current_step_index field."""
+        session = WorkflowSession(
+            session_id="abc123",
+            job_name="test_job",
+            workflow_name="main",
+            goal="Complete the task",
+            current_step_id="step3",
+            current_step_index=2,
+            started_at="2024-01-01T00:00:00Z",
+        )
+
+        assert session.current_step_index == 2
+
     def test_to_dict(self) -> None:
         """Test converting session to dict."""
         session = WorkflowSession(
@@ -509,9 +457,8 @@ class TestWorkflowSession:
         assert isinstance(data, dict)
         assert data["session_id"] == "abc123"
         assert data["job_name"] == "test_job"
+        assert data["current_step_index"] == 0
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.16.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict(self) -> None:
         """Test creating session from dict."""
         data = {
@@ -520,7 +467,7 @@ class TestWorkflowSession:
             "workflow_name": "main",
             "goal": "Complete the task",
             "current_step_id": "step1",
-            "current_entry_index": 0,
+            "current_step_index": 0,
             "step_progress": {},
             "started_at": "2024-01-01T00:00:00Z",
             "completed_at": None,
@@ -531,3 +478,4 @@ class TestWorkflowSession:
 
         assert session.session_id == "abc123"
         assert session.job_name == "test_job"
+        assert session.current_step_index == 0

@@ -56,8 +56,7 @@ deepwork/                       # DeepWork tool repository
 │       │       ├── tools.py        # MCP tool implementations
 │       │       ├── state.py        # Workflow session state management
 │       │       ├── schemas.py      # Pydantic models for I/O
-│       │       ├── quality_gate.py # Quality gate with review agent
-│       │       ├── claude_cli.py   # Claude CLI subprocess wrapper
+│       │       ├── quality_gate.py # Quality gate via DeepWork Reviews
 │       │       └── status.py       # Status file writer for external consumers
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── wrapper.py      # Cross-platform input/output normalization
@@ -115,7 +114,7 @@ The CLI has four active commands: `serve`, `hook`, `review`, and `jobs`. Depreca
 Starts the MCP server for workflow management:
 
 ```bash
-deepwork serve --path . --external-runner claude
+deepwork serve --path .
 ```
 
 The serve command:
@@ -186,13 +185,11 @@ my-project/                     # User's project (target)
 │   ├── tmp/                    # Temporary session state (gitignored, created lazily)
 │   └── jobs/                   # Job definitions
 │       ├── deepwork_jobs/      # Core job (auto-discovered from package)
-│       │   ├── job.yml
-│       │   └── steps/
+│       │   └── job.yml
 │       ├── competitive_research/
-│       │   ├── job.yml         # Job metadata
-│       │   └── steps/
+│       │   └── job.yml         # Job definition (steps are inline)
 │       └── ad_campaign/
-│           └── ...
+│           └── job.yml
 ├── (rest of user's project files)
 └── README.md
 ```
@@ -201,213 +198,138 @@ my-project/                     # User's project (target)
 
 **Note**: Work outputs are created directly in the project on dedicated Git branches (e.g., `deepwork/competitive_research-acme-2026-01-11`). The branch naming convention is `deepwork/[job_name]-[instance]-[date]`.
 
-## Job Definition Example
+## Job Definition Format
+
+Job definitions use `step_arguments` to declare data that flows between steps, and `workflows` to define step sequences with inline instructions. There are no separate step instruction files, no root-level `steps[]`, and no `version`, `dependencies`, `hooks`, or `exposed/hidden` fields.
+
+### Key Concepts
+
+- **`step_arguments`**: Named data items (strings or file paths) passed between steps. Each argument has a `name`, `description`, `type` (`string` or `file_path`), optional `review` block, and optional `json_schema`.
+- **`workflows`**: Named sequences of steps with inline instructions. Each workflow has a `summary`, optional `agent`, optional `common_job_info_provided_to_all_steps_at_runtime`, `steps`, and optional `post_workflow_instructions`.
+- **Steps**: Each step has `inputs` and `outputs` that reference `step_arguments` by name. Step logic is defined via `instructions` (inline string) or `sub_workflow` (delegates to another workflow).
+- **Reviews on outputs**: The `review` block on step arguments or step outputs uses the same format as `.deepreview` review rules. These are applied *in addition to* any `.deepreview` file-defined rules.
+- **`process_quality_attributes`**: Optional per-step object where keys are attribute names and values are descriptions. These review the *process and work* done (not individual output files).
+
+### Example: `job.yml`
 
 `.deepwork/jobs/competitive_research/job.yml`:
 
 ```yaml
 name: competitive_research
-version: "1.0.0"
 summary: "Systematic competitive analysis workflow"
-common_job_info_provided_to_all_steps_at_runtime: |
-  A comprehensive workflow for analyzing competitors in your market segment.
-  Designed for product teams conducting quarterly competitive analysis.
 
-# Workflows define named sequences of steps that form complete processes.
-# Steps not in any workflow are "standalone skills" that can be run anytime.
-# Steps can be listed as simple strings (sequential) or arrays (concurrent execution).
-#
-# Concurrent step patterns:
-# 1. Multiple different steps: [step_a, step_b] - run both in parallel
-# 2. Single step with multiple instances: [fetch_campaign_data] - indicates this
-#    step should be run in parallel for each instance (e.g., each ad campaign)
-#
-# Use a single-item array when a step needs multiple parallel instances, like
-# "fetch performance data" that runs once per campaign in an ad reporting job.
+step_arguments:
+  - name: market_segment
+    description: "The market segment to analyze"
+    type: string
+  - name: competitors_list
+    description: "List of competitors with descriptions"
+    type: file_path
+    review:
+      instructions: "Verify at least 5 direct and 3 indirect competitors are listed with descriptions."
+      strategy: individual
+  - name: primary_findings
+    description: "Primary research findings document"
+    type: file_path
+  - name: secondary_findings
+    description: "Secondary research findings document"
+    type: file_path
+  - name: comparison_matrix
+    description: "Detailed comparison matrix"
+    type: file_path
+  - name: positioning_strategy
+    description: "Market positioning strategy"
+    type: file_path
+
 workflows:
-  - name: full_analysis
+  full_analysis:
     summary: "Complete competitive analysis from identification through positioning"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      A comprehensive workflow for analyzing competitors in your market segment.
+      Designed for product teams conducting quarterly competitive analysis.
     steps:
-      - identify_competitors
-      # Steps in an array execute concurrently (as "Background Tasks")
-      - [primary_research, secondary_research]
-      - comparative_report
-      - positioning
+      - name: identify_competitors
+        instructions: |
+          Research and list direct and indirect competitors in the given market segment.
+          Create a document listing 5-10 direct competitors and 3-5 indirect competitors,
+          each with website, description, and value proposition.
+        inputs:
+          market_segment:
+            required: true
+        outputs:
+          competitors_list:
+            required: true
+        process_quality_attributes:
+          research_thoroughness: "Research used multiple sources (web search, analyst reports, review sites)"
 
-steps:
-  - id: identify_competitors
-    name: "Identify Competitors"
-    description: "Research and list direct and indirect competitors"
-    instructions_file: steps/identify_competitors.md
-    inputs:
-      - name: market_segment
-        description: "The market segment to analyze"
-      - name: product_category
-        description: "Product category"
-    outputs:
-      competitors.md:
-        type: file
-        description: "List of competitors with descriptions"
-        required: true
-    dependencies: []
+      - name: primary_research
+        instructions: |
+          Analyze each competitor's self-presentation: website messaging, product pages,
+          pricing, and positioning. Document findings for each competitor.
+        inputs:
+          competitors_list:
+            required: true
+        outputs:
+          primary_findings:
+            required: true
 
-  - id: primary_research
-    name: "Primary Research"
-    description: "Analyze competitors' self-presentation"
-    instructions_file: steps/primary_research.md
-    inputs:
-      - file: competitors.md
-        from_step: identify_competitors
-    outputs:
-      primary_research.md:
-        type: file
-        description: "Primary research findings"
-        required: true
-    dependencies:
-      - identify_competitors
+      - name: secondary_research
+        instructions: |
+          Research third-party perspectives on competitors: analyst reports, reviews,
+          press coverage, and community sentiment.
+        inputs:
+          competitors_list:
+            required: true
+          primary_findings:
+            required: true
+        outputs:
+          secondary_findings:
+            required: true
 
-  - id: secondary_research
-    name: "Secondary Research"
-    description: "Research third-party perspectives on competitors"
-    instructions_file: steps/secondary_research.md
-    inputs:
-      - file: competitors.md
-        from_step: identify_competitors
-      - file: primary_research.md
-        from_step: primary_research
-    outputs:
-      - secondary_research.md
-    dependencies:
-      - primary_research
+      - name: comparative_report
+        instructions: |
+          Create a detailed comparison matrix and strengths/weaknesses analysis
+          based on all research gathered.
+        inputs:
+          primary_findings:
+            required: true
+          secondary_findings:
+            required: true
+        outputs:
+          comparison_matrix:
+            required: true
 
-  - id: comparative_report
-    name: "Comparative Report"
-    description: "Create detailed comparison matrix"
-    instructions_file: steps/comparative_report.md
-    inputs:
-      - file: primary_research.md
-        from_step: primary_research
-      - file: secondary_research.md
-        from_step: secondary_research
-    outputs:
-      - comparison_matrix.md
-      - strengths_weaknesses.md
-    dependencies:
-      - primary_research
-      - secondary_research
+      - name: positioning
+        instructions: |
+          Define a positioning strategy based on the competitive landscape analysis.
+        inputs:
+          comparison_matrix:
+            required: true
+        outputs:
+          positioning_strategy:
+            required: true
 
-  - id: positioning
-    name: "Market Positioning"
-    description: "Define positioning strategy against competitors"
-    instructions_file: steps/positioning.md
-    inputs:
-      - file: comparison_matrix.md
-        from_step: comparative_report
-    outputs:
-      - positioning_strategy.md
-    dependencies:
-      - comparative_report
+    post_workflow_instructions: |
+      The competitive analysis is complete. Create a PR with all artifacts
+      for team review.
 ```
 
-### Lifecycle Hooks in Job Definitions
+### Sub-Workflow References
 
-Steps can define lifecycle hooks that trigger at specific points during execution. Hooks are defined using generic event names that are mapped to platform-specific names by adapters:
+Steps can delegate to other workflows instead of providing inline instructions:
 
 ```yaml
 steps:
-  - id: build_report
-    name: "Build Report"
-    description: "Generate the final report"
-    instructions_file: steps/build_report.md
+  - name: run_deep_analysis
+    sub_workflow:
+      workflow_name: deep_analysis
+      workflow_job: competitive_research  # optional, defaults to current job
+    inputs:
+      competitors_list:
+        required: true
     outputs:
-      - report.md
-    hooks:
-      after_agent:  # Triggers after agent finishes (Claude: "Stop")
-        - prompt: |
-            Verify the report includes all required sections:
-            - Executive summary
-            - Data analysis
-            - Recommendations
-        - script: hooks/validate_report.sh
-      before_tool:  # Triggers before tool use (Claude: "PreToolUse")
-        - prompt: "Confirm tool execution is appropriate"
-```
-
-**Supported Lifecycle Events**:
-- `after_agent` - Triggered after the agent finishes responding (quality validation)
-- `before_tool` - Triggered before the agent uses a tool
-- `before_prompt` - Triggered when user submits a new prompt
-
-**Hook Action Types**:
-- `prompt` - Inline prompt text
-- `prompt_file` - Path to a file containing the prompt
-- `script` - Path to a shell script
-
-**Note**: The deprecated `stop_hooks` field is still supported for backward compatibility but maps to `hooks.after_agent`.
-
-### Step Instructions Example
-
-`.deepwork/jobs/competitive_research/steps/identify_competitors.md`:
-
-```markdown
-# Identify Competitors
-
-## Objective
-Research and create a comprehensive list of direct and indirect competitors in the specified market segment.
-
-## Task Description
-You will identify companies that compete with us in {{market_segment}} for {{product_category}}.
-
-### Direct Competitors
-Companies offering similar products/services to the same customer base:
-- List 5-10 companies
-- Include company name, website, and brief description
-- Note their primary value proposition
-
-### Indirect Competitors
-Companies solving the same problem with different approaches:
-- List 3-5 companies
-- Explain how they're indirect competitors
-
-## Output Format
-Create `competitors.md` with this structure:
-
-```markdown
-# Competitor Analysis: {{market_segment}}
-
-## Direct Competitors
-
-### [Company Name]
-- **Website**: [URL]
-- **Description**: [Brief description]
-- **Value Proposition**: [What they claim]
-- **Target Market**: [Who they serve]
-
-[Repeat for each direct competitor]
-
-## Indirect Competitors
-
-### [Company Name]
-- **Website**: [URL]
-- **Alternative Approach**: [How they differ]
-- **Why Relevant**: [Why they compete with us]
-
-[Repeat for each indirect competitor]
-```
-
-## Research Tips
-1. Start with web searches for "[product category] companies"
-2. Check industry analyst reports (Gartner, Forrester)
-3. Look at review sites (G2, Capterra)
-4. Check LinkedIn for similar companies
-5. Use Crunchbase or similar databases
-
-## Quality Checklist
-- [ ] At least 5 direct competitors identified
-- [ ] At least 3 indirect competitors identified
-- [ ] Each competitor has website and description
-- [ ] Value propositions are clearly stated
-- [ ] No duplicate entries
+      primary_findings:
+        required: true
 ```
 
 ## Workflow Execution via MCP
@@ -465,88 +387,32 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
           PR created: https://github.com/user/project/pull/123
    ```
 
-## How Claude Code Executes Skills
+## How Agents Execute Workflows
 
-When user types `/competitive_research.identify_competitors`:
+Agents use the `/deepwork` skill which instructs them to interact with MCP tools:
 
-1. **Skill Discovery**:
-   - Claude Code scans `.claude/skills/` directory
-   - Finds `competitive_research.identify_competitors.md`
-   - Loads the skill definition
+1. **Workflow Discovery**: Agent calls `get_workflows` to list available jobs and workflows
+2. **Workflow Start**: Agent calls `start_workflow` with goal, job name, workflow name, and optional inputs
+3. **Step Execution**: Agent follows the inline instructions returned by the MCP server
+4. **Checkpoint**: Agent calls `finished_step` with outputs and work summary
+5. **Quality Gate**: MCP server runs DeepWork Reviews on outputs, returns feedback or advances
+6. **Repeat**: Agent continues until `workflow_complete`
 
-2. **Context Loading**:
-   - Skill file contains embedded instructions
-   - References to job definition and step files
-   - Claude reads these files to understand the full context
-
-3. **Execution**:
-   - Claude follows the instructions in the skill
-   - Uses its tools (Read, Write, WebSearch, WebFetch, etc.)
-   - Creates outputs in the specified format
-
-4. **State Management** (via filesystem):
-   - Work branch name encodes the job instance
-   - Output files track progress
-   - Git provides version control and resumability
-
-5. **No DeepWork Runtime**:
-   - DeepWork CLI is NOT running during execution
-   - Everything happens through Claude Code's native execution
-   - Skills are just markdown instruction files that Claude interprets
+All state is managed by the MCP server in `.deepwork/tmp/sessions/`. The agent never reads session files directly.
 
 ## Context Passing Between Steps
 
-Since there's no DeepWork runtime process, context is passed through:
-
 ### 1. Filesystem (Primary Mechanism)
 
-On a work branch like `deepwork/competitive_research-acme-2026-01-11`, outputs are created in the project:
+On a work branch like `deepwork/competitive_research-acme-2026-01-11`, outputs are created in the project. Step arguments with `type: file_path` reference files on disk; `type: string` values are passed inline through the MCP server.
 
-```
-(project root on work branch)
-├── competitors.md              ← Step 1 output
-├── primary_research.md          ← Step 2 output
-├── competitor_profiles/         ← Step 2 output
-│   ├── acme_corp.md
-│   ├── widgets_inc.md
-│   └── ...
-├── secondary_research.md        ← Step 3 output
-├── comparison_matrix.md         ← Step 4 output
-└── positioning_strategy.md      ← Step 5 output
-```
+### 2. Step Instructions
 
-Each command instructs Claude to:
-- Read specific input files from previous steps
-- Write specific output files for this step
-- All on the same work branch
-
-### 2. Skill Instructions
-
-Each skill file explicitly states its dependencies:
-
-```markdown
-### Prerequisites
-This step requires outputs from:
-- Step 1 (identify_competitors): competitors.md
-- Step 2 (primary_research): primary_research.md
-
-### Your Task
-Conduct web research on secondary sources for each competitor identified in competitors.md.
-```
+Each step's instructions (inline in job.yml) describe what inputs to read and what outputs to produce. The MCP server automatically includes input values/references when returning step instructions.
 
 ### 3. Git History
 
-When working on similar jobs:
-- User: "Do competitive research for Acme Corp, similar to our Widget Corp analysis"
-- Claude can read old existing branches like `deepwork/competitive_research-widget-corp-2024-01-05` from git history
-- Uses it as a template for style, depth, format
-
-### 4. No Environment Variables Needed
-
-Unlike the original architecture, we don't need special environment variables because:
-- The work branch name encodes the job instance
-- File paths are explicit in skill instructions
-- Git provides all the state management
+When working on similar jobs, agents can read old branches from git history to use as templates for style, depth, and format.
 
 ## Branching Strategy
 
@@ -665,8 +531,8 @@ Claude: I'll analyze this conversation for DeepWork job executions...
         2. Output format for competitor_profiles/ not specified
 
         Improvements made:
-        ✓ Updated steps/primary_research.md with source prioritization guidance
-        ✓ Added output format example to steps/primary_research.md
+        ✓ Updated job.yml step instructions with source prioritization guidance
+        ✓ Added output format example to primary_research step instructions
 
         Bespoke learnings captured:
         ✓ Created AGENTS.md with project-specific notes about this competitive research instance
@@ -676,48 +542,16 @@ Claude: I'll analyze this conversation for DeepWork job executions...
 
 This standalone skill can be run anytime after executing a job to capture learnings and improve instructions.
 
-### Template System
+### Step Instructions at Runtime
 
-Templates are Markdown files with variable interpolation:
+When `start_workflow` or `finished_step` returns step instructions to the agent, the MCP server assembles them from the job definition:
 
-```markdown
-# {{STEP_NAME}}
+- **Common job info**: The `common_job_info_provided_to_all_steps_at_runtime` block from the workflow
+- **Inline instructions**: The `instructions` string from the step definition
+- **Inputs**: The values/file paths for all declared step inputs, resolved from previous step outputs
+- **Expected outputs**: The list of outputs the step must produce, with descriptions from `step_arguments`
 
-## Objective
-{{STEP_DESCRIPTION}}
-
-## Context
-You are working on: {{JOB_NAME}}
-Current step: {{STEP_ID}} ({{STEP_NUMBER}}/{{TOTAL_STEPS}})
-
-## Inputs
-{% for input in INPUTS %}
-- Read `{{input.file}}` for {{input.description}}
-{% endfor %}
-
-## Your Task
-[Detailed instructions for the AI agent...]
-
-## Output Format
-Create the following files:
-{% for output in OUTPUTS %}
-### {{output.file}}
-{{output.template}}
-{% endfor %}
-
-## Quality Checklist
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-## Examples
-{{EXAMPLES}}
-```
-
-Variables populated by runtime:
-- Job metadata: `{{JOB_NAME}}`, `{{JOB_DESCRIPTION}}`
-- Step metadata: `{{STEP_ID}}`, `{{STEP_NAME}}`, `{{STEP_NUMBER}}`
-- Context: `{{INPUTS}}`, `{{OUTPUTS}}`, `{{DEPENDENCIES}}`
-- Examples: `{{EXAMPLES}}` (loaded from `examples/` directory if present)
+There is no separate template engine or Jinja2 rendering. Instructions are composed directly from the job.yml data at runtime.
 
 ---
 
@@ -728,26 +562,30 @@ Variables populated by runtime:
 ```
 tests/
 ├── unit/                       # Unit tests for core components
-│   ├── test_job_parser.py
-│   ├── test_registry.py
-│   ├── test_runtime_engine.py
-│   └── test_template_renderer.py
-├── integration/                # Integration tests
-│   ├── test_job_import.py
-│   ├── test_workflow_execution.py
-│   └── test_git_integration.py
-├── e2e/                        # End-to-end tests
-│   ├── test_full_workflow.py
-│   └── test_multi_platform.py
-├── fixtures/                   # Test data
 │   ├── jobs/
-│   │   ├── simple_job/
-│   │   └── complex_job/
-│   ├── templates/
-│   └── mock_responses/
-└── mocks/                      # Mock AI agent responses
-    ├── claude_mock.py
-    └── gemini_mock.py
+│   │   ├── test_parser.py      # Job parser and dataclasses
+│   │   ├── test_discovery.py   # Job folder discovery
+│   │   └── mcp/
+│   │       ├── test_tools.py          # MCP tool implementations
+│   │       ├── test_state.py          # State management
+│   │       ├── test_quality_gate.py   # Quality gate (DeepWork Reviews)
+│   │       ├── test_schemas.py        # Pydantic models
+│   │       ├── test_server.py         # Server creation
+│   │       └── test_async_interface.py
+│   ├── cli/
+│   │   └── test_jobs_get_stack.py
+│   ├── review/                 # DeepWork Reviews tests
+│   └── test_validation.py      # Schema validation
+├── integration/                # Integration tests
+│   └── test_quality_gate_integration.py
+├── e2e/                        # End-to-end tests
+│   └── test_claude_code_integration.py
+└── fixtures/                   # Test data
+    └── jobs/
+        ├── simple_job/
+        ├── complex_job/
+        ├── fruits/
+        └── job_with_doc_spec/
 ```
 
 ### Test Strategy
@@ -773,9 +611,6 @@ Use fixtures to provide test data.
 ```python
 def test_large_job_parsing():
     """Ensure parser handles jobs with 50+ steps"""
-
-def test_template_rendering_performance():
-    """Benchmark template rendering with large datasets"""
 
 def test_git_operations_at_scale():
     """Test with repositories containing 100+ work branches"""
@@ -852,12 +687,16 @@ quality_criteria:
 
 ### Using Doc Specs in Jobs
 
-Reference doc specs in job.yml outputs:
+Reference doc specs in job.yml step arguments:
 
 ```yaml
-outputs:
-  - file: reports/monthly_spending.md
-    doc_spec: .deepwork/doc_specs/monthly_aws_report.md
+step_arguments:
+  - name: monthly_spending_report
+    description: "Monthly AWS spending report"
+    type: file_path
+    json_schema: .deepwork/doc_specs/monthly_aws_report_schema.json
+    review:
+      instructions: "Verify the report meets the doc spec quality criteria."
 ```
 
 ### How Doc Specs Are Used at Runtime
@@ -908,10 +747,6 @@ See `doc/doc-specs.md` for complete documentation.
 ### State Storage: Filesystem + Git
 - **Rationale**: Transparent, auditable, reviewable, collaborative
 - **Alternatives**: Database (opaque), JSON files (no versioning)
-
-### Template Engine: Jinja2 (dev dependency only)
-- **Rationale**: Industry standard, powerful, well-documented; used in development tooling, not at runtime
-- **Alternatives**: Mustache (too simple), custom (NIH syndrome)
 
 ### Validation: JSON Schema + Custom Scripts
 - **Rationale**: Flexible, extensible, supports both structure and semantics
@@ -992,26 +827,27 @@ Begins a new workflow session.
 - `goal: str` - What the user wants to accomplish
 - `job_name: str` - Name of the job
 - `workflow_name: str` - Name of the workflow within the job
+- `inputs: dict[str, str | list[str]] | None` - Inputs for the first step (file paths for `file_path` type, strings for `string` type)
 - `session_id: str` - Claude Code session ID (required)
 - `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
-**Returns**: Important note (agent instruction to clarify ambiguous requests), first step info (`ActiveStepInfo`), workflow stack
+**Returns**: First step info (`ActiveStepInfo`) with resolved inputs, workflow stack
 
 #### 3. `finished_step`
 Reports step completion and gets next instructions.
 
 **Parameters**:
-- `outputs: dict[str, str | list[str]]` - Map of output names to file path(s)
-- `notes: str | None` - Optional notes about work done
+- `outputs: dict[str, str | list[str]]` - Map of output names to file path(s) or string values
+- `work_summary: str | None` - Summary of the work done in the step
 - `quality_review_override_reason: str | None` - If provided, skips quality review
 - `session_id: str` - Claude Code session ID (required)
 - `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
 **Returns**:
-- `status: "needs_work" | "next_step" | "workflow_complete"`
-- If `needs_work`: feedback from quality gate, failed criteria
-- If `next_step`: next step instructions
-- If `workflow_complete`: summary of all outputs
+- `status: "needs_review" | "next_step" | "workflow_complete"`
+- If `needs_review`: review instructions in the same format as the `/review` skill, with guidance on running reviews and calling `mark_review_as_passed` or fixing issues
+- If `next_step`: next step instructions (with resolved inputs)
+- If `workflow_complete`: summary of all outputs, plus `post_workflow_instructions` from the workflow definition
 
 #### 4. `abort_workflow`
 Aborts the current workflow and returns to the parent (if nested).
@@ -1035,9 +871,8 @@ Navigates back to a prior step, clearing progress from that step onward.
 
 **Behavior**:
 - Validates the target step exists in the workflow
-- Rejects forward navigation (target entry index > current entry index)
+- Rejects forward navigation (target step index > current step index)
 - Clears session tracking state for all steps from target onward (files on disk are not deleted)
-- For concurrent entries, navigates to the first step in the entry
 - Marks the target step as started
 
 #### 6. `get_review_instructions`
@@ -1084,9 +919,9 @@ class StateManager:
     async def create_session(session_id, ..., agent_id=None) -> WorkflowSession
     def resolve_session(session_id, agent_id=None) -> WorkflowSession
     async def start_step(session_id, step_id, agent_id=None) -> None
-    async def complete_step(session_id, step_id, outputs, notes, agent_id=None) -> None
-    async def advance_to_step(session_id, step_id, entry_index, agent_id=None) -> None
-    async def go_to_step(session_id, step_id, entry_index, invalidate_step_ids, agent_id=None) -> None
+    async def complete_step(session_id, step_id, outputs, work_summary, agent_id=None) -> None
+    async def advance_to_step(session_id, step_id, step_index, agent_id=None) -> None
+    async def go_to_step(session_id, step_id, step_index, invalidate_step_ids, agent_id=None) -> None
     async def complete_workflow(session_id, agent_id=None) -> None
     async def abort_workflow(session_id, explanation, agent_id=None) -> tuple
     async def record_quality_attempt(session_id, step_id, agent_id=None) -> int
@@ -1099,35 +934,26 @@ class StateManager:
 Session state includes:
 - Session ID and timestamps
 - Job/workflow/instance identification
-- Current step and entry index
-- Per-step progress (started_at, completed_at, outputs, quality_attempts)
+- Current step and step index
+- Per-step progress (started_at, completed_at, outputs, work_summary, quality_attempts)
 
 ### Quality Gate (`jobs/mcp/quality_gate.py`)
 
-Evaluates step outputs against quality criteria:
+The quality gate integrates with the DeepWork Reviews infrastructure rather than invoking a separate Claude CLI subprocess. When `finished_step` is called:
 
-```python
-class QualityGate:
-    async def evaluate_reviews(
-        reviews: list[dict],
-        outputs: dict[str, str | list[str]],
-        output_specs: dict[str, str],
-        project_root: Path,
-        notes: str | None = None,
-    ) -> list[ReviewResult]
+1. **JSON schema validation**: If a `json_schema` is defined for any file argument, the output file is validated against it first. Validation errors cause immediate failure before any reviews run.
 
-    async def build_review_instructions_file(
-        reviews: list[dict],
-        outputs: dict[str, str | list[str]],
-        output_specs: dict[str, str],
-        project_root: Path,
-        notes: str | None = None,
-    ) -> str
-```
+2. **Build dynamic review rules**: For each `review` block defined on step outputs (either inline on the step or on the `step_argument`), a `ReviewRule` object is constructed dynamically. The `common_job_info_provided_to_all_steps_at_runtime` is included in review instructions for context.
 
-The quality gate supports two modes:
-- **External runner** (`evaluate_reviews`): Invokes Claude Code via subprocess to evaluate each review, returns list of failed `ReviewResult` objects
-- **Self-review** (`build_review_instructions_file`): Generates a review instructions file for the agent to spawn a subagent for self-review
+3. **Process quality attributes**: If the step defines `process_quality_attributes`, a review is created that evaluates the `work_summary` against those criteria. The reviewer is instructed to tell the agent to fix its work or the `work_summary` if issues are found.
+
+4. **Merge with `.deepreview` rules**: The dynamically built rules are merged with any `.deepreview` file-defined rules that match the output files. The changed file list comes from the `outputs` parameter (not git diff).
+
+5. **Apply review strategies**: Review strategies (`individual`, `matches_together`, etc.) work normally on the merged rule set.
+
+6. **Honor pass caching**: Reviews that have already passed (via `mark_review_as_passed`) are skipped.
+
+7. **Return review instructions**: If there are reviews to run, they are returned to the agent in the same format as the `/review` skill, along with instructions on how to run them and call `mark_review_as_passed` or fix issues. The agent then runs reviews itself until all pass.
 
 ### Status Writer (`jobs/mcp/status.py`)
 
@@ -1159,10 +985,19 @@ Status writes are fire-and-forget: failures are logged as warnings and never fai
 Pydantic models for all tool inputs and outputs:
 - `StartWorkflowInput`, `FinishedStepInput`, `AbortWorkflowInput`, `GoToStepInput`
 - `GetWorkflowsResponse`, `StartWorkflowResponse`, `FinishedStepResponse`, `AbortWorkflowResponse`, `GoToStepResponse`
-- `ActiveStepInfo`, `ExpectedOutput`, `ReviewInfo`, `ReviewResult`, `StackEntry`
+- `ActiveStepInfo`, `StepInputInfo`, `ExpectedOutput`, `StackEntry`
 - `JobInfo`, `WorkflowInfo`, `JobLoadErrorInfo`
 - `WorkflowSession`, `StepProgress`, `StepHistoryEntry`
-- `QualityGateResult`, `QualityCriteriaResult`
+
+### Parser Dataclasses (`jobs/parser.py`)
+
+The parser produces these dataclasses from `job.yml`:
+- `ReviewBlock` - Review instructions (same format as `.deepreview` rules)
+- `StepArgument` - Named data item with type, description, optional review and json_schema
+- `StepInputRef` - Reference to a step argument as an input (with `required` flag)
+- `StepOutputRef` - Reference to a step argument as an output (with `required` flag, optional `review`)
+- `SubWorkflowRef` - Reference to another workflow (with `workflow_name`, optional `workflow_job`)
+- `WorkflowStep` - A step within a workflow (name, instructions or sub_workflow, inputs, outputs, process_quality_attributes)
 
 ## MCP Server Registration
 
@@ -1173,7 +1008,7 @@ The plugin's `.mcp.json` registers the MCP server automatically:
   "mcpServers": {
     "deepwork": {
       "command": "uvx",
-      "args": ["deepwork", "serve", "--path", ".", "--external-runner", "claude"]
+      "args": ["deepwork", "serve", "--path", "."]
     }
   }
 }
@@ -1193,7 +1028,7 @@ Execute multi-step workflows with quality gate checkpoints.
 2. Start a workflow: Call `start_workflow` with your goal
 3. Execute steps: Follow the instructions returned
 4. Checkpoint: Call `finished_step` with your outputs
-5. Iterate or continue: Handle needs_work, next_step, or workflow_complete
+5. Iterate or continue: Handle needs_review, next_step, or workflow_complete
 ```
 
 ## MCP Execution Flow
@@ -1204,42 +1039,27 @@ Execute multi-step workflows with quality gate checkpoints.
 
 2. **Agent calls `start_workflow`**
    - MCP server creates session, generates branch name
-   - Returns first step instructions and expected outputs
+   - Returns first step instructions with resolved inputs and expected outputs
 
 3. **Agent executes step**
-   - Follows step instructions
-   - Creates output files
+   - Follows inline step instructions
+   - Creates output files / produces string values
 
 4. **Agent calls `finished_step`**
-   - MCP server evaluates outputs against quality criteria (if configured)
-   - If `needs_work`: returns feedback for agent to fix issues
-   - If `next_step`: returns next step instructions
-   - If `workflow_complete`: workflow finished
+   - MCP server validates outputs, runs json_schema checks, then runs DeepWork Reviews
+   - If `needs_review`: returns review instructions for agent to run reviews (same format as `/review` skill)
+   - If `next_step`: returns next step instructions with resolved inputs
+   - If `workflow_complete`: returns summary and `post_workflow_instructions`
 
 5. **Loop continues until workflow complete**
-
-## Quality Gate
-
-Quality gate is enabled by default and uses Claude Code to evaluate step outputs
-against quality criteria. The command is constructed internally with proper flag
-ordering (see `doc/reference/calling_claude_in_print_mode.md`).
-
-To disable quality gate:
-
-```bash
-deepwork serve --no-quality-gate
-```
 
 ## Serve Command
 
 Start the MCP server manually:
 
 ```bash
-# Basic usage (quality gate enabled by default)
+# Basic usage
 deepwork serve
-
-# With quality gate disabled
-deepwork serve --no-quality-gate
 
 # For a specific project
 deepwork serve --path /path/to/project
@@ -1265,7 +1085,6 @@ deepwork serve --transport sse --port 8000
 - [Claude Code Documentation](https://claude.com/claude-code)
 - [Git Workflows](https://www.atlassian.com/git/tutorials/comparing-workflows)
 - [JSON Schema](https://json-schema.org/)
-- [Jinja2 Documentation](https://jinja.palletsprojects.com/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 - [FastMCP Documentation](https://github.com/jlowin/fastmcp)
 

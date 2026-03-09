@@ -46,17 +46,7 @@ def get_stack(path: str) -> None:
 
 
 def _list_sessions_sync(sessions_base: Path) -> list[WorkflowSession]:
-    """Read all session state files synchronously.
-
-    Scans .deepwork/tmp/sessions/<platform>/session-<id>/state.json files
-    and extracts all workflow sessions from each stack.
-
-    Args:
-        sessions_base: Path to .deepwork/tmp/sessions/ directory.
-
-    Returns:
-        List of all WorkflowSession objects across all stacks, sorted by started_at descending.
-    """
+    """Read all session state files synchronously."""
     if not sessions_base.exists():
         return []
 
@@ -74,14 +64,7 @@ def _list_sessions_sync(sessions_base: Path) -> list[WorkflowSession]:
 
 
 def _get_active_sessions(project_root: Path) -> dict[str, Any]:
-    """Load active sessions and enrich with job context.
-
-    Args:
-        project_root: Resolved path to the project root.
-
-    Returns:
-        Dict with "active_sessions" list ready for JSON serialization.
-    """
+    """Load active sessions and enrich with job context."""
     sessions_base = project_root / ".deepwork" / "tmp" / "sessions"
     all_sessions = _list_sessions_sync(sessions_base)
 
@@ -112,21 +95,22 @@ def _get_active_sessions(project_root: Path) -> dict[str, Any]:
         if job_dir:
             try:
                 job_def = parse_job_definition(job_dir)
-                entry["common_job_info"] = job_def.common_job_info_provided_to_all_steps_at_runtime
 
-                step = job_def.get_step(session.current_step_id)
-                if step:
-                    instructions_path = job_dir / step.instructions_file
-                    if instructions_path.exists():
-                        entry["current_step_instructions"] = instructions_path.read_text(
-                            encoding="utf-8"
-                        )
+                # Get common_job_info from the active workflow
+                wf = job_def.get_workflow(session.workflow_name)
+                if wf:
+                    entry["common_job_info"] = wf.common_job_info
+
+                    # Get current step instructions
+                    step = wf.get_step(session.current_step_id)
+                    if step and step.instructions:
+                        entry["current_step_instructions"] = step.instructions
 
                     # Add step position in workflow
-                    position = job_def.get_step_position_in_workflow(session.current_step_id)
-                    if position:
-                        entry["step_number"] = position[0]
-                        entry["total_steps"] = position[1]
+                    step_index = wf.get_step_index(session.current_step_id)
+                    if step_index is not None:
+                        entry["step_number"] = step_index + 1
+                        entry["total_steps"] = len(wf.steps)
             except ParseError:
                 logger.warning("Could not parse job definition for '%s'", session.job_name)
 

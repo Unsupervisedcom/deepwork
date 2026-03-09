@@ -1,23 +1,26 @@
-# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: simple_job
-version: "0.1.0"
 summary: "A simple single-step job for testing"
-common_job_info_provided_to_all_steps_at_runtime: |
-  A simple single-step job for testing the DeepWork framework.
-  This job demonstrates the minimal structure required for a valid job definition.
-
-steps:
-  - id: single_step
-    name: "Single Step"
-    description: "A single step that performs a task"
-    instructions_file: steps/single_step.md
-    inputs:
-      - name: input_param
-        description: "An input parameter"
-    outputs:
-      output.md:
-        type: file
-        description: "The output file produced by this step"
-        required: true
-    dependencies: []
-    reviews: []
+step_arguments:
+  - name: input_param
+    description: "An input parameter"
+    type: string
+  - name: output
+    description: "The output file produced by this step"
+    type: file_path
+workflows:
+  main:
+    summary: "Run the single step"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      A simple single-step job for testing the DeepWork framework.
+      This job demonstrates the minimal structure required for a valid job definition.
+    steps:
+      - name: single_step
+        instructions: |
+          Perform the task using the provided input parameter.
+          Write the result to the output file.
+        inputs:
+          input_param:
+            required: true
+        outputs:
+          output:
+            required: true
