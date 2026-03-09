@@ -20,16 +20,19 @@ def _create_session_file(
     status: str = "active",
     current_step_id: str = "step1",
     goal: str = "Test goal",
-    instance_id: str | None = None,
     step_progress: dict | None = None,
+    platform: str = "claude",
 ) -> Path:
-    """Create a session JSON file for testing."""
-    sessions_dir.mkdir(parents=True, exist_ok=True)
-    data = {
+    """Create a session JSON file for testing.
+
+    Writes to the new persistent state path structure:
+    sessions_dir/sessions/<platform>/session-<id>/state.json
+    with the workflow_stack format.
+    """
+    session_data = {
         "session_id": session_id,
         "job_name": job_name,
         "workflow_name": workflow_name,
-        "instance_id": instance_id,
         "goal": goal,
         "current_step_id": current_step_id,
         "current_entry_index": 0,
@@ -39,8 +42,10 @@ def _create_session_file(
         "status": status,
         "abort_reason": None,
     }
-    path = sessions_dir / f"session_{session_id}.json"
-    path.write_text(json.dumps(data))
+    state_dir = sessions_dir / "sessions" / platform / f"session-{session_id}"
+    state_dir.mkdir(parents=True, exist_ok=True)
+    path = state_dir / "state.json"
+    path.write_text(json.dumps({"workflow_stack": [session_data]}))
     return path
 
 
@@ -170,22 +175,6 @@ class TestGetStackActiveSessions:
         assert session["current_step_id"] == "step1"
         assert session["common_job_info"] == "Common info for my_job"
         assert "Instructions for step1" in session["current_step_instructions"]
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.6).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_session_with_instance_id(self, tmp_path: Path) -> None:
-        """Session with instance_id is included in output."""
-        sessions_dir = tmp_path / ".deepwork" / "tmp"
-        _create_session_file(sessions_dir, "def67890", job_name="my_job", instance_id="acme")
-        _create_minimal_job(tmp_path / ".deepwork" / "jobs", "my_job")
-
-        runner = CliRunner()
-        result = runner.invoke(get_stack, ["--path", str(tmp_path)])
-        assert result.exit_code == 0
-
-        data = json.loads(result.output)
-        session = data["active_sessions"][0]
-        assert session["instance_id"] == "acme"
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.4.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES

@@ -84,6 +84,19 @@
               # Also register as a uv tool so `uvx deepwork serve` uses local source
               uv tool install -e "$REPO_ROOT" --quiet 2>/dev/null || true
 
+              # Create claude wrapper script so direnv (which can't export functions) works
+              _claude_real=$(PATH="$(echo "$PATH" | sed "s|$REPO_ROOT/.venv/bin:||g")" command -v claude)
+              if [ -n "$_claude_real" ]; then
+                cat > "$REPO_ROOT/.venv/bin/claude" <<WRAPPER
+#!/usr/bin/env bash
+exec "$_claude_real" \\
+  --plugin-dir "$REPO_ROOT/plugins/claude" \\
+  --plugin-dir "$REPO_ROOT/learning_agents" \\
+  "\$@"
+WRAPPER
+                chmod +x "$REPO_ROOT/.venv/bin/claude"
+              fi
+
               # Only show welcome message in interactive shells
               if [[ $- == *i* ]]; then
                 echo ""
@@ -94,6 +107,7 @@
                 echo ""
                 echo "Commands:"
                 echo "  deepwork --help    CLI (development version)"
+                echo "  claude             Claude Code (with deepwork + learning_agents plugins)"
                 echo "  pytest             Run tests"
                 echo "  ruff check src/    Lint code"
                 echo "  mypy src/          Type check"

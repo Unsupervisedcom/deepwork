@@ -135,23 +135,13 @@ class TestStartWorkflowInput:
             goal="Complete a task",
             job_name="test_job",
             workflow_name="main",
+            session_id="test-session",
         )
 
         assert input_data.goal == "Complete a task"
         assert input_data.job_name == "test_job"
         assert input_data.workflow_name == "main"
-        assert input_data.instance_id is None
-
-    def test_with_instance_id(self) -> None:
-        """Test with optional instance_id."""
-        input_data = StartWorkflowInput(
-            goal="Complete a task",
-            job_name="test_job",
-            workflow_name="main",
-            instance_id="acme",
-        )
-
-        assert input_data.instance_id == "acme"
+        assert input_data.session_id == "test-session"
 
 
 class TestFinishedStepInput:
@@ -160,7 +150,8 @@ class TestFinishedStepInput:
     def test_with_outputs(self) -> None:
         """Test with structured outputs."""
         input_data = FinishedStepInput(
-            outputs={"report": "report.md", "data_files": ["a.csv", "b.csv"]}
+            outputs={"report": "report.md", "data_files": ["a.csv", "b.csv"]},
+            session_id="test-session",
         )
 
         assert input_data.outputs == {"report": "report.md", "data_files": ["a.csv", "b.csv"]}
@@ -168,7 +159,7 @@ class TestFinishedStepInput:
 
     def test_with_empty_outputs(self) -> None:
         """Test with empty outputs dict (for steps with no outputs)."""
-        input_data = FinishedStepInput(outputs={})
+        input_data = FinishedStepInput(outputs={}, session_id="test-session")
 
         assert input_data.outputs == {}
 
@@ -177,6 +168,7 @@ class TestFinishedStepInput:
         input_data = FinishedStepInput(
             outputs={"output": "output.md"},
             notes="Completed successfully",
+            session_id="test-session",
         )
 
         assert input_data.notes == "Completed successfully"
@@ -465,7 +457,7 @@ class TestFinishedStepResponse:
 class TestStepProgress:
     """Tests for StepProgress model."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.18.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.16.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_new_step(self) -> None:
         """Test new step progress."""
@@ -481,7 +473,7 @@ class TestStepProgress:
 class TestWorkflowSession:
     """Tests for WorkflowSession model."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.18.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.16.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_basic_session(self) -> None:
         """Test basic session creation."""
@@ -499,7 +491,7 @@ class TestWorkflowSession:
         assert session.status == "active"
         assert session.completed_at is None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.18.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.16.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_to_dict(self) -> None:
         """Test converting session to dict."""
@@ -518,7 +510,7 @@ class TestWorkflowSession:
         assert data["session_id"] == "abc123"
         assert data["job_name"] == "test_job"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.18.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.16.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict(self) -> None:
         """Test creating session from dict."""

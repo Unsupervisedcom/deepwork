@@ -13,6 +13,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -170,7 +171,7 @@ class TestMCPWorkflowTools:
     """Tests for MCP workflow tools functionality."""
 
     @pytest.fixture
-    def project_with_job(self) -> Path:
+    def project_with_job(self) -> Generator[Path, None, None]:
         """Create a test project with a job definition."""
         tmpdir = tempfile.mkdtemp()
         project_dir = Path(tmpdir)
@@ -214,7 +215,7 @@ class TestMCPWorkflowTools:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_get_workflows_returns_jobs(self, project_with_job: Path) -> None:
         """Test that get_workflows returns available jobs and workflows."""
-        state_manager = StateManager(project_with_job)
+        state_manager = StateManager(project_root=project_with_job, platform="test")
         tools = WorkflowTools(project_with_job, state_manager)
 
         response = tools.get_workflows()
@@ -238,7 +239,7 @@ class TestMCPWorkflowTools:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow_creates_session(self, project_with_job: Path) -> None:
         """Test that start_workflow creates a new workflow session."""
-        state_manager = StateManager(project_with_job)
+        state_manager = StateManager(project_root=project_with_job, platform="test")
         tools = WorkflowTools(project_with_job, state_manager)
 
         # Get available workflows first
@@ -255,7 +256,7 @@ class TestMCPWorkflowTools:
             goal="Test identifying and classifying fruits",
             job_name="fruits",
             workflow_name=workflow_name,
-            instance_id="test-instance",
+            session_id="test-e2e-session",
         )
 
         response = await tools.start_workflow(input_data)
@@ -272,7 +273,7 @@ class TestMCPWorkflowTools:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_workflow_step_progression(self, project_with_job: Path) -> None:
         """Test that finished_step progresses through workflow steps."""
-        state_manager = StateManager(project_with_job)
+        state_manager = StateManager(project_root=project_with_job, platform="test")
         tools = WorkflowTools(project_with_job, state_manager)
 
         # Get workflows and start
@@ -289,6 +290,7 @@ class TestMCPWorkflowTools:
             goal="Test workflow progression",
             job_name="fruits",
             workflow_name=workflow_name,
+            session_id="test-e2e-session-2",
         )
         await tools.start_workflow(start_input)
 
@@ -300,6 +302,7 @@ class TestMCPWorkflowTools:
         finish_input = FinishedStepInput(
             outputs={"identified_fruits.md": str(output_file)},
             notes="Identified fruits from test input",
+            session_id="test-e2e-session-2",
         )
         finish_response = await tools.finished_step(finish_input)
 
@@ -327,7 +330,7 @@ class TestClaudeCodeMCPExecution:
     """
 
     @pytest.fixture
-    def project_with_mcp(self) -> Path:
+    def project_with_mcp(self) -> Generator[Path, None, None]:
         """Create a test project with MCP server configured."""
         tmpdir = tempfile.mkdtemp()
         project_dir = Path(tmpdir)

@@ -36,7 +36,7 @@ def jobs() -> None:
 def get_stack(path: str) -> None:
     """Output active workflow sessions as JSON.
 
-    Reads session state from .deepwork/tmp/ and enriches each active
+    Reads session state from .deepwork/tmp/sessions/ and enriches each active
     session with the job's common info and current step instructions.
     Used by post-compaction hooks to restore workflow context.
     """
@@ -45,23 +45,28 @@ def get_stack(path: str) -> None:
     click.echo(json.dumps(result, indent=2))
 
 
-def _list_sessions_sync(sessions_dir: Path) -> list[WorkflowSession]:
-    """Read all session files synchronously.
+def _list_sessions_sync(sessions_base: Path) -> list[WorkflowSession]:
+    """Read all session state files synchronously.
+
+    Scans .deepwork/tmp/sessions/<platform>/session-<id>/state.json files
+    and extracts all workflow sessions from each stack.
 
     Args:
-        sessions_dir: Path to .deepwork/tmp/ directory.
+        sessions_base: Path to .deepwork/tmp/sessions/ directory.
 
     Returns:
-        List of WorkflowSession objects, sorted by started_at descending.
+        List of all WorkflowSession objects across all stacks, sorted by started_at descending.
     """
-    if not sessions_dir.exists():
+    if not sessions_base.exists():
         return []
 
     sessions: list[WorkflowSession] = []
-    for session_file in sessions_dir.glob("session_*.json"):
+    for state_file in sessions_base.glob("*/session-*/state.json"):
         try:
-            data = json.loads(session_file.read_text(encoding="utf-8"))
-            sessions.append(WorkflowSession.from_dict(data))
+            data = json.loads(state_file.read_text(encoding="utf-8"))
+            stack = data.get("workflow_stack", [])
+            for entry in stack:
+                sessions.append(WorkflowSession.from_dict(entry))
         except (json.JSONDecodeError, ValueError):
             continue
 
@@ -77,8 +82,8 @@ def _get_active_sessions(project_root: Path) -> dict[str, Any]:
     Returns:
         Dict with "active_sessions" list ready for JSON serialization.
     """
-    sessions_dir = project_root / ".deepwork" / "tmp"
-    all_sessions = _list_sessions_sync(sessions_dir)
+    sessions_base = project_root / ".deepwork" / "tmp" / "sessions"
+    all_sessions = _list_sessions_sync(sessions_base)
 
     active = [s for s in all_sessions if s.status == "active"]
     if not active:
@@ -97,7 +102,6 @@ def _get_active_sessions(project_root: Path) -> dict[str, Any]:
             "workflow_name": session.workflow_name,
             "goal": session.goal,
             "current_step_id": session.current_step_id,
-            "instance_id": session.instance_id,
             "completed_steps": completed_steps,
             "common_job_info": None,
             "current_step_instructions": None,
