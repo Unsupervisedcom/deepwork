@@ -99,10 +99,6 @@ class StartWorkflowInput(BaseModel):
             "other agents in the same session won't see it in their stack."
         ),
     )
-    instance_id: str | None = Field(
-        default=None,
-        description="Optional identifier (e.g., 'acme', 'q1-2026')",
-    )
 
 
 class FinishedStepInput(BaseModel):
@@ -392,7 +388,6 @@ class WorkflowSession(BaseModel):
     )
     job_name: str = Field(description="Name of the job")
     workflow_name: str = Field(description="Name of the workflow")
-    instance_id: str | None = Field(default=None, description="Instance identifier")
     goal: str = Field(description="User's goal for this workflow")
     current_step_id: str = Field(description="Current step in workflow")
     current_entry_index: int = Field(

@@ -102,7 +102,6 @@ def _get_active_sessions(project_root: Path) -> dict[str, Any]:
             "workflow_name": session.workflow_name,
             "goal": session.goal,
             "current_step_id": session.current_step_id,
-            "instance_id": session.instance_id,
             "completed_steps": completed_steps,
             "common_job_info": None,
             "current_step_instructions": None,

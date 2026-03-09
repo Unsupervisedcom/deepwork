@@ -127,10 +127,7 @@ def create_server(
         """Log a tool call with stack information."""
         log_data: dict[str, Any] = {"tool": tool_name}
         if session_id:
-            stack = [
-                entry.model_dump()
-                for entry in state_manager.get_stack(session_id, agent_id)
-            ]
+            stack = [entry.model_dump() for entry in state_manager.get_stack(session_id, agent_id)]
             log_data["stack"] = stack
             log_data["stack_depth"] = len(stack)
         if params:
@@ -156,8 +153,7 @@ def create_server(
             "Initializes state tracking and returns the first step's instructions. "
             "Required parameters: goal (what user wants), job_name, workflow_name, "
             "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
-            "Optional: instance_id for naming (e.g., 'acme', 'q1-2026'), "
-            "agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents). "
+            "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents). "
             "Supports nested workflows - starting a workflow while one is active "
             "pushes onto the stack. Use abort_workflow to cancel and return to parent."
         )
@@ -168,7 +164,6 @@ def create_server(
         workflow_name: str,
         session_id: str,
         agent_id: str | None = None,
-        instance_id: str | None = None,
     ) -> dict[str, Any]:
         """Start a workflow and get first step instructions."""
         _log_tool_call(
@@ -177,7 +172,6 @@ def create_server(
                 "goal": goal,
                 "job_name": job_name,
                 "workflow_name": workflow_name,
-                "instance_id": instance_id,
                 "agent_id": agent_id,
             },
             session_id=session_id,
@@ -189,7 +183,6 @@ def create_server(
             workflow_name=workflow_name,
             session_id=session_id,
             agent_id=agent_id,
-            instance_id=instance_id,
         )
         response = await tools.start_workflow(input_data)
         return response.model_dump()
@@ -294,9 +287,7 @@ def create_server(
             session_id=session_id,
             agent_id=agent_id,
         )
-        input_data = GoToStepInput(
-            step_id=step_id, session_id=session_id, agent_id=agent_id
-        )
+        input_data = GoToStepInput(step_id=step_id, session_id=session_id, agent_id=agent_id)
         response = await tools.go_to_step(input_data)
         return response.model_dump()
 
@@ -424,7 +415,6 @@ Use `go_to_step` to navigate back to a prior step when earlier outputs need revi
 - Always call `get_workflows` first to understand available options
 - Provide clear goals when starting - they're used for context
 - Create all expected outputs before calling `finished_step`
-- Use instance_id for meaningful names (e.g., client name, quarter)
 - Read quality gate feedback carefully before retrying
 - Check the `stack` field in responses to understand nesting depth
 - Use `abort_workflow` rather than leaving workflows in a broken state

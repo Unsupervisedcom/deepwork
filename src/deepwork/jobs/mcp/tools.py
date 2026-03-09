@@ -397,7 +397,6 @@ class WorkflowTools:
             workflow_name=workflow.name,
             goal=input_data.goal,
             first_step_id=first_step_id,
-            instance_id=input_data.instance_id,
             agent_id=aid,
         )
 
@@ -582,9 +581,7 @@ class WorkflowTools:
             raise ToolError(f"Next step not found: {next_step_id}")
 
         # Advance session
-        await self.state_manager.advance_to_step(
-            sid, next_step_id, next_entry_index, agent_id=aid
-        )
+        await self.state_manager.advance_to_step(sid, next_step_id, next_entry_index, agent_id=aid)
         await self.state_manager.start_step(sid, next_step_id, agent_id=aid)
 
         # Get instructions

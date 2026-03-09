@@ -20,6 +20,8 @@ SESSION_ID = "async-test-session"
 class TestAsyncInterfaceRegression:
     """Tests that verify async interface contract is maintained."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.15.1, JOBS-REQ-003.15.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_state_manager_async_methods(self) -> None:
         """Verify StateManager methods that must be async remain async."""
         async_methods = [
@@ -40,6 +42,8 @@ class TestAsyncInterfaceRegression:
                 f"This is required for concurrent access safety."
             )
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.1.4, JOBS-REQ-003.15.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_state_manager_has_lock(self, tmp_path: Path) -> None:
         """Verify StateManager has an asyncio.Lock for thread safety."""
         manager = StateManager(project_root=tmp_path, platform="test")

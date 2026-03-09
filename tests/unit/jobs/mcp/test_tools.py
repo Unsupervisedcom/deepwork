@@ -235,7 +235,6 @@ workflows:
             goal="Complete the test job",
             job_name="test_job",
             workflow_name="main",
-            instance_id="test-instance",
             session_id=SESSION_ID,
         )
 

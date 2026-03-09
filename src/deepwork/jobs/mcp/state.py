@@ -122,9 +122,7 @@ class StateManager:
         content = json.dumps(data, indent=2)
 
         # Write to a temp file then atomically rename to avoid partial reads
-        fd, tmp_path = tempfile.mkstemp(
-            dir=str(state_file.parent), suffix=".tmp"
-        )
+        fd, tmp_path = tempfile.mkstemp(dir=str(state_file.parent), suffix=".tmp")
         try:
             async with aiofiles.open(fd, "w", encoding="utf-8", closefd=True) as f:
                 await f.write(content)
@@ -144,7 +142,6 @@ class StateManager:
         workflow_name: str,
         goal: str,
         first_step_id: str,
-        instance_id: str | None = None,
         agent_id: str | None = None,
     ) -> WorkflowSession:
         """Create a new workflow session and push onto the stack.
@@ -155,7 +152,6 @@ class StateManager:
             workflow_name: Name of the workflow
             goal: User's goal for this workflow
             first_step_id: ID of the first step
-            instance_id: Optional instance identifier
             agent_id: Optional agent ID for sub-agent scoped state
 
         Returns:
@@ -169,7 +165,6 @@ class StateManager:
                 session_id=session_id,
                 job_name=job_name,
                 workflow_name=workflow_name,
-                instance_id=instance_id,
                 goal=goal,
                 current_step_id=first_step_id,
                 current_entry_index=0,
@@ -207,7 +202,9 @@ class StateManager:
         try:
             data = json.loads(content)
         except json.JSONDecodeError as exc:
-            raise StateError("No active workflow session. Use start_workflow to begin a workflow.") from exc
+            raise StateError(
+                "No active workflow session. Use start_workflow to begin a workflow."
+            ) from exc
 
         stack_data = data.get("workflow_stack", [])
         if not stack_data:
@@ -215,9 +212,7 @@ class StateManager:
 
         return WorkflowSession.from_dict(stack_data[-1])
 
-    async def start_step(
-        self, session_id: str, step_id: str, agent_id: str | None = None
-    ) -> None:
+    async def start_step(self, session_id: str, step_id: str, agent_id: str | None = None) -> None:
         """Mark a step as started.
 
         Args:
@@ -485,9 +480,7 @@ class StateManager:
             all_outputs.update(progress.outputs)
         return all_outputs
 
-    def get_stack(
-        self, session_id: str, agent_id: str | None = None
-    ) -> list[StackEntry]:
+    def get_stack(self, session_id: str, agent_id: str | None = None) -> list[StackEntry]:
         """Get the current workflow stack as StackEntry objects.
 
         When agent_id is provided, returns the main stack concatenated with
@@ -508,8 +501,7 @@ class StateManager:
             try:
                 data = json.loads(content)
                 main_stack = [
-                    WorkflowSession.from_dict(entry)
-                    for entry in data.get("workflow_stack", [])
+                    WorkflowSession.from_dict(entry) for entry in data.get("workflow_stack", [])
                 ]
             except json.JSONDecodeError:
                 pass
@@ -522,8 +514,7 @@ class StateManager:
                 try:
                     data = json.loads(content)
                     agent_stack = [
-                        WorkflowSession.from_dict(entry)
-                        for entry in data.get("workflow_stack", [])
+                        WorkflowSession.from_dict(entry) for entry in data.get("workflow_stack", [])
                     ]
                 except json.JSONDecodeError:
                     pass
@@ -537,9 +528,7 @@ class StateManager:
             for s in combined
         ]
 
-    def get_stack_depth(
-        self, session_id: str, agent_id: str | None = None
-    ) -> int:
+    def get_stack_depth(self, session_id: str, agent_id: str | None = None) -> int:
         """Get the current stack depth.
 
         Args:

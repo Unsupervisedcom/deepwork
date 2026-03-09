@@ -142,19 +142,6 @@ class TestStartWorkflowInput:
         assert input_data.job_name == "test_job"
         assert input_data.workflow_name == "main"
         assert input_data.session_id == "test-session"
-        assert input_data.instance_id is None
-
-    def test_with_instance_id(self) -> None:
-        """Test with optional instance_id."""
-        input_data = StartWorkflowInput(
-            goal="Complete a task",
-            job_name="test_job",
-            workflow_name="main",
-            session_id="test-session",
-            instance_id="acme",
-        )
-
-        assert input_data.instance_id == "acme"
 
 
 class TestFinishedStepInput:

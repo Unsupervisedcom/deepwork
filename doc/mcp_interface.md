@@ -64,7 +64,8 @@ Start a new workflow session. Creates a git branch, initializes state tracking, 
 | `goal` | `string` | Yes | What the user wants to accomplish |
 | `job_name` | `string` | Yes | Name of the job |
 | `workflow_name` | `string` | Yes | Name of the workflow within the job. If the name doesn't match but the job has only one workflow, that workflow is selected automatically. If the job has multiple workflows, an error is returned listing the available workflow names. |
-| `instance_id` | `string \| null` | No | Optional identifier for naming (e.g., 'acme', 'q1-2026') |
+| `session_id` | `string` | Yes | The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). Identifies the persistent state storage for this agent session. |
+| `agent_id` | `string \| null` | No | The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), if running as a sub-agent. When set, this workflow is scoped to this agent. |
 
 #### Returns
 
@@ -88,7 +89,8 @@ Report that you've finished a workflow step. Validates outputs against quality c
 | `outputs` | `Record<string, string \| string[]>` | Yes | Map of output names to file path(s). For outputs declared as type `file`: pass a single string path (e.g. `"report.md"`). For outputs declared as type `files`: pass a list of string paths (e.g. `["a.md", "b.md"]`). Outputs with `required: false` can be omitted. Check `step_expected_outputs` to see each output's declared type and required status. |
 | `notes` | `string \| null` | No | Optional notes about work done |
 | `quality_review_override_reason` | `string \| null` | No | If provided, skips quality review (must explain why) |
-| `session_id` | `string \| null` | No | Target a specific workflow session by ID. Use when multiple workflows are active concurrently. If omitted, operates on the top-of-stack session. The session_id is returned in `ActiveStepInfo` from `start_workflow` and `finished_step`. |
+| `session_id` | `string` | Yes | The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). Identifies the persistent state storage for this agent session. |
+| `agent_id` | `string \| null` | No | The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), if running as a sub-agent. When set, operates on this agent's scoped workflow stack. |
 
 #### Returns
 
@@ -125,7 +127,8 @@ Abort the current workflow and return to the parent workflow (if nested). Use th
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `explanation` | `string` | Yes | Why the workflow is being aborted |
-| `session_id` | `string \| null` | No | Target a specific workflow session by ID. Use when multiple workflows are active concurrently. If omitted, aborts the top-of-stack session. |
+| `session_id` | `string` | Yes | The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). Identifies the persistent state storage for this agent session. |
+| `agent_id` | `string \| null` | No | The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), if running as a sub-agent. When set, operates on this agent's scoped workflow stack. |
 
 #### Returns
 
@@ -151,7 +154,8 @@ Navigate back to a prior step in the current workflow. Clears all progress from 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `step_id` | `string` | Yes | ID of the step to navigate back to. Must exist in the current workflow. |
-| `session_id` | `string \| null` | No | Target a specific workflow session by ID. Use when multiple workflows are active concurrently. If omitted, operates on the top-of-stack session. |
+| `session_id` | `string` | Yes | The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). Identifies the persistent state storage for this agent session. |
+| `agent_id` | `string \| null` | No | The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), if running as a sub-agent. When set, operates on this agent's scoped workflow stack. |
 
 #### Returns
 
@@ -306,13 +310,13 @@ The `finished_step` tool returns one of three statuses:
    |
    Discover available jobs and workflows
    |
-2. start_workflow(goal, job_name, workflow_name)
+2. start_workflow(goal, job_name, workflow_name, session_id)
    |
    Get session_id, first step instructions
    |
 3. Execute step instructions, create outputs
    |
-4. finished_step(outputs)
+4. finished_step(outputs, session_id)
    |
    +-- status = "needs_work" -> Fix issues, goto 4
    +-- status = "next_step"  -> Execute new instructions, goto 4
@@ -420,6 +424,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
+| 2.0.0 | **Breaking**: `session_id` is now a required `string` parameter on all mutation tools (`start_workflow`, `finished_step`, `abort_workflow`, `go_to_step`). Added `agent_id` optional parameter for sub-agent scoping — sub-agents get their own isolated workflow stacks. State persistence path changed to `.deepwork/tmp/sessions/<platform>/session-<id>/state.json` (with sub-agent state in `agent_<agent_id>.json`). |
 | 1.9.0 | Added `go_to_step` tool for navigating back to prior steps. Clears all step progress from the target step onward, forcing re-execution of subsequent steps. Supports `session_id` for concurrent workflow safety. |
 | 1.8.0 | Added `how_to_invoke` field to `WorkflowInfo` in `get_workflows` response. Always populated with invocation instructions: when a workflow's `agent` field is set, directs callers to delegate via the Task tool; otherwise, directs callers to use the `start_workflow` MCP tool directly. Also added optional `agent` field to workflow definitions in job.yml. |
 | 1.7.0 | Added `mark_review_as_passed` tool for review pass caching. Instruction files now include an "After Review" section with the review ID. Reviews with a `.passed` marker are automatically skipped by `get_review_instructions`. |

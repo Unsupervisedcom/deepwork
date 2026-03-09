@@ -13,6 +13,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -170,7 +171,7 @@ class TestMCPWorkflowTools:
     """Tests for MCP workflow tools functionality."""
 
     @pytest.fixture
-    def project_with_job(self) -> Path:
+    def project_with_job(self) -> Generator[Path, None, None]:
         """Create a test project with a job definition."""
         tmpdir = tempfile.mkdtemp()
         project_dir = Path(tmpdir)
@@ -256,7 +257,6 @@ class TestMCPWorkflowTools:
             job_name="fruits",
             workflow_name=workflow_name,
             session_id="test-e2e-session",
-            instance_id="test-instance",
         )
 
         response = await tools.start_workflow(input_data)
@@ -330,7 +330,7 @@ class TestClaudeCodeMCPExecution:
     """
 
     @pytest.fixture
-    def project_with_mcp(self) -> Path:
+    def project_with_mcp(self) -> Generator[Path, None, None]:
         """Create a test project with MCP server configured."""
         tmpdir = tempfile.mkdtemp()
         project_dir = Path(tmpdir)

@@ -30,7 +30,7 @@ The StateManager manages workflow session state with support for stack-based nes
 6. The created session MUST have `current_entry_index: 0`.
 7. The created session MUST record the `started_at` timestamp in UTC ISO format.
 8. `create_session()` MUST persist the session by appending to the workflow stack on disk.
-9. The returned `WorkflowSession` MUST contain all provided parameters (session_id, job_name, workflow_name, goal, instance_id, first_step_id).
+9. The returned `WorkflowSession` MUST contain all provided parameters (session_id, job_name, workflow_name, goal, first_step_id).
 
 ### JOBS-REQ-003.4: State Persistence
 

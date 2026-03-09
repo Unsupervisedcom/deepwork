@@ -94,7 +94,7 @@ deepwork/                       # DeepWork tool repository
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── review/SKILL.md
 │   │   │   └── configure_reviews/SKILL.md
-│   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh
+│   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh
 │   │   └── .mcp.json           # MCP server config
 │   └── gemini/                 # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md
@@ -979,7 +979,8 @@ Begins a new workflow session.
 - `goal: str` - What the user wants to accomplish
 - `job_name: str` - Name of the job
 - `workflow_name: str` - Name of the workflow within the job
-- `instance_id: str | None` - Optional identifier (e.g., "acme", "q1-2026")
+- `session_id: str` - Claude Code session ID (required)
+- `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
 **Returns**: Session ID, branch name, first step instructions
 
@@ -990,7 +991,8 @@ Reports step completion and gets next instructions.
 - `outputs: dict[str, str | list[str]]` - Map of output names to file path(s)
 - `notes: str | None` - Optional notes about work done
 - `quality_review_override_reason: str | None` - If provided, skips quality review
-- `session_id: str | None` - Target a specific workflow session
+- `session_id: str` - Claude Code session ID (required)
+- `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
 **Returns**:
 - `status: "needs_work" | "next_step" | "workflow_complete"`
@@ -1003,7 +1005,8 @@ Aborts the current workflow and returns to the parent (if nested).
 
 **Parameters**:
 - `explanation: str` - Why the workflow is being aborted
-- `session_id: str | None` - Target a specific workflow session
+- `session_id: str` - Claude Code session ID (required)
+- `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
 **Returns**: Aborted workflow info, resumed parent info (if any), current stack
 
@@ -1012,7 +1015,8 @@ Navigates back to a prior step, clearing progress from that step onward.
 
 **Parameters**:
 - `step_id: str` - ID of the step to navigate back to
-- `session_id: str | None` - Target a specific workflow session
+- `session_id: str` - Claude Code session ID (required)
+- `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
 **Returns**: `begin_step` (step info for the target step), `invalidated_steps` (step IDs whose progress was cleared), `stack` (current workflow stack)
 
@@ -1059,21 +1063,23 @@ Cleanup between runs deletes only `.md` files, preserving `.passed` markers acro
 
 ### State Management (`jobs/mcp/state.py`)
 
-Manages workflow session state persisted to `.deepwork/tmp/session_[id].json`:
+Manages workflow session state persisted to `.deepwork/tmp/sessions/<platform>/session-<id>/state.json`. Sub-agents get isolated stacks in `agent_<agent_id>.json` alongside the main state file.
 
 ```python
 class StateManager:
-    async def create_session(...) -> WorkflowSession
-    def resolve_session(session_id=None) -> WorkflowSession
-    async def start_step(step_id, session_id=None) -> None
-    async def complete_step(step_id, outputs, notes, session_id=None) -> None
-    async def advance_to_step(step_id, entry_index, session_id=None) -> None
-    async def go_to_step(step_id, entry_index, invalidate_step_ids, session_id=None) -> None
-    async def complete_workflow(session_id=None) -> None
-    async def abort_workflow(explanation, session_id=None) -> tuple
-    async def record_quality_attempt(step_id, session_id=None) -> int
-    def get_all_outputs(session_id=None) -> dict
-    def get_stack() -> list[StackEntry]
+    def __init__(self, project_root: Path, platform: str)
+    async def create_session(session_id, ..., agent_id=None) -> WorkflowSession
+    def resolve_session(session_id, agent_id=None) -> WorkflowSession
+    async def start_step(session_id, step_id, agent_id=None) -> None
+    async def complete_step(session_id, step_id, outputs, notes, agent_id=None) -> None
+    async def advance_to_step(session_id, step_id, entry_index, agent_id=None) -> None
+    async def go_to_step(session_id, step_id, entry_index, invalidate_step_ids, agent_id=None) -> None
+    async def complete_workflow(session_id, agent_id=None) -> None
+    async def abort_workflow(session_id, explanation, agent_id=None) -> tuple
+    async def record_quality_attempt(session_id, step_id, agent_id=None) -> int
+    def get_all_outputs(session_id, agent_id=None) -> dict
+    def get_stack(session_id, agent_id=None) -> list[StackEntry]
+    def get_stack_depth(session_id, agent_id=None) -> int
 ```
 
 Session state includes:
