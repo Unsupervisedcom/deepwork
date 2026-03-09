@@ -301,13 +301,6 @@ For workflows that need to interact with websites, you can use any browser autom
 
 Here are some known issues that affect some early users — we're working on improving normal performance on these, but here are some known workarounds.
 
-### Stop hooks firing unexpectedly
-
-Occasionally, especially after updating a job or running the `deepwork_jobs learn` process after completing a task, Claude will get confused about which workflow it's running checks for. For now, if stop hooks fire when they shouldn't, you can either:
-- Ask claude `do we need to address any of these stop hooks or can we ignore them for now?`
-- Ignore the stop hooks and keep going until the workflow steps are complete
-- Run the `/clear` command to start a new context window (you'll have to re-run the job after this)
-
 ### Claude "just does the task" instead of using DeepWork
 
 If Claude attempts to bypass the workflow and do the task on its own, tell it explicitly to use the skill. You can also manually run the step command:
@@ -332,8 +325,7 @@ your-project/
 │   ├── tmp/               # Session state (created lazily)
 │   └── jobs/              # Job definitions
 │       └── job_name/
-│           ├── job.yml    # Job metadata
-│           └── steps/     # Step instructions
+│           └── job.yml    # Job definition (self-contained with inline instructions)
 ```
 
 </details>

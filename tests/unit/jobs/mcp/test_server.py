@@ -75,7 +75,6 @@ class TestCreateServerSchemaSetup:
         """create_server copies job.schema.json to .deepwork/ on startup."""
         create_server(
             project_root=tmp_path,
-            enable_quality_gate=False,
         )
 
         target = tmp_path / ".deepwork" / "job.schema.json"

@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from deepwork.jobs.schema import JOB_SCHEMA, LIFECYCLE_HOOK_EVENTS
+from deepwork.jobs.schema import JOB_SCHEMA
 from deepwork.utils.validation import ValidationError, validate_against_schema
 from deepwork.utils.yaml_utils import YAMLError, load_yaml
 
@@ -19,587 +19,292 @@ class ParseError(Exception):
 
 
 @dataclass
-class StepInput:
-    """Represents a step input (either user parameter or file from previous step)."""
+class ReviewBlock:
+    """A review rule for an output, matching .deepreview review block shape."""
 
-    # User parameter input
-    name: str | None = None
-    description: str | None = None
-
-    # File input from previous step
-    file: str | None = None
-    from_step: str | None = None
-
-    def is_user_input(self) -> bool:
-        """Check if this is a user parameter input."""
-        return self.name is not None and self.description is not None
-
-    def is_file_input(self) -> bool:
-        """Check if this is a file input from previous step."""
-        return self.file is not None and self.from_step is not None
+    strategy: str  # "individual" | "matches_together"
+    instructions: str
+    agent: dict[str, str] | None = None
+    additional_context: dict[str, bool] | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "StepInput":
-        """Create StepInput from dictionary."""
+    def from_dict(cls, data: dict[str, Any]) -> "ReviewBlock":
+        """Create ReviewBlock from dictionary."""
         return cls(
-            name=data.get("name"),
-            description=data.get("description"),
-            file=data.get("file"),
-            from_step=data.get("from_step"),
+            strategy=data["strategy"],
+            instructions=data["instructions"],
+            agent=data.get("agent"),
+            additional_context=data.get("additional_context"),
         )
 
 
 @dataclass
-class OutputSpec:
-    """Represents a step output specification with type information."""
+class StepArgument:
+    """A shared input/output definition referenced by steps."""
 
     name: str
-    type: str  # "file" or "files"
     description: str
-    required: bool
+    type: str  # "string" | "file_path"
+    review: ReviewBlock | None = None
+    json_schema: dict[str, Any] | None = None
 
     @classmethod
-    def from_dict(cls, name: str, data: dict[str, Any]) -> "OutputSpec":
-        """Create OutputSpec from output name and its specification dict."""
+    def from_dict(cls, data: dict[str, Any]) -> "StepArgument":
+        """Create StepArgument from dictionary."""
         return cls(
-            name=name,
-            type=data["type"],
-            description=data["description"],
-            required=data["required"],
-        )
-
-
-@dataclass
-class HookAction:
-    """Represents a hook action configuration.
-
-    Hook actions define what happens when a lifecycle hook is triggered.
-    Three types are supported:
-    - prompt: Inline prompt text for validation/action
-    - prompt_file: Path to a file containing the prompt
-    - script: Path to a shell script for custom logic
-    """
-
-    # Inline prompt
-    prompt: str | None = None
-
-    # Prompt file reference (relative to job directory)
-    prompt_file: str | None = None
-
-    # Shell script reference (relative to job directory)
-    script: str | None = None
-
-    def is_prompt(self) -> bool:
-        """Check if this is an inline prompt hook."""
-        return self.prompt is not None
-
-    def is_prompt_file(self) -> bool:
-        """Check if this is a prompt file reference hook."""
-        return self.prompt_file is not None
-
-    def is_script(self) -> bool:
-        """Check if this is a shell script hook."""
-        return self.script is not None
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "HookAction":
-        """Create HookAction from dictionary."""
-        return cls(
-            prompt=data.get("prompt"),
-            prompt_file=data.get("prompt_file"),
-            script=data.get("script"),
-        )
-
-
-# Backward compatibility alias
-StopHook = HookAction
-
-
-@dataclass
-class Review:
-    """Represents a quality review for step outputs."""
-
-    run_each: str  # "step" or output name
-    quality_criteria: dict[str, str]  # name → question
-    additional_review_guidance: str | None = None  # optional guidance for reviewer
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Review":
-        """Create Review from dictionary."""
-        return cls(
-            run_each=data["run_each"],
-            quality_criteria=data.get("quality_criteria", {}),
-            additional_review_guidance=data.get("additional_review_guidance"),
-        )
-
-
-@dataclass
-class Step:
-    """Represents a single step in a job."""
-
-    id: str
-    name: str
-    description: str
-    instructions_file: str
-    inputs: list[StepInput] = field(default_factory=list)
-    outputs: list[OutputSpec] = field(default_factory=list)
-    dependencies: list[str] = field(default_factory=list)
-
-    # New: hooks dict mapping lifecycle event names to HookAction lists
-    # Event names: after_agent, before_tool, before_prompt
-    hooks: dict[str, list[HookAction]] = field(default_factory=dict)
-
-    # If true, skill is user-invocable in menus. Default: false (hidden from menus).
-    exposed: bool = False
-
-    # Quality reviews to run when step completes
-    reviews: list[Review] = field(default_factory=list)
-
-    # Agent type for this step (e.g., "general-purpose"). When set, skill uses context: fork
-    agent: str | None = None
-
-    @property
-    def stop_hooks(self) -> list[HookAction]:
-        """
-        Backward compatibility property for stop_hooks.
-
-        Returns hooks for after_agent event.
-        """
-        return self.hooks.get("after_agent", [])
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Step":
-        """Create Step from dictionary."""
-        # Parse new hooks structure
-        hooks: dict[str, list[HookAction]] = {}
-        if "hooks" in data:
-            hooks_data = data["hooks"]
-            for event in LIFECYCLE_HOOK_EVENTS:
-                if event in hooks_data:
-                    hooks[event] = [HookAction.from_dict(h) for h in hooks_data[event]]
-
-        # Handle deprecated stop_hooks -> after_agent
-        if "stop_hooks" in data and data["stop_hooks"]:
-            # Merge with any existing after_agent hooks
-            after_agent_hooks = hooks.get("after_agent", [])
-            after_agent_hooks.extend([HookAction.from_dict(h) for h in data["stop_hooks"]])
-            hooks["after_agent"] = after_agent_hooks
-
-        return cls(
-            id=data["id"],
             name=data["name"],
             description=data["description"],
-            instructions_file=data["instructions_file"],
-            inputs=[StepInput.from_dict(inp) for inp in data.get("inputs", [])],
-            outputs=[
-                OutputSpec.from_dict(name, spec) for name, spec in data.get("outputs", {}).items()
-            ],
-            dependencies=data.get("dependencies", []),
-            hooks=hooks,
-            exposed=data.get("exposed", False),
-            reviews=[Review.from_dict(r) for r in data.get("reviews", [])],
-            agent=data.get("agent"),
+            type=data["type"],
+            review=ReviewBlock.from_dict(data["review"]) if "review" in data else None,
+            json_schema=data.get("json_schema"),
         )
 
 
 @dataclass
-class WorkflowStepEntry:
-    """Represents a single entry in a workflow's step list.
+class StepInputRef:
+    """Reference to a step_argument used as input."""
 
-    Each entry can be either:
-    - A single step (sequential execution)
-    - A list of steps (concurrent execution)
-    """
-
-    step_ids: list[str]  # Single step has one ID, concurrent group has multiple
-    is_concurrent: bool = False
-
-    @property
-    def first_step(self) -> str:
-        """Get the first step ID in this entry."""
-        return self.step_ids[0] if self.step_ids else ""
-
-    def all_step_ids(self) -> list[str]:
-        """Get all step IDs in this entry."""
-        return self.step_ids
+    argument_name: str
+    required: bool = True
 
     @classmethod
-    def from_data(cls, data: str | list[str]) -> "WorkflowStepEntry":
-        """Create WorkflowStepEntry from YAML data (string or list)."""
-        if isinstance(data, str):
-            return cls(step_ids=[data], is_concurrent=False)
-        else:
-            return cls(step_ids=list(data), is_concurrent=True)
+    def from_dict(cls, name: str, data: dict[str, Any]) -> "StepInputRef":
+        """Create StepInputRef from argument name and config."""
+        return cls(
+            argument_name=name,
+            required=data.get("required", True),
+        )
+
+
+@dataclass
+class StepOutputRef:
+    """Reference to a step_argument used as output."""
+
+    argument_name: str
+    required: bool = True
+    review: ReviewBlock | None = None
+
+    @classmethod
+    def from_dict(cls, name: str, data: dict[str, Any]) -> "StepOutputRef":
+        """Create StepOutputRef from argument name and config."""
+        return cls(
+            argument_name=name,
+            required=data.get("required", True),
+            review=ReviewBlock.from_dict(data["review"]) if "review" in data else None,
+        )
+
+
+@dataclass
+class SubWorkflowRef:
+    """Reference to another workflow (same job or cross-job)."""
+
+    workflow_name: str
+    workflow_job: str | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "SubWorkflowRef":
+        """Create SubWorkflowRef from dictionary."""
+        return cls(
+            workflow_name=data["workflow_name"],
+            workflow_job=data.get("workflow_job"),
+        )
+
+
+@dataclass
+class WorkflowStep:
+    """A single step within a workflow."""
+
+    name: str
+    instructions: str | None = None
+    sub_workflow: SubWorkflowRef | None = None
+    inputs: dict[str, StepInputRef] = field(default_factory=dict)
+    outputs: dict[str, StepOutputRef] = field(default_factory=dict)
+    process_quality_attributes: dict[str, str] = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "WorkflowStep":
+        """Create WorkflowStep from dictionary."""
+        inputs = {
+            name: StepInputRef.from_dict(name, ref_data)
+            for name, ref_data in data.get("inputs", {}).items()
+        }
+        outputs = {
+            name: StepOutputRef.from_dict(name, ref_data)
+            for name, ref_data in data.get("outputs", {}).items()
+        }
+        return cls(
+            name=data["name"],
+            instructions=data.get("instructions"),
+            sub_workflow=(
+                SubWorkflowRef.from_dict(data["sub_workflow"]) if "sub_workflow" in data else None
+            ),
+            inputs=inputs,
+            outputs=outputs,
+            process_quality_attributes=data.get("process_quality_attributes", {}),
+        )
 
 
 @dataclass
 class Workflow:
-    """Represents a named workflow grouping steps into a multi-step sequence."""
+    """A named workflow containing a sequence of steps."""
 
     name: str
     summary: str
-    step_entries: list[WorkflowStepEntry]  # List of step entries (sequential or concurrent)
-
-    # Agent type for this workflow (e.g., "general-purpose"). When set, the entire
-    # workflow should be delegated to a sub-agent of this type via the Task tool.
+    steps: list[WorkflowStep]
     agent: str | None = None
+    common_job_info: str | None = None
+    post_workflow_instructions: str | None = None
 
     @property
-    def steps(self) -> list[str]:
-        """Get flattened list of all step IDs for backward compatibility."""
-        result: list[str] = []
-        for entry in self.step_entries:
-            result.extend(entry.step_ids)
-        return result
+    def step_names(self) -> list[str]:
+        """Get list of step names in order."""
+        return [s.name for s in self.steps]
 
-    def get_step_entry_for_step(self, step_id: str) -> WorkflowStepEntry | None:
-        """Get the workflow step entry containing the given step ID."""
-        for entry in self.step_entries:
-            if step_id in entry.step_ids:
-                return entry
+    def get_step(self, step_name: str) -> WorkflowStep | None:
+        """Get step by name."""
+        for step in self.steps:
+            if step.name == step_name:
+                return step
         return None
 
-    def get_entry_index_for_step(self, step_id: str) -> int | None:
-        """Get the index of the entry containing the given step ID."""
-        for i, entry in enumerate(self.step_entries):
-            if step_id in entry.step_ids:
+    def get_step_index(self, step_name: str) -> int | None:
+        """Get index of step by name."""
+        for i, step in enumerate(self.steps):
+            if step.name == step_name:
                 return i
         return None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Workflow":
-        """Create Workflow from dictionary."""
-        step_entries = [WorkflowStepEntry.from_data(s) for s in data["steps"]]
+    def from_dict(cls, name: str, data: dict[str, Any]) -> "Workflow":
+        """Create Workflow from workflow name and dictionary."""
         return cls(
-            name=data["name"],
+            name=name,
             summary=data["summary"],
-            step_entries=step_entries,
+            steps=[WorkflowStep.from_dict(s) for s in data["steps"]],
             agent=data.get("agent"),
+            common_job_info=data.get("common_job_info_provided_to_all_steps_at_runtime"),
+            post_workflow_instructions=data.get("post_workflow_instructions"),
         )
 
 
 @dataclass
 class JobDefinition:
-    """Represents a complete job definition."""
+    """A complete job definition."""
 
     name: str
-    version: str
     summary: str
-    common_job_info_provided_to_all_steps_at_runtime: str
-    steps: list[Step]
+    step_arguments: list[StepArgument]
+    workflows: dict[str, Workflow]
     job_dir: Path
-    workflows: list[Workflow] = field(default_factory=list)
 
-    def get_step(self, step_id: str) -> Step | None:
-        """
-        Get step by ID.
-
-        Args:
-            step_id: Step ID to retrieve
-
-        Returns:
-            Step if found, None otherwise
-        """
-        for step in self.steps:
-            if step.id == step_id:
-                return step
+    def get_argument(self, name: str) -> StepArgument | None:
+        """Get step argument by name."""
+        for arg in self.step_arguments:
+            if arg.name == name:
+                return arg
         return None
 
-    def validate_dependencies(self) -> None:
-        """
-        Validate step dependencies.
+    def get_workflow(self, name: str) -> Workflow | None:
+        """Get workflow by name."""
+        return self.workflows.get(name)
+
+    def validate_argument_refs(self) -> None:
+        """Validate that all input/output refs point to valid step_arguments.
 
         Raises:
-            ParseError: If dependencies are invalid (missing steps, circular deps)
+            ParseError: If refs point to non-existent arguments
         """
-        step_ids = {step.id for step in self.steps}
+        arg_names = {arg.name for arg in self.step_arguments}
 
-        # Check all dependencies reference existing steps
-        for step in self.steps:
-            for dep_id in step.dependencies:
-                if dep_id not in step_ids:
-                    raise ParseError(f"Step '{step.id}' depends on non-existent step '{dep_id}'")
-
-        # Check for circular dependencies using topological sort
-        visited = set()
-        rec_stack = set()
-
-        def has_cycle(step_id: str) -> bool:
-            visited.add(step_id)
-            rec_stack.add(step_id)
-
-            step = self.get_step(step_id)
-            if step:
-                for dep_id in step.dependencies:
-                    if dep_id not in visited:
-                        if has_cycle(dep_id):
-                            return True
-                    elif dep_id in rec_stack:
-                        return True
-
-            rec_stack.remove(step_id)
-            return False
-
-        for step in self.steps:
-            if step.id not in visited:
-                if has_cycle(step.id):
-                    raise ParseError(f"Circular dependency detected involving step '{step.id}'")
-
-    def validate_file_inputs(self) -> None:
-        """
-        Validate that file inputs reference valid steps and dependencies.
-
-        Raises:
-            ParseError: If file inputs are invalid
-        """
-        for step in self.steps:
-            for inp in step.inputs:
-                if inp.is_file_input():
-                    # Check that from_step exists
-                    from_step = self.get_step(inp.from_step)  # type: ignore
-                    if from_step is None:
+        for wf_name, workflow in self.workflows.items():
+            for step in workflow.steps:
+                for input_name in step.inputs:
+                    if input_name not in arg_names:
                         raise ParseError(
-                            f"Step '{step.id}' references non-existent step "
-                            f"'{inp.from_step}' in file input"
+                            f"Workflow '{wf_name}' step '{step.name}' references "
+                            f"non-existent step_argument '{input_name}' in inputs"
+                        )
+                for output_name in step.outputs:
+                    if output_name not in arg_names:
+                        raise ParseError(
+                            f"Workflow '{wf_name}' step '{step.name}' references "
+                            f"non-existent step_argument '{output_name}' in outputs"
                         )
 
-                    # Check that from_step is in dependencies
-                    if inp.from_step not in step.dependencies:
+    def validate_sub_workflows(self) -> None:
+        """Validate that sub_workflow refs point to valid workflows.
+
+        Only validates same-job references (cross-job validated at runtime).
+
+        Raises:
+            ParseError: If refs point to non-existent workflows in same job
+        """
+        for wf_name, workflow in self.workflows.items():
+            for step in workflow.steps:
+                if step.sub_workflow and not step.sub_workflow.workflow_job:
+                    if step.sub_workflow.workflow_name not in self.workflows:
                         raise ParseError(
-                            f"Step '{step.id}' has file input from '{inp.from_step}' "
-                            f"but '{inp.from_step}' is not in dependencies"
+                            f"Workflow '{wf_name}' step '{step.name}' references "
+                            f"non-existent workflow '{step.sub_workflow.workflow_name}'"
                         )
 
-    def validate_reviews(self) -> None:
-        """
-        Validate that review run_each values reference valid output names or 'step'.
+    def validate_step_exclusivity(self) -> None:
+        """Validate each step has exactly one of instructions or sub_workflow.
 
         Raises:
-            ParseError: If run_each references an invalid output name
+            ParseError: If a step has both or neither
         """
-        for step in self.steps:
-            output_names = {out.name for out in step.outputs}
-            for review in step.reviews:
-                if review.run_each != "step" and review.run_each not in output_names:
+        for wf_name, workflow in self.workflows.items():
+            for step in workflow.steps:
+                has_instructions = step.instructions is not None
+                has_sub_workflow = step.sub_workflow is not None
+                if has_instructions and has_sub_workflow:
                     raise ParseError(
-                        f"Step '{step.id}' has review with run_each='{review.run_each}' "
-                        f"but no output with that name. "
-                        f"Valid values: 'step', {', '.join(sorted(output_names)) or '(no outputs)'}"
+                        f"Workflow '{wf_name}' step '{step.name}' has both "
+                        f"'instructions' and 'sub_workflow' — must have exactly one"
+                    )
+                if not has_instructions and not has_sub_workflow:
+                    raise ParseError(
+                        f"Workflow '{wf_name}' step '{step.name}' has neither "
+                        f"'instructions' nor 'sub_workflow' — must have exactly one"
                     )
 
-    def get_workflow_for_step(self, step_id: str) -> Workflow | None:
-        """
-        Get the workflow containing a step.
-
-        Args:
-            step_id: Step ID to look up
-
-        Returns:
-            Workflow containing the step, or None if step is standalone
-        """
-        for workflow in self.workflows:
-            if step_id in workflow.steps:
-                return workflow
-        return None
-
-    def get_next_step_in_workflow(self, step_id: str) -> str | None:
-        """
-        Get the next step in a workflow after the given step.
-
-        Args:
-            step_id: Current step ID
-
-        Returns:
-            Next step ID, or None if this is the last step or not in a workflow
-        """
-        workflow = self.get_workflow_for_step(step_id)
-        if not workflow:
-            return None
-        try:
-            index = workflow.steps.index(step_id)
-            if index < len(workflow.steps) - 1:
-                return workflow.steps[index + 1]
-        except ValueError:
-            pass
-        return None
-
-    def get_prev_step_in_workflow(self, step_id: str) -> str | None:
-        """
-        Get the previous step in a workflow before the given step.
-
-        Args:
-            step_id: Current step ID
-
-        Returns:
-            Previous step ID, or None if this is the first step or not in a workflow
-        """
-        workflow = self.get_workflow_for_step(step_id)
-        if not workflow:
-            return None
-        try:
-            index = workflow.steps.index(step_id)
-            if index > 0:
-                return workflow.steps[index - 1]
-        except ValueError:
-            pass
-        return None
-
-    def get_step_position_in_workflow(self, step_id: str) -> tuple[int, int] | None:
-        """
-        Get the position of a step within its workflow.
-
-        Args:
-            step_id: Step ID to look up
-
-        Returns:
-            Tuple of (1-based position, total steps in workflow), or None if standalone
-        """
-        workflow = self.get_workflow_for_step(step_id)
-        if not workflow:
-            return None
-        try:
-            index = workflow.steps.index(step_id)
-            return (index + 1, len(workflow.steps))
-        except ValueError:
-            return None
-
-    def get_step_entry_position_in_workflow(
-        self, step_id: str
-    ) -> tuple[int, int, WorkflowStepEntry] | None:
-        """
-        Get the entry-based position of a step within its workflow.
-
-        For concurrent step groups, multiple steps share the same entry position.
-
-        Args:
-            step_id: Step ID to look up
-
-        Returns:
-            Tuple of (1-based entry position, total entries, WorkflowStepEntry),
-            or None if standalone
-        """
-        workflow = self.get_workflow_for_step(step_id)
-        if not workflow:
-            return None
-
-        entry_index = workflow.get_entry_index_for_step(step_id)
-        if entry_index is None:
-            return None
-
-        entry = workflow.step_entries[entry_index]
-        return (entry_index + 1, len(workflow.step_entries), entry)
-
-    def get_concurrent_step_info(self, step_id: str) -> tuple[int, int] | None:
-        """
-        Get information about a step's position within a concurrent group.
-
-        Args:
-            step_id: Step ID to look up
-
-        Returns:
-            Tuple of (1-based position in group, total in group) if step is in
-            a concurrent group, None if step is not in a concurrent group
-        """
-        workflow = self.get_workflow_for_step(step_id)
-        if not workflow:
-            return None
-
-        entry = workflow.get_step_entry_for_step(step_id)
-        if entry is None or not entry.is_concurrent:
-            return None
-
-        try:
-            index = entry.step_ids.index(step_id)
-            return (index + 1, len(entry.step_ids))
-        except ValueError:
-            return None
-
-    def validate_workflows(self) -> None:
-        """
-        Validate workflow definitions.
+    def validate_unique_step_names(self) -> None:
+        """Validate step names are unique within each workflow.
 
         Raises:
-            ParseError: If workflow references non-existent steps or has duplicates
+            ParseError: If duplicate step names found
         """
-        step_ids = {step.id for step in self.steps}
-        workflow_names = set()
-
-        for workflow in self.workflows:
-            # Check for duplicate workflow names
-            if workflow.name in workflow_names:
-                raise ParseError(f"Duplicate workflow name: '{workflow.name}'")
-            workflow_names.add(workflow.name)
-
-            # Check all step references exist
-            for step_id in workflow.steps:
-                if step_id not in step_ids:
+        for wf_name, workflow in self.workflows.items():
+            seen: set[str] = set()
+            for step in workflow.steps:
+                if step.name in seen:
                     raise ParseError(
-                        f"Workflow '{workflow.name}' references non-existent step '{step_id}'"
+                        f"Workflow '{wf_name}' has duplicate step name '{step.name}'"
                     )
-
-            # Check for duplicate steps within a workflow
-            seen_steps = set()
-            for step_id in workflow.steps:
-                if step_id in seen_steps:
-                    raise ParseError(
-                        f"Workflow '{workflow.name}' contains duplicate step '{step_id}'"
-                    )
-                seen_steps.add(step_id)
-
-    def warn_orphaned_steps(self) -> list[str]:
-        """
-        Check for steps not included in any workflow and emit warnings.
-
-        Returns:
-            List of orphaned step IDs
-        """
-        # Collect all step IDs referenced in workflows
-        workflow_step_ids: set[str] = set()
-        for workflow in self.workflows:
-            workflow_step_ids.update(workflow.steps)
-
-        # Find orphaned steps
-        orphaned_steps = [step.id for step in self.steps if step.id not in workflow_step_ids]
-
-        if orphaned_steps:
-            logger.warning(
-                "Job '%s' has steps not included in any workflow: %s. "
-                "These steps are not accessible via the MCP interface.",
-                self.name,
-                ", ".join(orphaned_steps),
-            )
-
-        return orphaned_steps
+                seen.add(step.name)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], job_dir: Path) -> "JobDefinition":
-        """
-        Create JobDefinition from dictionary.
-
-        Args:
-            data: Parsed YAML data
-            job_dir: Directory containing job definition
-
-        Returns:
-            JobDefinition instance
-        """
-        workflows = [Workflow.from_dict(wf_data) for wf_data in data.get("workflows", [])]
+        """Create JobDefinition from dictionary."""
+        step_arguments = [
+            StepArgument.from_dict(arg_data) for arg_data in data.get("step_arguments", [])
+        ]
+        workflows = {
+            name: Workflow.from_dict(name, wf_data)
+            for name, wf_data in data.get("workflows", {}).items()
+        }
         return cls(
             name=data["name"],
-            version=data["version"],
             summary=data["summary"],
-            common_job_info_provided_to_all_steps_at_runtime=data[
-                "common_job_info_provided_to_all_steps_at_runtime"
-            ],
-            steps=[Step.from_dict(step_data) for step_data in data["steps"]],
-            job_dir=job_dir,
+            step_arguments=step_arguments,
             workflows=workflows,
+            job_dir=job_dir,
         )
 
 
 def parse_job_definition(job_dir: Path | str) -> JobDefinition:
-    """
-    Parse job definition from directory.
+    """Parse job definition from directory.
 
     Args:
         job_dir: Directory containing job.yml
@@ -628,7 +333,7 @@ def parse_job_definition(job_dir: Path | str) -> JobDefinition:
     except YAMLError as e:
         raise ParseError(f"Failed to load job.yml: {e}") from e
 
-    if job_data is None:
+    if not job_data:
         raise ParseError("job.yml is empty")
 
     # Validate against schema
@@ -640,13 +345,10 @@ def parse_job_definition(job_dir: Path | str) -> JobDefinition:
     # Parse into dataclass
     job_def = JobDefinition.from_dict(job_data, job_dir_path)
 
-    # Validate dependencies, file inputs, reviews, and workflows
-    job_def.validate_dependencies()
-    job_def.validate_file_inputs()
-    job_def.validate_reviews()
-    job_def.validate_workflows()
-
-    # Warn about orphaned steps (not in any workflow)
-    job_def.warn_orphaned_steps()
+    # Run validations
+    job_def.validate_unique_step_names()
+    job_def.validate_argument_refs()
+    job_def.validate_sub_workflows()
+    job_def.validate_step_exclusivity()
 
     return job_def

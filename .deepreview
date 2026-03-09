@@ -430,36 +430,33 @@ deepreview_config_quality:
         and a specific recommendation.
 
 job_schema_instruction_compatibility:
-  description: "Verify deepwork_jobs instruction files, templates, and examples are compatible with the job schema."
+  description: "Verify deepwork_jobs job.yml inline instructions are compatible with the job schema."
   match:
     include:
       - "src/deepwork/jobs/job.schema.json"
-      - "src/deepwork/standard_jobs/deepwork_jobs/steps/*.md"
-      - "src/deepwork/standard_jobs/deepwork_jobs/templates/*"
       - "src/deepwork/standard_jobs/deepwork_jobs/job.yml"
+      - "src/deepwork/standard_jobs/deepwork_reviews/job.yml"
   review:
     strategy: matches_together
     additional_context:
       unchanged_matching_files: true
     instructions: |
-      When the job schema or deepwork_jobs instruction files change, verify they
+      When the job schema or standard job definitions change, verify they
       are still compatible with each other.
 
       Read src/deepwork/jobs/job.schema.json to understand the current schema.
-      Then read each instruction file, template, and example in
-      src/deepwork/standard_jobs/deepwork_jobs/ and check:
+      Then read each standard job's job.yml and check:
 
-      1. **Field references**: Every field name mentioned in prose instructions,
-         templates, or examples must exist in the schema at the correct level.
-         Pay special attention to root-level vs step-level fields — a field
-         that exists on steps may not exist at the root, and vice versa.
+      1. **Field references**: Every field name referenced in inline step
+         instructions must exist in the schema at the correct level.
+         Pay special attention to step_arguments vs workflow vs step fields.
 
       2. **Required vs optional**: If instructions say a field is required,
          verify the schema agrees. If instructions say a field is optional,
          verify the schema doesn't require it.
 
-      3. **Schema structure**: Template files and examples that show YAML
-         structure must match the schema's property names and nesting.
+      3. **Schema structure**: Any YAML examples shown in inline instructions
+         must match the schema's property names and nesting.
 
       4. **Terminology consistency**: Instructions should use the same field
          names as the schema (e.g., if the schema uses
@@ -467,7 +464,7 @@ job_schema_instruction_compatibility:
          should not call it "description" or "job_description").
 
       Output Format:
-      - PASS: All instruction files are compatible with the schema.
+      - PASS: All job definitions are compatible with the schema.
       - FAIL: Incompatibilities found. List each with the file path, line
         reference, the incompatible content, and what the schema actually says.
 

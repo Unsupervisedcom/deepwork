@@ -16,29 +16,19 @@ def _create_minimal_job(parent: Path, job_name: str) -> Path:
     """Create a minimal valid job directory for testing."""
     job_dir = parent / job_name
     job_dir.mkdir(parents=True, exist_ok=True)
-    steps_dir = job_dir / "steps"
-    steps_dir.mkdir(exist_ok=True)
-    (steps_dir / "step1.md").write_text("# Step 1\n\nDo step 1.")
     (job_dir / "job.yml").write_text(
         f"""
 name: {job_name}
-version: "1.0.0"
 summary: Test job {job_name}
-common_job_info_provided_to_all_steps_at_runtime: A test job
-
-steps:
-  - id: step1
-    name: Step 1
-    description: First step
-    instructions_file: steps/step1.md
-    outputs: {{}}
-    reviews: []
+step_arguments: []
 
 workflows:
-  - name: main
+  main:
     summary: Main workflow
     steps:
-      - step1
+      - name: step1
+        instructions: |
+          Do step 1.
 """
     )
     return job_dir

@@ -2,380 +2,258 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://deepwork.dev/schemas/job.schema.json",
   "title": "DeepWork Job Definition",
-  "description": "Schema for DeepWork job.yml files. Jobs are multi-step workflows executed by AI agents.",
+  "description": "Schema for DeepWork job.yml files. Jobs define multi-step workflows executed by AI agents. Workflows contain steps with explicit input/output data flow through shared step_arguments.",
   "type": "object",
   "required": [
     "name",
-    "version",
     "summary",
-    "common_job_info_provided_to_all_steps_at_runtime",
-    "steps"
+    "step_arguments",
+    "workflows"
   ],
   "additionalProperties": false,
   "properties": {
     "name": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*$",
-      "description": "Job name (lowercase letters, numbers, underscores, must start with letter). Example: 'competitive_research'"
-    },
-    "version": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$",
-      "description": "Semantic version (e.g., '1.0.0')"
+      "description": "Job name (lowercase letters, numbers, underscores, must start with letter). This is used as the job_name parameter in start_workflow and appears in the MCP tool listings. Example: 'competitive_research'"
     },
     "summary": {
       "type": "string",
       "minLength": 1,
       "maxLength": 200,
-      "description": "Brief one-line summary of what this job accomplishes. Used in skill descriptions."
+      "description": "Brief one-line summary of what this job accomplishes. Shown in get_workflows output and skill descriptions. Keep it actionable — it tells the agent when to use this job."
     },
-    "common_job_info_provided_to_all_steps_at_runtime": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Common context and information provided to all steps at runtime. Use this for shared knowledge that every step needs (e.g., project background, key terminology, constraints, or conventions) rather than duplicating it in individual step instructions."
-    },
-    "workflows": {
+    "step_arguments": {
       "type": "array",
-      "description": "Named workflows that group steps into multi-step sequences. Workflows define execution order.",
+      "description": "Shared vocabulary of data that flows between steps. Each argument defines a named piece of data (a file path or a string value) that steps can declare as inputs or outputs. This creates an explicit data contract: step A outputs 'report' and step B inputs 'report', so the framework knows how to wire them together. Arguments can optionally carry review rules that apply whenever the argument is produced as an output.",
       "items": {
-        "$ref": "#/$defs/workflow"
+        "$ref": "#/$defs/step_argument"
       }
     },
-    "steps": {
-      "type": "array",
-      "minItems": 1,
-      "description": "List of steps in the job. Each step becomes a skill/command.",
-      "items": {
-        "$ref": "#/$defs/step"
+    "workflows": {
+      "type": "object",
+      "description": "Named workflows that define step sequences. Each key is the workflow name (used in start_workflow), and the value defines the steps and their order. A job can have multiple workflows — for example, a 'new_job' workflow for creating jobs and a 'repair' workflow for fixing them.",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-z][a-z0-9_]*$": {
+          "$ref": "#/$defs/workflow"
+        }
       }
     }
   },
   "$defs": {
-    "stepId": {
-      "type": "string",
-      "pattern": "^[a-z][a-z0-9_]*$",
-      "description": "Step identifier (lowercase letters, numbers, underscores, must start with letter)"
+    "step_argument": {
+      "type": "object",
+      "required": [
+        "name",
+        "description",
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "A named piece of data that flows between workflow steps. Step arguments are the shared vocabulary — steps reference them by name in their inputs and outputs sections. The type determines how the data is passed: 'file_path' means the value is a path to a file on disk (validated for existence), while 'string' means the value is inline text.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_./-]*$",
+          "description": "Unique name for this argument. Steps reference this name in their inputs{} and outputs{} maps. Can contain letters, numbers, dots, slashes, hyphens, and underscores (e.g., 'job.yml', 'step_instruction_files', '.deepwork/tmp/test_feedback.md')."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable description of what this data represents. Shown to the agent when it needs to produce or consume this argument. Be specific — 'The job.yml definition file for the new job' is better than 'A YAML file'."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "file_path"],
+          "description": "How the data is passed between steps. 'file_path' means the value is a filesystem path (single string or list of strings) — the framework validates that referenced files exist. 'string' means the value is inline text content — no file existence check is performed. Use 'file_path' for artifacts (documents, code, configs) and 'string' for short values (user answers, summaries, IDs)."
+        },
+        "review": {
+          "$ref": "#/$defs/review_block",
+          "description": "Optional review rule that applies whenever this argument is produced as a step output. This is a default review — steps can override or supplement it with their own output-level review. The review uses the DeepWork Reviews infrastructure (.deepreview pipeline) and runs automatically when finished_step is called. For file_path arguments, the review examines the output files. For string arguments, the review examines the string content."
+        },
+        "json_schema": {
+          "type": "object",
+          "description": "Optional JSON Schema to validate the content of file_path outputs. When set, the framework parses the output file as JSON and validates it against this schema before running any reviews. Validation failures are returned immediately as errors. Only applies to file_path type arguments."
+        }
+      }
+    },
+    "review_block": {
+      "type": "object",
+      "required": [
+        "strategy",
+        "instructions"
+      ],
+      "additionalProperties": false,
+      "description": "A review rule that defines how an output should be evaluated. Uses the same shape as .deepreview review blocks — the framework creates dynamic ReviewRule objects from these at runtime and merges them with any .deepreview rules that match the output files. The strategy determines how files are grouped for review, and the instructions tell the reviewer what to check.",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["individual", "matches_together"],
+          "description": "How to batch the review. 'individual' creates one review per output file (use for file_path arguments that produce multiple files — each file gets its own review agent). 'matches_together' reviews all output files in a single review (use when files need to be evaluated as a coherent set). Note: 'all_changed_files' is not available here — that strategy only applies to .deepreview rules."
+        },
+        "instructions": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Inline review instructions for the reviewer agent. Tell the reviewer what to check, what good output looks like, and what problems to flag. The framework automatically prepends the workflow's common_job_info and the step's input values as context, so you don't need to repeat that information here. Be specific and actionable — vague criteria like 'is it good?' lead to inconsistent reviews."
+        },
+        "agent": {
+          "type": "object",
+          "description": "Optional mapping of platform names to agent personas. When set, the review is dispatched to the specified agent type instead of the default. Example: {\"claude\": \"security-expert\"} routes the review to a security-focused agent on Claude.",
+          "patternProperties": {
+            "^[a-zA-Z0-9_-]+$": {
+              "type": "string"
+            }
+          }
+        },
+        "additional_context": {
+          "type": "object",
+          "description": "Optional flags to include extra context in the review prompt.",
+          "additionalProperties": false,
+          "properties": {
+            "all_changed_filenames": {
+              "type": "boolean",
+              "description": "If true, includes a list of all output files in the review prompt, even if the review strategy only examines a subset."
+            },
+            "unchanged_matching_files": {
+              "type": "boolean",
+              "description": "If true, includes matching files that were not produced as outputs but exist on disk. Useful for document freshness reviews where the reviewer needs to see the doc even when only source files changed."
+            }
+          }
+        }
+      }
     },
     "workflow": {
       "type": "object",
       "required": [
-        "name",
         "summary",
         "steps"
       ],
       "additionalProperties": false,
-      "description": "A named workflow grouping steps into a sequence",
+      "description": "A named workflow defining a sequence of steps. Workflows are the primary execution unit — agents start workflows, not individual steps. Each step in the sequence is executed in order, with data flowing through step_arguments.",
       "properties": {
-        "name": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$",
-          "description": "Workflow name (lowercase letters, numbers, underscores)"
-        },
         "summary": {
           "type": "string",
           "minLength": 1,
           "maxLength": 200,
-          "description": "Brief one-line summary of what this workflow accomplishes"
+          "description": "Brief one-line summary of what this workflow accomplishes. Shown in get_workflows output alongside the workflow name."
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Agent type to delegate the entire workflow to (e.g., 'general-purpose'). When set, the workflow is designed to run in a sub-agent via the Task tool — the caller agent spawns a sub-agent that runs all steps. Use this for workflows that should execute autonomously without blocking the main agent. If not set, the main agent executes steps directly."
+        },
+        "common_job_info_provided_to_all_steps_at_runtime": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Context and information prepended to every step's instructions at runtime. Use for shared knowledge that every step in this workflow needs — project background, key terminology, constraints, conventions, schema references. This avoids duplicating the same context in every step's instructions. Also included in review prompts so reviewers understand the domain."
         },
         "steps": {
           "type": "array",
           "minItems": 1,
-          "description": "Ordered list of step entries. Each entry is either a step ID (string) or an array of step IDs for concurrent execution.",
+          "description": "Ordered list of steps in this workflow. Steps execute sequentially — the agent completes one step (via finished_step) before receiving the next step's instructions. Each step either has inline instructions or delegates to a sub-workflow.",
           "items": {
-            "$ref": "#/$defs/workflowStepEntry"
+            "$ref": "#/$defs/workflow_step"
           }
         },
-        "agent": {
+        "post_workflow_instructions": {
           "type": "string",
-          "minLength": 1,
-          "description": "Agent type to run the entire workflow in (e.g., 'general-purpose'). When set, the workflow is designed to be delegated wholesale to a sub-agent of this type via the Task tool. This is for workflows where the entire execution should happen in a sub-agent — not for delegating individual steps within a workflow (use step-level 'agent' for that)."
+          "description": "Instructions returned to the agent when the workflow completes successfully. Use for guidance on what to do after the workflow finishes — e.g., 'Create a PR with the changes' or 'Run the test suite to verify'. Returned in the workflow_complete response from finished_step."
         }
       }
     },
-    "workflowStepEntry": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/stepId"
-        },
-        {
-          "type": "array",
-          "minItems": 1,
-          "description": "Array of step IDs that can be executed concurrently",
-          "items": {
-            "$ref": "#/$defs/stepId"
-          }
-        }
-      ]
-    },
-    "step": {
+    "workflow_step": {
       "type": "object",
       "required": [
-        "id",
-        "name",
-        "description",
-        "instructions_file",
-        "outputs",
-        "reviews"
+        "name"
       ],
       "additionalProperties": false,
-      "description": "A single Step in a job, representing one material unit of work with evaluatable outputs",
+      "description": "A single step in a workflow. Each step must have either 'instructions' (inline markdown telling the agent what to do) or 'sub_workflow' (delegation to another workflow). Steps declare their inputs and outputs by referencing step_arguments by name.",
       "properties": {
-        "id": {
-          "$ref": "#/$defs/stepId",
-          "description": "Unique step identifier within this job"
-        },
         "name": {
           "type": "string",
-          "minLength": 1,
-          "description": "Human-readable display name for the step"
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "Unique step identifier within this workflow. Used as the step_id in MCP responses and for tracking progress. Must be lowercase with underscores (e.g., 'define', 'implement', 'test')."
         },
-        "description": {
+        "instructions": {
           "type": "string",
           "minLength": 1,
-          "description": "Description of what this step does. Used in skill descriptions."
+          "description": "Inline markdown instructions telling the agent what to do in this step. Use YAML literal block scalar (|) for multi-line content. Instructions should be comprehensive — they are the complete guide for the agent. The framework prepends the workflow's common_job_info and the step's input values before delivering to the agent."
         },
-        "instructions_file": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Path to instructions markdown file (relative to job directory). Example: 'steps/research.md'"
+        "sub_workflow": {
+          "$ref": "#/$defs/sub_workflow_ref",
+          "description": "Instead of inline instructions, delegate this step to another workflow. The framework auto-generates instructions telling the agent to call start_workflow with the referenced workflow. Use this for composition — e.g., a 'full_pipeline' workflow that includes a 'code_review' sub-workflow."
         },
         "inputs": {
-          "type": "array",
-          "description": "List of inputs required by this step (user parameters or files from previous steps)",
-          "items": {
-            "$ref": "#/$defs/stepInput"
+          "type": "object",
+          "description": "Map of step_argument names to input configuration. Each key must match a name in the top-level step_arguments array. Input values come from: (1) outputs of previous steps in the same workflow, or (2) the inputs parameter of start_workflow for the first step. For file_path inputs, the file path is provided to the agent as a reference. For string inputs, the actual string content is included inline in the step instructions.",
+          "additionalProperties": {
+            "$ref": "#/$defs/step_input_ref"
           }
         },
         "outputs": {
           "type": "object",
-          "description": "Named outputs produced by this step. Keys are output identifiers, values describe type and purpose. May be empty for cleanup or validation steps.",
+          "description": "Map of step_argument names to output configuration. Each key must match a name in the top-level step_arguments array. When the agent calls finished_step, it must provide values for all required outputs. For file_path outputs, the value is a file path (or list of paths). For string outputs, the value is the string content. Outputs can carry step-specific review rules that supplement or override the step_argument's default review.",
           "additionalProperties": {
-            "$ref": "#/$defs/stepOutput"
+            "$ref": "#/$defs/step_output_ref"
           }
         },
-        "dependencies": {
-          "type": "array",
-          "description": "List of step IDs this step depends on. Dependencies must complete before this step runs.",
-          "items": {
-            "type": "string"
-          },
-          "default": []
-        },
-        "hooks": {
-          "$ref": "#/$defs/hooks",
-          "description": "Lifecycle hooks for validation and actions at different points in step execution"
-        },
-        "stop_hooks": {
-          "type": "array",
-          "description": "DEPRECATED: Use hooks.after_agent instead. Legacy stop hooks for quality validation loops.",
-          "items": {
-            "$ref": "#/$defs/hookAction"
-          }
-        },
-        "exposed": {
-          "type": "boolean",
-          "description": "If true, step is user-invocable in menus/commands. If false, step is hidden (only reachable via workflows or dependencies). Default: false",
-          "default": false
-        },
-        "hidden": {
-          "type": "boolean",
-          "description": "If true, step is hidden from menus. Alias for exposed: false. Default: false",
-          "default": false
-        },
-        "reviews": {
-          "type": "array",
-          "description": "Quality reviews to run when step completes. Can be empty.",
-          "items": {
-            "$ref": "#/$defs/review"
-          }
-        },
-        "agent": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Agent type for this step (e.g., 'general-purpose'). When set, the skill uses context forking and delegates to the specified agent type."
-        }
-      }
-    },
-    "stepInput": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/userParameterInput"
-        },
-        {
-          "$ref": "#/$defs/fileInput"
-        }
-      ]
-    },
-    "userParameterInput": {
-      "type": "object",
-      "required": [
-        "name",
-        "description"
-      ],
-      "additionalProperties": false,
-      "description": "A user-provided parameter input that will be requested at runtime",
-      "properties": {
-        "name": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Parameter name (used as variable name)"
-        },
-        "description": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Description shown to user when requesting this input"
-        }
-      }
-    },
-    "fileInput": {
-      "type": "object",
-      "required": [
-        "file",
-        "from_step"
-      ],
-      "additionalProperties": false,
-      "description": "A file input from a previous step's output",
-      "properties": {
-        "file": {
-          "type": "string",
-          "minLength": 1,
-          "description": "File name to consume from the source step's outputs"
-        },
-        "from_step": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Step ID that produces this file. Must be in the dependencies list."
-        }
-      }
-    },
-    "stepOutput": {
-      "type": "object",
-      "required": [
-        "type",
-        "description",
-        "required"
-      ],
-      "additionalProperties": false,
-      "description": "Output specification with type information indicating single file or multiple files",
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
-            "file",
-            "files"
-          ],
-          "description": "Whether this output is a single file ('file') or multiple files ('files')"
-        },
-        "description": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Description of what this output contains"
-        },
-        "required": {
-          "type": "boolean",
-          "description": "Whether this output must be provided when calling finished_step. If false, the output is optional and can be omitted."
-        }
-      }
-    },
-    "hooks": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "Lifecycle hooks triggered at different points in step execution",
-      "properties": {
-        "after_agent": {
-          "type": "array",
-          "description": "Hooks triggered after the agent finishes. Used for quality validation loops.",
-          "items": {
-            "$ref": "#/$defs/hookAction"
-          }
-        },
-        "before_tool": {
-          "type": "array",
-          "description": "Hooks triggered before a tool is used. Used for pre-action checks.",
-          "items": {
-            "$ref": "#/$defs/hookAction"
-          }
-        },
-        "before_prompt": {
-          "type": "array",
-          "description": "Hooks triggered when user submits a prompt. Used for input validation.",
-          "items": {
-            "$ref": "#/$defs/hookAction"
-          }
-        }
-      }
-    },
-    "hookAction": {
-      "type": "object",
-      "description": "A hook action - exactly one of: prompt (inline text), prompt_file (external file), or script (shell script)",
-      "oneOf": [
-        {
-          "required": [
-            "prompt"
-          ],
-          "additionalProperties": false,
-          "properties": {
-            "prompt": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Inline prompt text for validation/action"
-            }
-          }
-        },
-        {
-          "required": [
-            "prompt_file"
-          ],
-          "additionalProperties": false,
-          "properties": {
-            "prompt_file": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Path to prompt file (relative to job directory)"
-            }
-          }
-        },
-        {
-          "required": [
-            "script"
-          ],
-          "additionalProperties": false,
-          "properties": {
-            "script": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Path to shell script (relative to job directory)"
-            }
-          }
-        }
-      ]
-    },
-    "review": {
-      "type": "object",
-      "required": [
-        "run_each",
-        "quality_criteria"
-      ],
-      "additionalProperties": false,
-      "description": "A quality review that evaluates step outputs against criteria",
-      "properties": {
-        "run_each": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Either 'step' to review all outputs together, or the name of a specific output to review individually"
-        },
-        "quality_criteria": {
+        "process_quality_attributes": {
           "type": "object",
-          "description": "Map of criterion name to criterion question",
+          "description": "Quality attributes about the process or work done (not about specific output files). Each key is an attribute name, and the value is a statement (not a question) that should be true if the work was done correctly. These are evaluated against the agent's work_summary — the reviewer checks whether the described work meets these criteria. Example: {'tests_written': 'Unit tests were written before implementation code.', 'user_consulted': 'The user was asked to confirm the approach before proceeding.'}",
           "additionalProperties": {
             "type": "string",
             "minLength": 1
           },
           "minProperties": 1
+        }
+      }
+    },
+    "step_input_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Configuration for a step input referencing a step_argument.",
+      "properties": {
+        "required": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this input must be available when the step starts. If true (default), the framework errors if the value is not available from a previous step's output or from start_workflow inputs. If false, the step can proceed without this input."
+        }
+      }
+    },
+    "step_output_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Configuration for a step output referencing a step_argument.",
+      "properties": {
+        "required": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this output must be provided when calling finished_step. If true (default), the agent must include this output in the finished_step call. If false, the output can be omitted."
         },
-        "additional_review_guidance": {
+        "review": {
+          "$ref": "#/$defs/review_block",
+          "description": "Step-specific review rule for this output. This is IN ADDITION TO any review defined on the step_argument itself. Use this when a particular step needs extra scrutiny on an output — e.g., the 'define' step might have a review on its 'job.yml' output checking for specific structural requirements, while the step_argument's review checks general validity."
+        }
+      }
+    },
+    "sub_workflow_ref": {
+      "type": "object",
+      "required": [
+        "workflow_name"
+      ],
+      "additionalProperties": false,
+      "description": "Reference to another workflow to delegate to. The agent will be instructed to call start_workflow with the referenced workflow. This enables workflow composition — complex workflows can be built from simpler ones.",
+      "properties": {
+        "workflow_name": {
           "type": "string",
-          "description": "Optional guidance for the reviewer about what context to look at (e.g., 'Look at the job.yml file for context'). Replaces automatic inclusion of input file contents."
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "Name of the workflow to delegate to. If workflow_job is not set, this must be a workflow in the current job."
+        },
+        "workflow_job": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "Name of the job containing the workflow. If not set, the current job is used. Use this for cross-job workflow references."
         }
       }
     }

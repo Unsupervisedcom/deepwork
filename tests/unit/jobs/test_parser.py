@@ -6,589 +6,560 @@ import pytest
 
 from deepwork.jobs.parser import (
     JobDefinition,
-    OutputSpec,
     ParseError,
-    Review,
-    Step,
-    StepInput,
+    ReviewBlock,
+    StepArgument,
+    StepInputRef,
+    StepOutputRef,
+    SubWorkflowRef,
+    Workflow,
+    WorkflowStep,
     parse_job_definition,
 )
 
 
-class TestStepInput:
-    """Tests for StepInput dataclass."""
+class TestReviewBlock:
+    """Tests for ReviewBlock dataclass."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.4.4).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_user_input(self) -> None:
-        """Test user parameter input."""
-        inp = StepInput(name="param1", description="First parameter")
-
-        assert inp.is_user_input()
-        assert not inp.is_file_input()
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.4.5).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_file_input(self) -> None:
-        """Test file input from previous step."""
-        inp = StepInput(file="data.md", from_step="step1")
-
-        assert inp.is_file_input()
-        assert not inp.is_user_input()
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.4.2, JOBS-REQ-002.4.4).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_from_dict_user_input(self) -> None:
-        """Test creating user input from dictionary."""
-        data = {"name": "param1", "description": "First parameter"}
-        inp = StepInput.from_dict(data)
-
-        assert inp.name == "param1"
-        assert inp.description == "First parameter"
-        assert inp.is_user_input()
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.4.3, JOBS-REQ-002.4.5).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_from_dict_file_input(self) -> None:
-        """Test creating file input from dictionary."""
-        data = {"file": "data.md", "from_step": "step1"}
-        inp = StepInput.from_dict(data)
-
-        assert inp.file == "data.md"
-        assert inp.from_step == "step1"
-        assert inp.is_file_input()
-
-
-class TestOutputSpec:
-    """Tests for OutputSpec dataclass."""
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.1, JOBS-REQ-002.5.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_file_output(self) -> None:
-        """Test single file output."""
-        output = OutputSpec(
-            name="output.md", type="file", description="An output file", required=True
-        )
-
-        assert output.name == "output.md"
-        assert output.type == "file"
-        assert output.description == "An output file"
-        assert output.required is True
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.1, JOBS-REQ-002.5.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_files_output(self) -> None:
-        """Test multiple files output."""
-        output = OutputSpec(
-            name="step_instruction_files",
-            type="files",
-            description="Instruction files",
-            required=True,
-        )
-
-        assert output.name == "step_instruction_files"
-        assert output.type == "files"
-        assert output.description == "Instruction files"
-        assert output.required is True
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.4).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_optional_output(self) -> None:
-        """Test optional output with required=False."""
-        output = OutputSpec(name="bonus.md", type="file", description="Optional", required=False)
-
-        assert output.name == "bonus.md"
-        assert output.required is False
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.1, JOBS-REQ-002.5.2, JOBS-REQ-002.5.3, JOBS-REQ-002.5.4).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict(self) -> None:
-        """Test creating output from name and dict."""
-        data = {"type": "file", "description": "An output file", "required": True}
-        output = OutputSpec.from_dict("output.md", data)
-
-        assert output.name == "output.md"
-        assert output.type == "file"
-        assert output.description == "An output file"
-        assert output.required is True
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_from_dict_files_type(self) -> None:
-        """Test creating files-type output from dict."""
-        data = {"type": "files", "description": "Multiple output files", "required": True}
-        output = OutputSpec.from_dict("reports", data)
-
-        assert output.name == "reports"
-        assert output.type == "files"
-        assert output.description == "Multiple output files"
-        assert output.required is True
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.4).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_from_dict_optional(self) -> None:
-        """Test creating optional output from dict."""
-        data = {"type": "files", "description": "Optional files", "required": False}
-        output = OutputSpec.from_dict("extras", data)
-
-        assert output.name == "extras"
-        assert output.required is False
-
-
-class TestReview:
-    """Tests for Review dataclass."""
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.7.1, JOBS-REQ-002.7.2, JOBS-REQ-002.7.3).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_from_dict(self) -> None:
-        """Test creating review from dictionary."""
+        """Test creating ReviewBlock from dictionary."""
         data = {
-            "run_each": "step",
-            "quality_criteria": {"Complete": "Is it complete?", "Valid": "Is it valid?"},
+            "strategy": "individual",
+            "instructions": "Review each file individually.",
+            "agent": {"model": "claude-sonnet"},
+            "additional_context": {"include_diff": True},
         }
-        review = Review.from_dict(data)
+        review = ReviewBlock.from_dict(data)
 
-        assert review.run_each == "step"
-        assert review.quality_criteria == {"Complete": "Is it complete?", "Valid": "Is it valid?"}
+        assert review.strategy == "individual"
+        assert review.instructions == "Review each file individually."
+        assert review.agent == {"model": "claude-sonnet"}
+        assert review.additional_context == {"include_diff": True}
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.7.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_from_dict_output_specific(self) -> None:
-        """Test creating review targeting specific output."""
-        data = {
-            "run_each": "reports",
-            "quality_criteria": {"Well Written": "Is it well written?"},
-        }
-        review = Review.from_dict(data)
-
-        assert review.run_each == "reports"
-        assert len(review.quality_criteria) == 1
-
-    def test_from_dict_empty_criteria(self) -> None:
-        """Test creating review with empty criteria defaults."""
-        data = {"run_each": "step"}
-        review = Review.from_dict(data)
-
-        assert review.quality_criteria == {}
-
-
-class TestStep:
-    """Tests for Step dataclass."""
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.3.1, JOBS-REQ-002.3.3, JOBS-REQ-002.3.4, JOBS-REQ-002.3.5).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_from_dict_minimal(self) -> None:
-        """Test creating step from minimal dictionary."""
+        """Test creating ReviewBlock with only required fields."""
         data = {
-            "id": "step1",
-            "name": "Step 1",
-            "description": "First step",
-            "instructions_file": "steps/step1.md",
-            "outputs": {
-                "output.md": {"type": "file", "description": "An output file", "required": True},
+            "strategy": "matches_together",
+            "instructions": "Review all matches together.",
+        }
+        review = ReviewBlock.from_dict(data)
+
+        assert review.strategy == "matches_together"
+        assert review.instructions == "Review all matches together."
+        assert review.agent is None
+        assert review.additional_context is None
+
+
+class TestStepArgument:
+    """Tests for StepArgument dataclass."""
+
+    def test_from_dict_basic(self) -> None:
+        """Test creating StepArgument from dictionary."""
+        data = {
+            "name": "market_segment",
+            "description": "The market segment to analyze",
+            "type": "string",
+        }
+        arg = StepArgument.from_dict(data)
+
+        assert arg.name == "market_segment"
+        assert arg.description == "The market segment to analyze"
+        assert arg.type == "string"
+        assert arg.review is None
+        assert arg.json_schema is None
+
+    def test_from_dict_file_path_type(self) -> None:
+        """Test creating StepArgument with file_path type."""
+        data = {
+            "name": "report",
+            "description": "The output report",
+            "type": "file_path",
+        }
+        arg = StepArgument.from_dict(data)
+
+        assert arg.type == "file_path"
+
+    def test_from_dict_with_review(self) -> None:
+        """Test creating StepArgument with review block."""
+        data = {
+            "name": "report",
+            "description": "The output report",
+            "type": "file_path",
+            "review": {
+                "strategy": "individual",
+                "instructions": "Check completeness.",
             },
         }
-        step = Step.from_dict(data)
+        arg = StepArgument.from_dict(data)
 
-        assert step.id == "step1"
-        assert step.name == "Step 1"
-        assert step.description == "First step"
-        assert step.instructions_file == "steps/step1.md"
-        assert len(step.outputs) == 1
-        assert step.outputs[0].name == "output.md"
-        assert step.outputs[0].type == "file"
-        assert step.inputs == []
-        assert step.dependencies == []
+        assert arg.review is not None
+        assert arg.review.strategy == "individual"
+        assert arg.review.instructions == "Check completeness."
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_from_dict_with_multiple_outputs(self) -> None:
-        """Test creating step with file and files type outputs."""
+    def test_from_dict_with_json_schema(self) -> None:
+        """Test creating StepArgument with json_schema."""
+        schema = {"type": "object", "properties": {"name": {"type": "string"}}}
         data = {
-            "id": "step1",
-            "name": "Step 1",
-            "description": "First step",
-            "instructions_file": "steps/step1.md",
-            "outputs": {
-                "report.md": {"type": "file", "description": "A report", "required": True},
-                "attachments": {
-                    "type": "files",
-                    "description": "Supporting files",
-                    "required": True,
-                },
+            "name": "config",
+            "description": "Configuration object",
+            "type": "string",
+            "json_schema": schema,
+        }
+        arg = StepArgument.from_dict(data)
+
+        assert arg.json_schema == schema
+
+
+class TestStepInputRef:
+    """Tests for StepInputRef dataclass."""
+
+    def test_from_dict(self) -> None:
+        """Test creating StepInputRef from name and config."""
+        ref = StepInputRef.from_dict("market_segment", {"required": True})
+
+        assert ref.argument_name == "market_segment"
+        assert ref.required is True
+
+    def test_from_dict_defaults_required_true(self) -> None:
+        """Test that required defaults to True."""
+        ref = StepInputRef.from_dict("param", {})
+
+        assert ref.required is True
+
+    def test_from_dict_optional(self) -> None:
+        """Test creating optional StepInputRef."""
+        ref = StepInputRef.from_dict("optional_param", {"required": False})
+
+        assert ref.required is False
+
+
+class TestStepOutputRef:
+    """Tests for StepOutputRef dataclass."""
+
+    def test_from_dict(self) -> None:
+        """Test creating StepOutputRef from name and config."""
+        ref = StepOutputRef.from_dict("report", {"required": True})
+
+        assert ref.argument_name == "report"
+        assert ref.required is True
+        assert ref.review is None
+
+    def test_from_dict_with_review(self) -> None:
+        """Test creating StepOutputRef with inline review."""
+        data = {
+            "required": True,
+            "review": {
+                "strategy": "individual",
+                "instructions": "Check format.",
             },
         }
-        step = Step.from_dict(data)
+        ref = StepOutputRef.from_dict("report", data)
 
-        assert len(step.outputs) == 2
-        output_names = {out.name for out in step.outputs}
-        assert "report.md" in output_names
-        assert "attachments" in output_names
+        assert ref.review is not None
+        assert ref.review.strategy == "individual"
 
-        report = next(out for out in step.outputs if out.name == "report.md")
-        assert report.type == "file"
-        attachments = next(out for out in step.outputs if out.name == "attachments")
-        assert attachments.type == "files"
+    def test_from_dict_defaults_required_true(self) -> None:
+        """Test that required defaults to True."""
+        ref = StepOutputRef.from_dict("output", {})
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.4.1, JOBS-REQ-002.4.4, JOBS-REQ-002.4.5).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_from_dict_with_inputs(self) -> None:
-        """Test creating step with inputs."""
+        assert ref.required is True
+        assert ref.review is None
+
+
+class TestSubWorkflowRef:
+    """Tests for SubWorkflowRef dataclass."""
+
+    def test_from_dict_same_job(self) -> None:
+        """Test creating SubWorkflowRef within same job."""
+        data = {"workflow_name": "secondary"}
+        ref = SubWorkflowRef.from_dict(data)
+
+        assert ref.workflow_name == "secondary"
+        assert ref.workflow_job is None
+
+    def test_from_dict_cross_job(self) -> None:
+        """Test creating SubWorkflowRef referencing another job."""
+        data = {"workflow_name": "full", "workflow_job": "competitive_research"}
+        ref = SubWorkflowRef.from_dict(data)
+
+        assert ref.workflow_name == "full"
+        assert ref.workflow_job == "competitive_research"
+
+
+class TestWorkflowStep:
+    """Tests for WorkflowStep dataclass."""
+
+    def test_from_dict_with_instructions(self) -> None:
+        """Test creating WorkflowStep with instructions."""
         data = {
-            "id": "step1",
-            "name": "Step 1",
-            "description": "First step",
-            "instructions_file": "steps/step1.md",
-            "inputs": [
-                {"name": "param1", "description": "Parameter 1"},
-                {"file": "data.md", "from_step": "step0"},
+            "name": "research",
+            "instructions": "Do the research.",
+            "inputs": {"market_segment": {"required": True}},
+            "outputs": {"report": {"required": True}},
+        }
+        step = WorkflowStep.from_dict(data)
+
+        assert step.name == "research"
+        assert step.instructions == "Do the research."
+        assert step.sub_workflow is None
+        assert "market_segment" in step.inputs
+        assert step.inputs["market_segment"].argument_name == "market_segment"
+        assert "report" in step.outputs
+        assert step.outputs["report"].argument_name == "report"
+
+    def test_from_dict_with_sub_workflow(self) -> None:
+        """Test creating WorkflowStep with sub_workflow."""
+        data = {
+            "name": "delegate",
+            "sub_workflow": {"workflow_name": "detailed_analysis"},
+        }
+        step = WorkflowStep.from_dict(data)
+
+        assert step.name == "delegate"
+        assert step.instructions is None
+        assert step.sub_workflow is not None
+        assert step.sub_workflow.workflow_name == "detailed_analysis"
+
+    def test_from_dict_minimal(self) -> None:
+        """Test creating WorkflowStep with minimal fields."""
+        data = {"name": "empty_step", "instructions": "Do nothing."}
+        step = WorkflowStep.from_dict(data)
+
+        assert step.name == "empty_step"
+        assert step.inputs == {}
+        assert step.outputs == {}
+        assert step.process_quality_attributes == {}
+
+    def test_from_dict_with_process_quality_attributes(self) -> None:
+        """Test creating WorkflowStep with process quality attributes."""
+        data = {
+            "name": "careful_step",
+            "instructions": "Do carefully.",
+            "process_quality_attributes": {
+                "thoroughness": "Must cover all cases",
+            },
+        }
+        step = WorkflowStep.from_dict(data)
+
+        assert step.process_quality_attributes == {"thoroughness": "Must cover all cases"}
+
+
+class TestWorkflow:
+    """Tests for Workflow dataclass."""
+
+    @pytest.fixture
+    def sample_workflow(self) -> Workflow:
+        """Create a sample workflow for testing."""
+        return Workflow.from_dict("main", {
+            "summary": "Main workflow",
+            "steps": [
+                {"name": "step_a", "instructions": "Do A."},
+                {"name": "step_b", "instructions": "Do B."},
+                {"name": "step_c", "instructions": "Do C."},
             ],
-            "outputs": {
-                "output.md": {"type": "file", "description": "An output file", "required": True},
-            },
-            "dependencies": ["step0"],
-        }
-        step = Step.from_dict(data)
+        })
 
-        assert len(step.inputs) == 2
-        assert step.inputs[0].is_user_input()
-        assert step.inputs[1].is_file_input()
-        assert step.dependencies == ["step0"]
+    def test_step_names(self, sample_workflow: Workflow) -> None:
+        """Test step_names property returns ordered names."""
+        assert sample_workflow.step_names == ["step_a", "step_b", "step_c"]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.3.7).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_from_dict_exposed_default_false(self) -> None:
-        """Test that exposed defaults to False."""
-        data = {
-            "id": "step1",
-            "name": "Step 1",
-            "description": "First step",
-            "instructions_file": "steps/step1.md",
-            "outputs": {
-                "output.md": {"type": "file", "description": "An output file", "required": True},
-            },
-        }
-        step = Step.from_dict(data)
+    def test_get_step_found(self, sample_workflow: Workflow) -> None:
+        """Test getting an existing step by name."""
+        step = sample_workflow.get_step("step_b")
+        assert step is not None
+        assert step.name == "step_b"
 
-        assert step.exposed is False
+    def test_get_step_not_found(self, sample_workflow: Workflow) -> None:
+        """Test getting a non-existent step returns None."""
+        assert sample_workflow.get_step("nonexistent") is None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.3.6).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_from_dict_exposed_true(self) -> None:
-        """Test creating step with exposed=True."""
-        data = {
-            "id": "step1",
-            "name": "Step 1",
-            "description": "First step",
-            "instructions_file": "steps/step1.md",
-            "outputs": {
-                "output.md": {"type": "file", "description": "An output file", "required": True},
-            },
-            "exposed": True,
-        }
-        step = Step.from_dict(data)
+    def test_get_step_index(self, sample_workflow: Workflow) -> None:
+        """Test getting step index by name."""
+        assert sample_workflow.get_step_index("step_a") == 0
+        assert sample_workflow.get_step_index("step_b") == 1
+        assert sample_workflow.get_step_index("step_c") == 2
 
-        assert step.exposed is True
+    def test_get_step_index_not_found(self, sample_workflow: Workflow) -> None:
+        """Test getting index of non-existent step returns None."""
+        assert sample_workflow.get_step_index("nonexistent") is None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.7.1, JOBS-REQ-002.7.2, JOBS-REQ-002.7.3).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_from_dict_with_reviews(self) -> None:
-        """Test creating step with reviews."""
-        data = {
-            "id": "step1",
-            "name": "Step 1",
-            "description": "First step",
-            "instructions_file": "steps/step1.md",
-            "outputs": {
-                "output.md": {"type": "file", "description": "An output file", "required": True},
-            },
-            "reviews": [
-                {
-                    "run_each": "step",
-                    "quality_criteria": {"Complete": "Is it complete?"},
-                },
-                {
-                    "run_each": "output.md",
-                    "quality_criteria": {"Valid": "Is it valid?"},
-                },
-            ],
-        }
-        step = Step.from_dict(data)
+    def test_from_dict_with_optional_fields(self) -> None:
+        """Test creating Workflow with agent and post_workflow_instructions."""
+        wf = Workflow.from_dict("custom", {
+            "summary": "Custom workflow",
+            "agent": "general-purpose",
+            "common_job_info_provided_to_all_steps_at_runtime": "Shared context.",
+            "post_workflow_instructions": "Clean up after.",
+            "steps": [{"name": "only_step", "instructions": "Do it."}],
+        })
 
-        assert len(step.reviews) == 2
-        assert step.reviews[0].run_each == "step"
-        assert step.reviews[0].quality_criteria == {"Complete": "Is it complete?"}
-        assert step.reviews[1].run_each == "output.md"
+        assert wf.name == "custom"
+        assert wf.agent == "general-purpose"
+        assert wf.common_job_info == "Shared context."
+        assert wf.post_workflow_instructions == "Clean up after."
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.3.5).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_from_dict_empty_reviews(self) -> None:
-        """Test creating step with empty reviews list."""
-        data = {
-            "id": "step1",
-            "name": "Step 1",
-            "description": "First step",
-            "instructions_file": "steps/step1.md",
-            "outputs": {
-                "output.md": {"type": "file", "description": "An output file", "required": True},
-            },
-            "reviews": [],
-        }
-        step = Step.from_dict(data)
+    def test_from_dict_defaults(self) -> None:
+        """Test that optional fields default to None."""
+        wf = Workflow.from_dict("minimal", {
+            "summary": "Minimal workflow",
+            "steps": [{"name": "s", "instructions": "Do."}],
+        })
 
-        assert step.reviews == []
+        assert wf.agent is None
+        assert wf.common_job_info is None
+        assert wf.post_workflow_instructions is None
 
 
 class TestJobDefinition:
     """Tests for JobDefinition dataclass."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.14.1).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_get_step(self, fixtures_dir: Path) -> None:
-        """Test getting step by ID."""
-        job_dir = fixtures_dir / "jobs" / "simple_job"
-        job = parse_job_definition(job_dir)
-
-        step = job.get_step("single_step")
-        assert step is not None
-        assert step.id == "single_step"
-
-        assert job.get_step("nonexistent") is None
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.9.1).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_validate_dependencies_valid(self, fixtures_dir: Path) -> None:
-        """Test validation passes for valid dependencies."""
-        job_dir = fixtures_dir / "jobs" / "complex_job"
-        job = parse_job_definition(job_dir)
-
-        # Should not raise
-        job.validate_dependencies()
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.9.1).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_validate_dependencies_missing_step(self) -> None:
-        """Test validation fails for missing dependency."""
-        job = JobDefinition(
-            name="test_job",
-            version="1.0.0",
-            summary="Test job",
-            common_job_info_provided_to_all_steps_at_runtime="Test",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="Step",
-                    instructions_file="steps/step1.md",
-                    outputs=[
-                        OutputSpec(
-                            name="output.md", type="file", description="Output file", required=True
-                        )
-                    ],
-                    dependencies=["nonexistent"],
-                )
-            ],
-            job_dir=Path("/tmp"),
-        )
-
-        with pytest.raises(ParseError, match="depends on non-existent step"):
-            job.validate_dependencies()
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.9.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_validate_dependencies_circular(self) -> None:
-        """Test validation fails for circular dependencies."""
-        job = JobDefinition(
-            name="test_job",
-            version="1.0.0",
-            summary="Test job",
-            common_job_info_provided_to_all_steps_at_runtime="Test",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="Step",
-                    instructions_file="steps/step1.md",
-                    outputs=[
-                        OutputSpec(
-                            name="output.md", type="file", description="Output file", required=True
-                        )
-                    ],
-                    dependencies=["step2"],
-                ),
-                Step(
-                    id="step2",
-                    name="Step 2",
-                    description="Step",
-                    instructions_file="steps/step2.md",
-                    outputs=[
-                        OutputSpec(
-                            name="output.md", type="file", description="Output file", required=True
-                        )
-                    ],
-                    dependencies=["step1"],
-                ),
-            ],
-            job_dir=Path("/tmp"),
-        )
-
-        with pytest.raises(ParseError, match="Circular dependency detected"):
-            job.validate_dependencies()
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.10.1, JOBS-REQ-002.10.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_validate_file_inputs_valid(self, fixtures_dir: Path) -> None:
-        """Test file input validation passes for valid inputs."""
-        job_dir = fixtures_dir / "jobs" / "complex_job"
-        job = parse_job_definition(job_dir)
-
-        # Should not raise
-        job.validate_file_inputs()
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.10.1).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_validate_file_inputs_missing_step(self) -> None:
-        """Test file input validation fails for missing from_step."""
-        job = JobDefinition(
-            name="test_job",
-            version="1.0.0",
-            summary="Test job",
-            common_job_info_provided_to_all_steps_at_runtime="Test",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="Step",
-                    instructions_file="steps/step1.md",
-                    inputs=[StepInput(file="data.md", from_step="nonexistent")],
-                    outputs=[
-                        OutputSpec(
-                            name="output.md", type="file", description="Output file", required=True
-                        )
-                    ],
-                    dependencies=["nonexistent"],
-                )
-            ],
-            job_dir=Path("/tmp"),
-        )
-
-        with pytest.raises(ParseError, match="references non-existent step"):
-            job.validate_file_inputs()
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.11.1).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_validate_reviews_valid(self) -> None:
-        """Test that validate_reviews passes for valid run_each values."""
-        job = JobDefinition(
-            name="test_job",
-            version="1.0.0",
-            summary="Test job",
-            common_job_info_provided_to_all_steps_at_runtime="Test",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="Step",
-                    instructions_file="steps/step1.md",
-                    outputs=[
-                        OutputSpec(
-                            name="report.md", type="file", description="Report", required=True
-                        )
-                    ],
-                    reviews=[
-                        Review(run_each="step", quality_criteria={"Complete": "Is it?"}),
-                        Review(run_each="report.md", quality_criteria={"Valid": "Is it?"}),
-                    ],
-                )
-            ],
-            job_dir=Path("/tmp"),
-        )
-
-        # Should not raise
-        job.validate_reviews()
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.11.1).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_validate_reviews_invalid_run_each(self) -> None:
-        """Test that validate_reviews fails for invalid run_each."""
-        job = JobDefinition(
-            name="test_job",
-            version="1.0.0",
-            summary="Test job",
-            common_job_info_provided_to_all_steps_at_runtime="Test",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="Step",
-                    instructions_file="steps/step1.md",
-                    outputs=[
-                        OutputSpec(
-                            name="report.md", type="file", description="Report", required=True
-                        )
-                    ],
-                    reviews=[
-                        Review(
-                            run_each="nonexistent_output",
-                            quality_criteria={"Test": "Is it?"},
+    def _make_job(
+        self,
+        step_arguments: list[StepArgument] | None = None,
+        workflows: dict[str, Workflow] | None = None,
+    ) -> JobDefinition:
+        """Helper to build a JobDefinition for validation tests."""
+        if step_arguments is None:
+            step_arguments = [
+                StepArgument(name="input", description="Input", type="string"),
+                StepArgument(name="output", description="Output", type="file_path"),
+            ]
+        if workflows is None:
+            workflows = {
+                "main": Workflow(
+                    name="main",
+                    summary="Main",
+                    steps=[
+                        WorkflowStep(
+                            name="s1",
+                            instructions="Do.",
+                            inputs={"input": StepInputRef(argument_name="input")},
+                            outputs={"output": StepOutputRef(argument_name="output")},
                         ),
                     ],
-                )
-            ],
-            job_dir=Path("/tmp"),
-        )
-
-        with pytest.raises(ParseError, match="run_each='nonexistent_output'"):
-            job.validate_reviews()
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.10.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_validate_file_inputs_not_in_dependencies(self) -> None:
-        """Test file input validation fails if from_step not in dependencies."""
-        job = JobDefinition(
+                ),
+            }
+        return JobDefinition(
             name="test_job",
-            version="1.0.0",
-            summary="Test job",
-            common_job_info_provided_to_all_steps_at_runtime="Test",
-            steps=[
-                Step(
-                    id="step1",
-                    name="Step 1",
-                    description="Step",
-                    instructions_file="steps/step1.md",
-                    outputs=[
-                        OutputSpec(
-                            name="output.md", type="file", description="Output file", required=True
-                        )
-                    ],
-                ),
-                Step(
-                    id="step2",
-                    name="Step 2",
-                    description="Step",
-                    instructions_file="steps/step2.md",
-                    inputs=[StepInput(file="data.md", from_step="step1")],
-                    outputs=[
-                        OutputSpec(
-                            name="output.md", type="file", description="Output file", required=True
-                        )
-                    ],
-                    # Missing step1 in dependencies!
-                    dependencies=[],
-                ),
-            ],
+            summary="Test",
+            step_arguments=step_arguments,
+            workflows=workflows,
             job_dir=Path("/tmp"),
         )
 
-        with pytest.raises(ParseError, match="not in dependencies"):
-            job.validate_file_inputs()
+    def test_get_argument_found(self) -> None:
+        """Test getting an existing argument."""
+        job = self._make_job()
+        arg = job.get_argument("input")
+        assert arg is not None
+        assert arg.name == "input"
+
+    def test_get_argument_not_found(self) -> None:
+        """Test getting a non-existent argument returns None."""
+        job = self._make_job()
+        assert job.get_argument("nonexistent") is None
+
+    def test_get_workflow_found(self) -> None:
+        """Test getting an existing workflow."""
+        job = self._make_job()
+        wf = job.get_workflow("main")
+        assert wf is not None
+        assert wf.name == "main"
+
+    def test_get_workflow_not_found(self) -> None:
+        """Test getting a non-existent workflow returns None."""
+        job = self._make_job()
+        assert job.get_workflow("nonexistent") is None
+
+    def test_validate_argument_refs_valid(self) -> None:
+        """Test validation passes when all refs point to valid arguments."""
+        job = self._make_job()
+        # Should not raise
+        job.validate_argument_refs()
+
+    def test_validate_argument_refs_invalid_input(self) -> None:
+        """Test validation fails when input ref points to non-existent argument."""
+        job = self._make_job(
+            workflows={
+                "main": Workflow(
+                    name="main",
+                    summary="Main",
+                    steps=[
+                        WorkflowStep(
+                            name="s1",
+                            instructions="Do.",
+                            inputs={"bogus": StepInputRef(argument_name="bogus")},
+                        ),
+                    ],
+                ),
+            },
+        )
+
+        with pytest.raises(ParseError, match="non-existent step_argument 'bogus' in inputs"):
+            job.validate_argument_refs()
+
+    def test_validate_argument_refs_invalid_output(self) -> None:
+        """Test validation fails when output ref points to non-existent argument."""
+        job = self._make_job(
+            workflows={
+                "main": Workflow(
+                    name="main",
+                    summary="Main",
+                    steps=[
+                        WorkflowStep(
+                            name="s1",
+                            instructions="Do.",
+                            outputs={"bogus": StepOutputRef(argument_name="bogus")},
+                        ),
+                    ],
+                ),
+            },
+        )
+
+        with pytest.raises(ParseError, match="non-existent step_argument 'bogus' in outputs"):
+            job.validate_argument_refs()
+
+    def test_validate_sub_workflows_valid(self) -> None:
+        """Test validation passes for valid same-job sub_workflow ref."""
+        job = self._make_job(
+            workflows={
+                "main": Workflow(
+                    name="main",
+                    summary="Main",
+                    steps=[
+                        WorkflowStep(
+                            name="delegate",
+                            sub_workflow=SubWorkflowRef(workflow_name="helper"),
+                        ),
+                    ],
+                ),
+                "helper": Workflow(
+                    name="helper",
+                    summary="Helper",
+                    steps=[
+                        WorkflowStep(name="h1", instructions="Help."),
+                    ],
+                ),
+            },
+        )
+
+        # Should not raise
+        job.validate_sub_workflows()
+
+    def test_validate_sub_workflows_invalid(self) -> None:
+        """Test validation fails when sub_workflow points to non-existent workflow."""
+        job = self._make_job(
+            workflows={
+                "main": Workflow(
+                    name="main",
+                    summary="Main",
+                    steps=[
+                        WorkflowStep(
+                            name="delegate",
+                            sub_workflow=SubWorkflowRef(workflow_name="missing"),
+                        ),
+                    ],
+                ),
+            },
+        )
+
+        with pytest.raises(ParseError, match="non-existent workflow 'missing'"):
+            job.validate_sub_workflows()
+
+    def test_validate_sub_workflows_cross_job_skipped(self) -> None:
+        """Test that cross-job sub_workflow refs are not validated."""
+        job = self._make_job(
+            workflows={
+                "main": Workflow(
+                    name="main",
+                    summary="Main",
+                    steps=[
+                        WorkflowStep(
+                            name="delegate",
+                            sub_workflow=SubWorkflowRef(
+                                workflow_name="external_wf",
+                                workflow_job="other_job",
+                            ),
+                        ),
+                    ],
+                ),
+            },
+        )
+
+        # Should not raise even though external_wf doesn't exist locally
+        job.validate_sub_workflows()
+
+    def test_validate_step_exclusivity_valid(self) -> None:
+        """Test validation passes when steps have exactly one of instructions/sub_workflow."""
+        job = self._make_job()
+        # Default _make_job uses instructions
+        job.validate_step_exclusivity()
+
+    def test_validate_step_exclusivity_both(self) -> None:
+        """Test validation fails when step has both instructions and sub_workflow."""
+        job = self._make_job(
+            workflows={
+                "main": Workflow(
+                    name="main",
+                    summary="Main",
+                    steps=[
+                        WorkflowStep(
+                            name="bad_step",
+                            instructions="Do.",
+                            sub_workflow=SubWorkflowRef(workflow_name="other"),
+                        ),
+                    ],
+                ),
+            },
+        )
+
+        with pytest.raises(ParseError, match="has both"):
+            job.validate_step_exclusivity()
+
+    def test_validate_step_exclusivity_neither(self) -> None:
+        """Test validation fails when step has neither instructions nor sub_workflow."""
+        job = self._make_job(
+            workflows={
+                "main": Workflow(
+                    name="main",
+                    summary="Main",
+                    steps=[
+                        WorkflowStep(name="empty_step"),
+                    ],
+                ),
+            },
+        )
+
+        with pytest.raises(ParseError, match="has neither"):
+            job.validate_step_exclusivity()
+
+    def test_validate_unique_step_names_valid(self) -> None:
+        """Test validation passes when step names are unique."""
+        job = self._make_job()
+        job.validate_unique_step_names()
+
+    def test_validate_unique_step_names_duplicate(self) -> None:
+        """Test validation fails for duplicate step names within a workflow."""
+        job = self._make_job(
+            workflows={
+                "main": Workflow(
+                    name="main",
+                    summary="Main",
+                    steps=[
+                        WorkflowStep(name="dup", instructions="First."),
+                        WorkflowStep(name="dup", instructions="Second."),
+                    ],
+                ),
+            },
+        )
+
+        with pytest.raises(ParseError, match="duplicate step name 'dup'"):
+            job.validate_unique_step_names()
 
 
 class TestParseJobDefinition:
     """Tests for parse_job_definition function."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.1.1, JOBS-REQ-002.2.3).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_parses_simple_job(self, fixtures_dir: Path) -> None:
         """Test parsing simple job definition."""
         job_dir = fixtures_dir / "jobs" / "simple_job"
@@ -596,75 +567,80 @@ class TestParseJobDefinition:
 
         assert job.name == "simple_job"
         assert job.summary == "A simple single-step job for testing"
-        assert "DeepWork framework" in job.common_job_info_provided_to_all_steps_at_runtime
-        assert len(job.steps) == 1
-        assert job.steps[0].id == "single_step"
+        assert len(job.step_arguments) == 2
+        assert job.step_arguments[0].name == "input_param"
+        assert job.step_arguments[0].type == "string"
+        assert job.step_arguments[1].name == "output"
+        assert job.step_arguments[1].type == "file_path"
+        assert "main" in job.workflows
         assert job.job_dir == job_dir
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.2.8, JOBS-REQ-002.3.1).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_simple_job_workflow(self, fixtures_dir: Path) -> None:
+        """Test simple job's workflow structure."""
+        job_dir = fixtures_dir / "jobs" / "simple_job"
+        job = parse_job_definition(job_dir)
+
+        wf = job.get_workflow("main")
+        assert wf is not None
+        assert wf.summary == "Run the single step"
+        assert wf.step_names == ["single_step"]
+
+        step = wf.get_step("single_step")
+        assert step is not None
+        assert "input_param" in step.inputs
+        assert "output" in step.outputs
+
     def test_parses_complex_job(self, fixtures_dir: Path) -> None:
-        """Test parsing complex job with dependencies."""
+        """Test parsing complex job with multiple steps."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
         assert job.name == "competitive_research"
-        assert len(job.steps) == 4
-        assert job.steps[0].id == "identify_competitors"
-        assert job.steps[1].id == "primary_research"
-        assert job.steps[2].id == "secondary_research"
-        assert job.steps[3].id == "comparative_report"
+        assert len(job.step_arguments) == 8
 
-        # Check dependencies
-        assert job.steps[0].dependencies == []
-        assert job.steps[1].dependencies == ["identify_competitors"]
-        assert "identify_competitors" in job.steps[2].dependencies
-        assert "primary_research" in job.steps[2].dependencies
-        assert "primary_research" in job.steps[3].dependencies
-        assert "secondary_research" in job.steps[3].dependencies
+        wf = job.get_workflow("full")
+        assert wf is not None
+        assert len(wf.steps) == 4
+        assert wf.step_names == [
+            "identify_competitors",
+            "primary_research",
+            "secondary_research",
+            "comparative_report",
+        ]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.4.1, JOBS-REQ-002.4.2, JOBS-REQ-002.4.4).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_parses_user_inputs(self, fixtures_dir: Path) -> None:
-        """Test parsing step with user inputs."""
-        job_dir = fixtures_dir / "jobs" / "simple_job"
-        job = parse_job_definition(job_dir)
-
-        step = job.steps[0]
-        assert len(step.inputs) == 1
-        assert step.inputs[0].is_user_input()
-        assert step.inputs[0].name == "input_param"
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.4.3, JOBS-REQ-002.4.5).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_parses_file_inputs(self, fixtures_dir: Path) -> None:
-        """Test parsing step with file inputs."""
+    def test_complex_job_inputs_outputs(self, fixtures_dir: Path) -> None:
+        """Test complex job step inputs and outputs."""
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
-        step = job.steps[1]  # primary_research
-        assert len(step.inputs) == 1
-        assert step.inputs[0].is_file_input()
-        assert step.inputs[0].file == "competitors.md"
-        assert step.inputs[0].from_step == "identify_competitors"
+        wf = job.get_workflow("full")
+        assert wf is not None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.3.6, JOBS-REQ-002.3.7).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_parses_exposed_steps(self, fixtures_dir: Path) -> None:
-        """Test parsing job with exposed and hidden steps."""
-        job_dir = fixtures_dir / "jobs" / "exposed_step_job"
-        job = parse_job_definition(job_dir)
+        # identify_competitors: 2 inputs, 1 output
+        step0 = wf.steps[0]
+        assert "market_segment" in step0.inputs
+        assert "product_category" in step0.inputs
+        assert "competitors" in step0.outputs
 
-        assert len(job.steps) == 2
-        # First step is hidden by default
-        assert job.steps[0].id == "hidden_step"
-        assert job.steps[0].exposed is False
-        # Second step is explicitly exposed
-        assert job.steps[1].id == "exposed_step"
-        assert job.steps[1].exposed is True
+        # primary_research: 1 input, 2 outputs
+        step1 = wf.steps[1]
+        assert "competitors" in step1.inputs
+        assert "primary_research" in step1.outputs
+        assert "competitor_profiles" in step1.outputs
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.1.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        # secondary_research: 2 inputs, 1 output
+        step2 = wf.steps[2]
+        assert "competitors" in step2.inputs
+        assert "primary_research" in step2.inputs
+        assert "secondary_research" in step2.outputs
+
+        # comparative_report: 2 inputs, 2 outputs
+        step3 = wf.steps[3]
+        assert "primary_research" in step3.inputs
+        assert "secondary_research" in step3.inputs
+        assert "comparison_matrix" in step3.outputs
+        assert "strengths_weaknesses" in step3.outputs
+
     def test_raises_for_missing_directory(self, temp_dir: Path) -> None:
         """Test parsing fails for missing directory."""
         nonexistent = temp_dir / "nonexistent"
@@ -672,8 +648,6 @@ class TestParseJobDefinition:
         with pytest.raises(ParseError, match="does not exist"):
             parse_job_definition(nonexistent)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.1.3).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_file_instead_of_directory(self, temp_dir: Path) -> None:
         """Test parsing fails for file path."""
         file_path = temp_dir / "file.txt"
@@ -682,8 +656,6 @@ class TestParseJobDefinition:
         with pytest.raises(ParseError, match="not a directory"):
             parse_job_definition(file_path)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.1.4).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_missing_job_yml(self, temp_dir: Path) -> None:
         """Test parsing fails for directory without job.yml."""
         job_dir = temp_dir / "job"
@@ -692,19 +664,15 @@ class TestParseJobDefinition:
         with pytest.raises(ParseError, match="job.yml not found"):
             parse_job_definition(job_dir)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.1.5).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_empty_job_yml(self, temp_dir: Path) -> None:
         """Test parsing fails for empty job.yml."""
         job_dir = temp_dir / "job"
         job_dir.mkdir()
         (job_dir / "job.yml").write_text("")
 
-        with pytest.raises(ParseError, match="validation failed"):
+        with pytest.raises(ParseError, match="empty"):
             parse_job_definition(job_dir)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.1.6).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_invalid_yaml(self, temp_dir: Path) -> None:
         """Test parsing fails for invalid YAML."""
         job_dir = temp_dir / "job"
@@ -714,153 +682,9 @@ class TestParseJobDefinition:
         with pytest.raises(ParseError, match="Failed to load"):
             parse_job_definition(job_dir)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.2.2).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_raises_for_invalid_schema(self, fixtures_dir: Path) -> None:
         """Test parsing fails for schema validation errors."""
         job_dir = fixtures_dir / "jobs" / "invalid_job"
 
         with pytest.raises(ParseError, match="validation failed"):
             parse_job_definition(job_dir)
-
-
-class TestConcurrentSteps:
-    """Tests for concurrent step parsing in workflows."""
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.8.1, JOBS-REQ-002.8.4).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_parses_concurrent_steps_workflow(self, fixtures_dir: Path) -> None:
-        """Test parsing job with concurrent steps in workflow."""
-        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
-        job = parse_job_definition(job_dir)
-
-        assert job.name == "concurrent_workflow"
-        assert len(job.workflows) == 1
-        assert job.workflows[0].name == "full_analysis"
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.8.5, JOBS-REQ-002.8.6, JOBS-REQ-002.8.7).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_workflow_step_entries(self, fixtures_dir: Path) -> None:
-        """Test workflow step_entries structure with concurrent steps."""
-        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
-        job = parse_job_definition(job_dir)
-
-        workflow = job.workflows[0]
-        assert len(workflow.step_entries) == 4
-
-        # First entry: sequential step
-        assert not workflow.step_entries[0].is_concurrent
-        assert workflow.step_entries[0].step_ids == ["setup"]
-
-        # Second entry: concurrent steps
-        assert workflow.step_entries[1].is_concurrent
-        assert workflow.step_entries[1].step_ids == [
-            "research_web",
-            "research_docs",
-            "research_interviews",
-        ]
-
-        # Third entry: sequential step
-        assert not workflow.step_entries[2].is_concurrent
-        assert workflow.step_entries[2].step_ids == ["compile_results"]
-
-        # Fourth entry: sequential step
-        assert not workflow.step_entries[3].is_concurrent
-        assert workflow.step_entries[3].step_ids == ["final_review"]
-
-    def test_workflow_flattened_steps(self, fixtures_dir: Path) -> None:
-        """Test backward-compatible flattened steps list."""
-        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
-        job = parse_job_definition(job_dir)
-
-        workflow = job.workflows[0]
-        # Flattened list should include all step IDs
-        assert workflow.steps == [
-            "setup",
-            "research_web",
-            "research_docs",
-            "research_interviews",
-            "compile_results",
-            "final_review",
-        ]
-
-    def test_get_step_entry_for_step(self, fixtures_dir: Path) -> None:
-        """Test getting the step entry containing a step."""
-        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
-        job = parse_job_definition(job_dir)
-
-        workflow = job.workflows[0]
-
-        # Sequential step
-        entry = workflow.get_step_entry_for_step("setup")
-        assert entry is not None
-        assert not entry.is_concurrent
-        assert entry.step_ids == ["setup"]
-
-        # Concurrent step
-        entry = workflow.get_step_entry_for_step("research_web")
-        assert entry is not None
-        assert entry.is_concurrent
-        assert "research_web" in entry.step_ids
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.14.6).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_get_step_entry_position_in_workflow(self, fixtures_dir: Path) -> None:
-        """Test getting entry-based position in workflow."""
-        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
-        job = parse_job_definition(job_dir)
-
-        # Sequential step
-        result = job.get_step_entry_position_in_workflow("setup")
-        assert result is not None
-        entry_pos, total_entries, entry = result
-        assert entry_pos == 1
-        assert total_entries == 4
-        assert not entry.is_concurrent
-
-        # Concurrent step - all share same entry position
-        for step_id in ["research_web", "research_docs", "research_interviews"]:
-            result = job.get_step_entry_position_in_workflow(step_id)
-            assert result is not None
-            entry_pos, total_entries, entry = result
-            assert entry_pos == 2  # All in second position
-            assert total_entries == 4
-            assert entry.is_concurrent
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.14.7).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_get_concurrent_step_info(self, fixtures_dir: Path) -> None:
-        """Test getting info about position within concurrent group."""
-        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
-        job = parse_job_definition(job_dir)
-
-        # Sequential step returns None
-        assert job.get_concurrent_step_info("setup") is None
-
-        # Concurrent steps return their position in group
-        result = job.get_concurrent_step_info("research_web")
-        assert result == (1, 3)
-
-        result = job.get_concurrent_step_info("research_docs")
-        assert result == (2, 3)
-
-        result = job.get_concurrent_step_info("research_interviews")
-        assert result == (3, 3)
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.8.8).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_workflow_agent_parsed(self, fixtures_dir: Path) -> None:
-        """Test that workflow agent field is parsed from job.yml."""
-        job_dir = fixtures_dir / "jobs" / "concurrent_steps_job"
-        job = parse_job_definition(job_dir)
-
-        assert job.workflows[0].agent == "general-purpose"
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.8.8).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_workflow_agent_defaults_to_none(self, fixtures_dir: Path) -> None:
-        """Test that workflow agent defaults to None when not specified."""
-        job_dir = fixtures_dir / "jobs" / "fruits"
-        job = parse_job_definition(job_dir)
-
-        assert job.workflows[0].agent is None

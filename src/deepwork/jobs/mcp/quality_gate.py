@@ -1,54 +1,32 @@
-"""Quality gate for evaluating step outputs.
+"""Quality gate using DeepWork Reviews infrastructure.
 
-The quality gate invokes a review agent (via ClaudeCLI) to evaluate
-step outputs against quality criteria.
+Replaces the bespoke quality gate with dynamic ReviewRule objects built from
+step output reviews and process_quality_attributes. These are merged with
+.deepreview rules and processed through the standard review pipeline.
 """
 
 from __future__ import annotations
 
-import asyncio
+import json
+import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
 
-if TYPE_CHECKING:
-    from deepwork.review.config import ReviewTask
-
-import aiofiles
-
-from deepwork.jobs.mcp.claude_cli import ClaudeCLI
-from deepwork.jobs.mcp.schemas import (
-    QualityCriteriaResult,
-    QualityGateResult,
-    ReviewResult,
+from deepwork.jobs.mcp.schemas import ArgumentValue
+from deepwork.jobs.parser import (
+    JobDefinition,
+    ReviewBlock,
+    Workflow,
+    WorkflowStep,
 )
+from deepwork.review.config import ReviewRule, ReviewTask
+from deepwork.review.discovery import load_all_rules
+from deepwork.review.formatter import format_for_claude
+from deepwork.review.instructions import (
+    write_instruction_files,
+)
+from deepwork.review.matcher import match_files_to_rules
 
-# JSON Schema for quality gate response validation
-QUALITY_GATE_RESPONSE_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "required": ["passed", "feedback"],
-    "properties": {
-        "passed": {"type": "boolean"},
-        "feedback": {"type": "string"},
-        "criteria_results": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "required": ["criterion", "passed"],
-                "properties": {
-                    "criterion": {"type": "string"},
-                    "passed": {"type": "boolean"},
-                    "feedback": {"type": ["string", "null"]},
-                },
-            },
-        },
-    },
-}
-
-# File separator format: 20 dashes, filename, 20 dashes
-FILE_SEPARATOR = "-" * 20
-
-# Section headers for inputs/outputs
-SECTION_SEPARATOR = "=" * 20
+logger = logging.getLogger("deepwork.jobs.mcp.quality_gate")
 
 
 class QualityGateError(Exception):
@@ -57,782 +35,337 @@ class QualityGateError(Exception):
     pass
 
 
-# =========================================================================
-# Adapter: Jobs review data → Deepwork Reviews ReviewTask objects
-#
-# This adapter bridges the Jobs quality-gate review format into the
-# ReviewTask dataclass used by Deepwork Reviews (deepwork.review.config).
-# The Deepwork Reviews code is the canonical implementation and is NOT
-# modified here; instead we wrap it by producing ReviewTask objects that
-# its instruction/formatting pipeline can consume.
-# =========================================================================
+def validate_json_schemas(
+    outputs: dict[str, ArgumentValue],
+    step: WorkflowStep,
+    job: JobDefinition,
+    project_root: Path,
+) -> list[str]:
+    """Validate file_path outputs against their step_argument json_schema.
 
-
-def adapt_reviews_to_review_tasks(
-    reviews: list[dict[str, Any]],
-    outputs: dict[str, str | list[str]],
-    output_specs: dict[str, str],
-    step_id: str = "quality-review",
-    notes: str | None = None,
-) -> list[ReviewTask]:
-    """Convert Jobs review dicts into ReviewTask objects for the Reviews pipeline.
-
-    This is adapter logic that wraps the Deepwork Reviews mechanism so that
-    Jobs self-review can reuse the same instruction-file generation and
-    formatting code.
-
-    Args:
-        reviews: List of review dicts with ``run_each``, ``quality_criteria``,
-            and optional ``additional_review_guidance``.
-        outputs: Map of output names to file path(s) as submitted by the agent.
-        output_specs: Map of output names to their type (``"file"`` or ``"files"``).
-        step_id: Identifier for the step being reviewed (used in rule_name).
-        notes: Optional notes from the agent about work done.
-
-    Returns:
-        List of ReviewTask objects suitable for ``write_instruction_files``
-        and ``format_for_claude``.
+    Returns list of error messages (empty if all pass).
     """
-    from deepwork.review.config import ReviewTask
+    errors: list[str] = []
+    for output_name, value in outputs.items():
+        arg = job.get_argument(output_name)
+        if not arg or not arg.json_schema or arg.type != "file_path":
+            continue
 
-    tasks: list[ReviewTask] = []
+        paths = [value] if isinstance(value, str) else value
+        for path in paths:
+            full_path = project_root / path
+            if not full_path.exists():
+                continue
+            try:
+                content = full_path.read_text(encoding="utf-8")
+                parsed = json.loads(content)
+            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                errors.append(f"Output '{output_name}' file '{path}': failed to parse as JSON: {e}")
+                continue
 
-    for review in reviews:
-        run_each: str = review["run_each"]
-        quality_criteria: dict[str, str] = review["quality_criteria"]
-        guidance: str | None = review.get("additional_review_guidance")
+            from deepwork.utils.validation import ValidationError, validate_against_schema
 
-        # Build instruction text from quality criteria (adapter: translating
-        # Jobs quality_criteria dict into the free-text instructions field
-        # that ReviewTask expects).
-        instructions = _build_review_instructions_text(quality_criteria, guidance, notes)
-
-        if run_each == "step":
-            # Review all outputs together — collect every file path
-            all_paths = _flatten_output_paths(outputs)
-            tasks.append(
-                ReviewTask(
-                    rule_name=f"{step_id}-quality-review",
-                    files_to_review=all_paths,
-                    instructions=instructions,
-                    agent_name=None,
-                )
-            )
-        elif run_each in outputs:
-            output_type = output_specs.get(run_each, "file")
-            output_value = outputs[run_each]
-
-            if output_type == "files" and isinstance(output_value, list):
-                # Per-file review: one ReviewTask per file
-                for file_path in output_value:
-                    tasks.append(
-                        ReviewTask(
-                            rule_name=f"{step_id}-quality-review-{run_each}",
-                            files_to_review=[file_path],
-                            instructions=instructions,
-                            agent_name=None,
-                        )
-                    )
-            else:
-                # Single file review
-                path = output_value if isinstance(output_value, str) else str(output_value)
-                tasks.append(
-                    ReviewTask(
-                        rule_name=f"{step_id}-quality-review-{run_each}",
-                        files_to_review=[path],
-                        instructions=instructions,
-                        agent_name=None,
-                    )
+            try:
+                validate_against_schema(parsed, arg.json_schema)
+            except ValidationError as e:
+                errors.append(
+                    f"Output '{output_name}' file '{path}': JSON schema validation failed: {e}"
                 )
 
-    return tasks
+    return errors
 
 
-def _build_review_instructions_text(
-    quality_criteria: dict[str, str],
-    guidance: str | None = None,
-    notes: str | None = None,
-) -> str:
-    """Build instruction text from Jobs quality criteria for a ReviewTask.
-
-    Adapter logic: translates the Jobs structured quality_criteria dict
-    into the free-text instructions string that ReviewTask.instructions expects.
-
-    Args:
-        quality_criteria: Map of criterion name to question.
-        guidance: Optional additional review guidance.
-        notes: Optional author notes.
-
-    Returns:
-        Markdown instruction text.
-    """
-    parts: list[str] = []
-
-    parts.append(
-        "You are an editor responsible for reviewing the files listed below. "
-        "Evaluate whether the outputs meet the specified quality criteria."
-    )
-    parts.append("")
-
-    parts.append("## Criteria to Evaluate")
-    parts.append("")
-    for name, question in quality_criteria.items():
-        parts.append(f"- **{name}**: {question}")
-    parts.append("")
-
-    if guidance:
-        parts.append("## Additional Context")
-        parts.append("")
-        parts.append(guidance)
-        parts.append("")
-
-    if notes:
-        parts.append("## Author Notes")
-        parts.append("")
-        parts.append(notes)
-        parts.append("")
-
-    parts.append("## Guidelines")
-    parts.append("")
-    parts.append("- Be strict but fair")
-    parts.append(
-        "- Apply criteria pragmatically. If a criterion is not applicable "
-        "to this step's purpose, pass it."
-    )
-    parts.append("- Only mark a criterion as passed if it is clearly met or not applicable.")
-    parts.append("- Provide specific, actionable feedback for failed criteria.")
-
-    return "\n".join(parts)
-
-
-def _flatten_output_paths(outputs: dict[str, str | list[str]]) -> list[str]:
-    """Flatten outputs dict into a list of file paths (adapter helper)."""
+def _collect_output_file_paths(
+    outputs: dict[str, ArgumentValue],
+    step: WorkflowStep,
+    job: JobDefinition,
+) -> list[str]:
+    """Collect all file paths from file_path type outputs."""
     paths: list[str] = []
-    for value in outputs.values():
-        if isinstance(value, list):
-            paths.extend(value)
-        else:
-            paths.append(value)
-    return paths
-
-
-class QualityGate:
-    """Evaluates step outputs against quality criteria.
-
-    Uses ClaudeCLI to invoke a review agent that evaluates outputs
-    and returns structured feedback. Can also build review instructions
-    files for agent self-review when no external runner is configured.
-    """
-
-    # Default maximum number of files to include inline in the review payload.
-    # Beyond this threshold, only file paths are listed.
-    DEFAULT_MAX_INLINE_FILES = 5
-
-    def __init__(
-        self,
-        cli: ClaudeCLI | None = None,
-        max_inline_files: int | None = None,
-    ):
-        """Initialize quality gate.
-
-        Args:
-            cli: ClaudeCLI instance. If None, evaluate() cannot be called
-                but instruction-building methods still work.
-            max_inline_files: Maximum number of files to embed inline in
-                review payloads. Beyond this, only file paths are listed.
-                Defaults to DEFAULT_MAX_INLINE_FILES (5).
-        """
-        self._cli = cli
-        self.max_inline_files = (
-            max_inline_files if max_inline_files is not None else self.DEFAULT_MAX_INLINE_FILES
-        )
-
-    def _build_instructions(
-        self,
-        quality_criteria: dict[str, str],
-        notes: str | None = None,
-        additional_review_guidance: str | None = None,
-    ) -> str:
-        """Build the system instructions for the review agent.
-
-        Args:
-            quality_criteria: Map of criterion name to criterion question
-            notes: Optional notes from the agent about work done
-            additional_review_guidance: Optional guidance about what context to look at
-
-        Returns:
-            System instructions string
-        """
-        criteria_list = "\n".join(
-            f"- **{name}**: {question}" for name, question in quality_criteria.items()
-        )
-
-        notes_section = ""
-        if notes:
-            notes_section = f"""
-
-## Author Notes
-
-The author provided the following notes about the work done:
-
-{notes}"""
-
-        guidance_section = ""
-        if additional_review_guidance:
-            guidance_section = f"""
-
-## Additional Context
-
-{additional_review_guidance}"""
-
-        return f"""\
-You are an editor responsible for reviewing the files listed as outputs.
-Your job is to evaluate whether outputs meet the specified criteria below.
-
-## Criteria to Evaluate
-
-{criteria_list}
-{notes_section}
-{guidance_section}
-
-## Response Format
-
-You must respond with JSON in this exact structure:
-```json
-{{
-  "passed": true/false,
-  "feedback": "Brief overall summary of evaluation",
-  "criteria_results": [
-    {{
-      "criterion": "The criterion name",
-      "passed": true/false,
-      "feedback": "Specific feedback for this criterion (null if passed)"
-    }}
-  ]
-}}
-```
-
-## Guidelines
-
-- Be strict but fair
-- Apply criteria pragmatically. If a criterion is not applicable to this step's purpose, pass it.
-- Only mark a criterion as passed if it is clearly met or if it is not applicable.
-- Provide specific, actionable feedback for failed criteria
-- The overall "passed" should be true only if ALL criteria pass"""
-
-    @staticmethod
-    def _flatten_output_paths(outputs: dict[str, str | list[str]]) -> list[str]:
-        """Flatten a structured outputs dict into a list of file paths.
-
-        Args:
-            outputs: Map of output names to file path(s)
-
-        Returns:
-            Flat list of all file paths
-        """
-        paths: list[str] = []
-        for value in outputs.values():
+    for output_name, value in outputs.items():
+        arg = job.get_argument(output_name)
+        if arg and arg.type == "file_path":
             if isinstance(value, list):
                 paths.extend(value)
             else:
                 paths.append(value)
-        return paths
+    return paths
 
-    async def _read_file_sections(
-        self,
-        file_paths: dict[str, str | list[str]],
-        project_root: Path,
-    ) -> list[str]:
-        """Read files and return formatted sections for each.
 
-        Args:
-            file_paths: Map of names to file path(s)
-            project_root: Project root path for reading files
+def _build_input_context(
+    step: WorkflowStep,
+    job: JobDefinition,
+    input_values: dict[str, ArgumentValue],
+) -> str:
+    """Build a context string describing the step's inputs and their values."""
+    if not step.inputs:
+        return ""
 
-        Returns:
-            List of formatted file sections
-        """
-        sections: list[str] = []
-        all_paths = self._flatten_output_paths(file_paths)
+    parts: list[str] = []
+    parts.append("## Step Inputs\n")
 
-        for file_path in all_paths:
-            full_path = project_root / file_path
-            header = f"{FILE_SEPARATOR} {file_path} {FILE_SEPARATOR}"
+    for input_name, _input_ref in step.inputs.items():
+        arg = job.get_argument(input_name)
+        if not arg:
+            continue
 
-            if full_path.exists():
-                try:
-                    async with aiofiles.open(full_path, encoding="utf-8") as f:
-                        content = await f.read()
-                    sections.append(f"{header}\n{content}")
-                except (UnicodeDecodeError, ValueError):
-                    abs_path = full_path.resolve()
-                    sections.append(
-                        f"{header}\n[Binary file — not included in review. Read from: {abs_path}]"
-                    )
-                except Exception as e:
-                    sections.append(f"{header}\n[Error reading file: {e}]")
-            else:
-                sections.append(f"{header}\n[File not found]")
+        value = input_values.get(input_name)
+        if value is None:
+            parts.append(f"- **{input_name}** ({arg.type}): {arg.description} — *not available*")
+            continue
 
-        return sections
-
-    # =========================================================================
-    # WARNING: REVIEW PERFORMANCE IS SENSITIVE TO PAYLOAD SIZE
-    #
-    # The payload builder below sends file contents to the review agent (Claude
-    # CLI subprocess or self-review file). Reviews can get REALLY SLOW if the
-    # content gets too big:
-    #
-    # - Each file's full content is read and embedded in the prompt
-    # - The review agent must process ALL of this content to evaluate criteria
-    # - Large payloads (25+ files, or files with 500+ lines each) can cause
-    #   the review to approach or exceed its timeout
-    # - Per-file reviews (run_each: <output_name> with type: files) multiply
-    #   the problem — each file gets its own review subprocess
-    #
-    # To mitigate this, when more than self.max_inline_files files are
-    # present, the payload switches to a path-listing mode that only shows
-    # file paths instead of dumping all contents inline. The reviewer can
-    # then use its own tools to read specific files as needed.
-    #
-    # max_inline_files is configurable per instance:
-    #   - external_runner="claude": 5 (embed small sets, list large ones)
-    #   - external_runner=None (self-review): 0 (always list paths)
-    #
-    # If you're changing the payload builder, keep payload size in mind.
-    # =========================================================================
-
-    @staticmethod
-    def _build_path_listing(file_paths: dict[str, str | list[str]]) -> list[str]:
-        """Build a path-only listing for large file sets.
-
-        Args:
-            file_paths: Map of names to file path(s)
-
-        Returns:
-            List of formatted path entries
-        """
-        lines: list[str] = []
-        for name, value in file_paths.items():
+        if arg.type == "file_path":
+            # For file_path, show the path as a reference
             if isinstance(value, list):
-                for path in value:
-                    lines.append(f"- {path}  (output: {name})")
+                paths_str = ", ".join(f"@{p}" for p in value)
+                parts.append(f"- **{input_name}** (file_path): {paths_str}")
             else:
-                lines.append(f"- {value}  (output: {name})")
-        return lines
-
-    async def _build_payload(
-        self,
-        outputs: dict[str, str | list[str]],
-        project_root: Path,
-        notes: str | None = None,
-    ) -> str:
-        """Build the user prompt payload with output file contents.
-
-        When the total number of files exceeds MAX_INLINE_FILES, the payload
-        lists file paths instead of embedding full contents to avoid slow reviews.
-
-        Args:
-            outputs: Map of output names to file path(s)
-            project_root: Project root path for reading files
-            notes: Optional notes from the agent about work done
-
-        Returns:
-            Formatted payload with output file contents or path listing
-        """
-        parts: list[str] = []
-        total_files = len(self._flatten_output_paths(outputs))
-
-        if total_files > self.max_inline_files:
-            # Too many files — list paths only so the reviewer reads selectively
-            path_lines = self._build_path_listing(outputs)
-            parts.append(f"{SECTION_SEPARATOR} BEGIN OUTPUTS {SECTION_SEPARATOR}")
-            parts.append(
-                f"[{total_files} files — too many to include inline. "
-                f"Paths listed below. Read files as needed to evaluate criteria.]"
-            )
-            parts.extend(path_lines)
-            parts.append(f"{SECTION_SEPARATOR} END OUTPUTS {SECTION_SEPARATOR}")
+                parts.append(f"- **{input_name}** (file_path): @{value}")
         else:
-            # Build outputs section with full content
-            output_sections = await self._read_file_sections(outputs, project_root)
-            if output_sections:
-                parts.append(f"{SECTION_SEPARATOR} BEGIN OUTPUTS {SECTION_SEPARATOR}")
-                parts.extend(output_sections)
-                parts.append(f"{SECTION_SEPARATOR} END OUTPUTS {SECTION_SEPARATOR}")
+            # For string, include content inline
+            parts.append(f"- **{input_name}** (string): {value}")
 
-        if notes:
-            parts.append(f"{SECTION_SEPARATOR} AUTHOR NOTES {SECTION_SEPARATOR}")
-            parts.append(notes)
-            parts.append(f"{SECTION_SEPARATOR} END AUTHOR NOTES {SECTION_SEPARATOR}")
-
-        if not parts:
-            return "[No files provided]"
-
-        return "\n\n".join(parts)
-
-    def _parse_result(self, data: dict[str, Any]) -> QualityGateResult:
-        """Parse the structured output into a QualityGateResult.
-
-        Args:
-            data: The structured_output dict from ClaudeCLI
-
-        Returns:
-            Parsed QualityGateResult
-
-        Raises:
-            QualityGateError: If data cannot be interpreted
-        """
-        try:
-            criteria_results = [
-                QualityCriteriaResult(
-                    criterion=cr.get("criterion", ""),
-                    passed=cr.get("passed", False),
-                    feedback=cr.get("feedback"),
-                )
-                for cr in data.get("criteria_results", [])
-            ]
-
-            return QualityGateResult(
-                passed=data.get("passed", False),
-                feedback=data.get("feedback", "No feedback provided"),
-                criteria_results=criteria_results,
-            )
-
-        except (ValueError, KeyError) as e:
-            raise QualityGateError(
-                f"Failed to interpret quality gate result: {e}\nData was: {data}"
-            ) from e
-
-    async def build_review_instructions_file(
-        self,
-        reviews: list[dict[str, Any]],
-        outputs: dict[str, str | list[str]],
-        output_specs: dict[str, str],
-        project_root: Path,
-        notes: str | None = None,
-    ) -> str:
-        """Build complete review instructions content for writing to a file.
-
-        Used in self-review mode (no external runner) to generate a file that
-        a subagent can read and follow to evaluate quality criteria.
-
-        Args:
-            reviews: List of review dicts with run_each, quality_criteria,
-                and optional additional_review_guidance
-            outputs: Map of output names to file path(s)
-            output_specs: Map of output names to their type ("file" or "files")
-            project_root: Project root path
-            notes: Optional notes from the agent about work done
-
-        Returns:
-            Complete review instructions as a string
-        """
-        parts: list[str] = []
-
-        parts.append("# Quality Review Instructions")
-        parts.append("")
-        parts.append(
-            "You are an editor responsible for reviewing the outputs of a workflow step. "
-            "Your job is to evaluate whether the outputs meet the specified quality criteria."
-        )
-        parts.append("")
-
-        # Build outputs listing (uses self.max_inline_files to decide inline vs path-only)
-        # Notes are handled separately below in the "Author Notes" section,
-        # so we don't pass them to _build_payload here.
-        payload = await self._build_payload(outputs, project_root)
-        parts.append(payload)
-        parts.append("")
-
-        # Build review sections
-        for i, review in enumerate(reviews, 1):
-            run_each = review["run_each"]
-            quality_criteria = review["quality_criteria"]
-            guidance = review.get("additional_review_guidance")
-
-            if len(reviews) > 1:
-                scope = "all outputs together" if run_each == "step" else f"output '{run_each}'"
-                parts.append(f"## Review {i} (scope: {scope})")
-            else:
-                parts.append("## Criteria to Evaluate")
-            parts.append("")
-
-            criteria_list = "\n".join(
-                f"- **{name}**: {question}" for name, question in quality_criteria.items()
-            )
-            parts.append(criteria_list)
-            parts.append("")
-
-            if run_each != "step" and run_each in outputs:
-                output_type = output_specs.get(run_each, "file")
-                output_value = outputs[run_each]
-                if output_type == "files" and isinstance(output_value, list):
-                    parts.append(
-                        f"Evaluate the above criteria for **each file** in output '{run_each}':"
-                    )
-                    for fp in output_value:
-                        parts.append(f"- {fp}")
-                    parts.append("")
-
-            if guidance:
-                parts.append("### Additional Context")
-                parts.append("")
-                parts.append(guidance)
-                parts.append("")
-
-        if notes:
-            parts.append("## Author Notes")
-            parts.append("")
-            parts.append(notes)
-            parts.append("")
-
-        parts.append("## Guidelines")
-        parts.append("")
-        parts.append("- Be strict but fair")
-        parts.append(
-            "- Apply criteria pragmatically. If a criterion is not applicable "
-            "to this step's purpose, pass it."
-        )
-        parts.append("- Only mark a criterion as passed if it is clearly met or not applicable.")
-        parts.append("- Provide specific, actionable feedback for failed criteria.")
-        parts.append(
-            "- The overall review should PASS only if ALL criteria across all reviews pass."
-        )
-        parts.append("")
-        parts.append("## Your Task")
-        parts.append("")
-        parts.append("1. Read each output file listed above")
-        parts.append("2. Evaluate every criterion in every review section")
-        parts.append("3. For each criterion, report **PASS** or **FAIL** with specific feedback")
-        parts.append("4. At the end, clearly state the overall result: **PASSED** or **FAILED**")
-        parts.append(
-            "5. If any criteria failed, provide clear actionable feedback on what needs to change"
-        )
-
-        return "\n".join(parts)
-
-    @staticmethod
-    def compute_timeout(file_count: int) -> int:
-        """Compute dynamic timeout based on number of files.
-
-        Base timeout is 240 seconds (4 minutes). For every file beyond
-        the first 5, add 30 seconds. Examples:
-          - 3 files  -> 240s
-          - 5 files  -> 240s
-          - 10 files -> 240 + 30*5 = 390s (6.5 min)
-          - 20 files -> 240 + 30*15 = 690s (11.5 min)
-
-        Args:
-            file_count: Total number of files being reviewed
-
-        Returns:
-            Timeout in seconds
-        """
-        return 240 + 30 * max(0, file_count - 5)
-
-    async def evaluate(
-        self,
-        quality_criteria: dict[str, str],
-        outputs: dict[str, str | list[str]],
-        project_root: Path,
-        notes: str | None = None,
-        additional_review_guidance: str | None = None,
-    ) -> QualityGateResult:
-        """Evaluate step outputs against quality criteria.
-
-        Args:
-            quality_criteria: Map of criterion name to criterion question
-            outputs: Map of output names to file path(s)
-            project_root: Project root path
-            notes: Optional notes from the agent about work done
-            additional_review_guidance: Optional guidance for the reviewer
-
-        Returns:
-            QualityGateResult with pass/fail and feedback
-
-        Raises:
-            QualityGateError: If evaluation fails
-        """
-        if not quality_criteria:
-            # No criteria = auto-pass
-            return QualityGateResult(
-                passed=True,
-                feedback="No quality criteria defined - auto-passing",
-                criteria_results=[],
-            )
-
-        if self._cli is None:
-            raise QualityGateError(
-                "Cannot evaluate quality gate without a CLI runner. "
-                "Use build_review_instructions_file() for self-review mode."
-            )
-
-        instructions = self._build_instructions(
-            quality_criteria,
-            notes=notes,
-            additional_review_guidance=additional_review_guidance,
-        )
-        payload = await self._build_payload(outputs, project_root, notes=notes)
-
-        # Dynamic timeout: more files = more time for the reviewer
-        file_count = len(self._flatten_output_paths(outputs))
-        timeout = self.compute_timeout(file_count)
-
-        from deepwork.jobs.mcp.claude_cli import ClaudeCLIError
-
-        try:
-            data = await self._cli.run(
-                prompt=payload,
-                system_prompt=instructions,
-                json_schema=QUALITY_GATE_RESPONSE_SCHEMA,
-                cwd=project_root,
-                timeout=timeout,
-            )
-        except ClaudeCLIError as e:
-            raise QualityGateError(str(e)) from e
-
-        return self._parse_result(data)
-
-    async def evaluate_reviews(
-        self,
-        reviews: list[dict[str, Any]],
-        outputs: dict[str, str | list[str]],
-        output_specs: dict[str, str],
-        project_root: Path,
-        notes: str | None = None,
-    ) -> list[ReviewResult]:
-        """Evaluate all reviews for a step, running them in parallel.
-
-        Args:
-            reviews: List of review dicts with run_each, quality_criteria,
-                and optional additional_review_guidance
-            outputs: Map of output names to file path(s)
-            output_specs: Map of output names to their type ("file" or "files")
-            project_root: Project root path
-            notes: Optional notes from the agent about work done
-
-        Returns:
-            List of ReviewResult for any failed reviews (empty if all pass)
-        """
-        if not reviews:
-            return []
-
-        # Each task is (run_each, target_file, criteria, review_outputs, guidance)
-        tasks: list[
-            tuple[str, str | None, dict[str, str], dict[str, str | list[str]], str | None]
-        ] = []
-
-        for review in reviews:
-            run_each = review["run_each"]
-            quality_criteria = review["quality_criteria"]
-            guidance = review.get("additional_review_guidance")
-
-            if run_each == "step":
-                # Review all outputs together
-                tasks.append((run_each, None, quality_criteria, outputs, guidance))
-            elif run_each in outputs:
-                output_type = output_specs.get(run_each, "file")
-                output_value = outputs[run_each]
-
-                if output_type == "files" and isinstance(output_value, list):
-                    # Run once per file
-                    for file_path in output_value:
-                        tasks.append(
-                            (
-                                run_each,
-                                file_path,
-                                quality_criteria,
-                                {run_each: file_path},
-                                guidance,
-                            )
-                        )
-                else:
-                    # Single file - run once
-                    tasks.append(
-                        (
-                            run_each,
-                            output_value if isinstance(output_value, str) else None,
-                            quality_criteria,
-                            {run_each: output_value},
-                            guidance,
-                        )
-                    )
-
-        async def run_review(
-            run_each: str,
-            target_file: str | None,
-            criteria: dict[str, str],
-            review_outputs: dict[str, str | list[str]],
-            guidance: str | None,
-        ) -> ReviewResult:
-            result = await self.evaluate(
-                quality_criteria=criteria,
-                outputs=review_outputs,
-                project_root=project_root,
-                notes=notes,
-                additional_review_guidance=guidance,
-            )
-            return ReviewResult(
-                review_run_each=run_each,
-                target_file=target_file,
-                passed=result.passed,
-                feedback=result.feedback,
-                criteria_results=result.criteria_results,
-            )
-
-        results = await asyncio.gather(*(run_review(*task) for task in tasks))
-
-        return [r for r in results if not r.passed]
+    parts.append("")
+    return "\n".join(parts)
 
 
-class MockQualityGate(QualityGate):
-    """Mock quality gate for testing.
+def build_dynamic_review_rules(
+    step: WorkflowStep,
+    job: JobDefinition,
+    workflow: Workflow,
+    outputs: dict[str, ArgumentValue],
+    input_values: dict[str, ArgumentValue],
+    work_summary: str | None,
+    project_root: Path,
+) -> list[ReviewRule]:
+    """Build dynamic ReviewRule objects from step output reviews.
 
-    Always passes unless configured otherwise.
+    For each output with a review block (on the output ref or inherited from
+    the step_argument), creates a ReviewRule with the output files as match
+    targets.
     """
+    rules: list[ReviewRule] = []
+    input_context = _build_input_context(step, job, input_values)
+    common_info = workflow.common_job_info or ""
 
-    def __init__(self, should_pass: bool = True, feedback: str = "Mock evaluation"):
-        """Initialize mock quality gate.
+    # Build preamble with common info and inputs
+    preamble_parts: list[str] = []
+    if common_info:
+        preamble_parts.append(f"## Job Context\n\n{common_info}")
+    if input_context:
+        preamble_parts.append(input_context)
+    preamble = "\n\n".join(preamble_parts)
 
-        Args:
-            should_pass: Whether evaluations should pass
-            feedback: Feedback message to return
-        """
-        super().__init__()
-        self.should_pass = should_pass
-        self.feedback = feedback
-        self.evaluations: list[dict[str, Any]] = []
+    # Process each output
+    for output_name, output_ref in step.outputs.items():
+        arg = job.get_argument(output_name)
+        if not arg:
+            continue
 
-    async def evaluate(
-        self,
-        quality_criteria: dict[str, str],
-        outputs: dict[str, str | list[str]],
-        project_root: Path,
-        notes: str | None = None,
-        additional_review_guidance: str | None = None,
-    ) -> QualityGateResult:
-        """Mock evaluation - records call and returns configured result."""
-        self.evaluations.append(
-            {
-                "quality_criteria": quality_criteria,
-                "outputs": outputs,
-                "notes": notes,
-                "additional_review_guidance": additional_review_guidance,
-            }
-        )
+        # Collect review blocks: output-level review + argument-level review
+        review_blocks: list[ReviewBlock] = []
+        if output_ref.review:
+            review_blocks.append(output_ref.review)
+        if arg.review:
+            review_blocks.append(arg.review)
 
-        criteria_results = [
-            QualityCriteriaResult(
-                criterion=name,
-                passed=self.should_pass,
-                feedback=None if self.should_pass else self.feedback,
+        if not review_blocks:
+            continue
+
+        # Get the output value
+        value = outputs.get(output_name)
+        if value is None:
+            continue
+
+        # Get file paths for file_path type
+        if arg.type == "file_path":
+            file_paths = [value] if isinstance(value, str) else list(value)
+        else:
+            # For string type, no file matching — create a synthetic task later
+            file_paths = []
+
+        for i, review_block in enumerate(review_blocks):
+            # Build full instructions with preamble
+            full_instructions = (
+                f"{preamble}\n\n{review_block.instructions}" if preamble else review_block.instructions
             )
-            for name in quality_criteria
-        ]
 
-        return QualityGateResult(
-            passed=self.should_pass,
-            feedback=self.feedback,
-            criteria_results=criteria_results,
+            suffix = "_arg" if i > 0 else ""
+            rule_name = f"step_{step.name}_output_{output_name}{suffix}"
+
+            if arg.type == "file_path" and file_paths:
+                # Create exact-match patterns for the output files
+                include_patterns = list(file_paths)
+
+                rule = ReviewRule(
+                    name=rule_name,
+                    description=f"Review of output '{output_name}' from step '{step.name}'",
+                    include_patterns=include_patterns,
+                    exclude_patterns=[],
+                    strategy=review_block.strategy,
+                    instructions=full_instructions,
+                    agent=review_block.agent,
+                    all_changed_filenames=bool(
+                        review_block.additional_context
+                        and review_block.additional_context.get("all_changed_filenames")
+                    ),
+                    unchanged_matching_files=bool(
+                        review_block.additional_context
+                        and review_block.additional_context.get("unchanged_matching_files")
+                    ),
+                    source_dir=project_root,
+                    source_file=job.job_dir / "job.yml",
+                    source_line=0,
+                )
+                rules.append(rule)
+
+    # Process process_quality_attributes
+    if step.process_quality_attributes and work_summary is not None:
+        attrs_list = "\n".join(
+            f"- **{name}**: {statement}"
+            for name, statement in step.process_quality_attributes.items()
         )
+
+        # Build context with all inputs and outputs
+        output_context_parts: list[str] = []
+        for output_name, value in outputs.items():
+            arg = job.get_argument(output_name)
+            if arg and arg.type == "file_path":
+                if isinstance(value, list):
+                    paths_str = ", ".join(f"@{p}" for p in value)
+                    output_context_parts.append(f"- **{output_name}** (file_path): {paths_str}")
+                else:
+                    output_context_parts.append(f"- **{output_name}** (file_path): @{value}")
+            elif arg and arg.type == "string":
+                output_context_parts.append(f"- **{output_name}** (string): {value}")
+
+        output_context = "\n".join(output_context_parts)
+
+        pqa_instructions = f"""{preamble}
+
+## Process Quality Review
+
+You need to review the description of the work done as summarized below against the following quality criteria. If you find issues, assume that the work description could be incorrect, so phrase your answers always as telling the agent to fix its work or the `work_summary`.
+
+## Quality Criteria
+
+{attrs_list}
+
+## Work Summary (work_summary)
+
+{work_summary}
+
+## Step Outputs
+
+{output_context}
+
+Evaluate whether the work described in the `work_summary` meets each quality criterion. If an output file helps verify a criterion, read it."""
+
+        # Create a synthetic ReviewTask directly (not a ReviewRule since there are
+        # no file patterns to match — this is about the process, not files)
+        # We'll create a rule that matches all output files so it goes through
+        # the pipeline
+        output_paths = _collect_output_file_paths(outputs, step, job)
+        if output_paths:
+            pqa_rule = ReviewRule(
+                name=f"step_{step.name}_process_quality",
+                description=f"Process quality review for step '{step.name}'",
+                include_patterns=output_paths,
+                exclude_patterns=[],
+                strategy="matches_together",
+                instructions=pqa_instructions,
+                agent=None,
+                all_changed_filenames=False,
+                unchanged_matching_files=False,
+                source_dir=project_root,
+                source_file=job.job_dir / "job.yml",
+                source_line=0,
+            )
+            rules.append(pqa_rule)
+
+    return rules
+
+
+def run_quality_gate(
+    step: WorkflowStep,
+    job: JobDefinition,
+    workflow: Workflow,
+    outputs: dict[str, ArgumentValue],
+    input_values: dict[str, ArgumentValue],
+    work_summary: str | None,
+    project_root: Path,
+    platform: str = "claude",
+) -> str | None:
+    """Run the quality gate and return review instructions if reviews are needed.
+
+    Returns:
+        Review instructions string if there are reviews to run, None if all pass.
+    """
+    # 1. Validate json_schemas first
+    schema_errors = validate_json_schemas(outputs, step, job, project_root)
+    if schema_errors:
+        error_text = "\n".join(f"- {e}" for e in schema_errors)
+        return f"JSON schema validation failed:\n\n{error_text}\n\nFix these issues and call finished_step again."
+
+    # 2. Build dynamic ReviewRules from step output reviews
+    dynamic_rules = build_dynamic_review_rules(
+        step=step,
+        job=job,
+        workflow=workflow,
+        outputs=outputs,
+        input_values=input_values,
+        work_summary=work_summary,
+        project_root=project_root,
+    )
+
+    # 3. Load .deepreview rules
+    deepreview_rules, _errors = load_all_rules(project_root)
+
+    # 4. Get the "changed files" list = output file paths
+    output_files = _collect_output_file_paths(outputs, step, job)
+
+    # 5. Match .deepreview rules against output files
+    deepreview_tasks: list[ReviewTask] = []
+    if deepreview_rules and output_files:
+        deepreview_tasks = match_files_to_rules(output_files, deepreview_rules, project_root, platform)
+
+    # 6. Match dynamic rules against output files
+    dynamic_tasks: list[ReviewTask] = []
+    if dynamic_rules and output_files:
+        dynamic_tasks = match_files_to_rules(output_files, dynamic_rules, project_root, platform)
+
+    # 7. Combine all tasks
+    all_tasks = dynamic_tasks + deepreview_tasks
+
+    if not all_tasks:
+        return None
+
+    # 8. Write instruction files (honors .passed markers)
+    task_files = write_instruction_files(all_tasks, project_root)
+
+    if not task_files:
+        # All reviews already passed
+        return None
+
+    # 9. Format as review instructions
+    review_output = format_for_claude(task_files, project_root)
+
+    # 10. Build complete response with guidance
+    guidance = _build_review_guidance(review_output)
+
+    return guidance
+
+
+def _build_review_guidance(review_output: str) -> str:
+    """Build the complete review guidance including /review skill instructions."""
+    return f"""Quality reviews are required before this step can advance.
+
+{review_output}
+
+## How to Run Reviews
+
+For each review task listed above, launch it as a parallel Task agent. The task's prompt field points to an instruction file — read it and follow the review instructions.
+
+## After Reviews
+
+For any failing reviews, if you believe the issue is invalid, then you can call `mark_review_as_passed` on it. Otherwise, you should act on any feedback from the review to fix the issues. Once done, call `finished_step` again to see if you will pass now."""

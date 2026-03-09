@@ -1,124 +1,337 @@
 name: deepwork_reviews
-version: "1.0.1"
 summary: "Manage .deepreview rules for automated code review"
-common_job_info_provided_to_all_steps_at_runtime: |
-  This job manages .deepreview configuration files, which define automated code review
-  rules for DeepWork Reviews. Reviews are triggered when files matching specified glob
-  patterns change in a PR or commit.
 
-  ## .deepreview File Format
+step_arguments:
+  - name: deepreview_file
+    description: "A .deepreview configuration file with review rules"
+    type: file_path
 
-  YAML file at the repository root. Each top-level key is a rule name:
+  - name: deepreview_files
+    description: "All .deepreview files that were created or modified"
+    type: file_path
 
-  ```yaml
-  rule_name:
-    description: "Short description of what this rule checks."
-    match:
-      include:
-        - "glob/pattern/**"
-      exclude:           # optional
-        - "glob/to/exclude/**"
-    review:
-      strategy: individual | matches_together | all_changed_files
-      instructions: |
-        Inline review instructions for the reviewer.
-      # OR reference an external file:
-      # instructions:
-      #   file: path/to/instructions.md
-      additional_context:   # optional
-        unchanged_matching_files: true   # include matching files even if not changed
-        all_changed_filenames: true      # include list of all changed files
-  ```
+  - name: migrated_skill_backups
+    description: "Backup copies of deleted skills in .deepwork/tmp/migrated_skills/"
+    type: file_path
 
-  ## Key Concepts
+  - name: documentation_files_found
+    description: "Listing of all documentation files found with their rule coverage status"
+    type: file_path
 
-  - **match.include**: Glob patterns that trigger this rule when matched files change
-  - **match.exclude**: Glob patterns to skip (optional). Files matching .gitignore
-    rules (e.g. `__pycache__/`, `node_modules/`, `.env`) are excluded automatically,
-    so they don't need to be listed here.
-  - **strategy**: How to batch reviews:
-    - `individual`: One review per matched file
-    - `matches_together`: All matched files reviewed together
-    - `all_changed_files`: All changed files (not just matched ones) reviewed together
-  - **additional_context.unchanged_matching_files**: When true, the reviewer gets files
-    matching include patterns even if they didn't change in this PR. Critical for
-    document freshness checks — lets the reviewer see the doc even when only source
-    files changed.
+  - name: convention_files
+    description: "Language convention/guidelines files (created or pre-existing) referenced by the review rules"
+    type: file_path
 
-  ## Rule Naming Conventions
+  - name: doc_path
+    description: "Path to the documentation file to protect with a review rule"
+    type: string
 
-  - Narrow rules (specific to one doc): `update_<doc_name_without_extension>`
-  - Wide rules (protecting multiple docs): `update_documents_relating_to_<watched_path_description>`
+  - name: analysis
+    description: "Dependency analysis documenting which source files affect the doc, recommended match patterns, strategy decision, and whether an existing rule should be extended"
+    type: file_path
 
 workflows:
-  - name: discover_rules
+  discover_rules:
     summary: "Set up a complete suite of .deepreview rules for a project — native reviews, skill migration, documentation update rules, and language-specific code review"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      This job manages .deepreview configuration files, which define automated code review
+      rules for DeepWork Reviews. Reviews are triggered when files matching specified glob
+      patterns change in a PR or commit.
+
+      ## .deepreview File Format
+
+      YAML file at the repository root. Each top-level key is a rule name:
+
+      ```yaml
+      rule_name:
+        description: "Short description of what this rule checks."
+        match:
+          include:
+            - "glob/pattern/**"
+          exclude:           # optional
+            - "glob/to/exclude/**"
+        review:
+          strategy: individual | matches_together | all_changed_files
+          instructions: |
+            Inline review instructions for the reviewer.
+          # OR reference an external file:
+          # instructions:
+          #   file: path/to/instructions.md
+          additional_context:   # optional
+            unchanged_matching_files: true   # include matching files even if not changed
+            all_changed_filenames: true      # include list of all changed files
+      ```
+
+      ## Key Concepts
+
+      - **match.include**: Glob patterns that trigger this rule when matched files change
+      - **match.exclude**: Glob patterns to skip (optional). Files matching .gitignore
+        rules (e.g. `__pycache__/`, `node_modules/`, `.env`) are excluded automatically,
+        so they don't need to be listed here.
+      - **strategy**: How to batch reviews:
+        - `individual`: One review per matched file
+        - `matches_together`: All matched files reviewed together
+        - `all_changed_files`: All changed files (not just matched ones) reviewed together
+      - **additional_context.unchanged_matching_files**: When true, the reviewer gets files
+        matching include patterns even if they didn't change in this PR. Critical for
+        document freshness checks — lets the reviewer see the doc even when only source
+        files changed.
+
+      ## Rule Naming Conventions
+
+      - Narrow rules (specific to one doc): `update_<doc_name_without_extension>`
+      - Wide rules (protecting multiple docs): `update_documents_relating_to_<watched_path_description>`
     steps:
-      - add_deepwork_native_reviews
-      - migrate_existing_skills
-      - add_documentation_rules
-      - add_language_reviews
+      - name: add_deepwork_native_reviews
+        instructions: |
+          # Add DeepWork Native Reviews
 
-  - name: add_document_update_rule
-    summary: "Add a review rule ensuring a documentation file stays up-to-date when related source files change"
-    steps:
-      - analyze_dependencies
-      - apply_rule
+          ## Objective
 
-steps:
-  - id: add_deepwork_native_reviews
-    name: "Add DeepWork Native Reviews"
-    description: "Ensure the top-level .deepreview has the suggest_new_reviews and prompt_best_practices rules, adding them if missing."
-    instructions_file: steps/add_deepwork_native_reviews.md
-    inputs: []
-    outputs:
-      deepreview_file:
-        type: file
-        description: "The top-level .deepreview file with both native review rules present"
-        required: true
-    dependencies: []
-    reviews:
-      - run_each: deepreview_file
-        quality_criteria:
-          "prompt_best_practices Rule Present": >
-            The .deepreview file contains a prompt_best_practices rule with strategy: individual
-            and match patterns that cover prompt/instruction markdown files in the project.
-          "suggest_new_reviews Rule Present": >
-            The .deepreview file contains a suggest_new_reviews rule with strategy: matches_together
-            and broad match patterns covering project files.
+          Ensure the project's top-level `.deepreview` file contains the two built-in DeepWork review rules: `suggest_new_reviews` and `prompt_best_practices`. These are general-purpose rules that benefit any project using DeepWork Reviews.
 
-  - id: migrate_existing_skills
-    name: "Migrate Existing Review Skills"
-    description: "Find project-owned skills that perform review-like functions, convert them to .deepreview rules, and remove the originals (with backups)."
-    instructions_file: steps/migrate_existing_skills.md
-    inputs: []
-    outputs:
-      deepreview_files:
-        type: files
-        description: "All .deepreview files that were created or modified during migration"
-        required: true
-      migrated_skill_backups:
-        type: files
-        description: "Backup copies of deleted skills in .deepwork/tmp/migrated_skills/"
-        required: true
-    dependencies:
-      - add_deepwork_native_reviews
-    reviews:
-      - run_each: step
-        additional_review_guidance: |
-          This step migrates review-like skills into .deepreview rules. Two kinds of
-          output files exist:
+          ## Task
 
-          - **deepreview_files**: The NEW .deepreview rules. These are what you are evaluating.
-          - **migrated_skill_backups**: Backups of DELETED skills in .deepwork/tmp/migrated_skills/.
-            These are REFERENCE ONLY. Do NOT give feedback on these files — they are dead.
-            Use them solely to verify the new .deepreview rules faithfully capture the
-            original skill's intent.
+          ### 1. Read the example review instruction files
 
-          Read each backup to understand what the old skill did, then find and evaluate
-          the corresponding new .deepreview rule. All feedback should be about the new
-          rules, never about the old skills.
-        quality_criteria:
+          Read these files from the DeepWork plugin:
+          - `plugins/claude/example_reviews/prompt_best_practices.md`
+          - `plugins/claude/example_reviews/suggest_new_reviews.md`
+
+          These are the full, detailed versions of the two review instruction prompts. Read them to understand the review's intent, checklist, and tone. The inline YAML rules in steps 3 and 4 below are condensed versions — use the example files to fill in any gaps or to judge whether the inline version captures the key points.
+
+          For reference, this is how the DeepWork project's own `.deepreview` configures these two rules (using `instructions: { file: ... }` to point at the example files above):
+
+          ```yaml
+          prompt_best_practices:
+            description: "Review prompt/instruction markdown files for Anthropic prompt engineering best practices."
+            match:
+              include:
+                - "**/CLAUDE.md"
+                - "**/AGENTS.md"
+                - ".claude/**/*.md"
+                - ".deepwork/review/*.md"
+                - ".deepwork/jobs/**/*.md"
+            review:
+              strategy: individual
+              instructions:
+                file: .deepwork/review/prompt_best_practices.md
+
+          suggest_new_reviews:
+            description: "Analyze all changes and suggest new review rules that would catch issues going forward."
+            match:
+              include:
+                - "**/*"
+              exclude:
+                - ".github/**"
+            review:
+              strategy: matches_together
+              instructions:
+                file: .deepwork/review/suggest_new_reviews.md
+          ```
+
+          When creating rules for the target project, adapt the `match.include` patterns to its structure. The inline YAML in steps 3 and 4 uses inline `instructions:` text (suitable for projects that don't have the external instruction files), while the above uses `instructions: { file: ... }` references.
+
+          If the example files are not found (e.g., the plugin is installed differently), proceed using the inline YAML in steps 3 and 4 below.
+
+          ### 2. Check the existing `.deepreview` file
+
+          Read the top-level `.deepreview` file if it exists. Check whether `suggest_new_reviews` and/or `prompt_best_practices` rules are already present.
+
+          - If both rules already exist with reasonable configurations, skip to the output step — no changes needed.
+          - If one or both are missing, proceed to add the missing rule(s).
+          - If a rule exists but has a substantially different configuration (wrong strategy, missing match patterns), update it to match the specification below.
+
+          ### 3. Add the `prompt_best_practices` rule (if not present)
+
+          Add to `.deepreview`:
+
+          ```yaml
+          prompt_best_practices:
+            description: "Review prompt/instruction markdown files for Anthropic prompt engineering best practices."
+            match:
+              include:
+                - "**/CLAUDE.md"
+                - "**/AGENTS.md"
+                - ".claude/**/*.md"
+                - ".deepwork/review/*.md"
+                - ".deepwork/jobs/**/*.md"
+            review:
+              strategy: individual
+              instructions: |
+                Review this markdown file as a prompt or instruction file, evaluating it
+                against Anthropic's prompt engineering best practices.
+
+                For each issue found, report:
+                1. Location (section or line)
+                2. Severity (Critical / High / Medium / Low)
+                3. Best practice violated
+                4. Description of the issue
+                5. Suggested improvement
+
+                Check for:
+                - Clarity and specificity (concrete criteria vs vague language)
+                - Structure and formatting (XML tags, headers, numbered lists for distinct sections)
+                - Role and context (enough context for the AI, explicit assumptions)
+                - Examples for complex/nuanced tasks
+                - Output format specification
+                - Prompt anti-patterns (contradictions, instruction overload, buried critical instructions)
+                - Variable/placeholder clarity
+
+                Use judgment proportional to the file's complexity. A short, focused
+                instruction for a simple task does not need few-shot examples or XML tags.
+                Do not flag issues for best practices that are irrelevant to the file's purpose.
+          ```
+
+          Adapt the `match.include` patterns to the project if needed. Check for directories containing `.md` files that appear to be AI instruction files (e.g., `.gemini/`, `.cursorrules`, custom agent directories). If found, add those patterns too. You may add both missing rules in a single edit to the `.deepreview` file. The patterns above are the baseline.
+
+          ### 4. Add the `suggest_new_reviews` rule (if not present)
+
+          Add to `.deepreview`:
+
+          ```yaml
+          suggest_new_reviews:
+            description: "Analyze all changes and suggest new review rules that would catch issues going forward."
+            match:
+              include:
+                - "**/*"
+              exclude:
+                - ".github/**"
+            review:
+              strategy: matches_together
+              instructions: |
+                Analyze the changeset to determine whether any new DeepWork review rules
+                should be added.
+
+                1. Call get_configured_reviews to see all currently configured review rules.
+                2. Read README_REVIEWS.md if present for context on review capabilities.
+                3. For each change, consider:
+                   - Did this change introduce a type of issue a review rule could catch?
+                   - Is there a pattern likely to recur?
+                   - Would an existing rule benefit from a small scope expansion?
+                4. Be extremely conservative. Only suggest rules that are:
+                   - Extremely narrow (targets 1 specific file or small bounded set)
+                   - Slight additions to existing rules (adding a glob to an include list)
+                   - Catches an issue likely to recur and worth ongoing cost
+                5. If no rules are warranted, say so. An empty suggestion list is valid.
+          ```
+
+          ### 5. Validate
+
+          Ensure the `.deepreview` file is valid YAML. Ensure both rules have all required fields: `description`, `match.include`, `review.strategy`, `review.instructions`.
+
+          ## Output
+
+          ### deepreview_file
+
+          The top-level `.deepreview` file containing both native review rules (alongside any pre-existing rules). If no changes were required (both rules already existed with correct configuration), still provide the `.deepreview` file path as the output to confirm the check was completed.
+
+          ## Quality Criteria
+
+          - The `.deepreview` file exists at the repository root and is valid YAML
+          - A `prompt_best_practices` rule is present with `strategy: individual` and match patterns covering prompt/instruction files
+          - A `suggest_new_reviews` rule is present with `strategy: matches_together` and broad match patterns
+          - Pre-existing rules in the file are preserved unchanged
+          - Match patterns are adapted to the project's actual structure (not just copy-pasted defaults)
+        inputs: {}
+        outputs:
+          deepreview_file:
+            required: true
+            review:
+              strategy: matches_together
+              instructions: |
+                Verify the .deepreview file contains both native review rules with correct configuration.
+
+                Evaluate the output against these criteria:
+                - prompt_best_practices Rule Present: The .deepreview file contains a prompt_best_practices rule with strategy: individual and match patterns that cover prompt/instruction markdown files in the project.
+                - suggest_new_reviews Rule Present: The .deepreview file contains a suggest_new_reviews rule with strategy: matches_together and broad match patterns covering project files.
+
+      - name: migrate_existing_skills
+        instructions: |
+          # Migrate Existing Review Skills
+
+          ## Objective
+
+          Find any existing skills in the project (not from installed plugins) that perform review-like functions, convert each into a `.deepreview` rule, and remove the original skill — preserving a backup copy.
+
+          ## Task
+
+          ### 1. Identify candidate skills
+
+          Search the project for skill definitions that appear to be about code review, linting, quality checks, or similar review functions. Look in:
+
+          - `.claude/skills/` — Claude Code custom skills
+          - `.gemini/skills/` — Gemini CLI custom skills
+          - Any other skill directories the project may have
+
+          **Only target skills that belong to the project itself** — do not touch skills that come from installed plugins (e.g., the `deepwork` skill, `review` skill, or `configure_reviews` skill from the DeepWork plugin). Plugin-provided skills live in plugin directories (e.g., inside a `.claude-plugin/` parent or a cloned plugin repo) and should be left alone. When in doubt, check whether the skill directory is inside a plugin directory.
+
+          A skill is a candidate for migration if it:
+          - Reviews, lints, or checks code quality
+          - Enforces coding standards or conventions
+          - Validates documentation, configs, or other files
+          - Performs any kind of automated review that could be expressed as a `.deepreview` rule
+
+          If no candidate skills are found, report that in the output and finish — no migration needed.
+
+          ### 2. For each candidate skill
+
+          #### a. Analyze the skill
+
+          Read the skill's `SKILL.md` (or equivalent definition file) thoroughly. Understand:
+          - What files does it review? (These become `match.include` patterns)
+          - What does it check for? (This becomes `review.instructions`)
+          - Does it review files individually or together? (This determines `strategy`)
+          - Does it need context beyond the changed files? (This determines `additional_context`)
+
+          #### b. Create the `.deepreview` rule
+
+          Translate the skill into a `.deepreview` rule. Prefer the top-level `.deepreview` file unless the original skill was explicitly scoped to a subdirectory (e.g., only reviewed files under `src/`). In that case, place the rule in a `.deepreview` file at that subdirectory root.
+
+          - Use a descriptive rule name derived from the skill name
+          - Write clear, complete review instructions that capture everything the skill was doing
+          - Choose the appropriate strategy (`individual`, `matches_together`, or `all_changed_files`)
+          - If the skill's review instructions exceed roughly 200 words, put them in a file under `.deepwork/review/` and reference it with `instructions: { file: ... }`
+
+          #### c. Back up the skill
+
+          Before deleting the skill, copy it to `.deepwork/tmp/migrated_skills/`. Preserve the full directory structure. For example, if deleting `.claude/skills/python_review/SKILL.md`, copy it to `.deepwork/tmp/migrated_skills/.claude/skills/python_review/SKILL.md`.
+
+          #### d. Delete the original skill
+
+          Remove the skill directory from its original location.
+
+          ### 3. Validate
+
+          - Ensure all `.deepreview` rules are valid YAML with all required fields
+          - Ensure each backup exists in `.deepwork/tmp/migrated_skills/`
+          - Ensure the original skill directories have been removed
+
+          ## Output
+
+          ### deepreview_files
+
+          All `.deepreview` files that were created or modified during migration.
+
+          ### migrated_skill_backups
+
+          All backup copies of deleted skills in `.deepwork/tmp/migrated_skills/`. If no skills were migrated, this output should contain a single file `.deepwork/tmp/migrated_skills/NONE.md` stating that no review-like skills were found.
+
+          ## Quality Criteria
+
+          - Every identified review-like skill has a corresponding `.deepreview` rule
+          - Each rule's instructions faithfully capture the intent and coverage of the original skill
+          - Match patterns make sense for the file types the original skill targeted
+          - The strategy choice (individual vs matches_together) is appropriate for the review type
+          - All original skills have been backed up before deletion
+          - No plugin-provided skills were touched
+        inputs: {}
+        outputs:
+          deepreview_files:
+            required: true
+          migrated_skill_backups:
+            required: true
+        process_quality_attributes:
           "Replacement Rules Capture Skill Intent": >
             Every migrated skill has a corresponding .deepreview rule whose instructions
             faithfully capture the original skill's review logic. No significant review
@@ -129,162 +342,704 @@ steps:
             file types and scopes that the original skill was designed to review.
             Patterns are neither too broad nor too narrow.
 
-  - id: add_documentation_rules
-    name: "Add Documentation Update Rules"
-    description: "Find project documentation files and create .deepreview rules to keep each up-to-date when related source files change."
-    instructions_file: steps/add_documentation_rules.md
-    inputs: []
-    outputs:
-      documentation_files_found:
-        type: file
-        description: "Listing of all documentation files found with their rule coverage status"
-        required: true
-      deepreview_files:
-        type: files
-        description: "All .deepreview files created or modified with documentation update rules"
-        required: true
-    dependencies:
-      - add_deepwork_native_reviews
-      - migrate_existing_skills
-    reviews:
-      - run_each: deepreview_files
-        additional_review_guidance: |
-          Read each .deepreview file and the documentation files its rules protect.
-          Verify that the trigger scope of each rule is as narrow as possible —
-          it should only fire when files that could actually affect the doc's accuracy
-          change. Consider whether having more separate reviews with narrower scope
-          is actually more efficient than a slightly wider, shared review — each
-          review spawns a sub-agent with material overhead.
-        quality_criteria:
-          "Documentation Covered": >
-            Every project documentation file that describes the project itself has
-            a corresponding rule (either newly created or pre-existing).
-          "Trigger Scope Minimal": >
-            Each rule's match.include patterns are as narrow as possible while still
-            catching changes that could affect the protected documentation. Rules are
-            not overly broad (e.g., matching all files when only a specific directory matters).
-          "Efficient Rule Count": >
-            Where multiple narrow rules have substantially overlapping triggers, they
-            have been merged into shared rules. The total number of rules is the minimum
-            needed for adequate coverage. Separate narrow rules are only used when their
-            trigger sets are genuinely disjoint.
+      - name: add_documentation_rules
+        instructions: |
+          # Add Documentation Update Rules
 
-  - id: add_language_reviews
-    name: "Add Language-Specific Code Review Rules"
-    description: "Detect languages in the project, create or find convention files, and add per-file .deepreview rules for each language."
-    instructions_file: steps/add_language_reviews.md
-    inputs: []
-    outputs:
-      convention_files:
-        type: files
-        description: "Language convention/guidelines files (created or pre-existing) referenced by the review rules"
-        required: true
-      deepreview_files:
-        type: files
-        description: "All .deepreview files with language-specific code review rules"
-        required: true
-    dependencies:
-      - add_deepwork_native_reviews
-      - migrate_existing_skills
-      - add_documentation_rules
-    reviews:
-      - run_each: deepreview_files
-        additional_review_guidance: |
-          For each language review rule, read the convention file it references
-          and verify the review instructions make sense for that language. Check
-          that every rule uses strategy: individual. Verify that each convention
-          file includes DRY and comment accuracy standards, and that each rule's
-          instructions reference those standards from the conventions file.
-        quality_criteria:
-          "Convention Files Sensible": >
-            Each language convention file is concise, actionable, and based on
-            actual project patterns — not generic boilerplate. If pre-existing
-            standards files exist, they are referenced rather than duplicated.
-            Every convention file includes language-specific DRY guidelines and
-            comment accuracy standards.
-          "Per-File Strategy": >
-            Every language review rule uses strategy: individual. No language
-            review rule uses matches_together or all_changed_files.
-          "DRY and Comment Checks": >
-            Every language review rule's instructions explicitly reference the
-            DRY and comment accuracy standards from the conventions file and
-            instruct the reviewer to check for violations of those standards.
-          "Correct Match Patterns": >
-            Match patterns correctly target the language's file extensions with
-            appropriate excludes for generated/vendor files.
+          ## Objective
 
+          Find documentation files in the project that describe the project itself, and create `.deepreview` rules to keep each one up-to-date when related source files change.
 
-  - id: analyze_dependencies
-    name: "Analyze Document Dependencies"
-    description: "Read the documentation file, examine its content and location, and determine which source files could affect its accuracy. Produce a dependency analysis with recommended match patterns and rule strategy."
-    instructions_file: steps/analyze_dependencies.md
-    inputs:
-      - name: doc_path
-        description: "Path to the documentation file to protect with a review rule"
-    outputs:
-      analysis:
-        type: file
-        description: "Dependency analysis documenting which source files affect the doc, recommended match patterns, narrow vs wide strategy decision, and whether an existing rule should be extended"
-        required: true
-    dependencies: []
-    reviews:
-      - run_each: analysis
-        additional_review_guidance: |
-          Read the documentation file referenced in the analysis to verify the dependency
-          reasoning. Check the listed source files and glob patterns against the actual
-          filesystem to confirm they make sense. If the analysis recommends extending an
-          existing rule, read the .deepreview file to verify the overlap claim.
-        quality_criteria:
-          "Accurate Dependencies": >
-            The identified source files and directories are ones that could realistically
-            affect the document's accuracy. No important sources are missed and no
-            irrelevant files are included.
-          "Sound Strategy": >
-            The narrow vs wide decision is well-reasoned. Narrow is chosen only when a
-            small number of specific files are involved. Wide is chosen when a directory
-            or hierarchy of files is relevant.
-          "Correct Glob Patterns": >
-            The proposed match patterns correctly capture the identified source files.
-            Patterns use appropriate wildcards and are neither too broad nor too narrow.
-            Any excluded directories are genuinely irrelevant to the document — directories
-            that appear in the document's directory tree listings are NOT excluded.
-          "Existing Rule Assessment": >
-            If recommending to extend an existing rule, the overlap between the existing
-            rule's match patterns and the proposed patterns is genuine and significant.
-            If recommending a new rule, there is no existing rule that substantially overlaps.
+          ## Task
 
-  - id: apply_rule
-    name: "Apply Review Rule"
-    description: "Create or update the .deepreview file based on the approved dependency analysis."
-    instructions_file: steps/apply_rule.md
-    inputs:
-      - file: analysis
-        from_step: analyze_dependencies
-    outputs:
-      deepreview_file:
-        type: file
-        description: "The .deepreview configuration file with the new or updated rule"
-        required: true
-    dependencies:
-      - analyze_dependencies
-    reviews:
-      - run_each: deepreview_file
-        additional_review_guidance: |
-          Read the dependency analysis from the previous step to verify the rule
-          faithfully implements the approved plan. Read the documentation file
-          referenced in the rule's instructions. Check the .deepreview file for
-          valid YAML syntax and consistency with existing rules.
-        quality_criteria:
-          "Faithful Implementation": >
-            The rule accurately implements the dependency analysis from the previous
-            step — same match patterns, same strategy, same rule name convention.
-          "Valid Configuration": >
-            The .deepreview YAML is syntactically valid and follows the schema.
-            All required fields (description, match.include, review.strategy,
-            review.instructions) are present.
-          "Effective Instructions": >
-            Review instructions clearly tell the reviewer to check whether the
-            documentation file is still accurate given the source file changes.
-            The documentation file path is explicitly referenced. Uses
-            additional_context.unchanged_matching_files: true so the reviewer
-            can read the doc even when only source files changed.
+          ### 1. Search for project documentation files
+
+          Search the repository for files that document the project itself — its architecture, APIs, setup, configuration, usage, or internals. Common locations and patterns:
+
+          - `README.md`, `README*.md` at the root or in key directories
+          - `doc/`, `docs/`, `documentation/` directories
+          - `ARCHITECTURE.md`, `CONTRIBUTING.md`, `CHANGELOG.md`
+          - `*.md` files in the project root that describe the project
+          - API documentation, design documents, runbooks
+
+          **Exclude** documentation that describes external things (e.g., notes about a third-party API, research documents, user-facing help content that doesn't describe the project's own code or structure). Also exclude auto-generated documentation.
+
+          If no project documentation files are found, report that in the output and finish.
+
+          ### 2. Check existing rules
+
+          Read all `.deepreview` files in the project. Note which documentation files already have update rules protecting them. Skip any documentation file that is already covered by an existing rule.
+
+          ### 3. For each unprotected documentation file
+
+          For each unprotected documentation file, call `start_workflow` directly with `job_name: "deepwork_reviews"`, `workflow_name: "add_document_update_rule"`, and the doc path (relative to the repository root, e.g., `doc/architecture.md`) as the goal. Complete each nested workflow's steps (analyze_dependencies, apply_rule) before starting the next.
+
+          **Note**: Nested workflows are session-scoped MCP calls — do not attempt to run them inside separate Task agents, as MCP session context would not be shared. Run them sequentially from this agent.
+
+          ### 4. Review the resulting rules for scope efficiency
+
+          After all `add_document_update_rule` workflows complete, read all `.deepreview` files and review the rules that were created. Consider:
+
+          - Are there multiple narrow rules whose `match.include` patterns substantially overlap? If so, they should be merged into a single wider rule that covers all the documentation files together.
+          - Are there rules with overly broad triggers that will fire on many unrelated changes? Narrow them.
+          - The goal is the minimum number of rules that covers all documentation files with appropriately scoped triggers. Having more separate reviews with narrower scope is not always more efficient than a slightly wider, shared review — each review spawns a sub-agent with material overhead.
+
+          Make any merging or narrowing adjustments directly.
+
+          ## Output
+
+          ### documentation_files_found
+
+          A markdown file listing all project documentation files that were found, whether each was already protected by an existing rule or newly protected, and the rule name covering it. Save this to `.deepwork/tmp/documentation_files_found.md`.
+
+          ### deepreview_files
+
+          All `.deepreview` files that were created or modified.
+
+          ## Quality Criteria
+
+          - All project documentation files describing the project itself are identified
+          - External documentation and auto-generated docs are excluded
+          - Each unprotected doc file has a corresponding rule via the `add_document_update_rule` workflow
+          - The set of rules is efficient — overlapping narrow rules have been merged where appropriate
+          - Trigger scope for each rule is as narrow as possible while still catching relevant changes
+          - No documentation file is left unprotected unless it was already covered
+        inputs: {}
+        outputs:
+          documentation_files_found:
+            required: true
+          deepreview_files:
+            required: true
+            review:
+              strategy: individual
+              instructions: |
+                Read each .deepreview file and the documentation files its rules protect.
+                Verify that the trigger scope of each rule is as narrow as possible —
+                it should only fire when files that could actually affect the doc's accuracy
+                change. Consider whether having more separate reviews with narrower scope
+                is actually more efficient than a slightly wider, shared review — each
+                review spawns a sub-agent with material overhead.
+
+                Evaluate the output against these criteria:
+                - Documentation Covered: Every project documentation file that describes the project itself has a corresponding rule (either newly created or pre-existing).
+                - Trigger Scope Minimal: Each rule's match.include patterns are as narrow as possible while still catching changes that could affect the protected documentation. Rules are not overly broad (e.g., matching all files when only a specific directory matters).
+                - Efficient Rule Count: Where multiple narrow rules have substantially overlapping triggers, they have been merged into shared rules. The total number of rules is the minimum needed for adequate coverage. Separate narrow rules are only used when their trigger sets are genuinely disjoint.
+
+      - name: add_language_reviews
+        instructions: |
+          # Add Language-Specific Code Review Rules
+
+          ## Objective
+
+          If the project contains code, create language-specific review guidelines and `.deepreview` rules so that code changes are reviewed against the project's own conventions and best practices.
+
+          ## Task
+
+          ### 1. Detect languages in the project
+
+          Scan the repository to identify which programming languages are used. Use file extensions and directory structure:
+
+          - `*.py` → Python
+          - `*.js`, `*.jsx`, `*.ts`, `*.tsx` → JavaScript/TypeScript
+          - `*.go` → Go
+          - `*.rs` → Rust
+          - `*.rb` → Ruby
+          - `*.java`, `*.kt` → Java/Kotlin
+          - `*.swift` → Swift
+          - `*.c`, `*.h`, `*.cpp`, `*.hpp` → C/C++
+
+          For other languages not listed, use the same pattern: identify by file extension and include any language with 3 or more files.
+
+          Count files per language to gauge significance. Skip languages with only 1-2 files (likely config or tooling, not project code). If the project has no code files, report that and finish.
+
+          ### 2. Gather conventions for each language
+
+          For each significant language in the project, build a conventions/review guidelines document. Layer information from these sources in priority order:
+
+          #### a. Existing coding standards files
+
+          Search for existing guidelines the project already has:
+          - Linter configs (`.eslintrc`, `ruff.toml`, `pyproject.toml [tool.ruff]`, `.golangci.yml`, etc.)
+          - Style guides or coding standards documents in `doc/`, `docs/`, or the root
+          - `CONTRIBUTING.md` sections about code style
+          - Editor configs (`.editorconfig`)
+
+          If comprehensive guidelines already exist as a file, reference that file rather than duplicating its content.
+
+          #### b. README and project documentation
+
+          Check `README.md`, `CONTRIBUTING.md`, `CLAUDE.md`, `AGENTS.md`, and similar files for any guidance on coding conventions, style preferences, or review expectations.
+
+          #### c. Extract conventions from existing code
+
+          If the above sources don't provide enough conventions, launch an Explore agent (via a separate Task, one per language) to examine existing code files and extract observable patterns. The agent prompt should ask it to examine 10-20 representative files and return a bulleted list of observed patterns covering:
+
+          - Naming conventions (camelCase vs snake_case, prefixes, suffixes)
+          - Import ordering and grouping
+          - Error handling patterns
+          - Logging conventions
+          - Test file organization and naming
+          - Comment style and documentation patterns
+          - Module/package structure conventions
+
+          Collect the output and use it directly in drafting the conventions file.
+
+          ### 3. Create convention files
+
+          For each language, create or update a conventions file. Place it in:
+
+          - A `doc/` or `docs/` folder if one exists in the project
+          - Otherwise, `.deepwork/review/`
+
+          Name the file descriptively: e.g., `python_conventions.md`, `typescript_conventions.md`.
+
+          If a suitable conventions file already exists (found in step 2a), use it as-is — do not create a duplicate. Reference the existing file from the review rule instead.
+
+          Each conventions file should be a concise, actionable reference — not an exhaustive style guide. Focus on conventions that a reviewer can actually check by reading code.
+
+          ### 4. Create `.deepreview` rules
+
+          For each language, add a review rule to the top-level `.deepreview` file. If the `.deepreview` file does not yet exist, create it at the project root. Every language review rule must:
+
+          - Use `strategy: individual` (one review per changed file)
+          - Have `match.include` patterns targeting that language's file extensions
+          - Have `match.exclude` patterns for generated files, vendor directories, etc.
+          - Inline the review instructions (do not use a file reference for the instructions themselves, though the instructions should reference the conventions file)
+
+          The inline review instructions for each rule should:
+
+          1. Tell the reviewer to read the conventions file for the project's standards
+          2. Review the changed file against those conventions
+          3. **Explicitly instruct the reviewer to check for DRY violations** — look for duplicated logic, repeated patterns, or code that could be extracted into a shared function/module
+          4. **Explicitly instruct the reviewer to verify all comments are still accurate** — check that comments, docstrings, and inline documentation still correctly describe the code after the changes
+
+          **Example rule structure:**
+
+          ```yaml
+          python_code_review:
+            description: "Review Python files against project conventions and best practices."
+            match:
+              include:
+                - "**/*.py"
+              exclude:
+                - "**/migrations/**"
+                - "**/__pycache__/**"
+            review:
+              strategy: individual
+              instructions: |
+                Review this Python file against the project's coding conventions
+                documented in doc/python_conventions.md.
+
+                Check for:
+                - Adherence to naming conventions and style patterns
+                - Proper error handling following project patterns
+                - Import ordering and grouping
+                - [other language-specific items from the conventions]
+
+                Additionally, always check:
+                - **DRY violations**: Is there duplicated logic or repeated patterns that
+                  should be extracted into a shared function, utility, or module?
+                - **Comment accuracy**: Are all comments, docstrings, and inline
+                  documentation still accurate after the changes? Flag any comments that
+                  describe behavior that no longer matches the code.
+          ```
+
+          ### 5. Validate
+
+          - Each rule uses `strategy: individual`
+          - Match patterns correctly target the language's file extensions
+          - Generated/vendor files are excluded
+          - Review instructions reference the conventions file by path
+          - DRY and comment-accuracy checks are present in every rule
+          - The `.deepreview` file is valid YAML
+
+          ## Output
+
+          ### convention_files
+
+          All language convention files that were created or identified (existing ones count if referenced by rules).
+
+          ### deepreview_files
+
+          All `.deepreview` files that were created or modified with language review rules.
+
+          ## Quality Criteria
+
+          - Each language with significant presence in the project has a review rule
+          - Convention files are concise, actionable, and based on actual project patterns (not generic boilerplate)
+          - Every rule uses `strategy: individual` (per-file reviews)
+          - Every rule includes explicit DRY-violation and comment-accuracy checks
+          - Match patterns are appropriate for the language (correct extensions, sensible excludes)
+          - Existing coding standards files are referenced rather than duplicated
+        inputs: {}
+        outputs:
+          convention_files:
+            required: true
+          deepreview_files:
+            required: true
+            review:
+              strategy: individual
+              instructions: |
+                For each language review rule, read the convention file it references
+                and verify the review instructions make sense for that language. Check
+                that every rule uses strategy: individual.
+
+                Evaluate the output against these criteria:
+                - Convention Files Sensible: Each language convention file is concise, actionable, and based on actual project patterns — not generic boilerplate. If pre-existing standards files exist, they are referenced rather than duplicated.
+                - Per-File Strategy: Every language review rule uses strategy: individual. No language review rule uses matches_together or all_changed_files.
+                - DRY and Comment Checks: Every language review rule's instructions explicitly include checks for DRY violations (duplicated logic, repeated patterns) and comment accuracy (comments still match the code after changes).
+                - Correct Match Patterns: Match patterns correctly target the language's file extensions with appropriate excludes for generated/vendor files.
+
+  add_document_update_rule:
+    summary: "Add a review rule ensuring a documentation file stays up-to-date when related source files change"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      This job manages .deepreview configuration files, which define automated code review
+      rules for DeepWork Reviews. Reviews are triggered when files matching specified glob
+      patterns change in a PR or commit.
+
+      ## .deepreview File Format
+
+      YAML file at the repository root. Each top-level key is a rule name:
+
+      ```yaml
+      rule_name:
+        description: "Short description of what this rule checks."
+        match:
+          include:
+            - "glob/pattern/**"
+          exclude:           # optional
+            - "glob/to/exclude/**"
+        review:
+          strategy: individual | matches_together | all_changed_files
+          instructions: |
+            Inline review instructions for the reviewer.
+          # OR reference an external file:
+          # instructions:
+          #   file: path/to/instructions.md
+          additional_context:   # optional
+            unchanged_matching_files: true   # include matching files even if not changed
+            all_changed_filenames: true      # include list of all changed files
+      ```
+
+      ## Key Concepts
+
+      - **match.include**: Glob patterns that trigger this rule when matched files change
+      - **match.exclude**: Glob patterns to skip (optional). Files matching .gitignore
+        rules (e.g. `__pycache__/`, `node_modules/`, `.env`) are excluded automatically,
+        so they don't need to be listed here.
+      - **strategy**: How to batch reviews:
+        - `individual`: One review per matched file
+        - `matches_together`: All matched files reviewed together
+        - `all_changed_files`: All changed files (not just matched ones) reviewed together
+      - **additional_context.unchanged_matching_files**: When true, the reviewer gets files
+        matching include patterns even if they didn't change in this PR. Critical for
+        document freshness checks — lets the reviewer see the doc even when only source
+        files changed.
+
+      ## Rule Naming Conventions
+
+      - Narrow rules (specific to one doc): `update_<doc_name_without_extension>`
+      - Wide rules (protecting multiple docs): `update_documents_relating_to_<watched_path_description>`
+    steps:
+      - name: analyze_dependencies
+        instructions: |
+          # Analyze Document Dependencies
+
+          ## Objective
+
+          Examine a documentation file's content and filesystem location to determine which source files could affect its accuracy, then recommend a strategy for creating a .deepreview rule to keep it current.
+
+          ## Task
+
+          Given a documentation file path, perform a dependency analysis covering direct, structural, and behavioral dependencies to identify the source files that the document describes or depends on. Produce a structured analysis that will drive the next step's rule creation.
+
+          ### Process
+
+          1. **Read the documentation file**
+             - Read the full contents of the file at the provided `doc_path`
+             - Identify the key topics, concepts, and claims the document makes
+             - Note any explicit references to files, directories, modules, or code constructs
+
+          2. **Examine the filesystem context**
+             - Look at the document's location in the directory tree
+             - Identify sibling files, parent directories, and nearby related files
+             - Use `Glob` and `Grep` to find source files that contain identifiers, functions, classes, or concepts mentioned in the document
+             - Search for files that import, reference, or implement what the document describes
+             - Search at least 2 directory levels around the document's location. If more than 20 candidate files are found, consider whether a wide strategy is more appropriate rather than continuing to enumerate individually
+
+          3. **Build the dependency list**
+             - For each identified source file, note WHY it could affect the document's accuracy
+             - Categorize dependencies as:
+               - **Direct**: The document explicitly describes this file's contents (e.g., API docs describing an endpoint handler)
+               - **Structural**: Changes to the file's existence, location, or interface would invalidate the doc (e.g., a README referencing a directory structure)
+               - **Behavioral**: Changes to the file's behavior could make the doc's claims inaccurate (e.g., docs describing a feature's behavior)
+
+          4. **Decide narrow vs wide strategy**
+             - **Narrow** (specific rule for this document): Use when the dependency set is small — literally 2-5 specific files that can each be named explicitly in glob patterns
+             - **Wide** (broader rule covering a directory/hierarchy): Use when:
+               - Many files in a directory could affect the doc
+               - The set is hard to enumerate with a few specific globs
+               - New files added to a directory would also be relevant
+             - When in doubt, prefer wide — it's better to trigger a review that finds no issues than to miss a relevant change
+
+          5. **Determine rule naming**
+             - Narrow: `update_<doc_name_without_extension>` (e.g., `update_architecture` for `architecture.md`)
+             - Wide: `update_documents_relating_to_<watched_path_description>` (e.g., `update_documents_relating_to_src_core` for docs about `src/core/`)
+
+          6. **Check for existing overlapping rules**
+             - Read the existing `.deepreview` file (if it exists)
+             - For wide strategy: check if any existing rule already has match patterns that substantially overlap with the proposed patterns
+             - If an overlapping rule exists, recommend adding this document to that rule's monitored list instead of creating a new rule
+             - Document the overlapping rule name and how the patterns overlap
+
+          7. **Compose the recommended glob patterns**
+             - Write the specific glob patterns for `match.include`
+             - Always include the documentation file itself in the match patterns (so the review also triggers when someone edits the doc directly)
+             - Consider whether any `match.exclude` patterns are needed (e.g., test files, generated files)
+             - **Be careful with exclusions**: Before excluding a directory from match patterns, check whether the document contains a directory tree listing or structural reference that includes that directory. If the doc mentions a directory in a tree listing, changes to that directory (even adding/removing files) could invalidate the doc's tree — so don't exclude it. Only exclude directories that are truly irrelevant to the document's accuracy (e.g., `__pycache__/`, `.git/`).
+
+          ## Output Format
+
+          ### analysis
+
+          A markdown document with the full dependency analysis and rule recommendation.
+
+          **Structure**:
+          ```markdown
+          # Document Dependency Analysis
+
+          ## Document Under Analysis
+          - **Path**: [doc_path]
+          - **Summary**: [1-2 sentence summary of what the document covers]
+
+          ## Identified Dependencies
+
+          ### Direct Dependencies
+          | Source File | Reason |
+          |-------------|--------|
+          | [path/to/file.py] | [Why changes to this file affect the doc] |
+
+          ### Structural Dependencies
+          | Source File/Directory | Reason |
+          |----------------------|--------|
+          | [path/to/dir/] | [Why structural changes here affect the doc] |
+
+          ### Behavioral Dependencies
+          | Source File | Reason |
+          |-------------|--------|
+          | [path/to/module.py] | [Why behavior changes here affect the doc] |
+
+          ## Strategy Decision
+
+          **Strategy**: [Narrow / Wide]
+
+          **Rationale**: [Why this strategy was chosen — reference the dependency count and pattern complexity]
+
+          ## Recommended Rule
+
+          **Rule name**: [update_<name> or update_documents_relating_to_<desc>]
+
+          **Match patterns**:
+
+              include:
+                - "[glob/pattern/1]"
+                - "[glob/pattern/2]"
+                - "[doc_path itself]"
+              exclude:    # if needed
+                - "[exclusion pattern]"
+
+          **Review strategy**: [matches_together or all_changed_files]
+
+          > `matches_together` — all matched files in a single review pass (use for most documentation rules).
+          > `all_changed_files` — reviewer sees all changed files, not just matched ones (use when the doc describes cross-cutting concerns).
+
+          ## Existing Rule Assessment
+
+          [One of:]
+          - **No .deepreview file exists.** A new file and rule will be created.
+          - **No overlapping rules found.** Existing rules target different file sets.
+          - **Overlapping rule found: `[rule_name]`**. Its match patterns `[patterns]` substantially overlap with the proposed patterns. Recommend adding `[doc_path]` to this rule's monitored document list instead of creating a new rule.
+          ```
+
+          **Concrete example** (narrow case — a specific README describing a CLI module):
+          ```markdown
+          # Document Dependency Analysis
+
+          ## Document Under Analysis
+          - **Path**: docs/cli-reference.md
+          - **Summary**: Documents the CLI commands, flags, and usage examples for the deepwork CLI.
+
+          ## Identified Dependencies
+
+          ### Direct Dependencies
+          | Source File | Reason |
+          |-------------|--------|
+          | src/deepwork/cli/serve.py | Implements the `serve` command documented in the reference |
+          | src/deepwork/cli/hook.py | Implements the `hook` command documented in the reference |
+
+          ### Structural Dependencies
+          | Source File/Directory | Reason |
+          |----------------------|--------|
+          | src/deepwork/cli/__init__.py | CLI entry point — adding/removing commands here changes what's available |
+
+          ### Behavioral Dependencies
+          | Source File | Reason |
+          |-------------|--------|
+          | (none) | |
+
+          ## Strategy Decision
+
+          **Strategy**: Narrow
+
+          **Rationale**: Only 3 specific files affect this document. They can be enumerated explicitly.
+
+          ## Recommended Rule
+
+          **Rule name**: update_cli_reference
+
+          **Match patterns**:
+          ```yaml
+          include:
+            - "src/deepwork/cli/serve.py"
+            - "src/deepwork/cli/hook.py"
+            - "src/deepwork/cli/__init__.py"
+            - "docs/cli-reference.md"
+          ```
+
+          **Review strategy**: matches_together
+
+          ## Existing Rule Assessment
+
+          No overlapping rules found. The existing `python_code_review` rule matches `**/*.py` but serves a different purpose (code quality, not documentation freshness).
+          ```
+
+          ## Quality Criteria
+
+          - All source files that could realistically affect the document's accuracy are identified
+          - Glob patterns correctly capture the identified dependencies
+          - The narrow vs wide decision is well-reasoned based on the dependency set size
+          - The document itself is included in the match patterns
+          - Existing .deepreview rules are checked for overlap before recommending a new rule
+          - The analysis provides clear rationale that can be verified by the reviewer
+
+          ## Context
+
+          This analysis is the foundation for the rule that will be created in the next step. Getting the dependency identification right is critical — too narrow means changes slip through without review, too broad means noisy reviews that get ignored. The reviewer will verify this analysis against the actual filesystem before the rule is applied.
+        inputs:
+          doc_path:
+            required: true
+        outputs:
+          analysis:
+            required: true
+            review:
+              strategy: matches_together
+              instructions: |
+                Read the documentation file referenced in the analysis to verify the dependency
+                reasoning. Check the listed source files and glob patterns against the actual
+                filesystem to confirm they make sense. If the analysis recommends extending an
+                existing rule, read the .deepreview file to verify the overlap claim.
+
+                Evaluate the output against these criteria:
+                - Accurate Dependencies: The identified source files and directories are ones that could realistically affect the document's accuracy. No important sources are missed and no irrelevant files are included.
+                - Sound Strategy: The narrow vs wide decision is well-reasoned. Narrow is chosen only when a small number of specific files are involved. Wide is chosen when a directory or hierarchy of files is relevant.
+                - Correct Glob Patterns: The proposed match patterns correctly capture the identified source files. Patterns use appropriate wildcards and are neither too broad nor too narrow. Any excluded directories are genuinely irrelevant to the document — directories that appear in the document's directory tree listings are NOT excluded.
+                - Existing Rule Assessment: If recommending to extend an existing rule, the overlap between the existing rule's match patterns and the proposed patterns is genuine and significant. If recommending a new rule, there is no existing rule that substantially overlaps.
+
+      - name: apply_rule
+        instructions: |
+          # Apply Review Rule
+
+          ## Objective
+
+          Create or update the `.deepreview` file based on the approved dependency analysis from the previous step.
+
+          ## Task
+
+          Read the dependency analysis, then either create a new rule or extend an existing rule in the `.deepreview` file so that changes to the identified source files trigger a documentation freshness review.
+
+          ### Process
+
+          1. **Read the dependency analysis**
+             - Read the analysis file from the previous step
+             - Extract: rule name, match patterns, strategy decision, existing rule assessment
+
+          2. **Read the current .deepreview file**
+             - If it exists, read and parse its contents
+             - If it doesn't exist, you'll create a new file
+
+          3. **Apply the rule based on the analysis recommendation**
+
+             **If creating a new rule** (no overlapping rule found):
+             - Add a new top-level key to the `.deepreview` file using the recommended rule name
+             - Set the `description` to clearly state what documentation this rule protects
+             - Set `match.include` to the recommended glob patterns
+             - Set `match.exclude` if the analysis recommended exclusions
+             - Set `review.strategy` to the recommended strategy
+             - Set `review.additional_context.unchanged_matching_files` to `true`
+             - Write clear `review.instructions` (see instruction guidelines below)
+
+             **If extending an existing rule** (overlapping rule found):
+             - Read the existing rule's instructions
+             - Add the new documentation file to the list of monitored documents in the instructions
+             - Add the documentation file path to `match.include` if not already covered by existing patterns
+             - Ensure `review.additional_context.unchanged_matching_files` is `true`
+             - Do NOT change the existing rule's match patterns for source files unless the analysis specifically recommends it
+             - When updating the instructions text, follow the wide (multi-doc) template in Step 4 to ensure all monitored documents are listed
+
+          4. **Write the review instructions**
+
+             Replace bracketed placeholders in the templates below with values from the dependency analysis:
+             - `[doc_path]` — the documentation file path from the analysis
+             - `[doc_path_1]`, `[doc_path_2]` — multiple documentation file paths (for wide rules)
+             - `[watched area description]` — a short description of the source file area (e.g., "src/deepwork/core/")
+
+             Use the narrow (single-doc) template when the analysis recommends a narrow strategy with a single documentation file. Use the wide (multi-doc) template when the analysis recommends a wide strategy or when multiple documents are monitored by one rule.
+
+             The review instructions should tell the reviewer to:
+             - Read the specified documentation file(s)
+             - Compare the document's claims against the changed source files
+             - Flag any sections of the document that may be outdated or inaccurate
+             - Suggest specific updates if possible
+
+             **Instruction template for a narrow (single-doc) rule**:
+             ```
+             When source files change, check whether [doc_path] needs updating.
+
+             Read [doc_path] and compare its content against the changed files.
+             Flag any sections that are now outdated or inaccurate due to the changes.
+             If the documentation file itself was changed, verify the updates are correct
+             and consistent with the source files.
+             ```
+
+             **Instruction template for a wide (multi-doc) rule**:
+             ```
+             When source files in [watched area description] change, check whether the
+             following documentation files need updating:
+             - [doc_path_1]
+             - [doc_path_2]
+
+             Read each documentation file and compare its content against the changed
+             source files. Flag any sections that are now outdated or inaccurate.
+             If a documentation file itself was changed, verify the updates are correct
+             and consistent with the source files.
+             ```
+
+          5. **Validate the .deepreview file**
+             - Ensure valid YAML syntax
+             - Ensure all required fields are present: description, match.include, review.strategy, review.instructions
+             - Ensure the rule name follows naming conventions (lowercase, underscores/hyphens)
+             - Ensure `unchanged_matching_files: true` is set
+             - If any validation check fails, fix the issue before proceeding. Do not output an invalid `.deepreview` file.
+
+          ## Output Format
+
+          ### deepreview_file
+
+          The `.deepreview` file at the repository root with the new or updated rule.
+
+          **Example of a new narrow rule added to an existing .deepreview file**:
+          ```yaml
+          # ... existing rules above ...
+
+          update_cli_reference:
+            description: "Ensure CLI reference docs stay current when CLI source files change."
+            match:
+              include:
+                - "src/deepwork/cli/serve.py"
+                - "src/deepwork/cli/hook.py"
+                - "src/deepwork/cli/__init__.py"
+                - "docs/cli-reference.md"
+            review:
+              strategy: matches_together
+              instructions: |
+                When CLI source files change, check whether docs/cli-reference.md needs updating.
+
+                Read docs/cli-reference.md and compare its content against the changed files.
+                Flag any sections that are now outdated or inaccurate due to the changes.
+                If the documentation file itself was changed, verify the updates are correct
+                and consistent with the source files.
+              additional_context:
+                unchanged_matching_files: true
+          ```
+
+          **Example of a wide rule protecting multiple docs**:
+          ```yaml
+          update_documents_relating_to_src_core:
+            description: "Ensure documentation stays current when core source files change."
+            match:
+              include:
+                - "src/deepwork/core/**"
+                - "doc/architecture.md"
+                - "doc/internals.md"
+            review:
+              strategy: matches_together
+              instructions: |
+                When source files in src/deepwork/core/ change, check whether the following
+                documentation files need updating:
+                - doc/architecture.md
+                - doc/internals.md
+
+                Read each documentation file and compare its content against the changed
+                source files. Flag any sections that are now outdated or inaccurate.
+                If a documentation file itself was changed, verify the updates are correct
+                and consistent with the source files.
+              additional_context:
+                unchanged_matching_files: true
+          ```
+
+          **Example of extending an existing rule** (adding a doc to monitored list):
+          ```yaml
+          # Before: existing rule monitored only doc/architecture.md
+          # After: now also monitors doc/api-reference.md
+
+          update_documents_relating_to_src_core:
+            description: "Ensure documentation stays current when core source files change."
+            match:
+              include:
+                - "src/deepwork/core/**"
+                - "doc/architecture.md"
+                - "doc/api-reference.md"    # newly added
+            review:
+              strategy: matches_together
+              instructions: |
+                When source files in src/deepwork/core/ change, check whether the following
+                documentation files need updating:
+                - doc/architecture.md
+                - doc/api-reference.md
+
+                Read each documentation file and compare its content against the changed
+                source files. Flag any sections that are now outdated or inaccurate.
+              additional_context:
+                unchanged_matching_files: true
+          ```
+
+          ## Quality Criteria
+
+          - The rule faithfully implements the approved dependency analysis — same patterns, strategy, and naming
+          - The `.deepreview` file is valid YAML
+          - All required fields are present (description, match.include, review.strategy, review.instructions)
+          - Review instructions clearly reference the documentation file(s) being protected
+          - `additional_context.unchanged_matching_files` is set to `true`
+          - If extending an existing rule, existing patterns are preserved and the doc is cleanly added
+
+          ## Context
+
+          This step applies the plan from the analysis step. The .deepreview rule will trigger automatically during code reviews when matched files change, prompting a reviewer to check whether the protected documentation is still accurate. The `unchanged_matching_files: true` setting is essential — without it, the reviewer can't see the documentation file when only source files changed.
+        inputs:
+          analysis:
+            required: true
+        outputs:
+          deepreview_file:
+            required: true
+            review:
+              strategy: matches_together
+              instructions: |
+                Read the dependency analysis from the previous step to verify the rule
+                faithfully implements the approved plan. Read the documentation file
+                referenced in the rule's instructions. Check the .deepreview file for
+                valid YAML syntax and consistency with existing rules.
+
+                Evaluate the output against these criteria:
+                - Faithful Implementation: The rule accurately implements the dependency analysis from the previous step — same match patterns, same strategy, same rule name convention.
+                - Valid Configuration: The .deepreview YAML is syntactically valid and follows the schema. All required fields (description, match.include, review.strategy, review.instructions) are present.
+                - Effective Instructions: Review instructions clearly tell the reviewer to check whether the documentation file is still accurate given the source file changes. The documentation file path is explicitly referenced. Uses additional_context.unchanged_matching_files: true so the reviewer can read the doc even when only source files changed.

@@ -22,7 +22,8 @@ class ServeError(Exception):
     "--no-quality-gate",
     is_flag=True,
     default=False,
-    help="Disable quality gate evaluation",
+    hidden=True,
+    help="Deprecated. Quality gate now uses DeepWork Reviews infrastructure.",
 )
 @click.option(
     "--transport",
@@ -40,7 +41,8 @@ class ServeError(Exception):
     "--external-runner",
     type=click.Choice(["claude"]),
     default=None,
-    help="External runner for quality gate reviews. 'claude' uses Claude CLI subprocess. Default: None (agent self-review).",
+    hidden=True,
+    help="Deprecated. Quality gate now uses DeepWork Reviews infrastructure.",
 )
 @click.option(
     "--platform",
@@ -61,29 +63,22 @@ def serve(
     Exposes workflow management tools to AI agents via MCP protocol.
     By default uses stdio transport for local integration with Claude Code.
 
-    Quality gate is enabled by default. Use --external-runner to specify
-    how quality reviews are executed:
-
-    \b
-    - No flag (default): Agent self-review via instructions file
-    - --external-runner claude: Claude CLI subprocess review
+    Quality reviews are handled by the DeepWork Reviews infrastructure
+    (dynamic review rules from job.yml + .deepreview file rules).
 
     Examples:
 
-        # Start server for current directory (agent self-review)
+        # Start server for current directory
         deepwork serve
-
-        # Start with Claude CLI as quality gate reviewer
-        deepwork serve --external-runner claude
-
-        # Start with quality gate disabled
-        deepwork serve --no-quality-gate
 
         # Start for a specific project
         deepwork serve --path /path/to/project
+
+        # SSE transport for remote access
+        deepwork serve --transport sse --port 8000
     """
     try:
-        _serve_mcp(path, not no_quality_gate, transport, port, external_runner, platform)
+        _serve_mcp(path, transport, port, platform)
     except ServeError as e:
         click.echo(f"Error: {e}", err=True)
         raise click.Abort() from e
@@ -94,21 +89,16 @@ def serve(
 
 def _serve_mcp(
     project_path: Path,
-    enable_quality_gate: bool,
     transport: str,
     port: int,
-    external_runner: str | None = None,
     platform: str | None = None,
 ) -> None:
     """Start the MCP server.
 
     Args:
         project_path: Path to project directory
-        enable_quality_gate: Whether to enable quality gate evaluation
         transport: Transport protocol (stdio or sse)
         port: Port for SSE transport
-        external_runner: External runner for quality gate reviews.
-            "claude" uses Claude CLI subprocess. None means agent self-review.
         platform: Platform identifier for the review tool (e.g., "claude").
 
     Raises:
@@ -130,8 +120,6 @@ def _serve_mcp(
 
     server = create_server(
         project_root=project_path,
-        enable_quality_gate=enable_quality_gate,
-        external_runner=external_runner,
         platform=platform,
     )
 
