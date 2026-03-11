@@ -470,6 +470,30 @@ job_schema_instruction_compatibility:
       - FAIL: Incompatibilities found. List each with the file path, line
         reference, the incompatible content, and what the schema actually says.
 
+agents_md_claude_md_symlink:
+  description: "Ensure every AGENTS.md file has a sibling CLAUDE.md symlink pointing to it, because Claude Code reads CLAUDE.md but ignores AGENTS.md."
+  match:
+    include:
+      - "**/AGENTS.md"
+  review:
+    strategy: individual
+    instructions: |
+      Claude Code reads CLAUDE.md for project context but does not read AGENTS.md.
+      Every AGENTS.md file MUST have a sibling CLAUDE.md that is a symlink pointing
+      to AGENTS.md, so that Claude Code picks up the same content.
+
+      Check whether a CLAUDE.md symlink exists in the same directory as the matched
+      AGENTS.md file. If it is missing or is not a symlink to AGENTS.md, create it:
+
+        ln -sf AGENTS.md <dir>/CLAUDE.md
+
+      The symlink target MUST be the relative path "AGENTS.md" (not an absolute path),
+      so the link remains valid after the directory is moved or cloned.
+
+      Output Format:
+      - PASS: CLAUDE.md symlink exists and points to AGENTS.md.
+      - FAIL: Symlink missing or incorrect — describe the current state and the fix applied.
+
 nix_claude_wrapper:
   description: "Ensure flake.nix always wraps the claude command with the required plugin dirs."
   match:

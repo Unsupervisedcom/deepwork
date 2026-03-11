@@ -128,6 +128,10 @@ This folder and its subfolders are managed using `deepwork_jobs` workflows.
 2. **Direct edits** are fine for minor instruction tweaks
 EOF
 
+    # Create CLAUDE.md symlink pointing to AGENTS.md so Claude Code picks up the context
+    # (Claude Code reads CLAUDE.md but ignores AGENTS.md)
+    ln -s AGENTS.md "$job_path/CLAUDE.md"
+
     # Copy .deepreview template if available
     if [[ -f "$script_dir/template.deepreview" ]]; then
         cp "$script_dir/template.deepreview" "$job_path/.deepreview"
@@ -139,6 +143,7 @@ EOF
         echo "  ├── .deepreview"
     fi
     echo "  ├── AGENTS.md"
+    echo "  ├── CLAUDE.md -> AGENTS.md"
     echo "  ├── steps/"
     echo "  ├── hooks/.gitkeep"
     echo "  ├── scripts/.gitkeep"
