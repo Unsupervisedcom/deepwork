@@ -175,50 +175,37 @@ reviews:
 
 Reviews enforce quality without human intervention — the AI agent iterates until the work meets the defined standard.
 
-## Putting It Together
+## Example: Repo Setup Job
 
-Here's how Jobs, Workflows, and Steps relate:
+A more realistic example showing concurrent steps — a `repo` job that configures a GitHub repository:
+
+```
+Job (e.g., "repo")
+├── Steps: [audit_repo, create_labels, branch_protection, issue_templates, pr_templates, invite_collaborators]
+└── Workflows:
+    ├── "setup"          → [audit_repo, [create_labels, branch_protection, issue_templates, pr_templates], invite_collaborators]
+    ├── "doctor"         → [audit_repo]
+    └── "onboard_user"   → [invite_collaborators]
+```
 
 ```mermaid
 graph TD
-    JOB["<b>Job</b><br/><code>job.yml</code>"]
-    CTX["common_job_info<br/><i>shared context</i>"]
-    WF_FULL["Workflow: <b>full</b>"]
-    WF_QUICK["Workflow: <b>quick</b>"]
-    A["Step A<br/>inputs → instructions → outputs"]
-    B["Step B<br/>inputs → instructions → outputs"]
-    C["Step C<br/>inputs → instructions → outputs"]
+    A["audit_repo"] --> L["create_labels"]
+    A --> B["branch_protection"]
+    A --> I["issue_templates"]
+    A --> P["pr_templates"]
+    L --> C["invite_collaborators"]
+    B --> C
+    I --> C
+    P --> C
 
-    JOB --> CTX
-    JOB --> WF_FULL
-    JOB --> WF_QUICK
-    WF_FULL --> A --> B --> C
-    WF_QUICK --> A --> C
-    CTX -.->|injected into| A
-    CTX -.->|injected into| B
-    CTX -.->|injected into| C
+    style L fill:#f0e6d3,stroke:#c2603a
+    style B fill:#f0e6d3,stroke:#c2603a
+    style I fill:#f0e6d3,stroke:#c2603a
+    style P fill:#f0e6d3,stroke:#c2603a
 ```
 
-The `fruits` job demonstrates the sequential pattern — two steps (`identify` → `classify`) and one workflow (`full`). The identify step takes user input, produces a file, and the classify step consumes that file.
-
-The `concurrent_workflow` job demonstrates parallel execution:
-
-```mermaid
-graph TD
-    S["setup"] --> R1["research_web"]
-    S --> R2["research_docs"]
-    S --> R3["research_interviews"]
-    R1 --> C["compile_results"]
-    R2 --> C
-    R3 --> C
-    C --> F["final_review"]
-
-    style R1 fill:#f0e6d3,stroke:#c2603a
-    style R2 fill:#f0e6d3,stroke:#c2603a
-    style R3 fill:#f0e6d3,stroke:#c2603a
-```
-
-The three research steps run concurrently after setup, then their outputs are compiled into a final report.
+The `setup` workflow audits the repo first, then configures labels, branch protection, and templates concurrently (highlighted), then invites collaborators once everything is in place. The `doctor` workflow runs just the audit to check what's missing. The `onboard_user` workflow skips repo config and just sends invites.
 
 ## What Happens When You Run a Workflow
 
