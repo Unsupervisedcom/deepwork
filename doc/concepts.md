@@ -10,25 +10,23 @@ Job (e.g., "research")
     └── "quick" → [gather_sources, synthesize, write_report]
 ```
 
-```mermaid
-graph LR
-    JOB["research"] --> DR["deep workflow"]
-    JOB --> Q["quick workflow"]
-    DR --> G1["gather_sources"] --> D["deep_research"] --> S1["synthesize"] --> C1["check_citations"] --> W1["write_report"]
-    Q --> G2["gather_sources"] --> S2["synthesize"] --> W2["write_report"]
+```
+Job (e.g., "repo")
+├── Steps: [audit_repo, create_labels, branch_protection, issue_templates, pr_templates, invite_collaborators]
+└── Workflows:
+    ├── "setup"        → [audit_repo, [create_labels, branch_protection, issue_templates, pr_templates], invite_collaborators]
+    ├── "doctor"       → [audit_repo]
+    └── "onboard_user" → [invite_collaborators]
 ```
 
-Outputs from one step become inputs to the next. This is how data flows through the `deep` workflow:
-
-```mermaid
-graph LR
-    G["gather_sources"] -- "sources.md" --> D["deep_research"]
-    D -- "findings.md" --> S["synthesize"]
-    S -- "draft_report.md" --> C["check_citations"]
-    C -- "citation_report.md" --> W["write_report"]
+```
+Job (e.g., "fruits")
+├── Steps: [identify, classify]
+└── Workflows:
+    └── "full" → [identify, classify]
 ```
 
-A **Job** defines a pool of **Steps** and one or more **Workflows** — named paths through those steps. Different workflows reuse the same steps in different combinations. The `deep` workflow runs every step including citation checking; `quick` skips the deep research and citation check to go straight from sources to synthesis.
+A **Job** defines a pool of **Steps** and one or more **Workflows** — named paths through those steps. Different workflows reuse the same steps in different combinations. Steps in brackets `[a, b, c]` run concurrently.
 
 ## Jobs
 
@@ -174,38 +172,6 @@ reviews:
 ```
 
 Reviews enforce quality without human intervention — the AI agent iterates until the work meets the defined standard.
-
-## Example: Repo Setup Job
-
-A more realistic example showing concurrent steps — a `repo` job that configures a GitHub repository:
-
-```
-Job (e.g., "repo")
-├── Steps: [audit_repo, create_labels, branch_protection, issue_templates, pr_templates, invite_collaborators]
-└── Workflows:
-    ├── "setup"          → [audit_repo, [create_labels, branch_protection, issue_templates, pr_templates], invite_collaborators]
-    ├── "doctor"         → [audit_repo]
-    └── "onboard_user"   → [invite_collaborators]
-```
-
-```mermaid
-graph TD
-    A["audit_repo"] --> L["create_labels"]
-    A --> B["branch_protection"]
-    A --> I["issue_templates"]
-    A --> P["pr_templates"]
-    L --> C["invite_collaborators"]
-    B --> C
-    I --> C
-    P --> C
-
-    style L fill:#f0e6d3,stroke:#c2603a
-    style B fill:#f0e6d3,stroke:#c2603a
-    style I fill:#f0e6d3,stroke:#c2603a
-    style P fill:#f0e6d3,stroke:#c2603a
-```
-
-The `setup` workflow audits the repo first, then configures labels, branch protection, and templates concurrently (highlighted), then invites collaborators once everything is in place. The `doctor` workflow runs just the audit to check what's missing. The `onboard_user` workflow skips repo config and just sends invites.
 
 ## What Happens When You Run a Workflow
 
