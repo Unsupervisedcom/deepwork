@@ -129,23 +129,65 @@ Reviews enforce quality without human intervention — the AI agent iterates unt
 
 Here's how Jobs, Workflows, and Steps relate:
 
-```
-Job (job.yml)
-├── common_job_info (shared context for all steps)
-├── steps/
-│   ├── step_a (inputs → instructions → outputs)
-│   ├── step_b (inputs → instructions → outputs)
-│   └── step_c (inputs → instructions → outputs)
-└── workflows/
-    ├── full: [step_a, step_b, step_c]
-    └── quick: [step_a, step_c]
+```mermaid
+graph TD
+    JOB["<b>Job</b><br/><code>job.yml</code>"]
+    CTX["common_job_info<br/><i>shared context</i>"]
+    WF_FULL["Workflow: <b>full</b>"]
+    WF_QUICK["Workflow: <b>quick</b>"]
+    A["Step A<br/>inputs → instructions → outputs"]
+    B["Step B<br/>inputs → instructions → outputs"]
+    C["Step C<br/>inputs → instructions → outputs"]
+
+    JOB --> CTX
+    JOB --> WF_FULL
+    JOB --> WF_QUICK
+    WF_FULL --> A --> B --> C
+    WF_QUICK --> A --> C
+    CTX -.->|injected into| A
+    CTX -.->|injected into| B
+    CTX -.->|injected into| C
 ```
 
-**Minimal example** — The `fruits` job has two steps (`identify` → `classify`) and one workflow (`full`) that runs them sequentially. The identify step takes user input, produces a file, and the classify step consumes that file.
+The `fruits` job demonstrates the sequential pattern — two steps (`identify` → `classify`) and one workflow (`full`). The identify step takes user input, produces a file, and the classify step consumes that file.
 
-**Parallel example** — The `concurrent_workflow` job has a `full_analysis` workflow where three research steps run concurrently after setup, then their outputs are compiled into a final report.
+The `concurrent_workflow` job demonstrates parallel execution:
+
+```mermaid
+graph TD
+    S["setup"] --> R1["research_web"]
+    S --> R2["research_docs"]
+    S --> R3["research_interviews"]
+    R1 --> C["compile_results"]
+    R2 --> C
+    R3 --> C
+    C --> F["final_review"]
+
+    style R1 fill:#f0e6d3,stroke:#c2603a
+    style R2 fill:#f0e6d3,stroke:#c2603a
+    style R3 fill:#f0e6d3,stroke:#c2603a
+```
+
+The three research steps run concurrently after setup, then their outputs are compiled into a final report.
 
 ## What Happens When You Run a Workflow
+
+```mermaid
+flowchart TD
+    GW["get_workflows<br/><i>list available workflows</i>"]
+    SW["start_workflow<br/><i>initialize & return first step</i>"]
+    EX["Execute step<br/><i>read instructions, gather inputs,<br/>produce outputs</i>"]
+    FS["finished_step<br/><i>record outputs, run reviews</i>"]
+    PASS{"Reviews<br/>pass?"}
+    MORE{"More<br/>steps?"}
+    DONE["Workflow complete"]
+
+    GW --> SW --> EX --> FS --> PASS
+    PASS -->|No — needs_work| EX
+    PASS -->|Yes| MORE
+    MORE -->|Yes — next_step| EX
+    MORE -->|No| DONE
+```
 
 1. **get_workflows** — DeepWork lists available workflows for the job
 2. **start_workflow** — You pick a workflow; DeepWork initializes it and returns the first step(s)
