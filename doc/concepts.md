@@ -2,15 +2,26 @@
 
 DeepWork automates multi-step workflows by decomposing complex tasks into reviewable steps. Three concepts form the mental model: **Jobs**, **Steps**, and **Workflows**.
 
-```mermaid
-graph LR
-    JOB["<b>Job</b>"] --> WF1["Workflow A"]
-    JOB --> WF2["Workflow B"]
-    WF1 --> S1["Step 1"] --> S2["Step 2"] --> S3["Step 3"]
-    WF2 --> S1 --> S3
+```
+Job (e.g., "research_report")
+├── Steps: [gather_sources, deep_research, synthesize, check_citations, write_report]
+└── Workflows:
+    ├── "deep_research"      → [gather_sources, deep_research, synthesize, check_citations, write_report]
+    ├── "quick"              → [gather_sources, synthesize, write_report]
+    └── "citation_check"     → [gather_sources, check_citations]
 ```
 
-A **Job** contains **Steps** (the units of work) and **Workflows** (named paths through those steps). Different workflows can reuse the same steps in different combinations.
+```mermaid
+graph LR
+    JOB["research_report"] --> DR["deep_research workflow"]
+    JOB --> Q["quick workflow"]
+    JOB --> CC["citation_check workflow"]
+    DR --> G1["gather_sources"] --> D["deep_research"] --> S1["synthesize"] --> C1["check_citations"] --> W1["write_report"]
+    Q --> G2["gather_sources"] --> S2["synthesize"] --> W2["write_report"]
+    CC --> G3["gather_sources"] --> C2["check_citations"]
+```
+
+A **Job** defines a pool of **Steps** and one or more **Workflows** — named paths through those steps. Different workflows reuse the same steps in different combinations. The `deep_research` workflow runs every step; `quick` skips the deep dive and citation check; `citation_check` validates sources without writing a report.
 
 ## Jobs
 
