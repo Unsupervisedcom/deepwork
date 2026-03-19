@@ -21,6 +21,16 @@ graph LR
     CC --> G3["gather_sources"] --> C2["check_citations"]
 ```
 
+Outputs from one step become inputs to the next. This is how data flows through a workflow:
+
+```mermaid
+graph LR
+    G["gather_sources"] -- "sources.md" --> D["deep_research"]
+    D -- "findings.md" --> S["synthesize"]
+    S -- "draft_report.md" --> C["check_citations"]
+    C -- "citation_report.md" --> W["write_report"]
+```
+
 A **Job** defines a pool of **Steps** and one or more **Workflows** — named paths through those steps. Different workflows reuse the same steps in different combinations. The `deep_research` workflow runs every step; `quick` skips the deep dive and citation check; `citation_check` validates sources without writing a report.
 
 ## Jobs
@@ -49,19 +59,37 @@ A step is the atomic unit of work. Each step has instructions (a markdown file),
 
 ```yaml
 steps:
-  - id: identify
-    name: "Identify Fruits"
-    description: "Filter a list of items to identify only the fruits"
-    instructions_file: steps/identify.md
+  - id: gather_sources
+    name: "Gather Sources"
+    description: "Find and collect relevant sources for the research topic"
+    instructions_file: steps/gather_sources.md
     inputs:
-      - name: raw_items
-        description: "Comma-separated list of items to filter"
+      - name: research_topic
+        description: "The topic to research"
+      - name: max_sources
+        description: "Maximum number of sources to collect"
     outputs:
-      identified_fruits.md:
+      sources.md:
         type: file
-        description: "List of identified fruits from the input items"
+        description: "Curated list of sources with URLs and summaries"
         required: true
     dependencies: []
+    reviews: []
+
+  - id: deep_research
+    name: "Deep Research"
+    description: "Analyze gathered sources in depth"
+    instructions_file: steps/deep_research.md
+    inputs:
+      - file: sources.md
+        from_step: gather_sources
+    outputs:
+      findings.md:
+        type: file
+        description: "Detailed findings from source analysis"
+        required: true
+    dependencies:
+      - gather_sources
     reviews: []
 ```
 
@@ -74,27 +102,31 @@ Inputs can come from two sources:
 
 ```yaml
 inputs:
-  - name: market_segment            # user provides this
-    description: "The market segment to analyze"
-  - file: identified_fruits.md      # comes from a prior step
-    from_step: identify
+  - name: research_topic             # user provides this
+    description: "The topic to research"
+  - file: sources.md                 # comes from a prior step's output
+    from_step: gather_sources
 ```
 
 ### Outputs
 
-Outputs are files that the step produces. They can feed into later steps as inputs.
+Outputs are files that the step produces. They become available as inputs to later steps via `file:` + `from_step:`. This is how data flows through a workflow.
 
 ```yaml
 outputs:
-  classified_fruits.md:
+  findings.md:
     type: file
-    description: "Fruits organized into categories"
+    description: "Detailed findings from source analysis"
     required: true
 ```
 
+Output types:
+- **`file`** — A single file (e.g., `findings.md`)
+- **`files`** — Multiple files (e.g., a directory of individual source analyses)
+
 ### Dependencies
 
-The `dependencies` list declares which steps must complete before this step can run. This is how DeepWork knows the execution order.
+The `dependencies` list declares which steps must complete before this step can run. This is how DeepWork knows the execution order. A step's dependencies typically match the steps it draws `from_step` inputs from.
 
 ## Workflows
 
