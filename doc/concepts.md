@@ -3,25 +3,22 @@
 DeepWork automates multi-step workflows by decomposing complex tasks into reviewable steps. Three concepts form the mental model: **Jobs**, **Steps**, and **Workflows**.
 
 ```
-Job (e.g., "research_report")
+Job (e.g., "research")
 ├── Steps: [gather_sources, deep_research, synthesize, check_citations, write_report]
 └── Workflows:
-    ├── "deep_research"      → [gather_sources, deep_research, synthesize, check_citations, write_report]
-    ├── "quick"              → [gather_sources, synthesize, write_report]
-    └── "citation_check"     → [gather_sources, check_citations]
+    ├── "deep"  → [gather_sources, deep_research, synthesize, check_citations, write_report]
+    └── "quick" → [gather_sources, synthesize, write_report]
 ```
 
 ```mermaid
 graph LR
-    JOB["research_report"] --> DR["deep_research workflow"]
+    JOB["research"] --> DR["deep workflow"]
     JOB --> Q["quick workflow"]
-    JOB --> CC["citation_check workflow"]
     DR --> G1["gather_sources"] --> D["deep_research"] --> S1["synthesize"] --> C1["check_citations"] --> W1["write_report"]
     Q --> G2["gather_sources"] --> S2["synthesize"] --> W2["write_report"]
-    CC --> G3["gather_sources"] --> C2["check_citations"]
 ```
 
-Outputs from one step become inputs to the next. This is how data flows through a workflow:
+Outputs from one step become inputs to the next. This is how data flows through the `deep` workflow:
 
 ```mermaid
 graph LR
@@ -31,7 +28,7 @@ graph LR
     C -- "citation_report.md" --> W["write_report"]
 ```
 
-A **Job** defines a pool of **Steps** and one or more **Workflows** — named paths through those steps. Different workflows reuse the same steps in different combinations. The `deep_research` workflow runs every step; `quick` skips the deep dive and citation check; `citation_check` validates sources without writing a report.
+A **Job** defines a pool of **Steps** and one or more **Workflows** — named paths through those steps. Different workflows reuse the same steps in different combinations. The `deep` workflow runs every step including citation checking; `quick` skips the deep research and citation check to go straight from sources to synthesis.
 
 ## Jobs
 
