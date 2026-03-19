@@ -2,6 +2,16 @@
 
 DeepWork automates multi-step workflows by decomposing complex tasks into reviewable steps. Three concepts form the mental model: **Jobs**, **Steps**, and **Workflows**.
 
+```mermaid
+graph LR
+    JOB["<b>Job</b>"] --> WF1["Workflow A"]
+    JOB --> WF2["Workflow B"]
+    WF1 --> S1["Step 1"] --> S2["Step 2"] --> S3["Step 3"]
+    WF2 --> S1 --> S3
+```
+
+A **Job** contains **Steps** (the units of work) and **Workflows** (named paths through those steps). Different workflows can reuse the same steps in different combinations.
+
 ## Jobs
 
 A job is the top-level container. It lives in `.deepwork/jobs/<name>/job.yml` and defines everything needed to execute a task: the steps, the workflows, and shared context.
