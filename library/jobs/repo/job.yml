@@ -1,0 +1,343 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
+name: repo
+version: "1.0.0"
+summary: "Ensure a repository follows team conventions: labels, boards, branch protection, milestones"
+common_job_info_provided_to_all_steps_at_runtime: |
+  This job audits and configures repositories to follow team conventions. It supports two workflows:
+  `setup` (make a repo ready for work) and `doctor` (audit existing state and fix drift).
+
+  ## Provider Detection
+
+  The git provider is detected from the repository's remote origin URL:
+  - `github.com` → GitHub
+  - Self-hosted domains → Forgejo, Gitea, GitLab, etc.
+
+  The agent's tool conventions (loaded via system prompt) document CLI usage for each provider.
+  Step instructions describe *what* to check — the agent already knows *how* to invoke each
+  provider's CLI.
+
+  ## Standard Labels
+
+  Every repo must have these labels:
+  - `product` — product/UX scope
+  - `engineering` — technical scope
+  - `plan` — planning/coordination
+
+  ## Standard Board Columns
+
+  Project boards use these five status columns:
+  - Backlog, To Do, In Progress, In Review, Done
+
+  ## Board Lifecycle
+
+  - One project board MUST exist per milestone.
+  - The board MUST be created when the milestone is set up.
+  - The board MUST be closed or archived when the milestone is closed.
+
+  ## Board Transition Rules
+
+  | Event                          | Expected Column Change |
+  |--------------------------------|------------------------|
+  | Issue added to milestone       | → Backlog              |
+  | Issue prioritized for work     | Backlog → To Do        |
+  | Branch created, work starts    | To Do → In Progress    |
+  | PR marked ready for review     | In Progress → In Review|
+  | PR merged / issue closed       | → Done                 |
+
+  If the platform supports built-in board automations (e.g. GitHub's auto-close → Done,
+  PR merged → Done), agents MUST NOT duplicate those automatic transitions.
+
+  ## Branch Protection Expectations
+
+  The default branch should have these protections:
+  1. Require PR reviews (at least 1 approval)
+  2. Dismiss stale reviews on new commits
+  3. Require status checks to pass (if CI is configured)
+  4. Restrict force pushes
+  5. Restrict branch deletion
+
+workflows:
+  - name: setup
+    summary: "Make a repo ready for work: labels, branch protection, milestones, boards"
+    steps:
+      - detect_platform
+      - [ensure_labels, check_branch_protection]
+      - check_milestones
+      - check_boards
+      - setup_report
+
+  - name: doctor
+    summary: "Audit existing repo state and fix drift across all conventions"
+    steps:
+      - detect_platform
+      - [audit_labels, audit_branch_protection]
+      - audit_milestones
+      - audit_boards
+      - doctor_report
+
+steps:
+  # ── Shared ──────────────────────────────────────────────────────────
+
+  - id: detect_platform
+    name: "Detect Platform"
+    description: "Identify git provider, verify CLI auth, get default branch, inventory labels/milestones/boards"
+    instructions_file: steps/detect_platform.md
+    inputs:
+      - name: project_repo
+        description: "Repository — a remote URL, an owner/repo slug, or omit to detect from current directory's git remote. If the repo doesn't exist yet, the step will offer to create it."
+    outputs:
+      platform_context.md:
+        type: file
+        description: "Provider, repo, transport, default branch, auth status, existing labels, milestones, and boards"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: platform_context.md
+        quality_criteria:
+          "Provider Detected": "The git provider is correctly identified from the remote URL."
+          "Auth Verified": "CLI authentication has been verified for the detected provider."
+          "Default Branch": "The default branch name is recorded."
+          "Inventory Complete": "Existing labels, milestones, and boards (if applicable) are listed."
+
+  # ── Setup Steps ─────────────────────────────────────────────────────
+
+  - id: ensure_labels
+    name: "Ensure Labels"
+    description: "Verify product, engineering, plan labels exist; create missing ones"
+    instructions_file: steps/ensure_labels.md
+    inputs:
+      - file: platform_context.md
+        from_step: detect_platform
+    outputs:
+      labels_report.md:
+        type: file
+        description: "List of labels checked, created, or already present"
+        required: true
+    dependencies:
+      - detect_platform
+    reviews:
+      - run_each: labels_report.md
+        quality_criteria:
+          "All Required Labels": "All three required labels (product, engineering, plan) are accounted for."
+          "Missing Created": "Any missing labels were created with appropriate colors and descriptions."
+
+  - id: check_branch_protection
+    name: "Check Branch Protection"
+    description: "Check protection rules on default branch; report missing protections"
+    instructions_file: steps/check_branch_protection.md
+    inputs:
+      - file: platform_context.md
+        from_step: detect_platform
+    outputs:
+      branch_protection_report.md:
+        type: file
+        description: "Current branch protection status and any missing protections"
+        required: true
+    dependencies:
+      - detect_platform
+    reviews:
+      - run_each: branch_protection_report.md
+        quality_criteria:
+          "Protection Checked": "Branch protection rules on the default branch have been inspected."
+          "Gaps Identified": "Any missing or insufficient protections are documented."
+
+  - id: check_milestones
+    name: "Check Milestones"
+    description: "Verify milestone-issue consistency, consolidated issue exists, labels correct"
+    instructions_file: steps/check_milestones.md
+    inputs:
+      - file: platform_context.md
+        from_step: detect_platform
+    outputs:
+      milestones_report.md:
+        type: file
+        description: "Milestone consistency findings: missing consolidated issues, label mismatches"
+        required: true
+    dependencies:
+      - detect_platform
+    reviews:
+      - run_each: milestones_report.md
+        quality_criteria:
+          "All Milestones Checked": "Every open milestone was inspected."
+          "Issue Consistency": "Each milestone's issues are listed with state and label correctness."
+
+  - id: check_boards
+    name: "Check Boards"
+    description: "Verify each milestone has a board and item counts match"
+    instructions_file: steps/check_boards.md
+    inputs:
+      - file: platform_context.md
+        from_step: detect_platform
+      - file: milestones_report.md
+        from_step: check_milestones
+    outputs:
+      boards_report.md:
+        type: file
+        description: "Board existence and item count verification per milestone"
+        required: true
+    dependencies:
+      - detect_platform
+      - check_milestones
+    reviews:
+      - run_each: boards_report.md
+        quality_criteria:
+          "Boards Checked": "Each milestone was checked for a corresponding board."
+          "Item Counts": "Board item counts are compared against milestone issue counts."
+          "API Limitations": "If the provider lacks a board API, manual instructions are provided."
+
+  - id: setup_report
+    name: "Setup Report"
+    description: "Compile pass/fail readiness report across all four concerns"
+    instructions_file: steps/setup_report.md
+    inputs:
+      - file: platform_context.md
+        from_step: detect_platform
+      - file: labels_report.md
+        from_step: ensure_labels
+      - file: branch_protection_report.md
+        from_step: check_branch_protection
+      - file: milestones_report.md
+        from_step: check_milestones
+      - file: boards_report.md
+        from_step: check_boards
+    outputs:
+      setup_report.md:
+        type: file
+        description: "Pass/fail readiness report covering labels, branch protection, milestones, and boards"
+        required: true
+    dependencies:
+      - detect_platform
+      - ensure_labels
+      - check_branch_protection
+      - check_milestones
+      - check_boards
+    reviews:
+      - run_each: setup_report.md
+        quality_criteria:
+          "All Concerns Covered": "Report covers labels, branch protection, milestones, and boards."
+          "Pass/Fail Clear": "Each concern has a clear pass or fail status with details."
+
+  # ── Doctor Steps ────────────────────────────────────────────────────
+
+  - id: audit_labels
+    name: "Audit Labels"
+    description: "Check required labels, find case-insensitive duplicates, zero-issue labels"
+    instructions_file: steps/audit_labels.md
+    inputs:
+      - file: platform_context.md
+        from_step: detect_platform
+    outputs:
+      labels_audit.md:
+        type: file
+        description: "Label audit findings: missing, duplicates, unused labels, and fixes applied"
+        required: true
+    dependencies:
+      - detect_platform
+    reviews:
+      - run_each: labels_audit.md
+        quality_criteria:
+          "Required Labels": "All three required labels (product, engineering, plan) are verified."
+          "Duplicates Found": "Case-insensitive duplicate labels are identified."
+          "Unused Labels": "Labels with zero issues are flagged."
+
+  - id: audit_branch_protection
+    name: "Audit Branch Protection"
+    description: "Deep check of branch protection rules; attempt to enable missing protections via API"
+    instructions_file: steps/audit_branch_protection.md
+    inputs:
+      - file: platform_context.md
+        from_step: detect_platform
+    outputs:
+      branch_protection_audit.md:
+        type: file
+        description: "Branch protection audit with findings and fixes attempted"
+        required: true
+    dependencies:
+      - detect_platform
+    reviews:
+      - run_each: branch_protection_audit.md
+        quality_criteria:
+          "Rules Audited": "All branch protection rules on the default branch have been inspected."
+          "Fixes Attempted": "Missing protections were attempted to be enabled via API."
+          "Remaining Gaps": "Any gaps that could not be fixed automatically are documented."
+
+  - id: audit_milestones
+    name: "Audit Milestones"
+    description: "Deep consistency check on milestones; fix label drift on issues"
+    instructions_file: steps/audit_milestones.md
+    inputs:
+      - file: platform_context.md
+        from_step: detect_platform
+    outputs:
+      milestones_audit.md:
+        type: file
+        description: "Milestone audit findings: inconsistencies found and fixes applied"
+        required: true
+    dependencies:
+      - detect_platform
+    reviews:
+      - run_each: milestones_audit.md
+        quality_criteria:
+          "All Milestones Audited": "Every open milestone was deeply inspected."
+          "Label Drift Fixed": "Issues with incorrect or missing labels were corrected."
+          "Consistency Verified": "Milestone-issue relationships are consistent."
+
+  - id: audit_boards
+    name: "Audit Boards"
+    description: "Full board audit: add missing items, correct wrong statuses, flag stale cards"
+    instructions_file: steps/audit_boards.md
+    inputs:
+      - file: platform_context.md
+        from_step: detect_platform
+      - file: milestones_audit.md
+        from_step: audit_milestones
+    outputs:
+      boards_audit.md:
+        type: file
+        description: "Board audit findings, fixes applied, and remaining issues"
+        required: true
+    dependencies:
+      - detect_platform
+      - audit_milestones
+    reviews:
+      - run_each: boards_audit.md
+        quality_criteria:
+          "All Boards Audited": "Every milestone's board was inspected."
+          "Missing Items Added": "Issues missing from boards were added."
+          "Statuses Corrected": "Wrong statuses were corrected based on issue/PR state."
+          "Stale Cards Flagged": "Board items not belonging to the milestone are flagged."
+          "API Limitations": "If the provider lacks a board API, manual instructions are provided."
+
+  - id: doctor_report
+    name: "Doctor Report"
+    description: "Compile findings, fixes, and remaining issues across all concerns"
+    instructions_file: steps/doctor_report.md
+    inputs:
+      - file: platform_context.md
+        from_step: detect_platform
+      - file: labels_audit.md
+        from_step: audit_labels
+      - file: branch_protection_audit.md
+        from_step: audit_branch_protection
+      - file: milestones_audit.md
+        from_step: audit_milestones
+      - file: boards_audit.md
+        from_step: audit_boards
+    outputs:
+      doctor_report.md:
+        type: file
+        description: "Summary of findings, fixes applied, and remaining issues across all concerns"
+        required: true
+    dependencies:
+      - detect_platform
+      - audit_labels
+      - audit_branch_protection
+      - audit_milestones
+      - audit_boards
+    reviews:
+      - run_each: doctor_report.md
+        quality_criteria:
+          "All Concerns Covered": "Report covers labels, branch protection, milestones, and boards."
+          "Findings Summarized": "All audit findings are summarized with counts."
+          "Fixes Listed": "All fix actions taken are listed."
+          "Remaining Issues": "Any issues that still need manual attention are documented."
