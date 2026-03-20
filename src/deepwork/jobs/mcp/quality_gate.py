@@ -451,23 +451,32 @@ You must respond with JSON in this exact structure:
         return "\n".join(parts)
 
     @staticmethod
-    def compute_timeout(file_count: int) -> int:
-        """Compute dynamic timeout based on number of files.
+    def compute_timeout(file_count: int, total_chars: int = 0) -> int:
+        """Compute dynamic timeout based on number of files and total content size.
 
-        Base timeout is 240 seconds (4 minutes). For every file beyond
-        the first 5, add 30 seconds. Examples:
-          - 3 files  -> 240s
-          - 5 files  -> 240s
-          - 10 files -> 240 + 30*5 = 390s (6.5 min)
-          - 20 files -> 240 + 30*15 = 690s (11.5 min)
+        Base timeout is 240 seconds (4 minutes). For every file beyond the first 5,
+        add 30 seconds. Additionally, for large content sizes, add extra time to
+        allow the reviewer to process large files. The final timeout is the maximum
+        of both calculations. Examples:
+          - 3 files, small content    -> 240s
+          - 5 files, small content    -> 240s
+          - 10 files, small content   -> 240 + 30*5 = 390s (6.5 min)
+          - 20 files, small content   -> 240 + 30*15 = 690s (11.5 min)
+          - 1 file,  25,000 chars     -> max(240, 240 + 30*4) = 360s (6 min)
+          - 1 file,  50,000 chars     -> max(240, 240 + 30*9) = 510s (8.5 min)
 
         Args:
             file_count: Total number of files being reviewed
+            total_chars: Total character count of the review payload (file contents
+                plus formatting). Defaults to 0 (size-based factor is ignored).
 
         Returns:
             Timeout in seconds
         """
-        return 240 + 30 * max(0, file_count - 5)
+        count_based = 240 + 30 * max(0, file_count - 5)
+        # Add 30 seconds for every 5,000 chars beyond the first 5,000
+        size_based = 240 + 30 * max(0, total_chars // 5000 - 1)
+        return max(count_based, size_based)
 
     async def evaluate(
         self,
@@ -513,9 +522,9 @@ You must respond with JSON in this exact structure:
         )
         payload = await self._build_payload(outputs, project_root, notes=notes)
 
-        # Dynamic timeout: more files = more time for the reviewer
+        # Dynamic timeout: more files/content = more time for the reviewer
         file_count = len(self._flatten_output_paths(outputs))
-        timeout = self.compute_timeout(file_count)
+        timeout = self.compute_timeout(file_count, total_chars=len(payload))
 
         from deepwork.jobs.mcp.claude_cli import ClaudeCLIError
 

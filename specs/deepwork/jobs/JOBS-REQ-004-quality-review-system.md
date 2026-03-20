@@ -84,8 +84,10 @@ The quality review system evaluates step outputs against defined quality criteri
 ### JOBS-REQ-004.8: Timeout Computation
 
 1. The base timeout MUST be 240 seconds (4 minutes).
-2. For file counts of 5 or fewer, the timeout MUST be 240 seconds.
+2. For file counts of 5 or fewer (with small content), the timeout MUST be 240 seconds.
 3. For file counts beyond 5, the timeout MUST increase by 30 seconds per additional file.
+4. For large content sizes, the timeout MUST increase by 30 seconds for every 5,000 characters beyond the first 5,000 characters of the review payload.
+5. The final timeout MUST be the maximum of the file-count-based and content-size-based calculations.
 
 ### JOBS-REQ-004.9: Result Parsing
 

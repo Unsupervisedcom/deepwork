@@ -236,7 +236,16 @@ reviews:
 - Steps producing multiple files where each file needs individual review
 
 **Quality review timeout considerations:**
-Each individual quality review call has a 120-second timeout. For `run_each: <output_name>` with `files`-type outputs, each file gets its own separate review call — so having many files does NOT cause timeout accumulation. Timeout risk is only for individual reviews that are complex, such as:
+Each individual quality review call starts with a 240-second base timeout. The timeout scales
+automatically based on the number of files and the total size of the review payload:
+- Each file beyond the first 5 adds 30 seconds
+- Every 5,000 characters of content beyond the first 5,000 adds 30 seconds
+- The final timeout is the maximum of the file-count-based and content-size-based calculations
+
+For `run_each: <output_name>` with `files`-type outputs, each file gets its own separate review
+call — so having many files does NOT cause timeout accumulation per review.
+
+Timeout risk is highest for individual reviews with very large content, such as:
 - Reviewing a single very large file (500+ lines) with many criteria
 - Review criteria that require cross-referencing large amounts of context
 For these cases:
