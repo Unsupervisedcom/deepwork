@@ -32,6 +32,8 @@ library_job_portability:
       - "**/job.yml"
       - "**/steps/*.md"
       - "**/readme.md"
+      - "**/conventions.md"
+      - "**/templates/*.template"
     exclude:
       - ".deepreview"
   review:
