@@ -178,6 +178,8 @@ Check for and remove other obsolete files:
 
 ### Step 7: Library Job Access via Nix Dev Shell
 
+Library jobs replace some patterns previously handled by copied job files. This step ensures users are aware of the recommended setup path.
+
 Check whether the project uses a Nix flake devshell and whether shared library jobs are configured.
 
 **Detection logic:**
