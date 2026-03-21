@@ -1,0 +1,375 @@
+name: research
+version: "2.1.0"
+summary: "Research suite: deep investigation, quick summary, material ingestion, and reproduction planning"
+common_job_info_provided_to_all_steps_at_runtime: |
+  A multi-workflow research suite supporting deep investigation, quick summaries,
+  material ingestion into notes, and reproduction planning for engineering handoff.
+
+  ## Workflows
+
+  - **deep**: Full multi-platform research (8+ sources) with comprehensive report and bibliography
+  - **quick**: Local-only fast research (3+ sources via WebSearch/WebFetch) with concise summary
+  - **ingest**: Import external research material (markdown, papers, URLs) into the user's notes
+  - **reproduce**: Ingest material (via nested ingest workflow), analyze for reproducibility,
+    and create an engineering plan that can be handed off to sweng workflows or issue trackers
+
+  ## Platform Support (deep workflow only)
+
+  - Local: Claude's built-in WebSearch and WebFetch tools
+  - Gemini Deep Research: Comprehensive web crawling via Chrome
+  - ChatGPT: Research with citations
+  - Grok: Real-time information + social media context
+  - Perplexity: Research with inline citations
+  - Parallel mode: Multiple platforms for cross-validation
+
+  ## Notes Storage
+
+  Research material (ingest/reproduce workflows) is filed using environment variables:
+  - `NOTES_DIR`: Root notes directory (keystone sets this automatically from configured notes repo)
+  - `NOTES_RESEARCH_DIR`: Research subdirectory (defaults to `$NOTES_DIR/research`)
+
+  If these environment variables are not set, the workflow MUST ask the user where to store
+  notes and suggest they set `NOTES_DIR` for future runs. This keeps the workflow portable
+  beyond keystone.
+
+  ## Output Locations
+
+  - **deep/quick**: `research/[topic_slug]/` in the working directory
+  - **ingest**: `$NOTES_RESEARCH_DIR/[topic_slug]/` with frontmatter tags
+  - **reproduce**: reproduction plan in working directory + optional issue creation
+
+  ## Research Types
+
+  science, business, competitive, market, technical
+
+  ## Depth Levels
+
+  - Quick: 3+ sources, local only (WebSearch/WebFetch), concise output
+  - Standard: 5+ diverse sources, multi-source synthesis
+  - Deep: 8+ sources, multi-platform, comprehensive analysis
+
+  ## Project Integration
+
+  When a project is detected or specified, create symlinks at
+  `projects/[ProjectName]/research/[topic_slug]` pointing to the research directory.
+
+workflows:
+  - name: deep
+    summary: "Full multi-platform research with comprehensive report and bibliography"
+    steps:
+      - scope
+      - choose_platforms
+      - gather
+      - synthesize
+      - report
+
+  - name: quick
+    summary: "Fast local-only research producing a concise summary"
+    steps:
+      - scope
+      - gather_quick
+      - summarize
+
+  - name: ingest
+    summary: "Import external research material into notes with tags and metadata"
+    steps:
+      - parse
+      - file
+
+  - name: reproduce
+    summary: "Ingest research, analyze reproducibility, and create engineering plan or issues"
+    steps:
+      - ingest_material
+      - analyze
+      - plan
+
+steps:
+  # ── Shared steps (deep + quick) ──────────────────────────────────────
+
+  - id: scope
+    name: "Define Research Scope"
+    description: "Define the research question, type, depth level, and detect associated project"
+    instructions_file: steps/scope.md
+    inputs:
+      - name: topic
+        description: "The research topic or question to investigate"
+      - name: type
+        description: "Research type: science, business, competitive, market, or technical"
+      - name: depth
+        description: "Depth level: quick, standard, or deep"
+      - name: project
+        description: "Associated project tag (optional, auto-detected from context)"
+    outputs:
+      scope.md:
+        type: file
+        description: "Research scope definition with question, sub-questions, and search strategy"
+        required: true
+    dependencies: []
+    reviews: []
+
+  # ── Deep workflow steps ───────────────────────────────────────────────
+
+  - id: choose_platforms
+    name: "Choose Research Platforms"
+    description: "Select which AI platforms to use for deep research"
+    instructions_file: steps/choose_platforms.md
+    inputs:
+      - name: platforms
+        description: "Which AI platforms to use: local, gemini, chatgpt, grok, perplexity (can select multiple for parallel)"
+      - file: scope.md
+        from_step: scope
+    outputs:
+      platforms.md:
+        type: file
+        description: "Platform selection and execution plan for the gather step"
+        required: true
+    dependencies:
+      - scope
+    reviews: []
+
+  - id: gather
+    name: "Gather Sources (Deep)"
+    description: "Collect sources from selected platforms with 8+ diverse sources"
+    instructions_file: steps/gather.md
+    inputs:
+      - file: scope.md
+        from_step: scope
+      - file: platforms.md
+        from_step: choose_platforms
+    outputs:
+      sources.md:
+        type: file
+        description: "Consolidated sources with URLs, findings, and reliability assessments"
+        required: true
+    dependencies:
+      - scope
+      - choose_platforms
+    reviews:
+      - run_each: sources.md
+        additional_review_guidance: "Read scope.md to verify source gathering aligns with the research question and depth level."
+        quality_criteria:
+          "Source Count": "At least 8 sources are gathered from diverse types (academic, news, docs, reports)."
+          "Source Quality": "Each source has a URL, key excerpt or finding, and reliability assessment."
+          "Platform Coverage": "Sources come from the platforms specified in platforms.md."
+
+  - id: synthesize
+    name: "Synthesize Findings"
+    description: "Analyze gathered sources to identify key findings, themes, contradictions, and insights"
+    instructions_file: steps/synthesize.md
+    inputs:
+      - file: sources.md
+        from_step: gather
+      - file: scope.md
+        from_step: scope
+    outputs:
+      analysis.md:
+        type: file
+        description: "Synthesized analysis with findings by sub-question, cross-cutting themes, and key insights"
+        required: true
+    dependencies:
+      - gather
+      - scope
+    reviews:
+      - run_each: analysis.md
+        additional_review_guidance: "Read scope.md for the research question and sub-questions. Read sources.md to verify synthesis draws from multiple sources."
+        quality_criteria:
+          "Addresses Research Question": "The analysis directly addresses the research question and all sub-questions from scope.md."
+          "Cross-Source Synthesis": "Findings synthesize across multiple sources rather than summarizing each source individually."
+          "Gaps Identified": "Contradictions, gaps, and areas of disagreement in the evidence are explicitly noted."
+
+  - id: report
+    name: "Write Research Report"
+    description: "Produce final README.md with findings, bibliography, and project symlink"
+    instructions_file: steps/report.md
+    inputs:
+      - file: analysis.md
+        from_step: synthesize
+      - file: scope.md
+        from_step: scope
+      - file: sources.md
+        from_step: gather
+    outputs:
+      README.md:
+        type: file
+        description: "Final research report with findings, inline citations, and key takeaways"
+        required: true
+      bibliography.md:
+        type: file
+        description: "Categorized bibliography with annotated source entries"
+        required: false
+    dependencies:
+      - synthesize
+      - scope
+      - gather
+    reviews:
+      - run_each: README.md
+        additional_review_guidance: "Read scope.md for the research question and analysis.md for the findings being reported."
+        quality_criteria:
+          "Citations": "All findings cite sources with inline markdown links."
+          "Key Takeaways": "Key takeaways section has 3-5 actionable conclusions."
+          "Structure": "Report follows a clear structure: overview, research question, findings, key takeaways, related links."
+      - run_each: bibliography.md
+        quality_criteria:
+          "Categorized": "Sources are organized by category (academic, industry reports, news, documentation, etc.)."
+          "Annotated": "Each entry has a 1-2 sentence annotation describing its relevance."
+
+  # ── Quick workflow steps ──────────────────────────────────────────────
+
+  - id: gather_quick
+    name: "Gather Sources (Quick)"
+    description: "Fast local-only source gathering using WebSearch and WebFetch (3+ sources)"
+    instructions_file: steps/gather_quick.md
+    inputs:
+      - file: scope.md
+        from_step: scope
+    outputs:
+      sources.md:
+        type: file
+        description: "Sources gathered via local web search with URLs and key findings"
+        required: true
+    dependencies:
+      - scope
+    reviews:
+      - run_each: sources.md
+        additional_review_guidance: "Read scope.md to verify sources address the research question."
+        quality_criteria:
+          "Minimum Sources": "At least 3 sources are gathered with URLs and key findings."
+          "Relevance": "Sources are directly relevant to the research question in scope.md."
+
+  - id: summarize
+    name: "Summarize Research"
+    description: "Synthesize sources and produce a concise research summary in one step"
+    instructions_file: steps/summarize.md
+    inputs:
+      - file: sources.md
+        from_step: gather_quick
+      - file: scope.md
+        from_step: scope
+    outputs:
+      README.md:
+        type: file
+        description: "Concise research summary with key findings, sources cited, and takeaways"
+        required: true
+    dependencies:
+      - gather_quick
+      - scope
+    reviews:
+      - run_each: README.md
+        additional_review_guidance: "Read scope.md for the research question. Read sources.md to verify the summary draws from gathered sources."
+        quality_criteria:
+          "Concise": "The summary is focused and concise, appropriate for quick research depth."
+          "Addresses Question": "The summary directly answers the research question from scope.md."
+          "Sources Cited": "Key claims cite sources with inline markdown links."
+
+  # ── Ingest workflow steps ─────────────────────────────────────────────
+
+  - id: parse
+    name: "Parse External Material"
+    description: "Parse and clean external research material (markdown, papers, URLs), extract metadata"
+    instructions_file: steps/parse.md
+    inputs:
+      - name: material
+        description: "The external research material: a file path (markdown, PDF), URL, or pasted content"
+      - name: topic_slug
+        description: "Short slug for organizing the ingested material (e.g., 'transformer-attention')"
+    outputs:
+      parsed.md:
+        type: file
+        description: "Cleaned and normalized markdown with extracted metadata in frontmatter"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: parsed.md
+        quality_criteria:
+          "Metadata Extracted": "Frontmatter includes title, authors (if available), date, source URL or origin, and tags."
+          "Clean Markdown": "Content is well-formatted markdown with no HTML artifacts or broken formatting."
+          "Key Findings": "A summary section extracts the key findings or contributions from the material."
+          "Content Preserved": "The full original content is present — no sections truncated, summarized away, or replaced with references like 'see above'."
+          "Formatting Preserved": "Original notation and formatting (tree diagrams, special characters, code blocks, tables) are kept exactly as authored — not reformatted."
+
+  - id: file
+    name: "File to Notes"
+    description: "File parsed material into NOTES_RESEARCH_DIR with tags, frontmatter, and project symlinks"
+    instructions_file: steps/file.md
+    inputs:
+      - file: parsed.md
+        from_step: parse
+    outputs:
+      filed_note.md:
+        type: file
+        description: "The filed research note in its final location within the notes directory"
+        required: true
+    dependencies:
+      - parse
+    reviews:
+      - run_each: filed_note.md
+        quality_criteria:
+          "Correct Location": "Material is filed in $NOTES_RESEARCH_DIR/[topic_slug]/ or the user-specified notes location."
+          "Frontmatter Tags": "The filed document has proper frontmatter with tags for discoverability in the notes system."
+
+  # ── Reproduce workflow steps ──────────────────────────────────────────
+
+  - id: ingest_material
+    name: "Ingest Research Material"
+    description: "Run the ingest workflow as a nested workflow to import external research material"
+    instructions_file: steps/ingest_material.md
+    inputs:
+      - name: material
+        description: "The external research material: a file path, URL, or pasted content to ingest"
+      - name: topic_slug
+        description: "Short slug for organizing the material (e.g., 'gpt4-scaling-laws')"
+    outputs:
+      ingested_path:
+        type: file
+        description: "Path reference to the ingested and filed material from the nested ingest workflow"
+        required: true
+    dependencies: []
+    reviews: []
+
+  - id: analyze
+    name: "Analyze Reproducibility"
+    description: "Analyze ingested research for reproducible claims, experiments, and methodologies"
+    instructions_file: steps/analyze.md
+    inputs:
+      - file: ingested_path
+        from_step: ingest_material
+    outputs:
+      reproducibility_analysis.md:
+        type: file
+        description: "Analysis of reproducible claims with feasibility assessments and resource requirements"
+        required: true
+    dependencies:
+      - ingest_material
+    reviews:
+      - run_each: reproducibility_analysis.md
+        additional_review_guidance: "Read the ingested research material (referenced in the analysis) to verify claims are accurately represented."
+        quality_criteria:
+          "Claims Identified": "Specific reproducible claims, experiments, or methodologies are clearly listed."
+          "Feasibility Assessed": "Each item has a feasibility assessment including resource requirements and prerequisites."
+          "Prioritized": "Items are prioritized by impact and feasibility."
+
+  - id: plan
+    name: "Create Reproduction Plan"
+    description: "Create a structured reproduction plan; output as markdown, issues, or sweng handoff based on context"
+    instructions_file: steps/plan.md
+    inputs:
+      - file: reproducibility_analysis.md
+        from_step: analyze
+    outputs:
+      reproduction_plan.md:
+        type: file
+        description: "Structured reproduction plan with tasks, dependencies, and acceptance criteria"
+        required: true
+      issues:
+        type: files
+        description: "Created Forgejo/GitHub issues if applicable based on user preference or system context"
+        required: false
+    dependencies:
+      - analyze
+    reviews:
+      - run_each: reproduction_plan.md
+        additional_review_guidance: "Read reproducibility_analysis.md to verify the plan covers all identified reproducible items."
+        quality_criteria:
+          "Actionable Tasks": "The plan contains specific, actionable tasks with clear acceptance criteria."
+          "Dependencies Mapped": "Task dependencies and ordering are clearly specified."
+          "Handoff Ready": "The plan is structured for handoff to a sweng workflow or issue tracker (Forgejo/GitHub)."
