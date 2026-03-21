@@ -24,6 +24,7 @@ Identify the git provider, verify CLI authentication, determine the default bran
 
    **Provider detection from hostname:**
    - `github.com` → GitHub
+   - `gitlab.com` → GitLab
    - Any other host → assume Forgejo/Gitea (the agent's tool conventions document CLI usage)
 
    **Transport detection:**

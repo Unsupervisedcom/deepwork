@@ -34,7 +34,7 @@ Requires `platform_context.md` and `milestones_audit.md`. Board audit depends on
       - Expected status rules:
         - Closed issue → Done
         - Open + non-draft PR with reviewers → In Review
-        - Open + draft PR or any open PR → In Progress
+        - Open + draft PR or open non-draft PR without reviewers → In Progress
         - Open + no PR → Backlog
       - Correct wrong statuses using the provider's board item edit command
 

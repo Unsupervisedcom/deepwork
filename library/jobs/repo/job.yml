@@ -31,8 +31,10 @@ common_job_info_provided_to_all_steps_at_runtime: |
   ## Board Lifecycle
 
   - One project board MUST exist per milestone.
-  - The board MUST be created when the milestone is set up.
-  - The board MUST be closed or archived when the milestone is closed.
+  - The board MUST be created as part of the milestone setup process; the `setup`
+    workflow only checks/reports on board existence and MUST NOT create boards automatically.
+  - The board MUST be closed or archived when the milestone is closed; the `setup`
+    workflow MAY report drift but MUST NOT close or archive boards automatically.
 
   ## Board Transition Rules
 
