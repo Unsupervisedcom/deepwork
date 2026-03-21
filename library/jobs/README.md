@@ -18,11 +18,26 @@ Each job in this library follows the same structure as the `.deepwork/jobs` subf
 library/jobs/
 ├── .deepreview              # Review rules for library job quality
 ├── README.md
+├── repo/
+│   ├── job.yml              # Job definition (name, steps, workflows)
+│   ├── readme.md            # Job-specific documentation
+│   └── steps/
+│       ├── detect_platform.md
+│       ├── ensure_labels.md
+│       ├── check_branch_protection.md
+│       ├── check_milestones.md
+│       ├── check_boards.md
+│       ├── setup_report.md
+│       ├── audit_labels.md
+│       ├── audit_branch_protection.md
+│       ├── audit_milestones.md
+│       ├── audit_boards.md
+│       └── doctor_report.md
 └── spec_driven_development/
-    ├── job.yml              # Job definition (name, steps, dependencies)
+    ├── job.yml              # Job definition (name, steps, workflows)
     ├── readme.md            # Job-specific documentation
     └── steps/
-        ├── constitution.md  # Instructions for each step
+        ├── constitution.md
         ├── specify.md
         ├── clarify.md
         ├── plan.md
@@ -51,7 +66,7 @@ The job definition file contains:
   - `inputs`: What the step requires — each input has `name`/`description`, or `file`/`from_step` to reference outputs from prior steps
   - `outputs`: Map of output names to objects with `type` (`file` or `files`), `description`, and `required` fields
   - `dependencies`: Other step IDs that must complete first
-  - `quality_criteria`: Measurable criteria for step completion
+  - `reviews`: Quality reviews to run when step completes — array of objects with `run_each` (output name or `step`) and `quality_criteria` (map of criterion name to question)
 
 ### steps/
 
