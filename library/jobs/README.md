@@ -18,6 +18,12 @@ Each job in this library follows the same structure as the `.deepwork/jobs` subf
 library/jobs/
 ├── .deepreview              # Review rules for library job quality
 ├── README.md
+├── platform_engineer/       # Platform engineering workflows
+│   ├── job.yml
+│   ├── conventions.md       # RFC 2119 platform engineering standards
+│   ├── readme.md
+│   ├── steps/               # Step instruction files
+│   └── templates/           # Output templates
 ├── repo/
 │   ├── job.yml              # Job definition (name, steps, workflows)
 │   ├── readme.md            # Job-specific documentation

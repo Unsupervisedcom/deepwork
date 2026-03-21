@@ -1,0 +1,32 @@
+## Context
+
+- **Repository**: [owner/repo]
+- **Branch**: [current branch]
+- **Environment**: [relevant environment details]
+- **Date**: [YYYY-MM-DD]
+
+## Problem / Request
+
+[Clear description of the platform engineering issue or request]
+
+## Impact
+
+- **Who is affected**: [developers, users, CI, etc.]
+- **Urgency**: [blocking | high | medium | low]
+- **Current workaround**: [if any]
+
+## Relevant Files
+
+- `[file path]` — [brief description of relevance]
+- `[file path]` — [brief description of relevance]
+
+## References
+
+- [Link to related issues, PRs, docs, or dashboards]
+- [Link to error tracking or monitoring]
+
+## Checklist
+
+- [ ] [action item 1]
+- [ ] [action item 2]
+- [ ] [action item 3]
