@@ -76,6 +76,7 @@
 
             shellHook = ''
               export REPO_ROOT=$(git rev-parse --show-toplevel)
+              export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="$REPO_ROOT/library/jobs"
 
               # Create project venv with deepwork + all dev deps (pytest, ruff, mypy, etc.)
               uv sync --extra dev --quiet 2>/dev/null || true

@@ -176,7 +176,63 @@ Check for and remove other obsolete files:
 | `.claude/commands/` | Generated commands | Keep (current system) |
 | `.claude/settings.local.json` | Local overrides | Keep (user settings) |
 
-### Step 7: Verify Git Status
+### Step 7: Library Job Access via Nix Dev Shell
+
+Library jobs replace some patterns previously handled by copied job files. This step ensures users are aware of the recommended setup path.
+
+Check whether the project uses a Nix flake devshell and whether shared library jobs are configured.
+
+**Detection logic:**
+
+1. Check if `flake.nix` exists in the repo root:
+   ```bash
+   test -f flake.nix && echo "flake found" || echo "no flake"
+   ```
+
+2. **If `flake.nix` exists**, check whether it already sets `DEEPWORK_ADDITIONAL_JOBS_FOLDERS`:
+   ```bash
+   grep -q 'DEEPWORK_ADDITIONAL_JOBS_FOLDERS' flake.nix && echo "already configured" || echo "not configured"
+   ```
+
+3. **If already configured**: Do nothing. No output about library jobs — this is silent.
+
+4. **If `flake.nix` exists but library jobs are NOT configured**: Offer to set it up. Tell the user:
+   > Your project uses a Nix flake. You can access shared DeepWork library jobs by adding a sparse checkout to your shellHook. This keeps library jobs live and up-to-date without copying them into your project.
+
+   Then suggest adding to their `flake.nix` shellHook:
+   ```nix
+   shellHook = ''
+     export REPO_ROOT=$(git rev-parse --show-toplevel)
+
+     # Clone DeepWork library jobs if not present
+     if [ ! -d "$REPO_ROOT/.deepwork/upstream" ]; then
+       git clone --sparse --filter=blob:none \
+         https://github.com/Unsupervisedcom/deepwork.git \
+         "$REPO_ROOT/.deepwork/upstream"
+       git -C "$REPO_ROOT/.deepwork/upstream" sparse-checkout set --cone library/jobs/
+     fi
+
+     export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="$REPO_ROOT/.deepwork/upstream/library/jobs"
+   '';
+   ```
+
+   And adding `.deepwork/upstream/` to `.gitignore`.
+
+   If the user wants only specific library jobs, they can use sparse checkout to include/exclude:
+   ```bash
+   # Check out only specific jobs
+   git -C .deepwork/upstream sparse-checkout set --cone library/jobs/repo/
+
+   # Add more later
+   git -C .deepwork/upstream sparse-checkout add library/jobs/spec_driven_development/
+   ```
+
+5. **If no `flake.nix` exists**: Mention it as an option. Tell the user:
+   > DeepWork library jobs can be accessed via a Nix dev shell with `DEEPWORK_ADDITIONAL_JOBS_FOLDERS`. See `library/jobs/README.md` in the DeepWork repo for setup instructions.
+
+   Do not go into detail — just make the user aware.
+
+### Step 8: Verify Git Status
 
 Check that the cleanup hasn't left untracked garbage:
 

@@ -13,6 +13,7 @@ prompt_best_practices:
       - "learning_agents/agents/**/*.md"   # agent persona definitions
       - "platform/**/*.md"
       - "src/deepwork/standard_jobs/**/*.md"
+      - "library/jobs/**/*.md"  # library job step instructions are prompt-heavy files
       - "**/.deepreview"       # .deepreview files contain inline agent instructions — prompt-heavy content
   review:
     strategy: individual
