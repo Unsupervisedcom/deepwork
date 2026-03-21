@@ -9,7 +9,7 @@ Merge the current branch's PR, wait for it to land, then update local main.
 
 ## Steps
 
-1. **Merge the PR** using `gh pr merge` with `--squash --delete-branch`. This will add it to the merge queue if one is configured.
+1. **Merge the PR** using `gh pr merge --squash`. Do NOT use `--delete-branch` as it is incompatible with merge queues. This will add it to the merge queue if one is configured.
 
 2. **Wait for PR checks to complete** using `gh pr checks --watch --fail-fast`. This blocks until all PR-level checks finish or one fails.
 
