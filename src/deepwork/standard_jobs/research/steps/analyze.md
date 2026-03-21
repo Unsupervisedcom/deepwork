@@ -10,7 +10,7 @@ Analyze ingested research material to identify reproducible claims, experiments,
 
 1. **Read the ingested material**
 
-   Read the `ingested_path` reference from the prior step to locate the filed research material. Then read the full content of the filed note, paying particular attention to:
+   Read the ingested path reference from the prior step (resolved output path, typically `research/[topic_slug]/ingested_path.md`) to locate the filed research material. Then read the full content of the filed note, paying particular attention to:
    - Key findings listed in the frontmatter
    - Methodology sections
    - Experimental setups and results

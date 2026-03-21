@@ -10,7 +10,7 @@ Transform the reproducibility analysis into a structured engineering plan with a
 
 1. **Read the reproducibility analysis**
 
-   Read `reproducibility_analysis.md` from the analyze step. Focus on:
+   Read the reproducibility analysis from the prior step (resolved output path, typically `research/[topic_slug]/reproducibility_analysis.md`). Focus on:
    - P0 and P1 priority items (P2 items are optional)
    - Prerequisites and resource requirements
    - Dependencies between items

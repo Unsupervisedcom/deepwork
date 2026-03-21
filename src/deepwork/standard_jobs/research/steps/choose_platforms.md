@@ -10,7 +10,7 @@ Select which AI research platforms to use for deep research and create an execut
 
 1. **Read the scope**
 
-   Read `scope.md` from the prior step to understand the research question, type, and depth.
+   Read the scope file from the prior step (resolved output path, typically `research/[topic_slug]/scope.md`) to understand the research question, type, and depth.
 
 2. **Present platform options**
 

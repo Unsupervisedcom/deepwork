@@ -10,8 +10,8 @@ Collect at least 8 diverse sources from the selected research platforms, extract
 
 1. **Read inputs**
 
-   - Read `scope.md` for the research question, sub-questions, type, and search strategy
-   - Read `platforms.md` for the platform execution plan and query approach
+   - Read the scope file from the prior step (resolved output path, typically `research/[topic_slug]/scope.md`) for the research question, sub-questions, type, and search strategy
+   - Read the platforms file from the prior step (resolved output path, typically `research/[topic_slug]/platforms.md`) for the platform execution plan and query approach
 
 2. **Execute platform-specific gathering**
 
@@ -29,30 +29,30 @@ Collect at least 8 diverse sources from the selected research platforms, extract
    - Answer any clarifying questions Gemini asks
    - Review and approve the research plan
    - Wait for completion and extract findings with source links
-   - Save raw output as `sources_gemini.md`
+   - Save raw output as `research/[topic_slug]/sources_gemini.md`
 
    **ChatGPT Deep Research** (browser automation):
    - Open ChatGPT and use research/browse mode
    - Enter the research question
    - Answer clarifications and approve the plan
    - Extract findings with citations
-   - Save raw output as `sources_chatgpt.md`
+   - Save raw output as `research/[topic_slug]/sources_chatgpt.md`
 
    **Grok** (browser automation):
    - Open Grok and enter the research question
    - Extract findings, especially real-time and social context
-   - Save raw output as `sources_grok.md`
+   - Save raw output as `research/[topic_slug]/sources_grok.md`
 
    **Perplexity** (browser automation):
    - Open Perplexity and enter the research question
    - Extract findings with numbered inline citations
-   - Save raw output as `sources_perplexity.md`
+   - Save raw output as `research/[topic_slug]/sources_perplexity.md`
 
    **Parallel mode (2+ platforms)**:
    - Open each platform in separate browser tabs
    - Enter the same research question in each
    - Allow all platforms to research simultaneously
-   - Save platform-specific outputs, then consolidate
+   - Save platform-specific outputs under `research/[topic_slug]/`, then consolidate
 
 3. **Consolidate and deduplicate**
 

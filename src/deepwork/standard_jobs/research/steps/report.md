@@ -56,7 +56,7 @@ Produce the final `README.md` research report with inline citations and key take
 ## Overview
 
 **Type**: [science | business | competitive | market | technical]
-**Depth**: [quick | standard | deep]
+**Depth**: [quick | deep]
 **Project**: [#ProjectTag or N/A]
 **Date**: [YYYY-MM-DD]
 

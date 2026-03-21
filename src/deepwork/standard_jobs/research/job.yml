@@ -45,7 +45,6 @@ common_job_info_provided_to_all_steps_at_runtime: |
   ## Depth Levels
 
   - Quick: 3+ sources, local only (WebSearch/WebFetch), concise output
-  - Standard: 5+ diverse sources, multi-source synthesis
   - Deep: 8+ sources, multi-platform, comprehensive analysis
 
   ## Project Integration
@@ -96,7 +95,7 @@ steps:
       - name: type
         description: "Research type: science, business, competitive, market, or technical"
       - name: depth
-        description: "Depth level: quick, standard, or deep"
+        description: "Depth level: quick or deep"
       - name: project
         description: "Associated project tag (optional, auto-detected from context)"
     outputs:

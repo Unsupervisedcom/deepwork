@@ -95,7 +95,7 @@ slug: "[topic_slug]"
 ## Content
 
 [Cleaned and normalized content from the original material.
-All formatting preserved, HTML artifacts removed, headings normalized.]
+All formatting preserved, HTML artifacts removed, only broken markdown fixed without changing heading structure.]
 ```
 
 **Concrete example**:

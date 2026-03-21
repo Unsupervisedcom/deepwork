@@ -16,7 +16,6 @@ Define the research question, classify the research type and depth level, and de
    - **Type**: One of: science, business, competitive, market, technical.
    - **Depth**: One of:
      - **Quick** — Local web search summary, 3+ sources, concise output
-     - **Standard** — Multi-source web research, 5+ diverse sources, synthesized analysis
      - **Deep** — Thorough investigation, 8+ sources, multi-platform with browser automation
    - **Project** (optional): An associated project tag (e.g., `#MyProject`, `#WebPlatform`).
 
@@ -66,7 +65,7 @@ Define the research question, classify the research type and depth level, and de
 
 **Slug**: [topic_slug]
 **Type**: [science | business | competitive | market | technical]
-**Depth**: [quick | standard | deep]
+**Depth**: [quick | deep]
 **Project**: [#ProjectTag or N/A]
 **Date**: [YYYY-MM-DD]
 
@@ -87,7 +86,7 @@ Define the research question, classify the research type and depth level, and de
 **Source types to prioritize**: [based on research type]
 
 **Depth guidance**:
-- Minimum sources: [3 for quick, 5 for standard, 8 for deep]
+- Minimum sources: [3 for quick, 8 for deep]
 - Source diversity: [what kinds of sources to include]
 - Platform approach: [local only for quick, user-selected for deep]
 

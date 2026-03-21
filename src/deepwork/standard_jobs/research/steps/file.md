@@ -10,20 +10,21 @@ File the parsed research material into the user's notes directory (`$NOTES_RESEA
 
 1. **Read the parsed material**
 
-   Read `parsed.md` from the parse step. It contains frontmatter metadata and cleaned content.
+   Read the parsed material from the prior step (resolved output path, typically `research/[topic_slug]/parsed.md`). It contains frontmatter metadata and cleaned content.
 
 2. **Determine the notes directory**
 
    Check for the notes storage location in this order:
 
    a. **Environment variable `NOTES_RESEARCH_DIR`**: If set, use it directly.
-   b. **Environment variable `NOTES_DIR`**: If set, use `$NOTES_DIR/research/`.
+   b. **Environment variable `NOTES_DIR`**: If set, derive `NOTES_RESEARCH_DIR="${NOTES_DIR}/research"`.
    c. **Neither set**: Ask structured questions using the AskUserQuestion tool:
       - Where would you like research notes stored? (Look for common locations: `~/obsidian/research/`, `~/notes/research/`, or ask)
       - After filing, **always** inform the user: "Consider adding `export NOTES_DIR=/path/to/your/notes` to your shell profile (`.zshrc`/`.bashrc`) so future ingest runs file automatically."
 
    Create the target directory if it doesn't exist:
    ```bash
+   NOTES_RESEARCH_DIR="${NOTES_RESEARCH_DIR:-${NOTES_DIR}/research}"
    mkdir -p "$NOTES_RESEARCH_DIR/[topic_slug]"
    ```
 
