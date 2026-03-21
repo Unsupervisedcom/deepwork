@@ -31,10 +31,10 @@ Requires `platform_context.md` and `milestones_audit.md`. Board audit depends on
 
    d. **Cross-reference statuses** — for each board item:
       - Check linked issue state and PR state
-      - Expected status rules:
+      - Expected status rules (check in this order, first match wins):
         - Closed issue → Done
-        - Open + non-draft PR with reviewers → In Review
-        - Open + draft PR or open non-draft PR without reviewers → In Progress
+        - Open + non-draft PR with reviewers requested → In Review
+        - Open + any PR (draft or non-draft without reviewers) → In Progress
         - Open + no PR → Backlog
       - Correct wrong statuses using the provider's board item edit command
 

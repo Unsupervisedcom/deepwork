@@ -19,8 +19,8 @@ Compile a summary of all audit findings, fixes applied, and remaining issues acr
    - Count total findings, fixes applied, and remaining issues
 
 3. **Determine health status for each concern**
-   - HEALTHY: no issues found
-   - FIXED: issues were found and all were fixed
+   - HEALTHY: no issues found (nothing to fix)
+   - FIXED: issues were found and all were automatically fixed
    - NEEDS ATTENTION: issues remain that require manual intervention
 
 4. **Compile remaining manual actions**
