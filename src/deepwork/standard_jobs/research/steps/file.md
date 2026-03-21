@@ -96,4 +96,4 @@ filed_to: "[absolute path where this was filed]"
 
 ## Context
 
-This is the second and final step of the **ingest** workflow. The goal is long-term storage and discoverability — the filed material should be easy to find later through tags, frontmatter search, or project symlinks. The `NOTES_DIR` / `NOTES_RESEARCH_DIR` environment variables make this portable: keystone sets them automatically, but any user can configure them in their shell profile.
+This is the second and final step of the **ingest** workflow. The goal is long-term storage and discoverability — the filed material should be easy to find later through tags, frontmatter search, or project symlinks. The `NOTES_DIR` / `NOTES_RESEARCH_DIR` environment variables make this portable: any user can configure them in their shell profile for automatic filing.

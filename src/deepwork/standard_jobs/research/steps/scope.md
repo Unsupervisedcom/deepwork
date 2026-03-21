@@ -18,7 +18,7 @@ Define the research question, classify the research type and depth level, and de
      - **Quick** — Local web search summary, 3+ sources, concise output
      - **Standard** — Multi-source web research, 5+ diverse sources, synthesized analysis
      - **Deep** — Thorough investigation, 8+ sources, multi-platform with browser automation
-   - **Project** (optional): An associated project tag (e.g., `#Catalyst`, `#Meze`).
+   - **Project** (optional): An associated project tag (e.g., `#MyProject`, `#WebPlatform`).
 
 2. **Detect project association**
 
@@ -105,7 +105,7 @@ If N/A: "No project association"]
 **Slug**: transformer-attention
 **Type**: science
 **Depth**: deep
-**Project**: #LLMResearch
+**Project**: #MyProject
 **Date**: 2026-03-20
 
 ## Research Question
@@ -130,7 +130,7 @@ What are the current state-of-the-art alternatives to standard multi-head attent
 
 ## Project Context
 
-Feeds into #LLMResearch architecture decision. Results inform the attention mechanism selection.
+Feeds into #MyProject architecture decision. Results inform the attention mechanism selection.
 ```
 
 ## Quality Criteria

@@ -105,7 +105,7 @@ Synthesize the gathered sources and produce a concise research summary in a sing
 
 **Type**: technical
 **Depth**: quick
-**Project**: #Keystone
+**Project**: #MyProject
 **Date**: 2026-03-20
 **Sources**: 4 sources via local web search
 
@@ -127,7 +127,7 @@ Using `--max-jobs` and `--cores` on remote machines provides near-linear scaling
 
 1. Remote builders are net-positive for builds with 3+ independent derivations
 2. Store path copying is the main bottleneck — binary cache helps
-3. Worth investigating for Keystone's multi-host build pipeline
+3. Worth investigating for the project's multi-host build pipeline
 
 ## Limitations
 

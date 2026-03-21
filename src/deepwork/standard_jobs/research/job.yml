@@ -25,12 +25,12 @@ common_job_info_provided_to_all_steps_at_runtime: |
   ## Notes Storage
 
   Research material (ingest/reproduce workflows) is filed using environment variables:
-  - `NOTES_DIR`: Root notes directory (keystone sets this automatically from configured notes repo)
+  - `NOTES_DIR`: Root notes directory (can be set in your shell profile or by your environment)
   - `NOTES_RESEARCH_DIR`: Research subdirectory (defaults to `$NOTES_DIR/research`)
 
   If these environment variables are not set, the workflow MUST ask the user where to store
   notes and suggest they set `NOTES_DIR` for future runs. This keeps the workflow portable
-  beyond keystone.
+  across different environments.
 
   ## Output Locations
 
@@ -105,7 +105,12 @@ steps:
         description: "Research scope definition with question, sub-questions, and search strategy"
         required: true
     dependencies: []
-    reviews: []
+    reviews:
+      - run_each: scope.md
+        quality_criteria:
+          "Research Question Specific": "The research question is specific and answerable, not vague or overly broad."
+          "Sub-Questions Defined": "Sub-questions (3-5) collectively cover the breadth of the research topic."
+          "Search Strategy Appropriate": "The search strategy matches the research type and depth level, with appropriate source types prioritized."
 
   # ── Research workflow steps ──────────────────────────────────────────
 
@@ -125,7 +130,12 @@ steps:
         required: true
     dependencies:
       - scope
-    reviews: []
+    reviews:
+      - run_each: platforms.md
+        additional_review_guidance: "Read scope.md to verify platform selection is appropriate for the research type and depth."
+        quality_criteria:
+          "Platforms Selected": "At least one research platform is selected with a clear role and query approach."
+          "Browser Availability Confirmed": "Browser tool availability is confirmed for any external platforms, or a fallback to local-only is documented."
 
   - id: gather
     name: "Gather Sources (Deep)"
