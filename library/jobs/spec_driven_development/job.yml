@@ -49,11 +49,11 @@ steps:
     reviews:
       - run_each: constitution.md
         quality_criteria:
-          "Priorities Captured": "Did the agent gather specific development priorities from the user?"
-          "Principles Defined": "Are governance principles clear and actionable?"
-          "Technology Guidance": "Does the constitution include relevant technology stack preferences?"
-          "Quality Standards": "Are quality standards and testing expectations defined?"
-          "File Created": "Has constitution.md been created in the project's documentation folder?"
+          "Priorities Captured": "Specific development priorities are captured from the user."
+          "Principles Defined": "Governance principles are clear and actionable."
+          "Technology Guidance": "The constitution includes relevant technology stack preferences."
+          "Quality Standards": "Quality standards and testing expectations are defined."
+          "File Created": "constitution.md has been created in the project's documentation folder."
 
   - id: specify
     name: "Create Specification"
@@ -77,13 +77,13 @@ steps:
     reviews:
       - run_each: spec.md
         quality_criteria:
-          "User Stories Complete": "Are all user stories written in standard format (As a... I want... So that...)?"
-          "Acceptance Criteria": "Does each story have clear, testable acceptance criteria?"
-          "Non-Functional Requirements": "Are performance, security, and accessibility requirements captured?"
-          "Scope Boundaries": "Is it clear what's in and out of scope?"
-          "Constitution Aligned": "Does the spec respect the governance principles from the constitution?"
-          "Technology Agnostic": "Is the spec free of implementation details and technology choices?"
-          "File Created": "Has spec.md been created in specs/[feature-name]/?"
+          "User Stories Complete": "All user stories are written in standard format (As a... I want... So that...)."
+          "Acceptance Criteria": "Each story has clear, testable acceptance criteria."
+          "Non-Functional Requirements": "Performance, security, and accessibility requirements are captured."
+          "Scope Boundaries": "Scope boundaries are clearly defined."
+          "Constitution Aligned": "The spec respects the governance principles from the constitution."
+          "Technology Agnostic": "The spec is free of implementation details and technology choices."
+          "File Created": "spec.md has been created in specs/[feature-name]/."
 
   - id: clarify
     name: "Clarify Specification"
@@ -103,12 +103,12 @@ steps:
     reviews:
       - run_each: spec.md
         quality_criteria:
-          "Ambiguities Identified": "Were underspecified areas systematically identified?"
-          "Questions Asked": "Did the agent ask structured questions to resolve each ambiguity?"
-          "Answers Documented": "Are clarification answers recorded in the spec document?"
-          "Edge Cases Covered": "Are edge cases and error scenarios now defined?"
-          "Acceptance Checklist": "Is the acceptance criteria checklist complete and validated?"
-          "Spec Updated": "Has spec.md been updated with all clarifications?"
+          "Ambiguities Identified": "Underspecified areas are systematically identified."
+          "Questions Asked": "Structured questions are asked to resolve each ambiguity."
+          "Answers Documented": "Clarification answers are recorded in the spec document."
+          "Edge Cases Covered": "Edge cases and error scenarios are defined."
+          "Acceptance Checklist": "The acceptance criteria checklist is complete and validated."
+          "Spec Updated": "spec.md has been updated with all clarifications."
 
   - id: plan
     name: "Generate Technical Plan"
@@ -149,15 +149,15 @@ steps:
     reviews:
       - run_each: step
         quality_criteria:
-          "Architecture Defined": "Is the high-level architecture clearly described?"
-          "Technology Justified": "Are technology choices explained with rationale?"
-          "Data Model Complete": "Is the data model documented with all entities and relationships?"
-          "API Contracts": "Are API endpoints defined with request/response schemas?"
-          "Research Documented": "Are any research findings or technology evaluations captured?"
-          "Dependencies Listed": "Are external dependencies and their versions specified?"
-          "Constitution Respected": "Does the plan align with governance principles?"
-          "Architecture Doc Updated": "Has the project architecture document been reviewed and updated if needed?"
-          "Files Created": "Have all output files been created in specs/[feature-name]/?"
+          "Architecture Defined": "The high-level architecture is clearly described."
+          "Technology Justified": "Technology choices are explained with rationale."
+          "Data Model Complete": "The data model is documented with all entities and relationships."
+          "API Contracts": "API endpoints are defined with request/response schemas."
+          "Research Documented": "Research findings and technology evaluations are captured."
+          "Dependencies Listed": "External dependencies and their versions are specified."
+          "Constitution Respected": "The plan aligns with governance principles."
+          "Architecture Doc Updated": "The project architecture document has been reviewed and updated if needed."
+          "Files Created": "All output files have been created in specs/[feature-name]/."
 
   - id: tasks
     name: "Generate Task Breakdown"
@@ -182,14 +182,14 @@ steps:
     reviews:
       - run_each: tasks.md
         quality_criteria:
-          "User Story Organization": "Are tasks organized by user story?"
-          "Dependencies Sequenced": "Are task dependencies correctly ordered?"
-          "Parallel Tasks Marked": "Are parallelizable tasks identified with [P] markers?"
-          "File Paths Specified": "Does each task specify which files it creates/modifies?"
-          "TDD Structure": "Are test tasks included before or alongside implementation tasks?"
-          "Checkpoints Defined": "Are validation checkpoints included between phases?"
-          "Granularity Appropriate": "Are tasks small enough to be completed in one session?"
-          "File Created": "Has tasks.md been created in specs/[feature-name]/?"
+          "User Story Organization": "Tasks are organized by user story."
+          "Dependencies Sequenced": "Task dependencies are correctly ordered."
+          "Parallel Tasks Marked": "Parallelizable tasks are identified with [P] markers."
+          "File Paths Specified": "Each task specifies which files it creates/modifies."
+          "TDD Structure": "Test tasks are included before or alongside implementation tasks."
+          "Checkpoints Defined": "Validation checkpoints are included between phases."
+          "Granularity Appropriate": "Tasks are small enough to be completed in one session."
+          "File Created": "tasks.md has been created in specs/[feature-name]/."
 
   - id: implement
     name: "Execute Implementation"
@@ -221,10 +221,10 @@ steps:
     reviews:
       - run_each: step
         quality_criteria:
-          "Prerequisites Met": "Were all spec/plan/tasks artifacts validated before starting?"
-          "Task Order Followed": "Were tasks executed in dependency order?"
-          "Tests Written": "Are tests created alongside or before implementation?"
-          "Acceptance Criteria Met": "Does the implementation satisfy all acceptance criteria from spec?"
-          "Code Quality": "Does the code meet the standards defined in the constitution?"
-          "Progress Tracked": "Was progress communicated throughout implementation?"
-          "All Tasks Complete": "Have all tasks in tasks.md been completed?"
+          "Prerequisites Met": "All spec/plan/tasks artifacts were validated before starting."
+          "Task Order Followed": "Tasks were executed in dependency order."
+          "Tests Written": "Tests are created alongside or before implementation."
+          "Acceptance Criteria Met": "The implementation satisfies all acceptance criteria from spec."
+          "Code Quality": "The code meets the standards defined in the constitution."
+          "Progress Tracked": "Progress was communicated throughout implementation."
+          "All Tasks Complete": "All tasks in tasks.md have been completed."

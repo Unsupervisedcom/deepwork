@@ -14,7 +14,9 @@ Requires `platform_context.md` (board inventory) and `milestones_report.md` (mil
 
 1. **Handle providers without a board API**
    - If `boards_api: false` in `platform_context.md`, output manual instructions:
-     - Board URL pattern: `https://{host}/{owner}/{repo}/projects`
+     - Board URL pattern:
+       - For GitHub / Gitea / Forgejo: `https://{host}/{owner}/{repo}/projects`
+       - For GitLab: `https://{host}/{owner}/{repo}/-/boards`
      - Steps to create a board manually in the web UI
      - Skip all CLI automation steps below
 

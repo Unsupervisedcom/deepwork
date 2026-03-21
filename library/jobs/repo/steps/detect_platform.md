@@ -25,7 +25,12 @@ Identify the git provider, verify CLI authentication, determine the default bran
    **Provider detection from hostname:**
    - `github.com` → GitHub
    - `gitlab.com` → GitLab
-   - Any other host → assume Forgejo/Gitea (the agent's tool conventions document CLI usage)
+   - Any other host → attempt auto-detection, then prompt:
+     - Try lightweight API/version probes to distinguish common providers:
+       - GitLab (self-hosted): `https://{host}/api/v4/version`
+       - Gitea/Forgejo: `https://{host}/api/v1/version`
+     - If a known provider is detected, use that provider
+     - If detection fails or is ambiguous, ask the user which provider to use
 
    **Transport detection:**
    - URLs starting with `git@` or `ssh://` → SSH

@@ -14,7 +14,9 @@ Requires `platform_context.md` and `milestones_audit.md`. Board audit depends on
 
 1. **Handle providers without a board API**
    - If `boards_api: false` in `platform_context.md`, output manual review instructions:
-     - How to check boards in the web UI at `https://{host}/{owner}/{repo}/projects`
+     - How to check boards in the web UI:
+       - For GitHub / Gitea / Forgejo: `https://{host}/{owner}/{repo}/projects`
+       - For GitLab: `https://{host}/{owner}/{repo}/-/boards`
      - Checklist of things to verify manually
      - Skip all CLI automation steps below
 
