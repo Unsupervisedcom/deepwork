@@ -192,19 +192,23 @@ steps:
         additional_review_guidance: |
           For each language review rule, read the convention file it references
           and verify the review instructions make sense for that language. Check
-          that every rule uses strategy: individual.
+          that every rule uses strategy: individual. Verify that each convention
+          file includes DRY and comment accuracy standards, and that each rule's
+          instructions reference those standards from the conventions file.
         quality_criteria:
           "Convention Files Sensible": >
             Each language convention file is concise, actionable, and based on
             actual project patterns — not generic boilerplate. If pre-existing
             standards files exist, they are referenced rather than duplicated.
+            Every convention file includes language-specific DRY guidelines and
+            comment accuracy standards.
           "Per-File Strategy": >
             Every language review rule uses strategy: individual. No language
             review rule uses matches_together or all_changed_files.
           "DRY and Comment Checks": >
-            Every language review rule's instructions explicitly include checks
-            for DRY violations (duplicated logic, repeated patterns) and comment
-            accuracy (comments still match the code after changes).
+            Every language review rule's instructions explicitly reference the
+            DRY and comment accuracy standards from the conventions file and
+            instruct the reviewer to check for violations of those standards.
           "Correct Match Patterns": >
             Match patterns correctly target the language's file extensions with
             appropriate excludes for generated/vendor files.
