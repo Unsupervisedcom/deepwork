@@ -29,8 +29,8 @@ Identify the git provider, verify CLI authentication, determine the default bran
      - Try lightweight API/version probes to distinguish common providers:
        - GitLab (self-hosted): `https://{host}/api/v4/version`
        - Gitea/Forgejo: `https://{host}/api/v1/version`
-     - If a known provider is detected, use that provider
-     - If detection fails or is ambiguous, ask the user which provider to use
+     - If exactly one probe returns a successful response, use that provider
+     - If both probes succeed, neither succeeds, or detection is otherwise ambiguous, ask the user which provider to use
 
    **Transport detection:**
    - URLs starting with `git@` or `ssh://` → SSH
