@@ -7,13 +7,13 @@ common_job_info_provided_to_all_steps_at_runtime: |
 
   ## Workflows
 
-  - **deep**: Full multi-platform research (8+ sources) with comprehensive report and bibliography
+  - **research**: Full multi-platform research (8+ sources) with comprehensive report and bibliography
   - **quick**: Local-only fast research (3+ sources via WebSearch/WebFetch) with concise summary
   - **ingest**: Import external research material (markdown, papers, URLs) into the user's notes
   - **reproduce**: Ingest material (via nested ingest workflow), analyze for reproducibility,
     and create an engineering plan that can be handed off to sweng workflows or issue trackers
 
-  ## Platform Support (deep workflow only)
+  ## Platform Support (research workflow only)
 
   - Local: Claude's built-in WebSearch and WebFetch tools
   - Gemini Deep Research: Comprehensive web crawling via Chrome
@@ -54,7 +54,7 @@ common_job_info_provided_to_all_steps_at_runtime: |
   `projects/[ProjectName]/research/[topic_slug]` pointing to the research directory.
 
 workflows:
-  - name: deep
+  - name: research
     summary: "Full multi-platform research with comprehensive report and bibliography"
     steps:
       - scope
@@ -107,7 +107,7 @@ steps:
     dependencies: []
     reviews: []
 
-  # ── Deep workflow steps ───────────────────────────────────────────────
+  # ── Research workflow steps ──────────────────────────────────────────
 
   - id: choose_platforms
     name: "Choose Research Platforms"

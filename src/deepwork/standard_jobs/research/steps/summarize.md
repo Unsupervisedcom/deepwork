@@ -155,4 +155,4 @@ Using `--max-jobs` and `--cores` on remote machines provides near-linear scaling
 
 ## Context
 
-This is the final step of the **quick** workflow. Unlike the **deep** workflow which has separate synthesize and report steps, this step combines both into one streamlined output. The result should be useful on its own for quick decisions while clearly noting when deeper research would be warranted.
+This is the final step of the **quick** workflow. Unlike the **research** workflow which has separate synthesize and report steps, this step combines both into one streamlined output. The result should be useful on its own for quick decisions while clearly noting when deeper research would be warranted.

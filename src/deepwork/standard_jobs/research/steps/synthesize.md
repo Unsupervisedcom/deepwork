@@ -131,4 +131,4 @@ Analyze the gathered sources to produce a structured analysis that directly answ
 
 ## Context
 
-This is the analytical core of the **deep** workflow. The gather step collected raw material; this step transforms it into structured understanding. The report step that follows will present these insights to the reader, so the analysis must be rigorous enough to support clear, well-evidenced conclusions.
+This is the analytical core of the **research** workflow. The gather step collected raw material; this step transforms it into structured understanding. The report step that follows will present these insights to the reader, so the analysis must be rigorous enough to support clear, well-evidenced conclusions.

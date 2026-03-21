@@ -86,4 +86,4 @@ Rapidly collect at least 3 relevant sources using only local tools (WebSearch an
 
 ## Context
 
-This step runs only in the **quick** workflow. Unlike the deep gather which uses multi-platform research and requires 8+ sources, this step uses only local tools (WebSearch/WebFetch) for speed. The output feeds directly into the summarize step, which combines synthesis and reporting into one step. Prioritize relevance and quality over quantity.
+This step runs only in the **quick** workflow. Unlike the research workflow's gather step which uses multi-platform research and requires 8+ sources, this step uses only local tools (WebSearch/WebFetch) for speed. The output feeds directly into the summarize step, which combines synthesis and reporting into one step. Prioritize relevance and quality over quantity.

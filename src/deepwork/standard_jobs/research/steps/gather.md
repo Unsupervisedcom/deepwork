@@ -144,4 +144,4 @@ Collect at least 8 diverse sources from the selected research platforms, extract
 
 ## Context
 
-This is the primary data collection step of the **deep** workflow. Source quality and diversity directly determine the quality of synthesis and final report. Prioritize breadth across sub-questions over depth on any single point — gaps can be noted for the synthesis step. Document enough detail that the synthesize step can work without re-visiting sources.
+This is the primary data collection step of the **research** workflow. Source quality and diversity directly determine the quality of synthesis and final report. Prioritize breadth across sub-questions over depth on any single point — gaps can be noted for the synthesis step. Document enough detail that the synthesize step can work without re-visiting sources.

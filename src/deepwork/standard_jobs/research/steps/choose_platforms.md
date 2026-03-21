@@ -77,6 +77,6 @@ Select which AI research platforms to use for deep research and create an execut
 
 ## Context
 
-This step only runs in the **deep** workflow. The **quick** workflow skips platform selection entirely and uses local tools only. The platform execution plan directly guides the gather step's source collection strategy.
+This step only runs in the **research** workflow. The **quick** workflow skips platform selection entirely and uses local tools only. The platform execution plan directly guides the gather step's source collection strategy.
 
 **Clarifying questions flow**: When using Gemini or ChatGPT for deep research, these platforms follow a two-phase approach: (1) they analyze the query and may ask clarifying questions, then (2) they present a research plan for approval. The gather step handles this interaction — document it in the execution plan so the gather step knows what to expect.

@@ -131,4 +131,4 @@ to present a clear narrative.]
 
 ## Context
 
-This is the final step of the **deep** workflow. The README.md is the primary deliverable — it should stand on its own as a useful document. The bibliography provides provenance for verification. The project symlink ensures the research is discoverable from the project directory.
+This is the final step of the **research** workflow. The README.md is the primary deliverable — it should stand on its own as a useful document. The bibliography provides provenance for verification. The project symlink ensures the research is discoverable from the project directory.

@@ -2,7 +2,7 @@
 
 ## Objective
 
-Define the research question, classify the research type and depth level, and detect whether this research is associated with an existing project. Output a `scope.md` file that guides all subsequent steps in both the **deep** and **quick** workflows.
+Define the research question, classify the research type and depth level, and detect whether this research is associated with an existing project. Output a `scope.md` file that guides all subsequent steps in both the **research** and **quick** workflows.
 
 ## Task
 
@@ -145,4 +145,4 @@ Feeds into #LLMResearch architecture decision. Results inform the attention mech
 
 ## Context
 
-This is the foundation step for both **deep** and **quick** workflows. The scope file guides every downstream step — gather uses it to know what to search for, synthesize uses it to know what question to answer, and report uses it to structure the output. A well-defined scope prevents wasted effort in later steps.
+This is the foundation step for both **research** and **quick** workflows. The scope file guides every downstream step — gather uses it to know what to search for, synthesize uses it to know what question to answer, and report uses it to structure the output. A well-defined scope prevents wasted effort in later steps.
