@@ -2,7 +2,7 @@
 name: repo
 version: "1.0.0"
 summary: "Ensure a repository follows team conventions: labels, boards, branch protection, milestones"
-common_job_info_provided_to_all_steps_at_runtime: |
+description: |
   This job audits and configures repositories to follow team conventions. It supports two workflows:
   `setup` (make a repo ready for work) and `doctor` (audit existing state and fix drift).
 
