@@ -41,7 +41,7 @@ Execute these checks in priority order. Skip sections that are not relevant to t
 # Node status
 kubectl get nodes -o wide
 
-# Cluster events (last 1 hour, sorted by time)
+# Recent cluster events (sorted by time)
 kubectl get events --all-namespaces --sort-by='.lastTimestamp' --field-selector type!=Normal
 
 # Resource pressure

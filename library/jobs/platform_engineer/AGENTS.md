@@ -15,7 +15,7 @@ This folder contains the `platform_engineer` job — a comprehensive platform en
 
 ```
 platform_engineer/
-├── job.yml              # Job definition (20 steps, 13 workflows)
+├── job.yml              # Job definition (23 steps, 14 workflows)
 ├── conventions.md       # RFC 2119 platform engineering standards
 ├── readme.md            # User-facing documentation
 ├── AGENTS.md            # This file — agent context and learnings
@@ -27,7 +27,7 @@ platform_engineer/
 
 - `conventions.md` is the source of truth for standards — update it first, then update step instructions that reference the changed conventions
 - Step instructions reference conventions by number (e.g., "per convention 7")
-- The `gather_context` step is shared by 12 workflows — changes affect all of them
+- The `gather_context` step is shared by all workflows except `platform_issue` — changes affect almost all workflows
 - When adding a new workflow, ensure all steps appear in at least one workflow
 
 ## Learnings

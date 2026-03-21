@@ -79,7 +79,11 @@ Use `AskUserQuestion` to discuss the approach with the user. Present:
 - Use import/adopt features if available (e.g., `terraform import`, `pulumi import`) to bring existing resources under management without recreation
 - Plan for drift detection after migration
 
-#### 4. Create detailed migration plan with validation gates
+#### 4. Create rollback plan first (per convention 40)
+
+The rollback plan MUST be documented before defining detailed migration steps. See section 6 below for the full rollback plan structure. Write the rollback plan first, then return here to define the migration steps.
+
+#### 5. Create detailed migration plan with validation gates
 
 Structure the migration as an ordered sequence of phases, each containing steps with validation gates (per convention 44).
 
@@ -119,9 +123,9 @@ Each step MUST include:
    - Note any resources that should be kept for a grace period
 4. **Documentation update**: Update infrastructure documentation per convention 14
 
-#### 5. Create rollback plan (per convention 40)
+#### 6. Rollback plan structure (per convention 40)
 
-The rollback plan MUST be written before any migration steps are defined. It MUST answer:
+The rollback plan MUST answer:
 
 **Rollback feasibility:**
 - At what point during the migration is rollback still possible?
@@ -142,7 +146,7 @@ The rollback plan MUST be written before any migration steps are defined. It MUS
 - Who needs to be notified if rollback is triggered?
 - What is the rollback decision authority? (who decides to rollback)
 
-#### 6. Create GitHub issue with detailed checklist (per convention 41)
+#### 7. Create GitHub issue with detailed checklist (per convention 41)
 
 Create a GitHub issue using `gh issue create` that serves as the live tracking document for the migration.
 
