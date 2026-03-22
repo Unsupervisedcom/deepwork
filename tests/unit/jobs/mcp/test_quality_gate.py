@@ -693,7 +693,7 @@ class TestComputeTimeout:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8.1, JOBS-REQ-004.8.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_base_timeout_for_few_files(self) -> None:
-        """Test that <=5 files gives base 240s (4 min) timeout."""
+        """Test that <=5 files with small content gives base 240s (4 min) timeout."""
         assert QualityGate.compute_timeout(0) == 240
         assert QualityGate.compute_timeout(1) == 240
         assert QualityGate.compute_timeout(5) == 240
@@ -705,6 +705,32 @@ class TestComputeTimeout:
         assert QualityGate.compute_timeout(6) == 270
         assert QualityGate.compute_timeout(10) == 390  # 240 + 5*30
         assert QualityGate.compute_timeout(20) == 690  # 240 + 15*30
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_timeout_increases_with_large_content(self) -> None:
+        """Test that large total_chars adds 30s per 5,000 chars beyond first 5,000."""
+        # <=5,000 chars: no size-based increase
+        assert QualityGate.compute_timeout(1, total_chars=0) == 240
+        assert QualityGate.compute_timeout(1, total_chars=5000) == 240
+        # 10,000 chars: 240 + 30*1 = 270
+        assert QualityGate.compute_timeout(1, total_chars=10000) == 270
+        # 25,000 chars: 240 + 30*4 = 360
+        assert QualityGate.compute_timeout(1, total_chars=25000) == 360
+        # 50,000 chars: 240 + 30*9 = 510
+        assert QualityGate.compute_timeout(1, total_chars=50000) == 510
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_timeout_uses_maximum_of_count_and_size(self) -> None:
+        """Test that the final timeout is the max of count-based and size-based."""
+        # Many files, small content: count-based wins
+        assert QualityGate.compute_timeout(20, total_chars=1000) == 690  # 240+15*30 vs 240
+        # Few files, large content: size-based wins
+        assert QualityGate.compute_timeout(1, total_chars=50000) == 510  # 240 vs 240+30*9
+        # Both large: maximum wins
+        # 10 files -> count=390; 25,000 chars -> size=360: count wins
+        assert QualityGate.compute_timeout(10, total_chars=25000) == 390
 
 
 class TestDynamicTimeout:
@@ -725,7 +751,7 @@ class TestDynamicTimeout:
         )
 
         call_kwargs = mock_cli.run.call_args.kwargs
-        # 1 file -> timeout = 240
+        # 1 file, small content -> timeout = 240
         assert call_kwargs["timeout"] == 240
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.6.3, JOBS-REQ-004.8.3).
@@ -746,8 +772,30 @@ class TestDynamicTimeout:
         )
 
         call_kwargs = mock_cli.run.call_args.kwargs
-        # 10 files -> 240 + 5*30 = 390
+        # 10 files, small content -> 240 + 5*30 = 390
         assert call_kwargs["timeout"] == 390
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8.4, JOBS-REQ-004.8.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_timeout_scales_with_large_file_content(
+        self, mock_cli: ClaudeCLI, project_root: Path
+    ) -> None:
+        """Test that timeout increases for a single large file (large content)."""
+        gate = QualityGate(cli=mock_cli)
+
+        # Write a file with ~25,000 chars of content (simulating a large job.yml)
+        large_content = "x" * 25000
+        (project_root / "large_job.yml").write_text(large_content)
+
+        await gate.evaluate(
+            quality_criteria={"Valid": "Is it valid?"},
+            outputs={"job_yml": "large_job.yml"},
+            project_root=project_root,
+        )
+
+        call_kwargs = mock_cli.run.call_args.kwargs
+        # 1 file, ~25,000+ chars in payload -> size-based = 240 + 30*4 = 360
+        assert call_kwargs["timeout"] >= 360
 
 
 class TestMockQualityGate:
