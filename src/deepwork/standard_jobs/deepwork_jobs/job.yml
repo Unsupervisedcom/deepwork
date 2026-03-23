@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: deepwork_jobs
-version: "1.6.0"
+version: "1.6.2"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, testing, or improving DeepWork jobs."
 common_job_info_provided_to_all_steps_at_runtime: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -276,15 +276,15 @@ steps:
 
   - id: sync_shared_jobs
     name: "Sync Shared Jobs"
-    description: "Installs library jobs from the DeepWork shared job library into the project. Supports remote (GitHub) and local source paths."
+    description: "Configures DEEPWORK_ADDITIONAL_JOBS_FOLDERS to reference library jobs from a local checkout or sparse clone. Never copies jobs into .deepwork/jobs/."
     instructions_file: steps/sync_shared_jobs.md
     inputs:
       - name: source
-        description: "Source for library jobs: 'remote' for GitHub, or a local path to a DeepWork repo checkout"
+        description: "Source for library jobs: 'local' for an existing deepwork checkout, 'remote' for sparse-checkout clone, or a custom path"
     outputs:
       installed_jobs:
         type: files
-        description: "The job.yml files of newly installed library jobs"
+        description: "The job.yml files available via the configured library path"
         required: true
     dependencies: []
     reviews:
@@ -292,5 +292,5 @@ steps:
         quality_criteria:
           "Valid Job Definition": "The job.yml is valid YAML with required fields (name, version, summary, steps)."
           "Step Files Present": "All instructions_file paths referenced in job.yml exist."
-          "No Conflict": "Existing job handling was clean (new install, or user approved overwrite)."
-          "Sync Completed": "deepwork sync was run after installation."
+          "Referenced Not Copied": "Library jobs are referenced via DEEPWORK_ADDITIONAL_JOBS_FOLDERS, not copied into .deepwork/jobs/."
+          "Env Var Configured": "DEEPWORK_ADDITIONAL_JOBS_FOLDERS is set for persistence (flake.nix, shellHook, or equivalent)."
