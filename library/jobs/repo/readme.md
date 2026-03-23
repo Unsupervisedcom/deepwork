@@ -13,16 +13,26 @@ Two workflows are provided:
 
 ## Quick Start
 
+If you haven't already, enable shared library jobs in your project:
+
+```
+/deepwork shared_jobs
+```
+
 Runs the `setup` workflow from the `repo` job. Detects your git provider and ensures labels, branch protection, milestones, and boards match team conventions.
 
 ```
 /deepwork repo setup
 ```
 
-Or create a Claude skill for quick access:
+Or create a Claude skill for quick access, then use it:
 
 ```
 /deepwork create a /repo.setup skill that runs the repo job's setup workflow
+```
+
+```
+/repo.setup
 ```
 
 ## Provider Support

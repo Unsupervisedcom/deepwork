@@ -46,16 +46,26 @@ ingest_material → analyze → plan
 
 ## Quick Start
 
+If you haven't already, enable shared library jobs in your project:
+
+```
+/deepwork shared_jobs
+```
+
 Natural language is matched to the `research` job's `research` workflow. Scopes the question, gathers from multiple platforms, synthesizes findings, and produces a report with bibliography.
 
 ```
 /deepwork do a deep research run on growing plants in lunar regolith
 ```
 
-Or create Claude skills for quick access:
+Or create a Claude skill for quick access, then use it:
 
 ```
 /deepwork create a /research.deep skill that runs the research job's research workflow
+```
+
+```
+/research.deep growing plants in lunar regolith
 ```
 
 ## Prerequisites

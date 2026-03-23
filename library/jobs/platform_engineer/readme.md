@@ -18,16 +18,26 @@ This job covers the full lifecycle of platform engineering work:
 
 ## Quick Start
 
+If you haven't already, enable shared library jobs in your project:
+
+```
+/deepwork shared_jobs
+```
+
 Natural language is matched to the `platform_engineer` job's `incident_investigation` workflow. Triages the incident, gathers logs and metrics, and produces a structured incident report.
 
 ```
 /deepwork the staging deploy is returning 502s, investigate
 ```
 
-Or create Claude skills for quick access:
+Or create a Claude skill for quick access, then use it:
 
 ```
 /deepwork create a /platform.investigate skill that runs the platform_engineer job's incident_investigation workflow
+```
+
+```
+/platform.investigate the staging deploy is returning 502s
 ```
 
 ## Workflows
