@@ -52,6 +52,12 @@ Natural language is matched to the `research` job's `research` workflow. Scopes 
 /deepwork do a deep research run on growing plants in lunar regolith
 ```
 
+Or create Claude skills for quick access:
+
+```
+/deepwork create a /research.deep skill that runs the research job's research workflow
+```
+
 ## Prerequisites
 
 - For **research** workflow: Browser tool access if using external platforms (Gemini, ChatGPT, etc.)

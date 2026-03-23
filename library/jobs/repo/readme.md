@@ -19,6 +19,12 @@ Runs the `setup` workflow from the `repo` job. Detects your git provider and ens
 /deepwork repo setup
 ```
 
+Or create a Claude skill for quick access:
+
+```
+/deepwork create a /repo.setup skill that runs the repo job's setup workflow
+```
+
 ## Provider Support
 
 The job detects the provider from `git remote get-url origin`:

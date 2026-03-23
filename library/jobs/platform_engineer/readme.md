@@ -24,6 +24,12 @@ Natural language is matched to the `platform_engineer` job's `incident_investiga
 /deepwork the staging deploy is returning 502s, investigate
 ```
 
+Or create Claude skills for quick access:
+
+```
+/deepwork create a /platform.investigate skill that runs the platform_engineer job's incident_investigation workflow
+```
+
 ## Workflows
 
 | Workflow | When to Use |

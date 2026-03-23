@@ -23,6 +23,12 @@ Runs the `spec_driven_development` workflow starting at the `specify` step. Walk
 /deepwork spec_driven_development specify
 ```
 
+Or create a Claude skill for quick access:
+
+```
+/deepwork create a /spec.specify skill that runs the spec_driven_development job's specify workflow
+```
+
 ## When to Use
 
 This workflow is ideal for:
