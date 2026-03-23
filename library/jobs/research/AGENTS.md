@@ -1,6 +1,6 @@
 # Project Context for research
 
-This is the source of truth for the `research` standard job.
+This is a **library job** — a reusable research workflow that users can optionally adopt.
 
 ## Purpose
 
@@ -9,10 +9,9 @@ material ingestion into notes, and reproduction planning for engineering handoff
 
 ## Location
 
-This job lives in the DeepWork package source at `src/deepwork/standard_jobs/research/`.
-It is loaded directly at runtime by the multi-folder job discovery system — there is no
-separate "working copy" in `.deepwork/jobs/`. The MCP server returns the job directory path
-as `job_dir` in workflow responses so agents can find templates and scripts.
+This job lives in `library/jobs/research/`. It is NOT auto-installed — users adopt it
+via `DEEPWORK_ADDITIONAL_JOBS_FOLDERS`, the `shared_jobs` workflow, or by copying it
+into their project's `.deepwork/jobs/` directory.
 
 ## File Organization
 
@@ -21,6 +20,7 @@ research/
 ├── AGENTS.md              # This file
 ├── CLAUDE.md              # Symlink to AGENTS.md
 ├── job.yml                # Job definition with 4 workflows
+├── readme.md              # User-facing documentation
 └── steps/
     ├── scope.md           # Define research scope (shared: deep + quick)
     ├── choose_platforms.md # Select AI platforms (deep only)
@@ -38,9 +38,8 @@ research/
 
 ## Editing Guidelines
 
-- Source of truth is ALWAYS in `src/deepwork/standard_jobs/research/`
-- NEVER edit installed copies in `.deepwork/jobs/` directly
-- After editing, run `deepwork install` to sync
+- Source of truth is `library/jobs/research/`
+- Edit files here directly — changes benefit all adopters
 - Step instruction files live in `steps/` and are referenced by `instructions_file` in job.yml
 
 ## Workflows
@@ -64,5 +63,5 @@ research/
 
 ## Last Updated
 
-- Date: 2026-03-21
-- From conversation about: Initial creation of research standard job
+- Date: 2026-03-23
+- From conversation about: Migrated from standard job to library job
