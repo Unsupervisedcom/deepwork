@@ -1,0 +1,47 @@
+# Diagnostic Report
+
+**Date**: [YYYY-MM-DD]
+**Developer**: [who reported the issue]
+**Status**: [resolved | unresolved]
+
+## Symptom
+
+[What the developer reported — error message, failing command, or description]
+
+## Environment
+
+- **OS**: [operating system]
+- **Shell**: [bash/zsh/fish]
+- **Project**: [repo name]
+- **Branch**: [current branch]
+- **Key Tools**: [detected from context.md — nix, docker, node, python, etc.]
+
+## Checks Performed
+
+| # | Check | Status | Details |
+|---|-------|--------|---------|
+| 1 | [what was checked] | [pass/fail/skip] | [details] |
+| 2 | [what was checked] | [pass/fail/skip] | [details] |
+| 3 | [what was checked] | [pass/fail/skip] | [details] |
+
+## Root Cause
+
+[Identified root cause, or "Unknown — escalated to GitHub issue"]
+
+## Fixes Attempted
+
+| # | Fix | Result |
+|---|-----|--------|
+| 1 | [what was tried] | [success/failure + details] |
+| 2 | [what was tried] | [success/failure + details] |
+
+## Resolution
+
+**Resolved**: [yes/no]
+
+**If resolved**: [what fixed it, command to reproduce the fix]
+
+**If unresolved**:
+- **GitHub Issue**: [URL of created issue]
+- **Workaround**: [temporary workaround if any]
+- **Next Steps**: [what should be investigated next]

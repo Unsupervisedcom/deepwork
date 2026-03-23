@@ -1,0 +1,729 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
+name: platform_engineer
+version: "1.0.0"
+summary: "Platform engineering workflows: incidents, observability, CI/CD, releases, security, compliance, migrations, and dev tooling."
+common_job_info_provided_to_all_steps_at_runtime: |
+  Platform engineering job for discovering gaps, setting up infrastructure, and maintaining
+  production systems. Technology-agnostic — adapts to Kubernetes, Nix, cloud-managed, or hybrid
+  environments based on what `gather_context` discovers.
+
+  ## Core Philosophy
+  - Discover what exists before proposing changes
+  - Help users pick the right choices for their context
+  - Document all decisions in the repository
+  - Never take destructive actions without explicit approval
+
+  ## Conventions
+  All workflows follow the RFC 2119 conventions defined in `conventions.md` (in the job directory).
+  Step instructions reference specific convention numbers. Key areas:
+  - Investigation principles (conventions 1-6)
+  - Observability standards (conventions 7-12)
+  - Infrastructure standards (conventions 13-17)
+  - CI/CD standards (conventions 18-23)
+  - Release management (conventions 24-29)
+  - Security standards (conventions 30-34)
+  - Cloud cost standards (conventions 35-39)
+  - Migration standards (conventions 40-45)
+  - Developer environment (conventions 46-49)
+  - Error tracking (conventions 50-54)
+  - Grafana MCP usage (conventions 55-59)
+  - SOC 2 compliance (conventions 60-70)
+
+  ## Tool Detection
+  The `gather_context` step detects available tools and infrastructure type. All subsequent
+  steps read `context.md` to adapt behavior:
+  - **Kubernetes**: kubectl, helm, k9s
+  - **Observability**: Grafana MCP, Prometheus CLI, Loki CLI
+  - **CI/CD**: GitHub Actions, Forgejo Actions, GitLab CI, CircleCI
+  - **Cloud**: aws, gcloud, az, doctl
+  - **Nix**: nix, nixos-rebuild, home-manager
+  - **Error tracking**: sentry-cli, honeybadger CLI
+
+  ## Artifact Storage
+  Workflow artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
+
+workflows:
+  - name: incident_investigation
+    summary: "Full incident investigation from triage to report"
+    steps:
+      - gather_context
+      - triage
+      - investigate
+      - incident_report
+
+  - name: quick_investigate
+    summary: "Rapid incident triage without formal report"
+    steps:
+      - gather_context
+      - triage
+      - investigate
+
+  - name: doctor
+    summary: "Debug local dev environment issues and unblock developer"
+    steps:
+      - gather_context
+      - diagnose_dev
+
+  - name: error_tracking
+    summary: "Set up exception monitoring (Sentry, Honeybadger, etc.)"
+    steps:
+      - gather_context
+      - setup_error_tracking
+
+  - name: dashboard_management
+    summary: "Inspect and develop Grafana dashboards for services"
+    steps:
+      - gather_context
+      - inspect_dashboards
+      - develop_dashboard
+
+  - name: cicd_optimization
+    summary: "Review CI/CD pipelines and suggest optimizations"
+    steps:
+      - gather_context
+      - audit_cicd
+      - cicd_recommendations
+
+  - name: release_builder
+    summary: "Set up CI release pipeline, release branches, and release notes"
+    steps:
+      - gather_context
+      - audit_release
+      - setup_release_pipeline
+
+  - name: infrastructure_audit
+    summary: "Document and assess infrastructure setup against conventions"
+    steps:
+      - gather_context
+      - audit_infrastructure
+
+  - name: cloud_spend
+    summary: "Analyze cloud costs and identify waste"
+    steps:
+      - gather_context
+      - analyze_spend
+
+  - name: vulnerability_scan
+    summary: "Security vulnerability scanning and review"
+    steps:
+      - gather_context
+      - scan_vulnerabilities
+
+  - name: observability_setup
+    summary: "Set up Prometheus/Loki/VictoriaMetrics monitoring stack"
+    steps:
+      - gather_context
+      - plan_observability
+      - implement_observability
+
+  - name: infrastructure_migration
+    summary: "Plan and execute infrastructure migrations with validation gates"
+    steps:
+      - gather_context
+      - plan_migration
+      - execute_migration
+
+  - name: soc_audit
+    summary: "Assess SOC 2 readiness across all Trust Service Criteria and produce compliance document"
+    steps:
+      - gather_context
+      - assess_controls
+      - gap_analysis
+      - readiness_report
+
+  - name: platform_issue
+    summary: "Create a platform engineering GitHub issue from current context"
+    steps:
+      - create_issue
+
+steps:
+  # ── Shared ──────────────────────────────────────────────────────────────
+  - id: gather_context
+    name: "Gather Platform Context"
+    description: "Auto-detect available tools, infrastructure type, and repo structure to inform all subsequent steps"
+    instructions_file: steps/gather_context.md
+    hidden: true
+    inputs: []
+    outputs:
+      context.md:
+        type: file
+        description: "Platform context document listing detected tools, infrastructure type, repo structure, and existing configurations"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: context.md
+        quality_criteria:
+          "Tools Detected": "Available tools (kubectl, Grafana MCP, CI provider, cloud CLI, Nix) are explicitly listed with version info where available."
+          "Infrastructure Type Identified": "The infrastructure type (k8s, nix, cloud-managed, hybrid, or none) is clearly stated with supporting evidence."
+          "Repo Structure Documented": "Key directories and configuration files relevant to platform engineering are cataloged."
+
+  # ── Incident Investigation ──────────────────────────────────────────────
+  - id: triage
+    name: "Triage & Scope"
+    description: "Parse the incident description, identify affected services, and create a prioritized investigation plan"
+    instructions_file: steps/triage.md
+    hidden: true
+    inputs:
+      - name: incident_description
+        description: "Description of the incident — a symptom, alert, or error message"
+      - name: environment
+        description: "Target environment identifier (e.g., production, staging, dev)"
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      triage.md:
+        type: file
+        description: "Triage document with incident scope, affected services, and investigation plan"
+        required: true
+    dependencies:
+      - gather_context
+    reviews:
+      - run_each: triage.md
+        quality_criteria:
+          "Clear Scope": "The incident is clearly scoped with specific symptoms, timeframe, and affected environment identified."
+          "Investigation Plan": "A prioritized list of investigation areas is defined based on symptom analysis."
+          "Environment Confirmed": "The target environment is explicitly identified and connectivity is confirmed or noted as blocked."
+
+  - id: investigate
+    name: "Deep Investigation"
+    description: "Query logs, metrics, and events to correlate findings and build root cause hypotheses"
+    instructions_file: steps/investigate.md
+    hidden: true
+    inputs:
+      - file: triage.md
+        from_step: triage
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      investigation_findings.md:
+        type: file
+        description: "Detailed investigation findings with evidence, timeline, and root cause hypotheses"
+        required: true
+    dependencies:
+      - triage
+      - gather_context
+    reviews:
+      - run_each: investigation_findings.md
+        additional_review_guidance: "Read triage.md to verify the investigation followed the planned investigation areas."
+        quality_criteria:
+          "Root Cause Hypothesis": "At least one root cause hypothesis is proposed and supported by evidence from logs and/or metrics."
+          "Evidence Trail": "Each finding includes specific evidence — log lines, metric values, timestamps — not just conclusions."
+          "Cross-Reference": "Findings from different sources are cross-referenced to corroborate or rule out hypotheses."
+          "Honest Confidence": "Confidence levels accurately reflect verification status per convention 5."
+
+  - id: incident_report
+    name: "Incident Report"
+    description: "Synthesize investigation findings into a structured report with timeline, root cause, and remediation"
+    instructions_file: steps/incident_report.md
+    hidden: true
+    inputs:
+      - file: triage.md
+        from_step: triage
+      - file: investigation_findings.md
+        from_step: investigate
+    outputs:
+      incident_report.md:
+        type: file
+        description: "Final incident report with timeline, root cause analysis, and remediation suggestions"
+        required: true
+    dependencies:
+      - triage
+      - investigate
+    reviews:
+      - run_each: incident_report.md
+        additional_review_guidance: "Read investigation_findings.md to verify the report accurately reflects the evidence."
+        quality_criteria:
+          "Accurate Timeline": "The incident timeline is clear with specific timestamps and ordered chronologically."
+          "Supported Conclusions": "Root cause analysis is supported by evidence from the investigation, not speculation."
+          "Actionable Remediation": "Remediation suggestions include specific commands or actions with risk levels and rollback steps."
+          "Appropriate Scope": "The report format matches the severity — concise summary for minor issues, full report for significant incidents."
+
+  # ── Doctor ──────────────────────────────────────────────────────────────
+  - id: diagnose_dev
+    name: "Diagnose Dev Environment"
+    description: "Debug local development environment issues, attempt safe fixes, and create a GitHub issue if unresolved"
+    instructions_file: steps/diagnose_dev.md
+    hidden: true
+    inputs:
+      - name: symptom
+        description: "What is broken — error message, failing command, or description of the problem"
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      diagnostic_report.md:
+        type: file
+        description: "Diagnostic report with findings, attempted fixes, and resolution status"
+        required: true
+    dependencies:
+      - gather_context
+    reviews:
+      - run_each: diagnostic_report.md
+        quality_criteria:
+          "Root Cause Identified": "The root cause of the dev environment issue is identified or clearly stated as unknown."
+          "Fixes Attempted": "Safe fixes were attempted with their outcomes documented."
+          "Developer Unblocked": "The developer is either unblocked with a working fix or a GitHub issue was created to track the blocker."
+
+  # ── Error Tracking ─────────────────────────────────────────────────────
+  - id: setup_error_tracking
+    name: "Set Up Error Tracking"
+    description: "Configure exception monitoring (Sentry, Honeybadger, etc.) for the project"
+    instructions_file: steps/setup_error_tracking.md
+    hidden: true
+    inputs:
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      error_tracking_config.md:
+        type: file
+        description: "Documentation of error tracking setup: provider, DSN, SDK integration, source maps"
+        required: true
+    dependencies:
+      - gather_context
+    reviews:
+      - run_each: error_tracking_config.md
+        quality_criteria:
+          "Provider Selected": "An error tracking provider is selected with rationale for the choice."
+          "Integration Complete": "SDK integration is configured with DSN, environment tags, and release tracking."
+          "Verification": "A test event was sent or verification steps are documented."
+          "Documented": "Configuration details are documented in the repository per convention 54."
+
+  # ── Dashboard ───────────────────────────────────────────────────────────
+  - id: inspect_dashboards
+    name: "Inspect Dashboards"
+    description: "Catalog existing Grafana dashboards, check golden signal coverage, identify gaps"
+    instructions_file: steps/inspect_dashboards.md
+    hidden: true
+    inputs:
+      - name: target_service
+        description: "Service or organization to inspect dashboards for"
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      dashboard_assessment.md:
+        type: file
+        description: "Assessment of existing dashboards with coverage gaps and recommendations"
+        required: true
+    dependencies:
+      - gather_context
+    reviews:
+      - run_each: dashboard_assessment.md
+        quality_criteria:
+          "Dashboards Cataloged": "All existing dashboards for the target service/org are listed with their purpose."
+          "Golden Signals Checked": "Coverage of the four golden signals (latency, traffic, errors, saturation) is assessed per convention 7."
+          "Gaps Identified": "Missing dashboards or uncovered signals are clearly identified with recommendations."
+
+  - id: develop_dashboard
+    name: "Develop Dashboard"
+    description: "Create or update Grafana dashboard definitions ensuring golden signals are covered"
+    instructions_file: steps/develop_dashboard.md
+    hidden: true
+    inputs:
+      - file: dashboard_assessment.md
+        from_step: inspect_dashboards
+    outputs:
+      dashboard_definition:
+        type: files
+        description: "Grafana dashboard JSON definitions or provisioning configs"
+        required: true
+    dependencies:
+      - inspect_dashboards
+    reviews:
+      - run_each: dashboard_definition
+        additional_review_guidance: "Read dashboard_assessment.md to verify the new dashboards address identified gaps."
+        quality_criteria:
+          "Golden Signals Covered": "The dashboard includes panels for latency, traffic, errors, and saturation per convention 7."
+          "Time Range Configured": "Dashboard has time range selectors defaulting to last 1 hour per convention 8."
+          "Actionable": "Dashboard panels provide actionable information, not just raw data."
+
+  # ── CI/CD ───────────────────────────────────────────────────────────────
+  - id: audit_cicd
+    name: "Audit CI/CD Pipeline"
+    description: "Analyze CI/CD config files, build times, caching strategy, parallelism, and costs"
+    instructions_file: steps/audit_cicd.md
+    hidden: true
+    inputs:
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      cicd_audit.md:
+        type: file
+        description: "CI/CD audit report with pipeline analysis, bottlenecks, and metrics"
+        required: true
+    dependencies:
+      - gather_context
+    reviews:
+      - run_each: cicd_audit.md
+        quality_criteria:
+          "Pipelines Analyzed": "All CI/CD pipeline configurations are identified and analyzed."
+          "Metrics Gathered": "Build times, cache hit rates, and parallelism levels are documented where available."
+          "Bottlenecks Identified": "Performance bottlenecks and inefficiencies are flagged with evidence."
+          "Convention Compliance": "Pipelines are checked against CI/CD conventions 18-23."
+
+  - id: cicd_recommendations
+    name: "CI/CD Recommendations"
+    description: "Produce a prioritized optimization plan with expected impact on build times and costs"
+    instructions_file: steps/cicd_recommendations.md
+    hidden: true
+    inputs:
+      - file: cicd_audit.md
+        from_step: audit_cicd
+    outputs:
+      optimization_plan.md:
+        type: file
+        description: "Prioritized CI/CD optimization plan with expected impact"
+        required: true
+    dependencies:
+      - audit_cicd
+    reviews:
+      - run_each: optimization_plan.md
+        additional_review_guidance: "Read cicd_audit.md to verify recommendations address the identified bottlenecks."
+        quality_criteria:
+          "Recommendations Specific": "Each recommendation includes specific changes to make, not just general advice."
+          "Impact Estimated": "Expected impact on build time and/or cost is estimated for each recommendation."
+          "Prioritized": "Recommendations are ordered by impact-to-effort ratio."
+
+  # ── Release Builder ─────────────────────────────────────────────────────
+  - id: audit_release
+    name: "Audit Release Process"
+    description: "Review existing release process: CI pipelines, versioning, changelogs, branches, tags, artifact publishing"
+    instructions_file: steps/audit_release.md
+    hidden: true
+    inputs:
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      release_audit.md:
+        type: file
+        description: "Audit of existing release process with gaps identified against conventions 24-29"
+        required: true
+    dependencies:
+      - gather_context
+    reviews:
+      - run_each: release_audit.md
+        quality_criteria:
+          "Current State Documented": "The existing release process (or lack thereof) is fully documented."
+          "Gaps Identified": "Missing components are identified by checking against release management conventions 24-29."
+          "Versioning Assessed": "Current versioning scheme is documented and assessed for SemVer compliance."
+
+  - id: setup_release_pipeline
+    name: "Set Up Release Pipeline"
+    description: "Configure CI release pipeline, release branches, versioning, and release notes automation"
+    instructions_file: steps/setup_release_pipeline.md
+    hidden: true
+    inputs:
+      - file: release_audit.md
+        from_step: audit_release
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      release_configs:
+        type: files
+        description: "CI workflow files, release scripts, and branch protection configs"
+        required: true
+      release_docs.md:
+        type: file
+        description: "Documentation of release process decisions and setup"
+        required: true
+    dependencies:
+      - audit_release
+      - gather_context
+    reviews:
+      - run_each: step
+        additional_review_guidance: "Read release_audit.md to verify the setup addresses identified gaps."
+        quality_criteria:
+          "Pipeline Complete": "CI release pipeline includes build, test, tag, and publish stages per convention 27."
+          "Versioning Configured": "Semantic versioning is set up with automated version bumping."
+          "Release Notes": "Changelog/release notes generation is configured per convention 29."
+          "Branch Strategy Documented": "Release branch strategy is documented in the repository."
+          "Decisions Documented": "All setup decisions are documented in release_docs.md."
+
+  # ── Audit & Cost ────────────────────────────────────────────────────────
+  - id: audit_infrastructure
+    name: "Audit Infrastructure"
+    description: "Document how the project sets up monitoring, CI/CD, and infrastructure; check against conventions"
+    instructions_file: steps/audit_infrastructure.md
+    hidden: true
+    inputs:
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      infrastructure_audit.md:
+        type: file
+        description: "Infrastructure audit documenting setup, gaps, and convention compliance"
+        required: true
+    dependencies:
+      - gather_context
+    reviews:
+      - run_each: infrastructure_audit.md
+        quality_criteria:
+          "Comprehensive Coverage": "All infrastructure components (monitoring, CI/CD, deployment, secrets, networking) are documented."
+          "Convention Compliance": "Each component is checked against relevant conventions with pass/fail status."
+          "Gaps Actionable": "Identified gaps include specific recommendations for remediation."
+
+  - id: analyze_spend
+    name: "Analyze Cloud Spend"
+    description: "Gather cloud cost data, identify waste, and produce optimization recommendations"
+    instructions_file: steps/analyze_spend.md
+    hidden: true
+    inputs:
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      spend_analysis.md:
+        type: file
+        description: "Cloud spend analysis with waste identification and savings recommendations"
+        required: true
+    dependencies:
+      - gather_context
+    reviews:
+      - run_each: spend_analysis.md
+        quality_criteria:
+          "Cost Data Gathered": "Current cloud costs are documented with breakdown by service/resource type."
+          "Waste Identified": "Idle, oversized, or unused resources are flagged per conventions 35-38."
+          "Savings Estimated": "Potential savings are estimated for each recommendation."
+          "Fixed vs Variable": "Costs are categorized as fixed or variable per convention 39."
+
+  # ── Security & Observability ────────────────────────────────────────────
+  - id: scan_vulnerabilities
+    name: "Scan Vulnerabilities"
+    description: "Review vulnerability scan outputs, assess severity, and prioritize remediation"
+    instructions_file: steps/scan_vulnerabilities.md
+    hidden: true
+    inputs:
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      vulnerability_report.md:
+        type: file
+        description: "Vulnerability report with severity assessments and prioritized remediation plan"
+        required: true
+    dependencies:
+      - gather_context
+    reviews:
+      - run_each: vulnerability_report.md
+        quality_criteria:
+          "Scans Executed": "Vulnerability scans were run or existing scan results were reviewed."
+          "Severity Assessed": "Each vulnerability has a severity assessment (Critical/High/Medium/Low)."
+          "Remediation Prioritized": "Remediation actions are prioritized by severity and exploitability."
+          "Convention Compliance": "Scan frequency and response timelines are checked against conventions 30-34."
+
+  - id: plan_observability
+    name: "Plan Observability Setup"
+    description: "Design monitoring stack (Prometheus/Loki/VictoriaMetrics) based on infrastructure type"
+    instructions_file: steps/plan_observability.md
+    hidden: true
+    inputs:
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      observability_plan.md:
+        type: file
+        description: "Observability setup plan with stack selection, architecture, and implementation steps"
+        required: true
+    dependencies:
+      - gather_context
+    reviews:
+      - run_each: observability_plan.md
+        quality_criteria:
+          "Stack Selected": "A monitoring stack is selected with rationale based on the infrastructure type from context.md."
+          "Architecture Defined": "The monitoring architecture is defined including data flow, retention, and alerting."
+          "Implementation Steps": "Clear implementation steps are provided appropriate to the infrastructure type (k8s operator, nix module, or cloud-managed)."
+          "Golden Signals Planned": "The plan ensures all production services will have golden signal coverage per convention 7."
+
+  - id: implement_observability
+    name: "Implement Observability"
+    description: "Create and apply observability configurations for the chosen monitoring stack"
+    instructions_file: steps/implement_observability.md
+    hidden: true
+    inputs:
+      - file: observability_plan.md
+        from_step: plan_observability
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      observability_configs:
+        type: files
+        description: "Monitoring configuration files (Helm values, nix modules, cloud configs, alert rules)"
+        required: true
+    dependencies:
+      - plan_observability
+      - gather_context
+    reviews:
+      - run_each: step
+        additional_review_guidance: "Read observability_plan.md to verify the configs match the planned architecture."
+        quality_criteria:
+          "Configs Created": "All configuration files specified in the plan are created."
+          "Alert Rules Defined": "Alert rules are defined with associated runbook references per convention 9."
+          "Validated": "Configurations are validated (syntax checked, dry-run applied where possible)."
+
+  # ── Migration ───────────────────────────────────────────────────────────
+  - id: plan_migration
+    name: "Plan Infrastructure Migration"
+    description: "Analyze current state, design migration strategy, and create a GitHub issue with detailed checklist"
+    instructions_file: steps/plan_migration.md
+    hidden: true
+    inputs:
+      - name: migration_description
+        description: "What is being migrated (e.g., 'migrate from Zalando Postgres operator to CNPG')"
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      migration_plan.md:
+        type: file
+        description: "Detailed migration plan with steps, validation gates, and rollback procedures"
+        required: true
+      github_issue_url.md:
+        type: file
+        description: "URL of the created GitHub issue tracking the migration"
+        required: true
+    dependencies:
+      - gather_context
+    reviews:
+      - run_each: migration_plan.md
+        quality_criteria:
+          "Current State Documented": "The current infrastructure state is fully documented."
+          "Rollback Plan": "A rollback plan is documented before any migration steps per convention 40."
+          "Validation Gates": "Each migration step has a validation gate per convention 44."
+          "GitHub Issue Created": "A GitHub issue with detailed checklist is created per convention 41."
+          "Risk Assessment": "Risks are identified and mitigations are documented."
+
+  - id: execute_migration
+    name: "Execute Migration"
+    description: "Follow the migration plan with validation gates between phases"
+    instructions_file: steps/execute_migration.md
+    hidden: true
+    inputs:
+      - file: migration_plan.md
+        from_step: plan_migration
+    outputs:
+      migration_report.md:
+        type: file
+        description: "Migration execution report with completed steps, validation results, and final state"
+        required: true
+    dependencies:
+      - plan_migration
+    reviews:
+      - run_each: migration_report.md
+        additional_review_guidance: "Read migration_plan.md to verify all planned steps were executed with their validation gates."
+        quality_criteria:
+          "Steps Completed": "All migration steps from the plan are accounted for with pass/fail status."
+          "Validations Passed": "Each validation gate result is documented."
+          "State Tracked": "Migration progress is tracked in the GitHub issue per convention 45."
+          "Final State Verified": "The post-migration state is verified and documented."
+
+  # ── SOC 2 Compliance ──────────────────────────────────────────────────
+  - id: assess_controls
+    name: "Assess Controls"
+    description: "Auto-discover existing controls across all five SOC 2 Trust Service Criteria from code, CI, infrastructure, and documentation"
+    instructions_file: steps/assess_controls.md
+    hidden: true
+    inputs:
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      controls_assessment.md:
+        type: file
+        description: "Inventory of existing controls mapped to SOC 2 TSC criteria with evidence references"
+        required: true
+    dependencies:
+      - gather_context
+    reviews:
+      - run_each: controls_assessment.md
+        quality_criteria:
+          "All TSCs Covered": "Controls are assessed across all five Trust Service Criteria: Security (CC), Availability, Processing Integrity, Confidentiality, and Privacy."
+          "Evidence Referenced": "Each implemented control references where the evidence can be found (file path, CI workflow, config, policy) per convention 65."
+          "Classification Applied": "Every control is classified as implemented, partial, or missing per convention 64."
+          "Automated Controls Verified": "Automated controls are verified by checking actual infrastructure configuration, not just documentation per convention 68."
+
+  - id: gap_analysis
+    name: "Gap Analysis"
+    description: "Compare discovered controls against SOC 2 requirements, identify gaps, and produce an evidence collection checklist"
+    instructions_file: steps/gap_analysis.md
+    hidden: true
+    inputs:
+      - file: controls_assessment.md
+        from_step: assess_controls
+      - file: context.md
+        from_step: gather_context
+    outputs:
+      gap_analysis.md:
+        type: file
+        description: "Gap analysis with missing and partial controls, remediation recommendations, and prioritization"
+        required: true
+      evidence_checklist.md:
+        type: file
+        description: "Evidence collection checklist for controls requiring manual evidence"
+        required: true
+    dependencies:
+      - assess_controls
+      - gather_context
+    reviews:
+      - run_each: gap_analysis.md
+        additional_review_guidance: "Read controls_assessment.md to verify gaps are derived from the actual assessment, not generic checklists."
+        quality_criteria:
+          "Gaps Specific": "Each gap references the specific TSC criteria it violates (e.g., CC6.1, A1.2) per convention 69."
+          "Remediation Actionable": "Each gap includes a remediation recommendation with estimated effort and priority per convention 70."
+          "Risk Prioritized": "Gaps are prioritized by audit risk — controls that auditors always check are flagged as high priority."
+      - run_each: evidence_checklist.md
+        quality_criteria:
+          "Manual Items Listed": "All controls requiring manual evidence are listed with responsible party and collection cadence per convention 66."
+          "Automated Items Excluded": "Controls that can be verified automatically are not in the manual checklist."
+
+  - id: readiness_report
+    name: "Readiness Report"
+    description: "Produce the SOC 2 compliance document for the repository and an executive readiness summary"
+    instructions_file: steps/readiness_report.md
+    hidden: true
+    inputs:
+      - file: controls_assessment.md
+        from_step: assess_controls
+      - file: gap_analysis.md
+        from_step: gap_analysis
+      - file: evidence_checklist.md
+        from_step: gap_analysis
+    outputs:
+      compliance_doc.md:
+        type: file
+        description: "The SOC 2 compliance document to be committed to the repository per convention 60"
+        required: true
+      readiness_summary.md:
+        type: file
+        description: "Executive summary of SOC 2 readiness with overall score and top action items"
+        required: true
+    dependencies:
+      - assess_controls
+      - gap_analysis
+    reviews:
+      - run_each: compliance_doc.md
+        additional_review_guidance: "Read controls_assessment.md and gap_analysis.md to verify the compliance document accurately reflects the assessment."
+        quality_criteria:
+          "Platform Agnostic": "The document records controls and evidence without referencing any specific compliance platform per convention 61."
+          "Version Controlled": "The document is structured for version control — changes to controls will produce meaningful diffs per convention 62."
+          "TSC Mapping": "Each control is mapped to the specific TSC criteria it satisfies per convention 69."
+          "Evidence Discoverable": "Evidence references point to actual locations (file paths, URLs, CI workflows) that an auditor or compliance platform can verify."
+      - run_each: readiness_summary.md
+        quality_criteria:
+          "Overall Assessment": "An overall readiness assessment is provided (ready, nearly ready, significant gaps)."
+          "Top Gaps Listed": "The top 5-10 gaps are listed with their remediation priority."
+          "Timeline Realistic": "If a remediation timeline is suggested, it is realistic given the estimated effort."
+
+  # ── Standalone ──────────────────────────────────────────────────────────
+  - id: create_issue
+    name: "Create Platform Issue"
+    description: "Create a properly formatted GitHub issue with context, references, and checklists"
+    instructions_file: steps/create_issue.md
+    inputs:
+      - name: issue_description
+        description: "Description of the platform engineering issue to create"
+    outputs:
+      github_issue_url.md:
+        type: file
+        description: "URL of the created GitHub issue"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: github_issue_url.md
+        quality_criteria:
+          "Issue Created": "A GitHub issue was created successfully via gh issue create."
+          "Properly Formatted": "The issue follows the platform issue template with context, references, and checklists."
+          "Labels Applied": "Appropriate labels are applied to the issue."
