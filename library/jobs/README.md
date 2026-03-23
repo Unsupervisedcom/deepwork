@@ -1,12 +1,40 @@
-# Job Library
+# Shared Jobs
 
-This directory contains a public library of example jobs that you can use as starting points for your own workflows. Each job demonstrates best practices for structuring multi-step tasks with DeepWork.
+DeepWork includes a library of reusable jobs that any project can adopt. These are pre-built, multi-step workflows covering common tasks like research, repository setup, platform engineering, and spec-driven development.
+
+## Enabling Shared Jobs
+
+The fastest way to add shared jobs to your project is with the `/deepwork` skill:
+
+```
+/deepwork deepwork_jobs shared_jobs
+```
+
+This walks you through configuring `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` so the DeepWork plugin discovers library jobs at runtime alongside your local jobs. Jobs are referenced in-place from a checkout of the DeepWork repo — they are never copied into your project, so you always get the latest version.
+
+## Available Jobs
+
+| Job | Description |
+|-----|-------------|
+| [Research](/docs/jobs/research) | Multi-workflow research suite — deep investigation, quick summaries, material ingestion, and reproduction planning |
+| [Platform Engineer](/docs/jobs/platform-engineer) | Incident response, observability, CI/CD, releases, security, cost management, and infrastructure |
+| [Repo](/docs/jobs/repo) | Audit and configure repositories — labels, branch protection, milestones, and boards |
+| [Spec-Driven Development](/docs/jobs/spec-driven-development) | Build features through executable specifications: constitution, specify, clarify, plan, tasks, implement |
+
+## How It Works
+
+Shared jobs are stored in the `library/jobs/` directory of the DeepWork repository. When you run the `shared_jobs` workflow, it:
+
+1. **Detects your setup** — checks for an existing local DeepWork checkout or sparse clone
+2. **Configures the source** — sets up a sparse checkout in `.deepwork/upstream/` or points to an existing local clone
+3. **Sets the environment variable** — adds `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` to your `flake.nix` shellHook (or shell profile)
+4. **Discovers jobs** — library jobs appear in `/deepwork` alongside your local and standard jobs
 
 ## Purpose
 
 The job library provides:
 
-- **Inspiration**: See how others have structured complex workflows
+- **Ready-to-use workflows**: Start using proven multi-step workflows immediately
 - **Templates**: Copy and adapt jobs for your own use cases
 - **Learning**: Understand the job definition format through real examples
 

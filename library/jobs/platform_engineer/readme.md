@@ -16,6 +16,15 @@ This job covers the full lifecycle of platform engineering work:
 - **Infrastructure**: Audit documentation, plan migrations, convert imperative to declarative
 - **Error tracking**: Set up exception monitoring (Sentry, etc.)
 
+## Quick Start
+
+Enable shared library jobs in your project, then start a platform engineering workflow:
+
+```
+/deepwork deepwork_jobs shared_jobs
+/deepwork platform_engineer incident_investigation
+```
+
 ## Workflows
 
 | Workflow | When to Use |

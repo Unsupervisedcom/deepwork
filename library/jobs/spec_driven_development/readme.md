@@ -15,6 +15,15 @@ The workflow progresses through six steps:
 5. **Tasks** - Break the plan into ordered, actionable development tasks
 6. **Implement** - Execute tasks to deliver the complete feature
 
+## Quick Start
+
+Enable shared library jobs in your project, then start spec-driven development:
+
+```
+/deepwork deepwork_jobs shared_jobs
+/deepwork spec_driven_development specify
+```
+
 ## When to Use
 
 This workflow is ideal for:

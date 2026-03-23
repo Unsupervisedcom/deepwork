@@ -11,6 +11,15 @@ Two workflows are provided:
 1. **setup** — Make a repo ready for work: create missing labels, check branch protection, verify milestones and boards
 2. **doctor** — Audit existing state and fix drift: find duplicates, enable missing protections, correct label drift, reconcile board items
 
+## Quick Start
+
+Enable shared library jobs in your project, then set up your repo:
+
+```
+/deepwork deepwork_jobs shared_jobs
+/deepwork repo setup
+```
+
 ## Provider Support
 
 The job detects the provider from `git remote get-url origin`:
