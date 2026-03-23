@@ -7,7 +7,7 @@ DeepWork includes a library of reusable jobs that any project can adopt. These a
 The fastest way to add shared jobs to your project is with the `/deepwork` skill:
 
 ```
-/deepwork deepwork_jobs shared_jobs
+/deepwork shared_jobs
 ```
 
 This walks you through configuring `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` so the DeepWork plugin discovers library jobs at runtime alongside your local jobs. Jobs are referenced in-place from a checkout of the DeepWork repo — they are never copied into your project, so you always get the latest version.
@@ -205,7 +205,7 @@ When you use a library job and discover improvements, you can contribute them ba
 ### The Learn Flow
 
 1. Run the library job in your project as normal
-2. Run `/deepwork deepwork_jobs learn` — the learn step classifies improvements as:
+2. Run `/deepwork learn` — the learn step classifies improvements as:
    - **Generalizable**: Improvements that benefit all users (update the library job)
    - **Bespoke**: Improvements specific to your project (update your local `AGENTS.md`)
 
