@@ -13,10 +13,9 @@ Two workflows are provided:
 
 ## Quick Start
 
+Runs the `setup` workflow from the `repo` job. Detects your git provider and ensures labels, branch protection, milestones, and boards match team conventions.
+
 ```
-# Runs the "setup" workflow from the "repo" job.
-# Detects your git provider and ensures labels, branch protection,
-# milestones, and boards match team conventions.
 /deepwork repo setup
 ```
 

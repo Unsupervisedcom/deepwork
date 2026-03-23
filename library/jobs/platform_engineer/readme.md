@@ -18,10 +18,9 @@ This job covers the full lifecycle of platform engineering work:
 
 ## Quick Start
 
+Natural language is matched to the `platform_engineer` job's `incident_investigation` workflow. Triages the incident, gathers logs and metrics, and produces a structured incident report.
+
 ```
-# Natural language is matched to the "platform_engineer" job's
-# "incident_investigation" workflow. Triages the incident, gathers
-# logs and metrics, and produces a structured incident report.
 /deepwork the staging deploy is returning 502s, investigate
 ```
 
