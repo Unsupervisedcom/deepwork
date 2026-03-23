@@ -40,6 +40,23 @@ library/jobs/
 │       ├── audit_milestones.md
 │       ├── audit_boards.md
 │       └── doctor_report.md
+├── research/
+│   ├── job.yml              # Job definition (name, steps, workflows)
+│   ├── readme.md            # Job-specific documentation
+│   ├── AGENTS.md            # Agent context and learnings
+│   └── steps/
+│       ├── scope.md
+│       ├── choose_platforms.md
+│       ├── gather.md
+│       ├── gather_quick.md
+│       ├── synthesize.md
+│       ├── summarize.md
+│       ├── report.md
+│       ├── parse.md
+│       ├── file.md
+│       ├── ingest_material.md
+│       ├── analyze.md
+│       └── plan.md
 └── spec_driven_development/
     ├── job.yml              # Job definition (name, steps, workflows)
     ├── readme.md            # Job-specific documentation
