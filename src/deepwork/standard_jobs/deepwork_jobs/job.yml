@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: deepwork_jobs
-version: "1.5.1"
+version: "1.6.0"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, testing, or improving DeepWork jobs."
 common_job_info_provided_to_all_steps_at_runtime: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -54,6 +54,11 @@ workflows:
     summary: "Analyze conversation history to improve job instructions and capture learnings"
     steps:
       - learn
+
+  - name: shared_jobs
+    summary: "Install library jobs from the DeepWork shared job library into the project"
+    steps:
+      - sync_shared_jobs
 
 steps:
   - id: define
@@ -268,3 +273,24 @@ steps:
           "Rules Job Removed": "`.deepwork/jobs/deepwork_rules/` is gone."
           "MCP Server Entry Removed": "The `deepwork serve` entry is removed from `.mcp.json` (or the file is deleted if empty)."
           "Library Jobs Offered": "If a flake.nix exists without DEEPWORK_ADDITIONAL_JOBS_FOLDERS, the user was offered library job setup. If no flake.nix exists, the Nix devshell option was mentioned. If already configured, nothing was said."
+
+  - id: sync_shared_jobs
+    name: "Sync Shared Jobs"
+    description: "Installs library jobs from the DeepWork shared job library into the project. Supports remote (GitHub) and local source paths."
+    instructions_file: steps/sync_shared_jobs.md
+    inputs:
+      - name: source
+        description: "Source for library jobs: 'remote' for GitHub, or a local path to a DeepWork repo checkout"
+    outputs:
+      installed_jobs:
+        type: files
+        description: "The job.yml files of newly installed library jobs"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: installed_jobs
+        quality_criteria:
+          "Valid Job Definition": "The job.yml is valid YAML with required fields (name, version, summary, steps)."
+          "Step Files Present": "All instructions_file paths referenced in job.yml exist."
+          "No Conflict": "Existing job handling was clean (new install, or user approved overwrite)."
+          "Sync Completed": "deepwork sync was run after installation."
