@@ -14,6 +14,7 @@ Two workflows are provided:
 ## Quick Start
 
 ```
+# job: repo, workflow: setup
 /deepwork repo setup
 ```
 

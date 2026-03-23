@@ -47,6 +47,7 @@ ingest_material → analyze → plan
 ## Quick Start
 
 ```
+# job: research, workflow: research
 /deepwork do a deep research run on growing plants in lunar regolith
 ```
 

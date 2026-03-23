@@ -19,6 +19,7 @@ This job covers the full lifecycle of platform engineering work:
 ## Quick Start
 
 ```
+# job: platform_engineer, workflow: incident_investigation
 /deepwork the staging deploy is returning 502s, investigate
 ```
 
