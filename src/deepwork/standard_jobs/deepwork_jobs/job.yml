@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: deepwork_jobs
-version: "1.6.2"
+version: "1.7.0"
 summary: "Creates and manages multi-step AI workflows. Use when defining, implementing, testing, or improving DeepWork jobs."
 common_job_info_provided_to_all_steps_at_runtime: |
   Core commands for managing DeepWork jobs. These commands help you define new multi-step
@@ -199,6 +199,7 @@ steps:
           "Bespoke Learnings Captured": "Run-specific learnings were added to AGENTS.md."
           "File References Used": "AGENTS.md entries reference other files where appropriate."
           "Working Folder Correct": "AGENTS.md is in the correct working folder for the job."
+          "External Repo Handled": "If the job lives in an external repo (via DEEPWORK_ADDITIONAL_JOBS_FOLDERS), changes were committed and pushed per the user's preference. If the job is local, this criterion auto-passes."
 
   - id: fix_settings
     name: "Fix Settings Files"

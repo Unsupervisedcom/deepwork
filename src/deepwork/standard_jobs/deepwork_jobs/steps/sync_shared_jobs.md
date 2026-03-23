@@ -90,26 +90,27 @@ The env var must be set so the DeepWork plugin discovers library jobs at runtime
 
 1. **If `flake.nix` exists**, check whether it already sets `DEEPWORK_ADDITIONAL_JOBS_FOLDERS`:
    - If yes, verify it points to the correct path. Update if needed.
-   - If no, add the shellHook export. Example for sparse checkout:
+   - If no, add the shellHook export. The recommended pattern prefers a local checkout (e.g. `../deepwork`) when available and falls back to a sparse checkout in `.deepwork/upstream/`:
      ```nix
      shellHook = ''
        export REPO_ROOT=$(git rev-parse --show-toplevel)
-       # Clone or update DeepWork library jobs
-       if [ ! -d "$REPO_ROOT/.deepwork/upstream" ]; then
-         git clone --sparse --filter=blob:none \
-           https://github.com/Unsupervisedcom/deepwork.git \
-           "$REPO_ROOT/.deepwork/upstream"
-         git -C "$REPO_ROOT/.deepwork/upstream" sparse-checkout set --cone library/jobs/
+
+       # Prefer local deepwork checkout, fall back to sparse clone
+       if [ -d "$REPO_ROOT/../deepwork/library/jobs" ]; then
+         export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="$REPO_ROOT/../deepwork/library/jobs"
        else
-         # Pull updates in background to keep library jobs current
-         git -C "$REPO_ROOT/.deepwork/upstream" pull --quiet &
+         if [ ! -d "$REPO_ROOT/.deepwork/upstream" ]; then
+           git clone --sparse --filter=blob:none \
+             https://github.com/Unsupervisedcom/deepwork.git \
+             "$REPO_ROOT/.deepwork/upstream"
+           git -C "$REPO_ROOT/.deepwork/upstream" sparse-checkout set --cone library/jobs/
+         else
+           # Pull updates in background to keep library jobs current
+           git -C "$REPO_ROOT/.deepwork/upstream" pull --quiet &
+         fi
+         export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="$REPO_ROOT/.deepwork/upstream/library/jobs"
        fi
-       export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="$REPO_ROOT/.deepwork/upstream/library/jobs"
      '';
-     ```
-   - For a local checkout, the export is simpler:
-     ```nix
-     export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="$REPO_ROOT/../deepwork/library/jobs"
      ```
 
 2. **If no `flake.nix`**, inform the user they need to set the env var in their shell:

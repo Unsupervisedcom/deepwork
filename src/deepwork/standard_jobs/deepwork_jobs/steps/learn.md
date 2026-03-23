@@ -17,14 +17,20 @@ Analyze the conversation history to extract learnings and improvements, then app
    - Identify which jobs and steps were executed
    - Note the order of execution
 
-2. **Identify the target folder**
+2. **Locate the job directory using `job_dir`**
+   - The MCP server returns `job_dir` (absolute path) when starting workflows — use this as the authoritative location
+   - The job may live in `.deepwork/jobs/`, `src/deepwork/standard_jobs/`, or an **external folder** via `DEEPWORK_ADDITIONAL_JOBS_FOLDERS`
+   - Check if `job_dir` is inside the current project's git repo or in a **separate git repository** (e.g. a library checkout at `~/.keystone/*/deepwork/library/jobs/`)
+   - If `job_dir` is in a different git repo, note this — you'll need to handle commits/pushes separately in Step 8
+
+3. **Identify the AGENTS.md target folder**
    - This should be the deepest common folder that would contain all work on the topic in the future
    - Should be clear from conversation history where work was done
    - If unclear, run `git diff` to see where changes were made on the branch
 
-3. **If no job was specified**, ask the user:
+4. **If no job was specified**, ask the user:
    - "Which DeepWork job would you like me to learn from?"
-   - List available jobs from `.deepwork/jobs/`
+   - List available jobs (call `get_workflows` to see all discovered jobs)
 
 ### Step 2: Identify Points of Confusion and Inefficiency
 
@@ -80,8 +86,9 @@ For each learning identified, determine if it is:
 
 For each generalizable learning:
 
-1. **Locate the instruction file**
-   - Path: `.deepwork/jobs/[job_name]/steps/[step_id].md`
+1. **Locate the instruction file using `job_dir`**
+   - Path: `<job_dir>/steps/[step_id].md` (where `job_dir` was identified in Step 1)
+   - Do NOT assume `.deepwork/jobs/` — the job may live in an external folder
 
 2. **Make targeted improvements**
    - Add missing context or clarification
@@ -109,7 +116,7 @@ Review all instruction files for the job and identify content that:
 
 **Extract to shared files:**
 
-1. **Create shared files** in `.deepwork/jobs/[job_name]/steps/shared/`
+1. **Create shared files** in `<job_dir>/steps/shared/`
    - `conventions.md` - Coding/formatting conventions used across steps
    - `examples.md` - Common examples referenced by multiple steps
    - `schemas.md` - Data structures or formats used throughout
@@ -171,6 +178,31 @@ If instruction files were modified:
 1. **Bump version in job.yml**
    - Patch version (0.0.x) for instruction improvements
    - Minor version (0.x.0) if quality criteria changed
+
+### Step 8: Commit and Push Changes to External Job Repos
+
+If `job_dir` is in a **separate git repository** (outside the current project), you need to commit and push those changes independently.
+
+1. **Detect the external repo**
+   - Run `git -C <job_dir> rev-parse --show-toplevel` to find the repo root
+   - If it differs from the current project root, the job lives in an external repo
+
+2. **Commit changes in the external repo**
+   - `cd` to the external repo root
+   - Stage only the changed job files (e.g. `git add <job_dir>/`)
+   - Create a commit following Conventional Commits: `fix(jobs): improve <job_name> instructions from learn workflow`
+
+3. **Push strategy — ask the user**
+   - Ask: "The job `<job_name>` lives in an external repo at `<repo_root>`. How would you like to push these changes?"
+     - **Direct push to main**: Commit on main and push (for collaborators who prefer clean history)
+     - **PR from branch**: Create a feature branch, push, and open a PR (for non-collaborators or when review is desired)
+     - **PR from fork**: Fork the repo, push to fork, and open a PR (for non-collaborators without write access)
+   - If the user has previously expressed a preference, follow it without asking again
+
+4. **Execute the chosen strategy**
+   - For direct push: `git push origin main`
+   - For PR: Create branch `deepwork/learn-<job_name>`, push with `-u`, open PR via `gh pr create`
+   - For fork PR: Use `gh repo fork`, push to fork, open PR against upstream
 
 ## File Reference Patterns
 
