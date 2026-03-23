@@ -283,13 +283,13 @@ steps:
       - name: source
         description: "Source for library jobs: 'local' for an existing deepwork checkout, 'remote' for sparse-checkout clone, or a custom path"
     outputs:
-      installed_jobs:
+      available_jobs:
         type: files
         description: "The job.yml files available via the configured library path"
         required: true
     dependencies: []
     reviews:
-      - run_each: installed_jobs
+      - run_each: available_jobs
         quality_criteria:
           "Valid Job Definition": "The job.yml is valid YAML with required fields (name, version, summary, steps)."
           "Step Files Present": "All instructions_file paths referenced in job.yml exist."

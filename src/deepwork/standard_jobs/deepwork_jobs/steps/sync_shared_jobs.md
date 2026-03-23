@@ -35,23 +35,29 @@ Before asking the user anything, check for existing setup:
    ls .deepwork/upstream/library/jobs/ 2>/dev/null && echo "sparse checkout found" || echo "no sparse checkout"
    ```
 
-If a working configuration is already detected (env var set and pointing to a valid directory):
-1. **Always pull updates** on any sparse checkout found at `.deepwork/upstream/`:
-   ```bash
-   git -C .deepwork/upstream pull
-   ```
-2. Report what's configured and list available jobs.
-3. Ask if the user wants to reconfigure the source.
+If the env var is set, validate that each colon-separated path exists and contains at least one `job.yml`:
+```bash
+IFS=: read -ra FOLDERS <<< "$DEEPWORK_ADDITIONAL_JOBS_FOLDERS"
+for folder in "${FOLDERS[@]}"; do
+  [ -d "$folder" ] && ls "$folder"/*/job.yml 2>/dev/null | head -1 || echo "INVALID: $folder"
+done
+```
+
+If a working configuration is already detected (env var set and all paths valid):
+1. Report what's configured and list available jobs.
+2. Ask if the user wants to reconfigure the source.
 
 ### Step 2: Determine Source
 
-Based on detection results, use AskUserQuestion to offer appropriate options:
+Based on detection results, use AskUserQuestion to offer appropriate options.
+
+Valid `source` values are `local`, `remote`, or a custom filesystem path. Map the user-facing choice as follows:
 
 **Question**: "How should library jobs be sourced?"
 
-- **Local checkout** (if `../deepwork/library/jobs/` exists) — Point to the existing local DeepWork checkout. Best for maintainers or when a local clone already exists. *(Recommended when detected)*
-- **Sparse checkout** — Clone the DeepWork repo into `.deepwork/upstream/` with sparse checkout for just `library/jobs/`. Best for most users who want live upstream updates.
-- **Custom local path** — Specify a custom path to a DeepWork repository checkout.
+- `source: local` — **Local checkout** (if `../deepwork/library/jobs/` exists). Point to the existing local DeepWork checkout. Best for maintainers or when a local clone already exists. *(Recommended when detected)*
+- `source: remote` — **Sparse checkout**. Clone the DeepWork repo into `.deepwork/upstream/` with sparse checkout for just `library/jobs/`. Best for most users who want live upstream updates.
+- `source: <custom-path>` — **Custom local path**. Specify a custom path to a DeepWork repository checkout (the filesystem path is used directly as `source`).
 
 If the user selects "Custom local path", ask for the filesystem path to the DeepWork repository root.
 
@@ -59,11 +65,15 @@ If the user selects "Custom local path", ask for the filesystem path to the Deep
 
 #### Local Checkout (e.g., `../deepwork`)
 
-1. Validate the path contains `library/jobs/`:
+1. Set the local checkout path (for the default `../deepwork` layout, or the custom path provided):
+   ```bash
+   LOCAL_PATH="../deepwork"
+   ```
+2. Validate the path contains `library/jobs/`:
    ```bash
    ls "$LOCAL_PATH/library/jobs/"
    ```
-2. Resolve the absolute path:
+3. Resolve the absolute path:
    ```bash
    LIBRARY_PATH=$(cd "$LOCAL_PATH/library/jobs" && pwd)
    ```
@@ -82,7 +92,11 @@ If the user selects "Custom local path", ask for the filesystem path to the Deep
    git -C .deepwork/upstream pull
    ```
 3. Ensure `.deepwork/upstream/` is in `.gitignore`.
-4. Set `LIBRARY_PATH="$REPO_ROOT/.deepwork/upstream/library/jobs"`
+4. Set `LIBRARY_PATH` from the repository root:
+   ```bash
+   REPO_ROOT=$(git rev-parse --show-toplevel)
+   LIBRARY_PATH="$REPO_ROOT/.deepwork/upstream/library/jobs"
+   ```
 
 ### Step 4: Configure `DEEPWORK_ADDITIONAL_JOBS_FOLDERS`
 
@@ -90,27 +104,33 @@ The env var must be set so the DeepWork plugin discovers library jobs at runtime
 
 1. **If `flake.nix` exists**, check whether it already sets `DEEPWORK_ADDITIONAL_JOBS_FOLDERS`:
    - If yes, verify it points to the correct path. Update if needed.
-   - If no, add the shellHook export. The recommended pattern prefers a local checkout (e.g. `../deepwork`) when available and falls back to a sparse checkout in `.deepwork/upstream/`:
+   - If no, add the shellHook export. The recommended pattern prefers a local checkout (e.g. `../deepwork`) when available and falls back to an existing sparse checkout in `.deepwork/upstream/` (without performing network operations in `shellHook`):
      ```nix
      shellHook = ''
        export REPO_ROOT=$(git rev-parse --show-toplevel)
 
-       # Prefer local deepwork checkout, fall back to sparse clone
+       # Prefer local deepwork checkout, fall back to an existing sparse checkout
        if [ -d "$REPO_ROOT/../deepwork/library/jobs" ]; then
-         export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="$REPO_ROOT/../deepwork/library/jobs"
+         export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="${DEEPWORK_ADDITIONAL_JOBS_FOLDERS:+$DEEPWORK_ADDITIONAL_JOBS_FOLDERS:}$REPO_ROOT/../deepwork/library/jobs"
+       elif [ -d "$REPO_ROOT/.deepwork/upstream/library/jobs" ]; then
+         export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="${DEEPWORK_ADDITIONAL_JOBS_FOLDERS:+$DEEPWORK_ADDITIONAL_JOBS_FOLDERS:}$REPO_ROOT/.deepwork/upstream/library/jobs"
        else
-         if [ ! -d "$REPO_ROOT/.deepwork/upstream" ]; then
-           git clone --sparse --filter=blob:none \
-             https://github.com/Unsupervisedcom/deepwork.git \
-             "$REPO_ROOT/.deepwork/upstream"
-           git -C "$REPO_ROOT/.deepwork/upstream" sparse-checkout set --cone library/jobs/
-         else
-           # Pull updates in background to keep library jobs current
-           git -C "$REPO_ROOT/.deepwork/upstream" pull --quiet &
-         fi
-         export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="$REPO_ROOT/.deepwork/upstream/library/jobs"
+         echo "DeepWork library jobs not found. Run '/deepwork shared_jobs' to set them up." >&2
        fi
      '';
+     ```
+
+     To initially set up or manually update the sparse checkout, run this **outside of `shellHook`**:
+     ```bash
+     REPO_ROOT="$(git rev-parse --show-toplevel)"
+     if [ ! -d "$REPO_ROOT/.deepwork/upstream" ]; then
+       git clone --sparse --filter=blob:none \
+         https://github.com/Unsupervisedcom/deepwork.git \
+         "$REPO_ROOT/.deepwork/upstream"
+       git -C "$REPO_ROOT/.deepwork/upstream" sparse-checkout set --cone library/jobs/
+     else
+       git -C "$REPO_ROOT/.deepwork/upstream" pull --ff-only
+     fi
      ```
 
 2. **If no `flake.nix`**, inform the user they need to set the env var in their shell:
@@ -118,9 +138,9 @@ The env var must be set so the DeepWork plugin discovers library jobs at runtime
    export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="/path/to/deepwork/library/jobs"
    ```
 
-3. **For the current session**, export the variable so jobs are immediately available:
+3. **For the current session**, append to the variable so jobs are immediately available (preserving any existing paths):
    ```bash
-   export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="$LIBRARY_PATH"
+   export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="${DEEPWORK_ADDITIONAL_JOBS_FOLDERS:+$DEEPWORK_ADDITIONAL_JOBS_FOLDERS:}$LIBRARY_PATH"
    ```
 
 ### Step 5: Discover and Report Available Jobs
@@ -150,7 +170,7 @@ Summarize:
 
 ## Output
 
-### installed_jobs
+### available_jobs
 
 A list of `job.yml` file paths for each job available via the configured library path.
 

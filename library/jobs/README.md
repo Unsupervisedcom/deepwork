@@ -10,16 +10,16 @@ The fastest way to add shared jobs to your project is with the `/deepwork` skill
 /deepwork shared_jobs
 ```
 
-This walks you through configuring `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` so the DeepWork plugin discovers library jobs at runtime alongside your local jobs. Jobs are referenced in-place from a checkout of the DeepWork repo — they are never copied into your project, so you always get the latest version.
+This walks you through configuring `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` so the DeepWork plugin discovers library jobs at runtime alongside your local jobs. By default, jobs are referenced in-place from a checkout of the DeepWork repo, so you always get the latest version, though you can still copy them into your project when you want to customize them.
 
 ## Available Jobs
 
 | Job | Description |
 |-----|-------------|
-| [Research](/docs/jobs/research) | Multi-workflow research suite — deep investigation, quick summaries, material ingestion, and reproduction planning |
-| [Platform Engineer](/docs/jobs/platform-engineer) | Incident response, observability, CI/CD, releases, security, cost management, and infrastructure |
-| [Repo](/docs/jobs/repo) | Audit and configure repositories — labels, branch protection, milestones, and boards |
-| [Spec-Driven Development](/docs/jobs/spec-driven-development) | Build features through executable specifications: constitution, specify, clarify, plan, tasks, implement |
+| [Research](./research) | Multi-workflow research suite — deep investigation, quick summaries, material ingestion, and reproduction planning |
+| [Platform Engineer](./platform_engineer) | Incident response, observability, CI/CD, releases, security, cost management, and infrastructure |
+| [Repo](./repo) | Audit and configure repositories — labels, branch protection, milestones, and boards |
+| [Spec-Driven Development](./spec_driven_development) | Build features through executable specifications: constitution, specify, clarify, plan, tasks, implement |
 
 ## How It Works
 
@@ -159,19 +159,32 @@ git clone https://github.com/Unsupervisedcom/deepwork.git .deepwork/upstream
 shellHook = ''
   export REPO_ROOT=$(git rev-parse --show-toplevel)
 
-  # Clone DeepWork library jobs if not present
-  if [ ! -d "$REPO_ROOT/.deepwork/upstream" ]; then
-    git clone --sparse --filter=blob:none \
-      https://github.com/Unsupervisedcom/deepwork.git \
-      "$REPO_ROOT/.deepwork/upstream"
-    git -C "$REPO_ROOT/.deepwork/upstream" sparse-checkout set --cone library/jobs/
+  # Prefer local deepwork checkout, fall back to existing sparse checkout
+  if [ -d "$REPO_ROOT/../deepwork/library/jobs" ]; then
+    export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="''${DEEPWORK_ADDITIONAL_JOBS_FOLDERS:+$DEEPWORK_ADDITIONAL_JOBS_FOLDERS:}$REPO_ROOT/../deepwork/library/jobs"
+  elif [ -d "$REPO_ROOT/.deepwork/upstream/library/jobs" ]; then
+    export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="''${DEEPWORK_ADDITIONAL_JOBS_FOLDERS:+$DEEPWORK_ADDITIONAL_JOBS_FOLDERS:}$REPO_ROOT/.deepwork/upstream/library/jobs"
+  else
+    echo "DeepWork library jobs not found. Run '/deepwork shared_jobs' to set them up." >&2
   fi
-
-  export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="$REPO_ROOT/.deepwork/upstream/library/jobs"
 '';
 ```
 
 Library jobs now appear in `/deepwork` alongside your local and standard jobs.
+
+To initially set up or update the sparse checkout:
+
+```bash
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+if [ ! -d "$REPO_ROOT/.deepwork/upstream" ]; then
+  git clone --sparse --filter=blob:none \
+    https://github.com/Unsupervisedcom/deepwork.git \
+    "$REPO_ROOT/.deepwork/upstream"
+  git -C "$REPO_ROOT/.deepwork/upstream" sparse-checkout set --cone library/jobs/
+else
+  git -C "$REPO_ROOT/.deepwork/upstream" pull --ff-only
+fi
+```
 
 ### Sparse Checkout (Specific Jobs Only)
 

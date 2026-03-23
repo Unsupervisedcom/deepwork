@@ -189,7 +189,7 @@ If `job_dir` is in a **separate git repository** (outside the current project), 
 
 2. **Commit changes in the external repo**
    - `cd` to the external repo root
-   - Stage only the changed job files (e.g. `git add <job_dir>/`)
+   - Stage only the changed job files using a repo-relative path (e.g. `git -C <repo_root> add <relative_job_dir>/`)
    - Create a commit following Conventional Commits: `fix(jobs): improve <job_name> instructions from learn workflow`
 
 3. **Push strategy — ask the user**
