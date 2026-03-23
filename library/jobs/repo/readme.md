@@ -16,7 +16,7 @@ Two workflows are provided:
 Enable shared library jobs in your project, then set up your repo:
 
 ```
-/deepwork deepwork_jobs shared_jobs
+/deepwork shared_jobs
 /deepwork repo setup
 ```
 

@@ -21,7 +21,7 @@ This job covers the full lifecycle of platform engineering work:
 Enable shared library jobs in your project, then start a platform engineering workflow:
 
 ```
-/deepwork deepwork_jobs shared_jobs
+/deepwork shared_jobs
 /deepwork platform_engineer incident_investigation
 ```
 

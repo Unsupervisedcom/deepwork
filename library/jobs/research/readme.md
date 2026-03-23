@@ -49,7 +49,7 @@ ingest_material → analyze → plan
 Enable shared library jobs in your project, then start a research workflow:
 
 ```
-/deepwork deepwork_jobs shared_jobs
+/deepwork shared_jobs
 /deepwork research research
 ```
 

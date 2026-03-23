@@ -20,7 +20,7 @@ The workflow progresses through six steps:
 Enable shared library jobs in your project, then start spec-driven development:
 
 ```
-/deepwork deepwork_jobs shared_jobs
+/deepwork shared_jobs
 /deepwork spec_driven_development specify
 ```
 
