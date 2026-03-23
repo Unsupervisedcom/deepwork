@@ -18,11 +18,8 @@ This job covers the full lifecycle of platform engineering work:
 
 ## Quick Start
 
-Enable shared library jobs in your project, then start a platform engineering workflow:
-
 ```
-/deepwork shared_jobs
-/deepwork platform_engineer incident_investigation
+/deepwork the staging deploy is returning 502s, investigate
 ```
 
 ## Workflows

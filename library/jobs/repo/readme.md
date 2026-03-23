@@ -13,10 +13,7 @@ Two workflows are provided:
 
 ## Quick Start
 
-Enable shared library jobs in your project, then set up your repo:
-
 ```
-/deepwork shared_jobs
 /deepwork repo setup
 ```
 

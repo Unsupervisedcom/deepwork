@@ -46,11 +46,8 @@ ingest_material → analyze → plan
 
 ## Quick Start
 
-Enable shared library jobs in your project, then start a research workflow:
-
 ```
-/deepwork shared_jobs
-/deepwork research research
+/deepwork do a deep research run on growing plants in lunar regolith
 ```
 
 ## Prerequisites
