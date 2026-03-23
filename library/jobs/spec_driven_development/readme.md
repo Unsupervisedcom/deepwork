@@ -18,7 +18,8 @@ The workflow progresses through six steps:
 ## Quick Start
 
 ```
-# job: spec_driven_development, workflow: spec_driven_development
+# Runs the "spec_driven_development" workflow starting at the "specify" step.
+# Walks through constitution → specify → clarify → plan → tasks → implement.
 /deepwork spec_driven_development specify
 ```
 
