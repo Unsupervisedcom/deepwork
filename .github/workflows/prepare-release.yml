@@ -222,6 +222,7 @@ jobs:
           VERSION="${{ steps.versions.outputs.pypi_version }}"
 
           # Update the deepwork plugin version in marketplace.json
+          # Use jq to update only the deepwork plugin entry's version
           jq --arg v "$VERSION" '(.plugins[] | select(.name == "deepwork")).version = $v' \
             .claude-plugin/marketplace.json > .claude-plugin/marketplace.json.tmp
           mv .claude-plugin/marketplace.json.tmp .claude-plugin/marketplace.json
@@ -242,6 +243,7 @@ jobs:
           mv plugins/claude/.mcp.json.tmp plugins/claude/.mcp.json
           echo "Updated plugins/claude/.mcp.json:"
           cat plugins/claude/.mcp.json
+
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
