@@ -1,12 +1,62 @@
-# Job Library
+# Shared Jobs
 
-This directory contains a public library of example jobs that you can use as starting points for your own workflows. Each job demonstrates best practices for structuring multi-step tasks with DeepWork.
+DeepWork includes a library of reusable jobs that any project can adopt. These are pre-built, multi-step workflows covering common tasks like research, repository setup, platform engineering, and spec-driven development.
+
+## Enabling Shared Jobs
+
+The fastest way to add shared jobs to your project is with the `/deepwork` skill:
+
+```
+/deepwork shared_jobs
+```
+
+This walks you through configuring `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` so the DeepWork plugin discovers library jobs at runtime alongside your local jobs. Jobs are referenced in-place from a checkout of the DeepWork repo — they are never copied into your project, so you always get the latest version.
+
+## Available Jobs
+
+| Job | Description |
+|-----|-------------|
+| [Research](/docs/jobs/research) | Multi-workflow research suite — deep investigation, quick summaries, material ingestion, and reproduction planning |
+| [Platform Engineer](/docs/jobs/platform-engineer) | Incident response, observability, CI/CD, releases, security, cost management, and infrastructure |
+| [Repo](/docs/jobs/repo) | Audit and configure repositories — labels, branch protection, milestones, and boards |
+| [Spec-Driven Development](/docs/jobs/spec-driven-development) | Build features through executable specifications: constitution, specify, clarify, plan, tasks, implement |
+
+## How It Works
+
+Shared jobs are stored in the `library/jobs/` directory of the DeepWork repository. When you run the `shared_jobs` workflow, it:
+
+1. **Detects your setup** — checks for an existing local DeepWork checkout or sparse clone
+2. **Configures the source** — sets up a sparse checkout in `.deepwork/upstream/` or points to an existing local clone
+3. **Sets the environment variable** — adds `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` to your `flake.nix` shellHook (or shell profile)
+4. **Discovers jobs** — library jobs appear in `/deepwork` alongside your local and standard jobs
+
+## Creating Slash Commands for Jobs
+
+You can ask Claude to turn any job workflow into a slash command for quicker access. The easiest way is a one-liner from your terminal:
+
+```bash
+claude "Create a /research slash command from the deepwork research job with subcommands for each workflow"
+```
+
+Claude will create skill files under `.claude/skills/` so you can invoke workflows directly:
+
+```
+/research              # runs research (deep) workflow
+/research deep         # runs research (deep) workflow
+/research quick        # runs research (quick) workflow
+```
+
+You can also use dot notation for the skill name — `/research.deep` and `/research.quick` — which creates separate skill files for each workflow.
+
+### Why slash commands aren't created automatically
+
+DeepWork does not auto-generate slash commands for every job and workflow. Each slash command becomes a **skill** that is loaded into the agent's context — both for the user and for any sub-agents that spawn during a session. Auto-generating commands for every workflow across every installed job would flood the skill list, increasing token usage and making it harder for agents to select the right tool. Instead, users create slash commands only for the workflows they actually use frequently, keeping the skill surface lean and intentional.
 
 ## Purpose
 
 The job library provides:
 
-- **Inspiration**: See how others have structured complex workflows
+- **Ready-to-use workflows**: Start using proven multi-step workflows immediately
 - **Templates**: Copy and adapt jobs for your own use cases
 - **Learning**: Understand the job definition format through real examples
 
@@ -177,7 +227,7 @@ When you use a library job and discover improvements, you can contribute them ba
 ### The Learn Flow
 
 1. Run the library job in your project as normal
-2. Run `/deepwork deepwork_jobs learn` — the learn step classifies improvements as:
+2. Run `/deepwork learn` — the learn step classifies improvements as:
    - **Generalizable**: Improvements that benefit all users (update the library job)
    - **Bespoke**: Improvements specific to your project (update your local `AGENTS.md`)
 

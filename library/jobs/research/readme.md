@@ -44,6 +44,15 @@ Ingest research material, analyze for reproducible claims, and create an enginee
 ingest_material → analyze → plan
 ```
 
+## Quick Start
+
+Enable shared library jobs in your project, then start a research workflow:
+
+```
+/deepwork shared_jobs
+/deepwork research research
+```
+
 ## Prerequisites
 
 - For **research** workflow: Browser tool access if using external platforms (Gemini, ChatGPT, etc.)
