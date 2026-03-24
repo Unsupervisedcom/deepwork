@@ -30,6 +30,28 @@ Shared jobs are stored in the `library/jobs/` directory of the DeepWork reposito
 3. **Sets the environment variable** — adds `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` to your `flake.nix` shellHook (or shell profile)
 4. **Discovers jobs** — library jobs appear in `/deepwork` alongside your local and standard jobs
 
+## Creating Slash Commands for Jobs
+
+You can ask Claude to turn any job workflow into a slash command for quicker access. The easiest way is a one-liner from your terminal:
+
+```bash
+claude "Create a /research slash command from the deepwork research job with subcommands for each workflow"
+```
+
+Claude will create skill files under `.claude/skills/` so you can invoke workflows directly:
+
+```
+/research              # runs research (deep) workflow
+/research deep         # runs research (deep) workflow
+/research quick        # runs research (quick) workflow
+```
+
+You can also use dot notation for the skill name — `/research.deep` and `/research.quick` — which creates separate skill files for each workflow.
+
+### Why slash commands aren't created automatically
+
+DeepWork does not auto-generate slash commands for every job and workflow. Each slash command becomes a **skill** that is loaded into the agent's context — both for the user and for any sub-agents that spawn during a session. Auto-generating commands for every workflow across every installed job would flood the skill list, increasing token usage and making it harder for agents to select the right tool. Instead, users create slash commands only for the workflows they actually use frequently, keeping the skill surface lean and intentional.
+
 ## Purpose
 
 The job library provides:
