@@ -1,0 +1,291 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
+name: engineer
+version: "1.0.0"
+summary: "Domain-agnostic engineering execution from product issue through PR merge and product sync, with TDD discipline"
+common_job_info_provided_to_all_steps_at_runtime: |
+  This job drives engineering work from product issue through merged PR and product sync.
+  It enforces test-driven development, continuous PR synchronization, artifact generation,
+  and product traceability across any engineering domain (software, hardware, CAD, firmware,
+  documentation).
+
+  ## Requirements Reference
+
+  This job implements an RFC 2119 requirements specification bundled as `requirements.md`
+  in the job directory. Step instructions reference requirements by number (Req 1-8).
+  Read `requirements.md` for the full normative text.
+
+  ## Domain Adaptation
+
+  The workflow is domain-agnostic. Each step's instructions include a domain adaptation
+  table mapping generic concepts to domain-specific equivalents:
+
+  | Concept         | Software          | Hardware/CAD       | Firmware          | Docs             |
+  |-----------------|-------------------|--------------------|-------------------|------------------|
+  | Test            | Unit/integration  | DRC/simulation     | HIL/unit test     | Link check/lint  |
+  | Build artifact  | Binary/container  | STL/STEP/Gerber    | .hex/.bin         | PDF/HTML         |
+  | CI visual       | DOM snapshot      | Rendered STL       | Logic trace       | PDF render       |
+  | Branch          | Git branch        | Git branch         | Git branch        | Git branch       |
+
+  The agent MUST read the repository's `agent.md` (or equivalent context file) to determine
+  the project's domain and adapt accordingly. If no `agent.md` exists, the `doctor` workflow
+  SHOULD be run first.
+
+  ## PR Synchronization
+
+  Throughout the `implement` workflow, PR checkboxes MUST be kept synchronized with the
+  worktree state. Every time a task is completed and pushed, the corresponding PR checkbox
+  MUST be updated immediately.
+
+  ## Work Product Storage
+
+  Step outputs are DeepWork tracking files stored in `.deepwork/tmp/`. The actual engineering
+  artifacts (code, tests, configs, schematics) live in the repository's normal directory
+  structure as determined by the project's conventions.
+
+workflows:
+  - name: implement
+    summary: "Execute engineering work from product issue through PR merge and product sync"
+    steps:
+      - translate_issue
+      - initialize_branch
+      - red_tests
+      - green_implementation
+      - finalize_pr
+      - product_sync
+
+  - name: doctor
+    summary: "Validate that agent.md and domain context files are present, linked, and valid"
+    steps:
+      - check_agent_md
+      - check_context
+      - doctor_report
+
+steps:
+  # ── Implement Workflow ─────────────────────────────────────────────
+
+  - id: translate_issue
+    name: "Translate Product Issue to Engineering Issue"
+    description: "Read the product issue, extract requirements, and create a distinct engineering issue with implementation plan, test definitions, and traceability links."
+    instructions_file: steps/translate_issue.md
+    inputs:
+      - name: product_issue
+        description: "URL or identifier of the product issue containing the user story and requirements"
+    outputs:
+      .deepwork/tmp/engineering_issue.md:
+        type: file
+        description: "Engineering issue content: implementation plan, test definitions, and requirement traceability"
+        required: true
+      .deepwork/tmp/engineering_issue_url.md:
+        type: file
+        description: "URL of the created engineering issue on the git platform"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: .deepwork/tmp/engineering_issue.md
+        quality_criteria:
+          "Implementation Plan Present": "The engineering issue contains a concrete implementation plan with actionable tasks."
+          "Test Definitions Present": "The engineering issue defines expected red and green test states for each requirement."
+          "Requirement Traceability": "Every requirement from the product issue is explicitly referenced and mapped to implementation tasks."
+          "Distinct From Product Issue": "The engineering issue is a separate artifact from the product issue, not a copy."
+
+  - id: initialize_branch
+    name: "Initialize Branch and Draft PR"
+    description: "Create a dedicated git worktree or branch, commit the engineering specification, and open a draft PR using the repository's PR template."
+    instructions_file: steps/initialize_branch.md
+    inputs:
+      - file: .deepwork/tmp/engineering_issue.md
+        from_step: translate_issue
+      - file: .deepwork/tmp/engineering_issue_url.md
+        from_step: translate_issue
+    outputs:
+      .deepwork/tmp/branch_context.md:
+        type: file
+        description: "Branch name, PR URL, and initial commit SHA"
+        required: true
+    dependencies:
+      - translate_issue
+    reviews:
+      - run_each: .deepwork/tmp/branch_context.md
+        quality_criteria:
+          "Branch Created": "A dedicated branch or worktree exists for the engineering issue."
+          "Spec Committed": "The engineering specification was committed before any implementation code."
+          "Draft PR Opened": "A draft PR was opened using the repository's standardized PR template."
+          "PR Links Issue": "The PR references the engineering issue URL."
+
+  - id: red_tests
+    name: "Write Failing Tests"
+    description: "Implement new failing tests or verify existing tests against new requirements. Each test must reference a specific requirement from the engineering issue."
+    instructions_file: steps/red_tests.md
+    inputs:
+      - file: .deepwork/tmp/engineering_issue.md
+        from_step: translate_issue
+      - file: .deepwork/tmp/branch_context.md
+        from_step: initialize_branch
+    outputs:
+      .deepwork/tmp/test_manifest.md:
+        type: file
+        description: "Manifest mapping each test to its requirement, with red state verification"
+        required: true
+    dependencies:
+      - translate_issue
+      - initialize_branch
+    reviews:
+      - run_each: .deepwork/tmp/test_manifest.md
+        additional_review_guidance: "Read .deepwork/tmp/engineering_issue.md to verify that every requirement has at least one corresponding test."
+        quality_criteria:
+          "Requirement Coverage": "Every requirement from the engineering issue has at least one corresponding test."
+          "Tests Are Red": "All new tests are verified to be in a failing state before implementation begins."
+          "Requirement References": "Each test explicitly references the specific requirement it validates."
+          "Tests Committed Separately": "Failing tests were committed separately from any implementation code."
+
+  - id: green_implementation
+    name: "Implement to Pass Tests"
+    description: "Implement the necessary logic, parameters, or configuration to transition all tests to a passing state. Keep PR checkboxes synchronized with progress."
+    instructions_file: steps/green_implementation.md
+    inputs:
+      - file: .deepwork/tmp/engineering_issue.md
+        from_step: translate_issue
+      - file: .deepwork/tmp/branch_context.md
+        from_step: initialize_branch
+      - file: .deepwork/tmp/test_manifest.md
+        from_step: red_tests
+    outputs:
+      .deepwork/tmp/implementation_summary.md:
+        type: file
+        description: "Summary of implementation changes, test results, and PR checkbox state"
+        required: true
+    dependencies:
+      - translate_issue
+      - initialize_branch
+      - red_tests
+    reviews:
+      - run_each: .deepwork/tmp/implementation_summary.md
+        additional_review_guidance: "Read .deepwork/tmp/test_manifest.md to verify all tests transitioned from red to green."
+        quality_criteria:
+          "All Tests Green": "All tests from the test manifest have transitioned to a passing state."
+          "PR Checkboxes Synchronized": "PR checkboxes reflect the current state of completed tasks."
+          "Changes Pushed": "All implementation changes have been pushed to the remote branch."
+          "No Unrelated Changes": "The implementation contains only changes necessary to satisfy the requirements."
+
+  - id: finalize_pr
+    name: "Finalize PR with Artifacts"
+    description: "Ensure CI generates visual artifacts, populate the PR #demo section, document handoff notes, and verify all checkboxes are complete."
+    instructions_file: steps/finalize_pr.md
+    inputs:
+      - file: .deepwork/tmp/branch_context.md
+        from_step: initialize_branch
+      - file: .deepwork/tmp/implementation_summary.md
+        from_step: green_implementation
+    outputs:
+      .deepwork/tmp/pr_finalization.md:
+        type: file
+        description: "PR finalization status: artifact verification, demo section, handoff notes, checkbox state"
+        required: true
+    dependencies:
+      - initialize_branch
+      - green_implementation
+    reviews:
+      - run_each: .deepwork/tmp/pr_finalization.md
+        quality_criteria:
+          "Visual Artifacts Present": "The PR #demo section displays automatically generated visual artifacts relevant to the domain."
+          "Handoff Documented": "If the implementation unblocks downstream work, handoff notes are documented in the PR."
+          "Checkboxes Complete": "All PR task checkboxes are checked and synchronized with the branch state."
+          "PR Undrafted": "The PR has been undrafted (transitioned to ready for review) and code owner reviewers have been requested."
+
+  - id: product_sync
+    name: "Synchronize Product Issue"
+    description: "After PR merge, author a formal comment on the parent product issue with completed user stories and immutable links to the merged PR and closed engineering issue."
+    instructions_file: steps/product_sync.md
+    inputs:
+      - file: .deepwork/tmp/engineering_issue_url.md
+        from_step: translate_issue
+      - file: .deepwork/tmp/branch_context.md
+        from_step: initialize_branch
+      - file: .deepwork/tmp/pr_finalization.md
+        from_step: finalize_pr
+    outputs:
+      .deepwork/tmp/product_sync_record.md:
+        type: file
+        description: "Record of the product issue comment: content posted, links included, timestamp"
+        required: true
+    dependencies:
+      - translate_issue
+      - initialize_branch
+      - finalize_pr
+    reviews:
+      - run_each: .deepwork/tmp/product_sync_record.md
+        quality_criteria:
+          "Comment Posted": "A formal comment was authored on the parent product issue."
+          "User Stories Documented": "The comment documents which high-level user stories were completed."
+          "Immutable Links": "The comment contains immutable links to the merged PR and closed engineering issue."
+          "Product Manager Visibility": "The comment provides enough context for product managers to understand progress without parsing engineering telemetry."
+
+  # ── Doctor Workflow ────────────────────────────────────────────────
+
+  - id: check_agent_md
+    name: "Check Agent Context File"
+    description: "Verify that agent.md (or equivalent) exists, defines the engineering domain, and contains build/test/parse instructions for automated agents."
+    instructions_file: steps/check_agent_md.md
+    inputs:
+      - name: project_path
+        description: "Path to the repository root to check (defaults to current directory if omitted)"
+    outputs:
+      .deepwork/tmp/agent_md_audit.md:
+        type: file
+        description: "Audit results for agent.md: existence, domain declaration, build/test instructions"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: .deepwork/tmp/agent_md_audit.md
+        quality_criteria:
+          "File Existence Checked": "The audit verifies whether agent.md (or equivalent) exists at the repository root."
+          "Domain Declared": "The audit checks whether the file explicitly defines the project's engineering domain."
+          "Agent Instructions Present": "The audit checks for build, test, and parse instructions that automated agents need."
+          "CODEOWNERS Present": "The audit checks for a CODEOWNERS file needed for automatic reviewer assignment."
+
+  - id: check_context
+    name: "Check Supporting Context Files"
+    description: "Verify that supporting context files referenced by agent.md are present, correctly linked, and syntactically valid."
+    instructions_file: steps/check_context.md
+    inputs:
+      - file: .deepwork/tmp/agent_md_audit.md
+        from_step: check_agent_md
+    outputs:
+      .deepwork/tmp/context_audit.md:
+        type: file
+        description: "Audit results for supporting context files: broken links, missing files, syntax errors"
+        required: true
+    dependencies:
+      - check_agent_md
+    reviews:
+      - run_each: .deepwork/tmp/context_audit.md
+        additional_review_guidance: "Read .deepwork/tmp/agent_md_audit.md for context on which files were expected."
+        quality_criteria:
+          "References Resolved": "All file references from agent.md are checked for existence."
+          "Links Valid": "Symlinks and relative paths resolve correctly."
+          "Syntax Valid": "Referenced files are syntactically valid for their format (YAML, JSON, Markdown, etc.)."
+
+  - id: doctor_report
+    name: "Doctor Report"
+    description: "Compile findings from agent.md and context audits into a pass/fail report with remediation instructions."
+    instructions_file: steps/doctor_report.md
+    inputs:
+      - file: .deepwork/tmp/agent_md_audit.md
+        from_step: check_agent_md
+      - file: .deepwork/tmp/context_audit.md
+        from_step: check_context
+    outputs:
+      .deepwork/tmp/doctor_report.md:
+        type: file
+        description: "Pass/fail report covering agent.md presence, domain declaration, context file integrity, and remediation steps"
+        required: true
+    dependencies:
+      - check_agent_md
+      - check_context
+    reviews:
+      - run_each: .deepwork/tmp/doctor_report.md
+        quality_criteria:
+          "All Checks Covered": "Report covers agent.md existence, domain declaration, agent instructions, and context file integrity."
+          "Pass/Fail Clear": "Each check has a clear pass or fail status."
+          "Remediation Provided": "Failed checks include specific remediation instructions."
+          "Repo Job Recommended": "If labels, branch protection, or milestones need attention, the report recommends the repo library job's doctor workflow."
