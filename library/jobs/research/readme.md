@@ -44,6 +44,26 @@ Ingest research material, analyze for reproducible claims, and create an enginee
 ingest_material → analyze → plan
 ```
 
+Here is an example response from deepwork research reproduce.
+
+```
+● Reproduce workflow complete. Here's what was produced in research/dsn-et-tai-algorithms/:
+
+  Reproducibility Analysis — 5 items identified:
+  - P0: Dual-frequency ionosphere-free combination (hours), full iterative ET−TAI algorithm (weeks)
+  - P1: GPS receiver phase-center offsets (hours), TOPEX phase-center vector (days)
+  - P2: GPS transmission-time algorithm (days)
+
+  Reproduction Plan — 8 tasks, 2–4 weeks estimated:
+  - Critical path: Ingest Sections 2/3/5 → SPICE setup → approximate ET−TAI → station position → full iterative algorithm
+  - Key blocker: Sections 2, 3, and 5 of the monograph contain the core equations referenced by all four algorithms
+
+  Open questions for you:
+  1. Which language — Python (fast prototyping with astropy/spiceypy) or Rust?
+  2. Validate against existing tools (Astropy/SOFA) or clean-room implementation?
+  3. Just Section 7, or working toward the full ODP formulation?
+```
+
 ## Quick Start
 
 If you haven't already, enable shared library jobs in your project:
