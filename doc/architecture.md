@@ -123,6 +123,14 @@ The serve command:
 - Launches the FastMCP server (stdio or SSE transport)
 - No config file required — works out of the box
 
+Options:
+- `--path <dir>` — Project directory (default: `.`)
+- `--external-runner claude` — Quality gate execution strategy (see `doc/reference/external_runner_flag.md`)
+- `--no-quality-gate` — Disable quality gate entirely
+- `--transport stdio|sse` — MCP transport protocol (default: `stdio`)
+- `--port <n>` — Port for SSE transport (default: `8000`)
+- `--platform <name>` — Platform identifier for review output formatting
+
 ### 2. Hook Command (`hook.py`)
 
 Runs hook scripts by name, used by platform hook wrappers:
@@ -1208,9 +1216,12 @@ Execute multi-step workflows with quality gate checkpoints.
 
 ## Quality Gate
 
-Quality gate is enabled by default and uses Claude Code to evaluate step outputs
-against quality criteria. The command is constructed internally with proper flag
-ordering (see `doc/reference/calling_claude_in_print_mode.md`).
+Quality gate is enabled by default and evaluates step outputs against quality criteria when an agent calls `finished_step`. The `--external-runner` flag controls the execution strategy (see `doc/reference/external_runner_flag.md` for full details).
+
+**Modes:**
+- `--external-runner claude` — Invokes Claude Code as a subprocess to evaluate each review synchronously.
+- _(no flag, default)_ — Generates a review instructions file; the calling agent spawns a subagent for self-review.
+- `--no-quality-gate` — Disables quality gate evaluation entirely.
 
 To disable quality gate:
 
@@ -1218,13 +1229,22 @@ To disable quality gate:
 deepwork serve --no-quality-gate
 ```
 
+To use Claude CLI subprocess for automated reviews (plugin default):
+
+```bash
+deepwork serve --external-runner claude
+```
+
 ## Serve Command
 
 Start the MCP server manually:
 
 ```bash
-# Basic usage (quality gate enabled by default)
+# Basic usage (quality gate enabled, agent self-review mode)
 deepwork serve
+
+# Use Claude CLI subprocess for quality gate reviews
+deepwork serve --external-runner claude
 
 # With quality gate disabled
 deepwork serve --no-quality-gate
@@ -1235,6 +1255,8 @@ deepwork serve --path /path/to/project
 # SSE transport (for remote)
 deepwork serve --transport sse --port 8000
 ```
+
+See `doc/reference/external_runner_flag.md` for full documentation on the `--external-runner` flag.
 
 ## Benefits of MCP Approach
 
