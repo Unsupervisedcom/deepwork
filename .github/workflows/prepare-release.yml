@@ -18,7 +18,7 @@ on:
           - beta
           - rc
       prerelease_number:
-        description: 'Pre-release number (e.g., 1 for beta.1). Ignored for stable.'
+        description: 'Pre-release number (numeric only, e.g., "1" → PyPI: X.Y.Zb1, plugin: X.Y.Z-beta.1). Ignored for stable.'
         required: false
         type: string
         default: '1'
@@ -48,6 +48,38 @@ jobs:
         run: |
           if ! echo "${{ inputs.version }}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "Error: Version must be in format X.Y.Z (e.g., 0.10.0)"
+            exit 1
+          fi
+
+      - name: Validate pre-release number
+        if: inputs.release_type != 'stable'
+        run: |
+          NUM="${{ inputs.prerelease_number }}"
+          if ! echo "$NUM" | grep -qE '^[0-9]+$'; then
+            echo "Error: Pre-release number must be numeric (e.g., 1, 2, 3), got: '$NUM'"
+            exit 1
+          fi
+
+      - name: Check for existing tag
+        if: inputs.release_type != 'stable'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          BASE="${{ inputs.version }}"
+          TYPE="${{ inputs.release_type }}"
+          NUM="${{ inputs.prerelease_number }}"
+          case "$TYPE" in
+            alpha) PEP440="a" ;;
+            beta)  PEP440="b" ;;
+            rc)    PEP440="rc" ;;
+          esac
+          TAG="${BASE}${PEP440}${NUM}"
+
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
+            echo "Error: Tag '$TAG' already exists."
+            echo "  → https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG"
+            echo ""
+            echo "If you genuinely want to re-release this version, delete the existing tag and release first, then run this workflow again."
             exit 1
           fi
 
