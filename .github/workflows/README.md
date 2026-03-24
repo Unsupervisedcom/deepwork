@@ -11,7 +11,7 @@ This directory contains CI/CD workflows for the DeepWork project. We use GitHub'
 | **CLA Assistant** | `cla.yml` | Contributor License Agreement verification |
 | **Prepare Release** | `prepare-release.yml` | Version bumping, changelog, release PR or pre-release tagging |
 | **Publish Release** | `publish-release.yml` | Creates GitHub Release when a release PR is merged |
-| **Release** | `release.yml` | PyPI publishing and Homebrew formula update |
+| **Release** | `release.yml` | PyPI publishing |
 
 ## Merge Queue Strategy
 
@@ -112,4 +112,3 @@ All checks will pass in both PR and merge queue contexts (either by running or b
 - **Jobs**:
   - `build`: Runs tests and builds the package
   - `publish`: Publishes to PyPI via OIDC trusted publishing
-  - `update-homebrew`: Triggers Homebrew formula update (stable releases only — skipped for pre-releases)
