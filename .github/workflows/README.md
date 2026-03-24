@@ -9,7 +9,9 @@ This directory contains CI/CD workflows for the DeepWork project. We use GitHub'
 | **Validate** | `validate.yml` | Linting (ruff) and unit tests |
 | **Integration Tests** | `claude-code-test.yml` | Skill generation and e2e tests |
 | **CLA Assistant** | `cla.yml` | Contributor License Agreement verification |
-| **Release** | `release.yml` | PyPI publishing on tags |
+| **Prepare Release** | `prepare-release.yml` | Version bumping, changelog, release PR or pre-release tagging |
+| **Publish Release** | `publish-release.yml` | Creates GitHub Release when a release PR is merged |
+| **Release** | `release.yml` | PyPI publishing |
 
 ## Merge Queue Strategy
 
@@ -95,6 +97,18 @@ All checks will pass in both PR and merge queue contexts (either by running or b
   - `cla-check`: Verifies contributors have signed the CLA
 - `cla-check` runs on PRs, skips in merge queue and manual dispatch (CLA already verified)
 
+### prepare-release.yml
+- **Triggers**: `workflow_dispatch` with inputs: `version`, `release_type` (stable/alpha/beta/rc), `prerelease_number`, `ref`
+- **Stable releases**: Creates a `release/<version>` branch, bumps versions in pyproject.toml/plugin.json/marketplace.json, updates CHANGELOG.md, runs `uv sync`, and opens a PR with the `release` label
+- **Pre-releases**: Checks out the specified `ref` branch, bumps versions (PEP 440 for PyPI, semver for plugin.json), pins `.mcp.json` to the pre-release PyPI package, force-pushes to the `pre-release` branch, tags, and creates a GitHub Release directly (no PR)
+
+### publish-release.yml
+- **Triggers**: `pull_request` (closed) — only when merged with the `release` label
+- **Jobs**: Extracts version from PR title, creates a git tag, extracts release notes from CHANGELOG.md, and creates a GitHub Release
+- Uses `RELEASE_TOKEN` (PAT) so the created release triggers `release.yml`
+
 ### release.yml
-- **Triggers**: `release` (published)
-- **Jobs**: Builds and publishes to PyPI
+- **Triggers**: `release` (published), plus dry-run build on PRs that touch this file
+- **Jobs**:
+  - `build`: Runs tests and builds the package
+  - `publish`: Publishes to PyPI via OIDC trusted publishing
