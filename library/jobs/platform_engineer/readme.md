@@ -16,6 +16,30 @@ This job covers the full lifecycle of platform engineering work:
 - **Infrastructure**: Audit documentation, plan migrations, convert imperative to declarative
 - **Error tracking**: Set up exception monitoring (Sentry, etc.)
 
+## Quick Start
+
+If you haven't already, enable shared library jobs in your project:
+
+```
+/deepwork shared_jobs
+```
+
+Natural language is matched to the `platform_engineer` job's `incident_investigation` workflow. Triages the incident, gathers logs and metrics, and produces a structured incident report.
+
+```
+/deepwork the staging deploy is returning 502s, investigate
+```
+
+Or create a Claude skill for quick access, then use it:
+
+```
+/deepwork create a /platform.investigate skill that runs the platform_engineer job's incident_investigation workflow
+```
+
+```
+/platform.investigate the staging deploy is returning 502s
+```
+
 ## Workflows
 
 | Workflow | When to Use |

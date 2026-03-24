@@ -1,12 +1,40 @@
-# Job Library
+# Shared Jobs
 
-This directory contains a public library of example jobs that you can use as starting points for your own workflows. Each job demonstrates best practices for structuring multi-step tasks with DeepWork.
+DeepWork includes a library of reusable jobs that any project can adopt. These are pre-built, multi-step workflows covering common tasks like research, repository setup, platform engineering, and spec-driven development.
+
+## Enabling Shared Jobs
+
+The fastest way to add shared jobs to your project is with the `/deepwork` skill:
+
+```
+/deepwork shared_jobs
+```
+
+This walks you through configuring `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` so the DeepWork plugin discovers library jobs at runtime alongside your local jobs. By default, jobs are referenced in-place from a checkout of the DeepWork repo, so you always get the latest version, though you can still copy them into your project when you want to customize them.
+
+## Available Jobs
+
+| Job | Description |
+|-----|-------------|
+| [Research](./research) | Multi-workflow research suite — deep investigation, quick summaries, material ingestion, and reproduction planning |
+| [Platform Engineer](./platform_engineer) | Incident response, observability, CI/CD, releases, security, cost management, and infrastructure |
+| [Repo](./repo) | Audit and configure repositories — labels, branch protection, milestones, and boards |
+| [Spec-Driven Development](./spec_driven_development) | Build features through executable specifications: constitution, specify, clarify, plan, tasks, implement |
+
+## How It Works
+
+Shared jobs are stored in the `library/jobs/` directory of the DeepWork repository. When you run the `shared_jobs` workflow, it:
+
+1. **Detects your setup** — checks for an existing local DeepWork checkout or sparse clone
+2. **Configures the source** — sets up a sparse checkout in `.deepwork/upstream/` or points to an existing local clone
+3. **Sets the environment variable** — adds `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` to your `flake.nix` shellHook (or shell profile)
+4. **Discovers jobs** — library jobs appear in `/deepwork` alongside your local and standard jobs
 
 ## Purpose
 
 The job library provides:
 
-- **Inspiration**: See how others have structured complex workflows
+- **Ready-to-use workflows**: Start using proven multi-step workflows immediately
 - **Templates**: Copy and adapt jobs for your own use cases
 - **Learning**: Understand the job definition format through real examples
 
@@ -131,19 +159,32 @@ git clone https://github.com/Unsupervisedcom/deepwork.git .deepwork/upstream
 shellHook = ''
   export REPO_ROOT=$(git rev-parse --show-toplevel)
 
-  # Clone DeepWork library jobs if not present
-  if [ ! -d "$REPO_ROOT/.deepwork/upstream" ]; then
-    git clone --sparse --filter=blob:none \
-      https://github.com/Unsupervisedcom/deepwork.git \
-      "$REPO_ROOT/.deepwork/upstream"
-    git -C "$REPO_ROOT/.deepwork/upstream" sparse-checkout set --cone library/jobs/
+  # Prefer local deepwork checkout, fall back to existing sparse checkout
+  if [ -d "$REPO_ROOT/../deepwork/library/jobs" ]; then
+    export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="''${DEEPWORK_ADDITIONAL_JOBS_FOLDERS:+$DEEPWORK_ADDITIONAL_JOBS_FOLDERS:}$REPO_ROOT/../deepwork/library/jobs"
+  elif [ -d "$REPO_ROOT/.deepwork/upstream/library/jobs" ]; then
+    export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="''${DEEPWORK_ADDITIONAL_JOBS_FOLDERS:+$DEEPWORK_ADDITIONAL_JOBS_FOLDERS:}$REPO_ROOT/.deepwork/upstream/library/jobs"
+  else
+    echo "DeepWork library jobs not found. Run '/deepwork shared_jobs' to set them up." >&2
   fi
-
-  export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="$REPO_ROOT/.deepwork/upstream/library/jobs"
 '';
 ```
 
 Library jobs now appear in `/deepwork` alongside your local and standard jobs.
+
+To initially set up or update the sparse checkout:
+
+```bash
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+if [ ! -d "$REPO_ROOT/.deepwork/upstream" ]; then
+  git clone --sparse --filter=blob:none \
+    https://github.com/Unsupervisedcom/deepwork.git \
+    "$REPO_ROOT/.deepwork/upstream"
+  git -C "$REPO_ROOT/.deepwork/upstream" sparse-checkout set --cone library/jobs/
+else
+  git -C "$REPO_ROOT/.deepwork/upstream" pull --ff-only
+fi
+```
 
 ### Sparse Checkout (Specific Jobs Only)
 
@@ -177,7 +218,7 @@ When you use a library job and discover improvements, you can contribute them ba
 ### The Learn Flow
 
 1. Run the library job in your project as normal
-2. Run `/deepwork deepwork_jobs learn` — the learn step classifies improvements as:
+2. Run `/deepwork learn` — the learn step classifies improvements as:
    - **Generalizable**: Improvements that benefit all users (update the library job)
    - **Bespoke**: Improvements specific to your project (update your local `AGENTS.md`)
 

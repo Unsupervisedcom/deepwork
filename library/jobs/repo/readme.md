@@ -11,6 +11,30 @@ Two workflows are provided:
 1. **setup** — Make a repo ready for work: create missing labels, check branch protection, verify milestones and boards
 2. **doctor** — Audit existing state and fix drift: find duplicates, enable missing protections, correct label drift, reconcile board items
 
+## Quick Start
+
+If you haven't already, enable shared library jobs in your project:
+
+```
+/deepwork shared_jobs
+```
+
+Runs the `setup` workflow from the `repo` job. Detects your git provider and ensures labels, branch protection, milestones, and boards match team conventions.
+
+```
+/deepwork repo setup
+```
+
+Or create a Claude skill for quick access, then use it:
+
+```
+/deepwork create a /repo.setup skill that runs the repo job's setup workflow
+```
+
+```
+/repo.setup
+```
+
 ## Provider Support
 
 The job detects the provider from `git remote get-url origin`:

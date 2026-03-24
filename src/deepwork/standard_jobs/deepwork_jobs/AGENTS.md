@@ -82,7 +82,18 @@ Key details:
 - Bump patch version (0.0.x) for instruction improvements
 - Bump minor version (0.x.0) for new features or structural changes
 
+### Learn Workflow: External Job Repo Handling (v1.7.0)
+
+The learn workflow now detects when a job being updated lives in an external git repository (via `DEEPWORK_ADDITIONAL_JOBS_FOLDERS`) and handles commits/pushes to that repo separately.
+
+Key design decisions:
+- Uses `job_dir` from MCP response as the authoritative path — never assumes `.deepwork/jobs/`
+- Detects external repos by comparing `git rev-parse --show-toplevel` of job_dir vs project root
+- Asks user preference for push strategy (direct to main, PR from branch, PR from fork)
+- Designed for keystone development mode where `~/.keystone/*/deepwork/library/jobs/` is the additional folder
+- Quality criteria "External Repo Handled" auto-passes for local jobs
+
 ## Last Updated
 
-- Date: 2026-03-21
-- From conversation about: Adding library job Nix devshell detection to the repair workflow's errata step
+- Date: 2026-03-23
+- From conversation about: Adding DEEPWORK_ADDITIONAL_JOBS_FOLDERS awareness to the learn workflow
