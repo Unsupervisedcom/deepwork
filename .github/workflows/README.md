@@ -110,6 +110,16 @@ All checks will pass in both PR and merge queue contexts (either by running or b
 - **Jobs**: Extracts version from PR title, creates a git tag, extracts release notes from CHANGELOG.md, and creates a GitHub Release
 - Uses `RELEASE_TOKEN` (PAT) so the created release triggers `release.yml`
 
+### prepare-release.yml
+- **Triggers**: `workflow_dispatch` with inputs: `version`, `release_type` (stable/alpha/beta/rc), `prerelease_number`, `ref`
+- **Stable releases**: Creates a `release/<version>` branch, bumps versions in pyproject.toml/plugin.json/marketplace.json, updates CHANGELOG.md, runs `uv sync`, and opens a PR with the `release` label
+- **Pre-releases**: Checks out the specified `ref` branch, bumps versions (PEP 440 for PyPI, semver for plugin.json), pins `.mcp.json` to the pre-release PyPI package, force-pushes to the `pre-release` branch, tags, and creates a GitHub Release directly (no PR)
+
+### publish-release.yml
+- **Triggers**: `pull_request` (closed) — only when merged with the `release` label
+- **Jobs**: Extracts version from PR title, creates a git tag, extracts release notes from CHANGELOG.md, and creates a GitHub Release
+- Uses `RELEASE_TOKEN` (PAT) so the created release triggers `release.yml`
+
 ### release.yml
 - **Triggers**: `release` (published), plus dry-run build on PRs that touch this file
 - **Jobs**:
