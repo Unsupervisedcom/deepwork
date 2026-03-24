@@ -23,12 +23,18 @@ jobs:
         id: version
         run: |
           VERSION="${{ github.event.pull_request.title }}"
-          # Validate version format
-          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "Error: PR title must be a version number in format X.Y.Z (e.g., 0.6.0)"
+          # Accept stable (X.Y.Z) or PEP 440 pre-release (X.Y.ZaN, X.Y.ZbN, X.Y.ZrcN)
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?$'; then
+            echo "Error: PR title must be a version (e.g., 0.6.0 or 0.6.0b1)"
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          # Detect pre-release
+          if echo "$VERSION" | grep -qE '(a|b|rc)[0-9]+$'; then
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Configure git
         run: |
@@ -73,6 +79,6 @@ jobs:
           name: ${{ steps.version.outputs.version }}
           body_path: release_notes.md
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.version.outputs.is_prerelease == 'true' }}
           # Use PAT to trigger the release.yml workflow for PyPI publishing
           token: ${{ secrets.RELEASE_TOKEN }}
