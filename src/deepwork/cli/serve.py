@@ -118,6 +118,16 @@ def _serve_mcp(
     tmp_dir = project_path / ".deepwork" / "tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
+    # Ensure .deepwork/tmp/.gitignore exists to keep tmp contents out of git
+    tmp_gitignore = tmp_dir / ".gitignore"
+    if not tmp_gitignore.exists():
+        tmp_gitignore.write_text(
+            "# Ignore everything in this directory\n"
+            "*\n"
+            "# But keep this .gitignore\n"
+            "!.gitignore\n"
+        )
+
     # Create and run server
     from deepwork.jobs.mcp.server import create_server
 

@@ -1,3 +1,0 @@
-# This file ensures the .deepwork/tmp directory exists in version control.
-# The tmp directory is used for temporary files during DeepWork operations.
-# Do not delete this file.
