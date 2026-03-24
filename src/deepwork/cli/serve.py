@@ -122,10 +122,7 @@ def _serve_mcp(
     tmp_gitignore = tmp_dir / ".gitignore"
     if not tmp_gitignore.exists():
         tmp_gitignore.write_text(
-            "# Ignore everything in this directory\n"
-            "*\n"
-            "# But keep this .gitignore\n"
-            "!.gitignore\n"
+            "# Ignore everything in this directory\n*\n# But keep this .gitignore\n!.gitignore\n"
         )
 
     # Create and run server
