@@ -1,11 +1,17 @@
 # Engineer Job: RFC 2119 Requirements Specification
 
+This specification defines the normative requirements for the engineer job's
+`implement` and `doctor` workflows. The term "engineer" refers to the agent or
+human executing the workflow.
+
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
 "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be
 interpreted as described in RFC 2119.
 
 Note: All general version control operations SHALL adhere to the current
 established repository standards, beyond the explicit strictures defined below.
+
+## Implement workflow requirements
 
 ## 1. Product and engineering issue delineation
 
@@ -14,9 +20,9 @@ overarching user story and functional RFC 2119 requirements.
 
 An engineer MUST translate this Product Issue into a distinct Engineering Issue.
 
-The Engineering Issue REQUIRED payloads include the definitive implementation
-plan, applicable schematics or CAD snippets, and explicit definitions of
-expected red and green test states.
+The Engineering Issue MUST include the following payloads: the definitive
+implementation plan, applicable schematics or CAD snippets, and explicit
+definitions of expected red and green test states.
 
 ## 2. Version control initialization
 
@@ -51,11 +57,12 @@ finished and pushed to the remote branch.
 
 ## 5. Artifact generation and continuous integration
 
-The automated Continuous Integration (CI) system MUST capture visual
-representations of structural or interface alterations upon a successful green
-state, and MUST include any of the following that are relevant to the domain:
+The engineer MUST verify that the CI system produces visual representations of
+structural or interface alterations upon a successful green state. These
+artifacts MUST include any of the following that are relevant to the domain:
 rendered STLs, compiled schematics, localized DOM snapshots, or equivalent
-visual artifacts.
+visual artifacts. If the CI system does not produce the expected artifacts, the
+engineer MUST document the gap and manually capture equivalents.
 
 ## 6. Pull request finalization and handoff
 
@@ -78,6 +85,8 @@ This comment MUST document the high-level user stories completed and provide
 explicit, immutable links to the merged PR(s) and closed Engineering Issue(s),
 ensuring product managers maintain up-to-date visibility without parsing
 engineering telemetry.
+
+## Doctor workflow requirements
 
 ## 8. Contextual awareness and the doctor workflow
 

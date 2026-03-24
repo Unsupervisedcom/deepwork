@@ -1,0 +1,76 @@
+job_definition_review:
+  description: "Review job.yml and step instructions for correctness, completeness, and coherence as a holistic workflow."
+  match:
+    include:
+      - "job.yml"
+      - "steps/*.md"
+  review:
+    strategy: matches_together
+    instructions: |
+      Review this DeepWork job definition (job.yml) and its step instruction files
+      (steps/*.md) holistically. Check that they form a coherent, well-structured
+      workflow that an AI agent can execute reliably.
+
+      ## Reference Material
+
+      For reference on correct job structure and best practices, read the following files from your plugin:
+      - `job.yml.template` — canonical job.yml structure with all supported fields
+      - `job.yml.example` — a complete working example (competitive research job)
+      - `step_instruction.md.template` — expected structure for step instruction files
+      - `research_report_job_best_practices.md` — design patterns for report-type jobs
+
+      ## What to Check
+
+      ### 1. job.yml Structure
+      - Has required fields: `name`, `version`, `summary`, `workflows`, `steps`
+      - `name` is lowercase with underscores only
+      - `summary` is concise (under 200 characters) and descriptive enough to let a user know what the job does
+      - `version` follows semantic versioning (e.g., "1.0.0")
+      - `common_job_info_provided_to_all_steps_at_runtime` provides useful shared context (problem domain, terminology, conventions, constraints)
+
+      ### 2. Workflow Coherence
+      - Each workflow's steps form a logical sequence toward a clear goal
+      - Step dependencies are declared correctly (no missing or extraneous deps)
+      - No circular dependencies exist
+
+      ### 3. Input/Output Chain
+      - Each step has at least one output
+      - File inputs reference outputs from steps listed in that step's dependencies
+      - `from_step` values match actual step IDs that produce the referenced file
+      - The output chain creates a logical data flow through the workflow
+      - Intermediate outputs that are not meant to be persisted should be in .deepwork/tmp (and the name should indicate that)
+      - Final outputs follow project conventions (not hidden in dot-directories, descriptive names, appropriate use of subdirectories)
+
+      ### 4. Step Instructions Match job.yml
+      - Every step defined in job.yml has a corresponding instruction file
+      - Step instruction content aligns with the step's described purpose
+      - Instructions reference the correct input and output filenames from job.yml
+      - Instructions do not duplicate content already in `common_job_info_provided_to_all_steps_at_runtime`
+      - If there is duplicated content amongst the instruction files, it should be moved to `common_job_info_provided_to_all_steps_at_runtime` and removed from the instruction files
+      - If there is content that is needed in multiple steps but not all, it should be moved to its own file and referenced in the steps
+
+      ### 5. Quality Reviews
+      - Steps with complex or final outputs have reviews defined
+      - `run_each` values reference valid output names or `step`
+      - Quality criteria are statements of expected state, not questions
+      - `additional_review_guidance` is used when reviewers need context beyond the step's own output files (e.g., cross-referencing prior step outputs)
+      - Steps with no meaningful quality checks use `reviews: []`
+
+      ### 6. Step Instruction Quality
+      - Each instruction file has clear sections: Objective, Task/Process,
+        Output Format, and Quality Criteria
+      - Instructions are specific and actionable, not generic placeholders
+      - Output format sections show what good output looks like (examples or
+        templates)
+      - If the step gathers user input, instructions mention using structured
+        questions (e.g., the AskUserQuestion tool)
+      - Instructions explain how to use file inputs from prior steps
+
+      ## Output Format
+
+      - PASS: The job definition and step instructions are coherent and
+        well-structured.
+      - FAIL: List each issue with the specific file, the problem, and a
+        suggested fix.
+    additional_context:
+      unchanged_matching_files: true

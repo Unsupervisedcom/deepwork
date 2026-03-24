@@ -1,56 +1,23 @@
 # Translate Product Issue to Engineering Issue
 
-## Objective
+Transform the product issue into a distinct engineering issue with implementation plan,
+test definitions (red/green states), and traceability links.
 
-Read the product issue, extract its requirements, and create a distinct engineering issue
-containing the implementation plan, test definitions, and traceability links.
+## Process
 
-## Task
-
-Transform a high-level product issue (user story + requirements) into a concrete engineering
-issue that an agent or engineer can execute against. The engineering issue is a separate
-artifact — not a copy of the product issue.
-
-### Process
-
-1. **Read the product issue**
-   - Fetch the product issue using its URL or identifier
-   - Extract the user story and all functional requirements
-   - Identify any acceptance criteria, constraints, or non-functional requirements
-   - Note the product issue's labels, milestone, and assignees
-
-2. **Read the repository's agent.md**
-   - Determine the project's engineering domain from agent.md (or equivalent)
-   - Understand the build, test, and deployment conventions
-   - If agent.md does not exist, warn the user and recommend running the `doctor` workflow first
-
-3. **Draft the engineering issue**
-   - Write a definitive implementation plan with actionable tasks
-   - Define expected red and green test states for each requirement
-   - Include applicable schematics, CAD snippets, code references, or configuration details
-   - Map every product requirement to at least one implementation task
-
-4. **Create the engineering issue on the platform**
-   - Create a new issue on the git platform (GitHub, Forgejo, etc.)
-   - Label it with `engineering`
-   - Link it to the parent product issue
-   - Assign it to the same milestone if applicable
-
-### Domain Adaptation
-
-| Concept              | Software            | Hardware/CAD         | Firmware            | Docs               |
-|----------------------|---------------------|----------------------|---------------------|---------------------|
-| Implementation plan  | Code changes        | Design changes       | Register/driver map | Content outline     |
-| Test definitions     | Unit/integration    | DRC/simulation       | HIL/unit test       | Link check/lint     |
-| Schematics/snippets  | API contracts       | KiCad/FreeCAD refs   | Pinout diagrams     | IA diagrams         |
+1. Fetch the product issue — extract user story, requirements, acceptance criteria, and constraints
+2. Read agent.md to determine the engineering domain and build/test conventions; if missing, warn the user and recommend the `doctor` workflow
+3. Draft the engineering issue:
+   - Definitive implementation plan with actionable tasks
+   - Red and green test state definitions for each requirement
+   - Domain-appropriate schematics, code references, or configuration details
+   - Every product requirement mapped to at least one task
+4. Create the issue on the git platform, label as `engineering`, link to parent product issue
 
 ## Output Format
 
 ### .deepwork/tmp/engineering_issue.md
 
-The engineering issue content, structured for both platform posting and step consumption.
-
-**Structure**:
 ```markdown
 # Engineering Issue: [Title]
 
@@ -64,9 +31,6 @@ The engineering issue content, structured for both platform posting and step con
 - Requirement: Req [N] — [requirement summary]
 - Description: [what to implement]
 - Files: [expected files to create/modify]
-
-### Task 2: [task name]
-...
 
 ## Test Definitions
 
@@ -82,17 +46,4 @@ The engineering issue content, structured for both platform posting and step con
 
 ### .deepwork/tmp/engineering_issue_url.md
 
-A single-line file containing the URL of the created engineering issue.
-
-**Structure**:
-```
-https://github.com/owner/repo/issues/123
-```
-
-## Quality Criteria
-
-- Every product requirement maps to at least one implementation task
-- Test definitions cover all requirements with explicit red/green states
-- The engineering issue is self-contained enough to execute without re-reading the product issue
-- The issue was created on the platform with proper labels and links
-- Domain-specific conventions from agent.md are reflected in the plan
+Single-line file containing the URL of the created engineering issue.

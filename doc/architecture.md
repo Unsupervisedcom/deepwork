@@ -65,7 +65,8 @@ deepwork/                       # DeepWork tool repository
 │       │   └── gemini_hook.sh  # Shell wrapper for Gemini CLI
 │       ├── standard_jobs/      # Built-in job definitions
 │       │   ├── deepwork_jobs/
-│       │   └── deepwork_reviews/
+│       │   ├── deepwork_reviews/
+│       │   └── engineer/
 │       ├── review/             # DeepWork Reviews system
 │       │   ├── config.py       # .deepreview config parsing + data models
 │       │   ├── discovery.py    # Find .deepreview files in project tree
@@ -616,6 +617,18 @@ DeepWork includes a built-in job called `deepwork_reviews` for managing `.deepre
   - Sets up a complete suite of `.deepreview` rules for a project
 - **`add_document_update_rule`** workflow: `analyze_dependencies` → `apply_rule`
   - Adds a review rule to keep a specific documentation file up-to-date when related source files change
+
+### Standard Job: `engineer`
+
+DeepWork includes a built-in job called `engineer` for domain-agnostic engineering execution. It provides:
+
+**Workflows**:
+- **`implement`** workflow: `translate_issue` → `initialize_branch` → `red_tests` → `green_implementation` → `finalize_pr` → `product_sync`
+  - Drives engineering work from product issue through PR merge with TDD discipline, PR synchronization, and product traceability
+- **`doctor`** workflow: `check_agent_md` → `check_context` → `doctor_report`
+  - Validates that agent.md and domain context files are present, linked, and valid
+
+The job is domain-agnostic — step instructions include domain adaptation tables for software, hardware/CAD, firmware, and documentation projects. An RFC 2119 requirements specification is bundled as `requirements.md`.
 
 ### MCP-Based Workflow Execution
 
