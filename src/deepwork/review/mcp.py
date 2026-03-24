@@ -7,7 +7,7 @@ suitable for registration as an MCP tool.
 from pathlib import Path
 
 from deepwork.review.discovery import DiscoveryError, load_all_rules
-from deepwork.review.formatter import format_for_claude
+from deepwork.review.formatter import format_for_claude, format_for_gemini
 from deepwork.review.instructions import INSTRUCTIONS_DIR, write_instruction_files
 from deepwork.review.matcher import (
     GitDiffError,
@@ -19,6 +19,7 @@ from deepwork.review.matcher import (
 
 FORMATTERS = {
     "claude": format_for_claude,
+    "gemini": format_for_gemini,
 }
 
 SUPPORTED_PLATFORMS = set(FORMATTERS.keys())

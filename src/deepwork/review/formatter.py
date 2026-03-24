@@ -1,7 +1,7 @@
 """Output formatting for review task instructions.
 
 Formats ReviewTask results into structured text that AI agent platforms
-(e.g., Claude Code) can use to dispatch parallel review agents.
+(e.g., Claude Code, Gemini CLI) can use to dispatch review agents.
 """
 
 from pathlib import Path
@@ -46,6 +46,46 @@ def format_for_claude(
         lines.append(f"\tdescription: {description}")
         lines.append(f"\tsubagent_type: {subagent_type}")
         lines.append(f'\tprompt: "@{rel_path}"')
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def format_for_gemini(
+    task_files: list[tuple[ReviewTask, Path]],
+    project_root: Path,
+) -> str:
+    """Format review tasks as sequential instructions for Gemini CLI.
+
+    Gemini CLI does not support parallel subagent dispatch, so reviews
+    are listed as a numbered sequence for the agent to execute one at a time.
+
+    Args:
+        task_files: List of (ReviewTask, instruction_file_path) tuples.
+        project_root: Absolute path to the project root.
+
+    Returns:
+        Formatted instruction text for Gemini CLI.
+    """
+    if not task_files:
+        return "No review tasks to execute."
+
+    lines: list[str] = []
+    lines.append("Execute the following reviews sequentially:\n")
+
+    for i, (task, file_path) in enumerate(task_files, start=1):
+        try:
+            rel_path = file_path.relative_to(project_root)
+        except ValueError:
+            rel_path = file_path
+
+        name = _task_name(task)
+        description = _task_description(task)
+
+        lines.append(f"{i}. **{name}**")
+        lines.append(f"   Description: {description}")
+        lines.append(f"   Instruction file: {rel_path}")
+        lines.append("   Read the instruction file above, then perform the review.")
         lines.append("")
 
     return "\n".join(lines)
