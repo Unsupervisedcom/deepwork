@@ -9,7 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add shared_jobs workflow for installing library jobs from the DeepWork library (#273)
+- Add research job to library (moved from standard jobs) (#274)
+- Add platform_engineer job to library (#268)
+- Add repo job for repository setup and health auditing (#266)
+- Add slash command creation guide to shared jobs readme (#277)
+
 ### Changed
+
+- Rewrite README around "trustworthy agents" framing and enrich Reviews coverage (#271)
+- Require DRY and comment accuracy in language convention files (#267)
+- Shared_jobs workflow references library jobs instead of copying (#275)
 
 ### Fixed
 
@@ -18,7 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add file-based status reporting for external consumers (#257)
+- Add AGENTS.md → CLAUDE.md symlink rule and create symlinks for existing files (#259)
+
 ### Changed
+
+- Refactor state management to use session-scoped persistent storage (#255)
+- Harden e2e CI tests and copy job schema at MCP startup (#252)
 
 ### Fixed
 
