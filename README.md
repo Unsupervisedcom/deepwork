@@ -280,10 +280,12 @@ See [README_REVIEWS.md](README_REVIEWS.md) for the full reference — strategies
 | Platform | Status | Notes |
 |----------|--------|-------|
 | **Claude Code** | Full Support | Recommended. Plugin-based delivery with quality hooks. |
-| **Gemini CLI** | Partial Support | TOML format skill, manual setup |
+| **Gemini CLI** | Partial Support | Workflows + sequential reviews. Manual MCP setup. |
 | OpenCode | Planned | |
 | GitHub Copilot CLI | Planned | |
 | Others | Planned | We are nailing Claude and Gemini first, then adding others according to demand |
+
+See [doc/providers.md](doc/providers.md) for setup instructions and details on each platform.
 
 **Tip:** Use the terminal (Claude Code CLI), not the VS Code extension. The terminal has full feature support.
 
