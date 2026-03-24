@@ -1,15 +1,16 @@
 job_definition_review:
-  description: "Review job.yml and step instructions for correctness, completeness, and coherence as a holistic workflow."
+  description: "Review job.yml, requirements.md, and step instructions for correctness, completeness, and coherence as a holistic workflow."
   match:
     include:
       - "job.yml"
       - "steps/*.md"
+      - "requirements.md"
   review:
     strategy: matches_together
     instructions: |
-      Review this DeepWork job definition (job.yml) and its step instruction files
-      (steps/*.md) holistically. Check that they form a coherent, well-structured
-      workflow that an AI agent can execute reliably.
+      Review this DeepWork job definition (job.yml), its requirements (requirements.md),
+      and its step instruction files (steps/*.md) holistically. Check that they form a
+      coherent, well-structured workflow that an AI agent can execute reliably.
 
       ## Reference Material
 
@@ -57,14 +58,18 @@ job_definition_review:
       - Steps with no meaningful quality checks use `reviews: []`
 
       ### 6. Step Instruction Quality
-      - Each instruction file has clear sections: Objective, Task/Process,
-        Output Format, and Quality Criteria
+      - Each instruction file follows the structure and section headings defined in
+        `step_instruction.md.template` for this job type.
+      - The sections clearly communicate: what the step is trying to achieve,
+        what the agent should do, what to produce (including format/examples),
+        and how quality will be evaluated.
       - Instructions are specific and actionable, not generic placeholders
       - Output format sections show what good output looks like (examples or
         templates)
       - If the step gathers user input, instructions mention using structured
         questions (e.g., the AskUserQuestion tool)
-      - Instructions explain how to use file inputs from prior steps
+      - Instructions explain how to use file inputs from prior steps and how the
+        step's outputs will be consumed by later steps.
 
       ## Output Format
 

@@ -628,7 +628,7 @@ DeepWork includes a built-in job called `engineer` for domain-agnostic engineeri
 - **`doctor`** workflow: `check_agent_md` → `check_context` → `doctor_report`
   - Validates that agent.md and domain context files are present, linked, and valid
 
-The job is domain-agnostic — step instructions include domain adaptation tables for software, hardware/CAD, firmware, and documentation projects. An RFC 2119 requirements specification is bundled as `requirements.md`.
+The job is domain-agnostic — its `common_job_info` includes a domain adaptation table for software, hardware/CAD, firmware, and documentation projects that step instructions reference. An RFC 2119 requirements specification is bundled as `requirements.md`.
 
 ### MCP-Based Workflow Execution
 

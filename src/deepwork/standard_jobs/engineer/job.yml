@@ -16,8 +16,8 @@ common_job_info_provided_to_all_steps_at_runtime: |
 
   ## Domain Adaptation
 
-  The workflow is domain-agnostic. Each step's instructions include a domain adaptation
-  table mapping generic concepts to domain-specific equivalents:
+  The workflow is domain-agnostic. This common job info provides a domain adaptation
+  table mapping generic concepts to domain-specific equivalents that applies across all steps:
 
   | Concept         | Software          | Hardware/CAD       | Firmware          | Docs             |
   |-----------------|-------------------|--------------------|-------------------|------------------|
@@ -169,7 +169,7 @@ steps:
 
   - id: finalize_pr
     name: "Finalize PR with Artifacts"
-    description: "Ensure CI generates visual artifacts, populate the PR #demo section, document handoff notes, and verify all checkboxes are complete."
+    description: "Ensure CI generates visual artifacts, populate the PR ## Demo section, document handoff notes, and verify all checkboxes are complete."
     instructions_file: steps/finalize_pr.md
     inputs:
       - file: .deepwork/tmp/branch_context.md
@@ -187,7 +187,7 @@ steps:
     reviews:
       - run_each: .deepwork/tmp/pr_finalization.md
         quality_criteria:
-          "Visual Artifacts Present": "The PR #demo section displays automatically generated visual artifacts relevant to the domain."
+          "Visual Artifacts Present": "The PR ## Demo section displays automatically generated visual artifacts relevant to the domain."
           "Handoff Documented": "If the implementation unblocks downstream work, handoff notes are documented in the PR."
           "Checkboxes Complete": "All PR task checkboxes are checked and synchronized with the branch state."
           "PR Undrafted": "The PR has been undrafted (transitioned to ready for review) and code owner reviewers have been requested."

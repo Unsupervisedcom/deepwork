@@ -66,12 +66,12 @@ engineer MUST document the gap and manually capture equivalents.
 
 ## 6. Pull request finalization and handoff
 
-The #demo section of the PR MUST display the automatically generated visual
+The `## Demo` section of the PR MUST display the automatically generated visual
 artifacts to facilitate asynchronous review.
 
 If the implementation unblocks downstream work or requires specific
 staging/production verification, the engineer MUST document this in a formal
-comment or within the #handoff section of the PR.
+comment or within the `## Handoff` section of the PR.
 
 The PR SHALL NOT be merged until peer review validates the visual artifacts and
 verifies that all synchronized task checkboxes are complete.

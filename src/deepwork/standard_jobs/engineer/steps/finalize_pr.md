@@ -1,6 +1,6 @@
 # Finalize PR with Artifacts
 
-Ensure CI generates visual artifacts, populate the PR #demo section, document handoff
+Ensure CI generates visual artifacts, populate the PR `## Demo` section, document handoff
 notes, verify all checkboxes are complete, and undraft the PR for review.
 
 ## Process
@@ -8,7 +8,7 @@ notes, verify all checkboxes are complete, and undraft the PR for review.
 1. **Verify CI artifacts** — confirm the pipeline produced domain-appropriate visual artifacts
    (DOM snapshots, rendered STLs, logic traces, PDF renders, etc.). If CI does not produce
    artifacts, document the gap and manually capture equivalents.
-2. **Populate the ## Demo section** — add visual artifacts with captions and before/after
+2. **Populate `## Demo`** — add visual artifacts with captions and before/after
    comparisons where applicable
 3. **Document handoff** — if the implementation unblocks downstream work or needs
    staging/production verification, add a `## Handoff` section; otherwise note "none"

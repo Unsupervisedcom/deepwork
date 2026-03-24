@@ -32,7 +32,7 @@ engineer/
 
 ## Design Decisions
 
-1. **Domain-agnostic**: Step instructions include domain adaptation tables (software, hardware, CAD, firmware, docs)
+1. **Domain-agnostic**: Domain adaptation tables (software, hardware, CAD, firmware, docs) live in `job.yml` `common_job_info`; step instructions are written to be domain-agnostic and rely on those tables
 2. **Six implement steps**: Preserves TDD discipline boundary (red tests committed before green implementation)
 3. **product_sync is separate**: Workflow can pause at finalize_pr while PR undergoes human review
 4. **Doctor focuses on agent.md**: Recommends `repo` library job for labels/branch protection/milestones
