@@ -52,3 +52,8 @@ When the user invokes `/deepwork`, parse their intent:
     - **Explicit workflow**: `/deepwork <a workflow name>` → start the `<a workflow name>` workflow
     - **General request**: `/deepwork <a request>` → infer best match from available workflows
     - **No context**: `/deepwork` alone → ask user to choose from available workflows
+
+> **CRITICAL — `/deepwork learn`**: This starts the `deepwork_jobs` **workflow** named
+> `learn` via MCP tools. It analyzes conversation history and improves job instructions.
+> It is **NOT** a memory operation. Do **NOT** use memory tools. Instead call
+> `start_workflow` with `job_name: "deepwork_jobs"` and `workflow_name: "learn"`.
