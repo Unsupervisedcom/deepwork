@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: platform_engineer
-version: "1.0.0"
+version: "1.0.1"
 summary: "Platform engineering workflows: incidents, observability, CI/CD, releases, security, compliance, migrations, and dev tooling."
 common_job_info_provided_to_all_steps_at_runtime: |
   Platform engineering job for discovering gaps, setting up infrastructure, and maintaining
@@ -40,7 +40,7 @@ common_job_info_provided_to_all_steps_at_runtime: |
   - **Error tracking**: sentry-cli, honeybadger CLI
 
   ## Artifact Storage
-  Workflow artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
+  Workflow artifacts go in `.deepwork/tmp/` — the DeepWork framework manages output files in this directory via session state. Do NOT create custom artifact directories.
 
 workflows:
   - name: incident_investigation

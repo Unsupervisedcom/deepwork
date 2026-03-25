@@ -72,7 +72,7 @@ Collect context from the repository and environment. This information enriches t
 - Do not include issue numbers or PR references in the title
 
 **Labels:**
-- Always apply the `platform` label
+- Apply the `platform` label if it exists in the repository
 - Apply severity labels based on impact:
   - `P1` / `critical`: Production is down or data is at risk
   - `P2` / `high`: Significant functionality is impaired or a deadline is at risk
@@ -88,7 +88,7 @@ Collect context from the repository and environment. This information enriches t
   - `infrastructure`: Infrastructure-related
   - `monitoring`: Observability-related
 
-Check which labels exist in the repository using `gh label list` before applying them. If a label does not exist, skip it rather than creating it — note in the output that the label was not applied because it does not exist in the repository.
+**IMPORTANT**: You MUST check which labels exist in the repository using `gh label list` BEFORE constructing the `gh issue create` command. Build the list of `--label` flags from only labels that exist. If a label does not exist, skip it — note in the output that the label was not applied. Never include a label in `gh issue create` without first confirming it exists, as the command will fail entirely if any label is missing.
 
 **Assignees:**
 - Do NOT assign the issue unless the user explicitly requests it
@@ -176,18 +176,18 @@ Use the platform issue template to structure the issue body. Every section MUST 
 Run `gh issue create` with the formatted title, body, and labels:
 
 ```bash
+# Only include --label flags for labels confirmed to exist via gh label list
 gh issue create \
   --title "<title>" \
-  --label "platform" \
-  --label "<severity-label>" \
-  --label "<type-label>" \
+  --label "<confirmed-label-1>" \
+  --label "<confirmed-label-2>" \
   --body "$(cat <<'EOF'
 <issue body>
 EOF
 )"
 ```
 
-If label application fails (label does not exist), retry without the non-existent labels. The issue creation MUST succeed even if some labels cannot be applied.
+The issue creation MUST succeed on the first attempt. Never include labels that haven't been confirmed to exist.
 
 Capture the issue URL from the command output.
 
@@ -226,7 +226,7 @@ If additional context was gathered that could not fit in the issue (e.g., a larg
 - **Issue Created**: A GitHub issue was created successfully via `gh issue create`. The issue URL is captured and written to `github_issue_url.md`. The command did not fail.
 - **Properly Formatted**: The issue follows the platform issue template with all six sections present: Context, Problem/Request, Impact, Relevant Files, References, and Checklist. No section is omitted. The Problem/Request section is detailed enough that a reader can understand the issue without additional context.
 - **Context Gathered Automatically**: Repository information (repo name, branch, recent commits), CI status (if applicable), and environment details are gathered automatically without requiring the user to provide them. Related existing issues are searched for and referenced if found.
-- **Labels Applied**: Appropriate labels are applied (`platform` at minimum, plus severity and type labels as applicable). If a label does not exist in the repository, this is noted in the output rather than causing the issue creation to fail.
+- **Labels Applied**: Appropriate labels are applied (severity and type labels as applicable). Labels are validated against `gh label list` BEFORE the `gh issue create` call — never after. If a label does not exist in the repository, it is skipped and noted in the output.
 - **Actionable Checklist**: The checklist contains 3-7 actionable items derived from the problem description. Each item represents a concrete step toward resolution. Investigation items are included when the root cause is unknown.
 - **Clear Title**: The issue title is concise (under 80 characters), prefixed with the area in brackets (e.g., `[CI]`, `[infra]`, `[monitoring]`), and descriptive enough to understand the issue without reading the body.
 - **No Sensitive Data**: Error messages are included but secrets, tokens, passwords, and credentials are never included in the issue body. Environment variable values are not exposed — only their names and whether they are set. `.env` file contents are never read.
