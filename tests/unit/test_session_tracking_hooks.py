@@ -8,7 +8,9 @@ import json
 import os
 import subprocess
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -18,7 +20,7 @@ SESSION_STOP_SCRIPT = REPO_ROOT / "learning_agents" / "hooks" / "session_stop.sh
 
 
 @pytest.fixture
-def work_dir():
+def work_dir() -> Generator[Path, None, None]:
     """Create a temp directory simulating a project with a learning agent."""
     with tempfile.TemporaryDirectory() as tmpdir:
         work = Path(tmpdir)
@@ -29,7 +31,7 @@ def work_dir():
         yield work
 
 
-def run_hook(script: Path, hook_input: dict | None, cwd: Path) -> tuple[int, str]:
+def run_hook(script: Path, hook_input: dict[str, Any] | None, cwd: Path) -> tuple[int, str]:
     """Run a hook script with JSON input on stdin, return (exit_code, stdout)."""
     env = os.environ.copy()
     env["CLAUDE_PLUGIN_ROOT"] = str(REPO_ROOT / "learning_agents")
@@ -53,13 +55,13 @@ class TestPostTaskHook:
     """Tests for post_task.sh — subagent session tracking."""
 
     # LA-REQ-004.2: empty stdin
-    def test_empty_stdin_returns_empty_json(self, work_dir: Path):
+    def test_empty_stdin_returns_empty_json(self, work_dir: Path) -> None:
         exit_code, stdout = run_hook(POST_TASK_SCRIPT, None, work_dir)
         assert exit_code == 0
         assert stdout == "{}"
 
     # LA-REQ-004.3: missing session_id
-    def test_missing_session_id(self, work_dir: Path):
+    def test_missing_session_id(self, work_dir: Path) -> None:
         hook_input = {
             "tool_input": {"name": "test-agent"},
             "tool_response": {"agentId": "agent-123"},
@@ -69,7 +71,7 @@ class TestPostTaskHook:
         assert stdout == "{}"
 
     # LA-REQ-004.4: missing agent name
-    def test_missing_agent_name(self, work_dir: Path):
+    def test_missing_agent_name(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-1",
             "tool_input": {},
@@ -80,7 +82,7 @@ class TestPostTaskHook:
         assert stdout == "{}"
 
     # LA-REQ-004.5: missing agent_id
-    def test_missing_agent_id(self, work_dir: Path):
+    def test_missing_agent_id(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-1",
             "tool_input": {"name": "test-agent"},
@@ -91,7 +93,7 @@ class TestPostTaskHook:
         assert stdout == "{}"
 
     # LA-REQ-004.6: non-learning-agent exits silently
-    def test_non_learning_agent_exits_silently(self, work_dir: Path):
+    def test_non_learning_agent_exits_silently(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-1",
             "tool_input": {"name": "not-a-learning-agent"},
@@ -104,7 +106,7 @@ class TestPostTaskHook:
         assert not session_dir.exists()
 
     # LA-REQ-004.7, LA-REQ-004.8, LA-REQ-004.9: session directory and files created
-    def test_creates_session_tracking_files(self, work_dir: Path):
+    def test_creates_session_tracking_files(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-1",
             "tool_input": {"name": "test-agent"},
@@ -113,9 +115,7 @@ class TestPostTaskHook:
         exit_code, stdout = run_hook(POST_TASK_SCRIPT, hook_input, work_dir)
         assert exit_code == 0
 
-        session_dir = (
-            work_dir / ".deepwork" / "tmp" / "agent_sessions" / "sess-1" / "agent-abc"
-        )
+        session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "sess-1" / "agent-abc"
         assert session_dir.is_dir()  # LA-REQ-004.7
 
         # LA-REQ-004.8: timestamp file exists with ISO 8601 content
@@ -131,7 +131,7 @@ class TestPostTaskHook:
         assert agent_file.read_text().strip() == "test-agent"
 
     # LA-REQ-004.4 (normalization): uppercase and spaces normalized
-    def test_agent_name_normalization(self, work_dir: Path):
+    def test_agent_name_normalization(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-2",
             "tool_input": {"name": "Test Agent"},
@@ -140,14 +140,12 @@ class TestPostTaskHook:
         exit_code, _ = run_hook(POST_TASK_SCRIPT, hook_input, work_dir)
         assert exit_code == 0
 
-        session_dir = (
-            work_dir / ".deepwork" / "tmp" / "agent_sessions" / "sess-2" / "agent-xyz"
-        )
+        session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "sess-2" / "agent-xyz"
         agent_file = session_dir / "agent_used"
         assert agent_file.read_text().strip() == "test-agent"
 
     # LA-REQ-004.5: agentId fallback to agent_id
-    def test_agent_id_fallback(self, work_dir: Path):
+    def test_agent_id_fallback(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-3",
             "tool_input": {"name": "test-agent"},
@@ -156,33 +154,19 @@ class TestPostTaskHook:
         exit_code, _ = run_hook(POST_TASK_SCRIPT, hook_input, work_dir)
         assert exit_code == 0
 
-        session_dir = (
-            work_dir
-            / ".deepwork"
-            / "tmp"
-            / "agent_sessions"
-            / "sess-3"
-            / "fallback-id"
-        )
+        session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "sess-3" / "fallback-id"
         assert session_dir.is_dir()
 
     # LA-REQ-004.18: timestamp overwritten on repeated invocation
-    def test_timestamp_overwritten_on_repeat(self, work_dir: Path):
+    def test_timestamp_overwritten_on_repeat(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-4",
             "tool_input": {"name": "test-agent"},
             "tool_response": {"agentId": "agent-repeat"},
         }
         run_hook(POST_TASK_SCRIPT, hook_input, work_dir)
-        session_dir = (
-            work_dir
-            / ".deepwork"
-            / "tmp"
-            / "agent_sessions"
-            / "sess-4"
-            / "agent-repeat"
-        )
-        ts1 = (session_dir / "needs_learning_as_of_timestamp").read_text()
+        session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "sess-4" / "agent-repeat"
+        (session_dir / "needs_learning_as_of_timestamp").read_text()
 
         # Run again — file should be overwritten (not appended)
         run_hook(POST_TASK_SCRIPT, hook_input, work_dir)
@@ -192,13 +176,11 @@ class TestPostTaskHook:
         assert ts2.count("\n") <= 1
 
     # Transcript symlink creation
-    def test_transcript_symlink_created(self, work_dir: Path):
+    def test_transcript_symlink_created(self, work_dir: Path) -> None:
         # Create a fake transcript file
         transcript = work_dir / "transcripts" / "sess-5"
         transcript.mkdir(parents=True)
-        subagent_transcript = (
-            transcript / "subagents" / "agent-agent-sym.jsonl"
-        )
+        subagent_transcript = transcript / "subagents" / "agent-agent-sym.jsonl"
         subagent_transcript.parent.mkdir(parents=True)
         subagent_transcript.write_text('{"type":"test"}\n')
 
@@ -214,14 +196,7 @@ class TestPostTaskHook:
         exit_code, _ = run_hook(POST_TASK_SCRIPT, hook_input, work_dir)
         assert exit_code == 0
 
-        session_dir = (
-            work_dir
-            / ".deepwork"
-            / "tmp"
-            / "agent_sessions"
-            / "sess-5"
-            / "agent-sym"
-        )
+        session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "sess-5" / "agent-sym"
         symlink = session_dir / "conversation_transcript.jsonl"
         assert symlink.is_symlink() or symlink.exists()
 
@@ -235,13 +210,13 @@ class TestSessionStopHook:
     """Tests for session_stop.sh — top-level tracking + pending detection."""
 
     # LA-REQ-004.13: no agent_sessions dir
-    def test_no_sessions_dir_returns_empty(self, work_dir: Path):
+    def test_no_sessions_dir_returns_empty(self, work_dir: Path) -> None:
         exit_code, stdout = run_hook(SESSION_STOP_SCRIPT, {"session_id": "s1"}, work_dir)
         assert exit_code == 0
         assert stdout == "{}"
 
     # LA-REQ-004.14: no pending files
-    def test_no_pending_files_returns_empty(self, work_dir: Path):
+    def test_no_pending_files_returns_empty(self, work_dir: Path) -> None:
         sessions_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions"
         sessions_dir.mkdir(parents=True)
         exit_code, stdout = run_hook(SESSION_STOP_SCRIPT, {"session_id": "s1"}, work_dir)
@@ -249,7 +224,7 @@ class TestSessionStopHook:
         assert stdout == "{}"
 
     # Top-level agent tracking: creates session files when agent_type is a learning agent
-    def test_top_level_agent_creates_tracking(self, work_dir: Path):
+    def test_top_level_agent_creates_tracking(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "top-sess-1",
             "agent_type": "test-agent",
@@ -258,20 +233,13 @@ class TestSessionStopHook:
         exit_code, stdout = run_hook(SESSION_STOP_SCRIPT, hook_input, work_dir)
         assert exit_code == 0
 
-        session_dir = (
-            work_dir
-            / ".deepwork"
-            / "tmp"
-            / "agent_sessions"
-            / "top-sess-1"
-            / "top-level"
-        )
+        session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "top-sess-1" / "top-level"
         assert session_dir.is_dir()
         assert (session_dir / "needs_learning_as_of_timestamp").exists()
         assert (session_dir / "agent_used").read_text().strip() == "test-agent"
 
     # Top-level agent tracking: agent_type normalization
-    def test_top_level_agent_name_normalization(self, work_dir: Path):
+    def test_top_level_agent_name_normalization(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "top-sess-2",
             "agent_type": "Test Agent",
@@ -280,18 +248,11 @@ class TestSessionStopHook:
         exit_code, _ = run_hook(SESSION_STOP_SCRIPT, hook_input, work_dir)
         assert exit_code == 0
 
-        session_dir = (
-            work_dir
-            / ".deepwork"
-            / "tmp"
-            / "agent_sessions"
-            / "top-sess-2"
-            / "top-level"
-        )
+        session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "top-sess-2" / "top-level"
         assert (session_dir / "agent_used").read_text().strip() == "test-agent"
 
     # Top-level agent tracking: non-learning agent is ignored
-    def test_top_level_non_learning_agent_ignored(self, work_dir: Path):
+    def test_top_level_non_learning_agent_ignored(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "top-sess-3",
             "agent_type": "not-a-learning-agent",
@@ -299,13 +260,11 @@ class TestSessionStopHook:
         exit_code, stdout = run_hook(SESSION_STOP_SCRIPT, hook_input, work_dir)
         assert exit_code == 0
         assert stdout == "{}"
-        session_dir = (
-            work_dir / ".deepwork" / "tmp" / "agent_sessions" / "top-sess-3"
-        )
+        session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "top-sess-3"
         assert not session_dir.exists()
 
     # Top-level agent tracking: transcript symlink created when file exists
-    def test_top_level_transcript_symlink(self, work_dir: Path):
+    def test_top_level_transcript_symlink(self, work_dir: Path) -> None:
         transcript_file = work_dir / "my-transcript.jsonl"
         transcript_file.write_text('{"type":"test"}\n')
 
@@ -317,20 +276,13 @@ class TestSessionStopHook:
         exit_code, _ = run_hook(SESSION_STOP_SCRIPT, hook_input, work_dir)
         assert exit_code == 0
 
-        session_dir = (
-            work_dir
-            / ".deepwork"
-            / "tmp"
-            / "agent_sessions"
-            / "top-sess-4"
-            / "top-level"
-        )
+        session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "top-sess-4" / "top-level"
         symlink = session_dir / "conversation_transcript.jsonl"
         assert symlink.is_symlink()
         assert symlink.resolve() == transcript_file.resolve()
 
     # Top-level agent tracking: no symlink when transcript file doesn't exist
-    def test_top_level_no_symlink_when_transcript_missing(self, work_dir: Path):
+    def test_top_level_no_symlink_when_transcript_missing(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "top-sess-5",
             "agent_type": "test-agent",
@@ -339,32 +291,16 @@ class TestSessionStopHook:
         exit_code, _ = run_hook(SESSION_STOP_SCRIPT, hook_input, work_dir)
         assert exit_code == 0
 
-        session_dir = (
-            work_dir
-            / ".deepwork"
-            / "tmp"
-            / "agent_sessions"
-            / "top-sess-5"
-            / "top-level"
-        )
+        session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "top-sess-5" / "top-level"
         assert session_dir.is_dir()
         assert not (session_dir / "conversation_transcript.jsonl").exists()
 
     # LA-REQ-004.14, LA-REQ-004.15, LA-REQ-004.16: pending detection and suggestion
-    def test_pending_sessions_trigger_suggestion(self, work_dir: Path):
+    def test_pending_sessions_trigger_suggestion(self, work_dir: Path) -> None:
         # Pre-create a pending session
-        session_dir = (
-            work_dir
-            / ".deepwork"
-            / "tmp"
-            / "agent_sessions"
-            / "old-sess"
-            / "agent-old"
-        )
+        session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "old-sess" / "agent-old"
         session_dir.mkdir(parents=True)
-        (session_dir / "needs_learning_as_of_timestamp").write_text(
-            "2026-01-01T00:00:00Z"
-        )
+        (session_dir / "needs_learning_as_of_timestamp").write_text("2026-01-01T00:00:00Z")
         (session_dir / "agent_used").write_text("test-agent")
 
         exit_code, stdout = run_hook(SESSION_STOP_SCRIPT, {"session_id": "s1"}, work_dir)
@@ -376,7 +312,7 @@ class TestSessionStopHook:
         assert "/learning-agents learn" in output["systemMessage"]
 
     # Combined: top-level tracking AND pending detection in same invocation
-    def test_top_level_tracking_and_pending_detection(self, work_dir: Path):
+    def test_top_level_tracking_and_pending_detection(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "combined-sess",
             "agent_type": "test-agent",
@@ -387,12 +323,7 @@ class TestSessionStopHook:
 
         # Should have created tracking files
         session_dir = (
-            work_dir
-            / ".deepwork"
-            / "tmp"
-            / "agent_sessions"
-            / "combined-sess"
-            / "top-level"
+            work_dir / ".deepwork" / "tmp" / "agent_sessions" / "combined-sess" / "top-level"
         )
         assert session_dir.is_dir()
 
@@ -402,17 +333,15 @@ class TestSessionStopHook:
         assert "test-agent" in output["systemMessage"]
 
     # No agent_type means no top-level tracking
-    def test_no_agent_type_skips_tracking(self, work_dir: Path):
+    def test_no_agent_type_skips_tracking(self, work_dir: Path) -> None:
         hook_input = {"session_id": "normal-sess"}
         exit_code, stdout = run_hook(SESSION_STOP_SCRIPT, hook_input, work_dir)
         assert exit_code == 0
         assert stdout == "{}"
-        assert not (
-            work_dir / ".deepwork" / "tmp" / "agent_sessions" / "normal-sess"
-        ).exists()
+        assert not (work_dir / ".deepwork" / "tmp" / "agent_sessions" / "normal-sess").exists()
 
     # LA-REQ-004.15: deduplication of agent names in suggestion
-    def test_agent_name_deduplication(self, work_dir: Path):
+    def test_agent_name_deduplication(self, work_dir: Path) -> None:
         base = work_dir / ".deepwork" / "tmp" / "agent_sessions"
         for i in range(3):
             d = base / f"sess-{i}" / f"agent-{i}"
