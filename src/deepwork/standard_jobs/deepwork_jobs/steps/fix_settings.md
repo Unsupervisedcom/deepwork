@@ -24,32 +24,9 @@ First, get the list of jobs that exist in `.deepwork/jobs/`:
 ls .deepwork/jobs/
 ```
 
-Note these job names - you will use them to identify which `Skill(...)` entries to remove.
+Note these job names for identifying legacy artifacts.
 
-### Step 3: Remove DeepWork Skill Permissions
-
-Look for and **remove** `Skill(...)` permission entries that match DeepWork jobs. Only remove entries where the skill name matches a job in `.deepwork/jobs/`.
-
-**What to look for:**
-```json
-"permissions": {
-  "allow": [
-    "Skill(deepwork_jobs)",           // Remove if 'deepwork_jobs' is in .deepwork/jobs/
-    "Skill(deepwork_jobs.define)",    // Remove - matches job_name.step pattern
-    "Skill(competitive_research)",    // Remove if 'competitive_research' is in .deepwork/jobs/
-    "Skill(my_custom_skill)",         // KEEP - not a DeepWork job
-    ...
-  ]
-}
-```
-
-**IMPORTANT:** Only remove skills that:
-- Exactly match a job name in `.deepwork/jobs/` (e.g., `Skill(job_name)`)
-- Match the pattern `job_name.step_name` where `job_name` is in `.deepwork/jobs/`
-
-**DO NOT remove** skills that don't match DeepWork jobs - the user may have created these manually for other purposes.
-
-### Step 4: Remove Duplicate Hooks
+### Step 3: Remove Duplicate Hooks
 
 Check for duplicate hook entries in the `hooks` section. Prior versions sometimes added the same hook multiple times.
 
@@ -71,7 +48,7 @@ Check for duplicate hook entries in the `hooks` section. Prior versions sometime
 
 Keep only one instance of each unique hook.
 
-### Step 5: Remove Hardcoded User Paths
+### Step 4: Remove Hardcoded User Paths
 
 Search for and remove any hardcoded paths that reference specific user directories:
 
@@ -82,7 +59,7 @@ Search for and remove any hardcoded paths that reference specific user directori
 
 These should either be removed or replaced with relative paths.
 
-### Step 6: Remove DeepWork Rules Hooks (Fully Deprecated)
+### Step 5: Remove DeepWork Rules Hooks (Fully Deprecated)
 
 DeepWork Rules have been completely removed from the system. Remove ALL hooks related to rules:
 
@@ -92,12 +69,10 @@ DeepWork Rules have been completely removed from the system. Remove ALL hooks re
 - Any hook referencing `.deepwork/jobs/deepwork_rules/hooks/`
 - Any hook referencing `.deepwork/rules/`
 
-**Also remove these permissions if present:**
-- `Skill(deepwork_rules)`
-- `Skill(deepwork_rules.define)`
+**Also remove this permission if present:**
 - `Bash(rm -rf .deepwork/tmp/rules/queue/*.json)`
 
-### Step 7: Remove Other Deprecated Commands
+### Step 6: Remove Other Deprecated Commands
 
 Remove hooks referencing other deprecated DeepWork commands:
 
@@ -105,7 +80,7 @@ Remove hooks referencing other deprecated DeepWork commands:
 - `deepwork hook *` - The entire hook subcommand is deprecated
 - References to any `.deepwork/jobs/*/hooks/` scripts
 
-### Step 8: Clean Up Empty Sections
+### Step 7: Clean Up Empty Sections
 
 If after cleanup any sections are empty, consider removing them:
 
@@ -116,7 +91,7 @@ If after cleanup any sections are empty, consider removing them:
 }
 ```
 
-### Step 9: Validate JSON
+### Step 8: Validate JSON
 
 After all edits, ensure the file is valid JSON:
 
@@ -145,10 +120,6 @@ If there are syntax errors, fix them before proceeding.
   },
   "permissions": {
     "allow": [
-      "Skill(competitive_research)",
-      "Skill(competitive_research.discover_competitors)",
-      "Skill(deepwork_jobs)",
-      "Skill(deepwork_jobs.define)",
       "Read(./.deepwork/**)",
       "WebSearch"
     ]
@@ -171,7 +142,6 @@ If there are syntax errors, fix them before proceeding.
 
 ## Important Notes
 
-1. **Don't remove non-DeepWork permissions** - Keep permissions like `WebSearch`, `Read(...)`, `Bash(...)` that aren't related to old DeepWork skills
-2. **Remove stale `make_new_job.sh` permissions** - Remove any `Bash(...)` permission referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` — this script now lives in the package and is accessed via the `job_dir` path
-3. **Be conservative** - If unsure whether something is legacy, ask the user
-4. **Document changes** - Note what was removed for the final summary
+1. **Remove stale `make_new_job.sh` permissions** - Remove any `Bash(...)` permission referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` — this script now lives in the package and is accessed via the `job_dir` path
+2. **Be conservative** - If unsure whether something is legacy, ask the user
+3. **Document changes** - Note what was removed for the final summary
