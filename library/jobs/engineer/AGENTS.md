@@ -2,8 +2,8 @@
 
 ## Location
 
-This job lives in the DeepWork package source at `src/deepwork/standard_jobs/engineer/`.
-It is loaded directly at runtime by the multi-folder job discovery system.
+This job lives in `library/jobs/engineer/`.
+It is a library job — available for users to adopt but not auto-installed by the DeepWork runtime.
 
 ## File Organization
 
@@ -39,5 +39,5 @@ engineer/
 5. **Requirements bundled**: RFC 2119 spec lives alongside job definition as `requirements.md`
 
 ## Last Updated
-- Date: 2026-03-24
-- From conversation about: Initial creation of the engineer standard job
+- Date: 2026-03-25
+- From conversation about: Moved from standard_jobs to library/jobs
