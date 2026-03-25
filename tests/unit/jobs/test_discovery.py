@@ -6,6 +6,7 @@ import pytest
 
 from deepwork.jobs.discovery import (
     ENV_ADDITIONAL_JOBS_FOLDERS,
+    ENV_DEV,
     find_job_dir,
     get_job_folders,
     load_all_jobs,
@@ -90,6 +91,30 @@ class TestGetJobFolders:
         folders = get_job_folders(tmp_path)
         assert Path("/extra/a") in folders
         assert Path("/extra/b") in folders
+
+    def test_dev_mode_places_additional_folders_first(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv(ENV_DEV, "1")
+        monkeypatch.setenv(ENV_ADDITIONAL_JOBS_FOLDERS, "/extra/a:/extra/b")
+        folders = get_job_folders(tmp_path)
+        # Additional folders must come before local and standard
+        idx_extra_a = folders.index(Path("/extra/a"))
+        idx_extra_b = folders.index(Path("/extra/b"))
+        idx_local = folders.index(tmp_path / ".deepwork" / "jobs")
+        assert idx_extra_a < idx_local
+        assert idx_extra_b < idx_local
+
+    def test_dev_mode_without_additional_folders_preserves_defaults(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from deepwork.jobs.discovery import _STANDARD_JOBS_DIR
+
+        monkeypatch.setenv(ENV_DEV, "1")
+        monkeypatch.delenv(ENV_ADDITIONAL_JOBS_FOLDERS, raising=False)
+        folders = get_job_folders(tmp_path)
+        assert tmp_path / ".deepwork" / "jobs" in folders
+        assert _STANDARD_JOBS_DIR in folders
 
 
 class TestLoadAllJobs:
@@ -238,3 +263,16 @@ class TestFindJobDir:
         )
         result = find_job_dir(tmp_path, "dup")
         assert result == folder_a / "dup"
+
+    def test_dev_mode_prefers_additional_folder_over_local(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        local_jobs = tmp_path / ".deepwork" / "jobs"
+        extra_jobs = tmp_path / "library_jobs"
+        _create_minimal_job(local_jobs, "my_job")
+        _create_minimal_job(extra_jobs, "my_job")
+        monkeypatch.setenv(ENV_DEV, "1")
+        monkeypatch.setenv(ENV_ADDITIONAL_JOBS_FOLDERS, str(extra_jobs))
+        # In dev mode the extra folder should win over the local copy
+        result = find_job_dir(tmp_path, "my_job")
+        assert result == extra_jobs / "my_job"

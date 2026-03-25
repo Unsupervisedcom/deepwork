@@ -8,6 +8,12 @@ search path is:
 
 Additional directories can be appended via the ``DEEPWORK_ADDITIONAL_JOBS_FOLDERS``
 environment variable, which accepts a **colon-delimited** list of absolute paths.
+
+When ``DEEPWORK_DEV`` is set (to any non-empty value), the search order is changed
+so that additional folders are searched *before* the project-local and standard-jobs
+directories.  This ensures that a developer working on shared library jobs will have
+edits (e.g. from ``deepwork_jobs/learn``) applied to the library checkout rather than
+to the local ``.deepwork/jobs/`` copy.
 """
 
 from __future__ import annotations
@@ -34,8 +40,25 @@ class JobLoadError:
 # Environment variable for additional job folders (colon-delimited)
 ENV_ADDITIONAL_JOBS_FOLDERS = "DEEPWORK_ADDITIONAL_JOBS_FOLDERS"
 
+# Environment variable to enable developer mode (any non-empty value)
+# When set, additional job folders are searched *before* the project-local and
+# standard-jobs directories so that edits land in the shared library checkout.
+ENV_DEV = "DEEPWORK_DEV"
+
 # Location of built-in standard jobs inside the package
 _STANDARD_JOBS_DIR = Path(__file__).parent.parent / "standard_jobs"
+
+
+def _parse_additional_folders() -> list[Path]:
+    """Parse DEEPWORK_ADDITIONAL_JOBS_FOLDERS into a list of Paths."""
+    extra = os.environ.get(ENV_ADDITIONAL_JOBS_FOLDERS, "")
+    folders: list[Path] = []
+    if extra:
+        for entry in extra.split(":"):
+            entry = entry.strip()
+            if entry:
+                folders.append(Path(entry))
+    return folders
 
 
 def get_job_folders(project_root: Path) -> list[Path]:
@@ -44,21 +67,24 @@ def get_job_folders(project_root: Path) -> list[Path]:
     The order determines priority when the same job name appears in multiple
     folders – the first directory that contains a matching job wins.
 
+    When ``DEEPWORK_DEV`` is set, additional folders (from
+    ``DEEPWORK_ADDITIONAL_JOBS_FOLDERS``) are placed **first** so that developer
+    edits (e.g. from the ``learn`` workflow) are applied to the shared library
+    checkout rather than to the project-local copy.
+
     Returns:
         List of directory paths (may include non-existent paths which callers
         should skip).
     """
-    folders: list[Path] = [
-        project_root / ".deepwork" / "jobs",
-        _STANDARD_JOBS_DIR,
-    ]
+    local_folder = project_root / ".deepwork" / "jobs"
+    additional = _parse_additional_folders()
 
-    extra = os.environ.get(ENV_ADDITIONAL_JOBS_FOLDERS, "")
-    if extra:
-        for entry in extra.split(":"):
-            entry = entry.strip()
-            if entry:
-                folders.append(Path(entry))
+    if os.environ.get(ENV_DEV):
+        # Dev mode: additional folders take priority over local/standard so that
+        # learning/editing targets the shared library checkout.
+        folders: list[Path] = additional + [local_folder, _STANDARD_JOBS_DIR]
+    else:
+        folders = [local_folder, _STANDARD_JOBS_DIR] + additional
 
     return folders
 
