@@ -39,6 +39,8 @@ When creating or modifying jobs in this repository, you MUST understand which ty
 
 **Current standard jobs**:
 - `deepwork_jobs` - Core job management (define, implement, learn)
+- `engineer` - Domain-agnostic engineering execution (implement, doctor)
+- `deepwork_reviews` - DeepWork job review and quality control workflows
 
 **Editing rules**:
 - Source of truth is ALWAYS in `src/deepwork/standard_jobs/`
@@ -104,7 +106,8 @@ deepwork/
 │   ├── hooks/            # Hook scripts and wrappers
 │   ├── standard_jobs/    # Built-in job definitions (auto-discovered at runtime)
 │   │   ├── deepwork_jobs/
-│   │   └── deepwork_reviews/
+│   │   ├── deepwork_reviews/
+│   │   └── engineer/
 │   ├── review/           # DeepWork Reviews system (.deepreview pipeline)
 │   ├── schemas/          # Definition schemas (deepreview, doc_spec)
 │   └── utils/            # Utilities (fs, git, yaml, validation)
@@ -221,7 +224,7 @@ Each step:
 
 ### How to Identify Job Types
 
-- **Standard jobs**: Exist in `src/deepwork/standard_jobs/` (currently: `deepwork_jobs`, `deepwork_reviews`)
+- **Standard jobs**: Exist in `src/deepwork/standard_jobs/` (currently: `deepwork_jobs`, `deepwork_reviews`, `engineer`)
 - **Library jobs**: Exist in `library/jobs/`
 - **Bespoke jobs**: Exist ONLY in `.deepwork/jobs/` with no corresponding standard_jobs entry
 
@@ -242,3 +245,4 @@ Each step:
 5. **Type Safety**: Use type hints for better code quality
 6. **No Auto-Commit**: DO NOT automatically commit changes to git. Let the user review and commit changes themselves.
 7. **Documentation Sync**: When making implementation changes, always update `doc/architecture.md` and `README.md` to reflect those changes. The architecture document must stay in sync with the actual codebase.
+8. **Succinctness**: Jobs, documentation, and code MUST be succinct. Avoid verbose preambles, redundant explanations, and duplicated content. Step instructions should contain only what the agent needs to act — not philosophy, not quality criteria already enforced by the workflow runtime, and not domain tables already in `common_job_info`. If it can be said in one sentence, do not use three.
