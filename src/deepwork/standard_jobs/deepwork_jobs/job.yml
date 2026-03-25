@@ -215,8 +215,6 @@ steps:
     reviews:
       - run_each: step
         quality_criteria:
-          "DeepWork Skills Removed": "`Skill(...)` entries matching jobs in `.deepwork/jobs/` are removed."
-          "Non-DeepWork Skills Preserved": "Skills NOT matching DeepWork jobs are left intact."
           "Stale make_new_job.sh Removed": "Stale `Bash(...)` permissions referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` are removed."
           "Rules Hooks Removed": "All DeepWork Rules hooks and permissions are removed."
           "Duplicate Hooks Removed": "Duplicate hook entries are consolidated or removed."
@@ -255,7 +253,7 @@ steps:
 
   - id: errata
     name: "Clean Up Errata"
-    description: "Removes obsolete files and folders from prior DeepWork versions, including old skill directories, temp files, and deprecated configurations."
+    description: "Removes obsolete files and folders from prior DeepWork versions, including temp files and deprecated configurations."
     instructions_file: steps/errata.md
     outputs: {}
     inputs:
@@ -268,8 +266,6 @@ steps:
       - run_each: step
         additional_review_guidance: "Complete this review in a small number of turns - tee up every data request you need in your first call."
         quality_criteria:
-          "Legacy Job Skills Removed": "Legacy skill folders for each job are removed from `.claude/skills/` and `.gemini/skills/`."
-          "Deepwork Skill Removed": "The `deepwork` skill folder has been removed from `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` (now provided by the plugin system)."
           "Rules Folder Removed": "`.deepwork/rules/` folder is gone."
           "Rules Job Removed": "`.deepwork/jobs/deepwork_rules/` is gone."
           "MCP Server Entry Removed": "The `deepwork serve` entry is removed from `.mcp.json` (or the file is deleted if empty)."

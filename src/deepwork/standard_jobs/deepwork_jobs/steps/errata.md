@@ -8,56 +8,7 @@ Remove obsolete files and folders from prior DeepWork versions. This final step 
 
 Identify and clean up deprecated files and folders.
 
-### Step 1: Remove Legacy Job Skill Folders
-
-Old DeepWork versions created individual skill folders for each job and step. These need to be removed, including the main `deepwork` skill folder (which is now provided by the plugin system and no longer belongs in the repo).
-
-**Process:**
-
-1. **List all jobs** in `.deepwork/jobs/`:
-   ```bash
-   ls .deepwork/jobs/
-   ```
-
-2. **Kick off a single sub-agent** to remove all legacy skill folders for every job at once. Be concise — output minimal text, only reporting what was removed or confirming nothing was found. The sub-agent should:
-   - For each job in `.deepwork/jobs/`, search in both `.claude/skills/` and `.gemini/skills/` for folders matching:
-     - `{job_name}/` - folder named exactly like the job
-     - `{job_name}.*/` - folders starting with the job name followed by a period (e.g., `my_job.step1/`, `my_job.step2/`)
-   - Remove each matching folder
-   - **Also remove** `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` — the `deepwork` skill is now provided by the plugin system and should not exist in the repo
-   - Report only: what was removed (one line per folder) or "No legacy folders found"
-
-   **Example commands for a job named `competitive_research`:**
-   ```bash
-   # Find and remove from .claude/skills/
-   rm -rf .claude/skills/competitive_research/ 2>/dev/null
-   rm -rf .claude/skills/competitive_research.*/ 2>/dev/null
-
-   # Find and remove from .gemini/skills/
-   rm -rf .gemini/skills/competitive_research/ 2>/dev/null
-   rm -rf .gemini/skills/competitive_research.*/ 2>/dev/null
-   ```
-
-3. **Remove the `deepwork` skill folders** (now provided by the plugin):
-   ```bash
-   rm -rf .claude/skills/deepwork/ 2>/dev/null
-   rm -rf .gemini/skills/deepwork/ 2>/dev/null
-   ```
-
-**What this removes:**
-```
-.claude/skills/
-├── competitive_research/     <- REMOVE (legacy job folder)
-├── competitive_research.discover/  <- REMOVE (legacy step folder)
-├── competitive_research.analyze/   <- REMOVE (legacy step folder)
-├── deepwork/                 <- REMOVE (now provided by plugin)
-└── some_other_job/           <- REMOVE (legacy job folder)
-```
-
-**Do NOT remove:**
-- Any skill folders that don't match job names in `.deepwork/jobs/` (and aren't `deepwork/`)
-
-### Step 2: Clean Temp Files
+### Step 1: Clean Temp Files
 
 Check `.deepwork/tmp/` for accumulated temporary files:
 
@@ -82,7 +33,7 @@ rm -rf .deepwork/tmp/rules/queue/*.json 2>/dev/null
 find .deepwork/tmp -type d -empty -delete 2>/dev/null
 ```
 
-### Step 3: Remove Rules Folder (Fully Deprecated)
+### Step 2: Remove Rules Folder (Fully Deprecated)
 
 DeepWork Rules have been completely removed from the system. Delete the `.deepwork/rules/` folder and all related items:
 
@@ -92,7 +43,7 @@ rm -rf .deepwork/tmp/rules/ 2>/dev/null
 rm -rf .deepwork/jobs/deepwork_rules/ 2>/dev/null
 ```
 
-### Step 4: Update Config Version
+### Step 3: Update Config Version
 
 Check `.deepwork/config.yml` for outdated version format. If the file does not exist, skip this step.
 
@@ -116,7 +67,7 @@ platforms:
 
 Update if needed to match current schema expectations.
 
-### Step 5: Remove `deepwork serve` from `.mcp.json`
+### Step 4: Remove `deepwork serve` from `.mcp.json`
 
 Old DeepWork versions added a `deepwork serve` MCP server entry directly to the repo's `.mcp.json` file. This is now handled by the plugin system and must be removed.
 
@@ -164,7 +115,7 @@ Old DeepWork versions added a `deepwork serve` MCP server entry directly to the 
 }
 ```
 
-### Step 6: Remove Other Obsolete Files
+### Step 5: Remove Other Obsolete Files
 
 Check for and remove other obsolete files:
 
@@ -176,7 +127,7 @@ Check for and remove other obsolete files:
 | `.claude/commands/` | Generated commands | Keep (current system) |
 | `.claude/settings.local.json` | Local overrides | Keep (user settings) |
 
-### Step 7: Library Job Access via Nix Dev Shell
+### Step 6: Library Job Access via Nix Dev Shell
 
 Library jobs replace some patterns previously handled by copied job files. This step ensures users are aware of the recommended setup path.
 
@@ -232,7 +183,7 @@ Check whether the project uses a Nix flake devshell and whether shared library j
 
    Do not go into detail — just make the user aware.
 
-### Step 8: Verify Git Status
+### Step 7: Verify Git Status
 
 Check that the cleanup hasn't left untracked garbage:
 
@@ -247,8 +198,6 @@ git status
 
 ## Quality Criteria
 
-- Legacy skill folders for each job are removed from `.claude/skills/` and `.gemini/skills/`
-- The `deepwork` skill folder has been removed from `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` (now provided by the plugin system)
 - `.deepwork/rules/` folder is gone
 - `.deepwork/jobs/deepwork_rules/` is gone
 - The `deepwork serve` entry is removed from `.mcp.json` (or the file is deleted if empty)
