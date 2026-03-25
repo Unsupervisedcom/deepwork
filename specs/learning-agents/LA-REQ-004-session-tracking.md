@@ -2,7 +2,7 @@
 
 ## Overview
 
-The learning-agents plugin uses hooks to automatically track when LearningAgents are invoked during Claude Code sessions. The PostToolUse hook on the Task tool creates session tracking files. The Stop hook checks for unprocessed sessions and suggests running the learning cycle.
+The learning-agents plugin uses hooks to automatically track when LearningAgents are invoked during Claude Code sessions. The PostToolUse hook on the Task tool creates session tracking files for subagent sessions. The Stop hook creates session tracking files for top-level agent sessions (started with `claude --agent <name>`) and checks for unprocessed sessions, suggesting running the learning cycle.
 
 ## Requirements
 
@@ -81,3 +81,25 @@ All session tracking files MUST be stored under `.deepwork/tmp/agent_sessions/`.
 ### LA-REQ-004.18: Timestamp File Update Semantics
 
 The `needs_learning_as_of_timestamp` file MUST be overwritten (not appended) each time the same agent is used in the same session. The timestamp reflects the most recent invocation.
+
+### LA-REQ-004.19: Stop Hook -- Top-Level Agent Input Parsing
+
+The `session_stop.sh` hook MUST read JSON from stdin containing `session_id`, `transcript_path`, and optionally `agent_type` fields. If stdin is empty or not provided (terminal is interactive), the hook MUST skip the top-level tracking phase and proceed to the pending learning check.
+
+### LA-REQ-004.20: Stop Hook -- Top-Level Agent Detection
+
+If the hook input contains a non-empty `agent_type` field and a non-empty `session_id`, the hook MUST normalize the agent name (lowercase, spaces to hyphens) and check whether `.deepwork/learning-agents/<agent-name>/` exists. If the directory does NOT exist, the hook MUST skip session tracking for this session.
+
+### LA-REQ-004.21: Stop Hook -- Top-Level Session Directory
+
+When a top-level LearningAgent session is detected, the hook MUST create the directory `.deepwork/tmp/agent_sessions/<session_id>/top-level/` (including all parent directories). The fixed name `top-level` distinguishes these from subagent sessions which use an `agent_id`.
+
+### LA-REQ-004.22: Stop Hook -- Top-Level Tracking Files
+
+For top-level LearningAgent sessions, the hook MUST create:
+1. A `needs_learning_as_of_timestamp` file containing a single ISO 8601 UTC timestamp
+2. An `agent_used` file containing the normalized agent name
+
+### LA-REQ-004.23: Stop Hook -- Top-Level Transcript Symlink
+
+For top-level LearningAgent sessions, the hook MUST create a `conversation_transcript.jsonl` symlink pointing to the `transcript_path` from the hook input. The symlink MUST only be created if the transcript file exists at hook execution time.
