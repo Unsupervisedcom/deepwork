@@ -65,8 +65,7 @@ deepwork/                       # DeepWork tool repository
 │       │   └── gemini_hook.sh  # Shell wrapper for Gemini CLI
 │       ├── standard_jobs/      # Built-in job definitions
 │       │   ├── deepwork_jobs/
-│       │   ├── deepwork_reviews/
-│       │   └── engineer/
+│       │   └── deepwork_reviews/
 │       ├── review/             # DeepWork Reviews system
 │       │   ├── config.py       # .deepreview config parsing + data models
 │       │   ├── discovery.py    # Find .deepreview files in project tree
@@ -618,9 +617,9 @@ DeepWork includes a built-in job called `deepwork_reviews` for managing `.deepre
 - **`add_document_update_rule`** workflow: `analyze_dependencies` → `apply_rule`
   - Adds a review rule to keep a specific documentation file up-to-date when related source files change
 
-### Standard Job: `engineer`
+### Library Job: `engineer`
 
-DeepWork includes a built-in job called `engineer` for domain-agnostic engineering execution. It provides:
+The `engineer` job lives in `library/jobs/engineer/` and is available for users to adopt. It provides domain-agnostic engineering execution:
 
 **Workflows**:
 - **`implement`** workflow: `translate_issue` → `initialize_branch` → `red_tests` → `green_implementation` → `finalize_pr` → `product_sync`

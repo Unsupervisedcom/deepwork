@@ -39,7 +39,6 @@ When creating or modifying jobs in this repository, you MUST understand which ty
 
 **Current standard jobs**:
 - `deepwork_jobs` - Core job management (define, implement, learn)
-- `engineer` - Domain-agnostic engineering execution (implement, doctor)
 - `deepwork_reviews` - DeepWork job review and quality control workflows
 
 **Editing rules**:
@@ -106,8 +105,7 @@ deepwork/
 │   ├── hooks/            # Hook scripts and wrappers
 │   ├── standard_jobs/    # Built-in job definitions (auto-discovered at runtime)
 │   │   ├── deepwork_jobs/
-│   │   ├── deepwork_reviews/
-│   │   └── engineer/
+│   │   └── deepwork_reviews/
 │   ├── review/           # DeepWork Reviews system (.deepreview pipeline)
 │   ├── schemas/          # Definition schemas (deepreview, doc_spec)
 │   └── utils/            # Utilities (fs, git, yaml, validation)
@@ -224,7 +222,7 @@ Each step:
 
 ### How to Identify Job Types
 
-- **Standard jobs**: Exist in `src/deepwork/standard_jobs/` (currently: `deepwork_jobs`, `deepwork_reviews`, `engineer`)
+- **Standard jobs**: Exist in `src/deepwork/standard_jobs/` (currently: `deepwork_jobs`, `deepwork_reviews`)
 - **Library jobs**: Exist in `library/jobs/`
 - **Bespoke jobs**: Exist ONLY in `.deepwork/jobs/` with no corresponding standard_jobs entry
 
