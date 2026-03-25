@@ -17,6 +17,7 @@ import pytest
 REPO_ROOT = Path(__file__).parent.parent.parent
 POST_TASK_SCRIPT = REPO_ROOT / "learning_agents" / "hooks" / "post_task.sh"
 SESSION_STOP_SCRIPT = REPO_ROOT / "learning_agents" / "hooks" / "session_stop.sh"
+HOOKS_JSON = REPO_ROOT / "learning_agents" / "hooks" / "hooks.json"
 
 
 @pytest.fixture
@@ -47,20 +48,46 @@ def run_hook(script: Path, hook_input: dict[str, Any] | None, cwd: Path) -> tupl
 
 
 # ===========================================================================
-# post_task.sh tests (LA-REQ-004.1 through LA-REQ-004.11)
+# hooks.json configuration tests (LA-REQ-004.1, LA-REQ-004.12)
+# ===========================================================================
+
+
+class TestHooksJsonConfig:
+    """Tests for hooks.json hook configuration."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_post_tool_use_task_matcher(self) -> None:
+        hooks_config = json.loads(HOOKS_JSON.read_text())
+        post_tool_use = hooks_config["hooks"]["PostToolUse"]
+        task_hooks = [h for h in post_tool_use if h["matcher"] == "Task"]
+        assert len(task_hooks) == 1
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.12).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_stop_hook_empty_matcher(self) -> None:
+        hooks_config = json.loads(HOOKS_JSON.read_text())
+        stop_hooks = hooks_config["hooks"]["Stop"]
+        assert any(h["matcher"] == "" for h in stop_hooks)
+
+
+# ===========================================================================
+# post_task.sh tests (LA-REQ-004.2 through LA-REQ-004.11)
 # ===========================================================================
 
 
 class TestPostTaskHook:
     """Tests for post_task.sh — subagent session tracking."""
 
-    # LA-REQ-004.2: empty stdin
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_empty_stdin_returns_empty_json(self, work_dir: Path) -> None:
         exit_code, stdout = run_hook(POST_TASK_SCRIPT, None, work_dir)
         assert exit_code == 0
         assert stdout == "{}"
 
-    # LA-REQ-004.3: missing session_id
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_missing_session_id(self, work_dir: Path) -> None:
         hook_input = {
             "tool_input": {"name": "test-agent"},
@@ -70,7 +97,8 @@ class TestPostTaskHook:
         assert exit_code == 0
         assert stdout == "{}"
 
-    # LA-REQ-004.4: missing agent name
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_missing_agent_name(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-1",
@@ -81,7 +109,8 @@ class TestPostTaskHook:
         assert exit_code == 0
         assert stdout == "{}"
 
-    # LA-REQ-004.5: missing agent_id
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_missing_agent_id(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-1",
@@ -92,7 +121,8 @@ class TestPostTaskHook:
         assert exit_code == 0
         assert stdout == "{}"
 
-    # LA-REQ-004.6: non-learning-agent exits silently
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_non_learning_agent_exits_silently(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-1",
@@ -105,7 +135,8 @@ class TestPostTaskHook:
         session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "sess-1"
         assert not session_dir.exists()
 
-    # LA-REQ-004.7, LA-REQ-004.8, LA-REQ-004.9: session directory and files created
+    # THIS TEST VALIDATES HARD REQUIREMENTS (LA-REQ-004.7, LA-REQ-004.8, LA-REQ-004.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENTS CHANGE
     def test_creates_session_tracking_files(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-1",
@@ -130,7 +161,8 @@ class TestPostTaskHook:
         assert agent_file.exists()
         assert agent_file.read_text().strip() == "test-agent"
 
-    # LA-REQ-004.4 (normalization): uppercase and spaces normalized
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_agent_name_normalization(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-2",
@@ -144,7 +176,8 @@ class TestPostTaskHook:
         agent_file = session_dir / "agent_used"
         assert agent_file.read_text().strip() == "test-agent"
 
-    # LA-REQ-004.5: agentId fallback to agent_id
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_agent_id_fallback(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-3",
@@ -157,7 +190,26 @@ class TestPostTaskHook:
         session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "sess-3" / "fallback-id"
         assert session_dir.is_dir()
 
-    # LA-REQ-004.18: timestamp overwritten on repeated invocation
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_post_task_reminder_output(self, work_dir: Path) -> None:
+        hook_input = {
+            "session_id": "sess-reminder",
+            "tool_input": {"name": "test-agent"},
+            "tool_response": {"agentId": "agent-rem"},
+        }
+        exit_code, stdout = run_hook(POST_TASK_SCRIPT, hook_input, work_dir)
+        assert exit_code == 0
+
+        output = json.loads(stdout)
+        assert "hookSpecificOutput" in output
+        ctx = output["hookSpecificOutput"].get("additionalContext", "")
+        # LA-REQ-004.11: reminder must mention resuming and reporting issues
+        assert "resume" in ctx.lower() or "Resume" in ctx
+        assert "report" in ctx.lower() or "/learning-agents" in ctx
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.18).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_timestamp_overwritten_on_repeat(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "sess-4",
@@ -200,22 +252,39 @@ class TestPostTaskHook:
         symlink = session_dir / "conversation_transcript.jsonl"
         assert symlink.is_symlink() or symlink.exists()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.17).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_session_files_under_correct_base_dir(self, work_dir: Path) -> None:
+        hook_input = {
+            "session_id": "sess-loc",
+            "tool_input": {"name": "test-agent"},
+            "tool_response": {"agentId": "agent-loc"},
+        }
+        run_hook(POST_TASK_SCRIPT, hook_input, work_dir)
+
+        session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "sess-loc" / "agent-loc"
+        assert session_dir.is_dir()
+        # Verify the path is under .deepwork/tmp/agent_sessions/
+        assert ".deepwork/tmp/agent_sessions" in str(session_dir)
+
 
 # ===========================================================================
-# session_stop.sh tests (LA-REQ-004.12 through LA-REQ-004.18 + top-level)
+# session_stop.sh tests (LA-REQ-004.12 through LA-REQ-004.23)
 # ===========================================================================
 
 
 class TestSessionStopHook:
     """Tests for session_stop.sh — top-level tracking + pending detection."""
 
-    # LA-REQ-004.13: no agent_sessions dir
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.13).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_no_sessions_dir_returns_empty(self, work_dir: Path) -> None:
         exit_code, stdout = run_hook(SESSION_STOP_SCRIPT, {"session_id": "s1"}, work_dir)
         assert exit_code == 0
         assert stdout == "{}"
 
-    # LA-REQ-004.14: no pending files
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.14).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_no_pending_files_returns_empty(self, work_dir: Path) -> None:
         sessions_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions"
         sessions_dir.mkdir(parents=True)
@@ -223,7 +292,8 @@ class TestSessionStopHook:
         assert exit_code == 0
         assert stdout == "{}"
 
-    # Top-level agent tracking: creates session files when agent_type is a learning agent
+    # THIS TEST VALIDATES HARD REQUIREMENTS (LA-REQ-004.19, LA-REQ-004.20, LA-REQ-004.21, LA-REQ-004.22).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENTS CHANGE
     def test_top_level_agent_creates_tracking(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "top-sess-1",
@@ -238,7 +308,8 @@ class TestSessionStopHook:
         assert (session_dir / "needs_learning_as_of_timestamp").exists()
         assert (session_dir / "agent_used").read_text().strip() == "test-agent"
 
-    # Top-level agent tracking: agent_type normalization
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.20).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_top_level_agent_name_normalization(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "top-sess-2",
@@ -251,7 +322,8 @@ class TestSessionStopHook:
         session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "top-sess-2" / "top-level"
         assert (session_dir / "agent_used").read_text().strip() == "test-agent"
 
-    # Top-level agent tracking: non-learning agent is ignored
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.20).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_top_level_non_learning_agent_ignored(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "top-sess-3",
@@ -263,7 +335,8 @@ class TestSessionStopHook:
         session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "top-sess-3"
         assert not session_dir.exists()
 
-    # Top-level agent tracking: transcript symlink created when file exists
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.23).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_top_level_transcript_symlink(self, work_dir: Path) -> None:
         transcript_file = work_dir / "my-transcript.jsonl"
         transcript_file.write_text('{"type":"test"}\n')
@@ -281,7 +354,8 @@ class TestSessionStopHook:
         assert symlink.is_symlink()
         assert symlink.resolve() == transcript_file.resolve()
 
-    # Top-level agent tracking: no symlink when transcript file doesn't exist
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.23).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_top_level_no_symlink_when_transcript_missing(self, work_dir: Path) -> None:
         hook_input = {
             "session_id": "top-sess-5",
@@ -295,7 +369,8 @@ class TestSessionStopHook:
         assert session_dir.is_dir()
         assert not (session_dir / "conversation_transcript.jsonl").exists()
 
-    # LA-REQ-004.14, LA-REQ-004.15, LA-REQ-004.16: pending detection and suggestion
+    # THIS TEST VALIDATES HARD REQUIREMENTS (LA-REQ-004.14, LA-REQ-004.15, LA-REQ-004.16).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENTS CHANGE
     def test_pending_sessions_trigger_suggestion(self, work_dir: Path) -> None:
         # Pre-create a pending session
         session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "old-sess" / "agent-old"
@@ -332,7 +407,8 @@ class TestSessionStopHook:
         assert "systemMessage" in output
         assert "test-agent" in output["systemMessage"]
 
-    # No agent_type means no top-level tracking
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.19).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_no_agent_type_skips_tracking(self, work_dir: Path) -> None:
         hook_input = {"session_id": "normal-sess"}
         exit_code, stdout = run_hook(SESSION_STOP_SCRIPT, hook_input, work_dir)
@@ -340,7 +416,8 @@ class TestSessionStopHook:
         assert stdout == "{}"
         assert not (work_dir / ".deepwork" / "tmp" / "agent_sessions" / "normal-sess").exists()
 
-    # LA-REQ-004.15: deduplication of agent names in suggestion
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.15).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_agent_name_deduplication(self, work_dir: Path) -> None:
         base = work_dir / ".deepwork" / "tmp" / "agent_sessions"
         for i in range(3):
@@ -355,3 +432,17 @@ class TestSessionStopHook:
         # Agent name should appear only once despite 3 sessions
         msg = output["systemMessage"]
         assert msg.count("test-agent") == 1
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.17).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_top_level_session_files_under_correct_base_dir(self, work_dir: Path) -> None:
+        hook_input = {
+            "session_id": "top-loc",
+            "agent_type": "test-agent",
+            "transcript_path": "/tmp/nonexistent.jsonl",
+        }
+        run_hook(SESSION_STOP_SCRIPT, hook_input, work_dir)
+
+        session_dir = work_dir / ".deepwork" / "tmp" / "agent_sessions" / "top-loc" / "top-level"
+        assert session_dir.is_dir()
+        assert ".deepwork/tmp/agent_sessions" in str(session_dir)
