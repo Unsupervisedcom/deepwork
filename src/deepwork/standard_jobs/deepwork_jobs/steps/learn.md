@@ -20,6 +20,7 @@ Analyze the conversation history to extract learnings and improvements, then app
 2. **Locate the job directory using `job_dir`**
    - The MCP server returns `job_dir` (absolute path) when starting workflows — use this as the authoritative location
    - The job may live in `.deepwork/jobs/`, `src/deepwork/standard_jobs/`, or an **external folder** via `DEEPWORK_ADDITIONAL_JOBS_FOLDERS`
+   - When `DEEPWORK_DEV` is set, the MCP server automatically returns the path in `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` (if the job exists there) as `job_dir`, so no special handling is needed in most cases
    - Check if `job_dir` is inside the current project's git repo or in a **separate git repository** (e.g. a library checkout at `~/.keystone/*/deepwork/library/jobs/`)
    - If `job_dir` is in a different git repo, note this — you'll need to handle commits/pushes separately in Step 8
 

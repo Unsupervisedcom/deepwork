@@ -93,7 +93,21 @@ Key design decisions:
 - Designed for keystone development mode where `~/.keystone/*/deepwork/library/jobs/` is the additional folder
 - Quality criteria "External Repo Handled" auto-passes for local jobs
 
+### DEEPWORK_DEV: Developer Mode Job Targeting (v1.8.0)
+
+When `DEEPWORK_DEV` is set (any non-empty value), the job discovery system changes the folder search order so that `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` paths are searched *before* the project-local `.deepwork/jobs/` and standard-jobs directories.
+
+This means:
+- `start_workflow` returns `job_dir` pointing to the shared library checkout (not the local copy)
+- The `learn` workflow automatically updates files in the external library without any extra agent logic
+- `DEEPWORK_DEV` is typically set alongside `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` in `flake.nix` or shell init
+
+Key design decisions:
+- Implemented entirely in `src/deepwork/jobs/discovery.py` (`get_job_folders`)
+- Agents receive the correct `job_dir` transparently — no special learn-step logic required
+- When `DEEPWORK_DEV` is set but no additional folders are configured, the default order is preserved
+
 ## Last Updated
 
-- Date: 2026-03-23
-- From conversation about: Adding DEEPWORK_ADDITIONAL_JOBS_FOLDERS awareness to the learn workflow
+- Date: 2026-03-25
+- From conversation about: Adding DEEPWORK_DEV env var for developer-mode job targeting
