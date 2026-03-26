@@ -71,6 +71,7 @@ Start a new workflow session. Creates a git branch, initializes state tracking, 
 
 ```typescript
 {
+  important_note: string;     // Instruction reminding agent to clarify ambiguous requests
   begin_step: ActiveStepInfo; // Information about the first step to begin
   stack: StackEntry[];        // Current workflow stack after starting
 }
@@ -424,6 +425,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
+| 2.1.0 | Added `important_note` field to `StartWorkflowResponse` — instructs agents to clarify ambiguous user requests via `AskUserQuestion` when available. |
 | 2.0.0 | **Breaking**: `session_id` is now a required `string` parameter on all mutation tools (`start_workflow`, `finished_step`, `abort_workflow`, `go_to_step`). Added `agent_id` optional parameter for sub-agent scoping — sub-agents get their own isolated workflow stacks. State persistence path changed to `.deepwork/tmp/sessions/<platform>/session-<id>/state.json` (with sub-agent state in `agent_<agent_id>.json`). |
 | 1.9.0 | Added `go_to_step` tool for navigating back to prior steps. Clears all step progress from the target step onward, forcing re-execution of subsequent steps. Supports `session_id` for concurrent workflow safety. |
 | 1.8.0 | Added `how_to_invoke` field to `WorkflowInfo` in `get_workflows` response. Always populated with invocation instructions: when a workflow's `agent` field is set, directs callers to delegate via the Task tool; otherwise, directs callers to use the `start_workflow` MCP tool directly. Also added optional `agent` field to workflow definitions in job.yml. |

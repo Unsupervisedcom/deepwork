@@ -297,6 +297,14 @@ class StackEntry(BaseModel):
 class StartWorkflowResponse(BaseModel):
     """Response from start_workflow tool."""
 
+    important_note: str = Field(
+        default=(
+            "IMPORTANT: If, given the info on the workflow you now have, the user's request "
+            "seems ambiguous and can be interpreted several ways, you MUST use AskUserQuestion "
+            "to clarify their intent if that tool is available."
+        ),
+        description="Important instruction for the agent",
+    )
     begin_step: ActiveStepInfo = Field(description="Information about the first step to begin")
     stack: list[StackEntry] = Field(
         default_factory=list, description="Current workflow stack after starting"
