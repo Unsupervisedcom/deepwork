@@ -11,13 +11,19 @@
     {
       "name": "deepwork",
       "description": "Framework for AI-powered multi-step workflows with quality gates",
-      "version": "0.9.7",
+      "version": "0.9.8",
       "source": "./plugins/claude",
       "author": {
         "name": "DeepWork"
       },
       "category": "workflow",
-      "keywords": ["workflow", "automation", "quality-gates", "multi-step", "planning"],
+      "keywords": [
+        "workflow",
+        "automation",
+        "quality-gates",
+        "multi-step",
+        "planning"
+      ],
       "repository": "https://github.com/Unsupervisedcom/deepwork",
       "license": "BSL-1.1"
     },
@@ -30,7 +36,12 @@
         "name": "DeepWork"
       },
       "category": "learning",
-      "keywords": ["agents", "learning", "self-improving", "sub-agents"],
+      "keywords": [
+        "agents",
+        "learning",
+        "self-improving",
+        "sub-agents"
+      ],
       "repository": "https://github.com/Unsupervisedcom/deepwork",
       "license": "MIT"
     }
