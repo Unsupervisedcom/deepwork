@@ -253,6 +253,23 @@ workflows:
         assert response.begin_step.step_reviews[0].run_each == "step"
         assert "Output Valid" in response.begin_step.step_reviews[0].quality_criteria
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.15).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_start_workflow_important_note(self, tools: WorkflowTools) -> None:
+        """Test that start_workflow response contains important_note about clarifying ambiguity."""
+        input_data = StartWorkflowInput(
+            goal="Test important note",
+            job_name="test_job",
+            workflow_name="main",
+            session_id=SESSION_ID,
+        )
+
+        response = await tools.start_workflow(input_data)
+
+        assert hasattr(response, "important_note")
+        assert "ambiguous" in response.important_note.lower()
+        assert "AskUserQuestion" in response.important_note
+
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow_invalid_job(self, tools: WorkflowTools) -> None:

@@ -52,6 +52,7 @@ The DeepWork MCP server exposes five workflow tools to AI agents via the Model C
 12. The response MUST contain a `stack` field reflecting the current workflow stack after starting.
 13. Each expected output in `step_expected_outputs` MUST include `name`, `type`, `description`, `required`, and `syntax_for_finished_step_tool` fields.
 14. The `syntax_for_finished_step_tool` MUST be `"filepath"` for `type: file` outputs and `"array of filepaths for all individual files"` for `type: files` outputs.
+15. The response MUST contain an `important_note` field (string) instructing the agent to clarify ambiguous user requests via `AskUserQuestion` (if available) before proceeding with the workflow.
 
 ### JOBS-REQ-001.4: finished_step Tool
 

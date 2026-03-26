@@ -995,7 +995,7 @@ Begins a new workflow session.
 - `session_id: str` - Claude Code session ID (required)
 - `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
-**Returns**: Session ID, branch name, first step instructions
+**Returns**: Important note (agent instruction to clarify ambiguous requests), first step info (`ActiveStepInfo`), workflow stack
 
 #### 3. `finished_step`
 Reports step completion and gets next instructions.
