@@ -279,9 +279,7 @@ class JobDefinition:
             seen: set[str] = set()
             for step in workflow.steps:
                 if step.name in seen:
-                    raise ParseError(
-                        f"Workflow '{wf_name}' has duplicate step name '{step.name}'"
-                    )
+                    raise ParseError(f"Workflow '{wf_name}' has duplicate step name '{step.name}'")
                 seen.add(step.name)
 
     @classmethod

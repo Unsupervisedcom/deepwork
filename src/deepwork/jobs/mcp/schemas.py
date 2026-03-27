@@ -189,7 +189,9 @@ class GoToStepInput(BaseModel):
 class ExpectedOutput(BaseModel):
     """Describes an expected output for a step."""
 
-    name: str = Field(description="Output name (step_argument name, use as key in finished_step outputs)")
+    name: str = Field(
+        description="Output name (step_argument name, use as key in finished_step outputs)"
+    )
     type: str = Field(description="Argument type: 'file_path' or 'string'")
     description: str = Field(description="What this output should contain")
     required: bool = Field(

@@ -214,9 +214,7 @@ class WorkflowTools:
             )
 
         # Check for missing required output keys
-        required_names = {
-            name for name, ref in step.outputs.items() if ref.required
-        }
+        required_names = {name for name, ref in step.outputs.items() if ref.required}
         missing = required_names - submitted_names
         if missing:
             raise ToolError(
@@ -330,7 +328,9 @@ class WorkflowTools:
                 required_str = " (required)" if input_ref.required else " (optional)"
 
                 if value is None:
-                    parts.append(f"- **{input_name}**{required_str}: {arg.description} — *not yet available*")
+                    parts.append(
+                        f"- **{input_name}**{required_str}: {arg.description} — *not yet available*"
+                    )
                 elif arg.type == "file_path":
                     if isinstance(value, list):
                         paths_str = ", ".join(f"`{p}`" for p in value)
@@ -435,12 +435,18 @@ class WorkflowTools:
 
         # Resolve input values for first step
         input_values = self._resolve_input_values(
-            first_step, job, workflow, sid, aid,
+            first_step,
+            job,
+            workflow,
+            sid,
+            aid,
             provided_inputs=input_data.inputs,
         )
 
         # Mark first step as started with input values
-        await self.state_manager.start_step(sid, first_step.name, input_values=input_values, agent_id=aid)
+        await self.state_manager.start_step(
+            sid, first_step.name, input_values=input_values, agent_id=aid
+        )
 
         response = StartWorkflowResponse(
             begin_step=self._build_active_step_info(
@@ -536,14 +542,10 @@ class WorkflowTools:
         next_step = workflow.steps[next_step_index]
 
         # Advance session
-        await self.state_manager.advance_to_step(
-            sid, next_step.name, next_step_index, agent_id=aid
-        )
+        await self.state_manager.advance_to_step(sid, next_step.name, next_step_index, agent_id=aid)
 
         # Resolve input values for next step
-        next_input_values = self._resolve_input_values(
-            next_step, job, workflow, sid, aid
-        )
+        next_input_values = self._resolve_input_values(next_step, job, workflow, sid, aid)
 
         # Mark next step as started with input values
         await self.state_manager.start_step(
@@ -612,9 +614,7 @@ class WorkflowTools:
         target_step = workflow.steps[target_index]
 
         # Collect all step names from target index through end of workflow
-        invalidate_step_names: list[str] = [
-            s.name for s in workflow.steps[target_index:]
-        ]
+        invalidate_step_names: list[str] = [s.name for s in workflow.steps[target_index:]]
 
         # Clear progress and update position
         await self.state_manager.go_to_step(
@@ -626,9 +626,7 @@ class WorkflowTools:
         )
 
         # Resolve input values for target step
-        input_values = self._resolve_input_values(
-            target_step, job, workflow, sid, aid
-        )
+        input_values = self._resolve_input_values(target_step, job, workflow, sid, aid)
 
         # Mark target step as started
         await self.state_manager.start_step(
@@ -636,9 +634,7 @@ class WorkflowTools:
         )
 
         response = GoToStepResponse(
-            begin_step=self._build_active_step_info(
-                sid, target_step, job, workflow, input_values
-            ),
+            begin_step=self._build_active_step_info(sid, target_step, job, workflow, input_values),
             invalidated_steps=invalidate_step_names,
             stack=self.state_manager.get_stack(sid, aid),
         )

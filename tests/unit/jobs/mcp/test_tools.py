@@ -176,9 +176,7 @@ class TestGetWorkflows:
         main = next(wf for wf in job.workflows if wf.name == "main")
         assert "start_workflow" in main.how_to_invoke
 
-    def test_handles_load_errors(
-        self, tmp_path: Path, state_manager: StateManager
-    ) -> None:
+    def test_handles_load_errors(self, tmp_path: Path, state_manager: StateManager) -> None:
         """Jobs with invalid YAML appear in errors, not jobs."""
         deepwork_dir = tmp_path / ".deepwork"
         jobs_dir = deepwork_dir / "jobs"
@@ -203,9 +201,7 @@ class TestStartWorkflow:
     """Tests for start_workflow tool."""
 
     @pytest.mark.asyncio
-    async def test_creates_session_and_returns_first_step(
-        self, tools: WorkflowTools
-    ) -> None:
+    async def test_creates_session_and_returns_first_step(self, tools: WorkflowTools) -> None:
         resp = await _start_main_workflow(tools)
         step = resp.begin_step
 
@@ -289,9 +285,7 @@ class TestFinishedStep:
             await _finish_step(tools, outputs={}, override="skip")
 
     @pytest.mark.asyncio
-    async def test_unknown_output(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_unknown_output(self, tools: WorkflowTools, project_root: Path) -> None:
         await _start_main_workflow(tools)
 
         outfile = project_root / "out.md"
@@ -316,9 +310,7 @@ class TestFinishedStep:
             )
 
     @pytest.mark.asyncio
-    async def test_advances_to_next_step(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_advances_to_next_step(self, tools: WorkflowTools, project_root: Path) -> None:
         await _start_main_workflow(tools)
 
         outfile = project_root / "out1.md"
@@ -355,23 +347,17 @@ class TestFinishedStep:
         assert resp.begin_step.step_inputs[0].value == "out1.md"
 
     @pytest.mark.asyncio
-    async def test_completes_workflow(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_completes_workflow(self, tools: WorkflowTools, project_root: Path) -> None:
         await _start_main_workflow(tools)
 
         out1 = project_root / "out1.md"
         out1.write_text("step1 output")
-        resp = await _finish_step(
-            tools, outputs={"output1": "out1.md"}, override="skip"
-        )
+        resp = await _finish_step(tools, outputs={"output1": "out1.md"}, override="skip")
         assert resp.status == StepStatus.NEXT_STEP
 
         out2 = project_root / "out2.md"
         out2.write_text("step2 output")
-        resp = await _finish_step(
-            tools, outputs={"output2": "out2.md"}, override="skip"
-        )
+        resp = await _finish_step(tools, outputs={"output2": "out2.md"}, override="skip")
         assert resp.status == StepStatus.WORKFLOW_COMPLETE
         assert resp.summary is not None
         assert "completed" in resp.summary.lower()
@@ -387,23 +373,17 @@ class TestFinishedStep:
 
         out1 = project_root / "out1.md"
         out1.write_text("step1 output")
-        await _finish_step(
-            tools, outputs={"output1": "out1.md"}, override="skip"
-        )
+        await _finish_step(tools, outputs={"output1": "out1.md"}, override="skip")
 
         out2 = project_root / "out2.md"
         out2.write_text("step2 output")
-        resp = await _finish_step(
-            tools, outputs={"output2": "out2.md"}, override="skip"
-        )
+        resp = await _finish_step(tools, outputs={"output2": "out2.md"}, override="skip")
         assert resp.status == StepStatus.WORKFLOW_COMPLETE
         assert resp.post_workflow_instructions is not None
         assert "PR" in resp.post_workflow_instructions
 
     @pytest.mark.asyncio
-    async def test_string_type_validation(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_string_type_validation(self, tools: WorkflowTools, project_root: Path) -> None:
         """String type outputs must be strings, not other types."""
         # Start the delegated workflow which has a string_output
         inp = StartWorkflowInput(
@@ -441,18 +421,14 @@ class TestFinishedStep:
         assert resp.status == StepStatus.WORKFLOW_COMPLETE
 
     @pytest.mark.asyncio
-    async def test_quality_gate_pass(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_quality_gate_pass(self, tools: WorkflowTools, project_root: Path) -> None:
         """When quality gate returns None (pass), step advances."""
         await _start_main_workflow(tools)
 
         outfile = project_root / "out1.md"
         outfile.write_text("step1 output")
 
-        with patch(
-            "deepwork.jobs.mcp.tools.run_quality_gate", return_value=None
-        ):
+        with patch("deepwork.jobs.mcp.tools.run_quality_gate", return_value=None):
             resp = await _finish_step(
                 tools,
                 outputs={"output1": "out1.md"},
@@ -461,9 +437,7 @@ class TestFinishedStep:
         assert resp.status == StepStatus.NEXT_STEP
 
     @pytest.mark.asyncio
-    async def test_quality_gate_fail(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_quality_gate_fail(self, tools: WorkflowTools, project_root: Path) -> None:
         """When quality gate returns feedback, status is NEEDS_WORK."""
         await _start_main_workflow(tools)
 
@@ -508,14 +482,10 @@ class TestFinishedStep:
     @pytest.mark.asyncio
     async def test_no_active_session(self, tools: WorkflowTools) -> None:
         with pytest.raises(ToolError, match="No active workflow session"):
-            await _finish_step(
-                tools, outputs={"output1": "x.md"}, override="skip"
-            )
+            await _finish_step(tools, outputs={"output1": "x.md"}, override="skip")
 
     @pytest.mark.asyncio
-    async def test_file_path_list_validated(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_file_path_list_validated(self, tools: WorkflowTools, project_root: Path) -> None:
         """file_path type accepts a list of paths and validates each."""
         await _start_main_workflow(tools)
 
@@ -530,9 +500,7 @@ class TestFinishedStep:
             )
 
     @pytest.mark.asyncio
-    async def test_file_path_list_all_exist(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_file_path_list_all_exist(self, tools: WorkflowTools, project_root: Path) -> None:
         await _start_main_workflow(tools)
 
         f1 = project_root / "a.md"
@@ -557,9 +525,7 @@ class TestAbortWorkflow:
     """Tests for abort_workflow tool."""
 
     @pytest.mark.asyncio
-    async def test_abort_returns_to_empty_stack(
-        self, tools: WorkflowTools
-    ) -> None:
+    async def test_abort_returns_to_empty_stack(self, tools: WorkflowTools) -> None:
         await _start_main_workflow(tools)
 
         inp = AbortWorkflowInput(
@@ -576,9 +542,7 @@ class TestAbortWorkflow:
         assert len(resp.stack) == 0
 
     @pytest.mark.asyncio
-    async def test_abort_returns_to_parent(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_abort_returns_to_parent(self, tools: WorkflowTools, project_root: Path) -> None:
         """Aborting a nested workflow returns to the parent."""
         # Start outer workflow
         await _start_main_workflow(tools)
@@ -614,17 +578,13 @@ class TestGoToStep:
     """Tests for go_to_step tool."""
 
     @pytest.mark.asyncio
-    async def test_navigate_back(
-        self, tools: WorkflowTools, project_root: Path
-    ) -> None:
+    async def test_navigate_back(self, tools: WorkflowTools, project_root: Path) -> None:
         """Navigate back to step1 after advancing to step2."""
         await _start_main_workflow(tools)
 
         outfile = project_root / "out1.md"
         outfile.write_text("step1 output")
-        await _finish_step(
-            tools, outputs={"output1": "out1.md"}, override="skip"
-        )
+        await _finish_step(tools, outputs={"output1": "out1.md"}, override="skip")
 
         inp = GoToStepInput(step_id="step1", session_id=SESSION_ID)
         resp = await tools.go_to_step(inp)
@@ -642,9 +602,7 @@ class TestGoToStep:
 
         outfile = project_root / "out1.md"
         outfile.write_text("step1 output")
-        await _finish_step(
-            tools, outputs={"output1": "out1.md"}, override="skip"
-        )
+        await _finish_step(tools, outputs={"output1": "out1.md"}, override="skip")
 
         inp = GoToStepInput(step_id="step1", session_id=SESSION_ID)
         await tools.go_to_step(inp)
@@ -656,9 +614,7 @@ class TestGoToStep:
         assert "step2" not in session.step_progress
 
     @pytest.mark.asyncio
-    async def test_prevents_going_forward(
-        self, tools: WorkflowTools
-    ) -> None:
+    async def test_prevents_going_forward(self, tools: WorkflowTools) -> None:
         """Cannot use go_to_step to go forward."""
         await _start_main_workflow(tools)
 
@@ -675,9 +631,7 @@ class TestGoToStep:
             await tools.go_to_step(inp)
 
     @pytest.mark.asyncio
-    async def test_go_to_current_step(
-        self, tools: WorkflowTools
-    ) -> None:
+    async def test_go_to_current_step(self, tools: WorkflowTools) -> None:
         """Going to the current step is allowed (index == current)."""
         await _start_main_workflow(tools)
 

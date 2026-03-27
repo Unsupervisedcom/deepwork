@@ -187,7 +187,9 @@ def build_dynamic_review_rules(
         for i, review_block in enumerate(review_blocks):
             # Build full instructions with preamble
             full_instructions = (
-                f"{preamble}\n\n{review_block.instructions}" if preamble else review_block.instructions
+                f"{preamble}\n\n{review_block.instructions}"
+                if preamble
+                else review_block.instructions
             )
 
             suffix = "_arg" if i > 0 else ""
@@ -327,7 +329,9 @@ def run_quality_gate(
     # 5. Match .deepreview rules against output files
     deepreview_tasks: list[ReviewTask] = []
     if deepreview_rules and output_files:
-        deepreview_tasks = match_files_to_rules(output_files, deepreview_rules, project_root, platform)
+        deepreview_tasks = match_files_to_rules(
+            output_files, deepreview_rules, project_root, platform
+        )
 
     # 6. Match dynamic rules against output files
     dynamic_tasks: list[ReviewTask] = []

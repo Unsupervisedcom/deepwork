@@ -250,14 +250,17 @@ class TestWorkflow:
     @pytest.fixture
     def sample_workflow(self) -> Workflow:
         """Create a sample workflow for testing."""
-        return Workflow.from_dict("main", {
-            "summary": "Main workflow",
-            "steps": [
-                {"name": "step_a", "instructions": "Do A."},
-                {"name": "step_b", "instructions": "Do B."},
-                {"name": "step_c", "instructions": "Do C."},
-            ],
-        })
+        return Workflow.from_dict(
+            "main",
+            {
+                "summary": "Main workflow",
+                "steps": [
+                    {"name": "step_a", "instructions": "Do A."},
+                    {"name": "step_b", "instructions": "Do B."},
+                    {"name": "step_c", "instructions": "Do C."},
+                ],
+            },
+        )
 
     def test_step_names(self, sample_workflow: Workflow) -> None:
         """Test step_names property returns ordered names."""
@@ -285,13 +288,16 @@ class TestWorkflow:
 
     def test_from_dict_with_optional_fields(self) -> None:
         """Test creating Workflow with agent and post_workflow_instructions."""
-        wf = Workflow.from_dict("custom", {
-            "summary": "Custom workflow",
-            "agent": "general-purpose",
-            "common_job_info_provided_to_all_steps_at_runtime": "Shared context.",
-            "post_workflow_instructions": "Clean up after.",
-            "steps": [{"name": "only_step", "instructions": "Do it."}],
-        })
+        wf = Workflow.from_dict(
+            "custom",
+            {
+                "summary": "Custom workflow",
+                "agent": "general-purpose",
+                "common_job_info_provided_to_all_steps_at_runtime": "Shared context.",
+                "post_workflow_instructions": "Clean up after.",
+                "steps": [{"name": "only_step", "instructions": "Do it."}],
+            },
+        )
 
         assert wf.name == "custom"
         assert wf.agent == "general-purpose"
@@ -300,10 +306,13 @@ class TestWorkflow:
 
     def test_from_dict_defaults(self) -> None:
         """Test that optional fields default to None."""
-        wf = Workflow.from_dict("minimal", {
-            "summary": "Minimal workflow",
-            "steps": [{"name": "s", "instructions": "Do."}],
-        })
+        wf = Workflow.from_dict(
+            "minimal",
+            {
+                "summary": "Minimal workflow",
+                "steps": [{"name": "s", "instructions": "Do."}],
+            },
+        )
 
         assert wf.agent is None
         assert wf.common_job_info is None

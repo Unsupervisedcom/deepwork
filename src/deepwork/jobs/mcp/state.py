@@ -25,7 +25,13 @@ from typing import Any
 
 import aiofiles
 
-from deepwork.jobs.mcp.schemas import ArgumentValue, StackEntry, StepHistoryEntry, StepProgress, WorkflowSession
+from deepwork.jobs.mcp.schemas import (
+    ArgumentValue,
+    StackEntry,
+    StepHistoryEntry,
+    StepProgress,
+    WorkflowSession,
+)
 
 
 class StateError(Exception):

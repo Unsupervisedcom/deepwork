@@ -910,7 +910,7 @@ class TestStepHistory:
         await state_manager.go_to_step(
             session_id=SESSION_ID,
             step_id="step1",
-            entry_index=0,
+            step_index=0,
             invalidate_step_ids=["step1"],
         )
         await state_manager.start_step(SESSION_ID, "step1")
