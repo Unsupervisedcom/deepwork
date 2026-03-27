@@ -15,20 +15,22 @@ The `record` standard job enables AI agents to observe a user performing a proce
 
 ### JOBS-REQ-011.2: Observe Step
 
-1. The `observe` step MUST accept two user-provided inputs: `process_name` and `process_description`.
-2. The `observe` step MUST produce an `observation_log.md` output file.
-3. The observation log MUST capture actions, tools used, decisions, and outcomes chronologically.
+1. The `observe` step MUST NOT require any user-provided inputs.
+2. The `observe` step MUST have empty outputs (`{}`).
+3. The `observe` step MUST instruct the agent to start immediately without asking upfront questions.
+4. The `observe` step MUST instruct the agent to use AskUserQuestion to solicit reasoning when the user takes actions whose purpose is unclear.
 
 ### JOBS-REQ-011.3: Document Step
 
-1. The `document` step MUST consume `observation_log.md` from the `observe` step.
+1. The `document` step MUST NOT consume file inputs from the observe step.
 2. The `document` step MUST produce a `process_document.md` output file.
-3. The process document MUST include a tool inventory, structured steps with inputs and outputs, and data flow.
-4. The `document` step MUST have quality reviews validating complete coverage, clear structure, and tool inventory.
+3. The `document` step MUST instruct the agent to synthesize the process from conversation history.
+4. The `document` step MUST instruct the agent to ask the user to confirm: the process purpose, a name for the process, and which inputs are variable vs. fixed.
+5. The `document` step MUST have quality reviews validating complete coverage, clear structure, and incorporation of user clarification.
 
 ### JOBS-REQ-011.4: Reflect Step
 
-1. The `reflect` step MUST consume both `observation_log.md` and `process_document.md` from prior steps.
+1. The `reflect` step MUST consume `process_document.md` from the document step.
 2. The `reflect` step MUST produce a `reflection.md` output file.
 3. The reflection MUST identify stumbling blocks with mitigation strategies and efficiency improvements with expected benefits.
 4. The `reflect` step MUST have quality reviews validating actionable improvements, stumbling block identification, and evidence grounding.

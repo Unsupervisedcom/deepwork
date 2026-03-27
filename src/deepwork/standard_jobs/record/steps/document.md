@@ -2,85 +2,76 @@
 
 ## Objective
 
-Synthesize the raw observation log into a structured process document that captures all tools, steps, inputs, outputs, and decision points in a form suitable for automation.
+Synthesize everything observed during the conversation into a structured process document, then confirm key details with the user.
 
 ## Task
 
-Read the observation log from the observe step and transform it into a clean, structured process document. This document will be used both as a standalone reference and as input for generating a DeepWork job definition.
+### 1. Draft from memory
 
-### Process
+Reflect on the entire conversation from the observe step. Write a first draft of the process document capturing every action, tool, decision, and outcome you observed.
 
-1. **Read the observation log**
-   - Identify all distinct steps in the process
-   - Note the tools and commands used at each step
-   - Map the data flow: what outputs from one step feed into the next
+If the conversation feels incomplete (e.g., compaction happened and you lost context), tell the user what you remember and ask them to fill in the gaps before drafting.
 
-2. **Normalize and structure**
-   - Group related actions into logical steps (the raw log may have finer granularity than needed)
-   - Name each step with a clear, descriptive title
-   - Identify which steps require user input vs. which can run autonomously
-   - Document decision points and branching logic
+### 2. Clarify with the user
 
-3. **Catalog tools and resources**
-   - List every tool, command, API, or service used
-   - Note the purpose of each tool in the context of this process
-   - Flag any tools that require special access or configuration
+After drafting, use AskUserQuestion to confirm three things (ask all at once if possible):
 
-4. **Define inputs and outputs for each step**
-   - What information enters the step (user input, file from prior step, external data)
-   - What the step produces (files, state changes, API calls)
-   - What format each input/output is in
+1. **Purpose**: "What is the goal of this process? What does it accomplish?"
+2. **Name**: "What would you call this process?" (suggest a name based on what you observed)
+3. **Variable vs. fixed inputs**: "Which inputs change every time you run this, and which stay the same?"
 
-## Output Format
+### 3. Amend the document
+
+Update the draft to incorporate the user's answers. Ensure the process name, purpose, and input classification are reflected throughout.
+
+## Output format
 
 ### process_document.md
 
-A structured process document ready to inform job creation.
-
-**Structure**:
 ```markdown
 # Process Document: [process_name]
 
-## Summary
-[1-2 sentence description of what this process accomplishes and who it serves]
+## Purpose
+[What this process accomplishes and who it serves, as confirmed by the user]
+
+## Inputs
+### Variable (change each invocation)
+- [input]: [description]
+
+### Fixed (same every time)
+- [input]: [description]
 
 ## Tool Inventory
 | Tool | Purpose | Required Access |
 |------|---------|-----------------|
-| [tool name] | [what it's used for] | [any setup needed] |
+| [tool] | [what it's used for] | [setup needed] |
 
 ## Process Steps
 
 ### Step 1: [Step name]
 - **Purpose**: [What this step accomplishes]
 - **Type**: [User-interactive / Autonomous / Semi-autonomous]
-- **Inputs**:
-  - [Input name]: [description] (source: [user / prior step / external])
+- **Inputs**: [What enters this step]
 - **Actions**:
-  1. [Action description]
-  2. [Action description]
-- **Outputs**:
-  - [Output name]: [description] (format: [markdown / JSON / etc.])
-- **Decision points**: [Any branching logic or conditional actions]
+  1. [Action]
+  2. [Action]
+- **Outputs**: [What this step produces]
+- **Decision points**: [Any branching logic]
 
 [Repeat for each step]
 
 ## Data Flow
-[Description or diagram of how data moves between steps]
+[How outputs from one step feed into the next]
 
 ## External Dependencies
-- [Service, API, or resource this process depends on]
-- [Access requirements or credentials needed]
+- [Services, APIs, credentials, or resources required]
+
+## Implicit Knowledge
+- [Things the user relied on that an AI agent would need to be told]
 ```
 
-## Quality Criteria
+## Quality criteria
 
-- Every action and tool from the observation log is represented in the process document
-- Steps are logically ordered with clear inputs, outputs, and decision points for each
-- All tools, commands, and external resources used are listed with their purpose
-- The document distinguishes between user-interactive and autonomous steps
-- Data flow between steps is explicit — no implicit handoffs
-
-## Context
-
-This document serves as the blueprint for the generated DeepWork job. The clearer and more structured it is, the better the generated job will be. Focus on making the process reproducible by someone (or an AI agent) who has never seen it before.
+- All observed actions and tools are represented
+- Steps are logically ordered with clear inputs, outputs, and decision points
+- The document includes the process name, purpose, and variable vs. fixed inputs as confirmed by the user

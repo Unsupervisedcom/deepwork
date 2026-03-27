@@ -2,92 +2,71 @@
 
 ## Objective
 
-Analyze the recorded process to identify efficiency improvements, stumbling blocks, and recommendations that should be incorporated into the automated workflow.
+Analyze the process document to identify efficiency improvements, stumbling blocks, and recommendations for the automated workflow.
 
 ## Task
 
-Read both the observation log and the process document, then produce a reflection that identifies what went well, what was painful, and what could be improved when this process runs as an automated workflow.
+### 1. Review the process document
 
-### Process
+Read `process_document.md` and look for:
+- Steps that were error-prone or required backtracking
+- Workarounds or manual steps that felt tedious
+- Steps that took disproportionately long
+- Implicit knowledge that an AI agent would lack
+- External dependencies that caused friction
 
-1. **Review the raw observations**
-   - Re-read the observation log, paying attention to:
-     - Places where the user hesitated or backtracked
-     - Workarounds or manual steps that felt tedious
-     - Steps that took disproportionately long
-     - Implicit knowledge the user relied on
+### 2. Identify stumbling blocks
 
-2. **Identify stumbling blocks**
-   - What steps were error-prone or confusing?
-   - Where did the user need to retry or course-correct?
-   - What external dependencies caused delays or friction?
-   - What implicit knowledge would an AI agent lack?
+For each pain point, describe what happened, its impact, and how to mitigate it in the automated workflow.
 
-3. **Identify efficiency improvements**
-   - Which steps could be parallelized?
-   - Where could templates or defaults reduce manual input?
-   - Are there steps that could be combined or eliminated?
-   - Could any manual lookups be automated with tools?
+### 3. Identify efficiency improvements
 
-4. **Formulate recommendations**
-   - For each improvement, describe the concrete change to make in the automated workflow
-   - For each stumbling block, describe how to mitigate it (better instructions, validation, fallback)
-   - Prioritize by impact: what changes would save the most time or prevent the most errors?
+Look for:
+- Steps that could be parallelized
+- Places where templates or defaults could reduce manual input
+- Steps that could be combined or eliminated
+- Manual lookups that could be automated
 
-## Output Format
+### 4. Prioritize recommendations
+
+Rank by impact: what changes would save the most time or prevent the most errors?
+
+## Output format
 
 ### reflection.md
 
-An analysis with actionable recommendations for the automated workflow.
-
-**Structure**:
 ```markdown
 # Process Reflection: [process_name]
 
 ## Summary
-[1-2 sentences on the overall quality of the process and the biggest opportunities]
+[1-2 sentences on the biggest opportunities]
 
 ## Stumbling Blocks
 
 ### 1. [Block title]
-- **What happened**: [Describe the specific issue observed]
-- **Impact**: [How it affected the process — time lost, errors, rework]
-- **Mitigation**: [How to prevent or handle this in the automated workflow]
-
-[Repeat for each stumbling block]
+- **What happened**: [Specific issue from the process document]
+- **Impact**: [Time lost, errors, rework]
+- **Mitigation**: [How to handle this in the automated workflow]
 
 ## Efficiency Improvements
 
 ### 1. [Improvement title]
 - **Current state**: [How the step works now]
-- **Proposed change**: [Specific change to make]
-- **Expected benefit**: [Time saved, errors prevented, or quality improved]
-
-[Repeat for each improvement]
+- **Proposed change**: [Specific change]
+- **Expected benefit**: [Time saved, errors prevented]
 
 ## Recommendations for Automated Workflow
 
-### Step-level recommendations
 | Step | Recommendation | Priority |
 |------|---------------|----------|
-| [step name] | [what to change] | [high/medium/low] |
-
-### Workflow-level recommendations
-- [Any structural changes — reordering, parallelization, new steps, removed steps]
+| [step] | [change] | [high/medium/low] |
 
 ## Implicit Knowledge to Encode
-- [Things the user knew that an AI agent would need to be told explicitly]
-- [Domain conventions, naming patterns, or unwritten rules]
+- [Things an AI agent would need to be told explicitly]
 ```
 
-## Quality Criteria
+## Quality criteria
 
 - Each improvement is specific and explains how to implement it in the automated workflow
-- Pain points and failure-prone steps from the recording are identified with mitigation strategies
-- Insights reference specific observations from the recording, not generic advice
-- Implicit knowledge that an AI agent would need is surfaced and documented
-- Recommendations are prioritized by impact
-
-## Context
-
-This reflection is the bridge between "what happened" and "what the automated workflow should do." The generated DeepWork job should be better than the raw recording — incorporating the lessons learned here. Focus on actionable insights that translate directly into better step instructions, validation checks, or workflow structure.
+- Pain points are identified with mitigation strategies
+- Insights reference specific details from the process document, not generic advice
