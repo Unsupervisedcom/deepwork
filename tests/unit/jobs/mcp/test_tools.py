@@ -479,6 +479,8 @@ class TestFinishedStep:
         assert resp.status == StepStatus.NEXT_STEP
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.12).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_quality_gate_fail(self, tools: WorkflowTools, project_root: Path) -> None:
         """When quality gate returns feedback, status is NEEDS_WORK."""
         await _start_main_workflow(tools)
@@ -500,6 +502,8 @@ class TestFinishedStep:
         assert "missing key details" in resp.feedback
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_quality_gate_skipped_with_override(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -522,11 +526,15 @@ class TestFinishedStep:
         assert resp.status == StepStatus.NEXT_STEP
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_no_active_session(self, tools: WorkflowTools) -> None:
         with pytest.raises(ToolError, match="No active workflow session"):
             await _finish_step(tools, outputs={"output1": "x.md"}, override="skip")
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_file_path_list_validated(self, tools: WorkflowTools, project_root: Path) -> None:
         """file_path type accepts a list of paths and validates each."""
         await _start_main_workflow(tools)
@@ -542,6 +550,8 @@ class TestFinishedStep:
             )
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_file_path_list_all_exist(self, tools: WorkflowTools, project_root: Path) -> None:
         await _start_main_workflow(tools)
 
@@ -567,6 +577,8 @@ class TestAbortWorkflow:
     """Tests for abort_workflow tool."""
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.6.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_abort_returns_to_empty_stack(self, tools: WorkflowTools) -> None:
         await _start_main_workflow(tools)
 
@@ -584,6 +596,8 @@ class TestAbortWorkflow:
         assert len(resp.stack) == 0
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.6.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_abort_returns_to_parent(self, tools: WorkflowTools, project_root: Path) -> None:
         """Aborting a nested workflow returns to the parent."""
         # Start outer workflow
@@ -620,6 +634,8 @@ class TestGoToStep:
     """Tests for go_to_step tool."""
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_navigate_back(self, tools: WorkflowTools, project_root: Path) -> None:
         """Navigate back to step1 after advancing to step2."""
         await _start_main_workflow(tools)
@@ -636,6 +652,8 @@ class TestGoToStep:
         assert "step2" in resp.invalidated_steps
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_clears_progress(
         self, tools: WorkflowTools, project_root: Path, state_manager: StateManager
     ) -> None:
@@ -656,6 +674,8 @@ class TestGoToStep:
         assert "step2" not in session.step_progress
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_prevents_going_forward(self, tools: WorkflowTools) -> None:
         """Cannot use go_to_step to go forward."""
         await _start_main_workflow(tools)
@@ -665,6 +685,8 @@ class TestGoToStep:
             await tools.go_to_step(inp)
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_invalid_step_name(self, tools: WorkflowTools) -> None:
         await _start_main_workflow(tools)
 
@@ -673,6 +695,8 @@ class TestGoToStep:
             await tools.go_to_step(inp)
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.7.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_go_to_current_step(self, tools: WorkflowTools) -> None:
         """Going to the current step is allowed (index == current)."""
         await _start_main_workflow(tools)
