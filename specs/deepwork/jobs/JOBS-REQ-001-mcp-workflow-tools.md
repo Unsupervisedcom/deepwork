@@ -2,7 +2,7 @@
 
 ## Overview
 
-The DeepWork MCP server exposes five workflow tools to AI agents via the Model Context Protocol (MCP): `get_workflows`, `start_workflow`, `finished_step`, `abort_workflow`, and `go_to_step`. These tools constitute the primary runtime interface through which agents discover, execute, and manage multi-step workflows. The server is built on FastMCP and all tool responses are serialized as dictionaries via Pydantic `model_dump()`.
+The DeepWork MCP server exposes workflow tools to AI agents via the Model Context Protocol (MCP): `get_workflows`, `start_workflow`, `finished_step`, `abort_workflow`, and `go_to_step`. These tools constitute the primary runtime interface through which agents discover, execute, and manage multi-step workflows. The server also exposes review tools (`get_review_instructions`, `get_configured_reviews`, `mark_review_as_passed`). Built on FastMCP; all tool responses serialized as dictionaries via Pydantic `model_dump()`.
 
 ## Requirements
 
@@ -10,17 +10,13 @@ The DeepWork MCP server exposes five workflow tools to AI agents via the Model C
 
 1. The system MUST provide a `create_server()` function that returns a configured `FastMCP` instance.
 2. The server MUST accept a `project_root` parameter (Path or str) and resolve it to an absolute path.
-3. The server MUST accept an `enable_quality_gate` boolean parameter (default: `True`).
-4. The server MUST accept a `quality_gate_timeout` integer parameter in seconds (default: `120`).
-5. The server MUST accept a `quality_gate_max_attempts` integer parameter (default: `3`).
-6. The server MUST accept an `external_runner` parameter (default: `None`). When set to `"claude"`, the server SHALL use the Claude CLI subprocess for quality reviews. When `None`, the server SHALL use self-review mode.
-7. When `enable_quality_gate` is `True` and `external_runner` is `"claude"`, the system MUST create a `QualityGate` with a `ClaudeCLI` instance and `max_inline_files=5`.
-8. When `enable_quality_gate` is `True` and `external_runner` is `None`, the system MUST create a `QualityGate` with `cli=None` and `max_inline_files=0`.
-9. When `enable_quality_gate` is `False`, the system MUST NOT create a `QualityGate` instance.
-10. The server MUST be named `"deepwork"`.
-11. The server MUST include instructions text describing the workflow lifecycle (Discover, Start, Execute, Checkpoint, Iterate, Continue, Complete, Going Back).
-12. Every tool call MUST be logged with the tool name and current stack state.
-13. On startup, the server MUST copy `job.schema.json` from its package-bundled location to `.deepwork/job.schema.json` under the project root, overwriting any existing file at that path. If the copy fails (e.g., permission error), the server MUST log a warning and continue without error.
+3. The server MUST accept an optional `platform` parameter (str or None, default: `None`). When `None`, defaults to `"claude"`.
+4. The server MUST accept `**_kwargs` for backwards compatibility with removed parameters (`enable_quality_gate`, `quality_gate_timeout`, `quality_gate_max_attempts`, `external_runner`). These MUST be ignored.
+5. The server MUST be named `"deepwork"`.
+6. The server MUST include instructions text describing the workflow lifecycle.
+7. Every tool call MUST be logged with the tool name and current stack state.
+8. On startup, the server MUST copy `job.schema.json` from its package-bundled location to `.deepwork/job.schema.json` under the project root. If the copy fails, the server MUST log a warning and continue.
+9. On startup, the server MUST write an initial job manifest via `StatusWriter`.
 
 ### JOBS-REQ-001.2: get_workflows Tool
 
@@ -28,99 +24,79 @@ The DeepWork MCP server exposes five workflow tools to AI agents via the Model C
 2. The tool MUST accept no parameters.
 3. The tool MUST return a dictionary with a `jobs` key containing a list of job info objects.
 4. Each job info object MUST contain `name`, `summary`, and `workflows` fields.
-5. Each workflow info object MUST contain `name` and `summary` fields.
-6. Each workflow info object MUST contain a `how_to_invoke` field (string) with invocation instructions.
-7. When a workflow's `agent` field is set in job.yml, `how_to_invoke` MUST contain instructions for delegating the workflow to a sub-agent of the specified type via the Task tool. The instructions MUST include the agent type, job name, and workflow name.
-8. When a workflow's `agent` field is not set, `how_to_invoke` MUST contain instructions to call the `start_workflow` MCP tool directly with the job name and workflow name.
-9. The tool MUST also return an `errors` key containing a list of job load error objects for any jobs that failed to parse.
-10. Each job load error object MUST contain `job_name`, `job_dir`, and `error` fields.
-11. The tool MUST load jobs from all configured job folders (see JOBS-REQ-008).
+5. Each workflow info object MUST contain `name`, `summary`, and `how_to_invoke` fields.
+6. When a workflow's `agent` field is set, `how_to_invoke` MUST contain instructions for delegating to a sub-agent of the specified type via the Task tool.
+7. When a workflow's `agent` field is not set, `how_to_invoke` MUST contain instructions to call `start_workflow` directly.
+8. The tool MUST also return an `errors` key containing a list of job load error objects for jobs that failed to parse.
+9. Each job load error object MUST contain `job_name`, `job_dir`, and `error` fields.
 
 ### JOBS-REQ-001.3: start_workflow Tool
 
 1. The `start_workflow` tool MUST be registered as an asynchronous MCP tool.
-2. The tool MUST require the following parameters: `goal` (str), `job_name` (str), `workflow_name` (str), `session_id` (str).
-3. The tool MUST accept optional parameters: `instance_id` (str or None, default: None), `agent_id` (str or None, default: None).
+2. The tool MUST require: `goal` (str), `job_name` (str), `workflow_name` (str), `session_id` (str).
+3. The tool MUST accept optional: `inputs` (dict of step_argument names to values, or None), `agent_id` (str or None).
 4. The tool MUST raise `ToolError` if the specified `job_name` does not exist.
-5. The tool MUST raise `ToolError` if the specified `workflow_name` does not match any workflow in the job, UNLESS the job has exactly one workflow, in which case that workflow SHALL be auto-selected regardless of the name provided.
-6. The tool MUST raise `ToolError` if a job has multiple workflows and the specified name does not match any of them. The error message MUST list the available workflow names.
-7. The tool MUST raise `ToolError` if the selected workflow has no steps.
-8. The tool MUST create a new workflow session via the StateManager.
-9. The tool MUST mark the first step as started.
-10. The tool MUST read the instruction file for the first step and include its content in the response.
-11. The response MUST contain a `begin_step` object with: `session_id`, `step_id`, `job_dir`, `step_expected_outputs`, `step_reviews`, `step_instructions`, and `common_job_info`.
-12. The response MUST contain a `stack` field reflecting the current workflow stack after starting.
-13. Each expected output in `step_expected_outputs` MUST include `name`, `type`, `description`, `required`, and `syntax_for_finished_step_tool` fields.
-14. The `syntax_for_finished_step_tool` MUST be `"filepath"` for `type: file` outputs and `"array of filepaths for all individual files"` for `type: files` outputs.
-15. The response MUST contain an `important_note` field (string) instructing the agent to clarify ambiguous user requests via `AskUserQuestion` (if available) before proceeding with the workflow.
+5. The tool MUST raise `ToolError` if the specified `workflow_name` does not match any workflow, UNLESS the job has exactly one workflow, in which case it SHALL be auto-selected.
+6. The tool MUST raise `ToolError` if the selected workflow has no steps.
+7. The tool MUST create a new workflow session via `StateManager`.
+8. The tool MUST resolve input values for the first step from provided `inputs` and previous step outputs.
+9. The tool MUST mark the first step as started with resolved input values.
+10. The response MUST contain a `begin_step` (`ActiveStepInfo`) with: `session_id`, `step_id`, `job_dir`, `step_expected_outputs`, `step_inputs`, `step_instructions`, `common_job_info`.
+11. The response MUST contain a `stack` field and an `important_note` field instructing the agent to clarify ambiguous requests.
+12. Each expected output MUST include `name`, `type`, `description`, `required`, and `syntax_for_finished_step_tool`.
 
 ### JOBS-REQ-001.4: finished_step Tool
 
 1. The `finished_step` tool MUST be registered as an asynchronous MCP tool.
-2. The tool MUST require an `outputs` parameter: a dict mapping output names to file path(s).
-3. The tool MUST require a `session_id` parameter (str) and accept an optional `agent_id` parameter (str or None).
-4. The tool MUST raise `ToolError` if no active workflow session exists for the given `session_id`. The error message MUST explain what the tool does and provide guidance on how to resume a workflow.
-5. The tool MUST target the top-of-stack session for the given `session_id` (and `agent_id` if provided).
-6. The tool MUST validate submitted outputs against the current step's declared output specifications (see JOBS-REQ-001.5).
-7. The tool MUST return a response with a `status` field that is one of: `"needs_work"`, `"next_step"`, or `"workflow_complete"`.
+2. The tool MUST require: `outputs` (dict mapping step_argument names to values), `session_id` (str).
+3. The tool MUST accept optional: `work_summary` (str or None), `quality_review_override_reason` (str or None), `agent_id` (str or None).
+4. The tool MUST raise `ToolError` if no active workflow session exists for the given `session_id`.
+5. The tool MUST validate submitted outputs against the current step's declared output refs (see JOBS-REQ-001.5).
+6. The tool MUST return a response with `status` of: `"needs_work"`, `"next_step"`, or `"workflow_complete"`.
 
 #### Quality Gate Behavior
 
-8. If a quality gate is configured, the step has reviews, and `quality_review_override_reason` is NOT provided, the tool MUST invoke quality gate evaluation.
-9. If `quality_review_override_reason` IS provided, the tool MUST skip quality gate evaluation entirely.
-10. In self-review mode (`external_runner=None`): the tool MUST write review instructions to `.deepwork/tmp/quality_review_{session_id}_{workflow_name}_{step_id}.md` and return `status: "needs_work"` with instructions for the agent to spawn a subagent for self-review.
-11. In external runner mode (`external_runner="claude"`): the tool MUST record a quality attempt via the StateManager before invoking the quality gate.
-12. In external runner mode, if the quality gate returns failed reviews and the attempt count is below `max_quality_attempts`, the tool MUST return `status: "needs_work"` with combined feedback from all failed reviews.
-13. In external runner mode, if the quality gate returns failed reviews and the attempt count has reached `max_quality_attempts`, the tool MUST raise `ToolError` with a message indicating the maximum attempts were exceeded and including the feedback.
-14. In external runner mode, if all reviews pass, the tool MUST proceed to step completion.
+7. If `quality_review_override_reason` is NOT provided, the tool MUST invoke `run_quality_gate()` from `quality_gate.py`.
+8. If `quality_review_override_reason` IS provided, the tool MUST skip quality gate evaluation entirely.
+9. `run_quality_gate()` returns `None` (no reviews needed) or a string (review feedback). When it returns a string, the tool MUST record a quality attempt and return `status: "needs_work"` with the feedback.
+10. When `run_quality_gate()` returns `None`, the tool MUST proceed to step completion.
 
 #### Step Advancement
 
-15. After successful quality gate (or when no gate applies), the tool MUST mark the current step as completed in the StateManager with outputs and notes.
-16. If no more step entries remain in the workflow, the tool MUST return `status: "workflow_complete"` with a summary message and `all_outputs` merged from all completed steps.
-17. If more step entries remain, the tool MUST advance to the next step entry, return `status: "next_step"`, and include a `begin_step` object with the next step's information.
-18. For concurrent step entries (entries with multiple step IDs), the tool MUST use the first step ID as the primary step and append a message about concurrent execution using the Task tool.
-19. All `finished_step` responses MUST include a `stack` field reflecting the current workflow stack.
+11. After successful quality gate (or when no gate applies), the tool MUST mark the current step as completed with outputs and work_summary.
+12. If no more steps remain, the tool MUST return `status: "workflow_complete"` with `all_outputs` merged from all completed steps and `post_workflow_instructions` (if defined on the workflow).
+13. If more steps remain, the tool MUST advance to the next step, resolve its input values, mark it as started, and return `status: "next_step"` with a `begin_step` object.
+14. All `finished_step` responses MUST include a `stack` field.
 
 ### JOBS-REQ-001.5: Output Validation
 
-1. The system MUST reject submitted output keys that do not match any declared output name. The error MUST list the unknown keys and the valid declared names.
-2. The system MUST reject submissions missing any required output (outputs where `required: true`). The error MUST list the missing required outputs.
-3. Optional outputs (`required: false`) MAY be omitted from the submission without error.
-4. For outputs declared as `type: "file"`, the submitted value MUST be a single string. If not, the system MUST raise `ToolError` indicating the type mismatch.
-5. For outputs declared as `type: "file"`, the file at the specified path (relative to project root) MUST exist. If not, the system MUST raise `ToolError`.
-6. For outputs declared as `type: "files"`, the submitted value MUST be a list. If not, the system MUST raise `ToolError` indicating the type mismatch.
-7. For outputs declared as `type: "files"`, each element in the list MUST be a string. If not, the system MUST raise `ToolError`.
-8. For outputs declared as `type: "files"`, each file at the specified path (relative to project root) MUST exist. If not, the system MUST raise `ToolError`.
+1. The system MUST reject submitted output keys that do not match any declared output name.
+2. The system MUST reject submissions missing any required output (`required: true` on the `StepOutputRef`).
+3. Optional outputs (`required: false`) MAY be omitted without error.
+4. For outputs with `StepArgument.type == "file_path"`: the value MUST be a string or list of strings. Each path (relative to project root) MUST exist. `ToolError` MUST be raised on type mismatch or missing file.
+5. For outputs with `StepArgument.type == "string"`: the value MUST be a string. `ToolError` MUST be raised on type mismatch.
 
 ### JOBS-REQ-001.6: abort_workflow Tool
 
 1. The `abort_workflow` tool MUST be registered as an asynchronous MCP tool.
-2. The tool MUST require `explanation` (str) and `session_id` (str) parameters.
-3. The tool MUST accept an optional `agent_id` parameter (str or None, default: None).
+2. The tool MUST require `explanation` (str) and `session_id` (str).
+3. The tool MUST accept optional `agent_id` (str or None).
 4. The tool MUST raise `StateError` if no active workflow session exists.
-5. The tool MUST mark the targeted session as aborted with the provided explanation.
-6. The tool MUST remove the aborted session from the stack.
-7. The response MUST contain: `aborted_workflow` (formatted as `"job_name/workflow_name"`), `aborted_step`, `explanation`, `stack`, `resumed_workflow` (or None), and `resumed_step` (or None).
-8. If a parent workflow exists on the stack after abortion, `resumed_workflow` and `resumed_step` MUST reflect that parent's state.
+5. The tool MUST mark the session as aborted and remove it from the stack.
+6. The response MUST contain: `aborted_workflow`, `aborted_step`, `explanation`, `stack`, `resumed_workflow` (or None), `resumed_step` (or None).
 
 ### JOBS-REQ-001.7: go_to_step Tool
 
 1. The `go_to_step` tool MUST be registered as an asynchronous MCP tool.
-2. The tool MUST require `step_id` (str) and `session_id` (str) parameters.
-3. The tool MUST accept an optional `agent_id` parameter (str or None, default: None).
-4. The tool MUST raise `StateError` if no active workflow session exists for the given `session_id`.
-5. The tool MUST target the top-of-stack session for the given `session_id` (and `agent_id` if provided).
-6. The tool MUST raise `ToolError` if the specified `step_id` does not exist in the workflow. The error message MUST list the available step names.
-7. The tool MUST raise `ToolError` if the target step's entry index is greater than the current entry index (forward navigation). The error message MUST direct the agent to use `finished_step` to advance forward.
-8. The tool MUST allow navigating to the current step (target entry index == current entry index) to restart it.
-9. The tool MUST collect all step IDs from the target entry index through the end of the workflow as invalidated steps.
-10. The tool MUST clear session tracking state (step progress) for all invalidated step IDs via the StateManager. Files on disk MUST NOT be deleted.
-11. For concurrent step entries, the tool MUST navigate to the first step ID in the entry.
-12. The tool MUST mark the target step as started after clearing invalidated progress.
-13. The response MUST contain a `begin_step` object with: `session_id`, `step_id`, `job_dir`, `step_expected_outputs`, `step_reviews`, `step_instructions`, and `common_job_info`.
-14. The response MUST contain an `invalidated_steps` field listing all step IDs whose progress was cleared.
-15. The response MUST contain a `stack` field reflecting the current workflow stack after navigation.
+2. The tool MUST require `step_id` (str) and `session_id` (str). Optional: `agent_id`.
+3. The tool MUST raise `StateError` if no active workflow session exists.
+4. The tool MUST raise `ToolError` if `step_id` does not exist in the workflow, listing available step names.
+5. The tool MUST raise `ToolError` if the target step index is greater than the current step index (forward navigation). The error MUST direct the agent to use `finished_step`.
+6. The tool MUST allow navigating to the current step (same index) to restart it.
+7. The tool MUST collect all step names from the target index through the end of the workflow as invalidated steps.
+8. The tool MUST clear session tracking state for all invalidated steps via `StateManager`. Files on disk MUST NOT be deleted.
+9. The tool MUST mark the target step as started with resolved input values.
+10. The response MUST contain `begin_step`, `invalidated_steps`, and `stack`.
 
 ### JOBS-REQ-001.8: Tool Response Serialization
 
