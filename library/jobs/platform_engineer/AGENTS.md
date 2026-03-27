@@ -32,4 +32,11 @@ platform_engineer/
 
 ## Learnings
 
-(To be populated after workflow executions)
+### Artifact Storage
+- **Requirement**: Workflow artifacts (context, assessments, plans) MUST be stored in `.deepwork/tmp/platform_engineer/` instead of `.deepwork/artifacts/`.
+- **Reasoning**: The `.deepwork/tmp/` directory is globally gitignored in Keystone projects, ensuring temporary investigation artifacts don't clutter the main repository history. Canonical sources remain the repo JSON or GitHub issues.
+- **Reference**: Updated in `job.yml` and all step instruction files.
+
+### Grafana Integration
+- **Key Insight**: Always prefer declarative dashboard provisioning in Nix modules over manual API pushes when possible.
+- **Tooling**: The `ks` tool's `grafana dashboards apply` command is a useful iteration helper but should not be the primary provisioning method for production.
