@@ -148,7 +148,7 @@ For each failing or partial convention, provide:
 
 ## Output Format
 
-Write the audit to `.deepwork/artifacts/platform_engineer/infrastructure_audit/infrastructure_audit.md`. Create parent directories if they do not exist.
+Write the audit to `.deepwork/tmp/platform_engineer/infrastructure_audit/infrastructure_audit.md`. Create parent directories if they do not exist.
 
 ```markdown
 # Infrastructure Audit

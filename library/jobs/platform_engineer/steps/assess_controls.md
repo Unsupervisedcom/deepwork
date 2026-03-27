@@ -129,14 +129,14 @@ For automated controls (encryption, scanning, access controls), verify by checki
 #### 8. Create Artifact Directory
 
 ```bash
-mkdir -p .deepwork/artifacts/platform_engineer/soc_audit/$(date +%Y-%m-%d)/
+mkdir -p .deepwork/tmp/platform_engineer/soc_audit/$(date +%Y-%m-%d)/
 ```
 
 ## Output Format
 
 ### controls_assessment.md
 
-Write to `.deepwork/artifacts/platform_engineer/soc_audit/YYYY-MM-DD/controls_assessment.md`.
+Write to `.deepwork/tmp/platform_engineer/soc_audit/YYYY-MM-DD/controls_assessment.md`.
 
 ```markdown
 # SOC 2 Controls Assessment

@@ -124,7 +124,7 @@ Note existing monitoring and operational configurations without reading sensitiv
 
 ## Output Format
 
-Write the context document to `.deepwork/artifacts/platform_engineer/context.md`. Create parent directories if they do not exist.
+Write the context document to `.deepwork/tmp/platform_engineer/context.md`. Create parent directories if they do not exist.
 
 ```markdown
 # Platform Context

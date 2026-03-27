@@ -177,7 +177,7 @@ See `gap_analysis.md` for detailed remediation plans.
 
 ### readiness_summary.md
 
-Write to `.deepwork/artifacts/platform_engineer/soc_audit/YYYY-MM-DD/readiness_summary.md`.
+Write to `.deepwork/tmp/platform_engineer/soc_audit/YYYY-MM-DD/readiness_summary.md`.
 
 ```markdown
 # SOC 2 Readiness Summary

@@ -231,7 +231,7 @@ The specific files created depend on the stack and CI provider. Common examples:
 
 ### release_docs.md
 
-Write to `.deepwork/artifacts/platform_engineer/release_builder/release_docs.md`:
+Write to `.deepwork/tmp/platform_engineer/release_builder/release_docs.md`:
 
 ```markdown
 # Release Pipeline Setup

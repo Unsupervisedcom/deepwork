@@ -264,7 +264,7 @@ For each recommendation, provide:
 
 ## Output Format
 
-Write the analysis to `.deepwork/artifacts/platform_engineer/cloud_spend/spend_analysis.md`. Create parent directories if they do not exist.
+Write the analysis to `.deepwork/tmp/platform_engineer/cloud_spend/spend_analysis.md`. Create parent directories if they do not exist.
 
 ```markdown
 # Cloud Spend Analysis
