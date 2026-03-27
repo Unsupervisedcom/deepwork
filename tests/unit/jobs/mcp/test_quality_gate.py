@@ -410,6 +410,8 @@ class TestRunQualityGate:
 
         assert result is None
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_feedback_when_json_schema_fails(self, tmp_path: Path) -> None:
         """Schema validation failure returns an error string without running reviews."""
         schema = {
