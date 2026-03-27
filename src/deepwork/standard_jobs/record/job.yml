@@ -1,0 +1,112 @@
+name: record
+version: "1.0.0"
+summary: "Record a user's process with AI assistance, then generate a reusable DeepWork job from it"
+common_job_info_provided_to_all_steps_at_runtime: |
+  A meta-workflow for capturing and automating processes. The agent actively assists the
+  user through their task while recording every step, tool used, decision made, and
+  input/output produced. After recording, the agent synthesizes observations into a
+  structured process document, reflects on efficiency improvements and stumbling blocks,
+  and then launches the deepwork_jobs/new_job workflow to generate a complete DeepWork
+  job definition.
+
+  The goal is to turn a one-off manual process into a repeatable, reviewable workflow
+  that any AI agent can execute.
+
+  Key principles:
+  - Record everything: tools, commands, files read/written, decisions, and rationale
+  - Be helpful: actively assist the user rather than passively watching
+  - Capture context: note why steps are done, not just what is done
+  - Identify patterns: look for repeated actions that could be templated
+
+workflows:
+  - name: record
+    summary: "Record a process end-to-end and generate a DeepWork job from it"
+    steps:
+      - observe
+      - document
+      - reflect
+      - generate_job
+
+steps:
+  - id: observe
+    name: "Observe and assist"
+    description: "Help the user complete their process while recording every action, tool, and decision"
+    instructions_file: steps/observe.md
+    inputs:
+      - name: process_name
+        description: "Short name for the process being recorded (lowercase, underscores)"
+      - name: process_description
+        description: "What is the process you want to record? Describe the task and its goal."
+    outputs:
+      observation_log.md:
+        type: file
+        description: "Chronological log of every action, tool, decision, and outcome observed during the process"
+        required: true
+    dependencies: []
+    reviews: []
+
+  - id: document
+    name: "Document the process"
+    description: "Synthesize the observation log into a structured process document"
+    instructions_file: steps/document.md
+    inputs:
+      - file: observation_log.md
+        from_step: observe
+    outputs:
+      process_document.md:
+        type: file
+        description: "Structured process document with all tools, steps, inputs, outputs, and decision points"
+        required: true
+    dependencies:
+      - observe
+    reviews:
+      - run_each: process_document.md
+        additional_review_guidance: "Read the observation_log.md from the observe step to verify completeness."
+        quality_criteria:
+          "Complete Coverage": "Every action and tool from the observation log is represented in the process document."
+          "Clear Structure": "Steps are logically ordered with clear inputs, outputs, and decision points for each."
+          "Tool Inventory": "All tools, commands, and external resources used are listed with their purpose."
+
+  - id: reflect
+    name: "Reflect on the process"
+    description: "Analyze the process for efficiency improvements, stumbling blocks, and automation opportunities"
+    instructions_file: steps/reflect.md
+    inputs:
+      - file: observation_log.md
+        from_step: observe
+      - file: process_document.md
+        from_step: document
+    outputs:
+      reflection.md:
+        type: file
+        description: "Analysis of efficiency improvements, stumbling blocks, and recommendations for the automated workflow"
+        required: true
+    dependencies:
+      - observe
+      - document
+    reviews:
+      - run_each: reflection.md
+        additional_review_guidance: "Read the process_document.md and observation_log.md to verify the reflection is grounded in what actually happened."
+        quality_criteria:
+          "Actionable Improvements": "Each improvement is specific and explains how to implement it in the automated workflow."
+          "Stumbling Blocks Identified": "Pain points and failure-prone steps from the recording are identified with mitigation strategies."
+          "Grounded in Evidence": "Insights reference specific observations from the recording, not generic advice."
+
+  - id: generate_job
+    name: "Generate DeepWork job"
+    description: "Launch the deepwork_jobs/new_job workflow using the process document and reflection as context"
+    instructions_file: steps/generate_job.md
+    inputs:
+      - file: process_document.md
+        from_step: document
+      - file: reflection.md
+        from_step: reflect
+    outputs:
+      job_created.md:
+        type: file
+        description: "Confirmation of the generated job with its location and summary"
+        required: true
+    dependencies:
+      - document
+      - reflect
+    reviews: []
