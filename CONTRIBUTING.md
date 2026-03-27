@@ -232,33 +232,37 @@ uv tool list | grep deepwork
 uvx deepwork --version
 
 # Test the MCP server starts
-uvx deepwork serve --path . --external-runner claude
+uvx deepwork serve --path . --external-runner claude --platform claude
 ```
 
 ## Installing Pre-Release Versions
 
-DeepWork uses pre-release versions (e.g., `0.7.0a1`) during development. By default, `uv` and `pip` skip pre-release versions, so you need to opt in explicitly.
+DeepWork uses pre-release versions (e.g., `0.10.0a1`) during development. By default, `uv` and `pip` skip pre-release versions, so you need to opt in explicitly.
 
-### With uv
+### With uv tool install (recommended for CLI / MCP server)
+
+The plugin's MCP config runs `uvx deepwork serve`, so you need the pre-release registered as a uv tool:
 
 ```bash
-# Install the latest pre-release from PyPI
-uv pip install --prerelease=allow deepwork
+# Install the latest pre-release globally
+uv tool install --prerelease=allow deepwork
 
 # Or pin to a specific pre-release
-uv pip install --prerelease=allow "deepwork==0.7.0a1"
+uv tool install --prerelease=allow "deepwork==0.10.0a1"
+```
+
+After this, `uvx deepwork serve` will use the pre-release version.
+
+### With uv pip (library usage)
+
+```bash
+uv pip install --prerelease=allow deepwork
 ```
 
 ### With pip
 
 ```bash
 pip install --pre deepwork
-```
-
-### With uv tool install (global CLI)
-
-```bash
-uv tool install --prerelease=allow deepwork
 ```
 
 ## Testing Your Local Installation
@@ -278,7 +282,7 @@ uvx deepwork --version
 The MCP server is DeepWork's core runtime. Test it directly:
 
 ```bash
-uvx deepwork serve --path . --external-runner claude
+uvx deepwork serve --path . --external-runner claude --platform claude
 ```
 
 ### 3. Test with Claude Code
@@ -467,7 +471,7 @@ mypy src/
 ```bash
 # Verify uvx deepwork uses your local source
 uv tool list | grep deepwork
-uvx deepwork serve --path ~/test-project --external-runner claude
+uvx deepwork serve --path ~/test-project --external-runner claude --platform claude
 ```
 
 ### 5. Commit Your Changes

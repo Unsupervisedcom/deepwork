@@ -114,7 +114,7 @@ The CLI has four active commands: `serve`, `hook`, `review`, and `jobs`. Depreca
 Starts the MCP server for workflow management:
 
 ```bash
-deepwork serve --path .
+deepwork serve --path . --platform claude
 ```
 
 The serve command:
@@ -1008,7 +1008,7 @@ The plugin's `.mcp.json` registers the MCP server automatically:
   "mcpServers": {
     "deepwork": {
       "command": "uvx",
-      "args": ["deepwork", "serve", "--path", "."]
+      "args": ["deepwork", "serve", "--path", ".", "--platform", "claude"]
     }
   }
 }
