@@ -8,7 +8,10 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from deepwork.review.config import ReviewTask
 
 import aiofiles
 
@@ -71,7 +74,7 @@ def adapt_reviews_to_review_tasks(
     output_specs: dict[str, str],
     step_id: str = "quality-review",
     notes: str | None = None,
-) -> list["ReviewTask"]:
+) -> list[ReviewTask]:
     """Convert Jobs review dicts into ReviewTask objects for the Reviews pipeline.
 
     This is adapter logic that wraps the Deepwork Reviews mechanism so that
