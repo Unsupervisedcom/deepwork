@@ -99,7 +99,9 @@ class TestMCPServerRegistration:
         server = data["mcpServers"]["deepwork"]
         assert server["command"] == "uvx"
         args = server["args"]
-        assert args[0].startswith("deepwork"), f"Expected args[0] to start with 'deepwork', got '{args[0]}'"
+        assert args[0].startswith("deepwork"), (
+            f"Expected args[0] to start with 'deepwork', got '{args[0]}'"
+        )
         assert args[1] == "serve"
 
     def test_mcp_args_include_platform_claude(self) -> None:
