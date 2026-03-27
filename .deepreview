@@ -523,3 +523,35 @@ nix_claude_wrapper:
       Output Format:
       - PASS: The claude wrapper is correctly configured with both plugin dirs.
       - FAIL: Describe what is missing or broken.
+
+mcp_interface_consumer_sync:
+  description: "When MCP tool interfaces change, verify that skills, hooks, and platform content still reference correct parameter names, types, and behavior."
+  match:
+    include:
+      - "src/deepwork/jobs/mcp/tools.py"
+      - "src/deepwork/jobs/mcp/schemas.py"
+      - "src/deepwork/jobs/mcp/server.py"
+  review:
+    strategy: matches_together
+    additional_context:
+      unchanged_matching_files: true
+    instructions: |
+      When the MCP tool interfaces (tools.py, schemas.py, server.py) change,
+      verify that downstream consumers still accurately describe the MCP
+      interface. Check each of these files for stale parameter names, removed
+      fields, renamed concepts, or outdated behavior descriptions:
+
+      - platform/skill-body.md
+      - plugins/claude/skills/deepwork/SKILL.md
+      - plugins/gemini/skills/deepwork/SKILL.md
+      - plugins/claude/hooks/post_compact.sh
+      - doc/mcp_interface.md
+
+      For each file, compare any MCP parameter names, tool names, response
+      fields, or workflow behavior descriptions against the actual schemas
+      and tool implementations. Flag anything that no longer matches.
+
+      Output Format:
+      - PASS: All consumer files are consistent with the current MCP interface.
+      - FAIL: List each inconsistency with the file, the stale content, and
+        what it should say based on the current implementation.
