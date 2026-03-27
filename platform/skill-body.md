@@ -36,7 +36,6 @@ To create a new job, use the MCP tools:
    - `job_name`: `"deepwork_jobs"`
    - `workflow_name`: `"new_job"`
    - `goal`: a description of what the new job should accomplish
-   - `instance_id`: a short name for the new job (e.g., `"code_review"`)
 3. Follow the instructions returned by the MCP tools as you progress through the workflow
 
 ## Intent Parsing
