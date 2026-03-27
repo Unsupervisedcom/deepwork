@@ -53,6 +53,8 @@ def _make_job(
 class TestValidateJsonSchemas:
     """Tests for validate_json_schemas."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.2.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_passes_when_no_json_schema_defined(self, tmp_path: Path) -> None:
         """No json_schema on the argument means nothing to validate."""
         arg = StepArgument(name="report", description="Report file", type="file_path")
@@ -66,6 +68,8 @@ class TestValidateJsonSchemas:
         errors = validate_json_schemas({"report": "report.md"}, step, job, tmp_path)
         assert errors == []
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.2.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_passes_when_json_schema_validates(self, tmp_path: Path) -> None:
         """Valid JSON matching the schema produces no errors."""
         schema = {
@@ -86,6 +90,8 @@ class TestValidateJsonSchemas:
         errors = validate_json_schemas({"data": "data.json"}, step, job, tmp_path)
         assert errors == []
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.2.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_fails_when_json_is_invalid(self, tmp_path: Path) -> None:
         """Non-JSON content in the output file produces an error."""
         schema = {"type": "object"}
@@ -103,6 +109,8 @@ class TestValidateJsonSchemas:
         assert len(errors) == 1
         assert "failed to parse as JSON" in errors[0]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.2.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_fails_when_schema_validation_fails(self, tmp_path: Path) -> None:
         """JSON that doesn't match the schema produces an error."""
         schema = {
@@ -124,6 +132,8 @@ class TestValidateJsonSchemas:
         assert len(errors) == 1
         assert "schema validation failed" in errors[0]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.2.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_skips_string_type_arguments(self, tmp_path: Path) -> None:
         """String-type arguments are skipped even if json_schema is set."""
         schema = {"type": "object"}
@@ -146,6 +156,8 @@ class TestValidateJsonSchemas:
 class TestBuildDynamicReviewRules:
     """Tests for build_dynamic_review_rules."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.3.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_rules_from_output_level_review(self, tmp_path: Path) -> None:
         """A review block on the output ref creates a ReviewRule."""
         review = ReviewBlock(strategy="individual", instructions="Check the report")
@@ -170,6 +182,8 @@ class TestBuildDynamicReviewRules:
         assert "Check the report" in rules[0].instructions
         assert rules[0].include_patterns == ["report.md"]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.3.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_rules_from_step_argument_level_review(self, tmp_path: Path) -> None:
         """A review block on the step_argument (not the output ref) creates a rule."""
         arg_review = ReviewBlock(strategy="matches_together", instructions="Verify data")
@@ -196,6 +210,8 @@ class TestBuildDynamicReviewRules:
         assert rules[0].strategy == "matches_together"
         assert "Verify data" in rules[0].instructions
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.3.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_both_output_and_arg_level_rules(self, tmp_path: Path) -> None:
         """Both output-level and argument-level reviews produce separate rules."""
         output_review = ReviewBlock(strategy="individual", instructions="Output check")
@@ -219,6 +235,8 @@ class TestBuildDynamicReviewRules:
         assert rules[0].name == "step_write_output_report"
         assert rules[1].name == "step_write_output_report_arg"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.4.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_process_quality_attributes_rules(self, tmp_path: Path) -> None:
         """process_quality_attributes with a work_summary creates a PQA rule."""
         arg = StepArgument(name="report", description="Report file", type="file_path")
@@ -251,6 +269,8 @@ class TestBuildDynamicReviewRules:
         assert "completeness" in rule.instructions
         assert "I analyzed the data and wrote the report." in rule.instructions
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.4.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_no_pqa_rule_without_work_summary(self, tmp_path: Path) -> None:
         """process_quality_attributes without a work_summary are skipped."""
         arg = StepArgument(name="report", description="Report", type="file_path")
@@ -274,6 +294,8 @@ class TestBuildDynamicReviewRules:
 
         assert rules == []
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.3.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_no_rules_when_no_reviews_defined(self, tmp_path: Path) -> None:
         """No review blocks and no PQA means no rules."""
         arg = StepArgument(name="report", description="Report file", type="file_path")
@@ -293,6 +315,8 @@ class TestBuildDynamicReviewRules:
 
         assert rules == []
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.7.1, JOBS-REQ-004.3.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_includes_input_context_in_review_instructions(self, tmp_path: Path) -> None:
         """Input values are included as context in the review instructions."""
         review = ReviewBlock(strategy="individual", instructions="Review the report")
@@ -321,6 +345,8 @@ class TestBuildDynamicReviewRules:
         assert "topic" in rules[0].instructions
         assert "AI safety" in rules[0].instructions
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.3.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_includes_common_job_info_in_instructions(self, tmp_path: Path) -> None:
         """common_job_info from workflow is included in rule instructions."""
         review = ReviewBlock(strategy="individual", instructions="Check it")
@@ -364,6 +390,8 @@ class TestBuildDynamicReviewRules:
 class TestRunQualityGate:
     """Tests for run_quality_gate."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.1.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_none_when_no_reviews_needed(self, tmp_path: Path) -> None:
         """No review blocks, no PQA, no .deepreview files => None."""
         arg = StepArgument(name="report", description="Report file", type="file_path")
@@ -387,6 +415,8 @@ class TestRunQualityGate:
 
         assert result is None
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.1.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_none_when_no_review_blocks_defined(self, tmp_path: Path) -> None:
         """Outputs exist but have no review blocks and no .deepreview rules."""
         arg = StepArgument(name="data", description="Data file", type="file_path")
@@ -443,6 +473,8 @@ class TestRunQualityGate:
         assert "JSON schema validation failed" in result
         assert "finished_step" in result
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.1.3, JOBS-REQ-004.5.7, JOBS-REQ-004.6.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_review_instructions_when_reviews_exist(self, tmp_path: Path) -> None:
         """When dynamic rules produce tasks, review instructions are returned."""
         review = ReviewBlock(strategy="individual", instructions="Check quality")
@@ -496,6 +528,8 @@ class TestRunQualityGate:
         assert "Quality reviews are required" in result
         assert "step_write_output_report" in result
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_none_when_all_reviews_already_passed(self, tmp_path: Path) -> None:
         """If write_instruction_files returns empty (all .passed), result is None."""
         review = ReviewBlock(strategy="individual", instructions="Check it")
@@ -537,6 +571,8 @@ class TestRunQualityGate:
 
         assert result is None
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_merges_deepreview_and_dynamic_tasks(self, tmp_path: Path) -> None:
         """Both .deepreview rules and dynamic rules are processed together."""
         review = ReviewBlock(strategy="individual", instructions="Check it")
