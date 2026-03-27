@@ -65,7 +65,8 @@ deepwork/                       # DeepWork tool repository
 │       │   └── gemini_hook.sh  # Shell wrapper for Gemini CLI
 │       ├── standard_jobs/      # Built-in job definitions
 │       │   ├── deepwork_jobs/
-│       │   └── deepwork_reviews/
+│       │   ├── deepwork_reviews/
+│       │   └── record/
 │       ├── review/             # DeepWork Reviews system
 │       │   ├── config.py       # .deepreview config parsing + data models
 │       │   ├── discovery.py    # Find .deepreview files in project tree
