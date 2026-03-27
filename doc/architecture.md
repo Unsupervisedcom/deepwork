@@ -57,7 +57,8 @@ deepwork/                       # DeepWork tool repository
 │       │       ├── state.py        # Workflow session state management
 │       │       ├── schemas.py      # Pydantic models for I/O
 │       │       ├── quality_gate.py # Quality gate with review agent
-│       │       └── claude_cli.py   # Claude CLI subprocess wrapper
+│       │       ├── claude_cli.py   # Claude CLI subprocess wrapper
+│       │       └── status.py       # Status file writer for external consumers
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── wrapper.py      # Cross-platform input/output normalization
 │       │   ├── claude_hook.sh  # Shell wrapper for Claude Code
@@ -94,7 +95,7 @@ deepwork/                       # DeepWork tool repository
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── review/SKILL.md
 │   │   │   └── configure_reviews/SKILL.md
-│   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh
+│   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh
 │   │   └── .mcp.json           # MCP server config
 │   └── gemini/                 # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md
@@ -616,6 +617,18 @@ DeepWork includes a built-in job called `deepwork_reviews` for managing `.deepre
 - **`add_document_update_rule`** workflow: `analyze_dependencies` → `apply_rule`
   - Adds a review rule to keep a specific documentation file up-to-date when related source files change
 
+### Library Job: `engineer`
+
+The `engineer` job lives in `library/jobs/engineer/` and is available for users to adopt. It provides domain-agnostic engineering execution:
+
+**Workflows**:
+- **`implement`** workflow: `translate_issue` → `initialize_branch` → `red_tests` → `green_implementation` → `finalize_pr` → `product_sync`
+  - Drives engineering work from product issue through PR merge with TDD discipline, PR synchronization, and product traceability
+- **`doctor`** workflow: `check_agent_md` → `check_context` → `doctor_report`
+  - Validates that agent.md and domain context files are present, linked, and valid
+
+The job is domain-agnostic — its `common_job_info` includes a domain adaptation table for software, hardware/CAD, firmware, and documentation projects that step instructions reference. An RFC 2119 requirements specification is bundled as `requirements.md`.
+
 ### MCP-Based Workflow Execution
 
 Users invoke workflows through the `/deepwork` skill, which uses MCP tools:
@@ -979,9 +992,10 @@ Begins a new workflow session.
 - `goal: str` - What the user wants to accomplish
 - `job_name: str` - Name of the job
 - `workflow_name: str` - Name of the workflow within the job
-- `instance_id: str | None` - Optional identifier (e.g., "acme", "q1-2026")
+- `session_id: str` - Claude Code session ID (required)
+- `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
-**Returns**: Session ID, branch name, first step instructions
+**Returns**: Important note (agent instruction to clarify ambiguous requests), first step info (`ActiveStepInfo`), workflow stack
 
 #### 3. `finished_step`
 Reports step completion and gets next instructions.
@@ -990,7 +1004,8 @@ Reports step completion and gets next instructions.
 - `outputs: dict[str, str | list[str]]` - Map of output names to file path(s)
 - `notes: str | None` - Optional notes about work done
 - `quality_review_override_reason: str | None` - If provided, skips quality review
-- `session_id: str | None` - Target a specific workflow session
+- `session_id: str` - Claude Code session ID (required)
+- `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
 **Returns**:
 - `status: "needs_work" | "next_step" | "workflow_complete"`
@@ -1003,7 +1018,8 @@ Aborts the current workflow and returns to the parent (if nested).
 
 **Parameters**:
 - `explanation: str` - Why the workflow is being aborted
-- `session_id: str | None` - Target a specific workflow session
+- `session_id: str` - Claude Code session ID (required)
+- `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
 **Returns**: Aborted workflow info, resumed parent info (if any), current stack
 
@@ -1012,7 +1028,8 @@ Navigates back to a prior step, clearing progress from that step onward.
 
 **Parameters**:
 - `step_id: str` - ID of the step to navigate back to
-- `session_id: str | None` - Target a specific workflow session
+- `session_id: str` - Claude Code session ID (required)
+- `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
 **Returns**: `begin_step` (step info for the target step), `invalidated_steps` (step IDs whose progress was cleared), `stack` (current workflow stack)
 
@@ -1059,21 +1076,24 @@ Cleanup between runs deletes only `.md` files, preserving `.passed` markers acro
 
 ### State Management (`jobs/mcp/state.py`)
 
-Manages workflow session state persisted to `.deepwork/tmp/session_[id].json`:
+Manages workflow session state persisted to `.deepwork/tmp/sessions/<platform>/session-<id>/state.json`. Sub-agents get isolated stacks in `agent_<agent_id>.json` alongside the main state file.
 
 ```python
 class StateManager:
-    async def create_session(...) -> WorkflowSession
-    def resolve_session(session_id=None) -> WorkflowSession
-    async def start_step(step_id, session_id=None) -> None
-    async def complete_step(step_id, outputs, notes, session_id=None) -> None
-    async def advance_to_step(step_id, entry_index, session_id=None) -> None
-    async def go_to_step(step_id, entry_index, invalidate_step_ids, session_id=None) -> None
-    async def complete_workflow(session_id=None) -> None
-    async def abort_workflow(explanation, session_id=None) -> tuple
-    async def record_quality_attempt(step_id, session_id=None) -> int
-    def get_all_outputs(session_id=None) -> dict
-    def get_stack() -> list[StackEntry]
+    def __init__(self, project_root: Path, platform: str)
+    async def create_session(session_id, ..., agent_id=None) -> WorkflowSession
+    def resolve_session(session_id, agent_id=None) -> WorkflowSession
+    async def start_step(session_id, step_id, agent_id=None) -> None
+    async def complete_step(session_id, step_id, outputs, notes, agent_id=None) -> None
+    async def advance_to_step(session_id, step_id, entry_index, agent_id=None) -> None
+    async def go_to_step(session_id, step_id, entry_index, invalidate_step_ids, agent_id=None) -> None
+    async def complete_workflow(session_id, agent_id=None) -> None
+    async def abort_workflow(session_id, explanation, agent_id=None) -> tuple
+    async def record_quality_attempt(session_id, step_id, agent_id=None) -> int
+    def get_all_outputs(session_id, agent_id=None) -> dict
+    def get_stack(session_id, agent_id=None) -> list[StackEntry]
+    def get_stack_depth(session_id, agent_id=None) -> int
+    def get_all_session_data(session_id) -> dict[agent_id, (active_stack, completed_workflows)]
 ```
 
 Session state includes:
@@ -1109,6 +1129,31 @@ The quality gate supports two modes:
 - **External runner** (`evaluate_reviews`): Invokes Claude Code via subprocess to evaluate each review, returns list of failed `ReviewResult` objects
 - **Self-review** (`build_review_instructions_file`): Generates a review instructions file for the agent to spawn a subagent for self-review
 
+### Status Writer (`jobs/mcp/status.py`)
+
+Writes file-based status projections for external consumers (UIs, dashboards, monitoring). Status files are written to `.deepwork/tmp/status/v1/` and are a **stable external interface** — the file format must not change without versioning.
+
+```python
+class StatusWriter:
+    def __init__(self, project_root: Path)
+
+    def write_manifest(self, jobs: list[JobDefinition]) -> None
+        """Write job_manifest.yml with all available jobs, workflows, and steps."""
+
+    def write_session_status(self, session_id: str, state_manager: StateManager, job_loader: Callable) -> None
+        """Write sessions/<session_id>.yml from current state."""
+```
+
+**Output files:**
+- `job_manifest.yml` — catalog of all jobs/workflows/steps, sorted alphabetically
+- `sessions/<session_id>.yml` — per-session workflow execution status including active workflow, step history, and completed/aborted workflows
+
+**Write triggers:**
+- Manifest: MCP server startup, `get_workflows`
+- Session status: `start_workflow`, `finished_step`, `go_to_step`, `abort_workflow`
+
+Status writes are fire-and-forget: failures are logged as warnings and never fail the MCP tool call.
+
 ### Schemas (`jobs/mcp/schemas.py`)
 
 Pydantic models for all tool inputs and outputs:
@@ -1116,7 +1161,7 @@ Pydantic models for all tool inputs and outputs:
 - `GetWorkflowsResponse`, `StartWorkflowResponse`, `FinishedStepResponse`, `AbortWorkflowResponse`, `GoToStepResponse`
 - `ActiveStepInfo`, `ExpectedOutput`, `ReviewInfo`, `ReviewResult`, `StackEntry`
 - `JobInfo`, `WorkflowInfo`, `JobLoadErrorInfo`
-- `WorkflowSession`, `StepProgress`
+- `WorkflowSession`, `StepProgress`, `StepHistoryEntry`
 - `QualityGateResult`, `QualityCriteriaResult`
 
 ## MCP Server Registration

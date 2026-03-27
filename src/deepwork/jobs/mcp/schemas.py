@@ -8,6 +8,7 @@ the implementation.
 
 from enum import StrEnum
 from typing import Any
+from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
@@ -85,9 +86,19 @@ class StartWorkflowInput(BaseModel):
     goal: str = Field(description="What the user wants to accomplish")
     job_name: str = Field(description="Name of the job")
     workflow_name: str = Field(description="Name of the workflow within the job")
-    instance_id: str | None = Field(
+    session_id: str = Field(
+        description=(
+            "The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Identifies the persistent state storage for this agent session."
+        ),
+    )
+    agent_id: str | None = Field(
         default=None,
-        description="Optional identifier (e.g., 'acme', 'q1-2026')",
+        description=(
+            "The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), "
+            "if running as a sub-agent. When set, this workflow is scoped to this agent — "
+            "other agents in the same session won't see it in their stack."
+        ),
     )
 
 
@@ -108,12 +119,17 @@ class FinishedStepInput(BaseModel):
         default=None,
         description="If provided, skips the quality gate review. Must explain why the review is being bypassed.",
     )
-    session_id: str | None = Field(
+    session_id: str = Field(
+        description=(
+            "The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Identifies the persistent state storage for this agent session."
+        ),
+    )
+    agent_id: str | None = Field(
         default=None,
         description=(
-            "Optional session ID to target a specific workflow session. "
-            "Use this when multiple workflows are active concurrently to ensure "
-            "the correct session is updated. If omitted, operates on the top-of-stack session."
+            "The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), "
+            "if running as a sub-agent. When set, operates on this agent's scoped workflow stack."
         ),
     )
 
@@ -122,12 +138,17 @@ class AbortWorkflowInput(BaseModel):
     """Input for abort_workflow tool."""
 
     explanation: str = Field(description="Explanation of why the workflow is being aborted")
-    session_id: str | None = Field(
+    session_id: str = Field(
+        description=(
+            "The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Identifies the persistent state storage for this agent session."
+        ),
+    )
+    agent_id: str | None = Field(
         default=None,
         description=(
-            "Optional session ID to target a specific workflow session. "
-            "Use this when multiple workflows are active concurrently to ensure "
-            "the correct session is aborted. If omitted, aborts the top-of-stack session."
+            "The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), "
+            "if running as a sub-agent. When set, operates on this agent's scoped workflow stack."
         ),
     )
 
@@ -136,12 +157,17 @@ class GoToStepInput(BaseModel):
     """Input for go_to_step tool."""
 
     step_id: str = Field(description="ID of the step to navigate back to")
-    session_id: str | None = Field(
+    session_id: str = Field(
+        description=(
+            "The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Identifies the persistent state storage for this agent session."
+        ),
+    )
+    agent_id: str | None = Field(
         default=None,
         description=(
-            "Optional session ID to target a specific workflow session. "
-            "Use this when multiple workflows are active concurrently to ensure "
-            "the correct session is updated. If omitted, operates on the top-of-stack session."
+            "The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), "
+            "if running as a sub-agent. When set, operates on this agent's scoped workflow stack."
         ),
     )
 
@@ -220,7 +246,12 @@ class ExpectedOutput(BaseModel):
 class ActiveStepInfo(BaseModel):
     """Information about the step to begin working on."""
 
-    session_id: str = Field(description="Unique session identifier")
+    session_id: str = Field(
+        description=(
+            "The Claude Code session ID (CLAUDE_CODE_SESSION_ID). "
+            "This is the same session ID the agent received at startup."
+        )
+    )
     step_id: str = Field(description="ID of the current step")
     job_dir: str = Field(
         description="Absolute path to the job directory. Templates, scripts, "
@@ -266,6 +297,14 @@ class StackEntry(BaseModel):
 class StartWorkflowResponse(BaseModel):
     """Response from start_workflow tool."""
 
+    important_note: str = Field(
+        default=(
+            "IMPORTANT: If, given the info on the workflow you now have, the user's request "
+            "seems ambiguous and can be interpreted several ways, you MUST use AskUserQuestion "
+            "to clarify their intent if that tool is available."
+        ),
+        description="Important instruction for the agent",
+    )
     begin_step: ActiveStepInfo = Field(description="Information about the first step to begin")
     stack: list[StackEntry] = Field(
         default_factory=list, description="Current workflow stack after starting"
@@ -345,15 +384,39 @@ class StepProgress(BaseModel):
     )
     notes: str | None = Field(default=None, description="Notes from agent")
     quality_attempts: int = Field(default=0, description="Number of quality gate attempts")
+    sub_workflow_instance_ids: list[str] = Field(
+        default_factory=list,
+        description="Instance IDs of sub-workflows started from this step",
+    )
+
+
+class StepHistoryEntry(BaseModel):
+    """An entry in the step execution history."""
+
+    step_id: str = Field(description="Step identifier")
+    started_at: str | None = Field(default=None, description="ISO timestamp when started")
+    finished_at: str | None = Field(default=None, description="ISO timestamp when finished")
+    sub_workflow_instance_ids: list[str] = Field(
+        default_factory=list,
+        description="Instance IDs of sub-workflows started during this step execution",
+    )
 
 
 class WorkflowSession(BaseModel):
     """State for an active workflow session."""
 
-    session_id: str = Field(description="Unique session identifier")
+    session_id: str = Field(
+        description=(
+            "The Claude Code session ID (CLAUDE_CODE_SESSION_ID). "
+            "This is the same session ID the agent received at startup."
+        )
+    )
+    workflow_instance_id: str = Field(
+        default_factory=lambda: uuid4().hex,
+        description="Unique identifier for this workflow instance",
+    )
     job_name: str = Field(description="Name of the job")
     workflow_name: str = Field(description="Name of the workflow")
-    instance_id: str | None = Field(default=None, description="Instance identifier")
     goal: str = Field(description="User's goal for this workflow")
     current_step_id: str = Field(description="Current step in workflow")
     current_entry_index: int = Field(
@@ -361,6 +424,9 @@ class WorkflowSession(BaseModel):
     )
     step_progress: dict[str, StepProgress] = Field(
         default_factory=dict, description="Progress for each step"
+    )
+    step_history: list[StepHistoryEntry] = Field(
+        default_factory=list, description="Ordered history of step executions"
     )
     started_at: str = Field(description="ISO timestamp when session started")
     completed_at: str | None = Field(default=None, description="ISO timestamp when completed")

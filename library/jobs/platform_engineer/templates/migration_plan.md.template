@@ -1,0 +1,96 @@
+# Migration Plan: [Migration Title]
+
+**Date**: [YYYY-MM-DD]
+**Author**: [who created this plan]
+**Status**: [planned | in-progress | completed | aborted]
+**GitHub Issue**: [#issue-number or URL]
+
+## Overview
+
+[1-2 paragraph summary of what is being migrated and why]
+
+## Current State
+
+### Component Being Migrated
+- **What**: [e.g., PostgreSQL database managed by Zalando operator]
+- **Version**: [current version]
+- **Configuration**: [key config details]
+- **Data Size**: [approximate data volume]
+
+### Dependencies
+- [service or component that depends on this]
+- [another dependency]
+
+### Consumers
+- [who/what reads from or writes to this component]
+
+## Target State
+
+- **What**: [e.g., PostgreSQL managed by CNPG operator]
+- **Version**: [target version]
+- **Key Differences**: [what changes for consumers]
+
+## Migration Strategy
+
+**Approach**: [big-bang | blue-green | canary | rolling]
+
+**Rationale**: [why this approach was chosen]
+
+## Pre-Migration
+
+- [ ] **Backup**: [backup command and verification]
+- [ ] **Health Check**: [verify current system is healthy]
+- [ ] **Communication**: [notify affected teams]
+- [ ] **Rollback Tested**: [verify rollback procedure works]
+
+## Migration Steps
+
+### Step 1: [Step Title]
+
+**Action**: [what to do]
+```bash
+[commands to execute]
+```
+
+**Validation Gate**: [how to verify this step succeeded]
+```bash
+[verification commands]
+```
+
+**Rollback**: [how to undo this step]
+```bash
+[rollback commands]
+```
+
+### Step 2: [Step Title]
+
+**Action**: [what to do]
+
+**Validation Gate**: [how to verify]
+
+**Rollback**: [how to undo]
+
+## Post-Migration
+
+- [ ] **Verification**: [end-to-end verification steps]
+- [ ] **Monitoring**: [what to watch for 24-48 hours]
+- [ ] **Cleanup**: [remove old resources after confidence period]
+- [ ] **Documentation**: [update docs to reflect new state]
+
+## Rollback Plan
+
+**Point of no return**: [after which step rollback is no longer straightforward]
+
+**Full rollback procedure**:
+1. [step 1]
+2. [step 2]
+3. [step 3]
+
+**Data implications of rollback**: [what data might be lost]
+
+## Risk Assessment
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| [risk 1] | [low/med/high] | [low/med/high] | [mitigation] |
+| [risk 2] | [low/med/high] | [low/med/high] | [mitigation] |

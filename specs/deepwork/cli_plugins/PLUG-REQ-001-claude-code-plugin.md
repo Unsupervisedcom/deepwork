@@ -80,3 +80,12 @@ The Claude Code plugin is the primary distribution mechanism for DeepWork on the
 3. If active sessions are found, the hook MUST inject workflow context (session ID, workflow name, goal, current step, completed steps, common job info, and step instructions) as `additionalContext` in the `SessionStart` hook response.
 4. If no active sessions are found or the `deepwork` command fails, the hook MUST output an empty JSON object `{}` (graceful degradation).
 5. The hook MUST NOT produce errors or non-zero exit codes under any failure condition.
+
+### PLUG-REQ-001.12: Session and Agent Identity Injection
+
+1. The plugin MUST register a `SessionStart` hook (with empty matcher) via `plugins/claude/hooks/hooks.json` that injects session identity into agent context.
+2. The plugin MUST register a `SubagentStart` hook (with empty matcher) via `plugins/claude/hooks/hooks.json` that injects agent identity into sub-agent context.
+3. Both hooks MUST read `session_id` from the hook input JSON and emit it as `CLAUDE_CODE_SESSION_ID` in `additionalContext`.
+4. The `SubagentStart` hook MUST also read `agent_id` from the hook input JSON and emit it as `CLAUDE_CODE_AGENT_ID` in `additionalContext`.
+5. Both hooks MUST always exit 0, even on failure (graceful degradation).
+6. The injected session and agent IDs MUST be used by the MCP server tools as the `session_id` and `agent_id` parameters for persistent state management.

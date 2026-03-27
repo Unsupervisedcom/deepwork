@@ -15,6 +15,30 @@ The workflow progresses through six steps:
 5. **Tasks** - Break the plan into ordered, actionable development tasks
 6. **Implement** - Execute tasks to deliver the complete feature
 
+## Quick Start
+
+If you haven't already, enable shared library jobs in your project:
+
+```
+/deepwork shared_jobs
+```
+
+Runs the `spec_driven_development` workflow starting at the `specify` step. Walks through constitution, specify, clarify, plan, tasks, and implement.
+
+```
+/deepwork spec_driven_development specify
+```
+
+Or create a Claude skill for quick access, then use it:
+
+```
+/deepwork create a /spec.specify skill that runs the spec_driven_development job's specify workflow
+```
+
+```
+/spec.specify
+```
+
 ## When to Use
 
 This workflow is ideal for:

@@ -64,13 +64,36 @@ Mitigation strategies documented in `define.md`:
 
 The github_outreach `final_report` step had `analyze_repos` as a file input but was missing it from the `dependencies` list. This was caught at workflow start time but could have been caught earlier during the `implement` step. The define step's validation rules already mention this (`from_step must be in dependencies`) but it was missed during creation.
 
+### Repair Workflow: Library Job Detection (v1.5.1)
+
+The errata step now detects Nix flake devshells and offers to set up shared library jobs via sparse checkout. The behavior is tri-state:
+- **Flake with `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` already set**: Silent — no output
+- **Flake exists but no library job config**: Offer setup with flake.nix snippet and sparse checkout commands
+- **No flake.nix**: Brief mention of the Nix devshell option, no detail
+
+Key details:
+- Library jobs are cloned into `.deepwork/upstream/` via `git clone --sparse --filter=blob:none`
+- Users can include/exclude specific jobs via `git sparse-checkout set --cone` / `sparse-checkout add`
+- Full documentation lives in `library/jobs/README.md`
+
 ## Version Management
 
 - Version is tracked in `job.yml`
 - Bump patch version (0.0.x) for instruction improvements
 - Bump minor version (0.x.0) for new features or structural changes
 
+### Learn Workflow: External Job Repo Handling (v1.7.0)
+
+The learn workflow now detects when a job being updated lives in an external git repository (via `DEEPWORK_ADDITIONAL_JOBS_FOLDERS`) and handles commits/pushes to that repo separately.
+
+Key design decisions:
+- Uses `job_dir` from MCP response as the authoritative path — never assumes `.deepwork/jobs/`
+- Detects external repos by comparing `git rev-parse --show-toplevel` of job_dir vs project root
+- Asks user preference for push strategy (direct to main, PR from branch, PR from fork)
+- Designed for keystone development mode where `~/.keystone/*/deepwork/library/jobs/` is the additional folder
+- Quality criteria "External Repo Handled" auto-passes for local jobs
+
 ## Last Updated
 
-- Date: 2026-02-06
-- From conversation about: Learn workflow analyzing severe quality review issues in the new_job execution
+- Date: 2026-03-23
+- From conversation about: Adding DEEPWORK_ADDITIONAL_JOBS_FOLDERS awareness to the learn workflow

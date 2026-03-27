@@ -46,6 +46,30 @@ For each major phase they mentioned, ask structured questions to gather details:
    - Does it need files from previous steps?
    - What format should inputs be in?
 
+   **CRITICAL — Confirm what varies vs. what's fixed**: When the user describes a process, they will mention multiple things the process operates on (files, data sources, criteria, parameters, templates, etc.). You MUST distinguish between:
+   - **Variable inputs** (change each run) → these become job inputs (`name`/`description` user parameters)
+   - **Fixed context** (same every run) → these get baked into step instructions or `common_job_info_provided_to_all_steps_at_runtime`
+
+   **Do not assume which is which.** If the user describes a process involving e.g. "a file and a set of criteria", either one could be the variable input. Use the AskUserQuestion tool to explicitly confirm, for example:
+
+   ```
+   AskUserQuestion:
+     question: "When you run this job each time, what changes between runs?"
+     header: "Job inputs"
+     multiSelect: true
+     options:
+       - label: "The vendor data file"
+         description: "A different file each run — the criteria stay the same"
+       - label: "The filtering criteria"
+         description: "Different criteria each run — the file stays the same"
+       - label: "Both change each run"
+         description: "Both the file and the criteria vary between runs"
+   ```
+
+   Adapt the options to list every artifact/parameter the user mentioned. Items they select become job inputs; items they don't select get baked into instructions.
+
+   Getting this wrong produces a fundamentally broken job — the entire workflow will be structured around the wrong axis of variation.
+
 3. **Step Outputs**
    - What files or artifacts does this step produce?
    - What format should the output be in? (markdown, YAML, JSON, etc.)

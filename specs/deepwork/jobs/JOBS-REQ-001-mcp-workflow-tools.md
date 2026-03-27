@@ -39,8 +39,8 @@ The DeepWork MCP server exposes five workflow tools to AI agents via the Model C
 ### JOBS-REQ-001.3: start_workflow Tool
 
 1. The `start_workflow` tool MUST be registered as an asynchronous MCP tool.
-2. The tool MUST require the following parameters: `goal` (str), `job_name` (str), `workflow_name` (str).
-3. The tool MUST accept an optional `instance_id` parameter (str or None, default: None).
+2. The tool MUST require the following parameters: `goal` (str), `job_name` (str), `workflow_name` (str), `session_id` (str).
+3. The tool MUST accept optional parameters: `instance_id` (str or None, default: None), `agent_id` (str or None, default: None).
 4. The tool MUST raise `ToolError` if the specified `job_name` does not exist.
 5. The tool MUST raise `ToolError` if the specified `workflow_name` does not match any workflow in the job, UNLESS the job has exactly one workflow, in which case that workflow SHALL be auto-selected regardless of the name provided.
 6. The tool MUST raise `ToolError` if a job has multiple workflows and the specified name does not match any of them. The error message MUST list the available workflow names.
@@ -52,14 +52,15 @@ The DeepWork MCP server exposes five workflow tools to AI agents via the Model C
 12. The response MUST contain a `stack` field reflecting the current workflow stack after starting.
 13. Each expected output in `step_expected_outputs` MUST include `name`, `type`, `description`, `required`, and `syntax_for_finished_step_tool` fields.
 14. The `syntax_for_finished_step_tool` MUST be `"filepath"` for `type: file` outputs and `"array of filepaths for all individual files"` for `type: files` outputs.
+15. The response MUST contain an `important_note` field (string) instructing the agent to clarify ambiguous user requests via `AskUserQuestion` (if available) before proceeding with the workflow.
 
 ### JOBS-REQ-001.4: finished_step Tool
 
 1. The `finished_step` tool MUST be registered as an asynchronous MCP tool.
 2. The tool MUST require an `outputs` parameter: a dict mapping output names to file path(s).
-3. The tool MUST accept optional parameters: `notes` (str), `quality_review_override_reason` (str), `session_id` (str).
-4. The tool MUST raise `ToolError` if no active workflow session exists and no `session_id` is provided. The error message MUST explain what the tool does and provide guidance on how to resume a workflow.
-5. When `session_id` is provided, the tool MUST target the session with that ID rather than the top-of-stack session.
+3. The tool MUST require a `session_id` parameter (str) and accept an optional `agent_id` parameter (str or None).
+4. The tool MUST raise `ToolError` if no active workflow session exists for the given `session_id`. The error message MUST explain what the tool does and provide guidance on how to resume a workflow.
+5. The tool MUST target the top-of-stack session for the given `session_id` (and `agent_id` if provided).
 6. The tool MUST validate submitted outputs against the current step's declared output specifications (see JOBS-REQ-001.5).
 7. The tool MUST return a response with a `status` field that is one of: `"needs_work"`, `"next_step"`, or `"workflow_complete"`.
 
@@ -67,7 +68,7 @@ The DeepWork MCP server exposes five workflow tools to AI agents via the Model C
 
 8. If a quality gate is configured, the step has reviews, and `quality_review_override_reason` is NOT provided, the tool MUST invoke quality gate evaluation.
 9. If `quality_review_override_reason` IS provided, the tool MUST skip quality gate evaluation entirely.
-10. In self-review mode (`external_runner=None`): the tool MUST write review instructions to `.deepwork/tmp/quality_review_{session_id}_{step_id}.md` and return `status: "needs_work"` with instructions for the agent to spawn a subagent for self-review.
+10. In self-review mode (`external_runner=None`): the tool MUST write review instructions to `.deepwork/tmp/quality_review_{session_id}_{workflow_name}_{step_id}.md` and return `status: "needs_work"` with instructions for the agent to spawn a subagent for self-review.
 11. In external runner mode (`external_runner="claude"`): the tool MUST record a quality attempt via the StateManager before invoking the quality gate.
 12. In external runner mode, if the quality gate returns failed reviews and the attempt count is below `max_quality_attempts`, the tool MUST return `status: "needs_work"` with combined feedback from all failed reviews.
 13. In external runner mode, if the quality gate returns failed reviews and the attempt count has reached `max_quality_attempts`, the tool MUST raise `ToolError` with a message indicating the maximum attempts were exceeded and including the feedback.
@@ -95,8 +96,8 @@ The DeepWork MCP server exposes five workflow tools to AI agents via the Model C
 ### JOBS-REQ-001.6: abort_workflow Tool
 
 1. The `abort_workflow` tool MUST be registered as an asynchronous MCP tool.
-2. The tool MUST require an `explanation` parameter (str).
-3. The tool MUST accept an optional `session_id` parameter (str, default: None).
+2. The tool MUST require `explanation` (str) and `session_id` (str) parameters.
+3. The tool MUST accept an optional `agent_id` parameter (str or None, default: None).
 4. The tool MUST raise `StateError` if no active workflow session exists.
 5. The tool MUST mark the targeted session as aborted with the provided explanation.
 6. The tool MUST remove the aborted session from the stack.
@@ -106,10 +107,10 @@ The DeepWork MCP server exposes five workflow tools to AI agents via the Model C
 ### JOBS-REQ-001.7: go_to_step Tool
 
 1. The `go_to_step` tool MUST be registered as an asynchronous MCP tool.
-2. The tool MUST require a `step_id` parameter (str).
-3. The tool MUST accept an optional `session_id` parameter (str, default: None).
-4. The tool MUST raise `StateError` if no active workflow session exists and no `session_id` is provided.
-5. When `session_id` is provided, the tool MUST target the session with that ID rather than the top-of-stack session.
+2. The tool MUST require `step_id` (str) and `session_id` (str) parameters.
+3. The tool MUST accept an optional `agent_id` parameter (str or None, default: None).
+4. The tool MUST raise `StateError` if no active workflow session exists for the given `session_id`.
+5. The tool MUST target the top-of-stack session for the given `session_id` (and `agent_id` if provided).
 6. The tool MUST raise `ToolError` if the specified `step_id` does not exist in the workflow. The error message MUST list the available step names.
 7. The tool MUST raise `ToolError` if the target step's entry index is greater than the current entry index (forward navigation). The error message MUST direct the agent to use `finished_step` to advance forward.
 8. The tool MUST allow navigating to the current step (target entry index == current entry index) to restart it.

@@ -68,6 +68,11 @@ If a suitable conventions file already exists (found in step 2a), use it as-is �
 
 Each conventions file should be a concise, actionable reference — not an exhaustive style guide. Focus on conventions that a reviewer can actually check by reading code.
 
+Every conventions file **must** include these two universal standards, adapted to the language's idioms:
+
+- **DRY (Don't Repeat Yourself)**: Define what constitutes a DRY violation in this language — duplicated logic, repeated patterns, code that should be extracted into a shared function/module/utility. Include language-specific guidance (e.g., Python: extract to a helper or use a decorator; TypeScript: extract to a shared utility or generic).
+- **Comment accuracy**: Define the expectation that all comments, docstrings, and inline documentation must accurately describe the current code. Stale comments that describe removed or changed behavior are bugs.
+
 ### 4. Create `.deepreview` rules
 
 For each language, add a review rule to the top-level `.deepreview` file. If the `.deepreview` file does not yet exist, create it at the project root. Every language review rule must:
@@ -81,8 +86,8 @@ The inline review instructions for each rule should:
 
 1. Tell the reviewer to read the conventions file for the project's standards
 2. Review the changed file against those conventions
-3. **Explicitly instruct the reviewer to check for DRY violations** — look for duplicated logic, repeated patterns, or code that could be extracted into a shared function/module
-4. **Explicitly instruct the reviewer to verify all comments are still accurate** — check that comments, docstrings, and inline documentation still correctly describe the code after the changes
+3. **Explicitly instruct the reviewer to check for DRY violations** as defined in the conventions file — look for duplicated logic, repeated patterns, or code that could be extracted into a shared function/module
+4. **Explicitly instruct the reviewer to verify all comments are still accurate** as defined in the conventions file — check that comments, docstrings, and inline documentation still correctly describe the code after the changes
 
 **Example rule structure:**
 
@@ -107,12 +112,15 @@ python_code_review:
       - Import ordering and grouping
       - [other language-specific items from the conventions]
 
-      Additionally, always check:
-      - **DRY violations**: Is there duplicated logic or repeated patterns that
-        should be extracted into a shared function, utility, or module?
-      - **Comment accuracy**: Are all comments, docstrings, and inline
-        documentation still accurate after the changes? Flag any comments that
-        describe behavior that no longer matches the code.
+      Additionally, check the DRY and comment accuracy standards from the
+      conventions file:
+      - **DRY violations**: Following the DRY guidelines in the conventions,
+        is there duplicated logic or repeated patterns that should be
+        extracted into a shared function, utility, or module?
+      - **Comment accuracy**: Following the comment accuracy standards in
+        the conventions, are all comments, docstrings, and inline
+        documentation still accurate after the changes? Flag any comments
+        that describe behavior that no longer matches the code.
 ```
 
 ### 5. Validate

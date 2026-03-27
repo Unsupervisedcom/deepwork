@@ -4,6 +4,6 @@
 .last_head_ref
 job.schema.json
 
-# Temporary files (but keep the directory via .gitkeep)
+# Temporary files (tmp/.gitignore handles ignoring its own contents)
 tmp/*
-!tmp/.gitkeep
+!tmp/.gitignore

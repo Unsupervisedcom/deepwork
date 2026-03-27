@@ -13,6 +13,7 @@ prompt_best_practices:
       - "learning_agents/agents/**/*.md"   # agent persona definitions
       - "platform/**/*.md"
       - "src/deepwork/standard_jobs/**/*.md"
+      - "library/jobs/**/*.md"  # library job step instructions are prompt-heavy files
       - "**/.deepreview"       # .deepreview files contain inline agent instructions — prompt-heavy content
   review:
     strategy: individual
@@ -193,6 +194,47 @@ requirements_traceability:
 
       Produce a structured review with Coverage Gaps, Test Stability
       Violations, Traceability Issues, and a Summary with PASS/FAIL verdicts.
+
+requirement_file_format:
+  description: "Validate RFC 2119 compliance, unique IDs, and sequential numbering in requirement spec files."
+  match:
+    include:
+      - "specs/**/*-REQ-*.md"
+  review:
+    strategy: individual
+    instructions: |
+      Review this requirements specification file for format correctness.
+
+      Check the following:
+
+      1. **RFC 2119 keywords**: Every requirement statement MUST use at least one
+         RFC 2119 keyword (MUST, MUST NOT, SHALL, SHALL NOT, SHOULD, SHOULD NOT,
+         MAY, REQUIRED, RECOMMENDED, OPTIONAL). Flag any numbered requirement
+         that lacks an RFC 2119 keyword — e.g., "The system generates a UUID"
+         should be "The system MUST generate a UUID."
+
+      2. **Unique requirement IDs**: Each section heading must follow the pattern
+         `### {PREFIX}-REQ-NNN.M: Title` where PREFIX matches the filename prefix
+         (e.g., JOBS-REQ for JOBS-REQ-001-*.md). Within each section, requirements
+         are numbered lists (1., 2., 3., ...). Flag any duplicate section IDs.
+
+      3. **Sequential numbering**: Within each section, numbered requirements
+         should be sequential without gaps (1, 2, 3 — not 1, 2, 4). Flag gaps
+         or out-of-order numbers.
+
+      4. **Section ID consistency**: The section ID prefix must match the file's
+         naming convention. For example, in `JOBS-REQ-001-mcp-workflow-tools.md`,
+         all sections should use `JOBS-REQ-001.X` (not `JOBS-REQ-002.X`).
+
+      5. **Testability**: Each requirement should be specific enough to be
+         verifiable — either by an automated test or a review rule. Flag vague
+         requirements that cannot be objectively evaluated (e.g., "The system
+         SHOULD be fast" — fast compared to what?).
+
+      Output Format:
+      - PASS: All requirements are properly formatted.
+      - FAIL: Issues found. List each with the section ID, requirement number,
+        and a concise description of the issue.
 
 update_documents_relating_to_src_deepwork:
   description: "Ensure project documentation stays current when DeepWork source files, plugins, or platform content change."
@@ -428,3 +470,59 @@ job_schema_instruction_compatibility:
       - PASS: All instruction files are compatible with the schema.
       - FAIL: Incompatibilities found. List each with the file path, line
         reference, the incompatible content, and what the schema actually says.
+
+agents_md_claude_md_symlink:
+  description: "Ensure every AGENTS.md file has a sibling CLAUDE.md symlink pointing to it, because Claude Code reads CLAUDE.md but ignores AGENTS.md."
+  match:
+    include:
+      - "**/AGENTS.md"
+  review:
+    strategy: individual
+    instructions: |
+      Claude Code reads CLAUDE.md for project context but does not read AGENTS.md.
+      Every AGENTS.md file MUST have a sibling CLAUDE.md that is a symlink pointing
+      to AGENTS.md, so that Claude Code picks up the same content.
+
+      Check whether a CLAUDE.md symlink exists in the same directory as the matched
+      AGENTS.md file. If it is missing or is not a symlink to AGENTS.md, create it:
+
+        ln -sf AGENTS.md <dir>/CLAUDE.md
+
+      The symlink target MUST be the relative path "AGENTS.md" (not an absolute path),
+      so the link remains valid after the directory is moved or cloned.
+
+      Output Format:
+      - PASS: CLAUDE.md symlink exists and points to AGENTS.md.
+      - FAIL: Symlink missing or incorrect — describe the current state and the fix applied.
+
+nix_claude_wrapper:
+  description: "Ensure flake.nix always wraps the claude command with the required plugin dirs."
+  match:
+    include:
+      - "flake.nix"
+      - ".envrc"
+  review:
+    strategy: matches_together
+    instructions: |
+      The nix dev shell must ensure that running `claude` locally automatically
+      loads the project's plugin directories via `--plugin-dir` flags. Verify:
+
+      1. **Wrapper exists**: flake.nix creates a wrapper (script or function)
+         that invokes the real `claude` binary with extra arguments.
+
+      2. **Required plugin dirs**: The wrapper MUST pass both of these
+         `--plugin-dir` flags:
+         - `--plugin-dir "$REPO_ROOT/plugins/claude"`
+         - `--plugin-dir "$REPO_ROOT/learning_agents"`
+
+      3. **PATH setup**: The wrapper must be discoverable — either via a
+         script placed on PATH (e.g. `.venv/bin/claude`) with `.envrc`
+         adding that directory to PATH, or via a shell function/alias.
+
+      4. **Real binary resolution**: The wrapper must resolve the real
+         `claude` binary correctly, avoiding infinite recursion (e.g. by
+         stripping the wrapper's directory from PATH before lookup).
+
+      Output Format:
+      - PASS: The claude wrapper is correctly configured with both plugin dirs.
+      - FAIL: Describe what is missing or broken.

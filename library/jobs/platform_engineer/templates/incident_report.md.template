@@ -1,0 +1,80 @@
+# Incident Report
+
+**Date**: [YYYY-MM-DD]
+**Environment**: [cluster/namespace or cloud environment]
+**Severity**: [minor | moderate | significant | critical]
+**Duration**: [start time] to [end time or "ongoing"]
+**Status**: [resolved | ongoing | intermittent]
+**Affected Users/Services**: [who was impacted]
+
+## Executive Summary
+
+[3-5 sentence summary for stakeholders who need the quick version]
+
+## Timeline
+
+| Time (UTC) | Event |
+|------------|-------|
+| [HH:MM] | [First indication of issue] |
+| [HH:MM] | [Key event] |
+| [HH:MM] | [Resolution or current state] |
+
+## Root Cause Analysis
+
+[Detailed explanation of what caused the incident, supported by evidence]
+
+**Verification Status**: [verified with runtime data | inferred from indirect evidence | unverified hypothesis]
+
+### Contributing Factors
+
+- [factor 1]
+- [factor 2]
+
+## Impact Assessment
+
+- **User Impact**: [description of user-facing effects]
+- **Data Impact**: [any data loss or corruption — usually none]
+- **Service Impact**: [which services were degraded or unavailable]
+- **Duration**: [how long users were affected]
+
+## Evidence Summary
+
+### From Logs
+- [key log finding with timestamp]
+
+### From Metrics
+- [key metric finding]
+
+### From Infrastructure
+- [key infrastructure finding]
+
+## Remediation
+
+### Immediate Actions
+
+1. **[Action description]** — Risk: [safe | moderate | high]
+   ```bash
+   [specific command to run]
+   ```
+   Rollback: `[rollback command if applicable]`
+
+2. **[Action description]** — Risk: [safe | moderate | high]
+   ```bash
+   [specific command]
+   ```
+
+### Follow-Up Actions
+
+- [ ] [longer-term fix or investigation]
+- [ ] [monitoring improvement]
+- [ ] [documentation update]
+
+## Prevention
+
+- **Short-term**: [immediate preventive measures]
+- **Long-term**: [architectural or process changes]
+
+## Lessons Learned
+
+- [what went well in detection/response]
+- [what could be improved]

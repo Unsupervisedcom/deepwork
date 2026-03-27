@@ -4,9 +4,29 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version number (e.g., 0.6.0)'
+        description: 'Base version number (e.g., 0.10.0)'
         required: true
         type: string
+      release_type:
+        description: 'Release type'
+        required: true
+        type: choice
+        default: 'stable'
+        options:
+          - stable
+          - alpha
+          - beta
+          - rc
+      prerelease_number:
+        description: 'Pre-release number (numeric only, e.g., "1" → PyPI: X.Y.Zb1, plugin: X.Y.Z-beta.1). Ignored for stable.'
+        required: false
+        type: string
+        default: '1'
+      ref:
+        description: 'Branch to release from. Only used for pre-releases. Defaults to repo default branch.'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -19,31 +39,102 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Use ref for pre-releases so we can checkout a feature branch.
+          # Use RELEASE_TOKEN so tags/releases created here trigger downstream workflows.
+          ref: ${{ inputs.release_type != 'stable' && inputs.ref || '' }}
+          token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Validate version format
         run: |
           if ! echo "${{ inputs.version }}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "Error: Version must be in format X.Y.Z (e.g., 0.6.0)"
+            echo "Error: Version must be in format X.Y.Z (e.g., 0.10.0)"
             exit 1
           fi
+
+      - name: Validate pre-release number
+        if: inputs.release_type != 'stable'
+        run: |
+          NUM="${{ inputs.prerelease_number }}"
+          if ! echo "$NUM" | grep -qE '^[0-9]+$'; then
+            echo "Error: Pre-release number must be numeric (e.g., 1, 2, 3), got: '$NUM'"
+            exit 1
+          fi
+
+      - name: Check for existing tag
+        if: inputs.release_type != 'stable'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          BASE="${{ inputs.version }}"
+          TYPE="${{ inputs.release_type }}"
+          NUM="${{ inputs.prerelease_number }}"
+          case "$TYPE" in
+            alpha) PEP440="a" ;;
+            beta)  PEP440="b" ;;
+            rc)    PEP440="rc" ;;
+          esac
+          TAG="${BASE}${PEP440}${NUM}"
+
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
+            echo "Error: Tag '$TAG' already exists."
+            echo "  → https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG"
+            echo ""
+            echo "If you genuinely want to re-release this version, delete the existing tag and release first, then run this workflow again."
+            exit 1
+          fi
+
+      - name: Compute version strings
+        id: versions
+        run: |
+          BASE="${{ inputs.version }}"
+          TYPE="${{ inputs.release_type }}"
+          NUM="${{ inputs.prerelease_number }}"
+
+          if [ "$TYPE" = "stable" ]; then
+            PYPI_VERSION="${BASE}"
+            PLUGIN_VERSION="${BASE}"
+            IS_PRERELEASE="false"
+          else
+            case "$TYPE" in
+              alpha) PEP440="a" ;;
+              beta)  PEP440="b" ;;
+              rc)    PEP440="rc" ;;
+            esac
+            PYPI_VERSION="${BASE}${PEP440}${NUM}"
+            PLUGIN_VERSION="${BASE}-${TYPE}.${NUM}"
+            IS_PRERELEASE="true"
+          fi
+
+          echo "pypi_version=$PYPI_VERSION" >> "$GITHUB_OUTPUT"
+          echo "plugin_version=$PLUGIN_VERSION" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
+
+          echo "Computed versions:"
+          echo "  PyPI:       $PYPI_VERSION"
+          echo "  Plugin:     $PLUGIN_VERSION"
+          echo "  Prerelease: $IS_PRERELEASE"
 
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      # --- Stable-only: create release branch ---
       - name: Create release branch
+        if: steps.versions.outputs.is_prerelease == 'false'
         run: |
-          VERSION="${{ inputs.version }}"
+          VERSION="${{ steps.versions.outputs.pypi_version }}"
           # Delete remote branch if it exists from a previous attempt
           git push origin --delete "release/${VERSION}" 2>/dev/null || true
           git checkout -b "release/${VERSION}"
 
+      # --- Stable-only: update CHANGELOG ---
       - name: Update CHANGELOG.md
+        if: steps.versions.outputs.is_prerelease == 'false'
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          VERSION="${{ inputs.version }}"
+          VERSION="${{ steps.versions.outputs.pypi_version }}"
           DATE=$(date +%Y-%m-%d)
 
           # Create the new Unreleased section template
@@ -103,17 +194,19 @@ jobs:
             fi
           fi
 
+      # --- Both: update pyproject.toml ---
       - name: Update pyproject.toml version
         run: |
-          VERSION="${{ inputs.version }}"
+          VERSION="${{ steps.versions.outputs.pypi_version }}"
           sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
 
           # Verify the change
           grep "^version = " pyproject.toml
 
+      # --- Both: update plugin.json files ---
       - name: Update plugin versions
         run: |
-          VERSION="${{ inputs.version }}"
+          VERSION="${{ steps.versions.outputs.plugin_version }}"
 
           # Update all Claude Code plugin versions
           for PLUGIN_FILE in $(find . -path '*/.claude-plugin/plugin.json'); do
@@ -121,6 +214,36 @@ jobs:
             echo "Updated $PLUGIN_FILE:"
             grep '"version"' "$PLUGIN_FILE"
           done
+
+      # --- Stable-only: update marketplace.json ---
+      - name: Update marketplace plugin versions
+        if: steps.versions.outputs.is_prerelease == 'false'
+        run: |
+          VERSION="${{ steps.versions.outputs.pypi_version }}"
+
+          # Update the deepwork plugin version in marketplace.json
+          # Use jq to update only the deepwork plugin entry's version
+          jq --arg v "$VERSION" '(.plugins[] | select(.name == "deepwork")).version = $v' \
+            .claude-plugin/marketplace.json > .claude-plugin/marketplace.json.tmp
+          mv .claude-plugin/marketplace.json.tmp .claude-plugin/marketplace.json
+          echo "Updated .claude-plugin/marketplace.json:"
+          jq '.plugins[] | select(.name == "deepwork") | .version' .claude-plugin/marketplace.json
+
+      # --- Pre-release only: pin .mcp.json to pre-release PyPI version ---
+      - name: Pin MCP server to pre-release version
+        if: steps.versions.outputs.is_prerelease == 'true'
+        run: |
+          PYPI_VERSION="${{ steps.versions.outputs.pypi_version }}"
+
+          # Pin uvx to the specific pre-release version so the MCP server
+          # uses the pre-release package instead of latest stable
+          jq --arg v "$PYPI_VERSION" \
+            '.mcpServers.deepwork.args[0] = "deepwork==" + $v' \
+            plugins/claude/.mcp.json > plugins/claude/.mcp.json.tmp
+          mv plugins/claude/.mcp.json.tmp plugins/claude/.mcp.json
+          echo "Updated plugins/claude/.mcp.json:"
+          cat plugins/claude/.mcp.json
+
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -136,18 +259,22 @@ jobs:
       - name: Update lock file
         run: uv sync
 
-      - name: Commit and push
+      # --- Stable: commit, push branch, create PR ---
+      - name: Commit and push release branch
+        if: steps.versions.outputs.is_prerelease == 'false'
         run: |
-          VERSION="${{ inputs.version }}"
-          git add CHANGELOG.md pyproject.toml uv.lock $(find . -path '*/.claude-plugin/plugin.json')
+          VERSION="${{ steps.versions.outputs.pypi_version }}"
+          git add CHANGELOG.md pyproject.toml uv.lock .claude-plugin/marketplace.json \
+            $(find . -path '*/.claude-plugin/plugin.json')
           git commit -m "Release v${VERSION}"
           git push -u origin "release/${VERSION}"
 
       - name: Create Pull Request
+        if: steps.versions.outputs.is_prerelease == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${{ inputs.version }}"
+          VERSION="${{ steps.versions.outputs.pypi_version }}"
           gh pr create \
             --title "${VERSION}" \
             --body "## Release v${VERSION}
@@ -157,9 +284,48 @@ jobs:
           ### Changes
           - Updated version in pyproject.toml
           - Updated plugin versions (Claude Code, Learning Agents)
+          - Updated marketplace.json
           - Updated CHANGELOG.md
           - Updated uv.lock
 
           ### After Merge
           A GitHub Release will be automatically created when this PR is merged." \
             --label "release"
+
+      # --- Pre-release: commit, force-push to pre-release branch, tag, create GH Release ---
+      - name: Commit and push to pre-release branch
+        if: steps.versions.outputs.is_prerelease == 'true'
+        run: |
+          PYPI_VERSION="${{ steps.versions.outputs.pypi_version }}"
+
+          # Commit version bumps on the current (source) branch
+          git add pyproject.toml uv.lock plugins/claude/.mcp.json \
+            $(find . -path '*/.claude-plugin/plugin.json')
+          git commit -m "Pre-release v${PYPI_VERSION}"
+
+          # Force-push to the `pre-release` branch.
+          # This is the branch users subscribe to via:
+          #   /plugin marketplace add Unsupervisedcom/deepwork#pre-release
+          git push origin HEAD:refs/heads/pre-release --force
+
+          # Tag for the GitHub Release
+          git tag -a "$PYPI_VERSION" -m "Pre-release $PYPI_VERSION"
+          git push origin "$PYPI_VERSION"
+
+      - name: Create GitHub Pre-release
+        if: steps.versions.outputs.is_prerelease == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.versions.outputs.pypi_version }}
+          name: ${{ steps.versions.outputs.pypi_version }}
+          body: |
+            Pre-release `${{ steps.versions.outputs.pypi_version }}` from branch `${{ inputs.ref || github.event.repository.default_branch }}`.
+
+            **To use this pre-release**, subscribe to the pre-release plugin channel:
+            ```
+            /plugin marketplace add Unsupervisedcom/deepwork#pre-release
+            /plugin install deepwork@deepwork-plugins
+            ```
+          draft: false
+          prerelease: true
+          token: ${{ secrets.RELEASE_TOKEN }}

@@ -14,6 +14,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Removed
+## [0.9.8] - 2026-03-26
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+## [0.9.7] - 2026-03-24
+
+### Added
+
+- Add shared_jobs workflow for installing library jobs from the DeepWork library (#273)
+- Add research job to library (moved from standard jobs) (#274)
+- Add platform_engineer job to library (#268)
+- Add repo job for repository setup and health auditing (#266)
+- Add slash command creation guide to shared jobs readme (#277)
+
+### Changed
+
+- Rewrite README around "trustworthy agents" framing and enrich Reviews coverage (#271)
+- Require DRY and comment accuracy in language convention files (#267)
+- Shared_jobs workflow references library jobs instead of copying (#275)
+
+### Fixed
+
+### Removed
+
+## [0.9.6] - 2026-03-09
+
+### Added
+
+- Add file-based status reporting for external consumers (#257)
+- Add AGENTS.md → CLAUDE.md symlink rule and create symlinks for existing files (#259)
+
+### Changed
+
+- Refactor state management to use session-scoped persistent storage (#255)
+- Harden e2e CI tests and copy job schema at MCP startup (#252)
+
+### Fixed
+
+### Removed
 ## [0.9.5] - 2026-03-03
 
 ### Added
@@ -311,7 +355,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.9.5...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.9.8...HEAD
+[0.9.8]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.9.8
+[0.9.7]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.9.7
+[0.9.6]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.9.6
 [0.9.5]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.9.5
 [0.9.4]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.9.4
 [0.9.3]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.9.3

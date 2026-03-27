@@ -24,3 +24,70 @@ update_library_readme:
       For each issue, state the README section name and what is outdated or incorrect.
     additional_context:
       unchanged_matching_files: true
+
+library_job_portability:
+  description: "Ensure library jobs are portable across machines — no hardcoded paths, personal info, private URLs, or OS-specific assumptions."
+  match:
+    include:
+      - "**/job.yml"
+      - "**/steps/*.md"
+      - "**/readme.md"
+      - "**/conventions.md"
+      - "**/templates/*.template"
+    exclude:
+      - ".deepreview"
+  review:
+    strategy: individual
+    instructions: |
+      Library jobs are reusable templates that any repository can adopt. They must
+      be portable across machines, users, and platforms. Review this file for any
+      content that would break portability or leak private information.
+
+      ## Hardcoded Paths
+
+      Flag any of these patterns:
+      - Absolute paths: `/home/`, `/Users/`, `/nix/store/`, `C:\`
+      - User-specific directories: `~/.config/`, `~/.local/`, `~/.ssh/`
+      - Workspace-relative paths that assume a specific repo layout
+        (e.g., `.repos/acme/api/` or `/code/myproject/`)
+
+      Acceptable: relative paths within the job directory (e.g., `steps/foo.md`,
+      `templates/bar.yml`) and generic placeholders like `<project_root>`.
+
+      ## Personal and Private Information
+
+      Flag any of these:
+      - Usernames, email addresses, or real names
+      - Private repository URLs (e.g., `git@private-server.com:...`)
+      - Internal domain names (anything not a well-known public domain)
+      - API keys, tokens, or secrets (even example/placeholder ones like `sk-...`)
+      - Organization-specific identifiers that aren't generic examples
+
+      Acceptable: generic examples like `owner/repo`, `example.com`, `user@example.com`.
+
+      ## Platform and OS Assumptions
+
+      Flag instructions that assume:
+      - A specific OS (e.g., "run `brew install`" without alternatives)
+      - A specific shell (e.g., bash-only syntax without noting the requirement)
+      - A specific git provider without supporting alternatives (should work
+        with GitHub, Forgejo, GitLab, etc. or clearly state which it targets)
+      - Hardcoded CLI tool versions
+
+      Acceptable: instructions that detect the platform and branch accordingly,
+      or that clearly document which platforms are supported.
+
+      ## Schema Compliance (job.yml only)
+
+      For job.yml files, also check:
+      - Uses `common_job_info_provided_to_all_steps_at_runtime` (not `description`)
+      - Has `workflows` section with at least one workflow
+      - All steps have `reviews` (even if empty array)
+      - All `file` inputs have both `file` and `from_step` fields
+      - All step `dependencies` include every step referenced in `from_step`
+
+      ## Output Format
+
+      - PASS: File is portable with no private or machine-specific content.
+      - FAIL: Issues found. List each with line number (if applicable),
+        the problematic content, and a suggested fix.
