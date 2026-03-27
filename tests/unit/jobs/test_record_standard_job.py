@@ -7,11 +7,7 @@ import pytest
 from deepwork.jobs.parser import parse_job_definition
 
 RECORD_JOB_DIR = (
-    Path(__file__).parent.parent.parent.parent
-    / "src"
-    / "deepwork"
-    / "standard_jobs"
-    / "record"
+    Path(__file__).parent.parent.parent.parent / "src" / "deepwork" / "standard_jobs" / "record"
 )
 
 
