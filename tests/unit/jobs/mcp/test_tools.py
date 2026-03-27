@@ -8,8 +8,10 @@ import pytest
 from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     FinishedStepInput,
+    FinishedStepResponse,
     GoToStepInput,
     StartWorkflowInput,
+    StartWorkflowResponse,
     StepStatus,
 )
 from deepwork.jobs.mcp.state import StateManager
@@ -116,7 +118,7 @@ async def _start_main_workflow(
     tools: WorkflowTools,
     session_id: str = SESSION_ID,
     goal: str = "Test goal",
-) -> None:
+) -> StartWorkflowResponse:
     """Start the main workflow and return the response."""
     inp = StartWorkflowInput(
         goal=goal,
@@ -133,7 +135,7 @@ async def _finish_step(
     session_id: str = SESSION_ID,
     work_summary: str | None = None,
     override: str | None = None,
-) -> object:
+) -> FinishedStepResponse:
     """Complete the current step."""
     inp = FinishedStepInput(
         outputs=outputs,
@@ -152,6 +154,8 @@ async def _finish_step(
 class TestGetWorkflows:
     """Tests for get_workflows tool."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_jobs(self, tools: WorkflowTools) -> None:
         resp = tools.get_workflows()
         assert len(resp.jobs) == 1
@@ -163,6 +167,8 @@ class TestGetWorkflows:
         wf_names = {wf.name for wf in job.workflows}
         assert wf_names == {"main", "delegated"}
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_delegated_workflow_how_to_invoke(self, tools: WorkflowTools) -> None:
         resp = tools.get_workflows()
         job = resp.jobs[0]
@@ -170,12 +176,16 @@ class TestGetWorkflows:
         assert "subagent_type" in delegated.how_to_invoke
         assert "research" in delegated.how_to_invoke
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_main_workflow_how_to_invoke(self, tools: WorkflowTools) -> None:
         resp = tools.get_workflows()
         job = resp.jobs[0]
         main = next(wf for wf in job.workflows if wf.name == "main")
         assert "start_workflow" in main.how_to_invoke
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.2.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_handles_load_errors(self, tmp_path: Path, state_manager: StateManager) -> None:
         """Jobs with invalid YAML appear in errors, not jobs."""
         deepwork_dir = tmp_path / ".deepwork"
@@ -201,6 +211,8 @@ class TestStartWorkflow:
     """Tests for start_workflow tool."""
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_creates_session_and_returns_first_step(self, tools: WorkflowTools) -> None:
         resp = await _start_main_workflow(tools)
         step = resp.begin_step
@@ -214,11 +226,15 @@ class TestStartWorkflow:
         assert step.step_expected_outputs[0].required is True
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.11).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_common_job_info(self, tools: WorkflowTools) -> None:
         resp = await _start_main_workflow(tools)
         assert "test job for unit tests" in resp.begin_step.common_job_info
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_workflow_not_found(self, tools: WorkflowTools) -> None:
         inp = StartWorkflowInput(
             goal="Test",
@@ -230,6 +246,8 @@ class TestStartWorkflow:
             await tools.start_workflow(inp)
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_job_not_found(self, tools: WorkflowTools) -> None:
         inp = StartWorkflowInput(
             goal="Test",
@@ -241,6 +259,8 @@ class TestStartWorkflow:
             await tools.start_workflow(inp)
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_inputs_passed_to_first_step(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -262,6 +282,8 @@ class TestStartWorkflow:
         assert resp.begin_step.step_id == "step1"
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.12).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_stack_populated(self, tools: WorkflowTools) -> None:
         resp = await _start_main_workflow(tools)
         assert len(resp.stack) == 1
@@ -278,6 +300,8 @@ class TestFinishedStep:
     """Tests for finished_step tool."""
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_missing_required_output(self, tools: WorkflowTools) -> None:
         await _start_main_workflow(tools)
 
@@ -285,6 +309,8 @@ class TestFinishedStep:
             await _finish_step(tools, outputs={}, override="skip")
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_unknown_output(self, tools: WorkflowTools, project_root: Path) -> None:
         await _start_main_workflow(tools)
 
@@ -299,6 +325,8 @@ class TestFinishedStep:
             )
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_file_not_found(self, tools: WorkflowTools) -> None:
         await _start_main_workflow(tools)
 
@@ -310,6 +338,8 @@ class TestFinishedStep:
             )
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.17).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_advances_to_next_step(self, tools: WorkflowTools, project_root: Path) -> None:
         await _start_main_workflow(tools)
 
@@ -327,6 +357,8 @@ class TestFinishedStep:
         assert "Do the second step" in resp.begin_step.step_instructions
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.17).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_next_step_receives_inputs(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -347,6 +379,8 @@ class TestFinishedStep:
         assert resp.begin_step.step_inputs[0].value == "out1.md"
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.16).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_completes_workflow(self, tools: WorkflowTools, project_root: Path) -> None:
         await _start_main_workflow(tools)
 
@@ -366,6 +400,8 @@ class TestFinishedStep:
         assert "output2" in resp.all_outputs
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.16).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_post_workflow_instructions(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -383,6 +419,8 @@ class TestFinishedStep:
         assert "PR" in resp.post_workflow_instructions
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_string_type_validation(self, tools: WorkflowTools, project_root: Path) -> None:
         """String type outputs must be strings, not other types."""
         # Start the delegated workflow which has a string_output
@@ -402,6 +440,8 @@ class TestFinishedStep:
             )
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_string_type_accepts_string(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -421,6 +461,8 @@ class TestFinishedStep:
         assert resp.status == StepStatus.WORKFLOW_COMPLETE
 
     @pytest.mark.asyncio
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.14).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_quality_gate_pass(self, tools: WorkflowTools, project_root: Path) -> None:
         """When quality gate returns None (pass), step advances."""
         await _start_main_workflow(tools)

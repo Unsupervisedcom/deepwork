@@ -844,8 +844,8 @@ Reports step completion and gets next instructions.
 - `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
 **Returns**:
-- `status: "needs_review" | "next_step" | "workflow_complete"`
-- If `needs_review`: review instructions in the same format as the `/review` skill, with guidance on running reviews and calling `mark_review_as_passed` or fixing issues
+- `status: "needs_work" | "next_step" | "workflow_complete"`
+- If `needs_work`: feedback from failed quality reviews with issues to fix
 - If `next_step`: next step instructions (with resolved inputs)
 - If `workflow_complete`: summary of all outputs, plus `post_workflow_instructions` from the workflow definition
 
@@ -1008,7 +1008,7 @@ The plugin's `.mcp.json` registers the MCP server automatically:
   "mcpServers": {
     "deepwork": {
       "command": "uvx",
-      "args": ["deepwork", "serve", "--path", "."]
+      "args": ["deepwork", "serve", "--path", ".", "--platform", "claude"]
     }
   }
 }
@@ -1028,7 +1028,7 @@ Execute multi-step workflows with quality gate checkpoints.
 2. Start a workflow: Call `start_workflow` with your goal
 3. Execute steps: Follow the instructions returned
 4. Checkpoint: Call `finished_step` with your outputs
-5. Iterate or continue: Handle needs_review, next_step, or workflow_complete
+5. Iterate or continue: Handle needs_work, next_step, or workflow_complete
 ```
 
 ## MCP Execution Flow
@@ -1047,7 +1047,7 @@ Execute multi-step workflows with quality gate checkpoints.
 
 4. **Agent calls `finished_step`**
    - MCP server validates outputs, runs json_schema checks, then runs DeepWork Reviews
-   - If `needs_review`: returns review instructions for agent to run reviews (same format as `/review` skill)
+   - If `needs_work`: returns feedback from failed quality reviews with issues to fix
    - If `next_step`: returns next step instructions with resolved inputs
    - If `workflow_complete`: returns summary and `post_workflow_instructions`
 

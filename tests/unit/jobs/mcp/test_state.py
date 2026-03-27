@@ -136,7 +136,7 @@ class TestStateManager:
             first_step_id="step1",
         )
 
-        input_vals = {"query": "test query", "limit": "10"}
+        input_vals: dict[str, str | list[str]] = {"query": "test query", "limit": "10"}
         await state_manager.start_step(SESSION_ID, "step2", input_values=input_vals)
         session = state_manager.resolve_session(SESSION_ID)
 
@@ -256,7 +256,7 @@ class TestStateManager:
             first_step_id="step1",
         )
 
-        input_vals = {"target": "competitor_x", "depth": "deep"}
+        input_vals: dict[str, str | list[str]] = {"target": "competitor_x", "depth": "deep"}
         await state_manager.start_step(SESSION_ID, "step1", input_values=input_vals)
 
         retrieved = state_manager.get_step_input_values(SESSION_ID, "step1")

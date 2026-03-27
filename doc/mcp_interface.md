@@ -65,6 +65,7 @@ Start a new workflow session. Creates a git branch, initializes state tracking, 
 | `job_name` | `string` | Yes | Name of the job |
 | `workflow_name` | `string` | Yes | Name of the workflow within the job. If the name doesn't match but the job has only one workflow, that workflow is selected automatically. If the job has multiple workflows, an error is returned listing the available workflow names. |
 | `session_id` | `string` | Yes | The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). Identifies the persistent state storage for this agent session. |
+| `inputs` | `Record<string, string \| string[]> \| null` | No | Optional input values for the first step. Map of step_argument names to values. For file_path type arguments: pass a file path string or list of file path strings. For string type arguments: pass a string value. These values are made available to the first step and flow through the workflow. |
 | `agent_id` | `string \| null` | No | The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), if running as a sub-agent. When set, this workflow is scoped to this agent. |
 
 #### Returns
@@ -88,7 +89,7 @@ Report that you've finished a workflow step. Validates outputs against quality c
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `outputs` | `Record<string, string \| string[]>` | Yes | Map of output names to file path(s). For outputs declared as type `file`: pass a single string path (e.g. `"report.md"`). For outputs declared as type `files`: pass a list of string paths (e.g. `["a.md", "b.md"]`). Outputs with `required: false` can be omitted. Check `step_expected_outputs` to see each output's declared type and required status. |
-| `notes` | `string \| null` | No | Optional notes about work done |
+| `work_summary` | `string \| null` | No | Summary of the work done in this step. Used by process_quality_attributes reviews to evaluate whether the work process met quality criteria. Include key decisions, approaches taken, and any deviations from the instructions. |
 | `quality_review_override_reason` | `string \| null` | No | If provided, skips quality review (must explain why) |
 | `session_id` | `string` | Yes | The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). Identifies the persistent state storage for this agent session. |
 | `agent_id` | `string \| null` | No | The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), if running as a sub-agent. When set, operates on this agent's scoped workflow stack. |
@@ -111,6 +112,7 @@ The response varies based on the `status` field:
   // For status = "workflow_complete"
   summary?: string;                    // Summary of completed workflow
   all_outputs?: Record<string, string | string[]>; // All outputs from all steps
+  post_workflow_instructions?: string; // Instructions for after workflow completion
 
   // Always included
   stack: StackEntry[];                 // Current workflow stack after this operation
@@ -246,7 +248,7 @@ A plain string with either:
 ```typescript
 interface ExpectedOutput {
   name: string;                    // Output name (use as key in finished_step outputs)
-  type: string;                    // "file" or "files"
+  type: string;                    // "file_path" or "string"
   description: string;             // What this output should contain
   required: boolean;               // If false, this output can be omitted from finished_step
   syntax_for_finished_step_tool: string; // Value format hint:
@@ -254,12 +256,20 @@ interface ExpectedOutput {
                                          //   "array of filepaths for all individual files" for type "files"
 }
 
+interface StepInputInfo {
+  name: string;                    // Step argument name
+  type: string;                    // Argument type: "file_path" or "string"
+  description: string;             // What this input represents
+  value: string | string[] | null; // The input value (file path or string content), if available
+  required: boolean;               // Whether this input is required
+}
+
 interface ActiveStepInfo {
   session_id: string;              // Unique session identifier
   step_id: string;                 // ID of the current step
   job_dir: string;                 // Absolute path to job directory (templates, scripts, etc.)
   step_expected_outputs: ExpectedOutput[]; // Expected outputs with type and format hints
-  step_reviews: ReviewInfo[];      // Reviews to run when step completes
+  step_inputs: StepInputInfo[];    // Inputs provided to this step with their values
   step_instructions: string;       // Instructions for the step
   common_job_info: string;         // Common context shared across all steps in this job
 }
@@ -412,8 +422,8 @@ Add to your `.mcp.json`:
 {
   "mcpServers": {
     "deepwork": {
-      "command": "deepwork",
-      "args": ["serve", "--path", "."]
+      "command": "uvx",
+      "args": ["deepwork", "serve", "--path", ".", "--platform", "claude"]
     }
   }
 }
