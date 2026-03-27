@@ -74,3 +74,49 @@ job_definition_review:
         suggested fix.
     additional_context:
       unchanged_matching_files: true
+
+record_step_requirements:
+  description: "Verify step instruction files satisfy JOBS-REQ-011 judgment-based requirements."
+  match:
+    include:
+      - "steps/*.md"
+  review:
+    strategy: each_file
+    instructions: |
+      Review this step instruction file against the JOBS-REQ-011 requirements for the
+      record standard job. Each step has specific behavioral requirements that the
+      instruction prose must convey.
+
+      ## Requirements by step
+
+      ### steps/observe.md
+      - JOBS-REQ-011.2.3: MUST instruct the agent to start immediately without asking upfront questions.
+        Look for explicit language like "start instantly" or "do NOT ask upfront questions."
+      - JOBS-REQ-011.2.4: MUST instruct the agent to use AskUserQuestion to solicit reasoning
+        when the user takes actions whose purpose is unclear. Look for mention of AskUserQuestion
+        and guidance about when to ask vs. when not to.
+
+      ### steps/document.md
+      - JOBS-REQ-011.3.3: MUST instruct the agent to synthesize the process from conversation
+        history. Look for instructions about reflecting on the conversation or using context.
+      - JOBS-REQ-011.3.4: MUST instruct the agent to ask the user to confirm: the process
+        purpose, a name for the process, and which inputs are variable vs. fixed. All three
+        clarification topics must be present.
+
+      ### steps/reflect.md
+      - JOBS-REQ-011.4.3: The reflection MUST identify stumbling blocks with mitigation
+        strategies and efficiency improvements with expected benefits. Look for instructions
+        covering both stumbling blocks and efficiency improvements.
+
+      ### steps/generate_job.md
+      - JOBS-REQ-011.5.3: MUST defer to the deepwork_jobs/new_job workflow as a nested
+        workflow. Look for instructions to call start_workflow with deepwork_jobs/new_job.
+      - JOBS-REQ-011.5.4: MUST use the process document and reflection to inform the nested
+        workflow rather than starting from scratch.
+
+      ## Output Format
+
+      For each requirement, state PASS or FAIL with a brief explanation.
+      If any requirement fails, the overall review is FAIL.
+    additional_context:
+      unchanged_matching_files: true
