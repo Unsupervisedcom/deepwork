@@ -45,9 +45,7 @@ class TestQualityGatePipelineIntegration:
             review=arg_review,
             json_schema=json_schema,
         )
-        output_ref = StepOutputRef(
-            argument_name="report", required=True, review=review
-        )
+        output_ref = StepOutputRef(argument_name="report", required=True, review=review)
         step = WorkflowStep(
             name="write_report",
             instructions="Write a report",

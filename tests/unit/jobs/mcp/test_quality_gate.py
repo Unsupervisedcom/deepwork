@@ -26,6 +26,7 @@ from deepwork.review.config import ReviewRule, ReviewTask
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_job(
     tmp_path: Path,
     step_arguments: list[StepArgument],
@@ -48,6 +49,7 @@ def _make_job(
 # TestValidateJsonSchemas
 # ---------------------------------------------------------------------------
 
+
 class TestValidateJsonSchemas:
     """Tests for validate_json_schemas."""
 
@@ -61,9 +63,7 @@ class TestValidateJsonSchemas:
         report_path = tmp_path / "report.md"
         report_path.write_text("some content")
 
-        errors = validate_json_schemas(
-            {"report": "report.md"}, step, job, tmp_path
-        )
+        errors = validate_json_schemas({"report": "report.md"}, step, job, tmp_path)
         assert errors == []
 
     def test_passes_when_json_schema_validates(self, tmp_path: Path) -> None:
@@ -134,15 +134,14 @@ class TestValidateJsonSchemas:
         step = WorkflowStep(name="generate", outputs={"data": output_ref})
         job, _ = _make_job(tmp_path, [arg], step)
 
-        errors = validate_json_schemas(
-            {"data": "just a string value"}, step, job, tmp_path
-        )
+        errors = validate_json_schemas({"data": "just a string value"}, step, job, tmp_path)
         assert errors == []
 
 
 # ---------------------------------------------------------------------------
 # TestBuildDynamicReviewRules
 # ---------------------------------------------------------------------------
+
 
 class TestBuildDynamicReviewRules:
     """Tests for build_dynamic_review_rules."""
@@ -201,12 +200,8 @@ class TestBuildDynamicReviewRules:
         """Both output-level and argument-level reviews produce separate rules."""
         output_review = ReviewBlock(strategy="individual", instructions="Output check")
         arg_review = ReviewBlock(strategy="matches_together", instructions="Arg check")
-        arg = StepArgument(
-            name="report", description="Report", type="file_path", review=arg_review
-        )
-        output_ref = StepOutputRef(
-            argument_name="report", required=True, review=output_review
-        )
+        arg = StepArgument(name="report", description="Report", type="file_path", review=arg_review)
+        output_ref = StepOutputRef(argument_name="report", required=True, review=output_review)
         step = WorkflowStep(name="write", outputs={"report": output_ref})
         job, workflow = _make_job(tmp_path, [arg], step)
 
@@ -365,6 +360,7 @@ class TestBuildDynamicReviewRules:
 # TestRunQualityGate
 # ---------------------------------------------------------------------------
 
+
 class TestRunQualityGate:
     """Tests for run_quality_gate."""
 
@@ -378,9 +374,7 @@ class TestRunQualityGate:
         report_path = tmp_path / "report.md"
         report_path.write_text("content")
 
-        with patch(
-            "deepwork.jobs.mcp.quality_gate.load_all_rules", return_value=([], [])
-        ):
+        with patch("deepwork.jobs.mcp.quality_gate.load_all_rules", return_value=([], [])):
             result = run_quality_gate(
                 step=step,
                 job=job,
@@ -403,9 +397,7 @@ class TestRunQualityGate:
         data_file = tmp_path / "data.json"
         data_file.write_text("{}")
 
-        with patch(
-            "deepwork.jobs.mcp.quality_gate.load_all_rules", return_value=([], [])
-        ):
+        with patch("deepwork.jobs.mcp.quality_gate.load_all_rules", return_value=([], [])):
             result = run_quality_gate(
                 step=step,
                 job=job,

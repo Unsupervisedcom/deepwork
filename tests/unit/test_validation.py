@@ -223,9 +223,7 @@ class TestValidateAgainstSchema:
         job_data = {
             "name": "job",
             "summary": "Test",
-            "step_arguments": [
-                {"name": "output", "description": "Output", "type": "file_path"}
-            ],
+            "step_arguments": [{"name": "output", "description": "Output", "type": "file_path"}],
             "workflows": {
                 "main": {
                     "summary": "Main",
