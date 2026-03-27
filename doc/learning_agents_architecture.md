@@ -111,11 +111,19 @@ Learnings are incident post-mortems from past agent sessions capturing mistakes,
 ### Session Logs (transient, gitignored)
 
 ```
-.deepwork/tmp/agent_sessions/<session_id>/<agent_id>/
-├── needs_learning_as_of_timestamp      # Flag file (body = ISO 8601 timestamp)
-├── learning_last_performed_timestamp   # When learning was last run on this conversation
-├── agent_used                          # Body = LearningAgent folder name
-└── <brief-name>.issue.yml              # Issues found during learning
+.deepwork/tmp/agent_sessions/<session_id>/
+├── <agent_id>/                            # Subagent sessions (created by post-Task hook)
+│   ├── conversation_transcript.jsonl      # Symlink to subagent transcript
+│   ├── needs_learning_as_of_timestamp     # Flag file (body = ISO 8601 timestamp)
+│   ├── learning_last_performed_timestamp  # When learning was last run
+│   ├── agent_used                         # Body = LearningAgent folder name
+│   └── <brief-name>.issue.yml             # Issues found during learning
+└── top-level/                             # Top-level agent sessions (--agent flag, created by Stop hook)
+    ├── conversation_transcript.jsonl      # Symlink to session transcript
+    ├── needs_learning_as_of_timestamp     # Flag file (body = ISO 8601 timestamp)
+    ├── learning_last_performed_timestamp  # When learning was last run
+    ├── agent_used                         # Body = LearningAgent folder name
+    └── <brief-name>.issue.yml             # Issues found during learning
 ```
 
 See `learning_log_folder_structure.md` for full details.
@@ -130,7 +138,8 @@ Fires after every `Task` tool call. The script:
 2. Checks if a matching folder exists in `.deepwork/learning-agents/` — if not, exits silently
 3. Creates `.deepwork/tmp/agent_sessions/<session_id>/<agent_id>/needs_learning_as_of_timestamp` with current timestamp
 4. Creates `.deepwork/tmp/agent_sessions/<session_id>/<agent_id>/agent_used` with the agent name
-5. Outputs the post-task reminder as feedback (contents of `learning_agent_post_task_reminder.md`)
+5. Symlinks the subagent transcript into the session log folder as `conversation_transcript.jsonl`
+6. Outputs the post-task reminder as feedback (contents of `learning_agent_post_task_reminder.md`)
 
 **Hook config:**
 ```json
@@ -151,8 +160,14 @@ Fires after every `Task` tool call. The script:
 
 ### Stop (session_stop.sh)
 
-Fires when the main agent finishes responding. The script:
+Fires when the main agent finishes responding. The script has two responsibilities:
 
+**Top-level agent tracking**: If the session was started with `claude --agent <name>` and that agent is a LearningAgent (has a matching `.deepwork/learning-agents/<name>/` directory), creates session tracking files under `.deepwork/tmp/agent_sessions/<session_id>/top-level/`:
+1. Extracts `agent_type`, `session_id`, and `transcript_path` from hook input
+2. Normalizes the agent name (lowercase, spaces to hyphens)
+3. Creates `needs_learning_as_of_timestamp`, `agent_used`, and symlinks the session transcript as `conversation_transcript.jsonl`
+
+**Pending learning check**:
 1. Searches for any `needs_learning_as_of_timestamp` files under `.deepwork/tmp/agent_sessions/`
 2. If none found, exits silently (exit 0, no output)
 3. If found, outputs feedback suggesting a learning cycle — does NOT block (exit 0 with stdout)
