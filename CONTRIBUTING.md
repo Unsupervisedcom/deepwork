@@ -232,34 +232,21 @@ uv tool list | grep deepwork
 uvx deepwork --version
 
 # Test the MCP server starts
-uvx deepwork serve --path . --external-runner claude
+uvx deepwork serve --path . --external-runner claude --platform claude
 ```
 
 ## Installing Pre-Release Versions
 
-DeepWork uses pre-release versions (e.g., `0.7.0a1`) during development. By default, `uv` and `pip` skip pre-release versions, so you need to opt in explicitly.
+DeepWork publishes pre-release versions (e.g., `0.10.0a1`) to a dedicated `pre-release` branch. The plugin marketplace handles the full installation — prompts, MCP config, and hooks all stay in sync.
 
-### With uv
+In Claude Code:
 
-```bash
-# Install the latest pre-release from PyPI
-uv pip install --prerelease=allow deepwork
-
-# Or pin to a specific pre-release
-uv pip install --prerelease=allow "deepwork==0.7.0a1"
+```
+/plugin marketplace add Unsupervisedcom/deepwork#pre-release
+/plugin install deepwork@deepwork-plugins
 ```
 
-### With pip
-
-```bash
-pip install --pre deepwork
-```
-
-### With uv tool install (global CLI)
-
-```bash
-uv tool install --prerelease=allow deepwork
-```
+This installs the plugin from the `pre-release` branch, which includes the version-pinned MCP config so `uvx` pulls the correct pre-release package from PyPI automatically.
 
 ## Testing Your Local Installation
 
@@ -278,7 +265,7 @@ uvx deepwork --version
 The MCP server is DeepWork's core runtime. Test it directly:
 
 ```bash
-uvx deepwork serve --path . --external-runner claude
+uvx deepwork serve --path . --external-runner claude --platform claude
 ```
 
 ### 3. Test with Claude Code
@@ -467,7 +454,7 @@ mypy src/
 ```bash
 # Verify uvx deepwork uses your local source
 uv tool list | grep deepwork
-uvx deepwork serve --path ~/test-project --external-runner claude
+uvx deepwork serve --path ~/test-project --external-runner claude --platform claude
 ```
 
 ### 5. Commit Your Changes

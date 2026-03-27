@@ -92,12 +92,14 @@ class TestMCPServerRegistration:
     def test_mcp_command_is_uvx_deepwork_serve(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.2.2).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        # The first arg must start with "deepwork" (not an exact match) because
+        # the release process may pin a version, e.g. "deepwork==0.10.0a1".
         """PLUG-REQ-001.2.2: command is uvx with deepwork and serve as first two args."""
         data = json.loads(self.mcp_json_path.read_text())
         server = data["mcpServers"]["deepwork"]
         assert server["command"] == "uvx"
         args = server["args"]
-        assert args[0] == "deepwork"
+        assert args[0].startswith("deepwork"), f"Expected args[0] to start with 'deepwork', got '{args[0]}'"
         assert args[1] == "serve"
 
     def test_mcp_args_include_platform_claude(self) -> None:
