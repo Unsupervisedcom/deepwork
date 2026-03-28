@@ -64,6 +64,10 @@ step_arguments:
     description: "Updated job.yml files in current DeepWork format"
     type: file_path
 
+  - name: available_jobs
+    description: "List of job.yml file paths available via the configured library path"
+    type: file_path
+
 workflows:
   new_job:
     summary: "Create a new DeepWork job from scratch through definition, implementation, testing, and iteration"
@@ -1363,7 +1367,7 @@ workflows:
 
           ### Step 1.5: Process Jobs in Parallel
 
-          **For each job** (except `deepwork_jobs` which should be updated via `deepwork install`), kick off a sub-agent to audit and repair that job's `job.yml` file. The sub-agent should:
+          **For each job** (except `deepwork_jobs` and `deepwork_reviews` which are standard jobs managed in `src/deepwork/standard_jobs/`), kick off a sub-agent to audit and repair that job's `job.yml` file. The sub-agent should:
 
           1. Read the job's `job.yml` file
           2. Attempt to parse it against the current schema
@@ -1999,3 +2003,60 @@ workflows:
           "Bespoke Learnings Captured": "Run-specific learnings were added to AGENTS.md."
           "File References Used": "AGENTS.md entries reference other files where appropriate."
           "Working Folder Correct": "AGENTS.md is in the correct working folder for the job."
+
+  shared_jobs:
+    summary: "Make DeepWork library jobs available by configuring DEEPWORK_ADDITIONAL_JOBS_FOLDERS"
+    steps:
+      - name: sync_shared_jobs
+        instructions: |
+          Make DeepWork library jobs available in the project by configuring `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` to reference them in-place. Jobs are **never copied** into `.deepwork/jobs/` — they are referenced from a local checkout or a sparse-checkout clone.
+
+          **Do NOT copy job directories into `.deepwork/jobs/`.** Library jobs MUST be referenced via `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` so they stay up-to-date with upstream.
+
+          ### Step 1: Detect Existing Configuration
+
+          Check for existing setup:
+          1. Check if `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` env var is set
+          2. Check `flake.nix` for the env var (if it exists)
+          3. Check for a local deepwork checkout at `../deepwork/library/jobs/`
+          4. Check for an existing sparse checkout at `.deepwork/upstream/library/jobs/`
+
+          If a working configuration is already detected, report what's configured and ask if the user wants to reconfigure.
+
+          ### Step 2: Determine Source
+
+          Ask the user how library jobs should be sourced:
+          - **Local checkout** — Point to an existing local DeepWork checkout (e.g., `../deepwork`). Best for maintainers.
+          - **Sparse checkout** — Clone into `.deepwork/upstream/` with sparse checkout for just `library/jobs/`. Best for most users.
+          - **Custom path** — Specify a custom filesystem path to a DeepWork repository.
+
+          ### Step 3: Set Up the Source
+
+          For **local checkout**: validate path contains `library/jobs/`, resolve absolute path.
+
+          For **sparse checkout**:
+          ```bash
+          git clone --sparse --filter=blob:none \
+            https://github.com/Unsupervisedcom/deepwork.git .deepwork/upstream
+          git -C .deepwork/upstream sparse-checkout set --cone library/jobs/
+          ```
+          Ensure `.deepwork/upstream/` is in `.gitignore`.
+
+          ### Step 4: Configure the Environment Variable
+
+          If `flake.nix` exists, add a shellHook that sets `DEEPWORK_ADDITIONAL_JOBS_FOLDERS`. Otherwise, instruct the user to set it in their shell profile.
+
+          For the current session, export immediately:
+          ```bash
+          export DEEPWORK_ADDITIONAL_JOBS_FOLDERS="${DEEPWORK_ADDITIONAL_JOBS_FOLDERS:+$DEEPWORK_ADDITIONAL_JOBS_FOLDERS:}$LIBRARY_PATH"
+          ```
+
+          ### Step 5: Verify and Report
+
+          List all discovered jobs from the library path. Check `.deepwork/jobs/` for stale copies that are now redundant and offer to remove them.
+        outputs:
+          available_jobs:
+            required: true
+        process_requirements:
+          "Referenced Not Copied": "Library jobs MUST be referenced via DEEPWORK_ADDITIONAL_JOBS_FOLDERS, NOT copied into .deepwork/jobs/."
+          "Persistence Configured": "The env var SHOULD be configured for persistence (in flake.nix or shell profile)."

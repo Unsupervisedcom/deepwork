@@ -25,6 +25,7 @@ from deepwork.review.instructions import (
     write_instruction_files,
 )
 from deepwork.review.matcher import match_files_to_rules
+from deepwork.utils.validation import ValidationError, validate_against_schema
 
 logger = logging.getLogger("deepwork.jobs.mcp.quality_gate")
 
@@ -63,8 +64,6 @@ def validate_json_schemas(
                 errors.append(f"Output '{output_name}' file '{path}': failed to parse as JSON: {e}")
                 continue
 
-            from deepwork.utils.validation import ValidationError, validate_against_schema
-
             try:
                 validate_against_schema(parsed, arg.json_schema)
             except ValidationError as e:
@@ -77,7 +76,6 @@ def validate_json_schemas(
 
 def _collect_output_file_paths(
     outputs: dict[str, ArgumentValue],
-    step: WorkflowStep,
     job: JobDefinition,
 ) -> list[str]:
     """Collect all file paths from file_path type outputs."""
@@ -224,8 +222,7 @@ def build_dynamic_review_rules(
     # Process requirements review
     if step.process_requirements and work_summary is not None:
         attrs_list = "\n".join(
-            f"- **{name}**: {statement}"
-            for name, statement in step.process_requirements.items()
+            f"- **{name}**: {statement}" for name, statement in step.process_requirements.items()
         )
 
         # Build context with all inputs and outputs
@@ -267,7 +264,7 @@ Evaluate whether the work described in the `work_summary` meets each requirement
         # no file patterns to match — this is about the process, not files)
         # We'll create a rule that matches all output files so it goes through
         # the pipeline
-        output_paths = _collect_output_file_paths(outputs, step, job)
+        output_paths = _collect_output_file_paths(outputs, job)
         if output_paths:
             pqa_rule = ReviewRule(
                 name=f"step_{step.name}_process_quality",
@@ -324,7 +321,7 @@ def run_quality_gate(
     deepreview_rules, _errors = load_all_rules(project_root)
 
     # 4. Get the "changed files" list = output file paths
-    output_files = _collect_output_file_paths(outputs, step, job)
+    output_files = _collect_output_file_paths(outputs, job)
 
     # 5. Match .deepreview rules against output files
     deepreview_tasks: list[ReviewTask] = []

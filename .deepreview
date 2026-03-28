@@ -249,6 +249,7 @@ update_documents_relating_to_src_deepwork:
       - "CLAUDE.md"
       - "doc/architecture.md"
       - "doc/mcp_interface.md"
+      - "doc/job_yml_guidance.md"  # Describes job.yml runtime behavior — must stay in sync with parser/schema
       - "doc/doc-specs.md"
       - "doc/platforms/**"
       - "src/deepwork/hooks/README.md"
@@ -264,6 +265,7 @@ update_documents_relating_to_src_deepwork:
       - CLAUDE.md (project structure, tech stack, CLI commands, architecture)
       - doc/architecture.md (detailed architecture, module descriptions, data flow)
       - doc/mcp_interface.md (MCP tool parameters, return values, server config)
+      - doc/job_yml_guidance.md (job.yml field descriptions, runtime behavior, review cascade)
       - doc/doc-specs.md (doc spec format, parser behavior, quality criteria)
       - doc/platforms/claude/ (Claude-specific hooks, CLI config, learnings)
       - doc/platforms/gemini/ (Gemini-specific hooks, CLI config, learnings)
@@ -436,16 +438,17 @@ job_schema_instruction_compatibility:
       - "src/deepwork/jobs/job.schema.json"
       - "src/deepwork/standard_jobs/deepwork_jobs/job.yml"
       - "src/deepwork/standard_jobs/deepwork_reviews/job.yml"
+      - "library/jobs/*/job.yml"
   review:
     strategy: matches_together
     additional_context:
       unchanged_matching_files: true
     instructions: |
-      When the job schema or standard job definitions change, verify they
-      are still compatible with each other.
+      When the job schema, standard job definitions, or library job definitions
+      change, verify they are still compatible with each other.
 
       Read src/deepwork/jobs/job.schema.json to understand the current schema.
-      Then read each standard job's job.yml and check:
+      Then read each job.yml (standard and library) and check:
 
       1. **Field references**: Every field name referenced in inline step
          instructions must exist in the schema at the correct level.
