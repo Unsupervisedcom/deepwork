@@ -4,73 +4,62 @@
 # Replace placeholders in [brackets] with actual values.
 
 name: [job_name]
-version: "1.0.0"
 summary: "[Brief one-line summary of what this job accomplishes - max 200 chars]"
-common_job_info_provided_to_all_steps_at_runtime: |
-  [Common context and information shared across all steps at runtime.
 
-  This should include:
-  - What problem this workflow solves
-  - Key terminology and conventions
-  - Constraints or guidelines that apply to every step
-  - Any important shared context about the workflow]
+step_arguments:
+  - name: [argument_name]
+    description: "[What this argument represents]"
+    type: file_path  # or "string"
+    # Optional: review block (same format as .deepreview rules)
+    # review:
+    #   strategy: individual  # or "matches_together"
+    #   instructions: |
+    #     Evaluate the output against these criteria:
+    #     - [Criterion]: [What to check]
+    # Optional: json_schema for file_path outputs
+    # json_schema:
+    #   type: object
+    #   properties: ...
 
 workflows:
-  - name: [workflow_name]
+  [workflow_name]:
     summary: "[What this workflow accomplishes]"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      [Common context and information shared across all steps at runtime.
+
+      This should include:
+      - What problem this workflow solves
+      - Key terminology and conventions
+      - Constraints or guidelines that apply to every step]
     steps:
-      - [step_id]
-      - [another_step]
-      # Iterative loop pattern: A later step can call go_to_step to loop
-      # back to an earlier step. This clears progress from the target step
-      # onward and re-executes those steps. Add loop logic in the step's
-      # instruction file, not in job.yml. Example:
-      # steps:
-      #   - gather_data
-      #   - write_draft
-      #   - review_draft    # Instructions tell agent to call go_to_step
-      #                     # back to gather_data or write_draft if needed
-      #   - finalize
+      - name: [step_name]
+        instructions: |
+          [Inline step instructions go here.
+          All instructions are inlined directly - no separate instruction files.]
+        inputs:
+          [argument_name]:
+            required: true  # or false
+        outputs:
+          [argument_name]:
+            required: true
+            # Optional: step-specific review (supplements step_argument review)
+            # review:
+            #   strategy: individual
+            #   instructions: |
+            #     [Review criteria for this specific step's output]
+        # Optional: process requirements using RFC 2119 keywords
+        # process_requirements:
+        #   "[Requirement Name]": "[Statement using MUST/SHOULD/MAY keywords]"
 
-steps:
-  - id: [step_id]
-    name: "[Step Name]"
-    description: "[What this step does]"
-    instructions_file: steps/[step_id].md
-    inputs:
-      - name: [param_name]
-        description: "[What user needs to provide]"
-      # OR for file inputs from previous steps:
-      # - file: [filename_or_path]
-      #   from_step: [previous_step_id]
-    outputs:
-      [output_name]:
-        type: file
-        description: "[What this output contains]"
-        required: true
-    dependencies: []  # List of step IDs that must complete first
-    reviews:
-      - run_each: step  # or a specific output name
-        # Optional: tell the reviewer what files to read for context
-        # additional_review_guidance: "Read the [filename] for context on [what]."
-        quality_criteria:
-          "[Criterion Name]": "[Statement of expected state after the step — NOT a question]"
-          "[Another Criterion]": "[Another statement of expected state]"
-    # Optional: Delegate to a specific agent type (uses context: fork)
-    # agent: general-purpose  # or other agent type
-
-  - id: [another_step]
-    name: "[Another Step]"
-    description: "[What this step does]"
-    instructions_file: steps/[another_step].md
-    inputs:
-      - file: [output_name]
-        from_step: [step_id]
-    outputs:
-      [another_output]:
-        type: file
-        description: "[What this output contains]"
-        required: true
-    dependencies:
-      - [step_id]  # This step requires the previous step
-    reviews: []  # Empty if no quality checks needed
+      - name: [another_step]
+        instructions: |
+          [Instructions for the next step]
+        inputs:
+          [argument_name]:
+            required: true
+        outputs:
+          [another_argument]:
+            required: true
+    # Optional: instructions shown after workflow completes
+    # post_workflow_instructions: |
+    #   [Instructions to show the agent after all steps complete]
