@@ -187,7 +187,7 @@ def create_server(
             "For outputs with type 'string': pass a string value. "
             "Outputs marked required: true must be provided; required: false outputs can be omitted. "
             "Check step_expected_outputs in the response to see each output's type and required status. "
-            "Optional: work_summary describing the work done (used by process_quality_attributes reviews). "
+            "Optional: work_summary describing the work done (used by process_requirements reviews). "
             "Optional: quality_review_override_reason to skip quality review (must explain why). "
             "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents)."
         )

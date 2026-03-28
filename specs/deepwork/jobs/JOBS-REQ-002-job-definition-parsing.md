@@ -46,7 +46,7 @@ Job definitions are YAML files (`job.yml`) that declare multi-step workflows for
 2. Each `WorkflowStep` MUST have exactly one of `instructions` (inline string) or `sub_workflow` (reference to another workflow). A `ParseError` MUST be raised if a step has both or neither.
 3. The `instructions` field, when present, MUST be a non-empty string containing the step instructions inline (NOT a file path).
 4. Steps MAY have `inputs` and `outputs` dicts mapping step_argument names to `StepInputRef` / `StepOutputRef` objects.
-5. Steps MAY have a `process_quality_attributes` dict mapping attribute names to quality statements.
+5. Steps MAY have a `process_requirements` dict mapping attribute names to quality statements.
 
 ### JOBS-REQ-002.6: StepInputRef and StepOutputRef
 

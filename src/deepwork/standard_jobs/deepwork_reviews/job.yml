@@ -331,7 +331,7 @@ workflows:
             required: true
           migrated_skill_backups:
             required: true
-        process_quality_attributes:
+        process_requirements:
           "Replacement Rules Capture Skill Intent": >
             Every migrated skill has a corresponding .deepreview rule whose instructions
             faithfully capture the original skill's review logic. No significant review

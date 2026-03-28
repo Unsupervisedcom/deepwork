@@ -159,15 +159,17 @@ A map of step_argument names to output configuration. When the agent calls `fini
 
 The `review` field on an output is step-specific and **supplements** (does not replace) any review on the step_argument. See "Review Cascade" below.
 
-### `process_quality_attributes`
+### `process_requirements`
 
-A map of attribute names to **statements that should be true** if the work was done correctly:
+A map of requirement names to **requirement statements using RFC 2119 keywords** (MUST, SHOULD, MAY, SHALL, RECOMMENDED, etc.):
 
 ```yaml
-process_quality_attributes:
-  tests_written: "Unit tests were written before implementation code."
-  user_consulted: "The user was asked to confirm the approach."
+process_requirements:
+  tests_written: "Unit tests MUST be written before implementation code."
+  user_consulted: "The user SHOULD be asked to confirm the approach."
 ```
+
+The reviewer will fail any MUST/SHALL requirement that is not met, fail any SHOULD/RECOMMENDED requirement that appears easily achievable but was not followed, and give feedback without failing for other applicable requirements.
 
 At runtime, this creates a synthetic review with `matches_together` strategy that evaluates the agent's `work_summary` (provided in `finished_step`) against these criteria. The review prompt includes:
 - The workflow's `common_job_info`

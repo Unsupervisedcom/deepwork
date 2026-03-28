@@ -1,7 +1,7 @@
 """Quality gate using DeepWork Reviews infrastructure.
 
 Replaces the bespoke quality gate with dynamic ReviewRule objects built from
-step output reviews and process_quality_attributes. These are merged with
+step output reviews and process requirements. These are merged with
 .deepreview rules and processed through the standard review pipeline.
 """
 
@@ -221,11 +221,11 @@ def build_dynamic_review_rules(
                 )
                 rules.append(rule)
 
-    # Process process_quality_attributes
-    if step.process_quality_attributes and work_summary is not None:
+    # Process requirements review
+    if step.process_requirements and work_summary is not None:
         attrs_list = "\n".join(
             f"- **{name}**: {statement}"
-            for name, statement in step.process_quality_attributes.items()
+            for name, statement in step.process_requirements.items()
         )
 
         # Build context with all inputs and outputs
@@ -245,11 +245,11 @@ def build_dynamic_review_rules(
 
         pqa_instructions = f"""{preamble}
 
-## Process Quality Review
+## Process Requirements Review
 
-You need to review the description of the work done as summarized below against the following quality criteria. If you find issues, assume that the work description could be incorrect, so phrase your answers always as telling the agent to fix its work or the `work_summary`.
+Please review for compliance with the following requirements. You MUST fail the review for any requirement using MUST/SHALL that is not met. You MUST fail the review for any SHOULD/RECOMMENDED requirement that appears easily achievable but was not followed. You SHOULD give feedback but not fail the review for any other applicable requirements. You can ignore requirements that are not applicable.
 
-## Quality Criteria
+## Requirements
 
 {attrs_list}
 
@@ -261,7 +261,7 @@ You need to review the description of the work done as summarized below against 
 
 {output_context}
 
-Evaluate whether the work described in the `work_summary` meets each quality criterion. If an output file helps verify a criterion, read it."""
+Evaluate whether the work described in the `work_summary` meets each requirement. If an output file helps verify a requirement, read it."""
 
         # Create a synthetic ReviewTask directly (not a ReviewRule since there are
         # no file patterns to match — this is about the process, not files)

@@ -89,7 +89,7 @@ Report that you've finished a workflow step. Validates outputs against quality c
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `outputs` | `Record<string, string \| string[]>` | Yes | Map of step_argument names to values. For outputs declared with type `file_path`: pass a single string path or list of paths. For outputs declared with type `string`: pass a string value. Outputs with `required: false` can be omitted. Check `step_expected_outputs` to see each output's type and required status. |
-| `work_summary` | `string \| null` | No | Summary of the work done in this step. Used by process_quality_attributes reviews to evaluate whether the work process met quality criteria. Include key decisions, approaches taken, and any deviations from the instructions. |
+| `work_summary` | `string \| null` | No | Summary of the work done in this step. Used by process_requirements reviews to evaluate whether the work process met quality criteria. Include key decisions, approaches taken, and any deviations from the instructions. |
 | `quality_review_override_reason` | `string \| null` | No | If provided, skips quality review (must explain why) |
 | `session_id` | `string` | Yes | The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). Identifies the persistent state storage for this agent session. |
 | `agent_id` | `string \| null` | No | The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), if running as a sub-agent. When set, operates on this agent's scoped workflow stack. |
@@ -320,7 +320,7 @@ The `finished_step` tool returns one of three statuses:
 Steps may define quality reviews that outputs must pass. When `finished_step` is called:
 
 1. JSON schema validation runs first (if any outputs have `json_schema` defined)
-2. Dynamic review rules are built from step output `review` blocks and `process_quality_attributes`
+2. Dynamic review rules are built from step output `review` blocks and `process_requirements`
 3. `.deepreview` rules are also loaded and matched against output files
 4. If any reviews are needed, `status = "needs_work"` with review instructions
 5. If all reviews pass (or no reviews defined), workflow advances
@@ -359,14 +359,14 @@ steps:
         review:                       # Override or add review at the output ref level
           strategy: matches_together
           instructions: "Review all output files together for consistency."
-    process_quality_attributes:       # Process review (evaluates work_summary)
+    process_requirements:       # Process review (evaluates work_summary)
       "Thoroughness": "Did the agent consider all relevant factors?"
 ```
 
 - **Output-level reviews**: Defined on the output ref in a step, or inherited from the step_argument's `review` block
 - **`strategy: individual`**: Each matched file is reviewed separately
 - **`strategy: matches_together`**: All matched files are reviewed together in one review task
-- **`process_quality_attributes`**: Evaluates the `work_summary` against named quality criteria (requires `work_summary` to be provided in `finished_step`)
+- **`process_requirements`**: Evaluates the `work_summary` against named quality criteria (requires `work_summary` to be provided in `finished_step`)
 
 To skip quality review (use sparingly):
 - Provide `quality_review_override_reason` explaining why review is unnecessary

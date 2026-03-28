@@ -208,7 +208,7 @@ Job definitions use `step_arguments` to declare data that flows between steps, a
 - **`workflows`**: Named sequences of steps with inline instructions. Each workflow has a `summary`, optional `agent`, optional `common_job_info_provided_to_all_steps_at_runtime`, `steps`, and optional `post_workflow_instructions`.
 - **Steps**: Each step has `inputs` and `outputs` that reference `step_arguments` by name. Step logic is defined via `instructions` (inline string) or `sub_workflow` (delegates to another workflow).
 - **Reviews on outputs**: The `review` block on step arguments or step outputs uses the same format as `.deepreview` review rules. These are applied *in addition to* any `.deepreview` file-defined rules.
-- **`process_quality_attributes`**: Optional per-step object where keys are attribute names and values are descriptions. These review the *process and work* done (not individual output files).
+- **`process_requirements`**: Optional per-step object where keys are requirement names and values are requirement statements using RFC 2119 keywords (MUST, SHOULD, MAY, etc.). These review the *process and work* done (not individual output files).
 
 ### Example: `job.yml`
 
@@ -259,8 +259,8 @@ workflows:
         outputs:
           competitors_list:
             required: true
-        process_quality_attributes:
-          research_thoroughness: "Research used multiple sources (web search, analyst reports, review sites)"
+        process_requirements:
+          research_thoroughness: "Research MUST use multiple sources (web search, analyst reports, review sites)"
 
       - name: primary_research
         instructions: |
@@ -945,7 +945,7 @@ The quality gate integrates with the DeepWork Reviews infrastructure rather than
 
 2. **Build dynamic review rules**: For each `review` block defined on step outputs (either inline on the step or on the `step_argument`), a `ReviewRule` object is constructed dynamically. The `common_job_info_provided_to_all_steps_at_runtime` is included in review instructions for context.
 
-3. **Process quality attributes**: If the step defines `process_quality_attributes`, a review is created that evaluates the `work_summary` against those criteria. The reviewer is instructed to tell the agent to fix its work or the `work_summary` if issues are found.
+3. **Process requirements**: If the step defines `process_requirements`, a review is created that evaluates the `work_summary` against those requirements using RFC 2119 semantics. MUST/SHALL violations cause failure; SHOULD/RECOMMENDED violations fail only if easily achievable; other requirements produce feedback without failure.
 
 4. **Merge with `.deepreview` rules**: The dynamically built rules are merged with any `.deepreview` file-defined rules that match the output files. The changed file list comes from the `outputs` parameter (not git diff).
 
@@ -997,7 +997,7 @@ The parser produces these dataclasses from `job.yml`:
 - `StepInputRef` - Reference to a step argument as an input (with `required` flag)
 - `StepOutputRef` - Reference to a step argument as an output (with `required` flag, optional `review`)
 - `SubWorkflowRef` - Reference to another workflow (with `workflow_name`, optional `workflow_job`)
-- `WorkflowStep` - A step within a workflow (name, instructions or sub_workflow, inputs, outputs, process_quality_attributes)
+- `WorkflowStep` - A step within a workflow (name, instructions or sub_workflow, inputs, outputs, process_requirements)
 
 ## MCP Server Registration
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The quality review system evaluates step outputs against defined quality criteria using the DeepWork Reviews infrastructure. It builds dynamic `ReviewRule` objects from step output reviews and `process_quality_attributes`, validates outputs against JSON schemas, and produces review instructions through the standard review pipeline (`write_instruction_files`, `format_for_claude`). There is no subprocess invocation — all reviews are handled via the Reviews pipeline.
+The quality review system evaluates step outputs against defined quality criteria using the DeepWork Reviews infrastructure. It builds dynamic `ReviewRule` objects from step output reviews and `process_requirements`, validates outputs against JSON schemas, and produces review instructions through the standard review pipeline (`write_instruction_files`, `format_for_claude`). There is no subprocess invocation — all reviews are handled via the Reviews pipeline.
 
 ## Requirements
 
@@ -31,9 +31,9 @@ The quality review system evaluates step outputs against defined quality criteri
 6. Outputs with `None` values MUST be skipped.
 7. Only `file_path` type arguments with actual file paths generate `ReviewRule` objects.
 
-### JOBS-REQ-004.4: Process Quality Attributes
+### JOBS-REQ-004.4: Process Requirements
 
-1. When a step has `process_quality_attributes` and a `work_summary` is provided, `build_dynamic_review_rules()` MUST create a `ReviewRule` with strategy `"matches_together"`.
+1. When a step has `process_requirements` and a `work_summary` is provided, `build_dynamic_review_rules()` MUST create a `ReviewRule` with strategy `"matches_together"`.
 2. The rule's instructions MUST include the quality criteria list, the `work_summary`, and output context.
 3. The rule MUST match all `file_path` output files so the reviewer can read them if needed.
 4. If there are no `file_path` output files, the process quality rule MUST NOT be created.

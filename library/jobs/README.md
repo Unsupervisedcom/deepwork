@@ -141,7 +141,7 @@ The job definition file contains:
     - `sub_workflow`: Alternative to instructions — delegates to another workflow
     - `inputs`: Map of step_argument names used as inputs
     - `outputs`: Map of step_argument names produced as outputs
-    - `process_quality_attributes`: Optional quality criteria for the work process
+    - `process_requirements`: Optional quality criteria for the work process
   - `post_workflow_instructions`: Optional instructions shown after workflow completes
 
 All step instructions are inlined directly in `job.yml` — there are no separate step instruction files.

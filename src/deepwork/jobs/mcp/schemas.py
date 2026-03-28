@@ -117,7 +117,7 @@ class FinishedStepInput(BaseModel):
     work_summary: str | None = Field(
         default=None,
         description=(
-            "Summary of the work done in this step. Used by process_quality_attributes "
+            "Summary of the work done in this step. Used by process_requirements "
             "reviews to evaluate whether the work process met quality criteria. "
             "Include key decisions, approaches taken, and any deviations from the instructions."
         ),

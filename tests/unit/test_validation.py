@@ -218,8 +218,8 @@ class TestValidateAgainstSchema:
 
         validate_against_schema(job_data, JOB_SCHEMA)
 
-    def test_validates_step_with_process_quality_attributes(self) -> None:
-        """Test validation of step with process_quality_attributes."""
+    def test_validates_step_with_process_requirements(self) -> None:
+        """Test validation of step with process_requirements."""
         job_data = {
             "name": "job",
             "summary": "Test",
@@ -232,7 +232,7 @@ class TestValidateAgainstSchema:
                             "name": "step1",
                             "instructions": "Do it.",
                             "outputs": {"output": {"required": True}},
-                            "process_quality_attributes": {
+                            "process_requirements": {
                                 "thorough": "The work was thorough and complete.",
                             },
                         }

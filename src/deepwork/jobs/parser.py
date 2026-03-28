@@ -119,7 +119,7 @@ class WorkflowStep:
     sub_workflow: SubWorkflowRef | None = None
     inputs: dict[str, StepInputRef] = field(default_factory=dict)
     outputs: dict[str, StepOutputRef] = field(default_factory=dict)
-    process_quality_attributes: dict[str, str] = field(default_factory=dict)
+    process_requirements: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "WorkflowStep":
@@ -140,7 +140,7 @@ class WorkflowStep:
             ),
             inputs=inputs,
             outputs=outputs,
-            process_quality_attributes=data.get("process_quality_attributes", {}),
+            process_requirements=data.get("process_requirements", {}),
         )
 
 
