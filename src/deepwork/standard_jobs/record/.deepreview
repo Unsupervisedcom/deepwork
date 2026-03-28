@@ -1,0 +1,119 @@
+job_definition_review:
+  description: "Review job.yml and step instructions for correctness, completeness, and coherence as a holistic workflow."
+  match:
+    include:
+      - "job.yml"
+      - "steps/*.md"
+  review:
+    strategy: matches_together
+    instructions: |
+      Review this DeepWork job definition (job.yml) and its step instruction files
+      (steps/*.md) holistically. Check that they form a coherent, well-structured
+      workflow that an AI agent can execute reliably.
+
+      When reviewing, apply DeepWork job and step-instruction best practices: a canonical `job.yml` structure with all supported fields, clear example workflows, well-structured step instruction files, and sensible design patterns for report-type jobs. Base your review only on the provided `job.yml` and `steps/*.md` files; do not assume access to any additional reference files.
+
+      ## What to Check
+
+      ### 1. job.yml Structure
+      - Has required fields: `name`, `version`, `summary`, `workflows`, `steps`
+      - `name` is lowercase with underscores only
+      - `summary` is concise (under 200 characters) and descriptive enough to let a user know what the job does
+      - `version` follows semantic versioning (e.g., "1.0.0")
+      - `common_job_info_provided_to_all_steps_at_runtime` provides useful shared context (problem domain, terminology, conventions, constraints)
+
+      ### 2. Workflow Coherence
+      - Each workflow's steps form a logical sequence toward a clear goal
+      - Step dependencies are declared correctly (no missing or extraneous deps)
+      - No circular dependencies exist
+
+      ### 3. Input/Output Chain
+      - Each step has at least one output
+      - File inputs reference outputs from steps listed in that step's dependencies
+      - `from_step` values match actual step IDs that produce the referenced file
+      - The output chain creates a logical data flow through the workflow
+      - Intermediate outputs that are not meant to be persisted should be in .deepwork/tmp (and the name should indicate that)
+      - Final outputs follow project conventions (not hidden in dot-directories, descriptive names, appropriate use of subdirectories)
+
+      ### 4. Step Instructions Match job.yml
+      - Every step defined in job.yml has a corresponding instruction file
+      - Step instruction content aligns with the step's described purpose
+      - Instructions reference the correct input and output filenames from job.yml
+      - Instructions do not duplicate content already in `common_job_info_provided_to_all_steps_at_runtime`
+      - If there is duplicated content amongst the instruction files, it should be moved to `common_job_info_provided_to_all_steps_at_runtime` and removed from the instruction files
+      - If there is content that is needed in multiple steps but not all, it should be moved to its own file and referenced in the steps
+
+      ### 5. Quality Reviews
+      - Steps with complex or final outputs have reviews defined
+      - `run_each` values reference valid output names or `step`
+      - Quality criteria are statements of expected state, not questions
+      - `additional_review_guidance` is used when reviewers need context beyond the step's own output files (e.g., cross-referencing prior step outputs)
+      - Steps with no meaningful quality checks use `reviews: []`
+
+      ### 6. Step Instruction Quality
+      - Each instruction file has clear sections: Objective, Task/Process,
+        Output Format, and Quality Criteria
+      - Instructions are specific and actionable, not generic placeholders
+      - Output format sections show what good output looks like (examples or
+        templates)
+      - If the step gathers user input, instructions mention using structured
+        questions (e.g., the AskUserQuestion tool)
+      - Instructions explain how to use file inputs from prior steps
+
+      ## Output Format
+
+      - PASS: The job definition and step instructions are coherent and
+        well-structured.
+      - FAIL: List each issue with the specific file, the problem, and a
+        suggested fix.
+    additional_context:
+      unchanged_matching_files: true
+
+record_step_requirements:
+  description: "Verify step instruction files satisfy JOBS-REQ-011 judgment-based requirements."
+  match:
+    include:
+      - "steps/*.md"
+  review:
+    strategy: each_file
+    instructions: |
+      Review this step instruction file against the JOBS-REQ-011 requirements for the
+      record standard job. Each step has specific behavioral requirements that the
+      instruction prose must convey.
+
+      ## Requirements by step
+
+      ### steps/observe.md
+      - JOBS-REQ-011.2.3: MUST instruct the agent to start immediately without asking upfront questions.
+        Look for explicit language like "start instantly" or "do NOT ask upfront questions."
+      - JOBS-REQ-011.2.4: MUST instruct the agent to use AskUserQuestion to solicit reasoning
+        when the user takes actions whose purpose is unclear. Look for mention of AskUserQuestion
+        and guidance about when to ask vs. when not to.
+
+      ### steps/document.md
+      - JOBS-REQ-011.3.3: MUST instruct the agent to synthesize the process from conversation
+        history, and to read the session transcript (via CLAUDE_CODE_SESSION_ID glob) when
+        compaction has occurred. Look for instructions about reflecting on the conversation
+        AND a fallback to reading transcript files.
+      - JOBS-REQ-011.3.4: MUST instruct the agent to ask the user to clarify remaining reasoning gaps
+        and, only when the facts were not explicitly stated or clearly demonstrated during observation,
+        confirm: the process purpose, a name for the process, and which inputs are variable vs. fixed.
+        All three confirmation topics must be present, conditioned on what was observable.
+
+      ### steps/reflect.md
+      - JOBS-REQ-011.4.3: The reflection MUST identify stumbling blocks with mitigation
+        strategies and efficiency improvements with expected benefits. Look for instructions
+        covering both stumbling blocks and efficiency improvements.
+
+      ### steps/generate_job.md
+      - JOBS-REQ-011.5.3: MUST defer to the deepwork_jobs/new_job workflow as a nested
+        workflow. Look for instructions to call start_workflow with deepwork_jobs/new_job.
+      - JOBS-REQ-011.5.4: MUST use the process document and reflection to inform the nested
+        workflow rather than starting from scratch.
+
+      ## Output Format
+
+      For each requirement, state PASS or FAIL with a brief explanation.
+      If any requirement fails, the overall review is FAIL.
+    additional_context:
+      unchanged_matching_files: true

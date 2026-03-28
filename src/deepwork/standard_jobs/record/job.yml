@@ -1,0 +1,97 @@
+name: record
+version: "1.1.0"
+summary: "Record a user's process with AI assistance, then generate a reusable DeepWork job from it"
+common_job_info_provided_to_all_steps_at_runtime: |
+  A meta-workflow for capturing and automating processes. The agent actively assists the
+  user through their task while mentally recording every step, tool used, decision made,
+  and input/output produced. The conversation itself is the record — no log files are
+  written during observation.
+
+  After recording, the agent synthesizes observations into a structured process document,
+  reflects on efficiency improvements and stumbling blocks, and launches the
+  deepwork_jobs/new_job workflow to generate a complete DeepWork job definition.
+
+  Key principles:
+  - Start instantly: no upfront questions, just help the user
+  - Understand why: ask about reasoning when actions are unclear
+  - Capture context: note why steps are done, not just what is done
+  - Identify patterns: look for repeated actions that could be templated
+
+workflows:
+  - name: record
+    summary: "Record a process end-to-end and generate a DeepWork job from it"
+    steps:
+      - observe
+      - document
+      - reflect
+      - generate_job
+
+steps:
+  - id: observe
+    name: "Observe and assist"
+    description: "Observe the user working in real time, asking clarifying questions when their reasoning is unclear"
+    instructions_file: steps/observe.md
+    inputs: []
+    outputs: {}
+    dependencies: []
+    reviews: []
+
+  - id: document
+    name: "Document the process"
+    description: "Synthesize observations from the conversation into a structured process document"
+    instructions_file: steps/document.md
+    inputs: []
+    outputs:
+      process_document.md:
+        type: file
+        description: "Structured process document with name, purpose, tools, steps, variable/fixed inputs, and decision points"
+        required: true
+    dependencies:
+      - observe
+    reviews:
+      - run_each: process_document.md
+        quality_criteria:
+          "Complete Coverage": "All observed actions and tools are represented in the process document."
+          "Clear Structure": "Steps are logically ordered with clear inputs, outputs, and decision points."
+          "User Clarification Incorporated": "The document includes the process name, purpose, and variable vs. fixed inputs as confirmed by the user."
+
+  - id: reflect
+    name: "Reflect on the process"
+    description: "Analyze the process for efficiency improvements, stumbling blocks, and automation opportunities"
+    instructions_file: steps/reflect.md
+    inputs:
+      - file: process_document.md
+        from_step: document
+    outputs:
+      reflection.md:
+        type: file
+        description: "Analysis of efficiency improvements, stumbling blocks, and recommendations for the automated workflow"
+        required: true
+    dependencies:
+      - document
+    reviews:
+      - run_each: reflection.md
+        additional_review_guidance: "Read the process_document.md to verify the reflection is grounded in what was documented."
+        quality_criteria:
+          "Actionable Improvements": "Each improvement is specific and explains how to implement it in the automated workflow."
+          "Stumbling Blocks Identified": "Pain points and failure-prone steps are identified with mitigation strategies."
+          "Grounded in Evidence": "Insights reference specific details from the process document, not generic advice."
+
+  - id: generate_job
+    name: "Generate DeepWork job"
+    description: "Launch the deepwork_jobs/new_job workflow using the process document and reflection as context"
+    instructions_file: steps/generate_job.md
+    inputs:
+      - file: process_document.md
+        from_step: document
+      - file: reflection.md
+        from_step: reflect
+    outputs:
+      job_created.md:
+        type: file
+        description: "Confirmation of the generated job with its location and summary"
+        required: true
+    dependencies:
+      - document
+      - reflect
+    reviews: []
