@@ -145,7 +145,7 @@ Each investigation area MUST specify:
 Create the incident artifact directory:
 
 ```
-.deepwork/artifacts/platform_engineer/incident_investigation/YYYY-MM-DD-<slug>/
+.deepwork/tmp/platform_engineer/incident_investigation/YYYY-MM-DD-<slug>/
 ```
 
 Where `<slug>` is a short, URL-safe description derived from the incident (e.g., `api-500-errors`, `pod-crashloop`, `deploy-stuck`). Use lowercase, hyphens only, no spaces.
@@ -154,7 +154,7 @@ Write the triage document to `triage.md` within this directory.
 
 ## Output Format
 
-Write the triage document to `.deepwork/artifacts/platform_engineer/incident_investigation/YYYY-MM-DD-<slug>/triage.md`.
+Write the triage document to `.deepwork/tmp/platform_engineer/incident_investigation/YYYY-MM-DD-<slug>/triage.md`.
 
 ```markdown
 # Incident Triage

@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: engineer
-version: "1.0.0"
+version: "1.0.1"
 summary: "Domain-agnostic engineering execution from product issue through PR merge and product sync, with TDD discipline"
 common_job_info_provided_to_all_steps_at_runtime: |
   This job drives engineering work from product issue through merged PR and product sync.

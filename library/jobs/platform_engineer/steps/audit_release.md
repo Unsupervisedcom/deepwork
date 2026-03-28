@@ -134,7 +134,7 @@ Compile all findings into the output document, clearly separating what exists fr
 
 ## Output Format
 
-Write the audit to `.deepwork/artifacts/platform_engineer/release_builder/release_audit.md`. Create parent directories if they do not exist.
+Write the audit to `.deepwork/tmp/platform_engineer/release_builder/release_audit.md`. Create parent directories if they do not exist.
 
 ```markdown
 # Release Process Audit

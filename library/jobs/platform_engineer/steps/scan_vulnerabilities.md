@@ -250,7 +250,7 @@ For each remediation action, provide:
 
 ## Output Format
 
-Write the report to `.deepwork/artifacts/platform_engineer/vulnerability_scan/vulnerability_report.md`. Create parent directories if they do not exist.
+Write the report to `.deepwork/tmp/platform_engineer/vulnerability_scan/vulnerability_report.md`. Create parent directories if they do not exist.
 
 ```markdown
 # Vulnerability Scan Report

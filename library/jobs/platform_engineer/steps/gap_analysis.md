@@ -115,7 +115,7 @@ Based on the gap analysis, provide an overall readiness assessment:
 
 ### gap_analysis.md
 
-Write to `.deepwork/artifacts/platform_engineer/soc_audit/YYYY-MM-DD/gap_analysis.md`.
+Write to `.deepwork/tmp/platform_engineer/soc_audit/YYYY-MM-DD/gap_analysis.md`.
 
 ```markdown
 # SOC 2 Gap Analysis
@@ -185,7 +185,7 @@ Write to `.deepwork/artifacts/platform_engineer/soc_audit/YYYY-MM-DD/gap_analysi
 
 ### evidence_checklist.md
 
-Write to `.deepwork/artifacts/platform_engineer/soc_audit/YYYY-MM-DD/evidence_checklist.md`.
+Write to `.deepwork/tmp/platform_engineer/soc_audit/YYYY-MM-DD/evidence_checklist.md`.
 
 ```markdown
 # SOC 2 Evidence Collection Checklist

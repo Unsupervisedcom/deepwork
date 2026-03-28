@@ -9,6 +9,9 @@ valid. If agent.md was not found, report that context files cannot be checked.
 2. For each reference: verify it exists, resolve symlinks, check it is non-empty
 3. Validate syntax by extension: `.yml`/`.yaml` (valid YAML), `.json` (valid JSON),
    `.md` (no broken internal links), `.toml` (valid TOML), `.nix` (balanced braces)
+   - Treat placeholder example links such as `[name](path)` as invalid unless they are shown
+     inside code fences or otherwise clearly marked as non-live examples.
+   - When a Markdown file fails link validation, record the broken target in `Issues`.
 4. Note any unreferenced context files near agent.md (`CONTRIBUTING.md`, `ARCHITECTURE.md`,
    `.editorconfig`, `flake.nix`, etc.) as informational — not failures
 

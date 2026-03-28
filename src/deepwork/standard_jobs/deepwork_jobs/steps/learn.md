@@ -22,6 +22,8 @@ Analyze the conversation history to extract learnings and improvements, then app
    - The job may live in `.deepwork/jobs/`, `src/deepwork/standard_jobs/`, or an **external folder** via `DEEPWORK_ADDITIONAL_JOBS_FOLDERS`
    - Check if `job_dir` is inside the current project's git repo or in a **separate git repository** (e.g. a library checkout at `~/.keystone/*/deepwork/library/jobs/`)
    - If `job_dir` is in a different git repo, note this — you'll need to handle commits/pushes separately in Step 8
+   - If `job_dir` points to a read-only installed copy (for example under a package manager store or `site-packages`), locate the editable source checkout before making changes
+   - If the user explicitly names a sibling or companion DeepWork checkout to keep in sync, treat that checkout as the authoritative editable repo for the job changes
 
 3. **Identify the AGENTS.md target folder**
    - This should be the deepest common folder that would contain all work on the topic in the future
@@ -89,6 +91,7 @@ For each generalizable learning:
 1. **Locate the instruction file using `job_dir`**
    - Path: `<job_dir>/steps/[step_id].md` (where `job_dir` was identified in Step 1)
    - Do NOT assume `.deepwork/jobs/` — the job may live in an external folder
+   - If `job_dir` is read-only, map the same relative job path into the editable source repo you identified in Step 1 and edit that file instead
 
 2. **Make targeted improvements**
    - Add missing context or clarification
@@ -141,6 +144,7 @@ The AGENTS.md file captures project-specific knowledge that helps future agent r
    - Place AGENTS.md in the deepest common folder that would contain all work on the topic in the future
    - This ensures the knowledge is available when working in that context
    - If uncertain, place at the project root
+   - If the run uncovered a local policy about mirroring DeepWork job fixes into a shared library checkout, capture that policy in the local project's AGENTS.md
 
 2. **Use file references where possible**
    - Instead of duplicating information, reference source files
@@ -186,6 +190,7 @@ If `job_dir` is in a **separate git repository** (outside the current project), 
 1. **Detect the external repo**
    - Run `git -C <job_dir> rev-parse --show-toplevel` to find the repo root
    - If it differs from the current project root, the job lives in an external repo
+   - If `job_dir` is a read-only installed copy, use the editable source repo root identified earlier for git operations
 
 2. **Commit changes in the external repo**
    - `cd` to the external repo root
