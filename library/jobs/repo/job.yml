@@ -1,345 +1,1191 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: repo
-version: "1.0.0"
 summary: "Ensure a repository follows team conventions: labels, boards, branch protection, milestones"
-common_job_info_provided_to_all_steps_at_runtime: |
-  This job audits and configures repositories to follow team conventions. It supports two workflows:
-  `setup` (make a repo ready for work) and `doctor` (audit existing state and fix drift).
 
-  ## Provider Detection
+step_arguments:
+  - name: project_repo
+    description: "Repository — a remote URL, an owner/repo slug, or omit to detect from current directory's git remote."
+    type: string
 
-  The git provider is detected from the repository's remote origin URL:
-  - `github.com` → GitHub
-  - Self-hosted domains → Forgejo, Gitea, GitLab, etc.
+  - name: platform_context.md
+    description: "Provider, repo, transport, default branch, auth status, existing labels, milestones, and boards"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - The git provider is correctly identified from the remote URL.
+        - CLI authentication has been verified for the detected provider.
+        - The default branch name is recorded.
+        - Existing labels, milestones, and boards (if applicable) are listed.
 
-  The agent's tool conventions (loaded via system prompt) document CLI usage for each provider.
-  Step instructions describe *what* to check — the agent already knows *how* to invoke each
-  provider's CLI.
+  - name: labels_report.md
+    description: "List of labels checked, created, or already present"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - All three required labels (product, engineering, plan) are accounted for.
+        - Any missing labels were created with appropriate colors and descriptions.
 
-  ## Standard Labels
+  - name: branch_protection_report.md
+    description: "Current branch protection status and any missing protections"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - Branch protection rules on the default branch have been inspected.
+        - Any missing or insufficient protections are documented.
 
-  Every repo must have these labels:
-  - `product` — product/UX scope
-  - `engineering` — technical scope
-  - `plan` — planning/coordination
+  - name: milestones_report.md
+    description: "Milestone consistency findings: missing consolidated issues, label mismatches"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - Every open milestone was inspected.
+        - Each milestone's issues are listed with state and label correctness.
 
-  ## Standard Board Columns
+  - name: boards_report.md
+    description: "Board existence and item count verification per milestone"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - Each milestone was checked for a corresponding board.
+        - Board item counts are compared against milestone issue counts.
+        - If the provider lacks a board API, manual instructions are provided.
 
-  Project boards use these five status columns:
-  - Backlog, To Do, In Progress, In Review, Done
+  - name: setup_report.md
+    description: "Pass/fail readiness report covering labels, branch protection, milestones, and boards"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - Report covers labels, branch protection, milestones, and boards.
+        - Each concern has a clear pass or fail status with details.
 
-  ## Board Lifecycle
+  - name: labels_audit.md
+    description: "Label audit findings: missing, duplicates, unused labels, and fixes applied"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - All three required labels (product, engineering, plan) are verified.
+        - Case-insensitive duplicate labels are identified.
+        - Labels with zero issues are flagged.
 
-  - One project board MUST exist per milestone.
-  - The board MUST be created as part of the milestone setup process; the `setup`
-    workflow only checks/reports on board existence and MUST NOT create boards automatically.
-  - The board MUST be closed or archived when the milestone is closed; the `setup`
-    workflow MAY report drift but MUST NOT close or archive boards automatically.
+  - name: branch_protection_audit.md
+    description: "Branch protection audit with findings and fixes attempted"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - All branch protection rules on the default branch have been inspected.
+        - Missing protections were attempted to be enabled via API.
+        - Any gaps that could not be fixed automatically are documented.
 
-  ## Board Transition Rules
+  - name: milestones_audit.md
+    description: "Milestone audit findings: inconsistencies found and fixes applied"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - Every open milestone was deeply inspected.
+        - Issues with incorrect or missing labels were corrected.
+        - Milestone-issue relationships are consistent.
 
-  | Event                          | Expected Column Change |
-  |--------------------------------|------------------------|
-  | Issue added to milestone       | → Backlog              |
-  | Issue prioritized for work     | Backlog → To Do        |
-  | Branch created, work starts    | To Do → In Progress    |
-  | PR marked ready for review     | In Progress → In Review|
-  | PR merged / issue closed       | → Done                 |
+  - name: boards_audit.md
+    description: "Board audit findings, fixes applied, and remaining issues"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - Every milestone's board was inspected.
+        - Issues missing from boards were added.
+        - Wrong statuses were corrected based on issue/PR state.
+        - Board items not belonging to the milestone are flagged.
+        - If the provider lacks a board API, manual instructions are provided.
 
-  If the platform supports built-in board automations (e.g. GitHub's auto-close → Done,
-  PR merged → Done), agents MUST NOT duplicate those automatic transitions.
-
-  ## Branch Protection Expectations
-
-  The default branch should have these protections:
-  1. Require PR reviews (at least 1 approval)
-  2. Dismiss stale reviews on new commits
-  3. Require status checks to pass (if CI is configured)
-  4. Restrict force pushes
-  5. Restrict branch deletion
+  - name: doctor_report.md
+    description: "Summary of findings, fixes applied, and remaining issues across all concerns"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - Report covers labels, branch protection, milestones, and boards.
+        - All audit findings are summarized with counts.
+        - All fix actions taken are listed.
+        - Any issues that still need manual attention are documented.
 
 workflows:
-  - name: setup
+  setup:
     summary: "Make a repo ready for work: labels, branch protection, milestones, boards"
-    steps:
-      - detect_platform
-      - [ensure_labels, check_branch_protection]
-      - check_milestones
-      - check_boards
-      - setup_report
+    common_job_info_provided_to_all_steps_at_runtime: |
+      This job audits and configures repositories to follow team conventions. It supports two workflows:
+      `setup` (make a repo ready for work) and `doctor` (audit existing state and fix drift).
 
-  - name: doctor
+      ## Provider Detection
+
+      The git provider is detected from the repository's remote origin URL:
+      - `github.com` → GitHub
+      - Self-hosted domains → Forgejo, Gitea, GitLab, etc.
+
+      The agent's tool conventions (loaded via system prompt) document CLI usage for each provider.
+      Step instructions describe *what* to check — the agent already knows *how* to invoke each
+      provider's CLI.
+
+      ## Standard Labels
+
+      Every repo must have these labels:
+      - `product` — product/UX scope
+      - `engineering` — technical scope
+      - `plan` — planning/coordination
+
+      ## Standard Board Columns
+
+      Project boards use these five status columns:
+      - Backlog, To Do, In Progress, In Review, Done
+
+      ## Board Lifecycle
+
+      - One project board MUST exist per milestone.
+      - The board MUST be created as part of the milestone setup process; the `setup`
+        workflow only checks/reports on board existence and MUST NOT create boards automatically.
+      - The board MUST be closed or archived when the milestone is closed; the `setup`
+        workflow MAY report drift but MUST NOT close or archive boards automatically.
+
+      ## Board Transition Rules
+
+      | Event                          | Expected Column Change |
+      |--------------------------------|------------------------|
+      | Issue added to milestone       | → Backlog              |
+      | Issue prioritized for work     | Backlog → To Do        |
+      | Branch created, work starts    | To Do → In Progress    |
+      | PR marked ready for review     | In Progress → In Review|
+      | PR merged / issue closed       | → Done                 |
+
+      If the platform supports built-in board automations (e.g. GitHub's auto-close → Done,
+      PR merged → Done), agents MUST NOT duplicate those automatic transitions.
+
+      ## Branch Protection Expectations
+
+      The default branch should have these protections:
+      1. Require PR reviews (at least 1 approval)
+      2. Dismiss stale reviews on new commits
+      3. Require status checks to pass (if CI is configured)
+      4. Restrict force pushes
+      5. Restrict branch deletion
+    steps:
+      - name: detect_platform
+        instructions: |
+          # Detect Platform
+
+          ## Objective
+
+          Identify the git provider, verify CLI authentication, determine the default branch, and inventory existing labels, milestones, and boards.
+
+          ## Task
+
+          ### Process
+
+          1. **Determine the repository and provider**
+
+             Handle three modes based on the `project_repo` input:
+
+             a. **Omitted / empty** — detect from the current directory:
+                - Run `git remote get-url origin` to get the remote URL
+                - Parse the URL to extract the host and owner/repo slug
+
+             b. **Remote URL provided** (SSH or HTTPS):
+                - Parse the URL directly to extract host and owner/repo slug
+
+             c. **Owner/repo slug provided** (e.g. `acme/widgets`):
+                - Check for a known provider host in `.git` remote, or ask the user which provider to use
+
+             **Provider detection from hostname:**
+             - `github.com` → GitHub
+             - `gitlab.com` → GitLab
+             - Any other host → assume Forgejo/Gitea (the agent's tool conventions document CLI usage)
+
+             **Transport detection:**
+             - URLs starting with `git@` or `ssh://` → SSH
+             - URLs starting with `https://` → HTTPS
+
+             If no repository exists yet (no `.git` directory or no remote), offer to create one using the provider's CLI, then re-detect.
+
+          2. **Verify CLI authentication**
+             - Use the provider's whoami or auth status command to confirm the current user is authenticated
+             - If additional scopes are needed (e.g. GitHub's `project` scope), prompt for a refresh
+
+          3. **Get default branch**
+             - Query the provider's API or CLI for the repository's default branch name
+
+          4. **Inventory existing labels**
+             - List all labels on the repository with name, color, and description
+
+          5. **Inventory milestones**
+             - List all milestones with title, number, state, and issue counts
+
+          6. **Inventory boards** (if the provider supports a board API)
+             - List project boards with title, number, and URL
+             - If the provider has no board API, record `boards_api: false`
+
+          ## Output Format
+
+          ### platform_context.md
+
+          ```markdown
+          # Platform Context
+
+          ## Provider
+          - **Provider**: [github | forgejo | gitea | gitlab]
+          - **Host**: [hostname]
+          - **Repository**: [owner/repo]
+          - **Transport**: [ssh | https]
+          - **Default Branch**: [main | master | etc.]
+          - **Auth Status**: [authenticated as {username} | needs refresh]
+          - **Boards API**: [true | false]
+
+          ## Existing Labels
+
+          | Name | Color | Description |
+          |------|-------|-------------|
+          | ... | ... | ... |
+
+          ## Milestones
+
+          | Title | Number | State | Open | Closed |
+          |-------|--------|-------|------|--------|
+          | ... | ... | ... | ... | ... |
+
+          ## Boards
+
+          | Title | Number | URL |
+          |-------|--------|-----|
+          | ... | ... | ... |
+
+          [Or "N/A — provider does not support project boards via API"]
+          ```
+        inputs:
+          project_repo:
+            required: false
+        outputs:
+          platform_context.md: {}
+
+      - name: ensure_labels
+        instructions: |
+          # Ensure Labels
+
+          ## Objective
+
+          Verify that the three required labels (`product`, `engineering`, `plan`) exist on the repository. Create any that are missing.
+
+          ## Task
+
+          ### Process
+
+          1. **Read existing labels** from `platform_context.md`
+
+          2. **Check for required labels**
+             - Required: `product`, `engineering`, `plan`
+             - Match case-insensitively against existing labels
+             - If an exact-case match exists, mark as present
+             - If a case-insensitive match exists but with wrong casing, note the discrepancy
+
+          3. **Create missing labels**
+             - Use the provider's label creation CLI or API
+             - Recommended colors and descriptions:
+               - `product` — color `#7057ff`, description "Product/UX scope"
+               - `engineering` — color `#0075ca`, description "Technical scope"
+               - `plan` — color `#e4e669`, description "Planning/coordination"
+
+          4. **Verify creation**
+             - Re-list labels to confirm the new labels exist
+
+          ## Output Format
+
+          ### labels_report.md
+
+          ```markdown
+          # Labels Report
+
+          ## Summary
+          - **Required Labels**: 3
+          - **Already Present**: [count]
+          - **Created**: [count]
+          - **Case Mismatches**: [count]
+
+          ## Details
+
+          | Label | Status | Notes |
+          |-------|--------|-------|
+          | product | [present | created | case mismatch] | [details] |
+          | engineering | [present | created | case mismatch] | [details] |
+          | plan | [present | created | case mismatch] | [details] |
+          ```
+        inputs:
+          platform_context.md: {}
+        outputs:
+          labels_report.md: {}
+
+      - name: check_branch_protection
+        instructions: |
+          # Check Branch Protection
+
+          ## Objective
+
+          Check branch protection rules on the repository's default branch and report any missing or insufficient protections.
+
+          ## Task
+
+          ### Process
+
+          1. **Read platform context** from `platform_context.md`
+             - Get the default branch name and provider
+
+          2. **Fetch branch protection rules**
+             - Use the provider's API or CLI to retrieve current protection settings on the default branch
+             - If no protection rules are configured, note that the branch is unprotected
+
+          3. **Check for expected protections**
+
+             Expected protections:
+             - **Require PR reviews**: At least 1 approval required before merge
+             - **Dismiss stale reviews**: Approvals dismissed when new commits are pushed
+             - **Require status checks**: CI must pass before merge (if CI is configured)
+             - **Restrict force pushes**: Force pushes to default branch are blocked
+             - **Restrict deletions**: Default branch cannot be deleted
+
+          4. **Report findings**
+             - For each expected protection, note whether it is enabled or missing
+             - Do NOT attempt to modify protections in the setup workflow — only report
+
+          ## Output Format
+
+          ### branch_protection_report.md
+
+          ```markdown
+          # Branch Protection Report
+
+          ## Repository
+          - **Repo**: [owner/repo]
+          - **Default Branch**: [branch name]
+          - **Provider**: [github | forgejo | etc.]
+
+          ## Protection Status
+
+          | Protection | Status | Details |
+          |------------|--------|---------|
+          | Require PR reviews | [enabled | missing] | [min approvals or N/A] |
+          | Dismiss stale reviews | [enabled | missing] | |
+          | Require status checks | [enabled | missing | N/A (no CI)] | [required checks] |
+          | Restrict force pushes | [enabled | missing] | |
+          | Restrict deletions | [enabled | missing] | |
+
+          ## Summary
+          - **Protections Enabled**: [count]/5
+          - **Missing Protections**: [list]
+          - **Overall**: [protected | partially protected | unprotected]
+          ```
+        inputs:
+          platform_context.md: {}
+        outputs:
+          branch_protection_report.md: {}
+
+      - name: check_milestones
+        instructions: |
+          # Check Milestones
+
+          ## Objective
+
+          Verify milestone-issue consistency: each milestone's issues are properly labeled, states are correct, and milestone metadata is complete.
+
+          ## Task
+
+          ### Process
+
+          1. **Read milestones** from `platform_context.md`
+
+          2. **For each open milestone, verify:**
+
+             a. **Issues exist** — milestone has at least one issue
+                - Use the provider's CLI or API to list all issues for the milestone
+
+             b. **Consolidated issue exists** — look for an issue whose title matches the milestone title
+                (this is the "tracking issue" pattern where a parent issue tracks the milestone's work)
+                - Flag if missing, but do not create it (just report)
+
+             c. **Labels are correct** — each issue should have at least one of the required labels
+                (`product`, `engineering`, or `plan`)
+                - Flag issues missing all three labels
+
+             d. **State consistency** — if all issues are closed, the milestone should be closeable
+                - Flag milestones where all issues are closed but milestone is still open
+
+          3. **Compile findings per milestone**
+
+          ## Output Format
+
+          ### milestones_report.md
+
+          ```markdown
+          # Milestones Report
+
+          ## Summary
+          - **Total Open Milestones**: [count]
+          - **Milestones with Issues**: [count]
+          - **Empty Milestones**: [count]
+          - **Issues Missing Labels**: [count]
+
+          ## Milestones
+
+          ### [Milestone Title] (#[number])
+          - **Open Issues**: [count]
+          - **Closed Issues**: [count]
+          - **Consolidated Issue**: [found (#N) | missing]
+          - **Unlabeled Issues**: [count]
+            - #[N] — [title]
+          - **State Issues**: [none | "all issues closed but milestone open"]
+          ```
+        inputs:
+          platform_context.md: {}
+        outputs:
+          milestones_report.md: {}
+
+      - name: check_boards
+        instructions: |
+          # Check Boards
+
+          ## Objective
+
+          Verify that each milestone has a corresponding project board and that item counts match the milestone's issue count.
+
+          ## Task
+
+          ### Process
+
+          1. **Handle providers without a board API**
+             - If `boards_api: false` in `platform_context.md`, output manual instructions:
+               - Board URL pattern: `https://{host}/{owner}/{repo}/projects`
+               - Steps to create a board manually in the web UI
+               - Skip all CLI automation steps below
+
+          2. **For each open milestone:**
+
+             a. **Check for corresponding board**
+                - Match board title against milestone title (from `platform_context.md` boards inventory)
+
+             b. **If board exists, verify item count**
+                - Use the provider's CLI or API to count board items
+                - Compare board item count against milestone issue count (from `milestones_report.md`)
+                - Flag mismatches
+
+             c. **If no board exists**
+                - Flag as missing
+                - Do NOT create it in the setup workflow — only report
+
+          3. **Check board columns** (for existing boards)
+             - Verify the five standard columns exist: Backlog, To Do, In Progress, In Review, Done
+
+          ## Output Format
+
+          ### boards_report.md
+
+          ```markdown
+          # Boards Report
+
+          ## Provider
+          - **Provider**: [github | forgejo | etc.]
+          - **Boards API**: [true | false]
+
+          ## Summary
+          - **Milestones Checked**: [count]
+          - **Boards Found**: [count]
+          - **Boards Missing**: [count]
+          - **Item Count Mismatches**: [count]
+
+          ## Milestones
+
+          ### [Milestone Title]
+          - **Board**: [found (#{number}) | missing]
+          - **Board URL**: [url | N/A]
+          - **Milestone Issues**: [count]
+          - **Board Items**: [count | N/A]
+          - **Match**: [yes | no — [details] | N/A]
+          - **Columns OK**: [yes | no — missing: [list] | N/A]
+
+          ## Manual Instructions (if no board API)
+
+          [Step-by-step web UI instructions for creating and managing boards, or "N/A — using CLI"]
+          ```
+        inputs:
+          platform_context.md: {}
+          milestones_report.md: {}
+        outputs:
+          boards_report.md: {}
+
+      - name: setup_report
+        instructions: |
+          # Setup Report
+
+          ## Objective
+
+          Compile a pass/fail readiness report across all four concerns: labels, branch protection, milestones, and boards.
+
+          ## Task
+
+          ### Process
+
+          1. **Read all input reports**
+             - `platform_context.md` — provider and repo info
+             - `labels_report.md` — label status
+             - `branch_protection_report.md` — protection status
+             - `milestones_report.md` — milestone consistency
+             - `boards_report.md` — board existence and item counts
+
+          2. **Determine pass/fail for each concern**
+
+             **Labels**: PASS if all three required labels exist. FAIL if any are missing after setup.
+
+             **Branch Protection**: PASS if all expected protections are enabled. WARN if partially protected. FAIL if unprotected.
+
+             **Milestones**: PASS if all milestones have issues, consolidated issues, and proper labels. WARN if minor issues found. FAIL if milestones are empty or severely inconsistent.
+
+             **Boards**: PASS if every milestone has a board with matching item counts. WARN if minor mismatches. FAIL if boards are missing. N/A if provider lacks board API.
+
+          3. **Compile overall readiness**
+             - READY: all concerns pass
+             - NEEDS ATTENTION: one or more concerns have warnings
+             - NOT READY: one or more concerns fail
+
+          ## Output Format
+
+          ### setup_report.md
+
+          ```markdown
+          # Repo Setup Report
+
+          ## Repository
+          - **Repo**: [owner/repo]
+          - **Provider**: [github | forgejo | etc.]
+          - **Default Branch**: [branch]
+          - **Date**: [YYYY-MM-DD]
+
+          ## Readiness: [READY | NEEDS ATTENTION | NOT READY]
+
+          ## Concerns
+
+          | Concern | Status | Details |
+          |---------|--------|---------|
+          | Labels | [PASS | FAIL] | [summary] |
+          | Branch Protection | [PASS | WARN | FAIL] | [summary] |
+          | Milestones | [PASS | WARN | FAIL] | [summary] |
+          | Boards | [PASS | WARN | FAIL | N/A] | [summary] |
+
+          ## Details
+
+          ### Labels
+          [Key findings from labels_report.md]
+
+          ### Branch Protection
+          [Key findings from branch_protection_report.md]
+
+          ### Milestones
+          [Key findings from milestones_report.md]
+
+          ### Boards
+          [Key findings from boards_report.md]
+
+          ## Recommended Actions
+          - [Numbered list of next steps to reach READY status, or "None — repo is ready for work"]
+          ```
+        inputs:
+          platform_context.md: {}
+          labels_report.md: {}
+          branch_protection_report.md: {}
+          milestones_report.md: {}
+          boards_report.md: {}
+        outputs:
+          setup_report.md: {}
+
+  doctor:
     summary: "Audit existing repo state and fix drift across all conventions"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      This job audits and configures repositories to follow team conventions. It supports two workflows:
+      `setup` (make a repo ready for work) and `doctor` (audit existing state and fix drift).
+
+      ## Provider Detection
+
+      The git provider is detected from the repository's remote origin URL:
+      - `github.com` → GitHub
+      - Self-hosted domains → Forgejo, Gitea, GitLab, etc.
+
+      The agent's tool conventions (loaded via system prompt) document CLI usage for each provider.
+      Step instructions describe *what* to check — the agent already knows *how* to invoke each
+      provider's CLI.
+
+      ## Standard Labels
+
+      Every repo must have these labels:
+      - `product` — product/UX scope
+      - `engineering` — technical scope
+      - `plan` — planning/coordination
+
+      ## Standard Board Columns
+
+      Project boards use these five status columns:
+      - Backlog, To Do, In Progress, In Review, Done
+
+      ## Board Lifecycle
+
+      - One project board MUST exist per milestone.
+      - The board MUST be created as part of the milestone setup process; the `setup`
+        workflow only checks/reports on board existence and MUST NOT create boards automatically.
+      - The board MUST be closed or archived when the milestone is closed; the `setup`
+        workflow MAY report drift but MUST NOT close or archive boards automatically.
+
+      ## Board Transition Rules
+
+      | Event                          | Expected Column Change |
+      |--------------------------------|------------------------|
+      | Issue added to milestone       | → Backlog              |
+      | Issue prioritized for work     | Backlog → To Do        |
+      | Branch created, work starts    | To Do → In Progress    |
+      | PR marked ready for review     | In Progress → In Review|
+      | PR merged / issue closed       | → Done                 |
+
+      If the platform supports built-in board automations (e.g. GitHub's auto-close → Done,
+      PR merged → Done), agents MUST NOT duplicate those automatic transitions.
+
+      ## Branch Protection Expectations
+
+      The default branch should have these protections:
+      1. Require PR reviews (at least 1 approval)
+      2. Dismiss stale reviews on new commits
+      3. Require status checks to pass (if CI is configured)
+      4. Restrict force pushes
+      5. Restrict branch deletion
     steps:
-      - detect_platform
-      - [audit_labels, audit_branch_protection]
-      - audit_milestones
-      - audit_boards
-      - doctor_report
+      - name: detect_platform
+        instructions: |
+          # Detect Platform
 
-steps:
-  # ── Shared ──────────────────────────────────────────────────────────
+          ## Objective
 
-  - id: detect_platform
-    name: "Detect Platform"
-    description: "Identify git provider, verify CLI auth, get default branch, inventory labels/milestones/boards"
-    instructions_file: steps/detect_platform.md
-    inputs:
-      - name: project_repo
-        description: "Repository — a remote URL, an owner/repo slug, or omit to detect from current directory's git remote. If the repo doesn't exist yet, the step will offer to create it."
-    outputs:
-      platform_context.md:
-        type: file
-        description: "Provider, repo, transport, default branch, auth status, existing labels, milestones, and boards"
-        required: true
-    dependencies: []
-    reviews:
-      - run_each: platform_context.md
-        quality_criteria:
-          "Provider Detected": "The git provider is correctly identified from the remote URL."
-          "Auth Verified": "CLI authentication has been verified for the detected provider."
-          "Default Branch": "The default branch name is recorded."
-          "Inventory Complete": "Existing labels, milestones, and boards (if applicable) are listed."
+          Identify the git provider, verify CLI authentication, determine the default branch, and inventory existing labels, milestones, and boards.
 
-  # ── Setup Steps ─────────────────────────────────────────────────────
+          ## Task
 
-  - id: ensure_labels
-    name: "Ensure Labels"
-    description: "Verify product, engineering, plan labels exist; create missing ones"
-    instructions_file: steps/ensure_labels.md
-    inputs:
-      - file: platform_context.md
-        from_step: detect_platform
-    outputs:
-      labels_report.md:
-        type: file
-        description: "List of labels checked, created, or already present"
-        required: true
-    dependencies:
-      - detect_platform
-    reviews:
-      - run_each: labels_report.md
-        quality_criteria:
-          "All Required Labels": "All three required labels (product, engineering, plan) are accounted for."
-          "Missing Created": "Any missing labels were created with appropriate colors and descriptions."
+          ### Process
 
-  - id: check_branch_protection
-    name: "Check Branch Protection"
-    description: "Check protection rules on default branch; report missing protections"
-    instructions_file: steps/check_branch_protection.md
-    inputs:
-      - file: platform_context.md
-        from_step: detect_platform
-    outputs:
-      branch_protection_report.md:
-        type: file
-        description: "Current branch protection status and any missing protections"
-        required: true
-    dependencies:
-      - detect_platform
-    reviews:
-      - run_each: branch_protection_report.md
-        quality_criteria:
-          "Protection Checked": "Branch protection rules on the default branch have been inspected."
-          "Gaps Identified": "Any missing or insufficient protections are documented."
+          1. **Determine the repository and provider**
 
-  - id: check_milestones
-    name: "Check Milestones"
-    description: "Verify milestone-issue consistency, consolidated issue exists, labels correct"
-    instructions_file: steps/check_milestones.md
-    inputs:
-      - file: platform_context.md
-        from_step: detect_platform
-    outputs:
-      milestones_report.md:
-        type: file
-        description: "Milestone consistency findings: missing consolidated issues, label mismatches"
-        required: true
-    dependencies:
-      - detect_platform
-    reviews:
-      - run_each: milestones_report.md
-        quality_criteria:
-          "All Milestones Checked": "Every open milestone was inspected."
-          "Issue Consistency": "Each milestone's issues are listed with state and label correctness."
+             Handle three modes based on the `project_repo` input:
 
-  - id: check_boards
-    name: "Check Boards"
-    description: "Verify each milestone has a board and item counts match"
-    instructions_file: steps/check_boards.md
-    inputs:
-      - file: platform_context.md
-        from_step: detect_platform
-      - file: milestones_report.md
-        from_step: check_milestones
-    outputs:
-      boards_report.md:
-        type: file
-        description: "Board existence and item count verification per milestone"
-        required: true
-    dependencies:
-      - detect_platform
-      - check_milestones
-    reviews:
-      - run_each: boards_report.md
-        quality_criteria:
-          "Boards Checked": "Each milestone was checked for a corresponding board."
-          "Item Counts": "Board item counts are compared against milestone issue counts."
-          "API Limitations": "If the provider lacks a board API, manual instructions are provided."
+             a. **Omitted / empty** — detect from the current directory:
+                - Run `git remote get-url origin` to get the remote URL
+                - Parse the URL to extract the host and owner/repo slug
 
-  - id: setup_report
-    name: "Setup Report"
-    description: "Compile pass/fail readiness report across all four concerns"
-    instructions_file: steps/setup_report.md
-    inputs:
-      - file: platform_context.md
-        from_step: detect_platform
-      - file: labels_report.md
-        from_step: ensure_labels
-      - file: branch_protection_report.md
-        from_step: check_branch_protection
-      - file: milestones_report.md
-        from_step: check_milestones
-      - file: boards_report.md
-        from_step: check_boards
-    outputs:
-      setup_report.md:
-        type: file
-        description: "Pass/fail readiness report covering labels, branch protection, milestones, and boards"
-        required: true
-    dependencies:
-      - detect_platform
-      - ensure_labels
-      - check_branch_protection
-      - check_milestones
-      - check_boards
-    reviews:
-      - run_each: setup_report.md
-        quality_criteria:
-          "All Concerns Covered": "Report covers labels, branch protection, milestones, and boards."
-          "Pass/Fail Clear": "Each concern has a clear pass or fail status with details."
+             b. **Remote URL provided** (SSH or HTTPS):
+                - Parse the URL directly to extract host and owner/repo slug
 
-  # ── Doctor Steps ────────────────────────────────────────────────────
+             c. **Owner/repo slug provided** (e.g. `acme/widgets`):
+                - Check for a known provider host in `.git` remote, or ask the user which provider to use
 
-  - id: audit_labels
-    name: "Audit Labels"
-    description: "Check required labels, find case-insensitive duplicates, zero-issue labels"
-    instructions_file: steps/audit_labels.md
-    inputs:
-      - file: platform_context.md
-        from_step: detect_platform
-    outputs:
-      labels_audit.md:
-        type: file
-        description: "Label audit findings: missing, duplicates, unused labels, and fixes applied"
-        required: true
-    dependencies:
-      - detect_platform
-    reviews:
-      - run_each: labels_audit.md
-        quality_criteria:
-          "Required Labels": "All three required labels (product, engineering, plan) are verified."
-          "Duplicates Found": "Case-insensitive duplicate labels are identified."
-          "Unused Labels": "Labels with zero issues are flagged."
+             **Provider detection from hostname:**
+             - `github.com` → GitHub
+             - `gitlab.com` → GitLab
+             - Any other host → assume Forgejo/Gitea (the agent's tool conventions document CLI usage)
 
-  - id: audit_branch_protection
-    name: "Audit Branch Protection"
-    description: "Deep check of branch protection rules; attempt to enable missing protections via API"
-    instructions_file: steps/audit_branch_protection.md
-    inputs:
-      - file: platform_context.md
-        from_step: detect_platform
-    outputs:
-      branch_protection_audit.md:
-        type: file
-        description: "Branch protection audit with findings and fixes attempted"
-        required: true
-    dependencies:
-      - detect_platform
-    reviews:
-      - run_each: branch_protection_audit.md
-        quality_criteria:
-          "Rules Audited": "All branch protection rules on the default branch have been inspected."
-          "Fixes Attempted": "Missing protections were attempted to be enabled via API."
-          "Remaining Gaps": "Any gaps that could not be fixed automatically are documented."
+             **Transport detection:**
+             - URLs starting with `git@` or `ssh://` → SSH
+             - URLs starting with `https://` → HTTPS
 
-  - id: audit_milestones
-    name: "Audit Milestones"
-    description: "Deep consistency check on milestones; fix label drift on issues"
-    instructions_file: steps/audit_milestones.md
-    inputs:
-      - file: platform_context.md
-        from_step: detect_platform
-    outputs:
-      milestones_audit.md:
-        type: file
-        description: "Milestone audit findings: inconsistencies found and fixes applied"
-        required: true
-    dependencies:
-      - detect_platform
-    reviews:
-      - run_each: milestones_audit.md
-        quality_criteria:
-          "All Milestones Audited": "Every open milestone was deeply inspected."
-          "Label Drift Fixed": "Issues with incorrect or missing labels were corrected."
-          "Consistency Verified": "Milestone-issue relationships are consistent."
+             If no repository exists yet (no `.git` directory or no remote), offer to create one using the provider's CLI, then re-detect.
 
-  - id: audit_boards
-    name: "Audit Boards"
-    description: "Full board audit: add missing items, correct wrong statuses, flag stale cards"
-    instructions_file: steps/audit_boards.md
-    inputs:
-      - file: platform_context.md
-        from_step: detect_platform
-      - file: milestones_audit.md
-        from_step: audit_milestones
-    outputs:
-      boards_audit.md:
-        type: file
-        description: "Board audit findings, fixes applied, and remaining issues"
-        required: true
-    dependencies:
-      - detect_platform
-      - audit_milestones
-    reviews:
-      - run_each: boards_audit.md
-        quality_criteria:
-          "All Boards Audited": "Every milestone's board was inspected."
-          "Missing Items Added": "Issues missing from boards were added."
-          "Statuses Corrected": "Wrong statuses were corrected based on issue/PR state."
-          "Stale Cards Flagged": "Board items not belonging to the milestone are flagged."
-          "API Limitations": "If the provider lacks a board API, manual instructions are provided."
+          2. **Verify CLI authentication**
+             - Use the provider's whoami or auth status command to confirm the current user is authenticated
+             - If additional scopes are needed (e.g. GitHub's `project` scope), prompt for a refresh
 
-  - id: doctor_report
-    name: "Doctor Report"
-    description: "Compile findings, fixes, and remaining issues across all concerns"
-    instructions_file: steps/doctor_report.md
-    inputs:
-      - file: platform_context.md
-        from_step: detect_platform
-      - file: labels_audit.md
-        from_step: audit_labels
-      - file: branch_protection_audit.md
-        from_step: audit_branch_protection
-      - file: milestones_audit.md
-        from_step: audit_milestones
-      - file: boards_audit.md
-        from_step: audit_boards
-    outputs:
-      doctor_report.md:
-        type: file
-        description: "Summary of findings, fixes applied, and remaining issues across all concerns"
-        required: true
-    dependencies:
-      - detect_platform
-      - audit_labels
-      - audit_branch_protection
-      - audit_milestones
-      - audit_boards
-    reviews:
-      - run_each: doctor_report.md
-        quality_criteria:
-          "All Concerns Covered": "Report covers labels, branch protection, milestones, and boards."
-          "Findings Summarized": "All audit findings are summarized with counts."
-          "Fixes Listed": "All fix actions taken are listed."
-          "Remaining Issues": "Any issues that still need manual attention are documented."
+          3. **Get default branch**
+             - Query the provider's API or CLI for the repository's default branch name
+
+          4. **Inventory existing labels**
+             - List all labels on the repository with name, color, and description
+
+          5. **Inventory milestones**
+             - List all milestones with title, number, state, and issue counts
+
+          6. **Inventory boards** (if the provider supports a board API)
+             - List project boards with title, number, and URL
+             - If the provider has no board API, record `boards_api: false`
+
+          ## Output Format
+
+          ### platform_context.md
+
+          ```markdown
+          # Platform Context
+
+          ## Provider
+          - **Provider**: [github | forgejo | gitea | gitlab]
+          - **Host**: [hostname]
+          - **Repository**: [owner/repo]
+          - **Transport**: [ssh | https]
+          - **Default Branch**: [main | master | etc.]
+          - **Auth Status**: [authenticated as {username} | needs refresh]
+          - **Boards API**: [true | false]
+
+          ## Existing Labels
+
+          | Name | Color | Description |
+          |------|-------|-------------|
+          | ... | ... | ... |
+
+          ## Milestones
+
+          | Title | Number | State | Open | Closed |
+          |-------|--------|-------|------|--------|
+          | ... | ... | ... | ... | ... |
+
+          ## Boards
+
+          | Title | Number | URL |
+          |-------|--------|-----|
+          | ... | ... | ... |
+
+          [Or "N/A — provider does not support project boards via API"]
+          ```
+        inputs:
+          project_repo:
+            required: false
+        outputs:
+          platform_context.md: {}
+
+      - name: audit_labels
+        instructions: |
+          # Audit Labels
+
+          ## Objective
+
+          Deep audit of repository labels: verify required labels, find case-insensitive duplicates, identify zero-issue labels, and fix issues.
+
+          ## Task
+
+          ### Process
+
+          1. **Read existing labels** from `platform_context.md`
+
+          2. **Check required labels**
+             - Required: `product`, `engineering`, `plan`
+             - Create any that are missing (same as ensure_labels)
+
+          3. **Find case-insensitive duplicates**
+             - Group all labels by lowercased name
+             - Flag any groups with more than one label (e.g., `Bug` and `bug`)
+             - Recommend which to keep (prefer lowercase)
+
+          4. **Find zero-issue labels**
+             - For each label, count issues using it via the provider's CLI or API
+             - Labels with zero issues are flagged as candidates for cleanup
+             - Do NOT auto-delete — just flag them
+
+          5. **Fix case mismatches on required labels**
+             - If a required label exists with wrong casing, rename it using the provider's label edit command
+
+          ## Output Format
+
+          ### labels_audit.md
+
+          ```markdown
+          # Labels Audit
+
+          ## Summary
+          - **Total Labels**: [count]
+          - **Required Labels OK**: [count]/3
+          - **Created**: [count]
+          - **Case Duplicates Found**: [count]
+          - **Zero-Issue Labels**: [count]
+
+          ## Required Labels
+
+          | Label | Status | Action |
+          |-------|--------|--------|
+          | product | [ok | created | renamed] | [details] |
+          | engineering | [ok | created | renamed] | [details] |
+          | plan | [ok | created | renamed] | [details] |
+
+          ## Case-Insensitive Duplicates
+
+          | Lowercase Name | Variants | Recommendation |
+          |----------------|----------|----------------|
+          | ... | Bug, bug | Keep "bug", delete "Bug" |
+
+          ## Zero-Issue Labels
+
+          | Label | Created | Recommendation |
+          |-------|---------|----------------|
+          | ... | [date] | Consider removing |
+
+          ## Actions Taken
+          - [List of changes made]
+
+          ## Manual Actions Needed
+          - [List of changes requiring human intervention, or "None"]
+          ```
+        inputs:
+          platform_context.md: {}
+        outputs:
+          labels_audit.md: {}
+
+      - name: audit_branch_protection
+        instructions: |
+          # Audit Branch Protection
+
+          ## Objective
+
+          Deep check of branch protection rules on the default branch. Attempt to enable missing protections via the provider's API.
+
+          ## Task
+
+          ### Process
+
+          1. **Read platform context** from `platform_context.md`
+
+          2. **Fetch current branch protection**
+             - Use the provider's API or CLI to retrieve protection settings on the default branch
+
+          3. **Check all expected protections**
+
+             Same checklist as check_branch_protection:
+             - Require PR reviews (min 1 approval)
+             - Dismiss stale reviews
+             - Require status checks (if CI configured)
+             - Restrict force pushes
+             - Restrict deletions
+
+          4. **Attempt to enable missing protections**
+             - Use the provider's API to enable missing protections
+             - Be careful with APIs that replace the entire protection config — read existing settings first and merge
+             - Document any API errors or permission issues
+
+          5. **Verify changes**
+             - Re-fetch protection rules to confirm the changes took effect
+             - Document any API errors or permission issues
+
+          ## Output Format
+
+          ### branch_protection_audit.md
+
+          ```markdown
+          # Branch Protection Audit
+
+          ## Repository
+          - **Repo**: [owner/repo]
+          - **Default Branch**: [branch name]
+          - **Provider**: [github | forgejo | etc.]
+
+          ## Findings
+
+          | Protection | Before | After | Action |
+          |------------|--------|-------|--------|
+          | Require PR reviews | [enabled | missing] | [enabled | missing] | [enabled via API | already set | failed: reason] |
+          | Dismiss stale reviews | ... | ... | ... |
+          | Require status checks | ... | ... | ... |
+          | Restrict force pushes | ... | ... | ... |
+          | Restrict deletions | ... | ... | ... |
+
+          ## Actions Taken
+          - [List of API calls made and their results]
+
+          ## Remaining Gaps
+          - [Protections that could not be enabled, with reasons]
+          - [Or "None — all protections are in place"]
+          ```
+        inputs:
+          platform_context.md: {}
+        outputs:
+          branch_protection_audit.md: {}
+
+      - name: audit_milestones
+        instructions: |
+          # Audit Milestones
+
+          ## Objective
+
+          Deep consistency check on milestones. Fix label drift on issues — add missing labels, correct mismatches.
+
+          ## Task
+
+          ### Process
+
+          1. **Read platform context** from `platform_context.md`
+
+          2. **For each open milestone:**
+
+             a. **List all issues**
+                - Use the provider's CLI or API to list all issues for the milestone with their title, state, labels, and assignees
+
+             b. **Check consolidated issue**
+                - Look for an issue whose title matches the milestone title
+                - If missing, flag but do not create
+
+             c. **Audit labels on each issue**
+                - Every issue SHOULD have at least one of: `product`, `engineering`, `plan`
+                - Apply heuristic to add missing labels:
+                  - Issues with specs, user stories, or UX mentions → `product`
+                  - Issues with implementation, code, or technical mentions → `engineering`
+                  - Issues about planning, coordination, or tracking → `plan`
+                - Fix label drift using the provider's issue edit command
+
+             d. **Check assignees**
+                - Flag issues with no assignees
+                - Do NOT auto-assign — just report
+
+             e. **State consistency**
+                - If all issues are closed, flag the milestone for closure
+                - If milestone has a due date in the past and open issues remain, flag as overdue
+
+          3. **Compile audit findings and actions taken**
+
+          ## Output Format
+
+          ### milestones_audit.md
+
+          ```markdown
+          # Milestones Audit
+
+          ## Summary
+          - **Milestones Audited**: [count]
+          - **Issues Audited**: [count]
+          - **Labels Added**: [count]
+          - **Unassigned Issues**: [count]
+          - **Overdue Milestones**: [count]
+
+          ## Milestones
+
+          ### [Milestone Title] (#[number])
+
+          **Issues:**
+
+          | # | Title | State | Labels | Assignees | Action |
+          |---|-------|-------|--------|-----------|--------|
+          | ... | ... | ... | ... | ... | [added "engineering" label | ok] |
+
+          **Findings:**
+          - Consolidated issue: [found (#N) | missing]
+          - Unassigned issues: [list or "none"]
+          - State: [ok | all closed — recommend closing milestone | overdue]
+
+          ## Actions Taken
+          - [List of label additions and other fixes]
+
+          ## Manual Actions Needed
+          - [Milestones to close, issues to assign, etc.]
+          ```
+        inputs:
+          platform_context.md: {}
+        outputs:
+          milestones_audit.md: {}
+
+      - name: audit_boards
+        instructions: |
+          # Audit Boards
+
+          ## Objective
+
+          Full board audit: add missing items, correct wrong statuses, flag stale cards. For providers without a board API, output manual instructions.
+
+          ## Task
+
+          ### Process
+
+          1. **Handle providers without a board API**
+             - If `boards_api: false` in `platform_context.md`, output manual review instructions:
+               - How to check boards in the web UI at `https://{host}/{owner}/{repo}/projects`
+               - Checklist of things to verify manually
+               - Skip all CLI automation steps below
+
+          2. **For each open milestone with a board:**
+
+             a. **Fetch board items**
+                - Use the provider's CLI or API to list all items on the board
+
+             b. **Fetch milestone issues**
+                - Use the provider's CLI or API to list all issues in the milestone
+
+             c. **Find missing items** — milestone issues not on the board
+                - Add missing items using the provider's board item add command
+
+             d. **Cross-reference statuses** — for each board item:
+                - Check linked issue state and PR state
+                - Expected status rules (check in this order, first match wins):
+                  - Closed issue → Done
+                  - Open + non-draft PR with reviewers requested → In Review
+                  - Open + any PR (draft or non-draft without reviewers) → In Progress
+                  - Open + no PR → Backlog
+                - Correct wrong statuses using the provider's board item edit command
+
+             e. **Find stale cards** — board items whose linked issue is NOT in the milestone
+                - Flag but do NOT auto-remove
+
+          3. **For milestones without boards:**
+             - Flag as missing
+             - Optionally create if there are issues to track (ask user or just report)
+
+          ## Output Format
+
+          ### boards_audit.md
+
+          ```markdown
+          # Boards Audit
+
+          ## Provider
+          - **Provider**: [github | forgejo | etc.]
+          - **Boards API**: [true | false]
+
+          ## Summary
+          - **Boards Audited**: [count]
+          - **Items Added**: [count]
+          - **Statuses Corrected**: [count]
+          - **Stale Cards Flagged**: [count]
+          - **Missing Boards**: [count]
+
+          ## Per-Board Details
+
+          ### [Milestone Title] — Board #{number}
+
+          **Items Added:**
+
+          | Issue # | Item ID | Status Set | Reason |
+          |---------|---------|------------|--------|
+          | ... | ... | ... | ... |
+
+          **Statuses Corrected:**
+
+          | Issue # | Item ID | Old Status | New Status | Reason |
+          |---------|---------|------------|------------|--------|
+          | ... | ... | ... | ... | ... |
+
+          **Stale Cards:**
+
+          | Item ID | Linked Issue | Recommendation |
+          |---------|-------------|----------------|
+          | ... | ... | ... |
+
+          ## Missing Boards
+          - [Milestone Title] — [count] issues, no board
+
+          ## Manual Instructions (if no board API)
+          [Manual review checklist, or "N/A"]
+
+          ## Actions Taken
+          - [Summary of all automated fixes]
+
+          ## Remaining Issues
+          - [Items needing manual attention]
+          ```
+        inputs:
+          platform_context.md: {}
+          milestones_audit.md: {}
+        outputs:
+          boards_audit.md: {}
+
+      - name: doctor_report
+        instructions: |
+          # Doctor Report
+
+          ## Objective
+
+          Compile a summary of all audit findings, fixes applied, and remaining issues across all four concerns.
+
+          ## Task
+
+          ### Process
+
+          1. **Read all input reports**
+             - `platform_context.md` — provider and repo info
+             - `labels_audit.md` — label audit findings and fixes
+             - `branch_protection_audit.md` — protection audit and fixes
+             - `milestones_audit.md` — milestone audit and label drift fixes
+             - `boards_audit.md` — board audit and status corrections
+
+          2. **Summarize findings per concern**
+             - Count total findings, fixes applied, and remaining issues
+
+          3. **Determine health status for each concern**
+             - HEALTHY: no issues found (nothing to fix)
+             - FIXED: issues were found and all were automatically fixed
+             - NEEDS ATTENTION: issues remain that require manual intervention
+
+          4. **Compile remaining manual actions**
+             - Aggregate all items from each audit that still need human attention
+
+          ## Output Format
+
+          ### doctor_report.md
+
+          ```markdown
+          # Doctor Report
+
+          ## Repository
+          - **Repo**: [owner/repo]
+          - **Provider**: [github | forgejo | etc.]
+          - **Date**: [YYYY-MM-DD]
+
+          ## Overall Health: [HEALTHY | FIXED | NEEDS ATTENTION]
+
+          ## Summary
+
+          | Concern | Findings | Fixed | Remaining | Status |
+          |---------|----------|-------|-----------|--------|
+          | Labels | [count] | [count] | [count] | [HEALTHY | FIXED | NEEDS ATTENTION] |
+          | Branch Protection | [count] | [count] | [count] | [HEALTHY | FIXED | NEEDS ATTENTION] |
+          | Milestones | [count] | [count] | [count] | [HEALTHY | FIXED | NEEDS ATTENTION] |
+          | Boards | [count] | [count] | [count] | [HEALTHY | FIXED | NEEDS ATTENTION] |
+
+          ## Details
+
+          ### Labels
+          - **Findings**: [summary from labels_audit.md]
+          - **Actions Taken**: [list]
+          - **Remaining**: [list or "None"]
+
+          ### Branch Protection
+          - **Findings**: [summary from branch_protection_audit.md]
+          - **Actions Taken**: [list]
+          - **Remaining**: [list or "None"]
+
+          ### Milestones
+          - **Findings**: [summary from milestones_audit.md]
+          - **Actions Taken**: [list]
+          - **Remaining**: [list or "None"]
+
+          ### Boards
+          - **Findings**: [summary from boards_audit.md]
+          - **Actions Taken**: [list]
+          - **Remaining**: [list or "None"]
+
+          ## Manual Actions Needed
+          1. [Numbered list of items requiring human attention]
+          [Or "None — repository is healthy"]
+          ```
+        inputs:
+          platform_context.md: {}
+          labels_audit.md: {}
+          branch_protection_audit.md: {}
+          milestones_audit.md: {}
+          boards_audit.md: {}
+        outputs:
+          doctor_report.md: {}

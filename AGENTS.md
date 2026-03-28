@@ -216,9 +216,7 @@ Each step:
 2. **Runtime copy**: `.deepwork/jobs/[job_name]/` - Copied at runtime by the MCP server
 
 **Edit the source files** in `src/deepwork/standard_jobs/[job_name]/`:
-- `job.yml` - Job definition with steps, hooks, etc.
-- `steps/*.md` - Step instruction files
-- `hooks/*` - Any hook scripts
+- `job.yml` - Job definition with inline step instructions, workflows, and step_arguments
 
 ### How to Identify Job Types
 
