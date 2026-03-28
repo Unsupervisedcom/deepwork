@@ -237,14 +237,14 @@ class TestBuildDynamicReviewRules:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.4.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_creates_process_quality_attributes_rules(self, tmp_path: Path) -> None:
-        """process_quality_attributes with a work_summary creates a PQA rule."""
+    def test_creates_process_requirements_rules(self, tmp_path: Path) -> None:
+        """process_requirements with a work_summary creates a process requirements rule."""
         arg = StepArgument(name="report", description="Report file", type="file_path")
         output_ref = StepOutputRef(argument_name="report", required=True)
         step = WorkflowStep(
             name="analyze",
             outputs={"report": output_ref},
-            process_quality_attributes={
+            process_requirements={
                 "accuracy": "All data points are verified",
                 "completeness": "All sections are filled",
             },
@@ -272,13 +272,13 @@ class TestBuildDynamicReviewRules:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.4.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_no_pqa_rule_without_work_summary(self, tmp_path: Path) -> None:
-        """process_quality_attributes without a work_summary are skipped."""
+        """process_requirements without a work_summary is skipped."""
         arg = StepArgument(name="report", description="Report", type="file_path")
         output_ref = StepOutputRef(argument_name="report", required=True)
         step = WorkflowStep(
             name="analyze",
             outputs={"report": output_ref},
-            process_quality_attributes={"accuracy": "Check it"},
+            process_requirements={"accuracy": "Check it"},
         )
         job, workflow = _make_job(tmp_path, [arg], step)
 

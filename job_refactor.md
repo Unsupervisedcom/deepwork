@@ -28,7 +28,7 @@ A lot of the goal of this is cleaning up the relationship between DeepWork Revie
 				1. `required` - boolean for if it is a required input. Defaults to true
 			4. `outputs` largely the same as how `inputs` are structured, but in addition to `required`, there is an optional `review` key. This is the exact same format (and should reuse the existing code) as the `review` key in `.deepreview` files.
 			5. NOTE: each step when finishing will be required to furnish all the outputs it has defined, and it will always be provided the inputs it requested when it starts.
-			6. `process_quality_attributes` - This is an object where each key is a name of an attribute and the body is a description of it. Note that these should be statements, not questions. They represent things about the *process and work* done in the step, not the individual output files, that need to be reviewed. Anything about the outputs that needs to be reviewed should be defined in the `outputs` under review, or the `step_arguments`. This is optional.
+			6. `process_requirements` - This is an object where each key is a name of an attribute and the body is a description of it. Note that these should be statements, not questions. They represent things about the *process and work* done in the step, not the individual output files, that need to be reviewed. Anything about the outputs that needs to be reviewed should be defined in the `outputs` under review, or the `step_arguments`. This is optional.
 		5. `post_workflow_instructions` - this is an optional string. It is instructions returned to the agent after the final step is successfully finished and the workflow is complete.
 
 ## Runtime Process
@@ -45,7 +45,7 @@ A lot of the goal of this is cleaning up the relationship between DeepWork Revie
 			2. We then treat it like normal review firing except the list of changed files is not from the git diff, but instead from the `outputs` list passed into the `step_finished` call.
 				1. This means things like the `strategy` should still work normally in the `review` block - i.e. `individual` on an array-type file output would have separate reviews for each file, and the `matches_together` would group them together.
 				2. We should include inputs by reference always too (for files) and by value for strings.
-			3. If there is a `process_quality_attributes`, then we make one review for that with
+			3. If there is a `process_requirements`, then we make one review for that with
 				1. Instructions of "You need to review the description of the work done as summarized below against the following quality criteria. If you find issues, assume that the work description could be incorrect, so phrase your answers always as telling the agent to fix its work or the `work_summary`.
 				2. Still should get all the inputs and outputs too
 				3. Be sure the `work_summary` gets passed to it labeled with that name so that any resulting errors reference the right thing

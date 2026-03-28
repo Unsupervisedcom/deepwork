@@ -90,7 +90,7 @@ workflows:
       Key schema rules:
       - `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` and `json_schema`
       - `workflows` is an object keyed by workflow name, each with {summary, steps[]}
-      - Each step has {name, instructions (inline string), inputs, outputs, process_quality_attributes}
+      - Each step has {name, instructions (inline string), inputs, outputs, process_requirements}
       - Inputs/outputs reference step_arguments by name
       - No `version`, no root-level `steps[]`, no `instructions_file`, no hooks, no dependencies
 
@@ -318,7 +318,7 @@ workflows:
              - `strategy: individual` — each file in the output is reviewed separately
              - `strategy: matches_together` — all files in the output are reviewed together as a group
 
-          2. **Process quality attributes** — defined on the step via `process_quality_attributes`, a map of attribute name to statement. These review the *work done* in the step (not individual output files), using the `work_summary` provided when calling `finished_step`.
+          2. **Process requirements** — defined on the step via `process_requirements`, a map of requirement name to statement using RFC 2119 keywords (MUST, SHOULD, MAY, etc.). These review the *work done* in the step (not individual output files), using the `work_summary` provided when calling `finished_step`. The reviewer will fail any MUST/SHALL that is not met, fail any SHOULD/RECOMMENDED that seems easily achievable but was not followed, and give feedback without failing for other applicable requirements.
 
           ```yaml
           steps:
@@ -336,8 +336,8 @@ workflows:
                       - Sufficient Data: Each competitor has at least 3 data points.
                       - Sources Cited: Sources are cited for key claims.
                       - Current Information: Information is current (within last year).
-              process_quality_attributes:
-                "Consistent Style": "All research notes follow the same structure."
+              process_requirements:
+                "Consistent Style": "All research notes MUST follow the same structure."
           ```
 
           **Reviews are particularly valuable for:**
@@ -354,7 +354,7 @@ workflows:
           - Keep review criteria focused and efficient to evaluate
           - The agent can use `quality_review_override_reason` to bypass a timed-out review, but this loses the quality gate benefit
 
-          **For steps with no quality checks needed, omit `process_quality_attributes` and output-level reviews.**
+          **For steps with no quality checks needed, omit `process_requirements` and output-level reviews.**
 
           ### Step 5: Create the Job Directory and Specification
 
@@ -639,13 +639,13 @@ workflows:
           3. **Provide output format examples** - Include a markdown code block in an "Output Format" section showing the expected file structure. A template with `[bracket placeholders]` is acceptable. For complex outputs, also include a concrete filled-in example showing realistic data — this is especially valuable for the first step in a workflow where there's no prior output to reference.
           4. **Explain the "why"** - Help the user understand the step's role in the workflow
           5. **Quality over quantity** - Detailed, actionable instructions are better than vague ones
-          6. **Align with reviews** - If the step has output-level reviews or process_quality_attributes defined, ensure the quality criteria in the instruction file match the review criteria
+          6. **Align with reviews** - If the step has output-level reviews or process_requirements defined, ensure the quality criteria in the instruction file match the review criteria
           7. **Ask structured questions (when applicable)** - When a step has string-type inputs, the instructions MUST explicitly tell the agent to "ask structured questions" using the AskUserQuestion tool. Steps that only have file_path inputs do NOT need this phrase — they process data without user interaction.
           8. **Handle edge cases** - If inputs might be missing, ambiguous, or incomplete, tell the agent to ask structured questions to clarify how to proceed rather than guessing
 
           #### Handling Reviews
 
-          If a step in the job.yml has reviews defined (either output-level reviews or process_quality_attributes), the generated instruction file should:
+          If a step in the job.yml has reviews defined (either output-level reviews or process_requirements), the generated instruction file should:
 
           1. **Mirror the quality criteria** - The "Quality Criteria" section should match what the reviews will validate
           2. **Be explicit about success** - Help the agent understand when the step is truly complete
@@ -979,7 +979,7 @@ workflows:
 
           1. **In step instruction files** - The "Quality Criteria" section should reflect what the user actually cared about during testing
 
-          2. **In job.yml** - Update the output-level `review` blocks and `process_quality_attributes` on each step to:
+          2. **In job.yml** - Update the output-level `review` blocks and `process_requirements` on each step to:
              - Remove criteria that weren't relevant
              - Add criteria based on user feedback
              - Make existing criteria more specific
@@ -1140,7 +1140,7 @@ workflows:
       Key schema rules:
       - `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` and `json_schema`
       - `workflows` is an object keyed by workflow name, each with {summary, steps[]}
-      - Each step has {name, instructions (inline string), inputs, outputs, process_quality_attributes}
+      - Each step has {name, instructions (inline string), inputs, outputs, process_requirements}
       - Inputs/outputs reference step_arguments by name
       - No `version`, no root-level `steps[]`, no `instructions_file`, no hooks, no dependencies
 
@@ -1329,7 +1329,7 @@ workflows:
         outputs:
           settings.json:
             required: true
-        process_quality_attributes:
+        process_requirements:
           "DeepWork Skills Removed": "`Skill(...)` entries matching jobs in `.deepwork/jobs/` are removed."
           "Non-DeepWork Skills Preserved": "Skills NOT matching DeepWork jobs are left intact."
           "Stale make_new_job.sh Removed": "Stale `Bash(...)` permissions referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` are removed."
@@ -1389,9 +1389,9 @@ workflows:
           6. NO `exposed` or `hidden` fields
           7. `workflows` is an OBJECT keyed by workflow name (not an array)
           8. Each workflow has: `summary`, optional `common_job_info_provided_to_all_steps_at_runtime`, `steps[]`, optional `post_workflow_instructions`
-          9. Each step has: `name`, `instructions` (inline string), `inputs` (object referencing step_arguments), `outputs` (object referencing step_arguments), optional `process_quality_attributes`
+          9. Each step has: `name`, `instructions` (inline string), `inputs` (object referencing step_arguments), `outputs` (object referencing step_arguments), optional `process_requirements`
           10. `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` {strategy, instructions} and optional `json_schema`
-          11. Old `reviews` with `run_each: step` and `quality_criteria` → convert to `process_quality_attributes` on the step
+          11. Old `reviews` with `run_each: step` and `quality_criteria` → convert to `process_requirements` on the step
           12. Old `reviews` with `run_each: <output>` where output type was `file` → convert to output-level `review` with `strategy: matches_together`
           13. Old `reviews` with `run_each: <output>` where output type was `files` → convert to output-level `review` with `strategy: individual`
           14. Convert quality_criteria dicts into review instruction text
@@ -1444,8 +1444,8 @@ workflows:
                   outputs:
                     report.md:
                       required: true
-                  process_quality_attributes:
-                    "Complete": "The report covers all topics."
+                  process_requirements:
+                    "Complete": "The report MUST cover all topics."
           ```
 
           **Old `reviews` with `run_each: <output>` → Output-level review:**
@@ -1467,7 +1467,7 @@ workflows:
                   - Well Written: Content is clear.
           ```
 
-          **Old `reviews` with `run_each: step` → `process_quality_attributes`:**
+          **Old `reviews` with `run_each: step` → `process_requirements`:**
           ```yaml
           # OLD
           reviews:
@@ -1475,9 +1475,9 @@ workflows:
               quality_criteria:
                 "Thorough": "All areas were investigated."
 
-          # NEW (on the step)
-          process_quality_attributes:
-            "Thorough": "All areas were investigated."
+          # NEW (on the step, using RFC 2119 keywords)
+          process_requirements:
+            "Thorough": "All areas MUST be investigated."
           ```
 
           ## Important Notes
@@ -1493,10 +1493,10 @@ workflows:
             required: true
           step_instruction_files:
             required: true
-        process_quality_attributes:
+        process_requirements:
           "New Format Used": "All job.yml files use the new format with step_arguments, workflows{} object, and inline step instructions."
           "No Legacy Fields": "No job.yml contains version, root-level steps[], instructions_file, hooks, dependencies, or exposed/hidden fields."
-          "Reviews Migrated": "Old review formats are converted to output-level review blocks or process_quality_attributes."
+          "Reviews Migrated": "Old review formats are converted to output-level review blocks or process_requirements."
           "Instructions Inlined": "All step instructions are inlined in the job.yml — no instructions_file references remain."
           "Jobs Parse Successfully": "Calling `get_workflows` from the Deepwork tool shows all expected jobs."
 
@@ -1682,7 +1682,7 @@ workflows:
           job_definitions:
             required: true
         outputs: {}
-        process_quality_attributes:
+        process_requirements:
           "Legacy Job Skills Removed": "Legacy skill folders for each job are removed from `.claude/skills/` and `.gemini/skills/`."
           "Deepwork Skill Removed": "The `deepwork` skill folder has been removed from `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` (now provided by the plugin system)."
           "Rules Folder Removed": "`.deepwork/rules/` folder is gone."
@@ -1708,7 +1708,7 @@ workflows:
       Key schema rules:
       - `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` and `json_schema`
       - `workflows` is an object keyed by workflow name, each with {summary, steps[]}
-      - Each step has {name, instructions (inline string), inputs, outputs, process_quality_attributes}
+      - Each step has {name, instructions (inline string), inputs, outputs, process_requirements}
       - Inputs/outputs reference step_arguments by name
       - No `version`, no root-level `steps[]`, no `instructions_file`, no hooks, no dependencies
 
@@ -1806,7 +1806,7 @@ workflows:
              - Include helpful examples
              - Clarify ambiguous instructions
              - Update quality criteria if needed
-             - If you identify problems in the outcomes of steps, those usually should be reflected in an update to the output-level `review` blocks or `process_quality_attributes` for that step in `job.yml`
+             - If you identify problems in the outcomes of steps, those usually should be reflected in an update to the output-level `review` blocks or `process_requirements` for that step in `job.yml`
 
           3. **Keep instructions concise**
              - Avoid redundancy - don't repeat the same guidance in multiple places
@@ -1990,7 +1990,7 @@ workflows:
             required: true
           scripts:
             required: false
-        process_quality_attributes:
+        process_requirements:
           "Conversation Analyzed": "The agent reviewed the conversation for DeepWork job executions."
           "Confusion Identified": "The agent identified points of confusion, errors, or inefficiencies."
           "Instructions Improved": "Job instructions were updated to address identified issues."

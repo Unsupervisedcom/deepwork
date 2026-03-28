@@ -228,20 +228,20 @@ class TestWorkflowStep:
         assert step.name == "empty_step"
         assert step.inputs == {}
         assert step.outputs == {}
-        assert step.process_quality_attributes == {}
+        assert step.process_requirements == {}
 
-    def test_from_dict_with_process_quality_attributes(self) -> None:
-        """Test creating WorkflowStep with process quality attributes."""
+    def test_from_dict_with_process_requirements(self) -> None:
+        """Test creating WorkflowStep with process requirements."""
         data = {
             "name": "careful_step",
             "instructions": "Do carefully.",
-            "process_quality_attributes": {
+            "process_requirements": {
                 "thoroughness": "Must cover all cases",
             },
         }
         step = WorkflowStep.from_dict(data)
 
-        assert step.process_quality_attributes == {"thoroughness": "Must cover all cases"}
+        assert step.process_requirements == {"thoroughness": "Must cover all cases"}
 
 
 class TestWorkflow:

@@ -318,7 +318,7 @@ workflows:
         outputs:
           constitution.md:
             required: true
-        process_quality_attributes:
+        process_requirements:
           priorities_captured: "The agent gathered specific development priorities from the user."
           principles_defined: "Governance principles are clear and actionable."
           technology_guidance: "The constitution includes relevant technology stack preferences."
@@ -627,7 +627,7 @@ workflows:
         outputs:
           spec.md:
             required: true
-        process_quality_attributes:
+        process_requirements:
           user_stories_complete: "All user stories are written in standard format (As a... I want... So that...)."
           acceptance_criteria: "Each story has clear, testable acceptance criteria."
           non_functional_requirements: "Performance, security, and accessibility requirements are captured."
@@ -907,7 +907,7 @@ workflows:
         outputs:
           spec.md:
             required: true
-        process_quality_attributes:
+        process_requirements:
           ambiguities_identified: "Underspecified areas were systematically identified."
           questions_asked: "The agent asked structured questions to resolve each ambiguity."
           answers_documented: "Clarification answers are recorded in the spec document."
@@ -1326,7 +1326,7 @@ workflows:
             required: true
           architecture.md:
             required: true
-        process_quality_attributes:
+        process_requirements:
           architecture_defined: "The high-level architecture is clearly described."
           technology_justified: "Technology choices are explained with rationale."
           data_model_complete: "The data model is documented with all entities and relationships."
@@ -1707,7 +1707,7 @@ workflows:
         outputs:
           tasks.md:
             required: true
-        process_quality_attributes:
+        process_requirements:
           user_story_organization: "Tasks are organized by user story."
           dependencies_sequenced: "Task dependencies are correctly ordered."
           parallel_tasks_marked: "Parallelizable tasks are identified with [P] markers."
@@ -2108,7 +2108,7 @@ workflows:
             required: true
           test_files:
             required: true
-        process_quality_attributes:
+        process_requirements:
           prerequisites_met: "All spec/plan/tasks artifacts were validated before starting."
           task_order_followed: "Tasks were executed in dependency order."
           tests_written: "Tests are created alongside or before implementation."

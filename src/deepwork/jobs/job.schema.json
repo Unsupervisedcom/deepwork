@@ -198,9 +198,9 @@
             "$ref": "#/$defs/step_output_ref"
           }
         },
-        "process_quality_attributes": {
+        "process_requirements": {
           "type": "object",
-          "description": "Quality attributes about the process or work done (not about specific output files). Each key is an attribute name, and the value is a statement (not a question) that should be true if the work was done correctly. These are evaluated against the agent's work_summary — the reviewer checks whether the described work meets these criteria. Example: {'tests_written': 'Unit tests were written before implementation code.', 'user_consulted': 'The user was asked to confirm the approach before proceeding.'}",
+          "description": "Process requirements for the work done in this step (not about specific output files). Each key is a requirement name, and the value is a requirement statement using RFC 2119 keywords (MUST, SHOULD, MAY, etc.). These are evaluated against the agent's work_summary — the reviewer checks compliance with each requirement. Example: {'tests_written': 'Unit tests MUST be written before implementation code.', 'user_consulted': 'The user SHOULD be asked to confirm the approach before proceeding.'}",
           "additionalProperties": {
             "type": "string",
             "minLength": 1
