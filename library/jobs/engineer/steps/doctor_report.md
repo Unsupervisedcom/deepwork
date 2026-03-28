@@ -15,6 +15,9 @@ remediation instructions. Serves two audiences: the developer fixing issues, and
    - If CI is not configured, note the impact on artifact generation (Req 5)
 4. Determine overall readiness: READY (all pass), NOT READY (critical failures),
    or PARTIAL (non-critical issues, implement can proceed with caveats)
+   - Missing test instructions, broken required context links, or missing `CODEOWNERS`
+     should normally be treated as NOT READY unless the repository documents an explicit
+     exception elsewhere.
 
 ## Output Format
 
