@@ -533,7 +533,7 @@ class TestFinishedStep:
             await _finish_step(tools, outputs={"output1": "x.md"}, override="skip")
 
     @pytest.mark.asyncio
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.8).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_file_path_list_validated(self, tools: WorkflowTools, project_root: Path) -> None:
         """file_path type accepts a list of paths and validates each."""
@@ -550,7 +550,7 @@ class TestFinishedStep:
             )
 
     @pytest.mark.asyncio
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.8).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.5.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_file_path_list_all_exist(self, tools: WorkflowTools, project_root: Path) -> None:
         await _start_main_workflow(tools)
@@ -596,7 +596,7 @@ class TestAbortWorkflow:
         assert len(resp.stack) == 0
 
     @pytest.mark.asyncio
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.6.8).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.6.5, JOBS-REQ-001.6.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_abort_returns_to_parent(self, tools: WorkflowTools, project_root: Path) -> None:
         """Aborting a nested workflow returns to the parent."""
