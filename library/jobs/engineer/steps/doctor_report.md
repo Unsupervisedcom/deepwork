@@ -37,6 +37,7 @@ remediation instructions. Serves two audiences: the developer fixing issues, and
 | 6 | Referenced files exist | PASS/FAIL | [N/N passed] |
 | 7 | Referenced files valid syntax | PASS/FAIL | [N/N passed] |
 | 8 | CODEOWNERS file present | PASS/FAIL | [path or "not found"] |
+| 9 | No placeholder HTML links in context files | PASS/FAIL | [N found or "none"] |
 
 ## Remediation
 

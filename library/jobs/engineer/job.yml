@@ -264,6 +264,7 @@ steps:
           "References Resolved": "All file references from agent.md are checked for existence."
           "Links Valid": "Symlinks and relative paths resolve correctly."
           "Syntax Valid": "Referenced files are syntactically valid for their format (YAML, JSON, Markdown, etc.)."
+          "Placeholder Links Absent": "No referenced markdown file contains placeholder HTML links (e.g. `<a>text</a>` without an href attribute)."
 
   - id: doctor_report
     name: "Doctor Report"
@@ -285,7 +286,7 @@ steps:
     reviews:
       - run_each: .deepwork/tmp/doctor_report.md
         quality_criteria:
-          "All Checks Covered": "Report covers agent.md existence, domain declaration, agent instructions, and context file integrity."
+          "All Checks Covered": "Report covers agent.md existence, domain declaration, agent instructions, context file integrity, and placeholder HTML links."
           "Pass/Fail Clear": "Each check has a clear pass or fail status."
           "Remediation Provided": "Failed checks include specific remediation instructions."
           "Repo Job Recommended": "If labels, branch protection, or milestones need attention, the report recommends the repo library job's doctor workflow."
