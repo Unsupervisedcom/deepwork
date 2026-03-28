@@ -6,19 +6,21 @@ Synthesize everything observed during the conversation into a structured process
 
 ## Task
 
-### 1. Draft from memory
+### 1. Reconstruct the process
 
-Reflect on the entire conversation from the observe step. Write a first draft of the process document capturing every action, tool, decision, and outcome you observed.
+Reflect on the entire conversation from the observe step. If any compaction has happened, use `CLAUDE_CODE_SESSION_ID` to locate and read the session transcript (glob `~/.claude/projects/**/sessions/<session_id>/*.jsonl`) to recover what was lost before drafting.
 
-If the conversation feels incomplete (e.g., compaction happened and you lost context), tell the user what you remember and ask them to fill in the gaps before drafting.
+Write a first draft of the process document capturing every action, tool, decision, and outcome you observed.
 
 ### 2. Clarify with the user
 
-After drafting, use AskUserQuestion to confirm three things (ask all at once if possible):
+After drafting, use AskUserQuestion to address two things (combine into one question where possible):
 
-1. **Purpose**: "What is the goal of this process? What does it accomplish?"
-2. **Name**: "What would you call this process?" (suggest a name based on what you observed)
-3. **Variable vs. fixed inputs**: "Which inputs change every time you run this, and which stay the same?"
+1. **Remaining reasoning gaps**: Ask about any actions whose purpose you are still uncertain about after reviewing the conversation or transcript.
+2. **Key facts** — only ask about items where you cannot answer from what was explicitly stated or clearly demonstrated during the observation:
+   - **Purpose**: What is the goal of this process? What does it accomplish?
+   - **Name**: What would you call this process? (suggest a name based on what you observed)
+   - **Variable vs. fixed inputs**: Which inputs change every time you run this, and which stay the same?
 
 ### 3. Amend the document
 

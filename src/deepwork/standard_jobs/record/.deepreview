@@ -11,13 +11,7 @@ job_definition_review:
       (steps/*.md) holistically. Check that they form a coherent, well-structured
       workflow that an AI agent can execute reliably.
 
-      ## Reference Material
-
-      For reference on correct job structure and best practices, read the following files from your plugin:
-      - `job.yml.template` — canonical job.yml structure with all supported fields
-      - `job.yml.example` — a complete working example (competitive research job)
-      - `step_instruction.md.template` — expected structure for step instruction files
-      - `research_report_job_best_practices.md` — design patterns for report-type jobs
+      When reviewing, apply DeepWork job and step-instruction best practices: a canonical `job.yml` structure with all supported fields, clear example workflows, well-structured step instruction files, and sensible design patterns for report-type jobs. Base your review only on the provided `job.yml` and `steps/*.md` files; do not assume access to any additional reference files.
 
       ## What to Check
 
@@ -98,10 +92,13 @@ record_step_requirements:
 
       ### steps/document.md
       - JOBS-REQ-011.3.3: MUST instruct the agent to synthesize the process from conversation
-        history. Look for instructions about reflecting on the conversation or using context.
-      - JOBS-REQ-011.3.4: MUST instruct the agent to ask the user to confirm: the process
-        purpose, a name for the process, and which inputs are variable vs. fixed. All three
-        clarification topics must be present.
+        history, and to read the session transcript (via CLAUDE_CODE_SESSION_ID glob) when
+        compaction has occurred. Look for instructions about reflecting on the conversation
+        AND a fallback to reading transcript files.
+      - JOBS-REQ-011.3.4: MUST instruct the agent to ask the user to clarify remaining reasoning gaps
+        and, only when the facts were not explicitly stated or clearly demonstrated during observation,
+        confirm: the process purpose, a name for the process, and which inputs are variable vs. fixed.
+        All three confirmation topics must be present, conditioned on what was observable.
 
       ### steps/reflect.md
       - JOBS-REQ-011.4.3: The reflection MUST identify stumbling blocks with mitigation
