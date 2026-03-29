@@ -137,8 +137,8 @@ uv run pytest           # Run tests
 ### 1. Plugin Installation
 Users install the DeepWork plugin for their AI agent CLI:
 ```
-/plugin marketplace add https://github.com/Unsupervisedcom/deepwork
-/plugin install deepwork@deepwork-plugins
+claude plugin marketplace add Unsupervisedcom/deepwork
+claude plugin install deepwork@deepwork-plugins
 ```
 The plugin provides:
 - `/deepwork` skill for invoking workflows

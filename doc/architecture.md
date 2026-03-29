@@ -349,8 +349,8 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
 1. **Install Plugin** (one-time):
    ```
    # In Claude Code
-   /plugin marketplace add https://github.com/Unsupervisedcom/deepwork
-   /plugin install deepwork@deepwork-plugins
+   claude plugin marketplace add Unsupervisedcom/deepwork
+   claude plugin install deepwork@deepwork-plugins
    ```
 
 2. **Define a Job** (once per job type):

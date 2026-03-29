@@ -8,8 +8,8 @@ DeepWork fixes this with two systems: **Workflows** that force agents to follow 
 
 ### Claude Code (Terminal)
 ```
-/plugin marketplace add https://github.com/Unsupervisedcom/deepwork
-/plugin install deepwork@deepwork-plugins
+claude plugin marketplace add Unsupervisedcom/deepwork
+claude plugin install deepwork@deepwork-plugins
 ```
 
 Then start a new session and define your first job:
@@ -95,8 +95,8 @@ Workflows ensure the agent follows the right process. Reviews ensure the output 
 
 In Claude Code:
 ```
-/plugin marketplace add https://github.com/Unsupervisedcom/deepwork
-/plugin install deepwork@deepwork-plugins
+claude plugin marketplace add Unsupervisedcom/deepwork
+claude plugin install deepwork@deepwork-plugins
 ```
 
 Start a new Claude Code session after installing.
