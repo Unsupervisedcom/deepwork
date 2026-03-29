@@ -1630,7 +1630,7 @@ class TestExternalRunnerSelfReview:
     async def test_self_review_feedback_contains_instructions(
         self, tools_self_review: WorkflowTools, project_root: Path
     ) -> None:
-        """Test that feedback contains subagent and override instructions."""
+        """Test that feedback contains task invocation and override instructions."""
         await tools_self_review.start_workflow(
             StartWorkflowInput(
                 goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
@@ -1644,16 +1644,17 @@ class TestExternalRunnerSelfReview:
 
         assert response.feedback is not None
         assert "Quality review required" in response.feedback
-        assert "subagent" in response.feedback.lower()
+        # Uses Reviews mechanism: format_for_claude output with subagent_type
+        assert "subagent_type" in response.feedback
         assert "quality_review_override_reason" in response.feedback
-        assert ".deepwork/tmp/quality_review_" in response.feedback
+        assert ".deepwork/tmp/review_instructions/" in response.feedback
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.10).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_self_review_writes_instructions_file(
         self, tools_self_review: WorkflowTools, project_root: Path
     ) -> None:
-        """Test that an instructions file is written to .deepwork/tmp/."""
+        """Test that an instructions file is written to .deepwork/tmp/review_instructions/."""
         await tools_self_review.start_workflow(
             StartWorkflowInput(
                 goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
@@ -1665,7 +1666,8 @@ class TestExternalRunnerSelfReview:
             FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID)
         )
 
-        review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
+        review_dir = project_root / ".deepwork" / "tmp" / "review_instructions"
+        review_files = list(review_dir.glob("*.md"))
         assert len(review_files) == 1
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.10).
@@ -1685,7 +1687,8 @@ class TestExternalRunnerSelfReview:
             FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID)
         )
 
-        review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
+        review_dir = project_root / ".deepwork" / "tmp" / "review_instructions"
+        review_files = list(review_dir.glob("*.md"))
         content = review_files[0].read_text()
 
         # step1 has review criteria "Output Valid": "Is the output valid?"
@@ -1707,7 +1710,8 @@ class TestExternalRunnerSelfReview:
             FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID)
         )
 
-        review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
+        review_dir = project_root / ".deepwork" / "tmp" / "review_instructions"
+        review_files = list(review_dir.glob("*.md"))
         content = review_files[0].read_text()
 
         assert "output1.md" in content
@@ -1715,26 +1719,26 @@ class TestExternalRunnerSelfReview:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.10).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    async def test_self_review_file_named_with_session_and_step(
+    async def test_self_review_file_named_with_step_id(
         self, tools_self_review: WorkflowTools, project_root: Path
     ) -> None:
-        """Test that review file name includes session and step IDs."""
-        resp = await tools_self_review.start_workflow(
+        """Test that review file name includes the step ID via Reviews naming."""
+        await tools_self_review.start_workflow(
             StartWorkflowInput(
                 goal="Test", job_name="test_job", workflow_name="main", session_id=SESSION_ID
             )
         )
-        session_id = resp.begin_step.session_id
         (project_root / "output1.md").write_text("output")
 
         await tools_self_review.finished_step(
             FinishedStepInput(outputs={"output1.md": "output1.md"}, session_id=SESSION_ID)
         )
 
-        expected_file = (
-            project_root / ".deepwork" / "tmp" / f"quality_review_{session_id}_main_step1.md"
-        )
-        assert expected_file.exists()
+        # Uses Reviews mechanism: file named with deterministic review ID
+        # containing step_id (e.g. "step1-quality-review--output1.md--<hash>.md")
+        review_dir = project_root / ".deepwork" / "tmp" / "review_instructions"
+        review_files = list(review_dir.glob("step1-quality-review--*.md"))
+        assert len(review_files) == 1
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.9, JOBS-REQ-001.4.10).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -1815,7 +1819,8 @@ class TestExternalRunnerSelfReview:
             )
         )
 
-        review_files = list((project_root / ".deepwork" / "tmp").glob("quality_review_*.md"))
+        review_dir = project_root / ".deepwork" / "tmp" / "review_instructions"
+        review_files = list(review_dir.glob("*.md"))
         content = review_files[0].read_text()
         assert "I used the XYZ library for this step." in content
 
