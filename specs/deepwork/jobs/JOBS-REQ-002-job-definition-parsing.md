@@ -2,7 +2,7 @@
 
 ## Overview
 
-Job definitions are YAML files (`job.yml`) that declare multi-step workflows for AI agents. The parser reads these files, validates them against a JSON Schema, parses them into typed dataclasses, and performs semantic validation of dependencies, file inputs, reviews, and workflows. This is the foundation of the DeepWork configuration model.
+Job definitions are YAML files (`job.yml`) that declare multi-step workflows for AI agents. The parser reads these files, validates them against a JSON Schema, parses them into typed dataclasses, and performs semantic validation. Steps are defined inline within workflows as `WorkflowStep` objects, with shared `step_arguments` defining the input/output contract.
 
 ## Requirements
 
@@ -19,101 +19,83 @@ Job definitions are YAML files (`job.yml`) that declare multi-step workflows for
 
 1. The job definition MUST be validated against the DeepWork JSON Schema (`job.schema.json`) before dataclass parsing.
 2. The parser MUST raise `ParseError` if schema validation fails, including the validation path and message.
-3. The JSON Schema MUST require the following top-level fields: `name`, `version`, `summary`, `common_job_info_provided_to_all_steps_at_runtime`, `steps`.
-4. The `name` field MUST match the pattern `^[a-z][a-z0-9_]*$` (lowercase letters, numbers, underscores, must start with a letter).
-5. The `version` field MUST match the pattern `^\d+\.\d+\.\d+$` (semantic versioning).
-6. The `summary` field MUST have a minimum length of 1 and a maximum length of 200 characters.
-7. The `common_job_info_provided_to_all_steps_at_runtime` field MUST have a minimum length of 1.
-8. The `steps` array MUST contain at least 1 item.
-9. The top-level object MUST NOT allow additional properties beyond those defined in the schema.
+3. The JSON Schema MUST require the following top-level fields: `name`, `summary`.
+4. The `name` field MUST match the pattern `^[a-z][a-z0-9_]*$`.
+5. The `summary` field MUST be a non-empty string.
+6. The top-level object MUST support `step_arguments` (array) and `workflows` (object) fields.
 
-### JOBS-REQ-002.3: Step Definition
+### JOBS-REQ-002.3: Step Arguments
 
-1. Each step MUST have the following required fields: `id`, `name`, `description`, `instructions_file`, `outputs`, `reviews`.
-2. The step `id` MUST match the pattern `^[a-z][a-z0-9_]*$`.
-3. The `instructions_file` field MUST be a non-empty string specifying a path relative to the job directory.
-4. The `outputs` field MUST be an object mapping output names to output specifications.
-5. The `reviews` field MUST be an array (MAY be empty).
-6. Steps MAY have optional fields: `inputs`, `dependencies`, `hooks`, `stop_hooks`, `exposed`, `hidden`, `agent`.
-7. The `exposed` field MUST default to `false`.
-8. Steps MUST NOT allow additional properties beyond those defined in the schema.
+1. Each step argument MUST have `name`, `description`, and `type` fields (all required).
+2. The `type` field MUST be one of: `"string"` or `"file_path"`.
+3. The `name` and `description` fields MUST be non-empty strings.
+4. Step arguments MAY have an optional `review` field containing a `ReviewBlock`.
+5. Step arguments MAY have an optional `json_schema` field containing a JSON Schema object for output validation.
 
-### JOBS-REQ-002.4: Step Inputs
+### JOBS-REQ-002.4: ReviewBlock
 
-1. Step inputs MUST be one of two types: user parameter inputs or file inputs.
-2. A user parameter input MUST have `name` and `description` fields (both required, non-empty strings).
-3. A file input MUST have `file` and `from_step` fields (both required, non-empty strings).
-4. A `StepInput` MUST correctly report `is_user_input()` as `True` when both `name` and `description` are set.
-5. A `StepInput` MUST correctly report `is_file_input()` as `True` when both `file` and `from_step` are set.
+1. Each `ReviewBlock` MUST have `strategy` and `instructions` fields (both required).
+2. The `strategy` field MUST be one of: `"individual"` or `"matches_together"`.
+3. The `instructions` field MUST be a non-empty string.
+4. A `ReviewBlock` MAY have an optional `agent` field (dict with string keys/values).
+5. A `ReviewBlock` MAY have an optional `additional_context` field (dict with boolean values, e.g., `all_changed_filenames`, `unchanged_matching_files`).
 
-### JOBS-REQ-002.5: Step Outputs
+### JOBS-REQ-002.5: WorkflowStep Definition
 
-1. Each output specification MUST have `type`, `description`, and `required` fields (all required).
-2. The `type` field MUST be one of: `"file"` or `"files"`.
-3. The `description` field MUST be a non-empty string.
-4. The `required` field MUST be a boolean.
+1. Each `WorkflowStep` MUST have a `name` field (required, non-empty string).
+2. Each `WorkflowStep` MUST have exactly one of `instructions` (inline string) or `sub_workflow` (reference to another workflow). A `ParseError` MUST be raised if a step has both or neither.
+3. The `instructions` field, when present, MUST be a non-empty string containing the step instructions inline (NOT a file path).
+4. Steps MAY have `inputs` and `outputs` dicts mapping step_argument names to `StepInputRef` / `StepOutputRef` objects.
+5. Steps MAY have a `process_requirements` dict mapping attribute names to quality statements.
 
-### JOBS-REQ-002.6: Hook Definitions
+### JOBS-REQ-002.6: StepInputRef and StepOutputRef
 
-1. The `hooks` object MUST support three lifecycle event keys: `after_agent`, `before_tool`, `before_prompt`.
-2. The `hooks` object MUST NOT allow additional properties beyond these three events.
-3. Each hook event MUST contain an array of hook actions.
-4. Each hook action MUST be exactly one of: `prompt` (inline text), `prompt_file` (path to file), or `script` (path to shell script).
-5. The deprecated `stop_hooks` field MUST be migrated to `hooks.after_agent` during parsing.
-6. When both `stop_hooks` and `hooks.after_agent` are present, the `stop_hooks` entries MUST be appended to the existing `after_agent` hooks.
-7. The `HookAction` class MUST provide `is_prompt()`, `is_prompt_file()`, and `is_script()` predicate methods.
+1. A `StepInputRef` MUST have an `argument_name` field referencing a declared `step_argument`.
+2. A `StepInputRef` MAY have a `required` field (boolean, default: `true`).
+3. A `StepOutputRef` MUST have an `argument_name` field referencing a declared `step_argument`.
+4. A `StepOutputRef` MAY have a `required` field (boolean, default: `true`).
+5. A `StepOutputRef` MAY have a `review` field containing a `ReviewBlock` that overrides or supplements the step_argument-level review.
 
-### JOBS-REQ-002.7: Review Definitions
+### JOBS-REQ-002.7: SubWorkflowRef
 
-1. Each review MUST have `run_each` and `quality_criteria` fields (both required).
-2. The `run_each` field MUST be a non-empty string: either `"step"` or the name of a specific output.
-3. The `quality_criteria` field MUST be an object mapping criterion names to criterion questions (both non-empty strings).
-4. The `quality_criteria` object MUST contain at least 1 property.
-5. Reviews MAY have an optional `additional_review_guidance` string field.
+1. A `SubWorkflowRef` MUST have a `workflow_name` field (required, non-empty string).
+2. A `SubWorkflowRef` MAY have a `workflow_job` field. When absent, the reference is to a workflow in the same job.
 
 ### JOBS-REQ-002.8: Workflow Definitions
 
-1. Each workflow MUST have `name`, `summary`, and `steps` fields (all required).
-2. The workflow `name` MUST match the pattern `^[a-z][a-z0-9_]*$`.
-3. The workflow `summary` MUST be a non-empty string with a maximum length of 200 characters.
-4. The workflow `steps` array MUST contain at least 1 item.
-5. Each workflow step entry MUST be either a step ID string (sequential execution) or an array of step ID strings (concurrent execution).
-6. When a step entry is a string, it SHALL be parsed as a `WorkflowStepEntry` with `is_concurrent=False`.
-7. When a step entry is a list, it SHALL be parsed as a `WorkflowStepEntry` with `is_concurrent=True`.
-8. Workflows MAY have an optional `agent` field. When present, it MUST be a non-empty string specifying the agent type for delegating the entire workflow to a sub-agent.
+1. Each workflow MUST have `summary` and `steps` fields (both required).
+2. The workflow name is the key in the `workflows` dict and MUST match the pattern `^[a-z][a-z0-9_]*$`.
+3. The workflow `summary` MUST be a non-empty string.
+4. The workflow `steps` array MUST contain at least 1 `WorkflowStep` item (inline, not references).
+5. Workflows MAY have an optional `agent` field (non-empty string) for delegating to a sub-agent.
+6. Workflows MAY have an optional `common_job_info_provided_to_all_steps_at_runtime` field (string) for shared context.
+7. Workflows MAY have an optional `post_workflow_instructions` field (string) returned on workflow completion.
 
-### JOBS-REQ-002.9: Semantic Validation - Dependencies
+### JOBS-REQ-002.9: Semantic Validation - Argument References
 
-1. The parser MUST validate that all step dependencies reference existing step IDs. A `ParseError` MUST be raised for any dependency referencing a non-existent step.
-2. The parser MUST detect circular dependencies using topological sort and raise `ParseError` if a cycle is found.
+1. All `StepInputRef` and `StepOutputRef` argument names MUST reference existing entries in `step_arguments`. A `ParseError` MUST be raised for any reference to a non-existent step_argument.
 
-### JOBS-REQ-002.10: Semantic Validation - File Inputs
+### JOBS-REQ-002.10: Semantic Validation - Sub-Workflow References
 
-1. For every file input, the `from_step` MUST reference an existing step. A `ParseError` MUST be raised otherwise.
-2. For every file input, the `from_step` MUST be listed in the consuming step's `dependencies` array. A `ParseError` MUST be raised otherwise.
+1. For same-job `SubWorkflowRef` (no `workflow_job`), the `workflow_name` MUST reference an existing workflow in the same job. A `ParseError` MUST be raised otherwise.
+2. Cross-job `SubWorkflowRef` (with `workflow_job`) SHALL be validated at runtime, not parse time.
 
-### JOBS-REQ-002.11: Semantic Validation - Reviews
+### JOBS-REQ-002.11: Semantic Validation - Step Name Uniqueness
 
-1. For every review, if `run_each` is not `"step"`, it MUST match the name of a declared output on that step. A `ParseError` MUST be raised otherwise, listing the valid values.
+1. Step names MUST be unique within each workflow. A `ParseError` MUST be raised for duplicate step names.
 
-### JOBS-REQ-002.12: Semantic Validation - Workflows
+### JOBS-REQ-002.12: JobDefinition Navigation Methods
 
-1. The parser MUST reject duplicate workflow names within the same job.
-2. The parser MUST reject workflow step references to non-existent step IDs.
-3. The parser MUST reject duplicate step IDs within a single workflow.
+1. `get_argument(name)` MUST return the `StepArgument` if found, or `None` otherwise.
+2. `get_workflow(name)` MUST return the `Workflow` if found, or `None` otherwise.
 
-### JOBS-REQ-002.13: Orphaned Step Detection
+### JOBS-REQ-002.13: Workflow Navigation Methods
 
-1. After validation, the parser MUST identify steps not included in any workflow.
-2. Orphaned steps MUST be logged as warnings.
-3. Orphaned step detection MUST return the list of orphaned step IDs.
+1. `Workflow.get_step(step_name)` MUST return the `WorkflowStep` if found, or `None` otherwise.
+2. `Workflow.get_step_index(step_name)` MUST return the 0-based index of the step, or `None` if not found.
+3. `Workflow.step_names` MUST return the ordered list of step names.
 
-### JOBS-REQ-002.14: JobDefinition Navigation Methods
+### JOBS-REQ-002.14: Template and Library Job Schema Compliance
 
-1. `get_step(step_id)` MUST return the Step if found, or `None` otherwise.
-2. `get_workflow_for_step(step_id)` MUST return the Workflow containing the step, or `None` if standalone.
-3. `get_next_step_in_workflow(step_id)` MUST return the next step ID in sequence, or `None` if last.
-4. `get_prev_step_in_workflow(step_id)` MUST return the previous step ID in sequence, or `None` if first.
-5. `get_step_position_in_workflow(step_id)` MUST return a 1-based `(position, total)` tuple, or `None`.
-6. `get_step_entry_position_in_workflow(step_id)` MUST return `(1-based entry position, total entries, WorkflowStepEntry)`, or `None`.
-7. `get_concurrent_step_info(step_id)` MUST return `(1-based position in group, total in group)` if the step is in a concurrent group, or `None` otherwise.
+1. All `job.yml.example` files in `src/deepwork/standard_jobs/deepwork_jobs/templates/` MUST validate against the job JSON schema.
+2. All `job.yml` files in `library/jobs/*/` MUST validate against the job JSON schema.

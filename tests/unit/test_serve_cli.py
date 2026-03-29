@@ -1,4 +1,4 @@
-"""Tests for serve CLI command --external-runner option."""
+"""Tests for serve CLI command options."""
 
 from unittest.mock import MagicMock, patch
 
@@ -7,40 +7,35 @@ from click.testing import CliRunner
 from deepwork.cli.serve import serve
 
 
-class TestServeExternalRunnerOption:
-    """Tests for --external-runner CLI option on the serve command."""
+class TestServeCLI:
+    """Tests for serve CLI command."""
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.6).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.serve._serve_mcp")
-    def test_default_external_runner_is_none(self, mock_serve: MagicMock, tmp_path: str) -> None:
-        """Test that --external-runner defaults to None when not specified."""
+    def test_default_invocation(self, mock_serve: MagicMock, tmp_path: str) -> None:
+        """Test that serve calls _serve_mcp with correct defaults."""
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
             result = runner.invoke(serve, ["--path", td])
             if result.exit_code != 0 and result.exception:
                 raise result.exception
 
-        # _serve_mcp should be called with external_runner=None
         mock_serve.assert_called_once()
-        call_args = mock_serve.call_args
-        assert call_args[0][4] is None or call_args.kwargs.get("external_runner") is None
+        call_args = mock_serve.call_args[0]
+        # _serve_mcp(project_path, transport, port, platform)
+        assert call_args[1] == "stdio"  # transport
+        assert call_args[2] == 8000  # port
+        assert call_args[3] is None  # platform
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    @patch("deepwork.cli.serve._serve_mcp")
-    def test_external_runner_claude(self, mock_serve: MagicMock, tmp_path: str) -> None:
-        """Test that --external-runner claude passes 'claude' through."""
+    def test_external_runner_option_accepted(self, tmp_path: str) -> None:
+        """Test that --external-runner is accepted (hidden, backwards compat)."""
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
-            result = runner.invoke(serve, ["--path", td, "--external-runner", "claude"])
-            if result.exit_code != 0 and result.exception:
-                raise result.exception
-
-        mock_serve.assert_called_once()
-        # external_runner is the 5th positional arg (index 4)
-        call_args = mock_serve.call_args[0]
-        assert call_args[4] == "claude"
+            with patch("deepwork.cli.serve._serve_mcp"):
+                result = runner.invoke(serve, ["--path", td, "--external-runner", "claude"])
+                # Should not fail — option is still accepted for backwards compat
+                assert result.exit_code == 0
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -52,13 +47,25 @@ class TestServeExternalRunnerOption:
         assert result.exit_code != 0
         assert "Invalid value" in result.output or "invalid" in result.output.lower()
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.6).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_help_shows_external_runner(self) -> None:
-        """Test that --help shows the --external-runner option."""
+    @patch("deepwork.cli.serve._serve_mcp")
+    def test_platform_option(self, mock_serve: MagicMock, tmp_path: str) -> None:
+        """Test that --platform passes through to _serve_mcp."""
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            result = runner.invoke(serve, ["--path", td, "--platform", "claude"])
+            if result.exit_code != 0 and result.exception:
+                raise result.exception
+
+        mock_serve.assert_called_once()
+        call_args = mock_serve.call_args[0]
+        assert call_args[3] == "claude"  # platform
+
+    def test_help_shows_options(self) -> None:
+        """Test that --help shows the available options."""
         runner = CliRunner()
         result = runner.invoke(serve, ["--help"])
 
         assert result.exit_code == 0
-        assert "--external-runner" in result.output
-        assert "claude" in result.output
+        assert "--path" in result.output
+        assert "--transport" in result.output
+        assert "--platform" in result.output

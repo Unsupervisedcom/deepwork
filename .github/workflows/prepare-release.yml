@@ -203,6 +203,15 @@ jobs:
           # Verify the change
           grep "^version = " pyproject.toml
 
+      # --- Both: update __init__.py version ---
+      - name: Update __init__.py version
+        run: |
+          VERSION="${{ steps.versions.outputs.pypi_version }}"
+          sed -i "s/^__version__ = \".*\"/__version__ = \"$VERSION\"/" src/deepwork/__init__.py
+
+          # Verify the change
+          grep "^__version__" src/deepwork/__init__.py
+
       # --- Both: update plugin.json files ---
       - name: Update plugin versions
         run: |
@@ -215,11 +224,10 @@ jobs:
             grep '"version"' "$PLUGIN_FILE"
           done
 
-      # --- Stable-only: update marketplace.json ---
+      # --- Both: update marketplace.json ---
       - name: Update marketplace plugin versions
-        if: steps.versions.outputs.is_prerelease == 'false'
         run: |
-          VERSION="${{ steps.versions.outputs.pypi_version }}"
+          VERSION="${{ steps.versions.outputs.plugin_version }}"
 
           # Update the deepwork plugin version in marketplace.json
           # Use jq to update only the deepwork plugin entry's version
@@ -265,6 +273,7 @@ jobs:
         run: |
           VERSION="${{ steps.versions.outputs.pypi_version }}"
           git add CHANGELOG.md pyproject.toml uv.lock .claude-plugin/marketplace.json \
+            src/deepwork/__init__.py \
             $(find . -path '*/.claude-plugin/plugin.json')
           git commit -m "Release v${VERSION}"
           git push -u origin "release/${VERSION}"
@@ -300,6 +309,7 @@ jobs:
 
           # Commit version bumps on the current (source) branch
           git add pyproject.toml uv.lock plugins/claude/.mcp.json \
+            .claude-plugin/marketplace.json \
             $(find . -path '*/.claude-plugin/plugin.json')
           git commit -m "Pre-release v${PYPI_VERSION}"
 

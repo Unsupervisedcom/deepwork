@@ -11,7 +11,7 @@ import yaml
 
 from deepwork.jobs.mcp.state import StateManager
 from deepwork.jobs.mcp.status import StatusWriter, _derive_display_name
-from deepwork.jobs.parser import JobDefinition, Workflow, WorkflowStepEntry
+from deepwork.jobs.parser import JobDefinition, Workflow, WorkflowStep
 
 SESSION_ID = "test-session-001"
 AGENT_ID = "agent-abc"
@@ -38,26 +38,24 @@ def state_manager(project_root: Path) -> StateManager:
 def _make_job(
     name: str = "test_job",
     summary: str = "A test job",
-    workflows: list[Workflow] | None = None,
+    workflows: dict[str, Workflow] | None = None,
 ) -> JobDefinition:
     """Create a minimal JobDefinition for testing."""
     if workflows is None:
-        workflows = [
-            Workflow(
+        workflows = {
+            "main": Workflow(
                 name="main",
                 summary="Main workflow",
-                step_entries=[
-                    WorkflowStepEntry(step_ids=["step1"]),
-                    WorkflowStepEntry(step_ids=["step2"]),
+                steps=[
+                    WorkflowStep(name="step1"),
+                    WorkflowStep(name="step2"),
                 ],
             )
-        ]
+        }
     return JobDefinition(
         name=name,
-        version="1.0.0",
         summary=summary,
-        common_job_info_provided_to_all_steps_at_runtime="",
-        steps=[],
+        step_arguments=[],
         job_dir=Path("/tmp/fake"),
         workflows=workflows,
     )
@@ -156,14 +154,14 @@ class TestWriteManifest:
         wf_b = Workflow(
             name="beta_wf",
             summary="Beta",
-            step_entries=[WorkflowStepEntry(step_ids=["s1"])],
+            steps=[WorkflowStep(name="s1")],
         )
         wf_a = Workflow(
             name="alpha_wf",
             summary="Alpha",
-            step_entries=[WorkflowStepEntry(step_ids=["s2"])],
+            steps=[WorkflowStep(name="s2")],
         )
-        jobs = [_make_job(workflows=[wf_b, wf_a])]
+        jobs = [_make_job(workflows={"beta_wf": wf_b, "alpha_wf": wf_a})]
         status_writer.write_manifest(jobs)
 
         data = yaml.safe_load(status_writer.manifest_path.read_text())
@@ -381,7 +379,7 @@ class TestWriteSessionStatus:
         await state_manager.go_to_step(
             session_id=SESSION_ID,
             step_id="step1",
-            entry_index=0,
+            step_index=0,
             invalidate_step_ids=["step1"],
         )
         await state_manager.start_step(SESSION_ID, "step1")

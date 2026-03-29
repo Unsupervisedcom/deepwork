@@ -35,7 +35,7 @@ def _create_session_file(
         "workflow_name": workflow_name,
         "goal": goal,
         "current_step_id": current_step_id,
-        "current_entry_index": 0,
+        "current_step_index": 0,
         "step_progress": step_progress or {},
         "started_at": "2026-01-15T10:00:00+00:00",
         "completed_at": None,
@@ -56,35 +56,24 @@ def _create_minimal_job(parent: Path, job_name: str, steps: list[str] | None = N
 
     job_dir = parent / job_name
     job_dir.mkdir(parents=True, exist_ok=True)
-    steps_dir = job_dir / "steps"
-    steps_dir.mkdir(exist_ok=True)
 
-    step_defs = []
     workflow_steps = []
     for step_id in steps:
-        (steps_dir / f"{step_id}.md").write_text(f"# {step_id}\n\nInstructions for {step_id}.")
-        step_defs.append(
-            f"""  - id: {step_id}
-    name: {step_id.replace("_", " ").title()}
-    description: {step_id} description
-    instructions_file: steps/{step_id}.md
-    outputs: {{}}
-    reviews: []"""
+        workflow_steps.append(
+            f"""      - name: {step_id}
+        instructions: |
+          Instructions for {step_id}."""
         )
-        workflow_steps.append(f"      - {step_id}")
 
     (job_dir / "job.yml").write_text(
         f"""name: {job_name}
-version: "1.0.0"
 summary: Test job {job_name}
-common_job_info_provided_to_all_steps_at_runtime: Common info for {job_name}
-
-steps:
-{chr(10).join(step_defs)}
+step_arguments: []
 
 workflows:
-  - name: main
+  main:
     summary: Main workflow
+    common_job_info_provided_to_all_steps_at_runtime: Common info for {job_name}
     steps:
 {chr(10).join(workflow_steps)}
 """
@@ -192,7 +181,7 @@ class TestGetStackActiveSessions:
                     "started_at": "2026-01-15T10:00:00+00:00",
                     "completed_at": "2026-01-15T10:05:00+00:00",
                     "outputs": {},
-                    "notes": None,
+                    "work_summary": None,
                     "quality_attempts": 0,
                 },
                 "step2": {
@@ -200,7 +189,7 @@ class TestGetStackActiveSessions:
                     "started_at": "2026-01-15T10:06:00+00:00",
                     "completed_at": None,
                     "outputs": {},
-                    "notes": None,
+                    "work_summary": None,
                     "quality_attempts": 0,
                 },
             },

@@ -1,6 +1,6 @@
 [project]
 name = "deepwork"
-version = "0.9.8"
+version = "0.10.0"
 description = "Framework for enabling AI agents to perform complex, multi-step work tasks"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,7 +23,7 @@ dependencies = [
     "pyyaml>=6.0",
     "click>=8.1.0",
     "jsonschema>=4.17.0",
-    "fastmcp>=2.0",
+    "fastmcp>=2.14",
     "pydantic>=2.0",
     "mcp>=1.0.0",
     "aiofiles>=24.0.0",

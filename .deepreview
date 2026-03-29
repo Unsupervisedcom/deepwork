@@ -14,6 +14,8 @@ prompt_best_practices:
       - "platform/**/*.md"
       - "src/deepwork/standard_jobs/**/*.md"
       - "library/jobs/**/*.md"  # library job step instructions are prompt-heavy files
+      - "library/jobs/*/job.yml"          # inline step instructions in job.yml are prompt-heavy
+      - "src/deepwork/standard_jobs/*/job.yml"  # standard job inline instructions
       - "**/.deepreview"       # .deepreview files contain inline agent instructions — prompt-heavy content
   review:
     strategy: individual
@@ -249,6 +251,7 @@ update_documents_relating_to_src_deepwork:
       - "CLAUDE.md"
       - "doc/architecture.md"
       - "doc/mcp_interface.md"
+      - "doc/job_yml_guidance.md"  # Describes job.yml runtime behavior — must stay in sync with parser/schema
       - "doc/doc-specs.md"
       - "doc/platforms/**"
       - "src/deepwork/hooks/README.md"
@@ -264,6 +267,7 @@ update_documents_relating_to_src_deepwork:
       - CLAUDE.md (project structure, tech stack, CLI commands, architecture)
       - doc/architecture.md (detailed architecture, module descriptions, data flow)
       - doc/mcp_interface.md (MCP tool parameters, return values, server config)
+      - doc/job_yml_guidance.md (job.yml field descriptions, runtime behavior, review cascade)
       - doc/doc-specs.md (doc spec format, parser behavior, quality criteria)
       - doc/platforms/claude/ (Claude-specific hooks, CLI config, learnings)
       - doc/platforms/gemini/ (Gemini-specific hooks, CLI config, learnings)
@@ -430,36 +434,35 @@ deepreview_config_quality:
         and a specific recommendation.
 
 job_schema_instruction_compatibility:
-  description: "Verify deepwork_jobs instruction files, templates, and examples are compatible with the job schema."
+  description: "Verify deepwork_jobs job.yml inline instructions are compatible with the job schema."
   match:
     include:
       - "src/deepwork/jobs/job.schema.json"
-      - "src/deepwork/standard_jobs/deepwork_jobs/steps/*.md"
-      - "src/deepwork/standard_jobs/deepwork_jobs/templates/*"
       - "src/deepwork/standard_jobs/deepwork_jobs/job.yml"
+      - "src/deepwork/standard_jobs/deepwork_reviews/job.yml"
+      - "src/deepwork/standard_jobs/deepwork_jobs/templates/job.yml.*"  # Templates users copy — must match schema
+      - "library/jobs/*/job.yml"
   review:
     strategy: matches_together
     additional_context:
       unchanged_matching_files: true
     instructions: |
-      When the job schema or deepwork_jobs instruction files change, verify they
-      are still compatible with each other.
+      When the job schema, standard job definitions, or library job definitions
+      change, verify they are still compatible with each other.
 
       Read src/deepwork/jobs/job.schema.json to understand the current schema.
-      Then read each instruction file, template, and example in
-      src/deepwork/standard_jobs/deepwork_jobs/ and check:
+      Then read each job.yml (standard and library) and check:
 
-      1. **Field references**: Every field name mentioned in prose instructions,
-         templates, or examples must exist in the schema at the correct level.
-         Pay special attention to root-level vs step-level fields — a field
-         that exists on steps may not exist at the root, and vice versa.
+      1. **Field references**: Every field name referenced in inline step
+         instructions must exist in the schema at the correct level.
+         Pay special attention to step_arguments vs workflow vs step fields.
 
       2. **Required vs optional**: If instructions say a field is required,
          verify the schema agrees. If instructions say a field is optional,
          verify the schema doesn't require it.
 
-      3. **Schema structure**: Template files and examples that show YAML
-         structure must match the schema's property names and nesting.
+      3. **Schema structure**: Any YAML examples shown in inline instructions
+         must match the schema's property names and nesting.
 
       4. **Terminology consistency**: Instructions should use the same field
          names as the schema (e.g., if the schema uses
@@ -467,7 +470,7 @@ job_schema_instruction_compatibility:
          should not call it "description" or "job_description").
 
       Output Format:
-      - PASS: All instruction files are compatible with the schema.
+      - PASS: All job definitions are compatible with the schema.
       - FAIL: Incompatibilities found. List each with the file path, line
         reference, the incompatible content, and what the schema actually says.
 
@@ -526,3 +529,35 @@ nix_claude_wrapper:
       Output Format:
       - PASS: The claude wrapper is correctly configured with both plugin dirs.
       - FAIL: Describe what is missing or broken.
+
+mcp_interface_consumer_sync:
+  description: "When MCP tool interfaces change, verify that skills, hooks, and platform content still reference correct parameter names, types, and behavior."
+  match:
+    include:
+      - "src/deepwork/jobs/mcp/tools.py"
+      - "src/deepwork/jobs/mcp/schemas.py"
+      - "src/deepwork/jobs/mcp/server.py"
+  review:
+    strategy: matches_together
+    additional_context:
+      unchanged_matching_files: true
+    instructions: |
+      When the MCP tool interfaces (tools.py, schemas.py, server.py) change,
+      verify that downstream consumers still accurately describe the MCP
+      interface. Check each of these files for stale parameter names, removed
+      fields, renamed concepts, or outdated behavior descriptions:
+
+      - platform/skill-body.md
+      - plugins/claude/skills/deepwork/SKILL.md
+      - plugins/gemini/skills/deepwork/SKILL.md
+      - plugins/claude/hooks/post_compact.sh
+      - doc/mcp_interface.md
+
+      For each file, compare any MCP parameter names, tool names, response
+      fields, or workflow behavior descriptions against the actual schemas
+      and tool implementations. Flag anything that no longer matches.
+
+      Output Format:
+      - PASS: All consumer files are consistent with the current MCP interface.
+      - FAIL: List each inconsistency with the file, the stale content, and
+        what it should say based on the current implementation.

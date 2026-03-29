@@ -26,6 +26,7 @@ from typing import Any
 import aiofiles
 
 from deepwork.jobs.mcp.schemas import (
+    ArgumentValue,
     StackEntry,
     StepHistoryEntry,
     StepProgress,
@@ -67,15 +68,7 @@ class StateManager:
         self._lock = asyncio.Lock()
 
     def _state_file(self, session_id: str, agent_id: str | None = None) -> Path:
-        """Get the path to a state file.
-
-        Args:
-            session_id: Claude Code session ID
-            agent_id: Optional agent ID for sub-agent scoped state
-
-        Returns:
-            Path to the state file
-        """
+        """Get the path to a state file."""
         session_dir = self.sessions_dir / f"session-{session_id}"
         if agent_id:
             return session_dir / f"agent_{agent_id}.json"
@@ -84,15 +77,7 @@ class StateManager:
     async def _read_stack(
         self, session_id: str, agent_id: str | None = None
     ) -> list[WorkflowSession]:
-        """Read the workflow stack from disk.
-
-        Args:
-            session_id: Claude Code session ID
-            agent_id: Optional agent ID for sub-agent scoped state
-
-        Returns:
-            List of WorkflowSession objects (the stack), or empty list if no state file
-        """
+        """Read the workflow stack from disk."""
         state_file = self._state_file(session_id, agent_id)
         if not state_file.exists():
             return []
@@ -193,19 +178,7 @@ class StateManager:
         first_step_id: str,
         agent_id: str | None = None,
     ) -> WorkflowSession:
-        """Create a new workflow session and push onto the stack.
-
-        Args:
-            session_id: Claude Code session ID (storage key)
-            job_name: Name of the job
-            workflow_name: Name of the workflow
-            goal: User's goal for this workflow
-            first_step_id: ID of the first step
-            agent_id: Optional agent ID for sub-agent scoped state
-
-        Returns:
-            New WorkflowSession
-        """
+        """Create a new workflow session and push onto the stack."""
         async with self._lock:
             stack = await self._read_stack(session_id, agent_id)
             now = datetime.now(UTC).isoformat()
@@ -216,7 +189,7 @@ class StateManager:
                 workflow_name=workflow_name,
                 goal=goal,
                 current_step_id=first_step_id,
-                current_entry_index=0,
+                current_step_index=0,
                 step_progress={},
                 started_at=now,
                 status="active",
@@ -258,22 +231,7 @@ class StateManager:
             return session
 
     def resolve_session(self, session_id: str, agent_id: str | None = None) -> WorkflowSession:
-        """Resolve the active session (top of stack) synchronously.
-
-        This is a synchronous convenience wrapper that reads state from disk
-        using synchronous I/O. For async contexts, prefer using _read_stack
-        directly within an async with self._lock block.
-
-        Args:
-            session_id: Claude Code session ID
-            agent_id: Optional agent ID for sub-agent scoped state
-
-        Returns:
-            Top-of-stack WorkflowSession
-
-        Raises:
-            StateError: If no active workflow session
-        """
+        """Resolve the active session (top of stack) synchronously."""
         state_file = self._state_file(session_id, agent_id)
         if not state_file.exists():
             raise StateError("No active workflow session. Use start_workflow to begin a workflow.")
@@ -292,17 +250,14 @@ class StateManager:
 
         return WorkflowSession.from_dict(stack_data[-1])
 
-    async def start_step(self, session_id: str, step_id: str, agent_id: str | None = None) -> None:
-        """Mark a step as started.
-
-        Args:
-            session_id: Claude Code session ID
-            step_id: Step ID to start
-            agent_id: Optional agent ID for sub-agent scoped state
-
-        Raises:
-            StateError: If no active session
-        """
+    async def start_step(
+        self,
+        session_id: str,
+        step_id: str,
+        input_values: dict[str, ArgumentValue] | None = None,
+        agent_id: str | None = None,
+    ) -> None:
+        """Mark a step as started, optionally storing input values."""
         async with self._lock:
             stack = await self._read_stack(session_id, agent_id)
             if not stack:
@@ -317,9 +272,12 @@ class StateManager:
                 session.step_progress[step_id] = StepProgress(
                     step_id=step_id,
                     started_at=now,
+                    input_values=input_values or {},
                 )
             else:
                 session.step_progress[step_id].started_at = now
+                if input_values:
+                    session.step_progress[step_id].input_values = input_values
 
             # Append to step history
             session.step_history.append(StepHistoryEntry(step_id=step_id, started_at=now))
@@ -331,22 +289,11 @@ class StateManager:
         self,
         session_id: str,
         step_id: str,
-        outputs: dict[str, str | list[str]],
-        notes: str | None = None,
+        outputs: dict[str, ArgumentValue],
+        work_summary: str | None = None,
         agent_id: str | None = None,
     ) -> None:
-        """Mark a step as completed.
-
-        Args:
-            session_id: Claude Code session ID
-            step_id: Step ID to complete
-            outputs: Map of output names to file path(s)
-            notes: Optional notes
-            agent_id: Optional agent ID for sub-agent scoped state
-
-        Raises:
-            StateError: If no active session
-        """
+        """Mark a step as completed."""
         async with self._lock:
             stack = await self._read_stack(session_id, agent_id)
             if not stack:
@@ -366,7 +313,7 @@ class StateManager:
             progress = session.step_progress[step_id]
             progress.completed_at = now
             progress.outputs = outputs
-            progress.notes = notes
+            progress.work_summary = work_summary
 
             # Update the last step_history entry's finished_at
             if session.step_history and session.step_history[-1].step_id == step_id:
@@ -379,16 +326,8 @@ class StateManager:
     ) -> int:
         """Record a quality gate attempt for a step.
 
-        Args:
-            session_id: Claude Code session ID
-            step_id: Step ID
-            agent_id: Optional agent ID for sub-agent scoped state
-
         Returns:
             Total number of attempts for this step
-
-        Raises:
-            StateError: If no active session
         """
         async with self._lock:
             stack = await self._read_stack(session_id, agent_id)
@@ -411,20 +350,10 @@ class StateManager:
         self,
         session_id: str,
         step_id: str,
-        entry_index: int,
+        step_index: int,
         agent_id: str | None = None,
     ) -> None:
-        """Advance the session to a new step.
-
-        Args:
-            session_id: Claude Code session ID
-            step_id: New current step ID
-            entry_index: Index in workflow step_entries
-            agent_id: Optional agent ID for sub-agent scoped state
-
-        Raises:
-            StateError: If no active session
-        """
+        """Advance the session to a new step."""
         async with self._lock:
             stack = await self._read_stack(session_id, agent_id)
             if not stack:
@@ -434,26 +363,26 @@ class StateManager:
 
             session = stack[-1]
             session.current_step_id = step_id
-            session.current_entry_index = entry_index
+            session.current_step_index = step_index
             await self._write_stack(session_id, stack, agent_id)
 
     async def go_to_step(
         self,
         session_id: str,
         step_id: str,
-        entry_index: int,
+        step_index: int,
         invalidate_step_ids: list[str],
         agent_id: str | None = None,
     ) -> None:
         """Navigate back to a prior step, clearing progress from that step onward.
 
-        Step history is preserved (not cleared) — the step will appear again
+        Step history is preserved (not cleared) -- the step will appear again
         in history when start_step is called, showing the re-execution.
 
         Args:
             session_id: Claude Code session ID
             step_id: Step ID to navigate to
-            entry_index: Index of the target entry in workflow step_entries
+            step_index: Index of the target step in workflow steps
             invalidate_step_ids: Step IDs whose progress should be cleared
             agent_id: Optional agent ID for sub-agent scoped state
 
@@ -476,7 +405,7 @@ class StateManager:
 
             # Update position
             session.current_step_id = step_id
-            session.current_entry_index = entry_index
+            session.current_step_index = step_index
 
             await self._write_stack(session_id, stack, agent_id)
 
@@ -561,39 +490,25 @@ class StateManager:
 
     def get_all_outputs(
         self, session_id: str, agent_id: str | None = None
-    ) -> dict[str, str | list[str]]:
-        """Get all outputs from all completed steps of the top-of-stack session.
-
-        Args:
-            session_id: Claude Code session ID
-            agent_id: Optional agent ID for sub-agent scoped state
-
-        Returns:
-            Merged dict of all output names to file path(s)
-
-        Raises:
-            StateError: If no active session
-        """
+    ) -> dict[str, ArgumentValue]:
+        """Get all outputs from all completed steps of the top-of-stack session."""
         session = self.resolve_session(session_id, agent_id)
-        all_outputs: dict[str, str | list[str]] = {}
+        all_outputs: dict[str, ArgumentValue] = {}
         for progress in session.step_progress.values():
             all_outputs.update(progress.outputs)
         return all_outputs
 
+    def get_step_input_values(
+        self, session_id: str, step_id: str, agent_id: str | None = None
+    ) -> dict[str, ArgumentValue]:
+        """Get stored input values for a specific step."""
+        session = self.resolve_session(session_id, agent_id)
+        if step_id in session.step_progress:
+            return session.step_progress[step_id].input_values
+        return {}
+
     def get_stack(self, session_id: str, agent_id: str | None = None) -> list[StackEntry]:
-        """Get the current workflow stack as StackEntry objects.
-
-        When agent_id is provided, returns the main stack concatenated with
-        the agent's stack, giving the sub-agent visibility into parent context.
-        When agent_id is None, returns only the main stack.
-
-        Args:
-            session_id: Claude Code session ID
-            agent_id: Optional agent ID for sub-agent scoped state
-
-        Returns:
-            List of StackEntry with workflow and step info, bottom to top
-        """
+        """Get the current workflow stack as StackEntry objects."""
         main_file = self._state_file(session_id, agent_id=None)
         main_stack: list[WorkflowSession] = []
         if main_file.exists():
@@ -629,15 +544,7 @@ class StateManager:
         ]
 
     def get_stack_depth(self, session_id: str, agent_id: str | None = None) -> int:
-        """Get the current stack depth.
-
-        Args:
-            session_id: Claude Code session ID
-            agent_id: Optional agent ID for sub-agent scoped state
-
-        Returns:
-            Number of active workflow sessions on the stack
-        """
+        """Get the current stack depth."""
         return len(self.get_stack(session_id, agent_id))
 
     def get_all_session_data(

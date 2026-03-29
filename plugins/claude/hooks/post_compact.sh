@@ -49,7 +49,6 @@ for ((i = 0; i < SESSION_COUNT; i++)); do
     IFS= read -r -d '' WORKFLOW_NAME
     IFS= read -r -d '' GOAL
     IFS= read -r -d '' CURRENT_STEP
-    IFS= read -r -d '' INSTANCE_ID
     IFS= read -r -d '' STEP_NUM
     IFS= read -r -d '' TOTAL_STEPS
     IFS= read -r -d '' COMPLETED
@@ -62,7 +61,6 @@ for ((i = 0; i < SESSION_COUNT; i++)); do
      (.workflow_name // ""), "\u0000",
      (.goal // ""), "\u0000",
      (.current_step_id // ""), "\u0000",
-     (.instance_id // ""), "\u0000",
      (.step_number // ""), "\u0000",
      (.total_steps // ""), "\u0000",
      ((.completed_steps // []) | join(", ")), "\u0000",
@@ -80,11 +78,6 @@ for ((i = 0; i < SESSION_COUNT; i++)); do
 - **Workflow**: ${JOB_NAME}/${WORKFLOW_NAME}
 - **Goal**: $GOAL
 - **Current Step**: $STEP_LABEL"
-
-  if [ -n "$INSTANCE_ID" ]; then
-    CONTEXT="$CONTEXT
-- **Instance**: $INSTANCE_ID"
-  fi
 
   if [ -n "$COMPLETED" ]; then
     CONTEXT="$CONTEXT

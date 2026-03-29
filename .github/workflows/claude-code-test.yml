@@ -68,34 +68,36 @@ jobs:
           job = parse_job_definition(Path('tests/fixtures/jobs/fruits'))
 
           assert job.name == 'fruits'
-          assert job.version == '1.0.0'
-          assert len(job.steps) == 2
-          assert [s.id for s in job.steps] == ['identify', 'classify']
+          assert job.summary is not None
 
-          # Identify step: user input -> file output
-          identify = job.steps[0]
-          assert identify.inputs[0].is_user_input()
-          assert identify.inputs[0].name == 'raw_items'
-          assert identify.outputs[0].name == 'identified_fruits.md'
-          assert identify.dependencies == []
-
-          # Classify step: file input from identify -> file output
-          classify = job.steps[1]
-          assert classify.inputs[0].is_file_input()
-          assert classify.inputs[0].file == 'identified_fruits.md'
-          assert classify.inputs[0].from_step == 'identify'
-          assert classify.outputs[0].name == 'classified_fruits.md'
-          assert classify.dependencies == ['identify']
+          # Step arguments (shared input/output definitions)
+          arg_names = [a.name for a in job.step_arguments]
+          assert 'raw_items' in arg_names
+          assert 'identified_fruits' in arg_names
+          assert 'classified_fruits' in arg_names
 
           # Workflow definition
-          assert len(job.workflows) == 1
-          assert job.workflows[0].name == 'full'
-          assert job.workflows[0].steps == ['identify', 'classify']
+          assert 'full' in job.workflows
+          wf = job.workflows['full']
+          assert wf.step_names == ['identify', 'classify']
 
-          # Validations pass
-          job.validate_dependencies()
-          job.validate_file_inputs()
-          job.validate_workflows()
+          # Identify step: raw_items input -> identified_fruits output
+          identify = wf.get_step('identify')
+          assert identify is not None
+          assert 'raw_items' in identify.inputs
+          assert 'identified_fruits' in identify.outputs
+
+          # Classify step: identified_fruits input -> classified_fruits output
+          classify = wf.get_step('classify')
+          assert classify is not None
+          assert 'identified_fruits' in classify.inputs
+          assert 'classified_fruits' in classify.outputs
+
+          # Validations pass (parse_job_definition already runs these, but verify they don't raise)
+          job.validate_unique_step_names()
+          job.validate_argument_refs()
+          job.validate_sub_workflows()
+          job.validate_step_exclusivity()
 
           print('All fruits fixture validations passed!')
           "

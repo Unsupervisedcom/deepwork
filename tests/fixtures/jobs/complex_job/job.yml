@@ -1,87 +1,86 @@
-# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: competitive_research
-version: "0.1.0"
 summary: "Systematic competitive analysis workflow"
-common_job_info_provided_to_all_steps_at_runtime: |
-  A comprehensive workflow for analyzing competitors in your market segment.
-  Designed for product teams conducting quarterly competitive analysis.
-
-steps:
-  - id: identify_competitors
-    name: "Identify Competitors"
-    description: "Research and list direct and indirect competitors"
-    instructions_file: steps/identify_competitors.md
-    inputs:
-      - name: market_segment
-        description: "The market segment to analyze"
-      - name: product_category
-        description: "Product category"
-    outputs:
-      competitors.md:
-        type: file
-        description: "Vetted list of direct and indirect competitors"
-        required: true
-    dependencies: []
-    reviews: []
-
-  - id: primary_research
-    name: "Primary Research"
-    description: "Analyze competitors' self-presentation"
-    instructions_file: steps/primary_research.md
-    inputs:
-      - file: competitors.md
-        from_step: identify_competitors
-    outputs:
-      primary_research.md:
-        type: file
-        description: "Analysis of competitors' self-presentation"
-        required: true
-      competitor_profiles:
-        type: files
-        description: "Individual competitor profile documents"
-        required: true
-    dependencies:
-      - identify_competitors
-    reviews: []
-
-  - id: secondary_research
-    name: "Secondary Research"
-    description: "Research third-party perspectives on competitors"
-    instructions_file: steps/secondary_research.md
-    inputs:
-      - file: competitors.md
-        from_step: identify_competitors
-      - file: primary_research.md
-        from_step: primary_research
-    outputs:
-      secondary_research.md:
-        type: file
-        description: "Third-party perspectives on competitors"
-        required: true
-    dependencies:
-      - identify_competitors
-      - primary_research
-    reviews: []
-
-  - id: comparative_report
-    name: "Comparative Report"
-    description: "Create detailed comparison matrix"
-    instructions_file: steps/comparative_report.md
-    inputs:
-      - file: primary_research.md
-        from_step: primary_research
-      - file: secondary_research.md
-        from_step: secondary_research
-    outputs:
-      comparison_matrix.md:
-        type: file
-        description: "Detailed comparison matrix across competitors"
-        required: true
-      strengths_weaknesses.md:
-        type: file
-        description: "Strengths and weaknesses analysis"
-        required: true
-    dependencies:
-      - primary_research
-      - secondary_research
-    reviews: []
+step_arguments:
+  - name: market_segment
+    description: "The market segment to analyze"
+    type: string
+  - name: product_category
+    description: "Product category"
+    type: string
+  - name: competitors
+    description: "Vetted list of direct and indirect competitors"
+    type: file_path
+  - name: primary_research
+    description: "Analysis of competitors' self-presentation"
+    type: file_path
+  - name: competitor_profiles
+    description: "Individual competitor profile documents"
+    type: file_path
+  - name: secondary_research
+    description: "Third-party perspectives on competitors"
+    type: file_path
+  - name: comparison_matrix
+    description: "Detailed comparison matrix across competitors"
+    type: file_path
+  - name: strengths_weaknesses
+    description: "Strengths and weaknesses analysis"
+    type: file_path
+workflows:
+  full:
+    summary: "Run the complete competitive research workflow"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      A comprehensive workflow for analyzing competitors in your market segment.
+      Designed for product teams conducting quarterly competitive analysis.
+    steps:
+      - name: identify_competitors
+        instructions: |
+          Research and list direct and indirect competitors in the given market
+          segment and product category. Produce a vetted competitor list.
+        inputs:
+          market_segment:
+            required: true
+          product_category:
+            required: true
+        outputs:
+          competitors:
+            required: true
+      - name: primary_research
+        instructions: |
+          Analyze each competitor's self-presentation including websites, marketing
+          materials, and public communications. Create individual competitor profiles
+          and a summary of primary research findings.
+        inputs:
+          competitors:
+            required: true
+        outputs:
+          primary_research:
+            required: true
+          competitor_profiles:
+            required: true
+      - name: secondary_research
+        instructions: |
+          Research third-party perspectives on competitors including analyst reports,
+          customer reviews, and industry coverage. Synthesize findings into a
+          secondary research document.
+        inputs:
+          competitors:
+            required: true
+          primary_research:
+            required: true
+        outputs:
+          secondary_research:
+            required: true
+      - name: comparative_report
+        instructions: |
+          Create a detailed comparison matrix across all competitors and a
+          strengths/weaknesses analysis based on primary and secondary research.
+        inputs:
+          primary_research:
+            required: true
+          secondary_research:
+            required: true
+        outputs:
+          comparison_matrix:
+            required: true
+          strengths_weaknesses:
+            required: true

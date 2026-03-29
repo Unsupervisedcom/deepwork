@@ -142,6 +142,26 @@ class TestStateManager:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.7.5, JOBS-REQ-003.7.6, JOBS-REQ-003.7.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_start_step_with_input_values(self, state_manager: StateManager) -> None:
+        """Test that start_step stores input_values in step progress."""
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="test_job",
+            workflow_name="main",
+            goal="Complete the task",
+            first_step_id="step1",
+        )
+
+        input_vals: dict[str, str | list[str]] = {"query": "test query", "limit": "10"}
+        await state_manager.start_step(SESSION_ID, "step2", input_values=input_vals)
+        session = state_manager.resolve_session(SESSION_ID)
+
+        assert session.current_step_id == "step2"
+        progress = session.step_progress["step2"]
+        assert progress.input_values == {"query": "test query", "limit": "10"}
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.8.1, JOBS-REQ-003.8.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_complete_step(self, state_manager: StateManager) -> None:
         """Test marking a step as completed."""
         await state_manager.create_session(
@@ -156,7 +176,7 @@ class TestStateManager:
             session_id=SESSION_ID,
             step_id="step1",
             outputs={"report": "output1.md", "data": "output2.md"},
-            notes="Done!",
+            work_summary="Done!",
         )
 
         session = state_manager.resolve_session(SESSION_ID)
@@ -164,9 +184,9 @@ class TestStateManager:
 
         assert progress.completed_at is not None
         assert progress.outputs == {"report": "output1.md", "data": "output2.md"}
-        assert progress.notes == "Done!"
+        assert progress.work_summary == "Done!"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.8.1, JOBS-REQ-003.8.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.9.1, JOBS-REQ-003.9.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_record_quality_attempt(self, state_manager: StateManager) -> None:
         """Test recording quality gate attempts."""
@@ -186,7 +206,7 @@ class TestStateManager:
         attempts = await state_manager.record_quality_attempt(SESSION_ID, "step1")
         assert attempts == 2
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.9.1, JOBS-REQ-003.9.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.10.1, JOBS-REQ-003.10.2, JOBS-REQ-003.10.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_advance_to_step(self, state_manager: StateManager) -> None:
         """Test advancing to a new step."""
@@ -202,9 +222,9 @@ class TestStateManager:
         session = state_manager.resolve_session(SESSION_ID)
 
         assert session.current_step_id == "step2"
-        assert session.current_entry_index == 1
+        assert session.current_step_index == 1
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.10.1, JOBS-REQ-003.10.2, JOBS-REQ-003.10.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.13.1, JOBS-REQ-003.13.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_complete_workflow(self, state_manager: StateManager) -> None:
         """Test marking workflow as complete pops from stack."""
@@ -227,7 +247,7 @@ class TestStateManager:
         state_file = state_manager._state_file(SESSION_ID)
         assert state_file.exists()
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.13.1, JOBS-REQ-003.13.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.12.1, JOBS-REQ-003.12.2, JOBS-REQ-003.12.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_get_all_outputs(self, state_manager: StateManager) -> None:
         """Test getting all outputs from completed steps."""
@@ -252,6 +272,28 @@ class TestStateManager:
         }
         assert len(outputs) == 2
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.10.1, JOBS-REQ-003.10.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_get_step_input_values(self, state_manager: StateManager) -> None:
+        """Test retrieving stored input values for a step."""
+        await state_manager.create_session(
+            session_id=SESSION_ID,
+            job_name="test_job",
+            workflow_name="main",
+            goal="Complete the task",
+            first_step_id="step1",
+        )
+
+        input_vals: dict[str, str | list[str]] = {"target": "competitor_x", "depth": "deep"}
+        await state_manager.start_step(SESSION_ID, "step1", input_values=input_vals)
+
+        retrieved = state_manager.get_step_input_values(SESSION_ID, "step1")
+        assert retrieved == {"target": "competitor_x", "depth": "deep"}
+
+        # Non-existent step returns empty dict
+        retrieved_empty = state_manager.get_step_input_values(SESSION_ID, "nonexistent_step")
+        assert retrieved_empty == {}
+
 
 class TestStateManagerStack:
     """Tests for stack-based workflow nesting."""
@@ -267,7 +309,7 @@ class TestStateManagerStack:
     def state_manager(self, project_root: Path) -> StateManager:
         return StateManager(project_root=project_root, platform="test")
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.12.1, JOBS-REQ-003.12.2, JOBS-REQ-003.12.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.12.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_nested_workflows_stack(self, state_manager: StateManager) -> None:
         """Test that starting workflows pushes onto the stack."""
@@ -303,7 +345,7 @@ class TestStateManagerStack:
 
         assert state_manager.get_stack_depth(SESSION_ID) == 3
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.10.1, JOBS-REQ-003.10.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.11.1, JOBS-REQ-003.11.2, JOBS-REQ-003.11.3, JOBS-REQ-003.11.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_complete_workflow_pops_stack(self, state_manager: StateManager) -> None:
         """Test that completing a workflow pops from stack and resumes parent."""
@@ -331,7 +373,7 @@ class TestStateManagerStack:
         assert resumed is not None
         assert resumed.job_name == "job1"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.12.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.11.1, JOBS-REQ-003.11.2, JOBS-REQ-003.11.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_get_stack(self, state_manager: StateManager) -> None:
         """Test get_stack returns workflow/step info."""
@@ -358,7 +400,7 @@ class TestStateManagerStack:
         assert stack[1].workflow == "job2/wf2"
         assert stack[1].step == "stepA"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.11.1, JOBS-REQ-003.11.2, JOBS-REQ-003.11.3, JOBS-REQ-003.11.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.1, JOBS-REQ-003.6.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_abort_workflow(self, state_manager: StateManager) -> None:
         """Test abort_workflow marks as aborted and pops from stack."""
@@ -387,7 +429,7 @@ class TestStateManagerStack:
         assert resumed.job_name == "job1"
         assert state_manager.get_stack_depth(SESSION_ID) == 1
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.11.1, JOBS-REQ-003.11.2, JOBS-REQ-003.11.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_abort_workflow_no_parent(self, state_manager: StateManager) -> None:
         """Test abort_workflow with no parent workflow."""
@@ -421,7 +463,7 @@ class TestAgentIsolation:
     def state_manager(self, project_root: Path) -> StateManager:
         return StateManager(project_root=project_root, platform="test")
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.1, JOBS-REQ-003.6.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_agent_workflow_isolated_from_main(self, state_manager: StateManager) -> None:
         """Agent workflow doesn't appear in the main stack."""
@@ -446,7 +488,7 @@ class TestAgentIsolation:
         assert len(main_stack) == 1
         assert main_stack[0].workflow == "main_job/main_wf"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_agent_stack_includes_main(self, state_manager: StateManager) -> None:
         """get_stack with agent_id returns main stack + agent stack."""
@@ -472,7 +514,7 @@ class TestAgentIsolation:
         assert agent_stack[0].workflow == "main_job/main_wf"
         assert agent_stack[1].workflow == "agent_job/agent_wf"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.2.3, JOBS-REQ-003.2.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_concurrent_agents_isolated(self, state_manager: StateManager) -> None:
         """Two agents don't see each other's workflows."""
@@ -513,7 +555,7 @@ class TestAgentIsolation:
         main_stack = state_manager.get_stack(SESSION_ID)
         assert len(main_stack) == 1
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.14.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_agent_operations_target_agent_stack(self, state_manager: StateManager) -> None:
         """Operations with agent_id target the agent's stack, not main."""
@@ -547,7 +589,7 @@ class TestAgentIsolation:
         main_session = state_manager.resolve_session(SESSION_ID)
         assert "agent_step1" not in main_session.step_progress
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.2.3, JOBS-REQ-003.2.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.14.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_agent_state_file_path(self, state_manager: StateManager) -> None:
         """Agent state is stored in a separate file."""
@@ -573,7 +615,7 @@ class TestGoToStep:
     def state_manager(self, project_root: Path) -> StateManager:
         return StateManager(project_root=project_root, platform="test")
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.14.5).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.14.7, JOBS-REQ-003.14.8).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_go_to_step_clears_invalidated_progress(
         self, state_manager: StateManager
@@ -597,7 +639,7 @@ class TestGoToStep:
         await state_manager.go_to_step(
             session_id=SESSION_ID,
             step_id="step1",
-            entry_index=0,
+            step_index=0,
             invalidate_step_ids=["step1", "step2"],
         )
 
@@ -605,7 +647,7 @@ class TestGoToStep:
         assert "step1" not in session.step_progress
         assert "step2" not in session.step_progress
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.14.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.14.9).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_go_to_step_preserves_earlier_progress(self, state_manager: StateManager) -> None:
         """Test that go_to_step preserves progress for steps before the target."""
@@ -624,7 +666,7 @@ class TestGoToStep:
         await state_manager.go_to_step(
             session_id=SESSION_ID,
             step_id="step2",
-            entry_index=1,
+            step_index=1,
             invalidate_step_ids=["step2", "step3"],
         )
 
@@ -633,10 +675,10 @@ class TestGoToStep:
         assert "step2" not in session.step_progress  # cleared
         assert "step3" not in session.step_progress  # cleared
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.14.7, JOBS-REQ-003.14.8).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.17.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_go_to_step_updates_position(self, state_manager: StateManager) -> None:
-        """Test that go_to_step updates current_step_id and current_entry_index."""
+        """Test that go_to_step updates current_step_id and current_step_index."""
         await state_manager.create_session(
             session_id=SESSION_ID,
             job_name="test_job",
@@ -650,15 +692,15 @@ class TestGoToStep:
         await state_manager.go_to_step(
             session_id=SESSION_ID,
             step_id="step1",
-            entry_index=0,
+            step_index=0,
             invalidate_step_ids=["step1", "step2", "step3"],
         )
 
         session = state_manager.resolve_session(SESSION_ID)
         assert session.current_step_id == "step1"
-        assert session.current_entry_index == 0
+        assert session.current_step_index == 0
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.14.9).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.4.4, JOBS-REQ-003.17.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_go_to_step_persists_to_disk(
         self, state_manager: StateManager, project_root: Path
@@ -678,7 +720,7 @@ class TestGoToStep:
         await state_manager.go_to_step(
             session_id=SESSION_ID,
             step_id="step1",
-            entry_index=0,
+            step_index=0,
             invalidate_step_ids=["step1", "step2"],
         )
 
@@ -687,7 +729,7 @@ class TestGoToStep:
         loaded = new_manager.resolve_session(SESSION_ID)
 
         assert loaded.current_step_id == "step1"
-        assert loaded.current_entry_index == 0
+        assert loaded.current_step_index == 0
         assert "step1" not in loaded.step_progress
 
 
@@ -705,7 +747,7 @@ class TestCrashResilience:
     def state_manager(self, project_root: Path) -> StateManager:
         return StateManager(project_root=project_root, platform="test")
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.17.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.17.1, JOBS-REQ-003.4.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_invalid_json_treated_as_empty_stack(self, state_manager: StateManager) -> None:
         """Corrupt state file is treated as empty stack, not an unhandled error."""
@@ -721,7 +763,7 @@ class TestCrashResilience:
         with pytest.raises(StateError, match="No active workflow session"):
             state_manager.resolve_session(SESSION_ID)
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.4.4, JOBS-REQ-003.17.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_write_uses_atomic_rename(self, state_manager: StateManager) -> None:
         """State writes use atomic rename (no temp files left behind)."""
@@ -747,8 +789,6 @@ class TestCrashResilience:
         assert "workflow_stack" in data
         assert len(data["workflow_stack"]) == 1
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.17.1, JOBS-REQ-003.4.6).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_no_in_memory_caching(
         self, state_manager: StateManager, project_root: Path
     ) -> None:
@@ -773,8 +813,6 @@ class TestCrashResilience:
         session = state_manager.resolve_session(SESSION_ID)
         assert session.current_step_id == "step2"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.3).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_get_stack_without_agent_returns_main_only(
         self, state_manager: StateManager
     ) -> None:
@@ -932,7 +970,7 @@ class TestStepHistory:
         await state_manager.go_to_step(
             session_id=SESSION_ID,
             step_id="step1",
-            entry_index=0,
+            step_index=0,
             invalidate_step_ids=["step1"],
         )
         await state_manager.start_step(SESSION_ID, "step1")
