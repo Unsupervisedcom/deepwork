@@ -93,52 +93,6 @@ Which type of job should this be?
 | Is this a reusable pattern that other repos might want to copy? | Library Job |
 | Is this only useful for developing DeepWork itself? | Bespoke Job |
 
-## Project Structure
-
-```
-deepwork/
-├── src/deepwork/
-│   ├── cli/              # CLI commands (serve, hook, review, jobs)
-│   ├── core/             # Core logic (doc_spec_parser)
-│   ├── jobs/             # Job discovery, parsing, schema, and MCP server
-│   │   └── mcp/          # MCP server module (the core runtime)
-│   ├── hooks/            # Hook scripts and wrappers
-│   ├── standard_jobs/    # Built-in job definitions (auto-discovered at runtime)
-│   │   ├── deepwork_jobs/
-│   │   └── deepwork_reviews/
-│   ├── review/           # DeepWork Reviews system (.deepreview pipeline)
-│   ├── schemas/          # Definition schemas (deepreview, doc_spec)
-│   └── utils/            # Utilities (fs, git, yaml, validation)
-├── platform/             # Shared platform-agnostic content
-│   └── skill-body.md     # Canonical skill body (source of truth)
-├── plugins/
-│   ├── claude/           # Claude Code plugin
-│   │   ├── .claude-plugin/plugin.json
-│   │   ├── README_REVIEWS.md
-│   │   ├── example_reviews/
-│   │   ├── skills/
-│   │   │   ├── deepwork/SKILL.md
-│   │   │   └── review/SKILL.md
-│   │   ├── hooks/        # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh
-│   │   └── .mcp.json     # MCP server config
-│   └── gemini/           # Gemini CLI extension
-│       └── skills/deepwork/SKILL.md
-├── library/jobs/         # Reusable example jobs
-├── tests/                # Test suite
-├── doc/                  # Documentation
-└── doc/architecture.md   # Detailed architecture document
-```
-
-## Technology Stack
-
-- **Language**: Python 3.11+
-- **Runtime Dependencies**: PyYAML, Click, jsonschema, FastMCP, Pydantic, aiofiles
-- **Dev Dependencies**: Jinja2, GitPython, Rich, pytest, ruff, mypy
-- **Distribution**: uv/pipx/brew for Python package management
-- **Testing**: pytest with pytest-mock
-- **Linting**: ruff
-- **Type Checking**: mypy
-
 ## Debugging Issues
 
 When debugging issues in this codebase, **always consult `doc/debugging_history/`** first. This directory contains documentation of past debugging sessions, including:
@@ -208,24 +162,6 @@ Each step:
 - Create PR for team review
 - Merge to preserve work products for future context
 
-## Editing Standard Jobs
-
-**Standard jobs** (like `deepwork_jobs`) are bundled with DeepWork and discovered at runtime from the Python package. They exist in TWO locations:
-
-1. **Source of truth**: `src/deepwork/standard_jobs/[job_name]/` - The canonical source files
-2. **Runtime copy**: `.deepwork/jobs/[job_name]/` - Copied at runtime by the MCP server
-
-**Edit the source files** in `src/deepwork/standard_jobs/[job_name]/`:
-- `job.yml` - Job definition with inline step instructions, workflows, and step_arguments
-
-### How to Identify Job Types
-
-- **Standard jobs**: Exist in `src/deepwork/standard_jobs/` (currently: `deepwork_jobs`, `deepwork_reviews`)
-- **Library jobs**: Exist in `library/jobs/`
-- **Bespoke jobs**: Exist ONLY in `.deepwork/jobs/` with no corresponding standard_jobs entry
-
-**When creating a new job, always clarify which type it should be.** If uncertain, ask the user.
-
 ## Key Files to Reference
 
 - `doc/architecture.md` - Comprehensive architecture documentation
@@ -234,11 +170,62 @@ Each step:
 
 ## Development Guidelines
 
-1. **Read Before Modifying**: Always read existing code before suggesting changes
-2. **Security**: Avoid XSS, SQL injection, command injection, and OWASP top 10 vulnerabilities
-3. **Simplicity**: Do not over-engineer; make only requested changes
-4. **Testing**: Write tests for new functionality
-5. **Type Safety**: Use type hints for better code quality
-6. **No Auto-Commit**: DO NOT automatically commit changes to git. Let the user review and commit changes themselves.
-7. **Documentation Sync**: When making implementation changes, always update `doc/architecture.md` and `README.md` to reflect those changes. The architecture document must stay in sync with the actual codebase.
-8. **Succinctness**: Jobs, documentation, and code MUST be succinct. Avoid verbose preambles, redundant explanations, and duplicated content. Step instructions should contain only what the agent needs to act — not philosophy, not quality criteria already enforced by the workflow runtime, and not domain tables already in `common_job_info`. If it can be said in one sentence, do not use three.
+### MUST (hard constraints)
+
+1. **No Auto-Commit**: DO NOT automatically commit changes to git. Let the user review and commit changes themselves.
+2. **Security**: Avoid XSS, SQL injection, command injection, and OWASP top 10 vulnerabilities.
+3. **Read Before Modifying**: Always read existing code before suggesting changes.
+
+### SHOULD (strong defaults)
+
+4. **Simplicity**: Do not over-engineer; make only requested changes.
+5. **Testing**: Write tests for new functionality.
+6. **Type Safety**: Use type hints for better code quality.
+7. **Succinctness**: Jobs, documentation, and code MUST be succinct. Avoid verbose preambles, redundant explanations, and duplicated content. Step instructions should contain only what the agent needs to act — not philosophy, not quality criteria already enforced by the workflow runtime, and not domain tables already in `common_job_info`. If it can be said in one sentence, do not use three.
+8. **Documentation Sync**: When making implementation changes, update `doc/architecture.md` and `README.md` to reflect those changes.
+
+## Appendix: Project Structure
+
+```
+deepwork/
+├── src/deepwork/
+│   ├── cli/              # CLI commands (serve, hook, review, jobs)
+│   ├── core/             # Core logic (doc_spec_parser)
+│   ├── jobs/             # Job discovery, parsing, schema, and MCP server
+│   │   └── mcp/          # MCP server module (the core runtime)
+│   ├── hooks/            # Hook scripts and wrappers
+│   ├── standard_jobs/    # Built-in job definitions (auto-discovered at runtime)
+│   │   ├── deepwork_jobs/
+│   │   └── deepwork_reviews/
+│   ├── review/           # DeepWork Reviews system (.deepreview pipeline)
+│   ├── schemas/          # Definition schemas (deepreview, doc_spec)
+│   └── utils/            # Utilities (fs, git, yaml, validation)
+├── platform/             # Shared platform-agnostic content
+│   └── skill-body.md     # Canonical skill body (source of truth)
+├── plugins/
+│   ├── claude/           # Claude Code plugin
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── README_REVIEWS.md
+│   │   ├── example_reviews/
+│   │   ├── skills/
+│   │   │   ├── deepwork/SKILL.md
+│   │   │   └── review/SKILL.md
+│   │   ├── hooks/        # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh
+│   │   └── .mcp.json     # MCP server config
+│   └── gemini/           # Gemini CLI extension
+│       └── skills/deepwork/SKILL.md
+├── library/jobs/         # Reusable example jobs
+├── tests/                # Test suite
+├── doc/                  # Documentation
+└── doc/architecture.md   # Detailed architecture document
+```
+
+## Appendix: Technology Stack
+
+- **Language**: Python 3.11+
+- **Runtime Dependencies**: PyYAML, Click, jsonschema, FastMCP, Pydantic, aiofiles
+- **Dev Dependencies**: Jinja2, GitPython, Rich, pytest, ruff, mypy
+- **Distribution**: uv/pipx/brew for Python package management
+- **Testing**: pytest with pytest-mock
+- **Linting**: ruff
+- **Type Checking**: mypy
