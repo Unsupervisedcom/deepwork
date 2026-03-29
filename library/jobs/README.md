@@ -16,6 +16,7 @@ This walks you through configuring `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` so the Dee
 
 | Job | Description |
 |-----|-------------|
+| [Music](./music) | AI-assisted music production: project setup, sound design (VSTs), arrangement, mix, and iterative review |
 | [Research](./research) | Multi-workflow research suite — deep investigation, quick summaries, material ingestion, and reproduction planning |
 | [Platform Engineer](./platform_engineer) | Incident response, observability, CI/CD, releases, security, cost management, and infrastructure |
 | [Repo](./repo) | Audit and configure repositories — labels, branch protection, milestones, and boards |
@@ -68,6 +69,14 @@ Each job in this library follows the same structure as the `.deepwork/jobs` subf
 library/jobs/
 ├── .deepreview              # Review rules for library job quality
 ├── README.md
+├── music/                   # AI-assisted music production
+│   ├── job.yml
+│   ├── AGENTS.md            # Agent context and learnings
+│   ├── CLAUDE.md
+│   ├── steps/               # Step instruction files
+│   ├── hooks/
+│   ├── scripts/
+│   └── templates/
 ├── platform_engineer/       # Platform engineering workflows
 │   ├── job.yml
 │   ├── AGENTS.md            # Agent context and learnings

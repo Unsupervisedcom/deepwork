@@ -25,9 +25,9 @@ Read the project brief, then methodically assign a sound source to every major r
 
 6. **Reference tracks check** — For each reference track in the project brief, identify which sound role it informs and note the connection explicitly.
 
-5. **Document stems** — Note which sounds will be bounced to `music/[track_name]/stems/` as `.wav` files and their approximate format (e.g., 24-bit 44.1 kHz).
+7. **Document stems** — Note which sounds will be bounced to `music/[track_name]/stems/` as `.wav` files and their approximate format (e.g., 24-bit 44.1 kHz).
 
-7. **Write `sound_design_notes.md`**.
+8. **Write `sound_design_notes.md`**.
 
 ## Output format
 
