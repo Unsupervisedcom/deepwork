@@ -94,3 +94,8 @@ Job definitions are YAML files (`job.yml`) that declare multi-step workflows for
 1. `Workflow.get_step(step_name)` MUST return the `WorkflowStep` if found, or `None` otherwise.
 2. `Workflow.get_step_index(step_name)` MUST return the 0-based index of the step, or `None` if not found.
 3. `Workflow.step_names` MUST return the ordered list of step names.
+
+### JOBS-REQ-002.14: Template and Library Job Schema Compliance
+
+1. All `job.yml.example` files in `src/deepwork/standard_jobs/deepwork_jobs/templates/` MUST validate against the job JSON schema.
+2. All `job.yml` files in `library/jobs/*/` MUST validate against the job JSON schema.
