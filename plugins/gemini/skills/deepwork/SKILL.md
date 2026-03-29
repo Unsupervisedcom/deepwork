@@ -43,6 +43,19 @@ To create a new job, use the MCP tools:
    - `goal`: a description of what the new job should accomplish
 3. Follow the instructions returned by the MCP tools as you progress through the workflow
 
+## Quality Gates
+
+Steps may have quality criteria. When you call `finished_step`:
+- Outputs are evaluated against review criteria
+- If any fail, you get `needs_work` with feedback — fix issues and call `finished_step` again
+- After passing, you get the next step or completion
+
+## Nested Workflows and Navigation
+
+- Starting a workflow while one is active pushes onto a stack. Check the `stack` field in responses.
+- Use `abort_workflow` with an explanation if a workflow cannot be completed.
+- Use `go_to_step` to revisit an earlier step — clears progress from that step onward.
+
 ## Intent Parsing
 
 When the user invokes `/deepwork`, parse their intent:
