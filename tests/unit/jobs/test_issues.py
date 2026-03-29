@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import yaml
-
 import pytest
+import yaml
 
 from deepwork.jobs.issues import Issue, detect_issues, format_issues_for_agent
 

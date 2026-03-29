@@ -48,6 +48,7 @@ deepwork/                       # DeepWork tool repository
 │       │   └── doc_spec_parser.py   # Doc spec parsing
 │       ├── jobs/               # Job discovery, parsing, and MCP server
 │       │   ├── discovery.py    # Job discovery
+│       │   ├── issues.py       # Job definition issue detection
 │       │   ├── parser.py       # Job definition parsing
 │       │   ├── schema.py       # Job schema validation
 │       │   ├── job.schema.json # JSON schema for job definitions
@@ -807,6 +808,7 @@ All MCP server code lives in `src/deepwork/jobs/mcp/`.
 The FastMCP server definition that:
 - Creates and configures the MCP server instance
 - Registers the workflow tools and review tools (`get_review_instructions`, `get_configured_reviews`, `mark_review_as_passed`)
+- Detects job definition issues at startup via `issues.py` and appends warnings to tool responses
 - Provides server instructions for agents
 
 ### Tools (`jobs/mcp/tools.py`)
