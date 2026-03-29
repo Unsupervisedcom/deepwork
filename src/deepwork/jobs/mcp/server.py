@@ -21,7 +21,7 @@ from typing import Any
 from fastmcp import FastMCP
 
 from deepwork.jobs.discovery import load_all_jobs
-from deepwork.jobs.issues import detect_issues, format_issues_for_agent
+from deepwork.jobs.issues import Issue, detect_issues, format_issues_for_agent
 from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     ArgumentValue,
@@ -423,8 +423,6 @@ def _build_startup_instructions(
     return (
         "## Available Workflows\n\n"
         "This project has DeepWork workflows installed. "
-        "Call `get_workflows` to see all available workflows.\n\n"
-        + _STATIC_INSTRUCTIONS
+        "Call `get_workflows` to see all available workflows and use them for "
+        "anything the user requests that seem related.\n\n" + _STATIC_INSTRUCTIONS
     )
-
-
