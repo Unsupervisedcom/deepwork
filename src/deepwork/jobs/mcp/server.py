@@ -437,10 +437,8 @@ def _build_startup_instructions(
     """
     if issues:
         return (
-            _STATIC_INSTRUCTIONS
-            + "\n## **IMPORTANT: ISSUE DETECTED**\n\n"
-            "Suggest repairing this immediately to the user.\n\n"
-            + format_issues_for_agent(issues)
+            _STATIC_INSTRUCTIONS + "\n## **IMPORTANT: ISSUE DETECTED**\n\n"
+            "Suggest repairing this immediately to the user.\n\n" + format_issues_for_agent(issues)
         )
 
     # No issues — list available workflows
@@ -454,12 +452,9 @@ def _build_startup_instructions(
             lines.append(f"- **{job.name}/{wf_name}**: {wf.summary}")
 
     return (
-        _STATIC_INSTRUCTIONS
-        + "\n## Available Workflows\n\n"
+        _STATIC_INSTRUCTIONS + "\n## Available Workflows\n\n"
         "This project uses DeepWork to manage complex processes with confidence. "
         "The following workflows are installed — if the user mentions wanting to do "
         "something that sounds like any of these, use the `/deepwork` skill to start "
-        "the appropriate workflow.\n\n"
-        + "\n".join(lines)
-        + "\n"
+        "the appropriate workflow.\n\n" + "\n".join(lines) + "\n"
     )

@@ -440,6 +440,7 @@ job_schema_instruction_compatibility:
       - "src/deepwork/jobs/job.schema.json"
       - "src/deepwork/standard_jobs/deepwork_jobs/job.yml"
       - "src/deepwork/standard_jobs/deepwork_reviews/job.yml"
+      - "src/deepwork/standard_jobs/deepwork_jobs/templates/job.yml.*"  # Templates users copy — must match schema
       - "library/jobs/*/job.yml"
   review:
     strategy: matches_together
