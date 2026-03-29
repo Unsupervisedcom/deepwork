@@ -157,6 +157,14 @@ class TestRunReview:
             run_review(tmp_path, "claude")
 
 
+def _get_tool_names(server: Any) -> set[str]:
+    """Get registered tool names from a FastMCP server (works with v2 and v3)."""
+    import asyncio
+
+    tools = asyncio.run(server.list_tools())
+    return {t.name for t in tools}
+
+
 class TestReviewToolRegistration:
     """Test that the review tool is registered on the MCP server."""
 
@@ -170,14 +178,14 @@ class TestReviewToolRegistration:
             enable_quality_gate=False,
             platform="claude",
         )
-        assert "get_review_instructions" in server._tool_manager._tools
+        assert "get_review_instructions" in _get_tool_names(server)
 
         # Without platform (defaults to claude)
         server_default = create_server(
             project_root=tmp_path,
             enable_quality_gate=False,
         )
-        assert "get_review_instructions" in server_default._tool_manager._tools
+        assert "get_review_instructions" in _get_tool_names(server_default)
 
     def test_get_configured_reviews_tool_is_registered(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-008.1.1).
@@ -189,7 +197,7 @@ class TestReviewToolRegistration:
             project_root=tmp_path,
             enable_quality_gate=False,
         )
-        assert "get_configured_reviews" in server._tool_manager._tools
+        assert "get_configured_reviews" in _get_tool_names(server)
 
 
 class TestGetConfiguredReviews:
@@ -417,19 +425,22 @@ class TestMarkReviewAsPassedMCPTool:
             project_root=tmp_path,
             enable_quality_gate=False,
         )
-        assert "mark_review_as_passed" in server._tool_manager._tools
+        assert "mark_review_as_passed" in _get_tool_names(server)
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.2.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_review_id_is_required_string_parameter(self, tmp_path: Path) -> None:
         """The review_id parameter MUST be a required string."""
+        import asyncio
+
         from deepwork.jobs.mcp.server import create_server
 
         server = create_server(
             project_root=tmp_path,
             enable_quality_gate=False,
         )
-        tool = server._tool_manager._tools["mark_review_as_passed"]
+        tools = asyncio.run(server.list_tools())
+        tool = next(t for t in tools if t.name == "mark_review_as_passed")
         params = tool.parameters
         assert "review_id" in params["properties"]
         assert params["properties"]["review_id"]["type"] == "string"
