@@ -54,12 +54,3 @@ Read the assembly requirements, decompose the assembly into sub-functions, and e
 - ...
 ```
 
-## Quality Criteria
-
-- Every assembly sub-function is addressed by either an OTS component or explicitly flagged for custom design.
-- Each OTS component includes a supplier name and part number or search URL.
-- The make vs. buy decision for each sub-component is briefly justified.
-
-## Context
-
-Maximizing OTS component use reduces cost, lead time, and design risk. Custom parts should only be designed when no standard alternative exists or when the standard alternative is significantly more expensive at the target production scale.

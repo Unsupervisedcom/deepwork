@@ -49,13 +49,3 @@ Read the OTS components list and custom parts plan, then produce a complete BOM.
 - [Any sourcing caveats, substitution options, or procurement dependencies]
 ```
 
-## Quality Criteria
-
-- BOM includes every OTS component and custom part from the assembly.
-- Each line item has a unit cost and extended cost; a total assembly cost is summed.
-- Each OTS part has a supplier; custom parts note fabrication method in the supplier column.
-- Lead time or fabrication time estimate is provided for each line item.
-
-## Context
-
-The BOM is used directly by `evaluate_manufacturability` to calculate per-unit cost across scale tiers and identify high-cost or long-lead items. Accuracy here is critical — gaps in cost or lead time will degrade the quality of scale recommendations.

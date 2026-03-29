@@ -87,13 +87,3 @@ Read the part specification and apply the manufacturing method guidelines from t
 - [Any spec ambiguity that blocks finalizing this recommendation]
 ```
 
-## Quality Criteria
-
-- The recommended process is justified against the part spec (geometry, loads, volume).
-- Prototype and production recommendations are given separately where they differ.
-- A specific material is recommended with grade and key properties noted.
-- DFM notes cover the critical fabrication risks for the chosen process.
-
-## Context
-
-This step bridges specification and fabrication. The output is used by `document_part` to produce a datasheet ready for fabricator handoff, and by `generate_bom` to estimate unit cost at the assembly level.

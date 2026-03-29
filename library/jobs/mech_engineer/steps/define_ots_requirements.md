@@ -64,12 +64,3 @@ Ask structured questions to understand what the OTS part must do, then produce a
 - [What the part must mate with, fit inside, or mount to]
 ```
 
-## Quality Criteria
-
-- The part's required function is stated with enough detail to evaluate candidates against it.
-- Key dimensional constraints are documented.
-- Quantity needed and an acceptable unit cost range are recorded.
-
-## Context
-
-Precise requirements here prevent wasted time researching incompatible options. Over-constraining (specifying exact part numbers rather than requirements) limits the search; under-constraining leads to candidates that fail at integration. Strike the balance: specify the *need*, not the solution.

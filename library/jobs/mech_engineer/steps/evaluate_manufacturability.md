@@ -101,13 +101,3 @@ Read the assembly requirements (for the target scale context) and the BOM (for p
 | [part_name]     | OTS            | OTS            | OTS (volume buy)   |
 ```
 
-## Quality Criteria
-
-- Evaluation explicitly addresses prototype, small-batch, and production scale tiers.
-- Total unit cost is calculated for each tier.
-- Parts whose manufacturing method should change between tiers are explicitly identified with justification.
-- High-cost or long-lead items that dominate the BOM at each scale are identified with mitigation suggestions.
-
-## Context
-
-This is the final step of the `design_assembly` workflow. The output drives sourcing strategy, investment timing (e.g., when to order mold tooling), and product pricing. The `evaluate_at_scale` workflow uses a similar analysis for existing assemblies without re-running the full design flow.

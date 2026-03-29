@@ -70,13 +70,3 @@ Read the assembly requirements and OTS component list to identify every sub-func
 [Repeat for each custom part]
 ```
 
-## Quality Criteria
-
-- Each custom part has a manufacturing method matched to the target production scale.
-- Each part has a recommended material with justification.
-- No custom part duplicates an available OTS option from the prior step.
-- Each part references an existing model source file (toolchain-appropriate format per agent.md) or includes notes on what geometry to create.
-
-## Context
-
-This step determines the core fabrication workload and cost of the assembly. Under-specifying parts here leads to fabrication errors and rework. The output feeds directly into BOM cost estimation and scale evaluation.

@@ -58,12 +58,3 @@ Ask structured questions to gather the project name, design goal, and target qua
 - [List any unresolved items that need clarification before proceeding]
 ```
 
-## Quality Criteria
-
-- Every function the assembly must perform is listed with a measurable acceptance criterion.
-- Size envelope, weight limits, mounting interfaces, and environmental conditions are documented.
-- Target production quantity is recorded and mapped to a scale tier.
-
-## Context
-
-This document is the single source of truth for all downstream steps. `source_ots_components` uses it to decide which sub-functions can be bought rather than built. `design_custom_parts` uses it to size and specify each custom part. `evaluate_manufacturability` uses it to determine appropriate manufacturing methods for the target scale.

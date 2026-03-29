@@ -102,13 +102,3 @@ Read `bom_context.md`, apply scale-tier logic, and produce a structured report c
 | [part]          | [method]       | [method]       | [method]           |
 ```
 
-## Quality Criteria
-
-- Every requested scale tier is analyzed.
-- Total unit cost is calculated for each tier.
-- Parts that should change manufacturing method between tiers are explicitly called out with the break-even quantity.
-- Each tier includes 1–3 concrete recommendations to reduce cost or lead time.
-
-## Context
-
-This is the final step of the `evaluate_at_scale` workflow and mirrors the analysis in `evaluate_manufacturability` at the end of `design_assembly`. The output is intended for engineering and business stakeholders deciding when to invest in tooling, volume purchasing, or process transitions.

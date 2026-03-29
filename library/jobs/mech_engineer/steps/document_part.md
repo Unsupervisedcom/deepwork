@@ -73,12 +73,3 @@ Merge the part spec and manufacturing specification into a clean datasheet, veri
 - [Any unresolved items before fabrication can begin]
 ```
 
-## Quality Criteria
-
-- Datasheet includes all fields needed to order fabrication or add the part to a BOM.
-- A model source file path (toolchain-appropriate format per agent.md) or model creation instructions are included.
-- A fabricator could produce the part from this datasheet without additional information.
-
-## Context
-
-This is the final output of the `design_part` workflow. The datasheet can be attached to a purchase order, included in a BOM, or handed to a fabricator directly. Keep it concise — one page is the target. Move long derivations or analysis to appendices if needed.

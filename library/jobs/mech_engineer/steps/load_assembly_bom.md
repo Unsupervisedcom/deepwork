@@ -60,12 +60,3 @@ Ask structured questions to locate the BOM and requirements files, then normaliz
 - Lines with missing lead time: [list or "none"]
 ```
 
-## Quality Criteria
-
-- Normalized BOM includes part name, quantity, unit cost, supplier, and manufacturing method for every line item.
-- Design requirements (function, constraints, quantity target) are present as context for the analysis.
-- The tiers to evaluate are explicitly listed.
-
-## Context
-
-This step is the entry point for the `evaluate_at_scale` workflow when applied to an existing assembly. The normalized context file is the sole input to `run_scale_analysis` — accuracy here directly determines the quality of scale recommendations.

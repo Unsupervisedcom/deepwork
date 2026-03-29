@@ -75,12 +75,3 @@ Read the OTS requirements document, search supplier catalogs, and record candida
 | MOQ               | [qty]    | [qty]    | [qty]    |
 ```
 
-## Quality Criteria
-
-- At least three distinct candidate parts are documented (or all available options if fewer exist in the market).
-- Each candidate's specifications are verified against the requirements document.
-- Unit cost and minimum order quantity are recorded for each candidate.
-
-## Context
-
-The quality of this research directly determines whether the selected part will work. Do not include candidates that fail a functional or dimensional requirement — note their failure and exclude them. If fewer than three options exist that meet all requirements, document all available options and note the constraint.

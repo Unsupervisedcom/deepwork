@@ -76,12 +76,3 @@ Ask structured questions to understand the part's function, load conditions, int
 - [Any unclear requirements to resolve before manufacturing method selection]
 ```
 
-## Quality Criteria
-
-- The part's primary function is stated with measurable acceptance criteria.
-- Mating surfaces, fastener patterns, and dimensional constraints are documented.
-- Forces, temperatures, and environmental conditions the part must withstand are recorded.
-
-## Context
-
-This specification feeds directly into `select_manufacturing_method`. A well-defined spec prevents back-and-forth with fabricators and enables accurate cost estimation. If any requirements are ambiguous, resolve them here before proceeding.

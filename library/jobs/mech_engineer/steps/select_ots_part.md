@@ -67,12 +67,3 @@ Read the requirements and options documents, apply selection criteria, choose on
 - **Datasheet**: [link if applicable]
 ```
 
-## Quality Criteria
-
-- The chosen part is preferred over alternatives with clear reasoning.
-- Output contains all fields needed to add the part to a BOM.
-- Notes on how to integrate the part into the assembly are included.
-
-## Context
-
-This is the final output of the `source_ots_parts` workflow. The BOM Entry table is designed to drop directly into a BOM. Integration notes prevent assembly errors downstream.
