@@ -415,13 +415,16 @@ def _build_startup_instructions(
         wf_names = ", ".join(job.workflows.keys())
         lines.append(f"- **{job.name}** ({wf_names}): {job.summary}")
 
-    # Trim workflow entries from the end if over budget
-    while lines:
-        result = _WORKFLOW_HEADER + "\n".join(lines) + "\n\n" + _STATIC_INSTRUCTIONS
-        if len(result) <= _MAX_INSTRUCTIONS_SIZE:
-            return result
-        lines.pop()
+    result = _WORKFLOW_HEADER + "\n".join(lines) + "\n\n" + _STATIC_INSTRUCTIONS
+    if len(result) <= _MAX_INSTRUCTIONS_SIZE:
+        return result
 
-    return _STATIC_INSTRUCTIONS
+    # Too many workflows to list — tell the agent to call get_workflows instead
+    return (
+        "## Available Workflows\n\n"
+        "This project has DeepWork workflows installed. "
+        "Call `get_workflows` to see all available workflows.\n\n"
+        + _STATIC_INSTRUCTIONS
+    )
 
 
