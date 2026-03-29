@@ -20,6 +20,7 @@ from typing import Any
 
 from fastmcp import FastMCP
 
+from deepwork.jobs.discovery import load_all_jobs
 from deepwork.jobs.issues import detect_issues, format_issues_for_agent
 from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
@@ -91,13 +92,14 @@ def create_server(
     except Exception:
         logger.warning("Failed to write initial job manifest", exc_info=True)
 
-    # Detect issues at startup (used to append warnings to tool responses)
+    # Detect issues at startup (used for instructions and tool response warnings)
     startup_issues = detect_issues(project_path)
+    instructions = _build_startup_instructions(project_path, startup_issues)
 
     # Create MCP server
     mcp = FastMCP(
         name="deepwork",
-        instructions=_STATIC_INSTRUCTIONS,
+        instructions=instructions,
     )
 
     # =========================================================================
@@ -375,5 +377,51 @@ Multi-step workflows with quality gates. All tools require `session_id` \
 
 Workflows nest via stack. Use `abort_workflow` to cancel, `go_to_step` to revisit earlier steps.
 """
+
+
+_WORKFLOW_HEADER = (
+    "## Available Workflows\n\n"
+    "This project uses DeepWork. If the user wants to do something matching "
+    "these, use `/deepwork` to start the workflow.\n\n"
+)
+
+_MAX_INSTRUCTIONS_SIZE = 2048
+
+
+def _build_startup_instructions(
+    project_root: Path,
+    issues: list[Issue],
+) -> str:
+    """Build MCP server instructions with dynamic content first (survives truncation).
+
+    If issues: show issue warning. Otherwise: list available workflows.
+    """
+    if issues:
+        return (
+            "## **IMPORTANT: ISSUE DETECTED**\n\n"
+            "Suggest repairing this immediately to the user.\n\n"
+            + format_issues_for_agent(issues)
+            + "\n\n"
+            + _STATIC_INSTRUCTIONS
+        )
+
+    # No issues — list available workflows
+    jobs, _ = load_all_jobs(project_root)
+    if not jobs:
+        return _STATIC_INSTRUCTIONS
+
+    lines: list[str] = []
+    for job in jobs:
+        wf_names = ", ".join(job.workflows.keys())
+        lines.append(f"- **{job.name}** ({wf_names}): {job.summary}")
+
+    # Trim workflow entries from the end if over budget
+    while lines:
+        result = _WORKFLOW_HEADER + "\n".join(lines) + "\n\n" + _STATIC_INSTRUCTIONS
+        if len(result) <= _MAX_INSTRUCTIONS_SIZE:
+            return result
+        lines.pop()
+
+    return _STATIC_INSTRUCTIONS
 
 
