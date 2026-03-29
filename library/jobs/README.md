@@ -70,17 +70,19 @@ library/jobs/
 ├── .deepreview              # Review rules for library job quality
 ├── README.md
 ├── engineer/                # Domain-agnostic engineering execution
+│   ├── .deepreview          # Review rules for this job
 │   ├── job.yml
 │   ├── AGENTS.md            # Agent context and learnings
-│   ├── CLAUDE.md            # Symlink to AGENTS.md
+│   ├── CLAUDE.md -> AGENTS.md
 │   ├── requirements.md      # RFC 2119 requirements specification
-│   └── steps/               # Step instruction files
+│   └── steps/               # Step instruction files (also inlined in job.yml)
 ├── platform_engineer/       # Platform engineering workflows
 │   ├── job.yml
 │   ├── AGENTS.md            # Agent context and learnings
+│   ├── CLAUDE.md -> AGENTS.md
 │   ├── conventions.md       # RFC 2119 platform engineering standards
 │   ├── readme.md
-│   ├── steps/               # Step instruction files
+│   ├── steps/               # Step instruction files (also inlined in job.yml)
 │   └── templates/           # Output templates
 ├── repo/
 │   ├── job.yml              # Job definition (name, steps, workflows)
@@ -101,6 +103,7 @@ library/jobs/
 │   ├── job.yml              # Job definition (name, steps, workflows)
 │   ├── readme.md            # Job-specific documentation
 │   ├── AGENTS.md            # Agent context and learnings
+│   ├── CLAUDE.md -> AGENTS.md
 │   └── steps/
 │       ├── scope.md
 │       ├── choose_platforms.md
@@ -144,7 +147,7 @@ The job definition file contains:
     - `process_requirements`: Optional quality criteria for the work process
   - `post_workflow_instructions`: Optional instructions shown after workflow completes
 
-All step instructions are inlined directly in `job.yml` — there are no separate step instruction files.
+Step instructions are inlined in `job.yml`. Some jobs also retain separate `steps/*.md` files from earlier versions; the inline `instructions` in `job.yml` are the canonical source.
 
 ## Using a Job from the Library
 

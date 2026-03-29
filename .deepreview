@@ -14,6 +14,8 @@ prompt_best_practices:
       - "platform/**/*.md"
       - "src/deepwork/standard_jobs/**/*.md"
       - "library/jobs/**/*.md"  # library job step instructions are prompt-heavy files
+      - "library/jobs/*/job.yml"          # inline step instructions in job.yml are prompt-heavy
+      - "src/deepwork/standard_jobs/*/job.yml"  # standard job inline instructions
       - "**/.deepreview"       # .deepreview files contain inline agent instructions — prompt-heavy content
   review:
     strategy: individual

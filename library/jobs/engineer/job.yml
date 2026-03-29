@@ -498,21 +498,13 @@ workflows:
   doctor:
     summary: "Validate that agent.md and domain context files are present, linked, and valid"
     common_job_info_provided_to_all_steps_at_runtime: |
-      This job drives engineering work from product issue through merged PR and product sync.
-      It enforces test-driven development, continuous PR synchronization, artifact generation,
-      and product traceability across any engineering domain (software, hardware, CAD, firmware,
-      documentation).
-
-      ## Requirements Reference
-
-      This job implements an RFC 2119 requirements specification bundled as `requirements.md`
-      in the job directory. Step instructions reference requirements by number (Req 1-8).
-      Read `requirements.md` for the full normative text.
+      The doctor workflow validates that the repository has the required context files
+      for engineering workflows — agent.md (or equivalent), domain declarations,
+      build/test instructions, and CODEOWNERS configuration.
 
       ## Domain Adaptation
 
-      The workflow is domain-agnostic. This common job info provides a domain adaptation
-      table mapping generic concepts to domain-specific equivalents that applies across all steps:
+      The domain adaptation table maps generic concepts to domain-specific equivalents:
 
       | Concept         | Software          | Hardware/CAD       | Firmware          | Docs             |
       |-----------------|-------------------|--------------------|-------------------|------------------|
