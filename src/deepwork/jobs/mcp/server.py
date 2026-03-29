@@ -20,8 +20,7 @@ from typing import Any
 
 from fastmcp import FastMCP
 
-from deepwork.jobs.discovery import load_all_jobs
-from deepwork.jobs.issues import Issue, detect_issues, format_issues_for_agent
+from deepwork.jobs.issues import detect_issues, format_issues_for_agent
 from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     ArgumentValue,
@@ -92,14 +91,13 @@ def create_server(
     except Exception:
         logger.warning("Failed to write initial job manifest", exc_info=True)
 
-    # Detect issues and build dynamic instructions
+    # Detect issues at startup (used to append warnings to tool responses)
     startup_issues = detect_issues(project_path)
-    instructions = _build_startup_instructions(project_path, startup_issues)
 
     # Create MCP server
     mcp = FastMCP(
         name="deepwork",
-        instructions=instructions,
+        instructions=_STATIC_INSTRUCTIONS,
     )
 
     # =========================================================================
@@ -379,54 +377,3 @@ Workflows nest via stack. Use `abort_workflow` to cancel, `go_to_step` to revisi
 """
 
 
-def _build_startup_instructions(
-    project_root: Path,
-    issues: list[Issue],
-) -> str:
-    """Build the MCP server instructions based on detected issues and available workflows.
-
-    This string is sent to clients during the MCP initialize handshake.
-    Dynamic content (issues/workflows) goes FIRST so it survives truncation.
-    """
-    if issues:
-        return (
-            "## **IMPORTANT: ISSUE DETECTED**\n\n"
-            "Suggest repairing this immediately to the user.\n\n"
-            + format_issues_for_agent(issues)
-            + "\n\n"
-            + _STATIC_INSTRUCTIONS
-        )
-
-    # No issues — list available workflows
-    jobs, _ = load_all_jobs(project_root)
-    if not jobs:
-        return _STATIC_INSTRUCTIONS
-
-    lines: list[str] = []
-    for job in jobs:
-        wf_names = ", ".join(job.workflows.keys())
-        lines.append(f"- **{job.name}** ({wf_names}): {job.summary}")
-
-    result = (
-        "## Available Workflows\n\n"
-        "This project uses DeepWork. If the user wants to do something matching "
-        "these, use `/deepwork` to start the workflow.\n\n"
-        + "\n".join(lines)
-        + "\n\n"
-        + _STATIC_INSTRUCTIONS
-    )
-
-    # Trim workflow entries from the end if over budget
-    max_size = 2048
-    while len(result) > max_size and lines:
-        lines.pop()
-        result = (
-            "## Available Workflows\n\n"
-            "This project uses DeepWork. If the user wants to do something matching "
-            "these, use `/deepwork` to start the workflow.\n\n"
-            + "\n".join(lines)
-            + "\n\n"
-            + _STATIC_INSTRUCTIONS
-        )
-
-    return result
