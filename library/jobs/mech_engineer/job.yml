@@ -1,0 +1,387 @@
+# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
+name: mech_engineer
+version: "1.0.1"
+summary: "Design mechanical assemblies and parts with OTS sourcing, manufacturing method recommendations, BOM generation, and multi-scale production evaluation"
+common_job_info_provided_to_all_steps_at_runtime: |
+  Mechanical engineering design workflow for hardware projects. Supports designing
+  assemblies and individual parts from off-the-shelf (OTS) components and custom-fabricated
+  parts, recommending manufacturing processes, and evaluating designs across production scales.
+
+  ## Manufacturing Methods
+
+  When recommending manufacturing methods, consider:
+  - **FDM 3D printing**: Prototypes, low-volume (1–100 units), complex geometry, low unit cost
+  - **SLA/SLS 3D printing**: High detail, engineering-grade materials, moderate cost
+  - **CNC machining**: Metal parts, tight tolerances, moderate volumes (10–10,000 units)
+  - **Injection molding**: High-volume plastic parts (10,000+ units), high tooling cost, low unit cost
+  - **Sheet metal fabrication**: Enclosures, brackets, moderate volumes, fast lead times
+  - **Laser/water jet cutting**: 2D profiles, sheet goods, fast turnaround
+  - **Off-the-shelf (OTS)**: Fasteners, bearings, motors, electronics modules, extrusions, hardware
+
+  ## Scale Tiers
+
+  Evaluate designs at three production scales:
+  - **Prototype** (1–10 units): Maximize iteration speed; 3D printing and OTS preferred
+  - **Small batch** (10–500 units): Balance cost and lead time; CNC + OTS mix
+  - **Production** (500+ units): Minimize unit cost; injection molding, volume purchasing
+
+  ## Output Structure
+
+  Final deliverables are saved to `mech_design/{project_name}/`:
+  - `requirements.md` — design goals and constraints
+  - `ots_components.md` — sourced off-the-shelf parts
+  - `custom_parts.md` — custom part designs and manufacturing specs
+  - `bom.md` — complete bill of materials
+  - `scale_evaluation.md` — multi-scale cost and feasibility analysis
+
+  Step-to-step tracking files go in `.deepwork/tmp/`.
+
+workflows:
+  - name: design_assembly
+    summary: "Full assembly design: requirements → OTS sourcing → custom parts → BOM → scale evaluation"
+    steps:
+      - define_assembly_requirements
+      - source_ots_components
+      - design_custom_parts
+      - generate_bom
+      - evaluate_manufacturability
+
+  - name: design_part
+    summary: "Design a single custom part with manufacturing method recommendation and spec sheet"
+    steps:
+      - define_part_spec
+      - select_manufacturing_method
+      - document_part
+
+  - name: source_ots_parts
+    summary: "Research and select off-the-shelf components for a given specification"
+    steps:
+      - define_ots_requirements
+      - research_ots_options
+      - select_ots_part
+
+  - name: evaluate_at_scale
+    summary: "Re-evaluate an existing assembly BOM at prototype, small-batch, and production scales"
+    steps:
+      - load_assembly_bom
+      - run_scale_analysis
+
+steps:
+  # ── Design Assembly Workflow ──────────────────────────────────────────
+
+  - id: define_assembly_requirements
+    name: "Define Assembly Requirements"
+    description: "Capture the design goal, functional requirements, physical constraints, and target production quantity for the assembly."
+    instructions_file: steps/define_assembly_requirements.md
+    inputs:
+      - name: project_name
+        description: "Short slug for the assembly (e.g., camera_mount, cable_organizer)"
+      - name: design_goal
+        description: "What the assembly must do — function, environment, load conditions, size constraints"
+      - name: target_quantity
+        description: "Target production quantity (e.g., 1, 50, 10000) — drives manufacturing method recommendations"
+    outputs:
+      .deepwork/tmp/assembly_requirements.md:
+        type: file
+        description: "Structured requirements: functional specs, physical constraints, quantity target, and acceptance criteria"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: .deepwork/tmp/assembly_requirements.md
+        quality_criteria:
+          "Functional Requirements Complete": "All functions the assembly must perform are listed with measurable acceptance criteria."
+          "Physical Constraints Captured": "Size envelope, weight limits, mounting interfaces, and environmental conditions are documented."
+          "Scale Tier Assigned": "Target production quantity is recorded and mapped to a scale tier (prototype / small batch / production)."
+
+  - id: source_ots_components
+    name: "Source Off-the-Shelf Components"
+    description: "Identify purchasable standard components (fasteners, bearings, motors, extrusions, electronics modules) that satisfy assembly sub-functions, minimizing custom fabrication."
+    instructions_file: steps/source_ots_components.md
+    inputs:
+      - file: .deepwork/tmp/assembly_requirements.md
+        from_step: define_assembly_requirements
+    outputs:
+      .deepwork/tmp/ots_components.md:
+        type: file
+        description: "List of OTS components with supplier, part number, unit cost, quantity, and the requirement each satisfies"
+        required: true
+    dependencies:
+      - define_assembly_requirements
+    reviews:
+      - run_each: .deepwork/tmp/ots_components.md
+        additional_review_guidance: "Read .deepwork/tmp/assembly_requirements.md to verify each requirement is addressed by either an OTS component or flagged for custom fabrication."
+        quality_criteria:
+          "Requirements Addressed": "Every assembly sub-function is addressed by either an OTS component or explicitly flagged for custom design."
+          "Supplier and Part Number": "Each OTS component includes a supplier name and part number or search URL."
+          "Make vs. Buy Justified": "The decision to source vs. fabricate each sub-component is briefly justified."
+
+  - id: design_custom_parts
+    name: "Design Custom Parts"
+    description: "For each sub-function not covered by OTS components, define the custom part geometry, material, tolerances, and recommended manufacturing method."
+    instructions_file: steps/design_custom_parts.md
+    inputs:
+      - file: .deepwork/tmp/assembly_requirements.md
+        from_step: define_assembly_requirements
+      - file: .deepwork/tmp/ots_components.md
+        from_step: source_ots_components
+    outputs:
+      .deepwork/tmp/custom_parts_plan.md:
+        type: file
+        description: "Per-part design brief: geometry description, material, tolerances, manufacturing method, and STL or model reference"
+        required: true
+    dependencies:
+      - define_assembly_requirements
+      - source_ots_components
+    reviews:
+      - run_each: .deepwork/tmp/custom_parts_plan.md
+        additional_review_guidance: "Read .deepwork/tmp/ots_components.md to verify no custom part duplicates an available OTS option."
+        quality_criteria:
+          "Manufacturing Method Specified": "Each custom part has a manufacturing method matched to the target production scale."
+          "Material Specified": "Each part has a recommended material with justification (e.g., PLA for prototype, aluminum 6061 for production)."
+          "No Unnecessary Custom Parts": "Custom parts are only designed for functions not addressable by OTS components."
+          "STL or Drawing Referenced": "Each part references an existing STL/STEP file or includes notes on what model geometry to create."
+
+  - id: generate_bom
+    name: "Generate Bill of Materials"
+    description: "Compile all OTS components and custom parts into a structured BOM with quantities, unit costs, extended costs, suppliers, and lead times."
+    instructions_file: steps/generate_bom.md
+    inputs:
+      - file: .deepwork/tmp/ots_components.md
+        from_step: source_ots_components
+      - file: .deepwork/tmp/custom_parts_plan.md
+        from_step: design_custom_parts
+    outputs:
+      .deepwork/tmp/bom.md:
+        type: file
+        description: "Complete BOM: line number, part name, description, quantity, unit cost, extended cost, supplier, and lead time"
+        required: true
+    dependencies:
+      - source_ots_components
+      - design_custom_parts
+    reviews:
+      - run_each: .deepwork/tmp/bom.md
+        quality_criteria:
+          "All Parts Listed": "BOM includes every OTS component and custom part from the assembly."
+          "Cost Totaled": "Each line item has a unit cost and extended cost; a total assembly cost is summed."
+          "Supplier Identified": "Each OTS part has a supplier; custom parts note fabrication method in the supplier column."
+          "Lead Times Present": "Lead time or fabrication time estimate is provided for each line item."
+
+  - id: evaluate_manufacturability
+    name: "Evaluate Manufacturability at Scale"
+    description: "Analyze the assembly BOM across prototype, small-batch, and production tiers. Recommend method transitions, flag high-cost or long-lead items, and state unit cost per tier."
+    instructions_file: steps/evaluate_manufacturability.md
+    inputs:
+      - file: .deepwork/tmp/assembly_requirements.md
+        from_step: define_assembly_requirements
+      - file: .deepwork/tmp/bom.md
+        from_step: generate_bom
+    outputs:
+      .deepwork/tmp/scale_evaluation.md:
+        type: file
+        description: "Scale evaluation: unit cost, lead time, and manufacturing method recommendations at prototype / small-batch / production tiers"
+        required: true
+    dependencies:
+      - define_assembly_requirements
+      - generate_bom
+    reviews:
+      - run_each: .deepwork/tmp/scale_evaluation.md
+        additional_review_guidance: "Read .deepwork/tmp/bom.md to verify scale analysis covers every line item."
+        quality_criteria:
+          "Three Tiers Covered": "Evaluation addresses prototype, small-batch, and production scale tiers explicitly."
+          "Unit Cost Per Tier": "Total unit cost is calculated for each tier."
+          "Method Transitions Called Out": "Parts whose manufacturing method should change between tiers (e.g., 3D print → injection mold) are explicitly identified."
+          "Bottlenecks Flagged": "High-cost or long-lead items that dominate the BOM at each scale are identified with mitigation suggestions."
+
+  # ── Design Part Workflow ──────────────────────────────────────────────
+
+  - id: define_part_spec
+    name: "Define Part Specification"
+    description: "Capture the part's function, load conditions, interface geometry, material constraints, and assembly context."
+    instructions_file: steps/define_part_spec.md
+    inputs:
+      - name: part_name
+        description: "Short slug for the part (e.g., motor_bracket, lid_hinge)"
+      - name: part_function
+        description: "What the part must do — loads, interfaces, environment, dimensional constraints"
+      - name: parent_assembly
+        description: "Assembly this part belongs to, or 'standalone' if none"
+    outputs:
+      .deepwork/tmp/part_spec.md:
+        type: file
+        description: "Part specification: function, load conditions, interface geometry, material constraints, and acceptance criteria"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: .deepwork/tmp/part_spec.md
+        quality_criteria:
+          "Function Defined": "The part's primary function is stated with measurable acceptance criteria."
+          "Interfaces Specified": "Mating surfaces, fastener patterns, and dimensional constraints are documented."
+          "Load Conditions Captured": "Forces, temperatures, and environmental conditions the part must withstand are recorded."
+
+  - id: select_manufacturing_method
+    name: "Select Manufacturing Method"
+    description: "Recommend the optimal manufacturing process for the part at prototype and production scales, with material selection and design-for-manufacture guidelines."
+    instructions_file: steps/select_manufacturing_method.md
+    inputs:
+      - file: .deepwork/tmp/part_spec.md
+        from_step: define_part_spec
+    outputs:
+      .deepwork/tmp/manufacturing_spec.md:
+        type: file
+        description: "Manufacturing recommendation: process, material, tolerances, DFM notes, and cost estimate"
+        required: true
+    dependencies:
+      - define_part_spec
+    reviews:
+      - run_each: .deepwork/tmp/manufacturing_spec.md
+        additional_review_guidance: "Read .deepwork/tmp/part_spec.md to verify the recommended process can meet the part's load and interface requirements."
+        quality_criteria:
+          "Method Justified": "The recommended process is justified against the part spec (geometry, loads, volume)."
+          "Scale Differentiation": "Prototype and production recommendations are given separately where they differ."
+          "Material Specified": "A specific material is recommended with grade and key properties noted."
+          "DFM Guidelines Included": "Design-for-manufacture notes are included (draft angles, minimum wall thickness, feature limitations, etc.)."
+
+  - id: document_part
+    name: "Document Part"
+    description: "Produce the final part datasheet combining spec, manufacturing recommendation, and STL or model reference for BOM inclusion or fabricator handoff."
+    instructions_file: steps/document_part.md
+    inputs:
+      - file: .deepwork/tmp/part_spec.md
+        from_step: define_part_spec
+      - file: .deepwork/tmp/manufacturing_spec.md
+        from_step: select_manufacturing_method
+    outputs:
+      .deepwork/tmp/part_datasheet.md:
+        type: file
+        description: "Complete part datasheet: spec summary, manufacturing method, material, cost estimate, and model/STL reference"
+        required: true
+    dependencies:
+      - define_part_spec
+      - select_manufacturing_method
+    reviews:
+      - run_each: .deepwork/tmp/part_datasheet.md
+        quality_criteria:
+          "Complete": "Datasheet includes all fields needed to order fabrication or add the part to a BOM."
+          "Model Referenced": "An STL file path, repository link, or model creation notes are included."
+          "Fabricator-Ready": "A fabricator could produce the part from this datasheet without additional information."
+
+  # ── Source OTS Parts Workflow ─────────────────────────────────────────
+
+  - id: define_ots_requirements
+    name: "Define OTS Part Requirements"
+    description: "Specify what an off-the-shelf part must do: function, dimensional envelope, load capacity, interface standard, and acceptable quantity and cost range."
+    instructions_file: steps/define_ots_requirements.md
+    inputs:
+      - name: part_function
+        description: "What the OTS part must do (e.g., 'M3 heat-set insert for PLA, 5mm OD')"
+      - name: quantity_needed
+        description: "Number of units needed (affects sourcing strategy and minimum order quantity)"
+      - name: project_context
+        description: "Assembly or project this part supports, for compatibility context"
+    outputs:
+      .deepwork/tmp/ots_requirements.md:
+        type: file
+        description: "OTS part requirements: function, dimensions, load spec, interface standard, quantity, and cost target"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: .deepwork/tmp/ots_requirements.md
+        quality_criteria:
+          "Function Specified": "The part's required function is stated with enough detail to evaluate candidates against it."
+          "Dimensional Constraints Present": "Key dimensional constraints (envelope, thread size, bore, etc.) are documented."
+          "Quantity and Cost Target": "Quantity needed and an acceptable unit cost range are recorded."
+
+  - id: research_ots_options
+    name: "Research OTS Options"
+    description: "Search supplier catalogs for off-the-shelf parts meeting the requirements. Document multiple options with part numbers, specs, and pricing."
+    instructions_file: steps/research_ots_options.md
+    inputs:
+      - file: .deepwork/tmp/ots_requirements.md
+        from_step: define_ots_requirements
+    outputs:
+      .deepwork/tmp/ots_options.md:
+        type: file
+        description: "Candidate OTS parts: supplier, part number, specifications, unit cost, lead time, and notes"
+        required: true
+    dependencies:
+      - define_ots_requirements
+    reviews:
+      - run_each: .deepwork/tmp/ots_options.md
+        additional_review_guidance: "Read .deepwork/tmp/ots_requirements.md to verify each candidate meets the stated requirements."
+        quality_criteria:
+          "Multiple Options": "At least three distinct candidate parts are documented (or all available options if fewer exist)."
+          "Specs Verified": "Each candidate's specifications are verified against the requirements."
+          "Pricing Included": "Unit cost and minimum order quantity are recorded for each candidate."
+
+  - id: select_ots_part
+    name: "Select and Document OTS Part"
+    description: "Choose the best OTS option and produce a selection record with justification, final part number, supplier, and integration notes."
+    instructions_file: steps/select_ots_part.md
+    inputs:
+      - file: .deepwork/tmp/ots_requirements.md
+        from_step: define_ots_requirements
+      - file: .deepwork/tmp/ots_options.md
+        from_step: research_ots_options
+    outputs:
+      .deepwork/tmp/ots_selection.md:
+        type: file
+        description: "Selected OTS part: supplier, part number, cost, lead time, justification, and integration notes"
+        required: true
+    dependencies:
+      - define_ots_requirements
+      - research_ots_options
+    reviews:
+      - run_each: .deepwork/tmp/ots_selection.md
+        quality_criteria:
+          "Selection Justified": "The chosen part is preferred over alternatives with clear reasoning."
+          "BOM-Ready": "Output contains all fields needed to add the part to a BOM."
+          "Integration Notes Present": "Notes on how to integrate the part into the assembly are included."
+
+  # ── Evaluate at Scale Workflow ────────────────────────────────────────
+
+  - id: load_assembly_bom
+    name: "Load Existing Assembly BOM"
+    description: "Accept a user-provided BOM and requirements document, normalize them to the standard format, and prepare context for scale analysis."
+    instructions_file: steps/load_assembly_bom.md
+    inputs:
+      - name: bom_file_path
+        description: "Path to the existing BOM file (Markdown or CSV)"
+      - name: requirements_file_path
+        description: "Path to the assembly requirements file, or describe requirements inline"
+      - name: target_scales
+        description: "Scale tiers to evaluate: prototype, small_batch, production (default: all three)"
+    outputs:
+      .deepwork/tmp/bom_context.md:
+        type: file
+        description: "Normalized BOM and requirements context ready for scale analysis"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: .deepwork/tmp/bom_context.md
+        quality_criteria:
+          "BOM Columns Present": "Normalized BOM includes part name, quantity, unit cost, supplier, and manufacturing method for every line item."
+          "Requirements Captured": "Design requirements (function, constraints, quantity target) are present as context for the analysis."
+          "Target Scales Specified": "The tiers to evaluate (prototype, small_batch, production) are explicitly listed."
+
+  - id: run_scale_analysis
+    name: "Run Scale Analysis"
+    description: "Evaluate the loaded BOM at each target scale tier: unit cost, lead time, manufacturing method transitions, and bottlenecks."
+    instructions_file: steps/run_scale_analysis.md
+    inputs:
+      - file: .deepwork/tmp/bom_context.md
+        from_step: load_assembly_bom
+    outputs:
+      .deepwork/tmp/scale_report.md:
+        type: file
+        description: "Scale analysis report: unit cost and lead time per tier, method transitions, bottlenecks, and recommendations"
+        required: true
+    dependencies:
+      - load_assembly_bom
+    reviews:
+      - run_each: .deepwork/tmp/scale_report.md
+        additional_review_guidance: "Read .deepwork/tmp/bom_context.md to verify the analysis covers every BOM line item."
+        quality_criteria:
+          "All Tiers Covered": "Every requested scale tier is analyzed."
+          "Unit Cost Calculated": "Total unit cost is calculated for each tier."
+          "Transitions Identified": "Parts that should change manufacturing method between tiers are explicitly called out."
+          "Actionable Recommendations": "Each tier includes 1–3 concrete recommendations to reduce cost or lead time."
