@@ -68,8 +68,8 @@ class TestBuildStartupInstructions:
 
         result = _build_startup_instructions(tmp_path, issues=[])
         assert "Available Workflows" in result
-        assert "my_job/main" in result
-        assert "Main workflow does stuff" in result
+        assert "my_job" in result
+        assert "main" in result
         assert "/deepwork" in result
 
     def test_without_issues_always_includes_workflows(self, tmp_path: Path) -> None:
@@ -93,3 +93,55 @@ class TestBuildStartupInstructions:
         result = _build_startup_instructions(tmp_path, issues)
         assert "ISSUE DETECTED" in result
         assert "Available Workflows" not in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.10.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_instructions_under_2kb_without_issues(self, tmp_path: Path) -> None:
+        """Instructions MUST NOT exceed 2048 bytes to avoid client truncation."""
+        result = _build_startup_instructions(tmp_path, issues=[])
+        assert len(result) <= 2048, f"Instructions are {len(result)} bytes, max 2048"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.10.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_instructions_under_2kb_with_issues(self, tmp_path: Path) -> None:
+        """Instructions with issues MUST NOT exceed 2048 bytes."""
+        issues = [
+            Issue(
+                severity="error",
+                job_name="broken_job",
+                job_dir="/path/to/broken_job",
+                message="Job definition validation failed: Validation error at root: "
+                "'step_arguments' is a required property",
+                suggestion="The invalid file is /path/to/broken_job/job.yml. "
+                "If you edited that file this session, fix it directly. "
+                "If you did not edit it, the project may need "
+                "`/deepwork repair` to migrate legacy formats.",
+            )
+        ]
+        result = _build_startup_instructions(tmp_path, issues)
+        assert len(result) <= 2048, f"Instructions are {len(result)} bytes, max 2048"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.10.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_dynamic_content_before_static(self, tmp_path: Path) -> None:
+        """Dynamic content (issues/workflows) MUST appear before static instructions."""
+        # With issues
+        issues = [
+            Issue(
+                severity="error",
+                job_name="broken",
+                job_dir="/path/broken",
+                message="Bad schema",
+                suggestion="Fix it",
+            )
+        ]
+        result = _build_startup_instructions(tmp_path, issues)
+        issue_pos = result.find("ISSUE DETECTED")
+        static_pos = result.find("DeepWork Workflow Server")
+        assert issue_pos < static_pos, "Issue warning must appear before static instructions"
+
+        # With workflows
+        result_wf = _build_startup_instructions(tmp_path, issues=[])
+        wf_pos = result_wf.find("Available Workflows")
+        static_pos_wf = result_wf.find("DeepWork Workflow Server")
+        assert wf_pos < static_pos_wf, "Workflow list must appear before static instructions"

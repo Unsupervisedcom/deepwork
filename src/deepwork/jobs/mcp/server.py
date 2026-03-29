@@ -365,65 +365,17 @@ def create_server(
 _STATIC_INSTRUCTIONS = """\
 # DeepWork Workflow Server
 
-This MCP server guides you through multi-step workflows with quality gates.
+Multi-step workflows with quality gates. All tools require `session_id` \
+(CLAUDE_CODE_SESSION_ID from startup context). Sub-agents also pass `agent_id`.
 
-## Session Identity
+## Workflow Lifecycle
 
-All workflow tools require `session_id` (your CLAUDE_CODE_SESSION_ID from startup context).
-If you are a sub-agent, also pass `agent_id` (your CLAUDE_CODE_AGENT_ID from startup context).
+1. `get_workflows` — discover available workflows
+2. `start_workflow` — begin with goal, job_name, workflow_name, session_id
+3. Follow step instructions, then call `finished_step` with outputs
+4. If `needs_work`: fix issues and retry. If `next_step`: continue. If `workflow_complete`: done.
 
-## Workflow
-
-1. **Discover**: Call `get_workflows` to see available workflows
-2. **Start**: Call `start_workflow` with your goal, job_name, workflow_name, and session_id
-3. **Execute**: Follow the step instructions returned
-4. **Checkpoint**: Call `finished_step` with your outputs and session_id when done with each step
-5. **Iterate**: If `needs_work`, fix issues and call `finished_step` again
-6. **Continue**: If `next_step`, execute new instructions and repeat
-7. **Complete**: When `workflow_complete`, the workflow is done
-
-## Quality Gates
-
-Steps may have quality criteria. When you call `finished_step`:
-- Your outputs are evaluated against the criteria
-- If any fail, you'll get `needs_work` status with feedback
-- Fix the issues and call `finished_step` again
-- After passing, you'll get the next step or completion
-
-## Nested Workflows
-
-Workflows can be nested - starting a new workflow while one is active pushes
-onto a stack. This is useful when a step requires running another workflow.
-
-- All tool responses include a `stack` field showing the current workflow stack
-- Each stack entry shows `{workflow: "job/workflow", step: "current_step"}`
-- When a workflow completes, it pops from the stack and resumes the parent
-- Use `abort_workflow` to cancel the current workflow and return to parent
-
-## Aborting Workflows
-
-If a workflow cannot be completed, use `abort_workflow` with an explanation:
-- The current workflow is marked as aborted and popped from the stack
-- If there was a parent workflow, it becomes active again
-- The explanation is saved for debugging and audit purposes
-
-## Going Back
-
-Use `go_to_step` to navigate back to a prior step when earlier outputs need revision:
-- All progress from the target step onward is cleared (outputs, timestamps, quality attempts)
-- The agent must re-execute all steps from the target onward
-- Files on disk are NOT deleted — only session tracking state is cleared
-- Cannot go forward — use `finished_step` to advance
-
-## Best Practices
-
-- Always call `get_workflows` first to understand available options
-- Provide clear goals when starting - they're used for context
-- Create all expected outputs before calling `finished_step`
-- Use instance_id for meaningful names (e.g., client name, quarter)
-- Read quality gate feedback carefully before retrying
-- Check the `stack` field in responses to understand nesting depth
-- Use `abort_workflow` rather than leaving workflows in a broken state
+Workflows nest via stack. Use `abort_workflow` to cancel, `go_to_step` to revisit earlier steps.
 """
 
 
@@ -452,16 +404,29 @@ def _build_startup_instructions(
 
     lines: list[str] = []
     for job in jobs:
-        for wf_name, wf in job.workflows.items():
-            lines.append(f"- **{job.name}/{wf_name}**: {wf.summary}")
+        wf_names = ", ".join(job.workflows.keys())
+        lines.append(f"- **{job.name}** ({wf_names}): {job.summary}")
 
-    return (
+    result = (
         "## Available Workflows\n\n"
-        "This project uses DeepWork to manage complex processes with confidence. "
-        "The following workflows are installed — if the user mentions wanting to do "
-        "something that sounds like any of these, use the `/deepwork` skill to start "
-        "the appropriate workflow.\n\n"
+        "This project uses DeepWork. If the user wants to do something matching "
+        "these, use `/deepwork` to start the workflow.\n\n"
         + "\n".join(lines)
         + "\n\n"
         + _STATIC_INSTRUCTIONS
     )
+
+    # Trim workflow entries from the end if over budget
+    max_size = 2048
+    while len(result) > max_size and lines:
+        lines.pop()
+        result = (
+            "## Available Workflows\n\n"
+            "This project uses DeepWork. If the user wants to do something matching "
+            "these, use `/deepwork` to start the workflow.\n\n"
+            + "\n".join(lines)
+            + "\n\n"
+            + _STATIC_INSTRUCTIONS
+        )
+
+    return result
