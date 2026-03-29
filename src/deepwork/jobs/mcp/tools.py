@@ -384,20 +384,19 @@ class WorkflowTools:
 
     def get_workflows(self) -> GetWorkflowsResponse:
         """List all available workflows."""
-        jobs, load_errors = self._load_all_jobs()
+        from deepwork.jobs.issues import detect_issues
+
+        jobs, _ = self._load_all_jobs()
         job_infos = [self._job_to_info(job) for job in jobs]
+
+        issues = detect_issues(self.project_root)
         error_infos = [
             JobLoadErrorInfo(
-                job_name=e.job_name,
-                job_dir=e.job_dir,
-                error=(
-                    f"{e.error}\n"
-                    f"The invalid file is {e.job_dir}/job.yml. "
-                    f"If you edited that file this session, fix it directly. "
-                    f"If you did not edit it, the project may need `/deepwork repair` to migrate legacy formats."
-                ),
+                job_name=issue.job_name,
+                job_dir=issue.job_dir,
+                error=f"{issue.message}\n{issue.suggestion}",
             )
-            for e in load_errors
+            for issue in issues
         ]
 
         # Write manifest for external consumers
