@@ -94,6 +94,108 @@ class TestDetectIssues:
         assert "/deepwork repair" in issues[0].suggestion
         assert "job.yml" in issues[0].suggestion
 
+    def test_handles_binary_content(self, tmp_path: Path) -> None:
+        """Binary/non-UTF-8 job.yml is detected as an issue, not a crash."""
+        jobs_dir = tmp_path / ".deepwork" / "jobs"
+        jobs_dir.mkdir(parents=True)
+        job_dir = jobs_dir / "binary_job"
+        job_dir.mkdir()
+        (job_dir / "job.yml").write_bytes(b"\x00\x01\x02\xff\xfe")
+
+        issues = detect_issues(tmp_path)
+        assert len(issues) == 1
+        assert issues[0].job_name == "binary_job"
+        assert issues[0].severity == "error"
+
+    def test_handles_empty_job_yml(self, tmp_path: Path) -> None:
+        """Empty job.yml is detected as an issue."""
+        jobs_dir = tmp_path / ".deepwork" / "jobs"
+        jobs_dir.mkdir(parents=True)
+        job_dir = jobs_dir / "empty_job"
+        job_dir.mkdir()
+        (job_dir / "job.yml").write_text("")
+
+        issues = detect_issues(tmp_path)
+        assert len(issues) == 1
+        assert issues[0].job_name == "empty_job"
+
+    def test_handles_malformed_yaml(self, tmp_path: Path) -> None:
+        """Malformed YAML (unclosed braces) is detected as an issue."""
+        jobs_dir = tmp_path / ".deepwork" / "jobs"
+        jobs_dir.mkdir(parents=True)
+        job_dir = jobs_dir / "malformed"
+        job_dir.mkdir()
+        (job_dir / "job.yml").write_text("{{{{not valid yaml")
+
+        issues = detect_issues(tmp_path)
+        assert len(issues) == 1
+        assert issues[0].job_name == "malformed"
+
+    def test_handles_non_dict_yaml(self, tmp_path: Path) -> None:
+        """YAML that parses to a list instead of dict is detected as an issue."""
+        jobs_dir = tmp_path / ".deepwork" / "jobs"
+        jobs_dir.mkdir(parents=True)
+        job_dir = jobs_dir / "list_job"
+        job_dir.mkdir()
+        (job_dir / "job.yml").write_text("- item1\n- item2\n")
+
+        issues = detect_issues(tmp_path)
+        assert len(issues) == 1
+        assert issues[0].job_name == "list_job"
+
+    def test_handles_latin1_encoded_file(self, tmp_path: Path) -> None:
+        """Latin-1 encoded file with non-UTF-8 bytes is detected as an issue."""
+        jobs_dir = tmp_path / ".deepwork" / "jobs"
+        jobs_dir.mkdir(parents=True)
+        job_dir = jobs_dir / "latin1_job"
+        job_dir.mkdir()
+        (job_dir / "job.yml").write_bytes("name: caf\xe9\n".encode("latin-1"))
+
+        issues = detect_issues(tmp_path)
+        assert len(issues) == 1
+        assert issues[0].job_name == "latin1_job"
+
+    def test_good_and_bad_jobs_together(self, tmp_path: Path) -> None:
+        """Good jobs are not reported; only bad ones produce issues."""
+        jobs_dir = tmp_path / ".deepwork" / "jobs"
+        jobs_dir.mkdir(parents=True)
+
+        # Good job
+        good = jobs_dir / "good_job"
+        good.mkdir()
+        (good / "job.yml").write_text(
+            yaml.dump(
+                {
+                    "name": "good_job",
+                    "summary": "Works",
+                    "step_arguments": [
+                        {"name": "out", "description": "Out", "type": "file_path"}
+                    ],
+                    "workflows": {
+                        "main": {
+                            "summary": "Main",
+                            "steps": [
+                                {
+                                    "name": "do_it",
+                                    "instructions": "Do it.",
+                                    "outputs": {"out": {"required": True}},
+                                }
+                            ],
+                        }
+                    },
+                }
+            )
+        )
+
+        # Binary-corrupted job
+        bad = jobs_dir / "corrupted"
+        bad.mkdir()
+        (bad / "job.yml").write_bytes(b"\xff\xfe\x00\x01")
+
+        issues = detect_issues(tmp_path)
+        assert len(issues) == 1
+        assert issues[0].job_name == "corrupted"
+
 
 class TestFormatIssuesForAgent:
     """Tests for format_issues_for_agent()."""
