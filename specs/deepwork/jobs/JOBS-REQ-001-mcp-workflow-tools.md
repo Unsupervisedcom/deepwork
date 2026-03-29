@@ -119,6 +119,8 @@ The DeepWork MCP server exposes workflow tools to AI agents via the Model Contex
 3. When issues are detected, the instructions MUST include an `IMPORTANT: ISSUE DETECTED` section with the formatted issue details.
 4. When no issues are detected, the instructions MUST include an `Available Workflows` section listing all discovered job/workflow pairs with summaries.
 5. When issues are detected, the `Available Workflows` section MUST NOT be included.
+6. The total instructions string MUST NOT exceed 2048 bytes, to avoid truncation by MCP clients.
+7. Dynamic content (issues or workflow list) MUST appear before static server instructions, so it survives truncation.
 
 ### JOBS-REQ-001.11: Issue Appending to Tool Responses
 
