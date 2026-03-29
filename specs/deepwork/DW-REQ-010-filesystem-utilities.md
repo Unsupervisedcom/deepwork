@@ -53,8 +53,9 @@ DeepWork provides utility modules for safe filesystem operations, YAML loading/s
 2. `load_yaml()` MUST return `None` if the file does not exist.
 3. `load_yaml()` MUST return an empty dict for an empty file.
 4. `load_yaml()` MUST raise `YAMLError` if the parsed content is not a dictionary.
-5. `load_yaml_from_string()` MUST parse a YAML string and return a dictionary.
-6. `load_yaml_from_string()` MUST return `None` for empty content.
+5. `load_yaml()` MUST raise `YAMLError` if the file contains invalid UTF-8 encoding.
+6. `load_yaml_from_string()` MUST parse a YAML string and return a dictionary.
+7. `load_yaml_from_string()` MUST return `None` for empty content.
 
 ### DW-REQ-010.8: YAML Saving
 

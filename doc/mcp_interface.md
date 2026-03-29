@@ -360,13 +360,14 @@ steps:
           strategy: matches_together
           instructions: "Review all output files together for consistency."
     process_requirements:       # Process review (evaluates work_summary)
-      "Thoroughness": "Did the agent consider all relevant factors?"
+      thoroughness: "Research MUST use multiple sources (web search, analyst reports, review sites)."
+      user_consulted: "The user SHOULD be asked to confirm the approach."
 ```
 
 - **Output-level reviews**: Defined on the output ref in a step, or inherited from the step_argument's `review` block
 - **`strategy: individual`**: Each matched file is reviewed separately
 - **`strategy: matches_together`**: All matched files are reviewed together in one review task
-- **`process_requirements`**: Evaluates the `work_summary` against named quality criteria (requires `work_summary` to be provided in `finished_step`)
+- **`process_requirements`**: Evaluates the `work_summary` against requirement statements using RFC 2119 keywords (MUST, SHOULD, MAY, etc.). MUST/SHALL violations cause failure; SHOULD/RECOMMENDED violations fail only if easily achievable. Requires `work_summary` to be provided in `finished_step`.
 
 To skip quality review (use sparingly):
 - Provide `quality_review_override_reason` explaining why review is unnecessary

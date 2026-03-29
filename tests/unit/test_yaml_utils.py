@@ -108,6 +108,51 @@ invalid:
         assert result is not None
         assert result["name"] == "test"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.7.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_raises_for_binary_content(self, temp_dir: Path) -> None:
+        """Binary/non-UTF-8 content raises YAMLError, not UnicodeDecodeError."""
+        yaml_file = temp_dir / "binary.yml"
+        yaml_file.write_bytes(b"\x00\x01\x02\xff\xfe")
+
+        with pytest.raises(YAMLError, match="Failed to read YAML file"):
+            load_yaml(yaml_file)
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.7.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_raises_for_latin1_content(self, temp_dir: Path) -> None:
+        """Latin-1 encoded content with non-UTF-8 bytes raises YAMLError."""
+        yaml_file = temp_dir / "latin1.yml"
+        yaml_file.write_bytes("name: caf\xe9\n".encode("latin-1"))
+
+        with pytest.raises(YAMLError, match="Failed to read YAML file"):
+            load_yaml(yaml_file)
+
+    def test_raises_for_truncated_multibyte(self, temp_dir: Path) -> None:
+        """Truncated multi-byte UTF-8 sequence raises YAMLError."""
+        yaml_file = temp_dir / "truncated.yml"
+        # Start of a 3-byte UTF-8 char but truncated
+        yaml_file.write_bytes(b"name: \xe2\x80")
+
+        with pytest.raises(YAMLError, match="Failed to read YAML file"):
+            load_yaml(yaml_file)
+
+    def test_raises_for_null_bytes(self, temp_dir: Path) -> None:
+        """File with null bytes raises YAMLError."""
+        yaml_file = temp_dir / "nulls.yml"
+        yaml_file.write_bytes(b"name: test\x00value\n")
+
+        with pytest.raises(YAMLError):
+            load_yaml(yaml_file)
+
+    def test_raises_for_malformed_yaml_braces(self, temp_dir: Path) -> None:
+        """Malformed YAML with unclosed braces raises YAMLError."""
+        yaml_file = temp_dir / "braces.yml"
+        yaml_file.write_text("{{{{not valid yaml at all")
+
+        with pytest.raises(YAMLError, match="Failed to parse YAML file"):
+            load_yaml(yaml_file)
+
 
 class TestSaveYAML:
     """Tests for save_yaml function."""
@@ -253,7 +298,7 @@ class TestValidateYAMLStructure:
 
     def test_raises_for_non_dict_data(self) -> None:
         """Test that validate_yaml_structure raises for non-dictionary data."""
-        data = ["item1", "item2"]  # type: ignore
+        data = ["item1", "item2"]
 
         with pytest.raises(YAMLError, match="Data must be a dictionary"):
             validate_yaml_structure(data, ["name"])  # type: ignore

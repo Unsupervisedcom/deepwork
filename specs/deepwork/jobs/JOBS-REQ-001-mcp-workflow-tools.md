@@ -2,7 +2,7 @@
 
 ## Overview
 
-The DeepWork MCP server exposes workflow tools to AI agents via the Model Context Protocol (MCP): `get_workflows`, `start_workflow`, `finished_step`, `abort_workflow`, and `go_to_step`. These tools constitute the primary runtime interface through which agents discover, execute, and manage multi-step workflows. The server also exposes review tools (`get_review_instructions`, `get_configured_reviews`, `mark_review_as_passed`). Built on FastMCP; all tool responses serialized as dictionaries via Pydantic `model_dump()`.
+The DeepWork MCP server exposes workflow tools to AI agents via the Model Context Protocol (MCP): `get_workflows`, `start_workflow`, `finished_step`, `abort_workflow`, and `go_to_step`. These tools constitute the primary runtime interface through which agents discover, execute, and manage multi-step workflows. The server also exposes review tools (`get_review_instructions`, `get_configured_reviews`, `mark_review_as_passed`). Built on FastMCP; all tool responses serialized as dictionaries via Pydantic `model_dump()`. At startup, the server detects issues (e.g., malformed job.yml files) via `detect_issues()` and communicates them through dynamic MCP instructions and by appending warnings to tool responses.
 
 ## Requirements
 
@@ -102,3 +102,28 @@ The DeepWork MCP server exposes workflow tools to AI agents via the Model Contex
 
 1. All tool responses MUST be serialized via Pydantic's `model_dump()` method, returning plain dictionaries.
 2. The `StepStatus` enum values MUST be: `"needs_work"`, `"next_step"`, `"workflow_complete"`.
+
+### JOBS-REQ-001.9: Issue Detection
+
+1. The system MUST provide a `detect_issues()` function in `deepwork.jobs.issues` that accepts a `project_root` (Path) and returns a list of `Issue` objects.
+2. `detect_issues()` MUST detect job.yml files that fail schema validation or parsing by calling `load_all_jobs()`.
+3. Each `Issue` MUST have: `severity` (str), `job_name` (str), `job_dir` (str), `message` (str), `suggestion` (str).
+4. The `suggestion` for schema errors MUST reference `/deepwork repair` as a remediation path.
+5. `detect_issues()` MUST return an empty list when all jobs parse successfully.
+6. `detect_issues()` MUST be importable independently of the MCP layer so other agent implementations can use it.
+
+### JOBS-REQ-001.10: Startup Instructions
+
+1. The MCP server's `instructions` field MUST be built dynamically at startup based on `detect_issues()` results.
+2. The instructions MUST always include static server instructions describing the workflow lifecycle and session identity.
+3. When issues are detected, the instructions MUST include an `IMPORTANT: ISSUE DETECTED` section with the formatted issue details.
+4. When no issues are detected, the instructions MUST include an `Available Workflows` section listing all discovered jobs with summaries.
+5. When issues are detected, the `Available Workflows` section MUST NOT be included.
+6. The total instructions string MUST NOT exceed 2048 bytes, to avoid truncation by MCP clients.
+7. Dynamic content (issues or workflow list) MUST appear before static server instructions, so it survives truncation.
+
+### JOBS-REQ-001.11: Issue Appending to Tool Responses
+
+1. When issues are detected at startup, all workflow tool responses (`get_workflows`, `start_workflow`, `finished_step`, `abort_workflow`, `go_to_step`) MUST include an `issue_detected` key with the formatted issue warning.
+2. When no issues are detected, tool responses MUST NOT include the `issue_detected` key.
+3. The `get_workflows` tool MUST use `detect_issues()` to populate its `errors` field, replacing inline error enhancement.
