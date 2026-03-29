@@ -208,6 +208,7 @@ deepwork/
 │   │   ├── README_REVIEWS.md
 │   │   ├── example_reviews/
 │   │   ├── skills/
+│   │   │   ├── configure_reviews/SKILL.md
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   └── review/SKILL.md
 │   │   ├── hooks/        # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh
@@ -223,7 +224,7 @@ deepwork/
 ## Appendix: Technology Stack
 
 - **Language**: Python 3.11+
-- **Runtime Dependencies**: PyYAML, Click, jsonschema, FastMCP, Pydantic, aiofiles
+- **Runtime Dependencies**: PyYAML, Click, jsonschema, FastMCP, Pydantic, MCP, aiofiles
 - **Dev Dependencies**: Jinja2, GitPython, Rich, pytest, ruff, mypy
 - **Distribution**: uv/pipx/brew for Python package management
 - **Testing**: pytest with pytest-mock
