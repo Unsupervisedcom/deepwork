@@ -51,6 +51,13 @@ Steps may have quality criteria. When you call `finished_step`:
 - Use `abort_workflow` with an explanation if a workflow cannot be completed.
 - Use `go_to_step` to revisit an earlier step — clears progress from that step onward.
 
+## Tips
+
+- Create all expected outputs before calling `finished_step` — check `step_expected_outputs` for what's required
+- Provide clear, specific goals when starting — they're used for context throughout the workflow
+- Read quality gate feedback carefully before retrying — it tells you exactly what to fix
+- Don't leave workflows in a broken state — use `abort_workflow` if you can't complete
+
 ## Intent Parsing
 
 When the user invokes `/deepwork`, parse their intent:
