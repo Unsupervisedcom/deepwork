@@ -20,6 +20,8 @@ from typing import Any
 
 from fastmcp import FastMCP
 
+from deepwork.jobs.discovery import load_all_jobs
+from deepwork.jobs.issues import Issue, detect_issues, format_issues_for_agent
 from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     ArgumentValue,
@@ -90,11 +92,33 @@ def create_server(
     except Exception:
         logger.warning("Failed to write initial job manifest", exc_info=True)
 
+    # Detect issues and build dynamic instructions
+    startup_issues = detect_issues(project_path)
+    instructions = _build_startup_instructions(project_path, startup_issues)
+
     # Create MCP server
     mcp = FastMCP(
         name="deepwork",
-        instructions=_get_server_instructions(),
+        instructions=instructions,
     )
+
+    # =========================================================================
+    # Issue detection — append to tool responses when issues exist
+    # =========================================================================
+
+    _issue_warning: str | None = None
+    if startup_issues:
+        _issue_warning = (
+            "\n\n---\n**IMPORTANT: ISSUE DETECTED.** "
+            "Suggest repairing this immediately to the user.\n\n"
+            + format_issues_for_agent(startup_issues)
+        )
+
+    def _append_issues(result: dict[str, Any]) -> dict[str, Any]:
+        """Append issue warning to a dict tool response if issues exist."""
+        if _issue_warning:
+            result["issue_detected"] = _issue_warning
+        return result
 
     # =========================================================================
     # MCP Tool Registrations
@@ -127,7 +151,7 @@ def create_server(
         """Get all available workflows."""
         _log_tool_call("get_workflows")
         response = tools.get_workflows()
-        return response.model_dump()
+        return _append_issues(response.model_dump())
 
     @mcp.tool(
         description=(
@@ -171,7 +195,7 @@ def create_server(
             agent_id=agent_id,
         )
         response = await tools.start_workflow(input_data)
-        return response.model_dump()
+        return _append_issues(response.model_dump())
 
     @mcp.tool(
         description=(
@@ -219,7 +243,7 @@ def create_server(
             agent_id=agent_id,
         )
         response = await tools.finished_step(input_data)
-        return response.model_dump()
+        return _append_issues(response.model_dump())
 
     @mcp.tool(
         description=(
@@ -247,7 +271,7 @@ def create_server(
             explanation=explanation, session_id=session_id, agent_id=agent_id
         )
         response = await tools.abort_workflow(input_data)
-        return response.model_dump()
+        return _append_issues(response.model_dump())
 
     @mcp.tool(
         description=(
@@ -275,7 +299,7 @@ def create_server(
         )
         input_data = GoToStepInput(step_id=step_id, session_id=session_id, agent_id=agent_id)
         response = await tools.go_to_step(input_data)
-        return response.model_dump()
+        return _append_issues(response.model_dump())
 
     # ---- Review tool (outside the workflow lifecycle) ----
 
@@ -338,9 +362,8 @@ def create_server(
     return mcp
 
 
-def _get_server_instructions() -> str:
-    """Get the server instructions for agents."""
-    return """# DeepWork Workflow Server
+_STATIC_INSTRUCTIONS = """\
+# DeepWork Workflow Server
 
 This MCP server guides you through multi-step workflows with quality gates.
 
@@ -402,3 +425,41 @@ Use `go_to_step` to navigate back to a prior step when earlier outputs need revi
 - Check the `stack` field in responses to understand nesting depth
 - Use `abort_workflow` rather than leaving workflows in a broken state
 """
+
+
+def _build_startup_instructions(
+    project_root: Path,
+    issues: list[Issue],
+) -> str:
+    """Build the MCP server instructions based on detected issues and available workflows.
+
+    This string is sent to clients during the MCP initialize handshake.
+    """
+    if issues:
+        return (
+            _STATIC_INSTRUCTIONS
+            + "\n## **IMPORTANT: ISSUE DETECTED**\n\n"
+            "Suggest repairing this immediately to the user.\n\n"
+            + format_issues_for_agent(issues)
+        )
+
+    # No issues — list available workflows
+    jobs, _ = load_all_jobs(project_root)
+    if not jobs:
+        return _STATIC_INSTRUCTIONS
+
+    lines: list[str] = []
+    for job in jobs:
+        for wf_name, wf in job.workflows.items():
+            lines.append(f"- **{job.name}/{wf_name}**: {wf.summary}")
+
+    return (
+        _STATIC_INSTRUCTIONS
+        + "\n## Available Workflows\n\n"
+        "This project uses DeepWork to manage complex processes with confidence. "
+        "The following workflows are installed — if the user mentions wanting to do "
+        "something that sounds like any of these, use the `/deepwork` skill to start "
+        "the appropriate workflow.\n\n"
+        + "\n".join(lines)
+        + "\n"
+    )
