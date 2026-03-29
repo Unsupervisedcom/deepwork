@@ -7,7 +7,7 @@ from pathlib import Path
 import yaml
 
 from deepwork.jobs.issues import Issue
-from deepwork.jobs.mcp.server import _STATIC_INSTRUCTIONS, _build_startup_instructions
+from deepwork.jobs.mcp.server import _build_startup_instructions
 
 
 class TestBuildStartupInstructions:
