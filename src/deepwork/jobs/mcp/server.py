@@ -434,11 +434,15 @@ def _build_startup_instructions(
     """Build the MCP server instructions based on detected issues and available workflows.
 
     This string is sent to clients during the MCP initialize handshake.
+    Dynamic content (issues/workflows) goes FIRST so it survives truncation.
     """
     if issues:
         return (
-            _STATIC_INSTRUCTIONS + "\n## **IMPORTANT: ISSUE DETECTED**\n\n"
-            "Suggest repairing this immediately to the user.\n\n" + format_issues_for_agent(issues)
+            "## **IMPORTANT: ISSUE DETECTED**\n\n"
+            "Suggest repairing this immediately to the user.\n\n"
+            + format_issues_for_agent(issues)
+            + "\n\n"
+            + _STATIC_INSTRUCTIONS
         )
 
     # No issues — list available workflows
@@ -452,9 +456,12 @@ def _build_startup_instructions(
             lines.append(f"- **{job.name}/{wf_name}**: {wf.summary}")
 
     return (
-        _STATIC_INSTRUCTIONS + "\n## Available Workflows\n\n"
+        "## Available Workflows\n\n"
         "This project uses DeepWork to manage complex processes with confidence. "
         "The following workflows are installed — if the user mentions wanting to do "
         "something that sounds like any of these, use the `/deepwork` skill to start "
-        "the appropriate workflow.\n\n" + "\n".join(lines) + "\n"
+        "the appropriate workflow.\n\n"
+        + "\n".join(lines)
+        + "\n\n"
+        + _STATIC_INSTRUCTIONS
     )
