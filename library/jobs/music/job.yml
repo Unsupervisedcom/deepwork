@@ -1,0 +1,189 @@
+name: music
+version: "1.0.1"
+summary: "AI-assisted music production: project setup, sound design (VSTs), arrangement, mix, and iterative review"
+common_job_info_provided_to_all_steps_at_runtime: |
+  A structured workflow for producing a music track with AI assistance.
+
+  ## Git LFS for audio files
+
+  All audio files MUST be tracked with git LFS. The project_setup step
+  configures .gitattributes. Always run `git lfs track` before committing
+  new audio file types. Tracked extensions: .wav .aif .aiff .flac .mp3 .ogg.
+
+  ## Directory structure
+
+  All work products live under `music/[track_name]/`:
+
+    music/[track_name]/
+    ├── project_brief.md        # Track goals, inputs, reference context, DAW choice
+    ├── sound_design_notes.md   # Samples, VST patches, sound decisions
+    ├── arrangement_notes.md    # Song structure, section layout, automation
+    ├── mix_notes.md            # Levels, EQ, compression, FX chains
+    ├── iteration_notes.md      # Review findings and loop/finalize decision
+    └── stems/                  # Bounced stems tracked via git LFS
+
+  ## DAW approaches
+
+  Choose one approach per project and document it in the project brief.
+
+  ### Ableton Live
+  - Session View: loop/scene-based composition; Arrangement View: linear timeline
+  - AbletonOSC MCP: control transport, clips, scenes, and parameters via OSC
+  - Max for Live: custom audio/MIDI processing and generative sequencers
+  - Save the .als project file; bounce stems to stems/ for git LFS tracking
+  - Reference: https://github.com/ideoforms/AbletonOSC
+
+  ### Ardour and open-source DAWs
+  - Ardour: professional DAW on Linux/macOS; .ardour session files are XML (git-diff-friendly)
+  - OSC control: Preferences → Control Surfaces → Open Sound Control (port 3819 by default)
+  - LMMS: lighter alternative with built-in synths, Beat+Bassline editor, and sample sequencer
+  - Export per-track stems to stems/ for git LFS tracking
+
+  ## VSTs and synthesis
+
+  Document all VST choices by synthesis type in sound_design_notes.md:
+  - Subtractive: Massive, Serum, Vital (free)
+  - FM: FM8, DX7 emulations, Dexed (free)
+  - Wavetable: Serum, Surge (free)
+  - Granular: Granite, Emergence, Padshop
+  - Physical modeling: Pianoteq, AAS products
+  Bounce final VST output to .wav stems for portability and LFS tracking.
+
+  ## Iterative production loop
+
+  The review_iterate step evaluates the current mix critically and decides
+  whether to loop back. Use go_to_step with the target step_id to loop:
+  - Loop to sound_design if fundamentals (sounds, samples) need rework
+  - Loop to arrange if song structure needs adjustment
+  - Loop to mix if only mix balance needs correction
+  - Proceed to finalize if the track meets the defined goals
+  Maximum 3 iterations before proceeding regardless.
+
+workflows:
+  - name: produce
+    summary: "Produce a track from project setup through composition, mix, and iterative review"
+    steps:
+      - project_setup
+      - sound_design
+      - arrange
+      - mix
+      - review_iterate
+
+steps:
+  - id: project_setup
+    name: "Project setup"
+    description: "Initialize project directory, configure git LFS for audio files, and write the project brief"
+    instructions_file: steps/project_setup.md
+    inputs:
+      - name: track_name
+        description: "Name of the track or project (used as the project directory name, e.g. 'dark_wave_001')"
+      - name: genre_style
+        description: "Genre, mood, or style goal (e.g., 'dark techno, industrial textures, hypnotic')"
+      - name: reference_tracks
+        description: "Reference songs for inspiration in 'Artist - Title' format, 2-5 tracks"
+      - name: bpm_key
+        description: "Target tempo and key/scale (e.g., '132 BPM, A minor')"
+    outputs:
+      project_brief.md:
+        type: file
+        description: "Project overview covering goals, all inputs, chosen DAW approach, and reference track notes"
+        required: true
+      .gitattributes:
+        type: file
+        description: "Git LFS configuration tracking all audio file formats"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: project_brief.md
+        quality_criteria:
+          "Complete inputs": "All four user inputs (track name, genre/style, reference tracks, BPM/key) are documented."
+          "DAW selected": "A specific DAW approach (Ableton or Ardour/open-source) is chosen and noted."
+      - run_each: .gitattributes
+        quality_criteria:
+          "LFS patterns present": ".gitattributes includes git-lfs track patterns for .wav, .aif, .aiff, .flac, .mp3, and .ogg."
+
+  - id: sound_design
+    name: "Sound design"
+    description: "Select samples and design sounds using VSTs; document all patch decisions; bounce stems to disk"
+    instructions_file: steps/sound_design.md
+    inputs:
+      - file: project_brief.md
+        from_step: project_setup
+    outputs:
+      sound_design_notes.md:
+        type: file
+        description: "Catalog of every sound role: assigned VST or sample, patch settings, and design rationale"
+        required: true
+    dependencies:
+      - project_setup
+    reviews:
+      - run_each: sound_design_notes.md
+        additional_review_guidance: "Read project_brief.md for the genre, style, BPM/key, and reference tracks to verify alignment."
+        quality_criteria:
+          "Sounds cataloged": "Each major sound role (kick, bass, pads, leads, percussion, etc.) has an assigned VST or sample with patch or settings notes."
+          "Genre fit": "Sound palette matches the genre and style defined in the project brief."
+          "Reference alignment": "At least one note per reference track describes which sonic element it inspired."
+          "Lead motif specified": "Any melodic lead role includes a specific 2-4 bar MIDI note sequence, not just a range."
+          "VSTs verified": "Only VSTs confirmed as installed are assigned; free or built-in alternatives are listed where applicable."
+
+  - id: arrange
+    name: "Arrange"
+    description: "Arrange clips, scenes, and regions in the DAW to define the full song structure"
+    instructions_file: steps/arrange.md
+    inputs:
+      - file: sound_design_notes.md
+        from_step: sound_design
+    outputs:
+      arrangement_notes.md:
+        type: file
+        description: "Song structure: named sections (intro/build/drop/break/outro), clip/scene layout, and automation notes"
+        required: true
+    dependencies:
+      - sound_design
+    reviews:
+      - run_each: arrangement_notes.md
+        quality_criteria:
+          "Structure defined": "All major sections are named and sequenced with bar/time markers."
+          "Energy arc": "The arrangement shows a clear build-peak-release arc."
+
+  - id: mix
+    name: "Mix"
+    description: "Balance levels, apply EQ and compression, and set up send/return effects and master bus"
+    instructions_file: steps/mix.md
+    inputs:
+      - file: arrangement_notes.md
+        from_step: arrange
+    outputs:
+      mix_notes.md:
+        type: file
+        description: "Mix decisions: relative levels, EQ and compression settings, FX send/return chains, master bus processing"
+        required: true
+    dependencies:
+      - arrange
+    reviews:
+      - run_each: mix_notes.md
+        quality_criteria:
+          "Levels documented": "Relative levels for all major elements (kick, bass, leads, pads, vocals if any) are noted."
+          "FX chain listed": "Send/return effects and master bus processing chain are documented."
+
+  - id: review_iterate
+    name: "Review and iterate"
+    description: "Critical listen to the full mix; decide whether to loop back to an earlier step or finalize"
+    instructions_file: steps/review_iterate.md
+    inputs:
+      - file: mix_notes.md
+        from_step: mix
+    outputs:
+      iteration_notes.md:
+        type: file
+        description: "Review findings: strengths, issues, and a clear loop decision (finalize or loop back to a specific step)"
+        required: true
+    dependencies:
+      - mix
+    reviews:
+      - run_each: iteration_notes.md
+        additional_review_guidance: "Read project_brief.md to verify the review is measuring the track against its stated goals and reference tracks."
+        quality_criteria:
+          "Loop decision": "A clear decision is documented: either proceed to finalize or loop back to a named step."
+          "Actionable feedback": "If looping back, specific changes are listed for the target step."
+          "Goal alignment": "The review explicitly evaluates the track against the genre, style, and reference tracks from the project brief."
