@@ -6,16 +6,26 @@ from pathlib import Path
 
 import yaml
 
+import pytest
+
 from deepwork.jobs.issues import Issue, detect_issues, format_issues_for_agent
+
+
+@pytest.fixture()
+def jobs_dir(tmp_path: Path) -> Path:
+    """Create and return the .deepwork/jobs directory."""
+    d = tmp_path / ".deepwork" / "jobs"
+    d.mkdir(parents=True)
+    return d
 
 
 class TestDetectIssues:
     """Tests for detect_issues()."""
 
-    def test_returns_empty_when_no_issues(self, tmp_path: Path) -> None:
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.9.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_returns_empty_when_no_issues(self, tmp_path: Path, jobs_dir: Path) -> None:
         """No issues when all jobs parse successfully."""
-        jobs_dir = tmp_path / ".deepwork" / "jobs"
-        jobs_dir.mkdir(parents=True)
         job_dir = jobs_dir / "good_job"
         job_dir.mkdir()
         (job_dir / "job.yml").write_text(
@@ -45,18 +55,19 @@ class TestDetectIssues:
         issues = detect_issues(tmp_path)
         assert issues == []
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.9.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_empty_when_no_jobs(self, tmp_path: Path) -> None:
         """No issues when no job directories exist."""
         issues = detect_issues(tmp_path)
         assert issues == []
 
-    def test_detects_schema_error(self, tmp_path: Path) -> None:
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.9.2, JOBS-REQ-001.9.3, JOBS-REQ-001.9.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_detects_schema_error(self, tmp_path: Path, jobs_dir: Path) -> None:
         """Detects a job.yml that doesn't conform to the schema."""
-        jobs_dir = tmp_path / ".deepwork" / "jobs"
-        jobs_dir.mkdir(parents=True)
         job_dir = jobs_dir / "broken_job"
         job_dir.mkdir()
-        # Missing required fields
         (job_dir / "job.yml").write_text("name: broken_job\n")
 
         issues = detect_issues(tmp_path)
@@ -66,11 +77,10 @@ class TestDetectIssues:
         assert issue.job_name == "broken_job"
         assert "broken_job" in issue.job_dir
         assert "/deepwork repair" in issue.suggestion
+        assert "job.yml" in issue.suggestion
 
-    def test_detects_multiple_issues(self, tmp_path: Path) -> None:
+    def test_detects_multiple_issues(self, tmp_path: Path, jobs_dir: Path) -> None:
         """Detects issues across multiple broken jobs."""
-        jobs_dir = tmp_path / ".deepwork" / "jobs"
-        jobs_dir.mkdir(parents=True)
         for name in ["bad_one", "bad_two"]:
             job_dir = jobs_dir / name
             job_dir.mkdir()
@@ -81,23 +91,8 @@ class TestDetectIssues:
         names = {i.job_name for i in issues}
         assert names == {"bad_one", "bad_two"}
 
-    def test_suggestion_mentions_repair(self, tmp_path: Path) -> None:
-        """The suggestion for schema errors mentions /deepwork repair."""
-        jobs_dir = tmp_path / ".deepwork" / "jobs"
-        jobs_dir.mkdir(parents=True)
-        job_dir = jobs_dir / "bad_job"
-        job_dir.mkdir()
-        (job_dir / "job.yml").write_text("name: bad_job\n")
-
-        issues = detect_issues(tmp_path)
-        assert len(issues) == 1
-        assert "/deepwork repair" in issues[0].suggestion
-        assert "job.yml" in issues[0].suggestion
-
-    def test_handles_binary_content(self, tmp_path: Path) -> None:
+    def test_handles_binary_content(self, tmp_path: Path, jobs_dir: Path) -> None:
         """Binary/non-UTF-8 job.yml is detected as an issue, not a crash."""
-        jobs_dir = tmp_path / ".deepwork" / "jobs"
-        jobs_dir.mkdir(parents=True)
         job_dir = jobs_dir / "binary_job"
         job_dir.mkdir()
         (job_dir / "job.yml").write_bytes(b"\x00\x01\x02\xff\xfe")
@@ -107,10 +102,8 @@ class TestDetectIssues:
         assert issues[0].job_name == "binary_job"
         assert issues[0].severity == "error"
 
-    def test_handles_empty_job_yml(self, tmp_path: Path) -> None:
+    def test_handles_empty_job_yml(self, tmp_path: Path, jobs_dir: Path) -> None:
         """Empty job.yml is detected as an issue."""
-        jobs_dir = tmp_path / ".deepwork" / "jobs"
-        jobs_dir.mkdir(parents=True)
         job_dir = jobs_dir / "empty_job"
         job_dir.mkdir()
         (job_dir / "job.yml").write_text("")
@@ -119,10 +112,8 @@ class TestDetectIssues:
         assert len(issues) == 1
         assert issues[0].job_name == "empty_job"
 
-    def test_handles_malformed_yaml(self, tmp_path: Path) -> None:
+    def test_handles_malformed_yaml(self, tmp_path: Path, jobs_dir: Path) -> None:
         """Malformed YAML (unclosed braces) is detected as an issue."""
-        jobs_dir = tmp_path / ".deepwork" / "jobs"
-        jobs_dir.mkdir(parents=True)
         job_dir = jobs_dir / "malformed"
         job_dir.mkdir()
         (job_dir / "job.yml").write_text("{{{{not valid yaml")
@@ -131,10 +122,8 @@ class TestDetectIssues:
         assert len(issues) == 1
         assert issues[0].job_name == "malformed"
 
-    def test_handles_non_dict_yaml(self, tmp_path: Path) -> None:
+    def test_handles_non_dict_yaml(self, tmp_path: Path, jobs_dir: Path) -> None:
         """YAML that parses to a list instead of dict is detected as an issue."""
-        jobs_dir = tmp_path / ".deepwork" / "jobs"
-        jobs_dir.mkdir(parents=True)
         job_dir = jobs_dir / "list_job"
         job_dir.mkdir()
         (job_dir / "job.yml").write_text("- item1\n- item2\n")
@@ -143,10 +132,8 @@ class TestDetectIssues:
         assert len(issues) == 1
         assert issues[0].job_name == "list_job"
 
-    def test_handles_latin1_encoded_file(self, tmp_path: Path) -> None:
+    def test_handles_latin1_encoded_file(self, tmp_path: Path, jobs_dir: Path) -> None:
         """Latin-1 encoded file with non-UTF-8 bytes is detected as an issue."""
-        jobs_dir = tmp_path / ".deepwork" / "jobs"
-        jobs_dir.mkdir(parents=True)
         job_dir = jobs_dir / "latin1_job"
         job_dir.mkdir()
         (job_dir / "job.yml").write_bytes("name: caf\xe9\n".encode("latin-1"))
@@ -155,11 +142,8 @@ class TestDetectIssues:
         assert len(issues) == 1
         assert issues[0].job_name == "latin1_job"
 
-    def test_good_and_bad_jobs_together(self, tmp_path: Path) -> None:
+    def test_good_and_bad_jobs_together(self, tmp_path: Path, jobs_dir: Path) -> None:
         """Good jobs are not reported; only bad ones produce issues."""
-        jobs_dir = tmp_path / ".deepwork" / "jobs"
-        jobs_dir.mkdir(parents=True)
-
         # Good job
         good = jobs_dir / "good_job"
         good.mkdir()
@@ -168,9 +152,7 @@ class TestDetectIssues:
                 {
                     "name": "good_job",
                     "summary": "Works",
-                    "step_arguments": [
-                        {"name": "out", "description": "Out", "type": "file_path"}
-                    ],
+                    "step_arguments": [{"name": "out", "description": "Out", "type": "file_path"}],
                     "workflows": {
                         "main": {
                             "summary": "Main",
