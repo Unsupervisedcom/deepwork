@@ -29,7 +29,11 @@ def format_for_claude(
         return "No review tasks to execute."
 
     lines: list[str] = []
-    lines.append("Invoke the following list of Tasks in parallel:\n")
+    lines.append("Invoke the following list of Tasks in parallel.")
+    lines.append(
+        "IMPORTANT: Do NOT read the prompt files yourself. Pass the prompt field "
+        "directly to each agent — the @file references are expanded automatically.\n"
+    )
 
     for task, file_path in task_files:
         # Make the instruction file path relative to project root

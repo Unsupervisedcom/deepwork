@@ -37,7 +37,7 @@ class TestFormatForClaude:
         file_path.parent.mkdir(parents=True)
         file_path.write_text("content")
         result = format_for_claude([(task, file_path)], tmp_path)
-        assert result.startswith("Invoke the following list of Tasks in parallel:")
+        assert result.startswith("Invoke the following list of Tasks in parallel.")
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3a).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
