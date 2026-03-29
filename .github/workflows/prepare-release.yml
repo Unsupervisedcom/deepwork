@@ -315,7 +315,7 @@ jobs:
 
           # Force-push to the `pre-release` branch.
           # This is the branch users subscribe to via:
-          #   /plugin marketplace add Unsupervisedcom/deepwork#pre-release
+          #   claude plugin marketplace add Unsupervisedcom/deepwork#pre-release
           git push origin HEAD:refs/heads/pre-release --force
 
           # Tag for the GitHub Release
@@ -333,8 +333,8 @@ jobs:
 
             **To use this pre-release**, subscribe to the pre-release plugin channel:
             ```
-            /plugin marketplace add Unsupervisedcom/deepwork#pre-release
-            /plugin install deepwork@deepwork-plugins
+            claude plugin marketplace add Unsupervisedcom/deepwork#pre-release
+            claude plugin install deepwork@deepwork-plugins
             ```
           draft: false
           prerelease: true

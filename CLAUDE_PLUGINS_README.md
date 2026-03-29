@@ -23,17 +23,17 @@ Run the following *in Claude*.
 
 #### Add the marketplace
 ```
-/plugin marketplace add https://github.com/Unsupervisedcom/deepwork
+claude plugin marketplace add Unsupervisedcom/deepwork
 ```
 
 #### Install the deepwork plugin
 ```
-/plugin install deepwork@deepwork-plugins
+claude plugin install deepwork@deepwork-plugins
 ```
 
 #### Install the learning-agents plugin
 ```
-/plugin install learning-agents@deepwork-plugins
+claude plugin install learning-agents@deepwork-plugins
 ```
 
 ## Plugin Details
