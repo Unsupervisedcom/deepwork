@@ -13,10 +13,11 @@ Read the assembly requirements and OTS component list to identify every sub-func
 1. **List parts to design** — Extract the "Flagged for Custom Design" list from `ots_components.md`. Each entry becomes one custom part.
 
 2. **For each part, define:**
-   - **Geometry** — Describe the shape in plain language (e.g., "L-bracket, 40×30×3 mm, two M3 clearance holes on each face"). If an STL or STEP file already exists in the repo, reference its path.
+   - **Geometry** — Describe the shape in plain language (e.g., "L-bracket, 40×30×3 mm, two M3 clearance holes on each face"). If a model source file already exists in the repo, reference its path.
    - **Material** — Select based on loads and scale tier (see manufacturing methods in job context).
    - **Critical dimensions and tolerances** — Identify the features that must hit tight tolerances vs. those that can be loose.
    - **Manufacturing method** — Choose from the scale-tier guidance in the job context. Justify the choice.
+   - **Model file reference** — Check `agent.md` for the project's CAD toolchain (see Toolchain Adaptation table in job context). Reference the toolchain-appropriate source file (e.g., Python `.py` for AnchorSCAD, `.scad` for OpenSCAD, `.FCStd` for FreeCAD) — not the STL build artifact.
    - **Design-for-manufacture notes** — Flag any features that complicate fabrication (deep holes, undercuts, thin walls, complex curves).
 
 3. **Check for redundancy** — Confirm no designed part duplicates an available OTS component from the prior step.
@@ -49,7 +50,8 @@ Read the assembly requirements and OTS component list to identify every sub-func
 
 [Plain-language description of the shape. Reference an existing model file if one exists.]
 
-- Model reference: `[path/to/file.stl]` or *to be created*
+- Model source: `[path/to/source_file]` (use toolchain-appropriate format — see agent.md) or *to be created*
+- Build command: `[command to generate STL from source, per toolchain table]`
 - Key dimensions: [list critical dimensions]
 
 ### Tolerances
@@ -73,7 +75,7 @@ Read the assembly requirements and OTS component list to identify every sub-func
 - Each custom part has a manufacturing method matched to the target production scale.
 - Each part has a recommended material with justification.
 - No custom part duplicates an available OTS option from the prior step.
-- Each part references an existing STL/STEP file or includes notes on what model geometry to create.
+- Each part references an existing model source file (toolchain-appropriate format per agent.md) or includes notes on what geometry to create.
 
 ## Context
 

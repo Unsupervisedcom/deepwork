@@ -42,3 +42,16 @@ mech_engineer/
 3. **Shared scale tiers**: Prototype / small batch / production definitions are canonical across all workflows
 4. **`.deepwork/tmp/` for tracking files**: Final deliverables are written to `mech_design/{project_name}/` by step instructions; `.deepwork/tmp/` files are workflow tracking artifacts
 5. **`evaluate_at_scale` is standalone**: Allows re-evaluating any existing BOM without re-running the full design workflow
+6. **CAD Toolchain Adaptation table**: Like the `engineer` job's domain adaptation table, a Toolchain Adaptation table in `common_job_info` maps generic concepts (model source file, build command, model registry) to tool-specific equivalents (AnchorSCAD, OpenSCAD, FreeCAD, etc.). Steps reference `agent.md` for the project's toolchain; they do NOT hardcode STL/STEP paths. STL is a build artifact, not a source file.
+
+## Known Project Contexts
+
+### ncrmro/plant-caravan (AnchorSCAD)
+
+The `plant-caravan` project uses AnchorSCAD — a Python-based parametric CAD framework:
+- Model source files: Python `.py` in `hardware/cad/src/` using `anchorscad-core`
+- Build command: `./bin/render` (generates `.scad` → OpenSCAD headless → `.stl`)
+- Model registry: `hardware/cad/cadeng.yaml`
+- Nix flake provides OpenSCAD with EGL headless support (no X11 needed)
+
+When running `mech_engineer` workflows in plant-caravan, model references should point to Python source files and `cadeng.yaml` entries, not raw STL files.

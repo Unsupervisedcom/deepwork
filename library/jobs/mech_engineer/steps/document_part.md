@@ -65,8 +65,8 @@ Merge the part spec and manufacturing specification into a clean datasheet, veri
 ## 3D Model
 
 - **Status**: [Exists / To be created]
-- **Location**: `[path/to/file.stl]` or *needs modeling*
-- **Format**: [STL / STEP / DXF]
+- **Source file**: `[path/to/source_file]` (toolchain-appropriate format per agent.md) or *needs modeling*
+- **Build command**: `[command to generate STL from source]`
 
 ## Open Issues
 
@@ -76,7 +76,7 @@ Merge the part spec and manufacturing specification into a clean datasheet, veri
 ## Quality Criteria
 
 - Datasheet includes all fields needed to order fabrication or add the part to a BOM.
-- An STL file path, repository link, or model creation instructions are included.
+- A model source file path (toolchain-appropriate format per agent.md) or model creation instructions are included.
 - A fabricator could produce the part from this datasheet without additional information.
 
 ## Context

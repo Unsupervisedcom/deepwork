@@ -1,11 +1,29 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: mech_engineer
-version: "1.0.1"
+version: "1.1.0"
 summary: "Design mechanical assemblies and parts with OTS sourcing, manufacturing method recommendations, BOM generation, and multi-scale production evaluation"
 common_job_info_provided_to_all_steps_at_runtime: |
   Mechanical engineering design workflow for hardware projects. Supports designing
   assemblies and individual parts from off-the-shelf (OTS) components and custom-fabricated
   parts, recommending manufacturing processes, and evaluating designs across production scales.
+
+  ## CAD Toolchain Adaptation
+
+  The agent MUST read the repository's `agent.md` (or equivalent context file) to determine
+  the project's CAD toolchain and adapt model references accordingly.
+
+  | Concept             | AnchorSCAD (Python)         | OpenSCAD              | FreeCAD               | Proprietary (SolidWorks/Fusion) |
+  |---------------------|-----------------------------|-----------------------|-----------------------|---------------------------------|
+  | Model source file   | Python `.py` (anchorscad)   | `.scad` file          | `.FCStd` file         | `.sldprt` / `.f3d` file         |
+  | Build output        | `.stl` via `./bin/render`   | `.stl` via `openscad -o` | `.stl` via CLI export | `.stl` via manual export       |
+  | Model registry      | `cadeng.yaml`               | file list / Makefile  | project index         | PDM system                      |
+  | Build command       | `./bin/render [name]`       | `openscad -o out.stl in.scad` | `freecad --export` | manual GUI export          |
+
+  When referencing or creating model files, use the toolchain-appropriate source format —
+  not raw STL files. STL is a build artifact, not a source file.
+
+  If no `agent.md` exists, ask the user which CAD toolchain the project uses before
+  proceeding with steps that involve model file references.
 
   ## Manufacturing Methods
 
@@ -127,7 +145,7 @@ steps:
     outputs:
       .deepwork/tmp/custom_parts_plan.md:
         type: file
-        description: "Per-part design brief: geometry description, material, tolerances, manufacturing method, and STL or model reference"
+        description: "Per-part design brief: geometry description, material, tolerances, manufacturing method, and model source file reference (toolchain-appropriate)"
         required: true
     dependencies:
       - define_assembly_requirements
@@ -139,7 +157,7 @@ steps:
           "Manufacturing Method Specified": "Each custom part has a manufacturing method matched to the target production scale."
           "Material Specified": "Each part has a recommended material with justification (e.g., PLA for prototype, aluminum 6061 for production)."
           "No Unnecessary Custom Parts": "Custom parts are only designed for functions not addressable by OTS components."
-          "STL or Drawing Referenced": "Each part references an existing STL/STEP file or includes notes on what model geometry to create."
+          "Model Source Referenced": "Each part references an existing model source file (toolchain-appropriate format per agent.md) or includes notes on what model geometry to create."
 
   - id: generate_bom
     name: "Generate Bill of Materials"
@@ -243,7 +261,7 @@ steps:
 
   - id: document_part
     name: "Document Part"
-    description: "Produce the final part datasheet combining spec, manufacturing recommendation, and STL or model reference for BOM inclusion or fabricator handoff."
+    description: "Produce the final part datasheet combining spec, manufacturing recommendation, and model source file reference for BOM inclusion or fabricator handoff."
     instructions_file: steps/document_part.md
     inputs:
       - file: .deepwork/tmp/part_spec.md
@@ -253,7 +271,7 @@ steps:
     outputs:
       .deepwork/tmp/part_datasheet.md:
         type: file
-        description: "Complete part datasheet: spec summary, manufacturing method, material, cost estimate, and model/STL reference"
+        description: "Complete part datasheet: spec summary, manufacturing method, material, cost estimate, and model source file reference"
         required: true
     dependencies:
       - define_part_spec
@@ -262,7 +280,7 @@ steps:
       - run_each: .deepwork/tmp/part_datasheet.md
         quality_criteria:
           "Complete": "Datasheet includes all fields needed to order fabrication or add the part to a BOM."
-          "Model Referenced": "An STL file path, repository link, or model creation notes are included."
+          "Model Referenced": "A model source file path (toolchain-appropriate format per agent.md) or model creation notes are included."
           "Fabricator-Ready": "A fabricator could produce the part from this datasheet without additional information."
 
   # ── Source OTS Parts Workflow ─────────────────────────────────────────
