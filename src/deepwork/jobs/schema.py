@@ -8,10 +8,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-# Supported lifecycle hook events (generic names, mapped to platform-specific by adapters)
-# These values must match SkillLifecycleHook enum in adapters.py
-LIFECYCLE_HOOK_EVENTS = ["after_agent", "before_tool", "before_prompt"]
-
 # Path to the JSON schema file
 _SCHEMA_FILE = Path(__file__).parent / "job.schema.json"
 

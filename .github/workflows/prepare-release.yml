@@ -203,6 +203,15 @@ jobs:
           # Verify the change
           grep "^version = " pyproject.toml
 
+      # --- Both: update __init__.py version ---
+      - name: Update __init__.py version
+        run: |
+          VERSION="${{ steps.versions.outputs.pypi_version }}"
+          sed -i "s/^__version__ = \".*\"/__version__ = \"$VERSION\"/" src/deepwork/__init__.py
+
+          # Verify the change
+          grep "^__version__" src/deepwork/__init__.py
+
       # --- Both: update plugin.json files ---
       - name: Update plugin versions
         run: |
@@ -264,6 +273,7 @@ jobs:
         run: |
           VERSION="${{ steps.versions.outputs.pypi_version }}"
           git add CHANGELOG.md pyproject.toml uv.lock .claude-plugin/marketplace.json \
+            src/deepwork/__init__.py \
             $(find . -path '*/.claude-plugin/plugin.json')
           git commit -m "Release v${VERSION}"
           git push -u origin "release/${VERSION}"

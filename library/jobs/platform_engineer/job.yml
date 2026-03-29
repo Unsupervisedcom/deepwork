@@ -1,729 +1,1298 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: platform_engineer
-version: "1.0.0"
 summary: "Platform engineering workflows: incidents, observability, CI/CD, releases, security, compliance, migrations, and dev tooling."
-common_job_info_provided_to_all_steps_at_runtime: |
-  Platform engineering job for discovering gaps, setting up infrastructure, and maintaining
-  production systems. Technology-agnostic — adapts to Kubernetes, Nix, cloud-managed, or hybrid
-  environments based on what `gather_context` discovers.
 
-  ## Core Philosophy
-  - Discover what exists before proposing changes
-  - Help users pick the right choices for their context
-  - Document all decisions in the repository
-  - Never take destructive actions without explicit approval
+step_arguments:
+  - name: context.md
+    description: "Platform context document listing detected tools, infrastructure type, repo structure, and existing configurations"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - Available tools (kubectl, Grafana MCP, CI provider, cloud CLI, Nix) are explicitly listed with version info where available.
+        - The infrastructure type (k8s, nix, cloud-managed, hybrid, or none) is clearly stated with supporting evidence.
+        - Key directories and configuration files relevant to platform engineering are cataloged.
 
-  ## Conventions
-  All workflows follow the RFC 2119 conventions defined in `conventions.md` (in the job directory).
-  Step instructions reference specific convention numbers. Key areas:
-  - Investigation principles (conventions 1-6)
-  - Observability standards (conventions 7-12)
-  - Infrastructure standards (conventions 13-17)
-  - CI/CD standards (conventions 18-23)
-  - Release management (conventions 24-29)
-  - Security standards (conventions 30-34)
-  - Cloud cost standards (conventions 35-39)
-  - Migration standards (conventions 40-45)
-  - Developer environment (conventions 46-49)
-  - Error tracking (conventions 50-54)
-  - Grafana MCP usage (conventions 55-59)
-  - SOC 2 compliance (conventions 60-70)
+  - name: incident_description
+    description: "Description of the incident — a symptom, alert, or error message"
+    type: string
 
-  ## Tool Detection
-  The `gather_context` step detects available tools and infrastructure type. All subsequent
-  steps read `context.md` to adapt behavior:
-  - **Kubernetes**: kubectl, helm, k9s
-  - **Observability**: Grafana MCP, Prometheus CLI, Loki CLI
-  - **CI/CD**: GitHub Actions, Forgejo Actions, GitLab CI, CircleCI
-  - **Cloud**: aws, gcloud, az, doctl
-  - **Nix**: nix, nixos-rebuild, home-manager
-  - **Error tracking**: sentry-cli, honeybadger CLI
+  - name: environment
+    description: "Target environment identifier (e.g., production, staging, dev)"
+    type: string
 
-  ## Artifact Storage
-  Workflow artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
+  - name: triage.md
+    description: "Triage document with incident scope, affected services, and investigation plan"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - The incident is clearly scoped with specific symptoms, timeframe, and affected environment identified.
+        - A prioritized list of investigation areas is defined based on symptom analysis.
+        - The target environment is explicitly identified and connectivity is confirmed or noted as blocked.
+
+  - name: investigation_findings.md
+    description: "Detailed investigation findings with evidence, timeline, and root cause hypotheses"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Read triage.md to verify the investigation followed the planned investigation areas. Verify that:
+        - At least one root cause hypothesis is proposed and supported by evidence from logs and/or metrics.
+        - Each finding includes specific evidence — log lines, metric values, timestamps — not just conclusions.
+        - Findings from different sources are cross-referenced to corroborate or rule out hypotheses.
+        - Confidence levels accurately reflect verification status per convention 5.
+
+  - name: incident_report.md
+    description: "Final incident report with timeline, root cause analysis, and remediation suggestions"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Read investigation_findings.md to verify the report accurately reflects the evidence. Verify that:
+        - The incident timeline is clear with specific timestamps and ordered chronologically.
+        - Root cause analysis is supported by evidence from the investigation, not speculation.
+        - Remediation suggestions include specific commands or actions with risk levels and rollback steps.
+        - The report format matches the severity — concise summary for minor issues, full report for significant incidents.
+
+  - name: symptom
+    description: "What is broken — error message, failing command, or description of the problem"
+    type: string
+
+  - name: diagnostic_report.md
+    description: "Diagnostic report with findings, attempted fixes, and resolution status"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - The root cause of the dev environment issue is identified or clearly stated as unknown.
+        - Safe fixes were attempted with their outcomes documented.
+        - The developer is either unblocked with a working fix or a GitHub issue was created to track the blocker.
+
+  - name: error_tracking_config.md
+    description: "Documentation of error tracking setup: provider, DSN, SDK integration, source maps"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - An error tracking provider is selected with rationale for the choice.
+        - SDK integration is configured with DSN, environment tags, and release tracking.
+        - A test event was sent or verification steps are documented.
+        - Configuration details are documented in the repository per convention 54.
+
+  - name: target_service
+    description: "Service or organization to inspect dashboards for"
+    type: string
+
+  - name: dashboard_assessment.md
+    description: "Assessment of existing dashboards with coverage gaps and recommendations"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - All existing dashboards for the target service/org are listed with their purpose.
+        - Coverage of the four golden signals (latency, traffic, errors, saturation) is assessed per convention 7.
+        - Missing dashboards or uncovered signals are clearly identified with recommendations.
+
+  - name: dashboard_definition
+    description: "Grafana dashboard JSON definitions or provisioning configs"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Read dashboard_assessment.md to verify the new dashboards address identified gaps. Verify that:
+        - The dashboard includes panels for latency, traffic, errors, and saturation per convention 7.
+        - Dashboard has time range selectors defaulting to last 1 hour per convention 8.
+        - Dashboard panels provide actionable information, not just raw data.
+
+  - name: cicd_audit.md
+    description: "CI/CD audit report with pipeline analysis, bottlenecks, and metrics"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - All CI/CD pipeline configurations are identified and analyzed.
+        - Build times, cache hit rates, and parallelism levels are documented where available.
+        - Performance bottlenecks and inefficiencies are flagged with evidence.
+        - Pipelines are checked against CI/CD conventions 18-23.
+
+  - name: optimization_plan.md
+    description: "Prioritized CI/CD optimization plan with expected impact"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Read cicd_audit.md to verify recommendations address the identified bottlenecks. Verify that:
+        - Each recommendation includes specific changes to make, not just general advice.
+        - Expected impact on build time and/or cost is estimated for each recommendation.
+        - Recommendations are ordered by impact-to-effort ratio.
+
+  - name: release_audit.md
+    description: "Audit of existing release process with gaps identified against conventions 24-29"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - The existing release process (or lack thereof) is fully documented.
+        - Missing components are identified by checking against release management conventions 24-29.
+        - Current versioning scheme is documented and assessed for SemVer compliance.
+
+  - name: release_configs
+    description: "CI workflow files, release scripts, and branch protection configs"
+    type: file_path
+
+  - name: release_docs.md
+    description: "Documentation of release process decisions and setup"
+    type: file_path
+
+  - name: infrastructure_audit.md
+    description: "Infrastructure audit documenting setup, gaps, and convention compliance"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - All infrastructure components (monitoring, CI/CD, deployment, secrets, networking) are documented.
+        - Each component is checked against relevant conventions with pass/fail status.
+        - Identified gaps include specific recommendations for remediation.
+
+  - name: spend_analysis.md
+    description: "Cloud spend analysis with waste identification and savings recommendations"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - Current cloud costs are documented with breakdown by service/resource type.
+        - Idle, oversized, or unused resources are flagged per conventions 35-38.
+        - Potential savings are estimated for each recommendation.
+        - Costs are categorized as fixed or variable per convention 39.
+
+  - name: vulnerability_report.md
+    description: "Vulnerability report with severity assessments and prioritized remediation plan"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - Vulnerability scans were run or existing scan results were reviewed.
+        - Each vulnerability has a severity assessment (Critical/High/Medium/Low).
+        - Remediation actions are prioritized by severity and exploitability.
+        - Scan frequency and response timelines are checked against conventions 30-34.
+
+  - name: observability_plan.md
+    description: "Observability setup plan with stack selection, architecture, and implementation steps"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - A monitoring stack is selected with rationale based on the infrastructure type from context.md.
+        - The monitoring architecture is defined including data flow, retention, and alerting.
+        - Clear implementation steps are provided appropriate to the infrastructure type (k8s operator, nix module, or cloud-managed).
+        - The plan ensures all production services will have golden signal coverage per convention 7.
+
+  - name: observability_configs
+    description: "Monitoring configuration files (Helm values, nix modules, cloud configs, alert rules)"
+    type: file_path
+
+  - name: migration_description
+    description: "What is being migrated (e.g., 'migrate from Zalando Postgres operator to CNPG')"
+    type: string
+
+  - name: migration_plan.md
+    description: "Detailed migration plan with steps, validation gates, and rollback procedures"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - The current infrastructure state is fully documented.
+        - A rollback plan is documented before any migration steps per convention 40.
+        - Each migration step has a validation gate per convention 44.
+        - A GitHub issue with detailed checklist is created per convention 41.
+        - Risks are identified and mitigations are documented.
+
+  - name: github_issue_url.md
+    description: "URL of the created GitHub issue"
+    type: file_path
+
+  - name: migration_report.md
+    description: "Migration execution report with completed steps, validation results, and final state"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Read migration_plan.md to verify all planned steps were executed with their validation gates. Verify that:
+        - All migration steps from the plan are accounted for with pass/fail status.
+        - Each validation gate result is documented.
+        - Migration progress is tracked in the GitHub issue per convention 45.
+        - The post-migration state is verified and documented.
+
+  - name: controls_assessment.md
+    description: "Inventory of existing controls mapped to SOC 2 TSC criteria with evidence references"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - Controls are assessed across all five Trust Service Criteria: Security (CC), Availability, Processing Integrity, Confidentiality, and Privacy.
+        - Each implemented control references where the evidence can be found (file path, CI workflow, config, policy) per convention 65.
+        - Every control is classified as implemented, partial, or missing per convention 64.
+        - Automated controls are verified by checking actual infrastructure configuration, not just documentation per convention 68.
+
+  - name: gap_analysis.md
+    description: "Gap analysis with missing and partial controls, remediation recommendations, and prioritization"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Read controls_assessment.md to verify gaps are derived from the actual assessment, not generic checklists. Verify that:
+        - Each gap references the specific TSC criteria it violates (e.g., CC6.1, A1.2) per convention 69.
+        - Each gap includes a remediation recommendation with estimated effort and priority per convention 70.
+        - Gaps are prioritized by audit risk — controls that auditors always check are flagged as high priority.
+
+  - name: evidence_checklist.md
+    description: "Evidence collection checklist for controls requiring manual evidence"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - All controls requiring manual evidence are listed with responsible party and collection cadence per convention 66.
+        - Controls that can be verified automatically are not in the manual checklist.
+
+  - name: compliance_doc.md
+    description: "The SOC 2 compliance document to be committed to the repository per convention 60"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Read controls_assessment.md and gap_analysis.md to verify the compliance document accurately reflects the assessment. Verify that:
+        - The document records controls and evidence without referencing any specific compliance platform per convention 61.
+        - The document is structured for version control — changes to controls will produce meaningful diffs per convention 62.
+        - Each control is mapped to the specific TSC criteria it satisfies per convention 69.
+        - Evidence references point to actual locations (file paths, URLs, CI workflows) that an auditor or compliance platform can verify.
+
+  - name: readiness_summary.md
+    description: "Executive summary of SOC 2 readiness with overall score and top action items"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - An overall readiness assessment is provided (ready, nearly ready, significant gaps).
+        - The top 5-10 gaps are listed with their remediation priority.
+        - If a remediation timeline is suggested, it is realistic given the estimated effort.
+
+  - name: issue_description
+    description: "Description of the platform engineering issue to create"
+    type: string
 
 workflows:
-  - name: incident_investigation
+  incident_investigation:
     summary: "Full incident investigation from triage to report"
-    steps:
-      - gather_context
-      - triage
-      - investigate
-      - incident_report
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Platform engineering job for discovering gaps, setting up infrastructure, and maintaining
+      production systems. Technology-agnostic — adapts to Kubernetes, Nix, cloud-managed, or hybrid
+      environments based on what `gather_context` discovers.
 
-  - name: quick_investigate
+      ## Core Philosophy
+      - Discover what exists before proposing changes
+      - Help users pick the right choices for their context
+      - Document all decisions in the repository
+      - Never take destructive actions without explicit approval
+
+      ## Conventions
+      All workflows follow the RFC 2119 conventions defined in `conventions.md` (in the job directory).
+      Step instructions reference specific convention numbers. Key areas:
+      - Investigation principles (conventions 1-6)
+      - Observability standards (conventions 7-12)
+      - Infrastructure standards (conventions 13-17)
+      - CI/CD standards (conventions 18-23)
+      - Release management (conventions 24-29)
+      - Security standards (conventions 30-34)
+      - Cloud cost standards (conventions 35-39)
+      - Migration standards (conventions 40-45)
+      - Developer environment (conventions 46-49)
+      - Error tracking (conventions 50-54)
+      - Grafana MCP usage (conventions 55-59)
+      - SOC 2 compliance (conventions 60-70)
+
+      ## Tool Detection
+      The `gather_context` step detects available tools and infrastructure type. All subsequent
+      steps read `context.md` to adapt behavior.
+
+      ## Artifact Storage
+      Workflow artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
+    steps:
+      - name: gather_context
+        instructions: |
+          # Gather Platform Context
+
+          ## Objective
+
+          Auto-detect the available tools, infrastructure type, repository structure, and existing configurations so that all subsequent workflow steps can adapt their behavior to the actual environment. This step MUST NOT require user input — it discovers everything automatically.
+
+          ## Task
+
+          Probe the local machine and repository to build a comprehensive platform context document. The output informs every other step in every workflow (12 workflows depend on this step), so thoroughness matters more than speed — but avoid blocking operations (no network calls that could hang without a timeout).
+
+          ### Process
+
+          #### 1. Detect Available Tools
+
+          For each tool category, check whether the binary exists and capture its version. Record each tool as **available** or **not found**.
+
+          **Container orchestration:**
+          - `kubectl version --client -o json 2>/dev/null` — record client version
+          - `helm version --short 2>/dev/null`
+          - `k9s version --short 2>/dev/null`
+          - `docker --version 2>/dev/null` or `podman --version 2>/dev/null`
+          - `docker compose version 2>/dev/null` or `podman-compose --version 2>/dev/null`
+
+          **Observability:**
+          - Grafana MCP — attempt to list dashboards via the Grafana MCP tool. If the tool responds, record as available and note the Grafana instance URL if returned. If the tool is not available or errors, record as not found.
+          - `promtool --version 2>/dev/null` (Prometheus CLI)
+          - `logcli --version 2>/dev/null` (Loki CLI)
+          - `amtool --version 2>/dev/null` (AlertManager CLI)
+
+          **CI provider (detect from repo files, not CLIs):**
+          - Check for `.github/workflows/` directory — if present, record GitHub Actions
+          - Check for `.forgejo/workflows/` directory — if present, record Forgejo Actions
+          - Check for `.gitlab-ci.yml` — if present, record GitLab CI
+          - Check for `.circleci/` directory — if present, record CircleCI
+          - Check for `Jenkinsfile` — if present, record Jenkins
+          - `gh --version 2>/dev/null` (GitHub CLI)
+
+          **Cloud CLIs:**
+          - `aws --version 2>/dev/null`
+          - `gcloud --version 2>/dev/null` (first line only)
+          - `az --version 2>/dev/null` (first line only)
+          - `doctl version 2>/dev/null`
+          - `terraform --version 2>/dev/null` (first line only)
+          - `pulumi version 2>/dev/null`
+          - `kubectl config get-contexts 2>/dev/null` — note the current context name
+
+          **Nix ecosystem:**
+          - `nix --version 2>/dev/null`
+          - `nixos-rebuild --help 2>/dev/null` (check exit code only, suppress output)
+          - `home-manager --version 2>/dev/null`
+          - Check if `flake.nix` exists at repo root
+          - Check if `flake.lock` exists at repo root
+
+          **Error tracking:**
+          - `sentry-cli --version 2>/dev/null`
+          - `honeybadger --version 2>/dev/null`
+
+          **Package managers & build tools:**
+          - `nix develop --help 2>/dev/null` (check exit code only)
+          - `npm --version 2>/dev/null`
+          - `pnpm --version 2>/dev/null`
+          - `yarn --version 2>/dev/null`
+          - `cargo --version 2>/dev/null`
+          - `go version 2>/dev/null`
+          - `uv --version 2>/dev/null`
+          - `pip --version 2>/dev/null`
+
+          #### 2. Determine Infrastructure Type
+
+          Based on tool detection results and repo contents, classify the infrastructure type. Exactly one primary type MUST be assigned, with optional secondary types.
+
+          | Type | Evidence |
+          |------|----------|
+          | **kubernetes** | `kubectl` available AND a kubeconfig exists (`~/.kube/config` or `$KUBECONFIG`) AND cluster is reachable (`kubectl cluster-info 2>/dev/null` exits 0) |
+          | **nix** | `flake.nix` exists at repo root OR NixOS configuration files are present |
+          | **cloud-managed** | Cloud CLI available AND no k8s/nix evidence (e.g., pure AWS Lambda, GCP Cloud Run) |
+          | **hybrid** | More than one of the above applies |
+          | **none** | None of the above applies — likely a local-only or new project |
+
+          If `kubectl` is available but cluster is not reachable, note this as "kubernetes (disconnected)" — the tool exists but cannot query live state.
+
+          #### 3. Survey Repository Structure
+
+          Scan the repository for platform-relevant files and directories. Do NOT read file contents — just note existence and paths.
+
+          #### 4. Catalog Existing Configurations
+
+          Note existing monitoring and operational configurations without reading sensitive content.
+
+          ## Output Format
+
+          Write the context document to `.deepwork/artifacts/platform_engineer/context.md`. Use the tabular format described in the step instructions file with sections for Available Tools, Infrastructure Type, Repository Structure, and Existing Configurations.
+        outputs:
+          context.md: {}
+
+      - name: triage
+        instructions: |
+          # Triage & Scope
+
+          ## Objective
+
+          Parse the incident description, determine the target environment, verify connectivity, identify likely affected services, and produce a prioritized investigation plan. This step transforms a vague symptom report into a structured, actionable scope for investigation.
+
+          ## Task
+
+          Take the incident description and environment inputs, validate them, confirm access to the target environment, and create a triage document that will guide the investigate step.
+
+          ### Process
+
+          1. Parse the incident description — extract symptom, onset, scope, severity, recent changes. If vague, ask structured clarifying questions.
+          2. Determine target environment from the environment input. If ambiguous, present discovered environments from context.md and ask user to confirm.
+          3. Verify connectivity to the target environment based on infrastructure type from context.md. If connectivity fails, note failure and suggest remediation.
+          4. Identify likely affected services by mapping symptoms to service categories and correlating with repo structure from context.md. Generate hypotheses ordered by likelihood.
+          5. Detect available investigation tools by cross-referencing context.md tools with what is useful for this incident.
+          6. Create a prioritized investigation plan. Each area MUST specify: what to check, which tool to use, what positive/negative findings mean, and estimated effort.
+          7. Create the incident artifact directory at `.deepwork/artifacts/platform_engineer/incident_investigation/YYYY-MM-DD-<slug>/` and write triage.md there.
+
+          Per convention 1, no destructive actions during triage. Per convention 3, all findings include timestamps and confidence levels.
+        inputs:
+          incident_description: {}
+          environment: {}
+          context.md: {}
+        outputs:
+          triage.md: {}
+
+      - name: investigate
+        instructions: |
+          # Deep Investigation
+
+          ## Objective
+
+          Execute the investigation plan from the triage step by querying logs, metrics, events, and service state to build an evidence-based understanding of the incident. Correlate findings across sources and produce root cause hypotheses with calibrated confidence levels.
+
+          ## Task
+
+          Systematically work through each priority area from the triage document, using the tools identified in context.md. Record all findings — including negative results (per convention 6) — and correlate evidence across sources to build root cause hypotheses.
+
+          ### Process
+
+          1. Review triage plan and adapt — confirm priorities are still valid, verify environment connectivity.
+          2. Kubernetes investigation (if kubectl available) — cluster health, pod status, logs, deployments, networking.
+          3. Grafana MCP investigation (if available) — check active alerts, dashboard queries for golden signals, Loki log queries per conventions 55-59.
+          4. Cloud CLI investigation (if available) — recent deployments, service health, resource utilization.
+          5. CI/CD correlation — check for recent deployments correlating with incident onset.
+          6. Error tracking correlation (if available) — error spikes matching incident timeframe.
+          7. Service-specific deep checks — database, application, networking, queue checks as relevant.
+          8. Correlate findings — build timeline, cross-reference sources, identify patterns, check for cascading failures. Per convention 4, cross-referencing MUST be performed before assigning high confidence.
+          9. Build root cause hypotheses — each with description, supporting evidence, contradicting evidence, confidence level per convention 5, and verification steps.
+          10. Document unresolved questions — tools unavailable, data inaccessible, hypotheses needing verification.
+
+          Per conventions 1 and 2, this step is strictly read-only. No remediation actions during investigation.
+        inputs:
+          triage.md: {}
+          context.md: {}
+        outputs:
+          investigation_findings.md: {}
+
+      - name: incident_report
+        instructions: |
+          # Incident Report
+
+          ## Objective
+
+          Synthesize the triage scope and investigation findings into a structured incident report with timeline, root cause analysis, impact assessment, and remediation suggestions. The report format scales with incident severity.
+
+          ## Task
+
+          Read the triage document and investigation findings, determine the appropriate report format (Quick Summary for minor issues, Full Report for significant incidents), and produce a report that is accurate, evidence-backed, and actionable. Remediation commands are suggested but NEVER executed.
+
+          ### Process
+
+          1. Determine report format — Quick Summary (1-2 pages) for straightforward issues with clear root cause, Full Report (comprehensive) for significant user impact or complex root causes.
+          2. Build the timeline — construct precise chronological timeline from all evidence, distinguishing known facts from inferred events.
+          3. Synthesize root cause analysis — primary root cause, contributing factors, trigger vs. underlying cause. Every claim MUST reference specific evidence.
+          4. Assess impact — duration, scope, user impact, data impact, business impact.
+          5. Formulate remediation suggestions — each with description, specific commands, risk level (Safe/Moderate/High risk), rollback steps, and verification. Group into Immediate, Short-term, and Long-term/Prevention. Per conventions 1 and 2, NEVER execute remediation commands.
+          6. Write prevention recommendations (Full Report only) — monitoring gaps, process gaps, architecture gaps, testing gaps.
+
+          Write the report to the incident artifact directory alongside triage.md and investigation_findings.md.
+        inputs:
+          triage.md: {}
+          investigation_findings.md: {}
+        outputs:
+          incident_report.md: {}
+
+  quick_investigate:
     summary: "Rapid incident triage without formal report"
-    steps:
-      - gather_context
-      - triage
-      - investigate
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Platform engineering job for discovering gaps, setting up infrastructure, and maintaining
+      production systems. Technology-agnostic — adapts to Kubernetes, Nix, cloud-managed, or hybrid
+      environments based on what `gather_context` discovers.
 
-  - name: doctor
+      ## Core Philosophy
+      - Discover what exists before proposing changes
+      - Help users pick the right choices for their context
+      - Document all decisions in the repository
+      - Never take destructive actions without explicit approval
+
+      ## Conventions
+      All workflows follow the RFC 2119 conventions defined in `conventions.md` (in the job directory).
+
+      ## Artifact Storage
+      Workflow artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
+    steps:
+      - name: gather_context
+        instructions: |
+          # Gather Platform Context
+
+          Auto-detect available tools, infrastructure type, and repo structure. See the incident_investigation workflow's gather_context step for the full process. Write context document to `.deepwork/artifacts/platform_engineer/context.md`.
+        outputs:
+          context.md: {}
+
+      - name: triage
+        instructions: |
+          # Triage & Scope
+
+          Parse the incident description, verify connectivity, identify affected services, and create a prioritized investigation plan. See the incident_investigation workflow's triage step for the full process.
+        inputs:
+          incident_description: {}
+          environment: {}
+          context.md: {}
+        outputs:
+          triage.md: {}
+
+      - name: investigate
+        instructions: |
+          # Deep Investigation
+
+          Execute the investigation plan from triage by querying logs, metrics, events, and service state. Correlate findings and produce root cause hypotheses. See the incident_investigation workflow's investigate step for the full process.
+        inputs:
+          triage.md: {}
+          context.md: {}
+        outputs:
+          investigation_findings.md: {}
+
+  doctor:
     summary: "Debug local dev environment issues and unblock developer"
-    steps:
-      - gather_context
-      - diagnose_dev
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Platform engineering job for discovering gaps, setting up infrastructure, and maintaining
+      production systems. Technology-agnostic — adapts to Kubernetes, Nix, cloud-managed, or hybrid
+      environments based on what `gather_context` discovers.
 
-  - name: error_tracking
+      ## Core Philosophy
+      - Discover what exists before proposing changes
+      - Help users pick the right choices for their context
+      - Document all decisions in the repository
+      - Never take destructive actions without explicit approval
+
+      ## Conventions
+      All workflows follow the RFC 2119 conventions defined in `conventions.md` (in the job directory).
+
+      ## Artifact Storage
+      Workflow artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
+    steps:
+      - name: gather_context
+        instructions: |
+          # Gather Platform Context
+
+          Auto-detect available tools, infrastructure type, and repo structure. Write context document to `.deepwork/artifacts/platform_engineer/context.md`.
+        outputs:
+          context.md: {}
+
+      - name: diagnose_dev
+        instructions: |
+          # Diagnose Dev Environment
+
+          ## Objective
+
+          Debug a local development environment issue by systematically checking common failure modes, attempting safe fixes, and either resolving the problem or creating a GitHub issue with full diagnostic context.
+
+          ## Task
+
+          Read context.md, understand the symptom, check common failure modes for the detected tech stack, attempt safe remediations, and verify the fix. If unresolved, create a GitHub issue.
+
+          ### Process
+
+          1. Read context.md to understand the project's tech stack and tooling.
+          2. Ask the user about the symptom — what command fails, exact error message, when it last worked.
+          3. Check common failure modes based on detected stack:
+             - **Nix/direnv**: direnv allow, flake.lock staleness, dev shell evaluation, store corruption, PATH tools
+             - **Docker/containers**: stale containers, port conflicts, volume permissions, network, compose health, disk usage
+             - **Database**: connectivity, migration drift, test database, running status
+             - **Dependencies**: lockfile conflicts, install command, missing native deps, version mismatches
+             - **Environment variables**: .env existence, diff against .env.example, required vars set (no secret values)
+             - **Build artifacts/caches**: stale caches, disk space, build tool versions
+          4. For each issue found, attempt safe fixes (direnv allow, container restart, dependency install, cache clear, etc.). MUST NOT: delete data, force-push git, modify production config, use sudo without approval, install globally.
+          5. Verify fix by re-running the failing command. If still failing, check if error changed.
+          6. If unresolved, create a GitHub issue via `gh issue create` with title `[dev-env] <symptom>`, labels `bug, dev-environment`, and body including symptom, environment, checks performed, fixes attempted, and suspected cause.
+        inputs:
+          symptom: {}
+          context.md: {}
+        outputs:
+          diagnostic_report.md: {}
+
+  error_tracking:
     summary: "Set up exception monitoring (Sentry, Honeybadger, etc.)"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Platform engineering job. Technology-agnostic — adapts based on what `gather_context` discovers.
+      All workflows follow RFC 2119 conventions in `conventions.md`.
+      Artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
     steps:
-      - gather_context
-      - setup_error_tracking
+      - name: gather_context
+        instructions: |
+          # Gather Platform Context
 
-  - name: dashboard_management
+          Auto-detect available tools, infrastructure type, and repo structure. Write context document to `.deepwork/artifacts/platform_engineer/context.md`.
+        outputs:
+          context.md: {}
+
+      - name: setup_error_tracking
+        instructions: |
+          # Set Up Error Tracking
+
+          ## Objective
+
+          Configure exception monitoring for the project so that production errors are captured, surfaced to developers, and tied to releases.
+
+          ## Task
+
+          Read context.md, check for existing error tracking, help the user choose a provider if none exists, integrate the SDK, configure release tracking and source maps, set up alerts, verify the setup, and document everything.
+
+          ### Process
+
+          1. Read context.md for language, framework, CI provider, deployment target, and package manager.
+          2. Check for existing error tracking — search for Sentry DSN, Honeybadger, Bugsnag, GlitchTip configs.
+          3. If existing, audit for gaps in source maps, release tracking, environment tags, and alert rules.
+          4. If none exists, present provider options (Sentry, Honeybadger, Bugsnag, GlitchTip) with trade-offs and ask user to choose.
+          5. Configure the chosen provider — install SDK, set up DSN as env var, configure environment tags, release tracking, source maps/debug symbols in CI, and alert rules.
+          6. Verify setup — add a test route/script, confirm event appears in dashboard, remove test trigger.
+          7. Document everything in the repository per convention 54.
+        inputs:
+          context.md: {}
+        outputs:
+          error_tracking_config.md: {}
+
+  dashboard_management:
     summary: "Inspect and develop Grafana dashboards for services"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Platform engineering job. Technology-agnostic — adapts based on what `gather_context` discovers.
+      All workflows follow RFC 2119 conventions in `conventions.md`.
+      Artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
     steps:
-      - gather_context
-      - inspect_dashboards
-      - develop_dashboard
+      - name: gather_context
+        instructions: |
+          # Gather Platform Context
 
-  - name: cicd_optimization
+          Auto-detect available tools, infrastructure type, and repo structure. Write context document to `.deepwork/artifacts/platform_engineer/context.md`.
+        outputs:
+          context.md: {}
+
+      - name: inspect_dashboards
+        instructions: |
+          # Inspect Dashboards
+
+          ## Objective
+
+          Catalog all existing Grafana dashboards for a target service or organization, assess coverage of the four golden signals (latency, traffic, errors, saturation), and identify observability gaps.
+
+          ## Task
+
+          Use Grafana MCP (when available) or fall-back discovery to build a comprehensive dashboard picture. Confirm scope with user via AskUserQuestion before querying.
+
+          ### Process
+
+          1. Read context.md, confirm Grafana MCP availability and data sources.
+          2. Confirm scope with user — which service, namespace, team, or folder to inspect.
+          3. Enumerate existing dashboards via Grafana MCP or fall-back methods (repo JSON files, Helm values, ConfigMaps, Terraform resources).
+          4. Assess golden signal coverage for each dashboard — mark each signal as Covered, Partial, or Missing.
+          5. Check dashboard best practices per conventions 8-9 (time range selectors, alert references, label filters, explicit time ranges).
+          6. Identify gaps — services without dashboards, missing golden signals, stale dashboards, missing alert integration, data source gaps.
+          7. Formulate recommendations with priority levels.
+        inputs:
+          target_service: {}
+          context.md: {}
+        outputs:
+          dashboard_assessment.md: {}
+
+      - name: develop_dashboard
+        instructions: |
+          # Develop Dashboard
+
+          ## Objective
+
+          Create or update Grafana dashboard definitions to close the observability gaps identified in the dashboard assessment, ensuring golden signal coverage.
+
+          ## Task
+
+          Read dashboard_assessment.md and systematically address each gap by producing Grafana dashboard JSON files, Helm provisioning configs, or creating dashboards via Grafana MCP.
+
+          ### Process
+
+          1. Read the dashboard assessment, extract recommendations ordered by priority.
+          2. Determine available data sources and metric naming conventions from context.md.
+          3. Design dashboard panels for each golden signal — latency (histogram quantiles), traffic (RPS), errors (error rate and ratio), saturation (CPU, memory, connection pools).
+          4. Create or update dashboards via Grafana MCP or as JSON definition files.
+          5. Configure time range (default 1h), template variables ($namespace, $service, $pod), and auto-refresh per convention 8.
+          6. Add alert annotations and links per convention 9.
+          7. Organize layout by golden signal using Grafana rows.
+          8. Validate dashboard definitions — JSON syntax, query validity, template variable queries.
+        inputs:
+          dashboard_assessment.md: {}
+        outputs:
+          dashboard_definition: {}
+
+  cicd_optimization:
     summary: "Review CI/CD pipelines and suggest optimizations"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Platform engineering job. Technology-agnostic — adapts based on what `gather_context` discovers.
+      All workflows follow RFC 2119 conventions in `conventions.md`.
+      Artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
     steps:
-      - gather_context
-      - audit_cicd
-      - cicd_recommendations
+      - name: gather_context
+        instructions: |
+          # Gather Platform Context
 
-  - name: release_builder
+          Auto-detect available tools, infrastructure type, and repo structure. Write context document to `.deepwork/artifacts/platform_engineer/context.md`.
+        outputs:
+          context.md: {}
+
+      - name: audit_cicd
+        instructions: |
+          # Audit CI/CD Pipeline
+
+          ## Objective
+
+          Analyze all CI/CD pipeline configurations, measure performance characteristics, assess compliance with conventions 18-23, and identify bottlenecks.
+
+          ## Task
+
+          Find and read every CI/CD configuration file, assess each pipeline's structure, caching, parallelism, security, and estimated run time. This is analysis-only — do not modify any files.
+
+          ### Process
+
+          1. Read context.md for CI provider detection, hosting platform, CI-adjacent tools.
+          2. Find and read all CI config files (GitHub Actions, Forgejo, GitLab CI, CircleCI, Jenkins, etc.) and supporting build configs.
+          3. Analyze each pipeline — overview (triggers, branches, path filters, concurrency), job structure, step-by-step analysis, caching strategy, estimated total run time.
+          4. Check against CI/CD conventions 18-23 — PR pipeline <10min, build caching, dependency caching, pipeline linting, no hardcoded secrets, parallel test stages.
+          5. Gather actual metrics from CI API if available (average/P90 run time, failure rate, slowest job).
+          6. Identify bottlenecks — slow deps, sequential jobs, large images, redundant builds, missing concurrency controls, oversized runners, no path filtering.
+          7. Security assessment — secrets management, permission scoping, action pinning, write permissions.
+        inputs:
+          context.md: {}
+        outputs:
+          cicd_audit.md: {}
+
+      - name: cicd_recommendations
+        instructions: |
+          # CI/CD Recommendations
+
+          ## Objective
+
+          Produce a prioritized CI/CD optimization plan with specific, implementable recommendations addressing identified bottlenecks.
+
+          ## Task
+
+          Read cicd_audit.md and transform each bottleneck and convention failure into a concrete optimization with implementation plan, ready-to-use configuration snippets, and estimated impact.
+
+          ### Process
+
+          1. Read the audit report, extract bottlenecks, convention failures, and security issues.
+          2. Map bottlenecks to optimizations (dependency caching, build cache, parallel jobs, smaller images, path filtering, concurrency controls, etc.).
+          3. Estimate impact for each recommendation — time savings, cost savings, implementation effort (Low/Medium/High).
+          4. Prioritize by impact-to-effort ratio — P0 (do now), P1 (do soon), P2 (plan), P3 (backlog).
+          5. Produce configuration snippets specific to the detected CI provider — complete enough to copy-paste.
+          6. Handle convention compliance failures — MUST conventions (19, 22) are automatically P0.
+          7. Separate quick wins from larger projects.
+        inputs:
+          cicd_audit.md: {}
+        outputs:
+          optimization_plan.md: {}
+
+  release_builder:
     summary: "Set up CI release pipeline, release branches, and release notes"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Platform engineering job. Technology-agnostic — adapts based on what `gather_context` discovers.
+      All workflows follow RFC 2119 conventions in `conventions.md`.
+      Artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
     steps:
-      - gather_context
-      - audit_release
-      - setup_release_pipeline
+      - name: gather_context
+        instructions: |
+          # Gather Platform Context
 
-  - name: infrastructure_audit
+          Auto-detect available tools, infrastructure type, and repo structure. Write context document to `.deepwork/artifacts/platform_engineer/context.md`.
+        outputs:
+          context.md: {}
+
+      - name: audit_release
+        instructions: |
+          # Audit Release Process
+
+          ## Objective
+
+          Review the existing release process: CI pipelines, versioning, changelogs, branches, tags, artifact publishing. This is read-only — no files are modified except the output artifact.
+
+          ## Task
+
+          Systematically examine the repository for all release-related infrastructure, compare findings against release management conventions 24-29, and produce a detailed gap analysis.
+
+          ### Process
+
+          1. Read context.md for CI provider, package managers, build tools, repo structure.
+          2. Check for existing release infrastructure — CI release workflows, version files, changelog files, release branch patterns, tag conventions, GitHub Releases, release scripts, release tooling configuration (release-please, semantic-release, git-cliff, changesets, goreleaser).
+          3. Assess against conventions 24-29 — SemVer compliance, release notes generation, release branch strategy, CI pipeline stages (build/test/tag/publish), automated artifact publishing, changelog from commits/PRs.
+          4. Document findings with specific file paths, tool names, and configuration details.
+        inputs:
+          context.md: {}
+        outputs:
+          release_audit.md: {}
+
+      - name: setup_release_pipeline
+        instructions: |
+          # Set Up Release Pipeline
+
+          ## Objective
+
+          Configure a complete release pipeline based on gaps identified in release_audit.md. All decisions requiring user judgment MUST be surfaced via AskUserQuestion.
+
+          ## Task
+
+          Read the release audit, identify what needs to be built, and set up each missing component to move every convention (24-29) from fail/partial to pass.
+
+          ### Process
+
+          1. Read release_audit.md (gap analysis) and context.md (platform context).
+          2. Set up versioning (convention 24) — choose version bumping tool based on stack, configure it.
+          3. Set up changelog generation (convention 29) — choose tool based on stack and CI provider.
+          4. Document release branch strategy (convention 26) — ask user for preferred model (trunk-based, release branches, GitFlow).
+          5. Create CI release workflow (convention 27) — MUST include build, test, tag, publish stages. Ask user for publish targets.
+          6. Configure automated artifact publishing (convention 28) — add publish steps with CI secret references (NEVER hardcode tokens).
+          7. Configure release notes (convention 25) — release-please, git-cliff, or GitHub auto-generated notes.
+          8. Document all decisions in release_docs.md.
+        inputs:
+          release_audit.md: {}
+          context.md: {}
+        outputs:
+          release_configs: {}
+          release_docs.md: {}
+        process_requirements:
+          pipeline_complete: "CI release pipeline MUST include build, test, tag, and publish stages per convention 27."
+          versioning_configured: "Semantic versioning MUST be set up with automated version bumping."
+          release_notes: "Changelog/release notes generation MUST be configured per convention 29."
+          branch_strategy_documented: "Release branch strategy MUST be documented in the repository."
+          decisions_documented: "All setup decisions MUST be documented in release_docs.md."
+
+  infrastructure_audit:
     summary: "Document and assess infrastructure setup against conventions"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Platform engineering job. Technology-agnostic — adapts based on what `gather_context` discovers.
+      All workflows follow RFC 2119 conventions in `conventions.md`.
+      Artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
     steps:
-      - gather_context
-      - audit_infrastructure
+      - name: gather_context
+        instructions: |
+          # Gather Platform Context
 
-  - name: cloud_spend
+          Auto-detect available tools, infrastructure type, and repo structure. Write context document to `.deepwork/artifacts/platform_engineer/context.md`.
+        outputs:
+          context.md: {}
+
+      - name: audit_infrastructure
+        instructions: |
+          # Audit Infrastructure
+
+          ## Objective
+
+          Document the project's infrastructure setup comprehensively and assess it against platform engineering conventions. This is read-only — no infrastructure changes are made.
+
+          ## Task
+
+          Systematically examine every infrastructure area and compare findings against relevant conventions.
+
+          ### Process
+
+          1. Read context.md for infrastructure type, tools, repo structure, CI provider.
+          2. Document each infrastructure area:
+             - **Monitoring & Observability**: stack, dashboards, alerts, log aggregation, runbooks, golden signals (convention 7)
+             - **CI/CD**: pipelines, stages, caching (conventions 18-23)
+             - **Deployment**: mechanism, declarative (convention 13), documented (convention 14), resource limits (convention 16), ADRs (convention 17)
+             - **Secrets Management**: approach, plain text check (convention 15), .gitignore, .env tracking
+             - **Networking**: load balancers, DNS, TLS, ingress, network policies
+             - **Data Stores**: databases, caches, queues, provisioning, backups, migrations
+             - **Backup & Recovery**: strategy, automation, frequency, restore testing
+          3. Check against conventions — infrastructure 13-17, observability 7-12, CI/CD 18-23, security 30-34, developer environment 46-49. Mark each as Pass/Fail/Partial/N/A with evidence.
+          4. Identify gaps with specific remediation recommendations, estimated effort, and priority.
+        inputs:
+          context.md: {}
+        outputs:
+          infrastructure_audit.md: {}
+
+  cloud_spend:
     summary: "Analyze cloud costs and identify waste"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Platform engineering job. Technology-agnostic — adapts based on what `gather_context` discovers.
+      All workflows follow RFC 2119 conventions in `conventions.md`.
+      Artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
     steps:
-      - gather_context
-      - analyze_spend
+      - name: gather_context
+        instructions: |
+          # Gather Platform Context
 
-  - name: vulnerability_scan
+          Auto-detect available tools, infrastructure type, and repo structure. Write context document to `.deepwork/artifacts/platform_engineer/context.md`.
+        outputs:
+          context.md: {}
+
+      - name: analyze_spend
+        instructions: |
+          # Analyze Cloud Spend
+
+          ## Objective
+
+          Analyze cloud infrastructure costs, identify waste and optimization opportunities, and produce prioritized recommendations with estimated savings.
+
+          ## Task
+
+          Gather cost data from available cloud providers, break down by service and environment, identify idle or oversized resources, and produce actionable savings recommendations.
+
+          ### Process
+
+          1. Read context.md for cloud CLIs, provider, Kubernetes involvement, IaC tools. If no cloud CLI detected, ask user how to provide cost data.
+          2. Gather cost data using appropriate cloud CLI commands (AWS CE, GCP billing, Azure consumption, DigitalOcean invoices). For Kubernetes, also gather node/pod resource usage.
+          3. Break down costs by service type (compute, storage, networking, database, other), by environment (prod, staging, dev), and by cost type (fixed vs. variable per convention 39).
+          4. Identify waste:
+             - Idle resources (convention 35) — unused LBs, detached volumes, stopped instances, unused IPs, old snapshots, unused NAT gateways
+             - Oversized resources (convention 36) — low CPU/memory utilization, over-provisioned databases, over-provisioned k8s node pools
+             - Unused storage — old container images, CI artifacts, unused buckets, excess snapshots
+             - Dev/staging running 24/7 (convention 38) — estimate savings from scheduling
+          5. Estimate savings for each finding — immediate (delete idle), near-term (right-size), strategic (reserved instances).
+          6. Produce prioritized recommendations grouped as quick wins, right-sizing, scheduling, and architectural changes. Each with specific actions, savings estimate, risk level, and rollback plan.
+        inputs:
+          context.md: {}
+        outputs:
+          spend_analysis.md: {}
+
+  vulnerability_scan:
     summary: "Security vulnerability scanning and review"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Platform engineering job. Technology-agnostic — adapts based on what `gather_context` discovers.
+      All workflows follow RFC 2119 conventions in `conventions.md`.
+      Artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
     steps:
-      - gather_context
-      - scan_vulnerabilities
+      - name: gather_context
+        instructions: |
+          # Gather Platform Context
 
-  - name: observability_setup
+          Auto-detect available tools, infrastructure type, and repo structure. Write context document to `.deepwork/artifacts/platform_engineer/context.md`.
+        outputs:
+          context.md: {}
+
+      - name: scan_vulnerabilities
+        instructions: |
+          # Scan Vulnerabilities
+
+          ## Objective
+
+          Run security vulnerability scans, assess severity and exploitability, and produce a prioritized remediation plan.
+
+          ## Task
+
+          Determine appropriate scanners, execute scans, analyze results, check convention compliance (30-34), and produce a vulnerability report.
+
+          ### Process
+
+          1. Read context.md for languages, package managers, container usage, scanning tools, CI provider, dependency automation.
+          2. Check for existing vulnerability management — Dependabot/Renovate config, CI security scanning, GitHub Security Alerts, SECURITY.md.
+          3. Run vulnerability scans for each applicable ecosystem — npm/pnpm/yarn audit, pip-audit, cargo audit, govulncheck, bundler-audit, trivy/grype for container images, trivy fs for filesystem.
+          4. Analyze each vulnerability — severity (Critical/High/Medium/Low), exploitability in project context (is code path reachable? untrusted input?), fix availability (patched version, breaking changes), deduplication across scanners.
+          5. Check against security conventions 30-34 — scan frequency, response timeframes, base image currency, automated updates, triage process.
+          6. Prioritize remediation in four tiers:
+             - Tier 1 Immediate: Critical/High + exploitable + fix available
+             - Tier 2 Soon: Critical/High with fix but low exploitability, or Medium with high exploitability
+             - Tier 3 Planned: Medium with fix, or High with no fix (workaround)
+             - Tier 4 Backlog: Low severity, no fix available
+        inputs:
+          context.md: {}
+        outputs:
+          vulnerability_report.md: {}
+
+  observability_setup:
     summary: "Set up Prometheus/Loki/VictoriaMetrics monitoring stack"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Platform engineering job. Technology-agnostic — adapts based on what `gather_context` discovers.
+      All workflows follow RFC 2119 conventions in `conventions.md`.
+      Artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
     steps:
-      - gather_context
-      - plan_observability
-      - implement_observability
+      - name: gather_context
+        instructions: |
+          # Gather Platform Context
 
-  - name: infrastructure_migration
+          Auto-detect available tools, infrastructure type, and repo structure. Write context document to `.deepwork/artifacts/platform_engineer/context.md`.
+        outputs:
+          context.md: {}
+
+      - name: plan_observability
+        instructions: |
+          # Plan Observability Setup
+
+          ## Objective
+
+          Design a monitoring stack tailored to the project's infrastructure type, ensuring golden signal coverage for all production services.
+
+          ## Task
+
+          Assess current observability posture, recommend a monitoring stack, confirm with user, and produce a detailed architecture and implementation plan.
+
+          ### Process
+
+          1. Read context.md for infrastructure type, existing observability tools, monitoring configs, CI/CD and deployment tooling.
+          2. Assess current state — metrics collection, log aggregation, visualization, alerting — marking each as covered/partial/missing. List specific gaps.
+          3. Recommend monitoring stack based on infrastructure type:
+             - Kubernetes: kube-prometheus-stack or VictoriaMetrics Operator + Loki + Grafana
+             - Nix/NixOS: NixOS modules for Prometheus + Loki + Grafana + Alertmanager
+             - Cloud-managed: Cloud-native monitoring (CloudWatch/Cloud Monitoring/Azure Monitor)
+             - Hybrid: Combined approach
+          4. Confirm stack choice with user via AskUserQuestion including tradeoffs and alternatives.
+          5. Design architecture — data flow (ASCII diagrams), retention policies (hot/cold), alerting pipeline (severity/routing/silencing), dashboard plan (per-service golden signals).
+          6. Define ordered implementation steps — each with what to create, which tool/format, dependencies, and validation check.
+        inputs:
+          context.md: {}
+        outputs:
+          observability_plan.md: {}
+
+      - name: implement_observability
+        instructions: |
+          # Implement Observability
+
+          ## Objective
+
+          Create and apply observability configurations specified in the plan, producing validated, ready-to-deploy monitoring infrastructure.
+
+          ## Task
+
+          Translate the observability plan into concrete configuration files, alert rules with runbook references, and dashboard definitions. Validate all configurations.
+
+          ### Process
+
+          1. Read observability_plan.md and context.md — extract confirmed stack, implementation steps, dashboard plan, alert rules, retention policy.
+          2. Create configuration files based on infrastructure type:
+             - Kubernetes: Helm values, ServiceMonitor/PodMonitor CRDs, PrometheusRule CRDs, Loki config, Grafana dashboard ConfigMaps
+             - Nix: NixOS module configs for Prometheus, Loki, Promtail, Grafana, Alertmanager
+             - Cloud-managed: Terraform/CloudFormation/Pulumi resources for monitoring services
+          3. Create alert rules with runbook references (per convention 9) — error rate, latency, infrastructure, resource alerts. Create stub runbook files.
+          4. Create Grafana dashboards covering golden signals per convention 7 — time range default 1h (convention 8), explicit time ranges (convention 12).
+          5. Validate configurations — helm template, kubectl dry-run, promtool check, nix eval, terraform validate, JSON syntax checks. Fix any failures.
+          6. Document how to apply the configs with exact commands and prerequisites.
+        inputs:
+          observability_plan.md: {}
+          context.md: {}
+        outputs:
+          observability_configs: {}
+        process_requirements:
+          configs_created: "All configuration files specified in the plan MUST be created."
+          alert_rules_defined: "Alert rules MUST be defined with associated runbook references per convention 9."
+          validated: "Configurations MUST be validated (syntax checked, dry-run applied where possible)."
+
+  infrastructure_migration:
     summary: "Plan and execute infrastructure migrations with validation gates"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Platform engineering job. Technology-agnostic — adapts based on what `gather_context` discovers.
+      All workflows follow RFC 2119 conventions in `conventions.md`.
+      Artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
     steps:
-      - gather_context
-      - plan_migration
-      - execute_migration
+      - name: gather_context
+        instructions: |
+          # Gather Platform Context
 
-  - name: soc_audit
+          Auto-detect available tools, infrastructure type, and repo structure. Write context document to `.deepwork/artifacts/platform_engineer/context.md`.
+        outputs:
+          context.md: {}
+
+      - name: plan_migration
+        instructions: |
+          # Plan Infrastructure Migration
+
+          ## Objective
+
+          Analyze the current infrastructure state, design a migration strategy with validation gates and rollback procedures, and create a GitHub issue with a detailed checklist.
+
+          ## Task
+
+          Document current state, design migration strategy, create step-by-step plan with validation gates, and publish a tracking GitHub issue.
+
+          ### Process
+
+          1. Read context.md and migration_description input.
+          2. Document current state in detail — what is deployed, data/volumes/persistent state, dependencies/consumers, current backup procedures.
+          3. Design migration strategy — choose approach (big-bang, blue-green, canary, rolling, parallel-run) based on risk, downtime tolerance, complexity. Discuss with user via AskUserQuestion.
+          4. Create rollback plan FIRST (per convention 40) — rollback feasibility, point of no return, data implications, step-by-step rollback procedure, communication plan.
+          5. Create detailed migration plan with validation gates (per convention 44):
+             - Pre-migration: backup, freeze automated changes, health check, communication, dependencies ready
+             - Migration: each step with commands, validation gate, estimated duration, step-specific rollback
+             - Post-migration: verification, monitoring soak period, cleanup, documentation update
+          6. Create GitHub issue via `gh issue create` with detailed checklist (per convention 41), labels `platform, migration`.
+        inputs:
+          migration_description: {}
+          context.md: {}
+        outputs:
+          migration_plan.md: {}
+          github_issue_url.md: {}
+
+      - name: execute_migration
+        instructions: |
+          # Execute Migration
+
+          ## Objective
+
+          Follow the migration plan with validation gates between phases. MUST NOT proceed past a failed validation gate without explicit user approval. MUST NOT execute destructive actions without explicit user confirmation.
+
+          ## Task
+
+          Execute each step in order, validate at each gate, track progress in GitHub issue, handle failures appropriately.
+
+          ### Process
+
+          1. Read migration_plan.md — extract steps, validation gates, rollback plan, GitHub issue number.
+          2. For each step: announce to user, confirm before executing (especially destructive steps), execute commands, run validation gate, update GitHub issue checklist (per convention 45), log the step.
+          3. Handle validation gate failures — stop, diagnose, present options (fix and retry, rollback, skip with justification). If at/past point of no return, explain forward-fix options.
+          4. Complete post-migration verification — health checks, metrics comparison, data integrity, monitoring soak period, cleanup (after user approval), documentation update.
+          5. Finalize migration report with execution log, issues encountered, final state, and lessons learned.
+        inputs:
+          migration_plan.md: {}
+        outputs:
+          migration_report.md: {}
+
+  soc_audit:
     summary: "Assess SOC 2 readiness across all Trust Service Criteria and produce compliance document"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Platform engineering job. Technology-agnostic — adapts based on what `gather_context` discovers.
+      All workflows follow RFC 2119 conventions in `conventions.md`.
+      Artifacts go in `.deepwork/artifacts/platform_engineer/<workflow>/<date-slug>/`.
     steps:
-      - gather_context
-      - assess_controls
-      - gap_analysis
-      - readiness_report
+      - name: gather_context
+        instructions: |
+          # Gather Platform Context
 
-  - name: platform_issue
+          Auto-detect available tools, infrastructure type, and repo structure. Write context document to `.deepwork/artifacts/platform_engineer/context.md`.
+        outputs:
+          context.md: {}
+
+      - name: assess_controls
+        instructions: |
+          # Assess Controls
+
+          ## Objective
+
+          Auto-discover existing controls across all five SOC 2 Trust Service Criteria from code, CI, infrastructure, and documentation.
+
+          ## Task
+
+          Systematically examine the project to identify which SOC 2 controls are in place, partially implemented, or missing. Assessment MUST be based on actual configuration and code, not just documentation claims.
+
+          ### Process
+
+          1. Read context.md for infrastructure type, tools, CI provider, repo structure.
+          2. Assess Security Controls (CC1-CC9) — control environment, communication, risk assessment, monitoring, control activities, access controls, system operations, change management, risk mitigation.
+          3. Assess Availability Controls (A1) — uptime monitoring, SLA docs, auto-scaling, load balancing, redundancy, DR plans.
+          4. Assess Processing Integrity Controls (PI1) — input validation, data constraints, testing, idempotency, error handling.
+          5. Assess Confidentiality Controls (C1) — data classification, encryption at rest/in transit, access control, retention policies, .gitignore patterns.
+          6. Assess Privacy Controls (P1) — privacy policy, consent management, PII handling, DSAR procedures, breach notification.
+          7. Classify each control as implemented/partial/missing per convention 64. For automated controls, verify actual config per convention 68.
+        inputs:
+          context.md: {}
+        outputs:
+          controls_assessment.md: {}
+
+      - name: gap_analysis
+        instructions: |
+          # Gap Analysis
+
+          ## Objective
+
+          Compare discovered controls against SOC 2 requirements, identify gaps, and produce an evidence collection checklist.
+
+          ## Task
+
+          Using the controls assessment, identify what is missing or incomplete for SOC 2 readiness. Produce a gap analysis with remediation plan and an evidence checklist for manual items.
+
+          ### Process
+
+          1. Review controls_assessment.md and context.md.
+          2. Identify gaps by TSC — high-priority (access controls, change management, monitoring, encryption, vulnerability management, backups, logging), medium-priority (retention, vendor management, capacity, privacy), lower-priority (physical security, HR controls).
+          3. Map each gap to specific TSC criteria (e.g., CC6.1, A1.2) per convention 69.
+          4. Produce remediation recommendations per convention 70 — what is missing, why it matters, specific remediation steps, estimated effort, priority (P1/P2/P3).
+          5. Generate evidence collection checklist — separate automated evidence (already in assessment) from manual evidence (HR records, pen tests, training, BCP tests, vendor assessments). Per convention 66, list each with responsible party and collection cadence.
+          6. Assess overall readiness — Ready, Nearly Ready, Significant Gaps, or Major Work Needed.
+        inputs:
+          controls_assessment.md: {}
+          context.md: {}
+        outputs:
+          gap_analysis.md: {}
+          evidence_checklist.md: {}
+
+      - name: readiness_report
+        instructions: |
+          # Readiness Report
+
+          ## Objective
+
+          Produce the SOC 2 compliance document for the repository and an executive readiness summary.
+
+          ## Task
+
+          Synthesize the controls assessment and gap analysis into a compliance document (platform-agnostic, version-controlled, TSC-mapped) and a concise readiness summary for leadership.
+
+          ### Process
+
+          1. Review controls_assessment.md, gap_analysis.md, and evidence_checklist.md.
+          2. Create the compliance document at `docs/compliance/soc2.md` (or as agreed with user). Structure: Overview, Scope, Controls Matrix (per TSC with status and evidence references), Evidence Locations, Manual Evidence Tracking, Known Gaps, Maintenance guidance.
+             - Platform-agnostic per convention 61 — no compliance platform references
+             - Version-controlled per convention 62 — meaningful git diffs
+             - TSC-mapped per convention 69
+             - Evidence-linked per convention 65
+          3. Create executive readiness summary — overall assessment, readiness score by TSC, top action items, estimated timeline, strengths, risks, next steps.
+          4. Confirm placement with user via AskUserQuestion before committing.
+        inputs:
+          controls_assessment.md: {}
+          gap_analysis.md: {}
+          evidence_checklist.md: {}
+        outputs:
+          compliance_doc.md: {}
+          readiness_summary.md: {}
+
+  platform_issue:
     summary: "Create a platform engineering GitHub issue from current context"
     steps:
-      - create_issue
+      - name: create_issue
+        instructions: |
+          # Create Platform Issue
 
-steps:
-  # ── Shared ──────────────────────────────────────────────────────────────
-  - id: gather_context
-    name: "Gather Platform Context"
-    description: "Auto-detect available tools, infrastructure type, and repo structure to inform all subsequent steps"
-    instructions_file: steps/gather_context.md
-    hidden: true
-    inputs: []
-    outputs:
-      context.md:
-        type: file
-        description: "Platform context document listing detected tools, infrastructure type, repo structure, and existing configurations"
-        required: true
-    dependencies: []
-    reviews:
-      - run_each: context.md
-        quality_criteria:
-          "Tools Detected": "Available tools (kubectl, Grafana MCP, CI provider, cloud CLI, Nix) are explicitly listed with version info where available."
-          "Infrastructure Type Identified": "The infrastructure type (k8s, nix, cloud-managed, hybrid, or none) is clearly stated with supporting evidence."
-          "Repo Structure Documented": "Key directories and configuration files relevant to platform engineering are cataloged."
+          ## Objective
 
-  # ── Incident Investigation ──────────────────────────────────────────────
-  - id: triage
-    name: "Triage & Scope"
-    description: "Parse the incident description, identify affected services, and create a prioritized investigation plan"
-    instructions_file: steps/triage.md
-    hidden: true
-    inputs:
-      - name: incident_description
-        description: "Description of the incident — a symptom, alert, or error message"
-      - name: environment
-        description: "Target environment identifier (e.g., production, staging, dev)"
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      triage.md:
-        type: file
-        description: "Triage document with incident scope, affected services, and investigation plan"
-        required: true
-    dependencies:
-      - gather_context
-    reviews:
-      - run_each: triage.md
-        quality_criteria:
-          "Clear Scope": "The incident is clearly scoped with specific symptoms, timeframe, and affected environment identified."
-          "Investigation Plan": "A prioritized list of investigation areas is defined based on symptom analysis."
-          "Environment Confirmed": "The target environment is explicitly identified and connectivity is confirmed or noted as blocked."
+          Create a well-structured GitHub issue for a platform engineering concern, automatically gathering relevant context.
 
-  - id: investigate
-    name: "Deep Investigation"
-    description: "Query logs, metrics, and events to correlate findings and build root cause hypotheses"
-    instructions_file: steps/investigate.md
-    hidden: true
-    inputs:
-      - file: triage.md
-        from_step: triage
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      investigation_findings.md:
-        type: file
-        description: "Detailed investigation findings with evidence, timeline, and root cause hypotheses"
-        required: true
-    dependencies:
-      - triage
-      - gather_context
-    reviews:
-      - run_each: investigation_findings.md
-        additional_review_guidance: "Read triage.md to verify the investigation followed the planned investigation areas."
-        quality_criteria:
-          "Root Cause Hypothesis": "At least one root cause hypothesis is proposed and supported by evidence from logs and/or metrics."
-          "Evidence Trail": "Each finding includes specific evidence — log lines, metric values, timestamps — not just conclusions."
-          "Cross-Reference": "Findings from different sources are cross-referenced to corroborate or rule out hypotheses."
-          "Honest Confidence": "Confidence levels accurately reflect verification status per convention 5."
+          ## Task
 
-  - id: incident_report
-    name: "Incident Report"
-    description: "Synthesize investigation findings into a structured report with timeline, root cause, and remediation"
-    instructions_file: steps/incident_report.md
-    hidden: true
-    inputs:
-      - file: triage.md
-        from_step: triage
-      - file: investigation_findings.md
-        from_step: investigate
-    outputs:
-      incident_report.md:
-        type: file
-        description: "Final incident report with timeline, root cause analysis, and remediation suggestions"
-        required: true
-    dependencies:
-      - triage
-      - investigate
-    reviews:
-      - run_each: incident_report.md
-        additional_review_guidance: "Read investigation_findings.md to verify the report accurately reflects the evidence."
-        quality_criteria:
-          "Accurate Timeline": "The incident timeline is clear with specific timestamps and ordered chronologically."
-          "Supported Conclusions": "Root cause analysis is supported by evidence from the investigation, not speculation."
-          "Actionable Remediation": "Remediation suggestions include specific commands or actions with risk levels and rollback steps."
-          "Appropriate Scope": "The report format matches the severity — concise summary for minor issues, full report for significant incidents."
+          Gather issue description, collect environmental and repository context, format using the platform issue template, create via `gh issue create`, and output the issue URL.
 
-  # ── Doctor ──────────────────────────────────────────────────────────────
-  - id: diagnose_dev
-    name: "Diagnose Dev Environment"
-    description: "Debug local development environment issues, attempt safe fixes, and create a GitHub issue if unresolved"
-    instructions_file: steps/diagnose_dev.md
-    hidden: true
-    inputs:
-      - name: symptom
-        description: "What is broken — error message, failing command, or description of the problem"
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      diagnostic_report.md:
-        type: file
-        description: "Diagnostic report with findings, attempted fixes, and resolution status"
-        required: true
-    dependencies:
-      - gather_context
-    reviews:
-      - run_each: diagnostic_report.md
-        quality_criteria:
-          "Root Cause Identified": "The root cause of the dev environment issue is identified or clearly stated as unknown."
-          "Fixes Attempted": "Safe fixes were attempted with their outcomes documented."
-          "Developer Unblocked": "The developer is either unblocked with a working fix or a GitHub issue was created to track the blocker."
+          ### Process
 
-  # ── Error Tracking ─────────────────────────────────────────────────────
-  - id: setup_error_tracking
-    name: "Set Up Error Tracking"
-    description: "Configure exception monitoring (Sentry, Honeybadger, etc.) for the project"
-    instructions_file: steps/setup_error_tracking.md
-    hidden: true
-    inputs:
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      error_tracking_config.md:
-        type: file
-        description: "Documentation of error tracking setup: provider, DSN, SDK integration, source maps"
-        required: true
-    dependencies:
-      - gather_context
-    reviews:
-      - run_each: error_tracking_config.md
-        quality_criteria:
-          "Provider Selected": "An error tracking provider is selected with rationale for the choice."
-          "Integration Complete": "SDK integration is configured with DSN, environment tags, and release tracking."
-          "Verification": "A test event was sent or verification steps are documented."
-          "Documented": "Configuration details are documented in the repository per convention 54."
+          1. Ask user for issue description via AskUserQuestion if input is terse. Prompt for: problem/request, impact, error messages.
+          2. Gather context automatically:
+             - Repo info: name, current branch, default branch, recent commits, uncommitted changes
+             - CI/CD status: recent runs on current branch
+             - Related files: verify mentioned files exist, note relevant config files
+             - Related issues: `gh issue list --search "<keywords>" --limit 5`
+             - Environment: OS, shell, relevant tool versions
+          3. Determine metadata:
+             - Title: `[area] concise description` (under 80 chars)
+             - Labels: `platform` + severity (P1-P4) + type (bug, enhancement, security, etc.). Check label existence via `gh label list`.
+          4. Format issue body with sections: Context, Problem/Request, Impact, Relevant Files, References, Checklist (3-7 actionable items).
+          5. Create issue via `gh issue create`. If label application fails, retry without non-existent labels.
+          6. Write issue URL to github_issue_url.md.
 
-  # ── Dashboard ───────────────────────────────────────────────────────────
-  - id: inspect_dashboards
-    name: "Inspect Dashboards"
-    description: "Catalog existing Grafana dashboards, check golden signal coverage, identify gaps"
-    instructions_file: steps/inspect_dashboards.md
-    hidden: true
-    inputs:
-      - name: target_service
-        description: "Service or organization to inspect dashboards for"
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      dashboard_assessment.md:
-        type: file
-        description: "Assessment of existing dashboards with coverage gaps and recommendations"
-        required: true
-    dependencies:
-      - gather_context
-    reviews:
-      - run_each: dashboard_assessment.md
-        quality_criteria:
-          "Dashboards Cataloged": "All existing dashboards for the target service/org are listed with their purpose."
-          "Golden Signals Checked": "Coverage of the four golden signals (latency, traffic, errors, saturation) is assessed per convention 7."
-          "Gaps Identified": "Missing dashboards or uncovered signals are clearly identified with recommendations."
-
-  - id: develop_dashboard
-    name: "Develop Dashboard"
-    description: "Create or update Grafana dashboard definitions ensuring golden signals are covered"
-    instructions_file: steps/develop_dashboard.md
-    hidden: true
-    inputs:
-      - file: dashboard_assessment.md
-        from_step: inspect_dashboards
-    outputs:
-      dashboard_definition:
-        type: files
-        description: "Grafana dashboard JSON definitions or provisioning configs"
-        required: true
-    dependencies:
-      - inspect_dashboards
-    reviews:
-      - run_each: dashboard_definition
-        additional_review_guidance: "Read dashboard_assessment.md to verify the new dashboards address identified gaps."
-        quality_criteria:
-          "Golden Signals Covered": "The dashboard includes panels for latency, traffic, errors, and saturation per convention 7."
-          "Time Range Configured": "Dashboard has time range selectors defaulting to last 1 hour per convention 8."
-          "Actionable": "Dashboard panels provide actionable information, not just raw data."
-
-  # ── CI/CD ───────────────────────────────────────────────────────────────
-  - id: audit_cicd
-    name: "Audit CI/CD Pipeline"
-    description: "Analyze CI/CD config files, build times, caching strategy, parallelism, and costs"
-    instructions_file: steps/audit_cicd.md
-    hidden: true
-    inputs:
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      cicd_audit.md:
-        type: file
-        description: "CI/CD audit report with pipeline analysis, bottlenecks, and metrics"
-        required: true
-    dependencies:
-      - gather_context
-    reviews:
-      - run_each: cicd_audit.md
-        quality_criteria:
-          "Pipelines Analyzed": "All CI/CD pipeline configurations are identified and analyzed."
-          "Metrics Gathered": "Build times, cache hit rates, and parallelism levels are documented where available."
-          "Bottlenecks Identified": "Performance bottlenecks and inefficiencies are flagged with evidence."
-          "Convention Compliance": "Pipelines are checked against CI/CD conventions 18-23."
-
-  - id: cicd_recommendations
-    name: "CI/CD Recommendations"
-    description: "Produce a prioritized optimization plan with expected impact on build times and costs"
-    instructions_file: steps/cicd_recommendations.md
-    hidden: true
-    inputs:
-      - file: cicd_audit.md
-        from_step: audit_cicd
-    outputs:
-      optimization_plan.md:
-        type: file
-        description: "Prioritized CI/CD optimization plan with expected impact"
-        required: true
-    dependencies:
-      - audit_cicd
-    reviews:
-      - run_each: optimization_plan.md
-        additional_review_guidance: "Read cicd_audit.md to verify recommendations address the identified bottlenecks."
-        quality_criteria:
-          "Recommendations Specific": "Each recommendation includes specific changes to make, not just general advice."
-          "Impact Estimated": "Expected impact on build time and/or cost is estimated for each recommendation."
-          "Prioritized": "Recommendations are ordered by impact-to-effort ratio."
-
-  # ── Release Builder ─────────────────────────────────────────────────────
-  - id: audit_release
-    name: "Audit Release Process"
-    description: "Review existing release process: CI pipelines, versioning, changelogs, branches, tags, artifact publishing"
-    instructions_file: steps/audit_release.md
-    hidden: true
-    inputs:
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      release_audit.md:
-        type: file
-        description: "Audit of existing release process with gaps identified against conventions 24-29"
-        required: true
-    dependencies:
-      - gather_context
-    reviews:
-      - run_each: release_audit.md
-        quality_criteria:
-          "Current State Documented": "The existing release process (or lack thereof) is fully documented."
-          "Gaps Identified": "Missing components are identified by checking against release management conventions 24-29."
-          "Versioning Assessed": "Current versioning scheme is documented and assessed for SemVer compliance."
-
-  - id: setup_release_pipeline
-    name: "Set Up Release Pipeline"
-    description: "Configure CI release pipeline, release branches, versioning, and release notes automation"
-    instructions_file: steps/setup_release_pipeline.md
-    hidden: true
-    inputs:
-      - file: release_audit.md
-        from_step: audit_release
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      release_configs:
-        type: files
-        description: "CI workflow files, release scripts, and branch protection configs"
-        required: true
-      release_docs.md:
-        type: file
-        description: "Documentation of release process decisions and setup"
-        required: true
-    dependencies:
-      - audit_release
-      - gather_context
-    reviews:
-      - run_each: step
-        additional_review_guidance: "Read release_audit.md to verify the setup addresses identified gaps."
-        quality_criteria:
-          "Pipeline Complete": "CI release pipeline includes build, test, tag, and publish stages per convention 27."
-          "Versioning Configured": "Semantic versioning is set up with automated version bumping."
-          "Release Notes": "Changelog/release notes generation is configured per convention 29."
-          "Branch Strategy Documented": "Release branch strategy is documented in the repository."
-          "Decisions Documented": "All setup decisions are documented in release_docs.md."
-
-  # ── Audit & Cost ────────────────────────────────────────────────────────
-  - id: audit_infrastructure
-    name: "Audit Infrastructure"
-    description: "Document how the project sets up monitoring, CI/CD, and infrastructure; check against conventions"
-    instructions_file: steps/audit_infrastructure.md
-    hidden: true
-    inputs:
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      infrastructure_audit.md:
-        type: file
-        description: "Infrastructure audit documenting setup, gaps, and convention compliance"
-        required: true
-    dependencies:
-      - gather_context
-    reviews:
-      - run_each: infrastructure_audit.md
-        quality_criteria:
-          "Comprehensive Coverage": "All infrastructure components (monitoring, CI/CD, deployment, secrets, networking) are documented."
-          "Convention Compliance": "Each component is checked against relevant conventions with pass/fail status."
-          "Gaps Actionable": "Identified gaps include specific recommendations for remediation."
-
-  - id: analyze_spend
-    name: "Analyze Cloud Spend"
-    description: "Gather cloud cost data, identify waste, and produce optimization recommendations"
-    instructions_file: steps/analyze_spend.md
-    hidden: true
-    inputs:
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      spend_analysis.md:
-        type: file
-        description: "Cloud spend analysis with waste identification and savings recommendations"
-        required: true
-    dependencies:
-      - gather_context
-    reviews:
-      - run_each: spend_analysis.md
-        quality_criteria:
-          "Cost Data Gathered": "Current cloud costs are documented with breakdown by service/resource type."
-          "Waste Identified": "Idle, oversized, or unused resources are flagged per conventions 35-38."
-          "Savings Estimated": "Potential savings are estimated for each recommendation."
-          "Fixed vs Variable": "Costs are categorized as fixed or variable per convention 39."
-
-  # ── Security & Observability ────────────────────────────────────────────
-  - id: scan_vulnerabilities
-    name: "Scan Vulnerabilities"
-    description: "Review vulnerability scan outputs, assess severity, and prioritize remediation"
-    instructions_file: steps/scan_vulnerabilities.md
-    hidden: true
-    inputs:
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      vulnerability_report.md:
-        type: file
-        description: "Vulnerability report with severity assessments and prioritized remediation plan"
-        required: true
-    dependencies:
-      - gather_context
-    reviews:
-      - run_each: vulnerability_report.md
-        quality_criteria:
-          "Scans Executed": "Vulnerability scans were run or existing scan results were reviewed."
-          "Severity Assessed": "Each vulnerability has a severity assessment (Critical/High/Medium/Low)."
-          "Remediation Prioritized": "Remediation actions are prioritized by severity and exploitability."
-          "Convention Compliance": "Scan frequency and response timelines are checked against conventions 30-34."
-
-  - id: plan_observability
-    name: "Plan Observability Setup"
-    description: "Design monitoring stack (Prometheus/Loki/VictoriaMetrics) based on infrastructure type"
-    instructions_file: steps/plan_observability.md
-    hidden: true
-    inputs:
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      observability_plan.md:
-        type: file
-        description: "Observability setup plan with stack selection, architecture, and implementation steps"
-        required: true
-    dependencies:
-      - gather_context
-    reviews:
-      - run_each: observability_plan.md
-        quality_criteria:
-          "Stack Selected": "A monitoring stack is selected with rationale based on the infrastructure type from context.md."
-          "Architecture Defined": "The monitoring architecture is defined including data flow, retention, and alerting."
-          "Implementation Steps": "Clear implementation steps are provided appropriate to the infrastructure type (k8s operator, nix module, or cloud-managed)."
-          "Golden Signals Planned": "The plan ensures all production services will have golden signal coverage per convention 7."
-
-  - id: implement_observability
-    name: "Implement Observability"
-    description: "Create and apply observability configurations for the chosen monitoring stack"
-    instructions_file: steps/implement_observability.md
-    hidden: true
-    inputs:
-      - file: observability_plan.md
-        from_step: plan_observability
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      observability_configs:
-        type: files
-        description: "Monitoring configuration files (Helm values, nix modules, cloud configs, alert rules)"
-        required: true
-    dependencies:
-      - plan_observability
-      - gather_context
-    reviews:
-      - run_each: step
-        additional_review_guidance: "Read observability_plan.md to verify the configs match the planned architecture."
-        quality_criteria:
-          "Configs Created": "All configuration files specified in the plan are created."
-          "Alert Rules Defined": "Alert rules are defined with associated runbook references per convention 9."
-          "Validated": "Configurations are validated (syntax checked, dry-run applied where possible)."
-
-  # ── Migration ───────────────────────────────────────────────────────────
-  - id: plan_migration
-    name: "Plan Infrastructure Migration"
-    description: "Analyze current state, design migration strategy, and create a GitHub issue with detailed checklist"
-    instructions_file: steps/plan_migration.md
-    hidden: true
-    inputs:
-      - name: migration_description
-        description: "What is being migrated (e.g., 'migrate from Zalando Postgres operator to CNPG')"
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      migration_plan.md:
-        type: file
-        description: "Detailed migration plan with steps, validation gates, and rollback procedures"
-        required: true
-      github_issue_url.md:
-        type: file
-        description: "URL of the created GitHub issue tracking the migration"
-        required: true
-    dependencies:
-      - gather_context
-    reviews:
-      - run_each: migration_plan.md
-        quality_criteria:
-          "Current State Documented": "The current infrastructure state is fully documented."
-          "Rollback Plan": "A rollback plan is documented before any migration steps per convention 40."
-          "Validation Gates": "Each migration step has a validation gate per convention 44."
-          "GitHub Issue Created": "A GitHub issue with detailed checklist is created per convention 41."
-          "Risk Assessment": "Risks are identified and mitigations are documented."
-
-  - id: execute_migration
-    name: "Execute Migration"
-    description: "Follow the migration plan with validation gates between phases"
-    instructions_file: steps/execute_migration.md
-    hidden: true
-    inputs:
-      - file: migration_plan.md
-        from_step: plan_migration
-    outputs:
-      migration_report.md:
-        type: file
-        description: "Migration execution report with completed steps, validation results, and final state"
-        required: true
-    dependencies:
-      - plan_migration
-    reviews:
-      - run_each: migration_report.md
-        additional_review_guidance: "Read migration_plan.md to verify all planned steps were executed with their validation gates."
-        quality_criteria:
-          "Steps Completed": "All migration steps from the plan are accounted for with pass/fail status."
-          "Validations Passed": "Each validation gate result is documented."
-          "State Tracked": "Migration progress is tracked in the GitHub issue per convention 45."
-          "Final State Verified": "The post-migration state is verified and documented."
-
-  # ── SOC 2 Compliance ──────────────────────────────────────────────────
-  - id: assess_controls
-    name: "Assess Controls"
-    description: "Auto-discover existing controls across all five SOC 2 Trust Service Criteria from code, CI, infrastructure, and documentation"
-    instructions_file: steps/assess_controls.md
-    hidden: true
-    inputs:
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      controls_assessment.md:
-        type: file
-        description: "Inventory of existing controls mapped to SOC 2 TSC criteria with evidence references"
-        required: true
-    dependencies:
-      - gather_context
-    reviews:
-      - run_each: controls_assessment.md
-        quality_criteria:
-          "All TSCs Covered": "Controls are assessed across all five Trust Service Criteria: Security (CC), Availability, Processing Integrity, Confidentiality, and Privacy."
-          "Evidence Referenced": "Each implemented control references where the evidence can be found (file path, CI workflow, config, policy) per convention 65."
-          "Classification Applied": "Every control is classified as implemented, partial, or missing per convention 64."
-          "Automated Controls Verified": "Automated controls are verified by checking actual infrastructure configuration, not just documentation per convention 68."
-
-  - id: gap_analysis
-    name: "Gap Analysis"
-    description: "Compare discovered controls against SOC 2 requirements, identify gaps, and produce an evidence collection checklist"
-    instructions_file: steps/gap_analysis.md
-    hidden: true
-    inputs:
-      - file: controls_assessment.md
-        from_step: assess_controls
-      - file: context.md
-        from_step: gather_context
-    outputs:
-      gap_analysis.md:
-        type: file
-        description: "Gap analysis with missing and partial controls, remediation recommendations, and prioritization"
-        required: true
-      evidence_checklist.md:
-        type: file
-        description: "Evidence collection checklist for controls requiring manual evidence"
-        required: true
-    dependencies:
-      - assess_controls
-      - gather_context
-    reviews:
-      - run_each: gap_analysis.md
-        additional_review_guidance: "Read controls_assessment.md to verify gaps are derived from the actual assessment, not generic checklists."
-        quality_criteria:
-          "Gaps Specific": "Each gap references the specific TSC criteria it violates (e.g., CC6.1, A1.2) per convention 69."
-          "Remediation Actionable": "Each gap includes a remediation recommendation with estimated effort and priority per convention 70."
-          "Risk Prioritized": "Gaps are prioritized by audit risk — controls that auditors always check are flagged as high priority."
-      - run_each: evidence_checklist.md
-        quality_criteria:
-          "Manual Items Listed": "All controls requiring manual evidence are listed with responsible party and collection cadence per convention 66."
-          "Automated Items Excluded": "Controls that can be verified automatically are not in the manual checklist."
-
-  - id: readiness_report
-    name: "Readiness Report"
-    description: "Produce the SOC 2 compliance document for the repository and an executive readiness summary"
-    instructions_file: steps/readiness_report.md
-    hidden: true
-    inputs:
-      - file: controls_assessment.md
-        from_step: assess_controls
-      - file: gap_analysis.md
-        from_step: gap_analysis
-      - file: evidence_checklist.md
-        from_step: gap_analysis
-    outputs:
-      compliance_doc.md:
-        type: file
-        description: "The SOC 2 compliance document to be committed to the repository per convention 60"
-        required: true
-      readiness_summary.md:
-        type: file
-        description: "Executive summary of SOC 2 readiness with overall score and top action items"
-        required: true
-    dependencies:
-      - assess_controls
-      - gap_analysis
-    reviews:
-      - run_each: compliance_doc.md
-        additional_review_guidance: "Read controls_assessment.md and gap_analysis.md to verify the compliance document accurately reflects the assessment."
-        quality_criteria:
-          "Platform Agnostic": "The document records controls and evidence without referencing any specific compliance platform per convention 61."
-          "Version Controlled": "The document is structured for version control — changes to controls will produce meaningful diffs per convention 62."
-          "TSC Mapping": "Each control is mapped to the specific TSC criteria it satisfies per convention 69."
-          "Evidence Discoverable": "Evidence references point to actual locations (file paths, URLs, CI workflows) that an auditor or compliance platform can verify."
-      - run_each: readiness_summary.md
-        quality_criteria:
-          "Overall Assessment": "An overall readiness assessment is provided (ready, nearly ready, significant gaps)."
-          "Top Gaps Listed": "The top 5-10 gaps are listed with their remediation priority."
-          "Timeline Realistic": "If a remediation timeline is suggested, it is realistic given the estimated effort."
-
-  # ── Standalone ──────────────────────────────────────────────────────────
-  - id: create_issue
-    name: "Create Platform Issue"
-    description: "Create a properly formatted GitHub issue with context, references, and checklists"
-    instructions_file: steps/create_issue.md
-    inputs:
-      - name: issue_description
-        description: "Description of the platform engineering issue to create"
-    outputs:
-      github_issue_url.md:
-        type: file
-        description: "URL of the created GitHub issue"
-        required: true
-    dependencies: []
-    reviews:
-      - run_each: github_issue_url.md
-        quality_criteria:
-          "Issue Created": "A GitHub issue was created successfully via gh issue create."
-          "Properly Formatted": "The issue follows the platform issue template with context, references, and checklists."
-          "Labels Applied": "Appropriate labels are applied to the issue."
+          No sensitive data (secrets, tokens, .env contents) in the issue body.
+        inputs:
+          issue_description: {}
+        outputs:
+          github_issue_url.md: {}
+        process_requirements:
+          issue_created: "A GitHub issue MUST be created successfully via gh issue create."
+          properly_formatted: "The issue MUST follow the platform issue template with Context, Problem/Request, Impact, Relevant Files, References, and Checklist sections."
+          labels_applied: "Appropriate labels MUST be applied (platform at minimum)."

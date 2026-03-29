@@ -20,10 +20,9 @@ from typing import Any
 
 from fastmcp import FastMCP
 
-from deepwork.jobs.mcp.claude_cli import ClaudeCLI
-from deepwork.jobs.mcp.quality_gate import QualityGate
 from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
+    ArgumentValue,
     FinishedStepInput,
     GoToStepInput,
     StartWorkflowInput,
@@ -37,12 +36,7 @@ logger = logging.getLogger("deepwork.jobs.mcp")
 
 
 def _ensure_schema_available(project_root: Path) -> None:
-    """Copy job.schema.json to .deepwork/ so agents have a stable reference path.
-
-    The schema file is bundled with the DeepWork package at an install-dependent
-    location. This copies it to .deepwork/job.schema.json on every server start
-    so that agents and step instructions can always reference it at a known path.
-    """
+    """Copy job.schema.json to .deepwork/ so agents have a stable reference path."""
     from deepwork.jobs.schema import get_schema_path
 
     schema_source = get_schema_path()
@@ -58,24 +52,19 @@ def _ensure_schema_available(project_root: Path) -> None:
 
 def create_server(
     project_root: Path | str,
-    enable_quality_gate: bool = True,
-    quality_gate_timeout: int = 120,
-    quality_gate_max_attempts: int = 3,
-    external_runner: str | None = None,
     platform: str | None = None,
+    **_kwargs: Any,
 ) -> FastMCP:
     """Create and configure the MCP server.
 
     Args:
         project_root: Path to the project root
-        enable_quality_gate: Whether to enable quality gate evaluation (default: True)
-        quality_gate_timeout: Timeout in seconds for quality gate (default: 120)
-        quality_gate_max_attempts: Max attempts before failing quality gate (default: 3)
-        external_runner: External runner for quality gate reviews.
-            "claude" uses Claude CLI subprocess. None means agent self-review
-            via instructions file. (default: None)
         platform: Platform identifier for the review tool (e.g., "claude").
             Defaults to "claude" if not set. (default: None)
+        **_kwargs: Accepted for backwards compatibility (enable_quality_gate,
+            quality_gate_timeout, quality_gate_max_attempts, external_runner).
+            These are no longer used — quality reviews now go through the
+            DeepWork Reviews infrastructure.
 
     Returns:
         Configured FastMCP server instance
@@ -87,25 +76,11 @@ def create_server(
 
     # Initialize components
     state_manager = StateManager(project_root=project_path, platform=platform or "claude")
-
-    quality_gate: QualityGate | None = None
-    if enable_quality_gate:
-        if external_runner == "claude":
-            # Claude CLI subprocess mode: embed up to 5 files inline
-            cli = ClaudeCLI(timeout=quality_gate_timeout)
-            quality_gate = QualityGate(cli=cli, max_inline_files=5)
-        else:
-            # Self-review mode: no CLI, always reference files by path (0 inline)
-            quality_gate = QualityGate(cli=None, max_inline_files=0)
-
     status_writer = StatusWriter(project_path)
 
     tools = WorkflowTools(
         project_root=project_path,
         state_manager=state_manager,
-        quality_gate=quality_gate,
-        max_quality_attempts=quality_gate_max_attempts,
-        external_runner=external_runner,
         status_writer=status_writer,
     )
 
@@ -123,9 +98,6 @@ def create_server(
 
     # =========================================================================
     # MCP Tool Registrations
-    # =========================================================================
-    # IMPORTANT: When modifying these tool signatures (parameters, return types,
-    # descriptions), update doc/mcp_interface.md to keep documentation in sync.
     # =========================================================================
 
     def _log_tool_call(
@@ -163,7 +135,8 @@ def create_server(
             "Initializes state tracking and returns the first step's instructions. "
             "Required parameters: goal (what user wants), job_name, workflow_name, "
             "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
-            "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents). "
+            "Optional: inputs (map of step_argument names to values for the first step), "
+            "agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents). "
             "Supports nested workflows - starting a workflow while one is active "
             "pushes onto the stack. Use abort_workflow to cancel and return to parent."
         )
@@ -173,6 +146,7 @@ def create_server(
         job_name: str,
         workflow_name: str,
         session_id: str,
+        inputs: dict[str, ArgumentValue] | None = None,
         agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Start a workflow and get first step instructions."""
@@ -182,6 +156,7 @@ def create_server(
                 "goal": goal,
                 "job_name": job_name,
                 "workflow_name": workflow_name,
+                "inputs": inputs,
                 "agent_id": agent_id,
             },
             session_id=session_id,
@@ -191,6 +166,7 @@ def create_server(
             goal=goal,
             job_name=job_name,
             workflow_name=workflow_name,
+            inputs=inputs,
             session_id=session_id,
             agent_id=agent_id,
         )
@@ -200,26 +176,26 @@ def create_server(
     @mcp.tool(
         description=(
             "Report that you've finished a workflow step. "
-            "Validates outputs against quality criteria (if configured), "
+            "Validates outputs and runs quality reviews (from step definitions and .deepreview rules), "
             "then returns either: "
-            "'needs_work' with feedback to fix issues, "
+            "'needs_work' with review instructions to follow, "
             "'next_step' with instructions for the next step, or "
             "'workflow_complete' when finished (pops from stack if nested). "
-            "Required: outputs (map of output names to file paths created), "
+            "Required: outputs (map of step_argument names to values), "
             "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
-            "For outputs with type 'file': pass a single string path. "
-            "For outputs with type 'files': pass a list of string paths. "
+            "For outputs with type 'file_path': pass a single string path or list of paths. "
+            "For outputs with type 'string': pass a string value. "
             "Outputs marked required: true must be provided; required: false outputs can be omitted. "
             "Check step_expected_outputs in the response to see each output's type and required status. "
-            "Optional: notes about work done. "
+            "Optional: work_summary describing the work done (used by process_requirements reviews). "
             "Optional: quality_review_override_reason to skip quality review (must explain why). "
             "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents)."
         )
     )
     async def finished_step(
-        outputs: dict[str, str | list[str]],
+        outputs: dict[str, ArgumentValue],
         session_id: str,
-        notes: str | None = None,
+        work_summary: str | None = None,
         quality_review_override_reason: str | None = None,
         agent_id: str | None = None,
     ) -> dict[str, Any]:
@@ -228,7 +204,7 @@ def create_server(
             "finished_step",
             {
                 "outputs": outputs,
-                "notes": notes,
+                "work_summary": work_summary,
                 "quality_review_override_reason": quality_review_override_reason,
                 "agent_id": agent_id,
             },
@@ -237,7 +213,7 @@ def create_server(
         )
         input_data = FinishedStepInput(
             outputs=outputs,
-            notes=notes,
+            work_summary=work_summary,
             quality_review_override_reason=quality_review_override_reason,
             session_id=session_id,
             agent_id=agent_id,
@@ -280,7 +256,7 @@ def create_server(
             "of subsequent steps to ensure consistency. "
             "Use this when earlier outputs need revision or quality issues are discovered. "
             "Files on disk are NOT deleted — only session tracking state is cleared. "
-            "Required: step_id (the step to go back to), "
+            "Required: step_id (the step name to go back to), "
             "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
             "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents)."
         )
@@ -363,11 +339,7 @@ def create_server(
 
 
 def _get_server_instructions() -> str:
-    """Get the server instructions for agents.
-
-    Returns:
-        Instructions string describing how to use the DeepWork MCP server.
-    """
+    """Get the server instructions for agents."""
     return """# DeepWork Workflow Server
 
 This MCP server guides you through multi-step workflows with quality gates.
@@ -425,6 +397,7 @@ Use `go_to_step` to navigate back to a prior step when earlier outputs need revi
 - Always call `get_workflows` first to understand available options
 - Provide clear goals when starting - they're used for context
 - Create all expected outputs before calling `finished_step`
+- Use instance_id for meaningful names (e.g., client name, quarter)
 - Read quality gate feedback carefully before retrying
 - Check the `stack` field in responses to understand nesting depth
 - Use `abort_workflow` rather than leaving workflows in a broken state

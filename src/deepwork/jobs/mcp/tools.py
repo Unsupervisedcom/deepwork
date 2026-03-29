@@ -15,10 +15,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from deepwork.jobs.discovery import JobLoadError, find_job_dir, load_all_jobs
+from deepwork.jobs.mcp.quality_gate import run_quality_gate
 from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     AbortWorkflowResponse,
     ActiveStepInfo,
+    ArgumentValue,
     ExpectedOutput,
     FinishedStepInput,
     FinishedStepResponse,
@@ -27,27 +29,24 @@ from deepwork.jobs.mcp.schemas import (
     GoToStepResponse,
     JobInfo,
     JobLoadErrorInfo,
-    ReviewInfo,
     StartWorkflowInput,
     StartWorkflowResponse,
+    StepInputInfo,
     StepStatus,
     WorkflowInfo,
 )
 from deepwork.jobs.mcp.state import StateError, StateManager
 from deepwork.jobs.parser import (
     JobDefinition,
-    OutputSpec,
     ParseError,
-    Step,
     Workflow,
-    WorkflowStepEntry,
+    WorkflowStep,
     parse_job_definition,
 )
 
 logger = logging.getLogger("deepwork.jobs.mcp")
 
 if TYPE_CHECKING:
-    from deepwork.jobs.mcp.quality_gate import QualityGate
     from deepwork.jobs.mcp.status import StatusWriter
 
 
@@ -64,9 +63,6 @@ class WorkflowTools:
         self,
         project_root: Path,
         state_manager: StateManager,
-        quality_gate: QualityGate | None = None,
-        max_quality_attempts: int = 3,
-        external_runner: str | None = None,
         status_writer: StatusWriter | None = None,
     ):
         """Initialize workflow tools.
@@ -74,17 +70,10 @@ class WorkflowTools:
         Args:
             project_root: Path to project root
             state_manager: State manager instance
-            quality_gate: Optional quality gate for step validation
-            max_quality_attempts: Maximum attempts before failing quality gate
-            external_runner: External runner for quality gate reviews.
-                "claude" uses Claude CLI subprocess. None means agent self-review.
             status_writer: Optional status writer for external status files.
         """
         self.project_root = project_root
         self.state_manager = state_manager
-        self.quality_gate = quality_gate
-        self.max_quality_attempts = max_quality_attempts
-        self.external_runner = external_runner
         self.status_writer = status_writer
 
     def _write_session_status(self, session_id: str) -> None:
@@ -113,42 +102,30 @@ class WorkflowTools:
                 logger.warning("Failed to write job manifest", exc_info=True)
 
     def _load_all_jobs(self) -> tuple[list[JobDefinition], list[JobLoadError]]:
-        """Load all job definitions from all configured job folders.
-
-        Returns:
-            Tuple of (parsed JobDefinition objects, errors for jobs that failed)
-        """
+        """Load all job definitions from all configured job folders."""
         return load_all_jobs(self.project_root)
 
     def _job_to_info(self, job: JobDefinition) -> JobInfo:
-        """Convert a JobDefinition to JobInfo for response.
-
-        Args:
-            job: Parsed job definition
-
-        Returns:
-            JobInfo with workflow details
-        """
-        # Convert workflows
+        """Convert a JobDefinition to JobInfo for response."""
         workflows = []
-        for wf in job.workflows:
+        for wf_name, wf in job.workflows.items():
             if wf.agent:
                 how_to_invoke = (
                     f'Invoke as a Task using subagent_type="{wf.agent}" with a prompt '
                     f"giving full context needed and instructions to call "
                     f"`mcp__plugin_deepwork_deepwork__start_workflow` "
-                    f'(job_name="{job.name}", workflow_name="{wf.name}"). '
+                    f'(job_name="{job.name}", workflow_name="{wf_name}"). '
                     f"If you do not have Task as an available tool, invoke the workflow directly."
                 )
             else:
                 how_to_invoke = (
                     f"Call `mcp__plugin_deepwork_deepwork__start_workflow` with "
-                    f'job_name="{job.name}" and workflow_name="{wf.name}", '
+                    f'job_name="{job.name}" and workflow_name="{wf_name}", '
                     f"then follow the step instructions it returns."
                 )
             workflows.append(
                 WorkflowInfo(
-                    name=wf.name,
+                    name=wf_name,
                     summary=wf.summary,
                     how_to_invoke=how_to_invoke,
                 )
@@ -161,19 +138,7 @@ class WorkflowTools:
         )
 
     def _get_job(self, job_name: str) -> JobDefinition:
-        """Get a specific job by name.
-
-        Searches all configured job folders for the named job.
-
-        Args:
-            job_name: Job name to find
-
-        Returns:
-            JobDefinition
-
-        Raises:
-            ToolError: If job not found
-        """
+        """Get a specific job by name."""
         job_dir = find_job_dir(self.project_root, job_name)
         if job_dir is None:
             raise ToolError(f"Job not found: {job_name}")
@@ -186,78 +151,58 @@ class WorkflowTools:
     def _get_workflow(self, job: JobDefinition, workflow_name: str) -> Workflow:
         """Get a specific workflow from a job.
 
-        If the workflow name doesn't match any workflow but the job has exactly
-        one workflow, that workflow is returned automatically.
-
-        Args:
-            job: Job definition
-            workflow_name: Workflow name to find
-
-        Returns:
-            Workflow
-
-        Raises:
-            ToolError: If workflow not found and job has multiple workflows
+        Auto-selects if there's only one workflow.
         """
-        for wf in job.workflows:
-            if wf.name == workflow_name:
-                return wf
+        wf = job.get_workflow(workflow_name)
+        if wf:
+            return wf
 
         # Auto-select if there's only one workflow
         if len(job.workflows) == 1:
-            return job.workflows[0]
+            return next(iter(job.workflows.values()))
 
-        available = [wf.name for wf in job.workflows]
+        available = list(job.workflows.keys())
         raise ToolError(
             f"Workflow '{workflow_name}' not found in job '{job.name}'. "
             f"Available workflows: {', '.join(available)}"
         )
 
-    def _get_step_instructions(self, job: JobDefinition, step_id: str) -> str:
-        """Get the instruction content for a step.
+    def _resolve_input_values(
+        self,
+        step: WorkflowStep,
+        job: JobDefinition,
+        workflow: Workflow,
+        session_id: str,
+        agent_id: str | None,
+        provided_inputs: dict[str, ArgumentValue] | None = None,
+    ) -> dict[str, ArgumentValue]:
+        """Resolve input values for a step from previous outputs or provided inputs."""
+        values: dict[str, ArgumentValue] = {}
 
-        Args:
-            job: Job definition
-            step_id: Step ID
+        # Collect all previous step outputs from the session
+        try:
+            all_outputs = self.state_manager.get_all_outputs(session_id, agent_id)
+        except StateError:
+            all_outputs = {}
 
-        Returns:
-            Step instruction content
+        for input_name, _input_ref in step.inputs.items():
+            # Check provided inputs first (from start_workflow)
+            if provided_inputs and input_name in provided_inputs:
+                values[input_name] = provided_inputs[input_name]
+            # Then check previous step outputs
+            elif input_name in all_outputs:
+                values[input_name] = all_outputs[input_name]
 
-        Raises:
-            ToolError: If step or instruction file not found
-        """
-        step = job.get_step(step_id)
-        if step is None:
-            raise ToolError(f"Step not found: {step_id}")
-
-        instructions_path = job.job_dir / step.instructions_file
-        if not instructions_path.exists():
-            raise ToolError(f"Instructions file not found: {step.instructions_file}")
-
-        return instructions_path.read_text(encoding="utf-8")
+        return values
 
     def _validate_outputs(
         self,
-        submitted: dict[str, str | list[str]],
-        declared: list[OutputSpec],
+        submitted: dict[str, ArgumentValue],
+        step: WorkflowStep,
+        job: JobDefinition,
     ) -> None:
-        """Validate submitted outputs against declared output specs.
-
-        Checks:
-        1. Every submitted key matches a declared output name
-        2. Every declared output has a corresponding submitted key
-        3. type: file -> value is a single string path, file must exist
-        4. type: files -> value is a list of strings, each file must exist
-
-        Args:
-            submitted: The outputs dict from the agent
-            declared: The OutputSpec list from the step definition
-
-        Raises:
-            ToolError: If validation fails
-        """
-        declared_map = {spec.name: spec for spec in declared}
-        declared_names = set(declared_map.keys())
+        """Validate submitted outputs against step's declared output refs."""
+        declared_names = set(step.outputs.keys())
         submitted_names = set(submitted.keys())
 
         # Check for unknown output keys
@@ -269,7 +214,7 @@ class WorkflowTools:
             )
 
         # Check for missing required output keys
-        required_names = {spec.name for spec in declared if spec.required}
+        required_names = {name for name, ref in step.outputs.items() if ref.required}
         missing = required_names - submitted_names
         if missing:
             raise ToolError(
@@ -279,99 +224,166 @@ class WorkflowTools:
 
         # Validate types and file existence
         for name, value in submitted.items():
-            spec = declared_map[name]
+            arg = job.get_argument(name)
+            if not arg:
+                continue
 
-            if spec.type == "file":
+            if arg.type == "file_path":
+                if isinstance(value, str):
+                    full_path = self.project_root / value
+                    if not full_path.exists():
+                        raise ToolError(f"Output '{name}': file not found at '{value}'")
+                elif isinstance(value, list):
+                    for path in value:
+                        if not isinstance(path, str):
+                            raise ToolError(
+                                f"Output '{name}': all paths must be strings, "
+                                f"got {type(path).__name__}"
+                            )
+                        full_path = self.project_root / path
+                        if not full_path.exists():
+                            raise ToolError(f"Output '{name}': file not found at '{path}'")
+                else:
+                    raise ToolError(
+                        f"Output '{name}' is type 'file_path' and must be a "
+                        f"string path or list of paths, got {type(value).__name__}"
+                    )
+            elif arg.type == "string":
                 if not isinstance(value, str):
                     raise ToolError(
-                        f"Output '{name}' is declared as type 'file' and must be a "
-                        f"single string path, got {type(value).__name__}"
+                        f"Output '{name}' is type 'string' and must be a string, "
+                        f"got {type(value).__name__}"
                     )
-                full_path = self.project_root / value
-                if not full_path.exists():
-                    raise ToolError(f"Output '{name}': file not found at '{value}'")
 
-            elif spec.type == "files":
-                if not isinstance(value, list):
-                    raise ToolError(
-                        f"Output '{name}' is declared as type 'files' and must be a "
-                        f"list of paths, got {type(value).__name__}"
-                    )
-                for path in value:
-                    if not isinstance(path, str):
-                        raise ToolError(
-                            f"Output '{name}': all paths must be strings, got {type(path).__name__}"
-                        )
-                    full_path = self.project_root / path
-                    if not full_path.exists():
-                        raise ToolError(f"Output '{name}': file not found at '{path}'")
+    def _build_expected_outputs(
+        self, step: WorkflowStep, job: JobDefinition
+    ) -> list[ExpectedOutput]:
+        """Build ExpectedOutput list from step's output refs."""
+        results = []
+        for output_name, output_ref in step.outputs.items():
+            arg = job.get_argument(output_name)
+            if not arg:
+                continue
 
-    @staticmethod
-    def _build_expected_outputs(outputs: list[OutputSpec]) -> list[ExpectedOutput]:
-        """Build ExpectedOutput list from OutputSpec list."""
-        syntax_map = {
-            "file": "filepath",
-            "files": "array of filepaths for all individual files",
-        }
-        return [
-            ExpectedOutput(
-                name=out.name,
-                type=out.type,
-                description=out.description,
-                required=out.required,
-                syntax_for_finished_step_tool=syntax_map.get(out.type, out.type),
+            if arg.type == "file_path":
+                syntax = "filepath or list of filepaths"
+            else:
+                syntax = "string value"
+
+            results.append(
+                ExpectedOutput(
+                    name=output_name,
+                    type=arg.type,
+                    description=arg.description,
+                    required=output_ref.required,
+                    syntax_for_finished_step_tool=syntax,
+                )
             )
-            for out in outputs
-        ]
+        return results
+
+    def _build_step_inputs_info(
+        self,
+        step: WorkflowStep,
+        job: JobDefinition,
+        input_values: dict[str, ArgumentValue],
+    ) -> list[StepInputInfo]:
+        """Build StepInputInfo list with resolved values."""
+        results = []
+        for input_name, input_ref in step.inputs.items():
+            arg = job.get_argument(input_name)
+            if not arg:
+                continue
+
+            value = input_values.get(input_name)
+            results.append(
+                StepInputInfo(
+                    name=input_name,
+                    type=arg.type,
+                    description=arg.description,
+                    value=value,
+                    required=input_ref.required,
+                )
+            )
+        return results
+
+    def _build_step_instructions(
+        self,
+        step: WorkflowStep,
+        job: JobDefinition,
+        workflow: Workflow,
+        input_values: dict[str, ArgumentValue],
+    ) -> str:
+        """Build complete step instructions with inputs prepended."""
+        parts: list[str] = []
+
+        # Prepend input descriptions and values
+        if step.inputs:
+            parts.append("## Inputs\n")
+            for input_name, input_ref in step.inputs.items():
+                arg = job.get_argument(input_name)
+                if not arg:
+                    continue
+
+                value = input_values.get(input_name)
+                required_str = " (required)" if input_ref.required else " (optional)"
+
+                if value is None:
+                    parts.append(
+                        f"- **{input_name}**{required_str}: {arg.description} — *not yet available*"
+                    )
+                elif arg.type == "file_path":
+                    if isinstance(value, list):
+                        paths_str = ", ".join(f"`{p}`" for p in value)
+                        parts.append(f"- **{input_name}**{required_str}: {paths_str}")
+                    else:
+                        parts.append(f"- **{input_name}**{required_str}: `{value}`")
+                else:
+                    parts.append(f"- **{input_name}**{required_str}: {value}")
+            parts.append("")
+
+        # For sub_workflow steps, generate delegation instructions
+        if step.sub_workflow:
+            sw = step.sub_workflow
+            job_ref = sw.workflow_job or job.name
+            parts.append(
+                f"This step delegates to a sub-workflow. Call `start_workflow` with "
+                f'job_name="{job_ref}" and workflow_name="{sw.workflow_name}", '
+                f"then follow the instructions it returns until the sub-workflow completes."
+            )
+        elif step.instructions:
+            parts.append(step.instructions)
+
+        return "\n".join(parts)
 
     def _build_active_step_info(
         self,
         session_id: str,
-        step_id: str,
+        step: WorkflowStep,
         job: JobDefinition,
-        step: Step,
-        instructions: str,
-        step_outputs: list[ExpectedOutput],
+        workflow: Workflow,
+        input_values: dict[str, ArgumentValue],
     ) -> ActiveStepInfo:
         """Build an ActiveStepInfo from a step definition and its context."""
+        instructions = self._build_step_instructions(step, job, workflow, input_values)
+        step_outputs = self._build_expected_outputs(step, job)
+        step_inputs = self._build_step_inputs_info(step, job, input_values)
+
         return ActiveStepInfo(
             session_id=session_id,
-            step_id=step_id,
+            step_id=step.name,
             job_dir=str(job.job_dir),
             step_expected_outputs=step_outputs,
-            step_reviews=[
-                ReviewInfo(
-                    run_each=r.run_each,
-                    quality_criteria=r.quality_criteria,
-                    additional_review_guidance=r.additional_review_guidance,
-                )
-                for r in step.reviews
-            ],
+            step_inputs=step_inputs,
             step_instructions=instructions,
-            common_job_info=job.common_job_info_provided_to_all_steps_at_runtime,
+            common_job_info=workflow.common_job_info or "",
         )
-
-    @staticmethod
-    def _append_concurrent_info(instructions: str, entry: WorkflowStepEntry) -> str:
-        """Append concurrent step info to instructions if applicable."""
-        if entry.is_concurrent and len(entry.step_ids) > 1:
-            instructions += (
-                f"\n\n**CONCURRENT STEPS**: This entry has {len(entry.step_ids)} "
-                f"steps that can run in parallel: {', '.join(entry.step_ids)}\n"
-                f"Use the Task tool to execute them concurrently."
-            )
-        return instructions
 
     # =========================================================================
     # Tool Implementations
     # =========================================================================
 
     def get_workflows(self) -> GetWorkflowsResponse:
-        """List all available workflows.
-
-        Returns:
-            GetWorkflowsResponse with all jobs and their workflows
-        """
+        """List all available workflows."""
         jobs, load_errors = self._load_all_jobs()
         job_infos = [self._job_to_info(job) for job in jobs]
         error_infos = [
@@ -398,17 +410,7 @@ class WorkflowTools:
         return GetWorkflowsResponse(jobs=job_infos, errors=error_infos)
 
     async def start_workflow(self, input_data: StartWorkflowInput) -> StartWorkflowResponse:
-        """Start a new workflow session.
-
-        Args:
-            input_data: StartWorkflowInput with goal, job_name, workflow_name
-
-        Returns:
-            StartWorkflowResponse with session ID, branch, and first step
-
-        Raises:
-            ToolError: If job or workflow not found
-        """
+        """Start a new workflow session."""
         # Load job and workflow
         job = self._get_job(input_data.job_name)
         workflow = self._get_workflow(job, input_data.workflow_name)
@@ -416,10 +418,7 @@ class WorkflowTools:
         if not workflow.steps:
             raise ToolError(f"Workflow '{workflow.name}' has no steps")
 
-        first_step_id = workflow.steps[0]
-        first_step = job.get_step(first_step_id)
-        if first_step is None:
-            raise ToolError(f"First step not found: {first_step_id}")
+        first_step = workflow.steps[0]
 
         sid = input_data.session_id
         aid = input_data.agent_id
@@ -430,22 +429,28 @@ class WorkflowTools:
             job_name=input_data.job_name,
             workflow_name=workflow.name,
             goal=input_data.goal,
-            first_step_id=first_step_id,
+            first_step_id=first_step.name,
             agent_id=aid,
         )
 
-        # Mark first step as started
-        await self.state_manager.start_step(sid, first_step_id, agent_id=aid)
+        # Resolve input values for first step
+        input_values = self._resolve_input_values(
+            first_step,
+            job,
+            workflow,
+            sid,
+            aid,
+            provided_inputs=input_data.inputs,
+        )
 
-        # Get step instructions
-        instructions = self._get_step_instructions(job, first_step_id)
-
-        # Get expected outputs
-        step_outputs = self._build_expected_outputs(first_step.outputs)
+        # Mark first step as started with input values
+        await self.state_manager.start_step(
+            sid, first_step.name, input_values=input_values, agent_id=aid
+        )
 
         response = StartWorkflowResponse(
             begin_step=self._build_active_step_info(
-                session.session_id, first_step_id, job, first_step, instructions, step_outputs
+                session.session_id, first_step, job, workflow, input_values
             ),
             stack=self.state_manager.get_stack(sid, aid),
         )
@@ -453,18 +458,7 @@ class WorkflowTools:
         return response
 
     async def finished_step(self, input_data: FinishedStepInput) -> FinishedStepResponse:
-        """Report step completion and get next instructions.
-
-        Args:
-            input_data: FinishedStepInput with outputs and optional notes
-
-        Returns:
-            FinishedStepResponse with status and next step or completion
-
-        Raises:
-            StateError: If no active session
-            ToolError: If quality gate fails after max attempts
-        """
+        """Report step completion and get next instructions."""
         sid = input_data.session_id
         aid = input_data.agent_id
         try:
@@ -476,125 +470,60 @@ class WorkflowTools:
                 "If you want to resume a workflow, just start it again and call finished_step "
                 "with quality_review_override_reason until you get back to your prior step."
             ) from err
-        current_step_id = session.current_step_id
+        current_step_name = session.current_step_id
 
         # Load job and workflow
         job = self._get_job(session.job_name)
         workflow = self._get_workflow(job, session.workflow_name)
-        current_step = job.get_step(current_step_id)
+        current_step = workflow.get_step(current_step_name)
 
         if current_step is None:
-            raise ToolError(f"Current step not found: {current_step_id}")
+            raise ToolError(f"Current step not found: {current_step_name}")
 
-        # Validate outputs against step's declared output specs
-        self._validate_outputs(input_data.outputs, current_step.outputs)
+        # Validate outputs against step's declared output refs
+        self._validate_outputs(input_data.outputs, current_step, job)
 
-        # Run quality gate if available and step has reviews (unless overridden)
-        if (
-            self.quality_gate
-            and current_step.reviews
-            and not input_data.quality_review_override_reason
-        ):
-            # Build review dicts and output specs used by both paths
-            review_dicts = [
-                {
-                    "run_each": r.run_each,
-                    "quality_criteria": r.quality_criteria,
-                    "additional_review_guidance": r.additional_review_guidance,
-                }
-                for r in current_step.reviews
-            ]
-            output_specs = {out.name: out.type for out in current_step.outputs}
+        # Get input values from state
+        input_values = self.state_manager.get_step_input_values(sid, current_step_name, aid)
 
-            if self.external_runner is None:
-                # Self-review mode: use the Deepwork Reviews mechanism to
-                # generate instruction files and formatted output.
-                # This adapter bridges Jobs review data into ReviewTask objects
-                # that the Reviews pipeline can consume.
-                from deepwork.jobs.mcp.quality_gate import adapt_reviews_to_review_tasks
-                from deepwork.review.formatter import format_for_claude
-                from deepwork.review.instructions import write_instruction_files
+        # Run quality gate if not overridden
+        if not input_data.quality_review_override_reason:
+            review_feedback = run_quality_gate(
+                step=current_step,
+                job=job,
+                workflow=workflow,
+                outputs=input_data.outputs,
+                input_values=input_values,
+                work_summary=input_data.work_summary,
+                project_root=self.project_root,
+            )
 
-                review_tasks = adapt_reviews_to_review_tasks(
-                    reviews=review_dicts,
-                    outputs=input_data.outputs,
-                    output_specs=output_specs,
-                    step_id=current_step_id,
-                    notes=input_data.notes,
+            if review_feedback:
+                # Record quality attempt
+                await self.state_manager.record_quality_attempt(
+                    sid, current_step_name, agent_id=aid
                 )
 
-                task_files = write_instruction_files(review_tasks, self.project_root)
-
-                if task_files:
-                    formatted = format_for_claude(task_files, self.project_root)
-                    feedback = (
-                        f"Quality review required.\n\n"
-                        f"{formatted}\n"
-                        f"After reviewing, fix any issues found, then call finished_step "
-                        f"again with quality_review_override_reason set to describe the "
-                        f"review outcome (e.g. 'Self-review passed: all criteria met')"
-                    )
-                else:
-                    # All reviews already passed (cached .passed markers)
-                    feedback = None
-
-                if feedback:
-                    response = FinishedStepResponse(
-                        status=StepStatus.NEEDS_WORK,
-                        feedback=feedback,
-                        stack=self.state_manager.get_stack(sid, aid),
-                    )
-                    self._write_session_status(sid)
-                    return response
-                # If no feedback (all cached), fall through to step completion
-            else:
-                # External runner mode: use quality gate subprocess evaluation
-                attempts = await self.state_manager.record_quality_attempt(
-                    sid, current_step_id, agent_id=aid
+                return FinishedStepResponse(
+                    status=StepStatus.NEEDS_WORK,
+                    feedback=review_feedback,
+                    stack=self.state_manager.get_stack(sid, aid),
                 )
-
-                failed_reviews = await self.quality_gate.evaluate_reviews(
-                    reviews=review_dicts,
-                    outputs=input_data.outputs,
-                    output_specs=output_specs,
-                    project_root=self.project_root,
-                    notes=input_data.notes,
-                )
-
-                if failed_reviews:
-                    # Check max attempts
-                    if attempts >= self.max_quality_attempts:
-                        feedback_parts = [r.feedback for r in failed_reviews]
-                        raise ToolError(
-                            f"Quality gate failed after {self.max_quality_attempts} attempts. "
-                            f"Feedback: {'; '.join(feedback_parts)}"
-                        )
-
-                    # Return needs_work status
-                    combined_feedback = "; ".join(r.feedback for r in failed_reviews)
-                    response = FinishedStepResponse(
-                        status=StepStatus.NEEDS_WORK,
-                        feedback=combined_feedback,
-                        failed_reviews=failed_reviews,
-                        stack=self.state_manager.get_stack(sid, aid),
-                    )
-                    self._write_session_status(sid)
-                    return response
 
         # Mark step as completed
         await self.state_manager.complete_step(
             session_id=sid,
-            step_id=current_step_id,
+            step_id=current_step_name,
             outputs=input_data.outputs,
-            notes=input_data.notes,
+            work_summary=input_data.work_summary,
             agent_id=aid,
         )
 
         # Find next step
-        current_entry_index = session.current_entry_index
-        next_entry_index = current_entry_index + 1
+        current_step_index = session.current_step_index
+        next_step_index = current_step_index + 1
 
-        if next_entry_index >= len(workflow.step_entries):
+        if next_step_index >= len(workflow.steps):
             # Workflow complete - get outputs before completing (which removes from stack)
             all_outputs = self.state_manager.get_all_outputs(sid, aid)
             await self.state_manager.complete_workflow(sid, aid)
@@ -603,37 +532,30 @@ class WorkflowTools:
                 status=StepStatus.WORKFLOW_COMPLETE,
                 summary=f"Workflow '{workflow.name}' completed successfully!",
                 all_outputs=all_outputs,
+                post_workflow_instructions=workflow.post_workflow_instructions,
                 stack=self.state_manager.get_stack(sid, aid),
             )
             self._write_session_status(sid)
             return response
 
         # Get next step
-        next_entry = workflow.step_entries[next_entry_index]
-
-        # For concurrent entries, we use the first step as the "current"
-        # The agent will handle running them in parallel via Task tool
-        next_step_id = next_entry.step_ids[0]
-        next_step = job.get_step(next_step_id)
-
-        if next_step is None:
-            raise ToolError(f"Next step not found: {next_step_id}")
+        next_step = workflow.steps[next_step_index]
 
         # Advance session
-        await self.state_manager.advance_to_step(sid, next_step_id, next_entry_index, agent_id=aid)
-        await self.state_manager.start_step(sid, next_step_id, agent_id=aid)
+        await self.state_manager.advance_to_step(sid, next_step.name, next_step_index, agent_id=aid)
 
-        # Get instructions
-        instructions = self._get_step_instructions(job, next_step_id)
-        step_outputs = self._build_expected_outputs(next_step.outputs)
+        # Resolve input values for next step
+        next_input_values = self._resolve_input_values(next_step, job, workflow, sid, aid)
 
-        # Add info about concurrent steps if this is a concurrent entry
-        instructions = self._append_concurrent_info(instructions, next_entry)
+        # Mark next step as started with input values
+        await self.state_manager.start_step(
+            sid, next_step.name, input_values=next_input_values, agent_id=aid
+        )
 
         response = FinishedStepResponse(
             status=StepStatus.NEXT_STEP,
             begin_step=self._build_active_step_info(
-                sid, next_step_id, job, next_step, instructions, step_outputs
+                sid, next_step, job, workflow, next_input_values
             ),
             stack=self.state_manager.get_stack(sid, aid),
         )
@@ -641,17 +563,7 @@ class WorkflowTools:
         return response
 
     async def abort_workflow(self, input_data: AbortWorkflowInput) -> AbortWorkflowResponse:
-        """Abort the current workflow and return to the previous one.
-
-        Args:
-            input_data: AbortWorkflowInput with explanation
-
-        Returns:
-            AbortWorkflowResponse with abort info and new stack state
-
-        Raises:
-            StateError: If no active session
-        """
+        """Abort the current workflow and return to the previous one."""
         sid = input_data.session_id
         aid = input_data.agent_id
         aborted_session, new_active = await self.state_manager.abort_workflow(
@@ -672,22 +584,7 @@ class WorkflowTools:
         return response
 
     async def go_to_step(self, input_data: GoToStepInput) -> GoToStepResponse:
-        """Navigate back to a prior step, clearing progress from that step onward.
-
-        This allows re-executing a step and all subsequent steps when earlier
-        outputs need revision. Only session tracking state is cleared — files
-        on disk are not deleted (Git handles file versioning).
-
-        Args:
-            input_data: GoToStepInput with step_id and optional session_id
-
-        Returns:
-            GoToStepResponse with step info, invalidated steps, and stack
-
-        Raises:
-            StateError: If no active session
-            ToolError: If step not found or forward navigation attempted
-        """
+        """Navigate back to a prior step, clearing progress from that step onward."""
         sid = input_data.session_id
         aid = input_data.agent_id
         session = self.state_manager.resolve_session(sid, aid)
@@ -697,64 +594,48 @@ class WorkflowTools:
         workflow = self._get_workflow(job, session.workflow_name)
 
         # Validate target step exists in workflow
-        target_entry_index = workflow.get_entry_index_for_step(input_data.step_id)
-        if target_entry_index is None:
+        target_index = workflow.get_step_index(input_data.step_id)
+        if target_index is None:
             raise ToolError(
                 f"Step '{input_data.step_id}' not found in workflow '{workflow.name}'. "
-                f"Available steps: {', '.join(workflow.steps)}"
+                f"Available steps: {', '.join(workflow.step_names)}"
             )
 
         # Validate not going forward (use finished_step for that)
-        current_entry_index = session.current_entry_index
-        if target_entry_index > current_entry_index:
+        current_step_index = session.current_step_index
+        if target_index > current_step_index:
             raise ToolError(
                 f"Cannot go forward to step '{input_data.step_id}' "
-                f"(entry index {target_entry_index} > current {current_entry_index}). "
+                f"(index {target_index} > current {current_step_index}). "
                 f"Use finished_step to advance forward."
             )
 
         # Validate step definition exists
-        target_step = job.get_step(input_data.step_id)
-        if target_step is None:
-            raise ToolError(f"Step definition not found: {input_data.step_id}")
+        target_step = workflow.steps[target_index]
 
-        # Collect all step IDs from target entry index through end of workflow
-        invalidate_step_ids: list[str] = []
-        for i in range(target_entry_index, len(workflow.step_entries)):
-            entry = workflow.step_entries[i]
-            invalidate_step_ids.extend(entry.step_ids)
-
-        # For concurrent entries, navigate to the first step in the entry
-        target_entry = workflow.step_entries[target_entry_index]
-        nav_step_id = target_entry.step_ids[0]
-        nav_step = job.get_step(nav_step_id)
-        if nav_step is None:
-            raise ToolError(f"Step definition not found: {nav_step_id}")
+        # Collect all step names from target index through end of workflow
+        invalidate_step_names: list[str] = [s.name for s in workflow.steps[target_index:]]
 
         # Clear progress and update position
         await self.state_manager.go_to_step(
             session_id=sid,
-            step_id=nav_step_id,
-            entry_index=target_entry_index,
-            invalidate_step_ids=invalidate_step_ids,
+            step_id=target_step.name,
+            step_index=target_index,
+            invalidate_step_ids=invalidate_step_names,
             agent_id=aid,
         )
 
+        # Resolve input values for target step
+        input_values = self._resolve_input_values(target_step, job, workflow, sid, aid)
+
         # Mark target step as started
-        await self.state_manager.start_step(sid, nav_step_id, agent_id=aid)
-
-        # Get step instructions
-        instructions = self._get_step_instructions(job, nav_step_id)
-        step_outputs = self._build_expected_outputs(nav_step.outputs)
-
-        # Add concurrent step info if applicable
-        instructions = self._append_concurrent_info(instructions, target_entry)
+        await self.state_manager.start_step(
+            sid, target_step.name, input_values=input_values, agent_id=aid
+        )
 
         response = GoToStepResponse(
-            begin_step=self._build_active_step_info(
-                sid, nav_step_id, job, nav_step, instructions, step_outputs
-            ),
-            invalidated_steps=invalidate_step_ids,
+            begin_step=self._build_active_step_info(sid, target_step, job, workflow, input_values),
+            invalidated_steps=invalidate_step_names,
             stack=self.state_manager.get_stack(sid, aid),
         )
         self._write_session_status(sid)

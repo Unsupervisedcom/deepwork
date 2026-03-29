@@ -55,7 +55,7 @@ interface WorkflowInfo {
 
 ### 2. `start_workflow`
 
-Start a new workflow session. Creates a git branch, initializes state tracking, and returns the first step's instructions. Supports nested workflows — starting a workflow while one is active pushes onto a stack.
+Start a new workflow session. Initializes state tracking and returns the first step's instructions. Supports nested workflows — starting a workflow while one is active pushes onto a stack.
 
 #### Parameters
 
@@ -65,6 +65,7 @@ Start a new workflow session. Creates a git branch, initializes state tracking, 
 | `job_name` | `string` | Yes | Name of the job |
 | `workflow_name` | `string` | Yes | Name of the workflow within the job. If the name doesn't match but the job has only one workflow, that workflow is selected automatically. If the job has multiple workflows, an error is returned listing the available workflow names. |
 | `session_id` | `string` | Yes | The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). Identifies the persistent state storage for this agent session. |
+| `inputs` | `Record<string, string \| string[]> \| null` | No | Optional input values for the first step. Map of step_argument names to values. For file_path type arguments: pass a file path string or list of file path strings. For string type arguments: pass a string value. These values are made available to the first step and flow through the workflow. |
 | `agent_id` | `string \| null` | No | The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), if running as a sub-agent. When set, this workflow is scoped to this agent. |
 
 #### Returns
@@ -87,8 +88,8 @@ Report that you've finished a workflow step. Validates outputs against quality c
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `outputs` | `Record<string, string \| string[]>` | Yes | Map of output names to file path(s). For outputs declared as type `file`: pass a single string path (e.g. `"report.md"`). For outputs declared as type `files`: pass a list of string paths (e.g. `["a.md", "b.md"]`). Outputs with `required: false` can be omitted. Check `step_expected_outputs` to see each output's declared type and required status. |
-| `notes` | `string \| null` | No | Optional notes about work done |
+| `outputs` | `Record<string, string \| string[]>` | Yes | Map of step_argument names to values. For outputs declared with type `file_path`: pass a single string path or list of paths. For outputs declared with type `string`: pass a string value. Outputs with `required: false` can be omitted. Check `step_expected_outputs` to see each output's type and required status. |
+| `work_summary` | `string \| null` | No | Summary of the work done in this step. Used by process_requirements reviews to evaluate whether the work process met quality criteria. Include key decisions, approaches taken, and any deviations from the instructions. |
 | `quality_review_override_reason` | `string \| null` | No | If provided, skips quality review (must explain why) |
 | `session_id` | `string` | Yes | The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). Identifies the persistent state storage for this agent session. |
 | `agent_id` | `string \| null` | No | The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), if running as a sub-agent. When set, operates on this agent's scoped workflow stack. |
@@ -102,8 +103,7 @@ The response varies based on the `status` field:
   status: "needs_work" | "next_step" | "workflow_complete";
 
   // For status = "needs_work"
-  feedback?: string;                    // Combined feedback from failed reviews
-  failed_reviews?: ReviewResult[];      // Failed review results
+  feedback?: string;                    // Feedback from quality reviews
 
   // For status = "next_step"
   begin_step?: ActiveStepInfo;         // Information about the next step to begin
@@ -111,6 +111,7 @@ The response varies based on the `status` field:
   // For status = "workflow_complete"
   summary?: string;                    // Summary of completed workflow
   all_outputs?: Record<string, string | string[]>; // All outputs from all steps
+  post_workflow_instructions?: string; // Instructions for after workflow completion
 
   // Always included
   stack: StackEntry[];                 // Current workflow stack after this operation
@@ -173,7 +174,7 @@ Navigate back to a prior step in the current workflow. Clears all progress from 
 - **Backward/current only**: The target step's entry index must be <= the current entry index. To go forward, use `finished_step`.
 - **Clears subsequent progress**: All `step_progress` entries from the target step onward are deleted (outputs, timestamps, quality attempts). The agent must re-execute all affected steps.
 - **Files preserved**: Only session tracking state is cleared. Files on disk are not deleted — Git handles file versioning.
-- **Concurrent entries**: When targeting a step in a concurrent entry, navigation goes to the first step in that entry, and all steps in the group are invalidated.
+- **Invalidation scope**: All steps from the target step through the end of the workflow are invalidated and must be re-executed.
 
 ---
 
@@ -246,12 +247,20 @@ A plain string with either:
 ```typescript
 interface ExpectedOutput {
   name: string;                    // Output name (use as key in finished_step outputs)
-  type: string;                    // "file" or "files"
+  type: string;                    // "file_path" or "string"
   description: string;             // What this output should contain
   required: boolean;               // If false, this output can be omitted from finished_step
   syntax_for_finished_step_tool: string; // Value format hint:
-                                         //   "filepath" for type "file"
-                                         //   "array of filepaths for all individual files" for type "files"
+                                         //   "filepath or list of filepaths" for type "file_path"
+                                         //   "string value" for type "string"
+}
+
+interface StepInputInfo {
+  name: string;                    // Step argument name
+  type: string;                    // Argument type: "file_path" or "string"
+  description: string;             // What this input represents
+  value: string | string[] | null; // The input value (file path or string content), if available
+  required: boolean;               // Whether this input is required
 }
 
 interface ActiveStepInfo {
@@ -259,29 +268,9 @@ interface ActiveStepInfo {
   step_id: string;                 // ID of the current step
   job_dir: string;                 // Absolute path to job directory (templates, scripts, etc.)
   step_expected_outputs: ExpectedOutput[]; // Expected outputs with type and format hints
-  step_reviews: ReviewInfo[];      // Reviews to run when step completes
+  step_inputs: StepInputInfo[];    // Inputs provided to this step with their values
   step_instructions: string;       // Instructions for the step
   common_job_info: string;         // Common context shared across all steps in this job
-}
-
-interface ReviewInfo {
-  run_each: string;                // 'step' or output name to review
-  quality_criteria: Record<string, string>; // Map of criterion name to question
-  additional_review_guidance: string | null; // Optional guidance for the reviewer
-}
-
-interface ReviewResult {
-  review_run_each: string;         // 'step' or output name that was reviewed
-  target_file: string | null;      // Specific file reviewed (for per-file reviews)
-  passed: boolean;                 // Whether this review passed
-  feedback: string;                // Summary feedback
-  criteria_results: QualityCriteriaResult[];
-}
-
-interface QualityCriteriaResult {
-  criterion: string;               // The quality criterion name
-  passed: boolean;                 // Whether this criterion passed
-  feedback: string | null;         // Feedback if failed
 }
 
 interface StackEntry {
@@ -330,47 +319,54 @@ The `finished_step` tool returns one of three statuses:
 
 Steps may define quality reviews that outputs must pass. When `finished_step` is called:
 
-1. If the step has reviews and a quality gate is configured, outputs are evaluated
-2. **Input files from prior steps are included** alongside outputs in the review payload, giving the reviewer full context to evaluate whether outputs are consistent with their inputs
-3. If any review fails, `status = "needs_work"` with feedback
-4. If all reviews pass (or no reviews defined), workflow advances
-5. After 3 failed attempts (configurable), the quality gate raises an error
+1. JSON schema validation runs first (if any outputs have `json_schema` defined)
+2. Dynamic review rules are built from step output `review` blocks and `process_requirements`
+3. `.deepreview` rules are also loaded and matched against output files
+4. If any reviews are needed, `status = "needs_work"` with review instructions
+5. If all reviews pass (or no reviews defined), workflow advances
+6. There is no maximum attempt limit — the agent can retry `finished_step` indefinitely
 
 ### Review Payload Structure
 
-The quality gate builds a prompt for the review agent with clearly separated sections:
+The quality gate builds dynamic `ReviewRule` objects from step output review blocks. Each rule's instructions include a preamble with:
 
-```
-==================== BEGIN INPUTS ====================
-(contents of input files from prior steps)
-==================== END INPUTS ====================
+- **Job context**: The workflow's `common_job_info` (if any)
+- **Step inputs**: Input values from prior steps, with file_path inputs shown as `@path` references
 
-==================== BEGIN OUTPUTS ====================
-(contents of output files from current step)
-==================== END OUTPUTS ====================
-```
-
-- **Inputs** are resolved automatically from prior step outputs recorded in the session state. If a step declares `file` inputs with `from_step` references, the quality gate looks up the actual file paths from the referenced step's completed outputs.
-- **The inputs section is omitted** if the step has no file inputs from prior steps.
-- **Binary files** (e.g., PDFs) that cannot be decoded as UTF-8 are not embedded in the payload. Instead, a placeholder is included: `[Binary file — not included in review. Read from: /absolute/path/to/file]`
+These rules are then processed through the standard DeepWork Reviews pipeline (matched against output files, instruction files written, formatted for the agent platform). The review output directs the agent to launch parallel Task agents for each review.
 
 ### Review Types
 
-Reviews are defined per-step in the job.yml:
+Reviews are defined on individual output refs or step_arguments in job.yml using `ReviewBlock`:
 
 ```yaml
-reviews:
-  - run_each: step                    # Review all outputs together
-    quality_criteria:
-      "Criterion Name": "Question to evaluate"
-  - run_each: output_name             # Review a specific output
-    quality_criteria:
-      "Criterion Name": "Question to evaluate"
+step_arguments:
+  - name: report
+    type: file_path
+    review:
+      strategy: individual            # "individual" or "matches_together"
+      instructions: "Review the report for accuracy and completeness."
+      agent:                          # Optional: delegate to a specific agent type
+        type: "code"
+      additional_context:             # Optional
+        all_changed_filenames: true
+        unchanged_matching_files: true
+
+steps:
+  - name: write_report
+    outputs:
+      report:
+        review:                       # Override or add review at the output ref level
+          strategy: matches_together
+          instructions: "Review all output files together for consistency."
+    process_requirements:       # Process review (evaluates work_summary)
+      "Thoroughness": "Did the agent consider all relevant factors?"
 ```
 
-- `run_each: step` — Review runs once with ALL output files
-- `run_each: <output_name>` where output is `type: file` — Review runs once with that specific file
-- `run_each: <output_name>` where output is `type: files` — Review runs once per file in the list
+- **Output-level reviews**: Defined on the output ref in a step, or inherited from the step_argument's `review` block
+- **`strategy: individual`**: Each matched file is reviewed separately
+- **`strategy: matches_together`**: All matched files are reviewed together in one review task
+- **`process_requirements`**: Evaluates the `work_summary` against named quality criteria (requires `work_summary` to be provided in `finished_step`)
 
 To skip quality review (use sparingly):
 - Provide `quality_review_override_reason` explaining why review is unnecessary
@@ -395,12 +391,12 @@ deepwork serve [OPTIONS]
 
 Options:
   --path PATH            Project root directory (default: current directory)
-  --no-quality-gate      Disable quality gate evaluation
   --transport TYPE       Transport type: stdio or sse (default: stdio)
   --port PORT            Port for SSE transport (default: 8000)
-  --external-runner TYPE External runner for quality gate reviews (default: None)
   --platform NAME        Platform identifier (e.g., 'claude'). Used by the review tool to format output.
 ```
+
+Note: `--no-quality-gate` and `--external-runner` are deprecated and hidden. Quality reviews now use the DeepWork Reviews infrastructure (dynamic review rules from job.yml + .deepreview file rules). These flags are accepted for backwards compatibility but have no effect.
 
 ---
 
@@ -412,8 +408,8 @@ Add to your `.mcp.json`:
 {
   "mcpServers": {
     "deepwork": {
-      "command": "deepwork",
-      "args": ["serve", "--path", "."]
+      "command": "uvx",
+      "args": ["deepwork", "serve", "--path", ".", "--platform", "claude"]
     }
   }
 }

@@ -67,21 +67,21 @@ class StatusWriter:
         manifest_jobs: list[dict[str, Any]] = []
 
         for job in sorted_jobs:
-            sorted_workflows = sorted(job.workflows, key=lambda w: w.name)
+            sorted_workflows = sorted(job.workflows.items(), key=lambda item: item[0])
             wf_list: list[dict[str, Any]] = []
-            for wf in sorted_workflows:
+            for wf_name, wf in sorted_workflows:
                 steps_list: list[dict[str, str]] = []
-                for step_id in wf.steps:
+                for step in wf.steps:
                     steps_list.append(
                         {
-                            "name": step_id,
-                            "display_name": _derive_display_name(step_id),
+                            "name": step.name,
+                            "display_name": _derive_display_name(step.name),
                         }
                     )
                 wf_list.append(
                     {
-                        "name": wf.name,
-                        "display_name": _derive_display_name(wf.name),
+                        "name": wf_name,
+                        "display_name": _derive_display_name(wf_name),
                         "summary": wf.summary,
                         "steps": steps_list,
                     }
@@ -179,17 +179,16 @@ class StatusWriter:
         # Enrich with job definition data if available
         job = job_map.get(session.job_name)
         if job:
-            for wf in job.workflows:
-                if wf.name == session.workflow_name:
-                    wf_def["summary"] = wf.summary
-                    wf_def["steps"] = [
-                        {
-                            "name": step_id,
-                            "display_name": _derive_display_name(step_id),
-                        }
-                        for step_id in wf.steps
-                    ]
-                    break
+            wf = job.workflows.get(session.workflow_name)
+            if wf:
+                wf_def["summary"] = wf.summary
+                wf_def["steps"] = [
+                    {
+                        "name": step.name,
+                        "display_name": _derive_display_name(step.name),
+                    }
+                    for step in wf.steps
+                ]
 
         # Build ordered step history
         steps_output: list[dict[str, Any]] = []

@@ -26,33 +26,23 @@ class StepStatus(StrEnum):
 
 
 # =============================================================================
+# Shared Argument Value Type
+# =============================================================================
+
+
+ArgumentValue = str | list[str]
+"""Value for a step argument.
+
+For file_path type arguments: a single string path or list of string paths.
+For string type arguments: a single string value.
+"""
+
+
+# =============================================================================
 # Workflow Info Models
 # NOTE: These models are returned by get_workflows tool.
 #       Update doc/mcp_interface.md when modifying.
 # =============================================================================
-
-
-class StepInfo(BaseModel):
-    """Information about a single step."""
-
-    id: str = Field(description="Step identifier")
-    name: str = Field(description="Human-readable step name")
-    description: str = Field(description="What the step does")
-    dependencies: list[str] = Field(default_factory=list, description="Required prior steps")
-
-
-class ConcurrentStepGroup(BaseModel):
-    """A group of steps that can be executed concurrently."""
-
-    step_ids: list[str] = Field(description="Steps that run in parallel")
-    is_concurrent: bool = Field(default=True)
-
-
-class WorkflowStepEntryInfo(BaseModel):
-    """Information about a workflow step entry (sequential or concurrent)."""
-
-    step_ids: list[str] = Field(description="Step ID(s) in this entry")
-    is_concurrent: bool = Field(default=False, description="True if steps run in parallel")
 
 
 class WorkflowInfo(BaseModel):
@@ -86,6 +76,15 @@ class StartWorkflowInput(BaseModel):
     goal: str = Field(description="What the user wants to accomplish")
     job_name: str = Field(description="Name of the job")
     workflow_name: str = Field(description="Name of the workflow within the job")
+    inputs: dict[str, ArgumentValue] | None = Field(
+        default=None,
+        description=(
+            "Optional input values for the first step. Map of step_argument names to values. "
+            "For file_path type arguments: pass a file path string or list of file path strings. "
+            "For string type arguments: pass a string value. "
+            "These values are made available to the first step and flow through the workflow."
+        ),
+    )
     session_id: str = Field(
         description=(
             "The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). "
@@ -105,16 +104,24 @@ class StartWorkflowInput(BaseModel):
 class FinishedStepInput(BaseModel):
     """Input for finished_step tool."""
 
-    outputs: dict[str, str | list[str]] = Field(
+    outputs: dict[str, ArgumentValue] = Field(
         description=(
-            "Map of output names to file path(s). "
-            "For outputs declared as type 'file': pass a single string path (e.g. \"report.md\"). "
-            'For outputs declared as type \'files\': pass a list of string paths (e.g. ["a.md", "b.md"]). '
+            "Map of step_argument names to values. "
+            "For outputs declared with type 'file_path': pass a single string path or list of paths. "
+            "For outputs declared with type 'string': pass a string value. "
             "Outputs with required: false can be omitted from this map. "
-            "Check step_expected_outputs from start_workflow/finished_step response to see each output's type and required status."
+            "Check step_expected_outputs from start_workflow/finished_step response "
+            "to see each output's type and required status."
         )
     )
-    notes: str | None = Field(default=None, description="Optional notes about work done")
+    work_summary: str | None = Field(
+        default=None,
+        description=(
+            "Summary of the work done in this step. Used by process_requirements "
+            "reviews to evaluate whether the work process met quality criteria. "
+            "Include key decisions, approaches taken, and any deviations from the instructions."
+        ),
+    )
     quality_review_override_reason: str | None = Field(
         default=None,
         description="If provided, skips the quality gate review. Must explain why the review is being bypassed.",
@@ -156,7 +163,7 @@ class AbortWorkflowInput(BaseModel):
 class GoToStepInput(BaseModel):
     """Input for go_to_step tool."""
 
-    step_id: str = Field(description="ID of the step to navigate back to")
+    step_id: str = Field(description="Name of the step to navigate back to")
     session_id: str = Field(
         description=(
             "The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). "
@@ -173,56 +180,6 @@ class GoToStepInput(BaseModel):
 
 
 # =============================================================================
-# Quality Gate Models
-# =============================================================================
-
-
-class QualityCriteriaResult(BaseModel):
-    """Result for a single quality criterion."""
-
-    criterion: str = Field(description="The quality criterion text")
-    passed: bool = Field(description="Whether this criterion passed")
-    feedback: str | None = Field(default=None, description="Feedback if failed")
-
-
-class QualityGateResult(BaseModel):
-    """Result from quality gate evaluation."""
-
-    passed: bool = Field(description="Overall pass/fail")
-    feedback: str = Field(description="Summary feedback")
-    criteria_results: list[QualityCriteriaResult] = Field(
-        default_factory=list, description="Per-criterion results"
-    )
-
-
-class ReviewInfo(BaseModel):
-    """Information about a review for a step."""
-
-    run_each: str = Field(description="'step' or output name to review")
-    quality_criteria: dict[str, str] = Field(
-        description="Map of criterion name to criterion question"
-    )
-    additional_review_guidance: str | None = Field(
-        default=None,
-        description="Optional guidance for the reviewer about what context to look at",
-    )
-
-
-class ReviewResult(BaseModel):
-    """Result from a single review evaluation."""
-
-    review_run_each: str = Field(description="'step' or output name that was reviewed")
-    target_file: str | None = Field(
-        default=None, description="Specific file reviewed (for per-file reviews)"
-    )
-    passed: bool = Field(description="Whether this review passed")
-    feedback: str = Field(description="Summary feedback")
-    criteria_results: list[QualityCriteriaResult] = Field(
-        default_factory=list, description="Per-criterion results"
-    )
-
-
-# =============================================================================
 # Tool Output Models
 # NOTE: Changes to these models affect MCP tool return types.
 #       Update doc/mcp_interface.md when modifying.
@@ -232,8 +189,10 @@ class ReviewResult(BaseModel):
 class ExpectedOutput(BaseModel):
     """Describes an expected output for a step."""
 
-    name: str = Field(description="Output name (use as key in finished_step outputs)")
-    type: str = Field(description="Output type: 'file' or 'files'")
+    name: str = Field(
+        description="Output name (step_argument name, use as key in finished_step outputs)"
+    )
+    type: str = Field(description="Argument type: 'file_path' or 'string'")
     description: str = Field(description="What this output should contain")
     required: bool = Field(
         description="Whether this output must be provided. If false, it can be omitted from finished_step outputs."
@@ -241,6 +200,18 @@ class ExpectedOutput(BaseModel):
     syntax_for_finished_step_tool: str = Field(
         description="The value format to use for this output when calling finished_step"
     )
+
+
+class StepInputInfo(BaseModel):
+    """Information about an input provided to a step."""
+
+    name: str = Field(description="Step argument name")
+    type: str = Field(description="Argument type: 'file_path' or 'string'")
+    description: str = Field(description="What this input represents")
+    value: ArgumentValue | None = Field(
+        default=None, description="The input value (file path or string content), if available"
+    )
+    required: bool = Field(default=True, description="Whether this input is required")
 
 
 class ActiveStepInfo(BaseModel):
@@ -252,7 +223,7 @@ class ActiveStepInfo(BaseModel):
             "This is the same session ID the agent received at startup."
         )
     )
-    step_id: str = Field(description="ID of the current step")
+    step_id: str = Field(description="Name of the current step")
     job_dir: str = Field(
         description="Absolute path to the job directory. Templates, scripts, "
         "and other files referenced in step instructions live here."
@@ -260,12 +231,13 @@ class ActiveStepInfo(BaseModel):
     step_expected_outputs: list[ExpectedOutput] = Field(
         description="Expected outputs for this step, including type and format hints"
     )
-    step_reviews: list[ReviewInfo] = Field(
-        default_factory=list, description="Reviews to run when step completes"
+    step_inputs: list[StepInputInfo] = Field(
+        default_factory=list, description="Inputs provided to this step with their values"
     )
     step_instructions: str = Field(description="Instructions for the step")
     common_job_info: str = Field(
-        description="Common context and information shared across all steps in this job"
+        default="",
+        description="Common context and information shared across all steps in this workflow",
     )
 
 
@@ -291,7 +263,7 @@ class StackEntry(BaseModel):
     """An entry in the workflow stack."""
 
     workflow: str = Field(description="Workflow identifier (job_name/workflow_name)")
-    step: str = Field(description="Current step ID in this workflow")
+    step: str = Field(description="Current step name in this workflow")
 
 
 class StartWorkflowResponse(BaseModel):
@@ -317,10 +289,7 @@ class FinishedStepResponse(BaseModel):
     status: StepStatus = Field(description="Result status")
 
     # For needs_work status
-    feedback: str | None = Field(default=None, description="Feedback from quality gate")
-    failed_reviews: list[ReviewResult] | None = Field(
-        default=None, description="Failed review results"
-    )
+    feedback: str | None = Field(default=None, description="Feedback from quality reviews")
 
     # For next_step status
     begin_step: ActiveStepInfo | None = Field(
@@ -329,8 +298,11 @@ class FinishedStepResponse(BaseModel):
 
     # For workflow_complete status
     summary: str | None = Field(default=None, description="Summary of completed workflow")
-    all_outputs: dict[str, str | list[str]] | None = Field(
+    all_outputs: dict[str, ArgumentValue] | None = Field(
         default=None, description="All outputs from all steps"
+    )
+    post_workflow_instructions: str | None = Field(
+        default=None, description="Instructions for after workflow completion"
     )
 
     # Stack info (included in all responses)
@@ -361,7 +333,7 @@ class GoToStepResponse(BaseModel):
 
     begin_step: ActiveStepInfo = Field(description="Information about the step to begin working on")
     invalidated_steps: list[str] = Field(
-        description="Step IDs whose progress was cleared (from target step onward)"
+        description="Step names whose progress was cleared (from target step onward)"
     )
     stack: list[StackEntry] = Field(
         default_factory=list, description="Current workflow stack after navigation"
@@ -376,13 +348,16 @@ class GoToStepResponse(BaseModel):
 class StepProgress(BaseModel):
     """Progress for a single step in a workflow."""
 
-    step_id: str = Field(description="Step identifier")
+    step_id: str = Field(description="Step name")
     started_at: str | None = Field(default=None, description="ISO timestamp when started")
     completed_at: str | None = Field(default=None, description="ISO timestamp when completed")
-    outputs: dict[str, str | list[str]] = Field(
-        default_factory=dict, description="Output files created"
+    outputs: dict[str, ArgumentValue] = Field(
+        default_factory=dict, description="Output values produced"
     )
-    notes: str | None = Field(default=None, description="Notes from agent")
+    work_summary: str | None = Field(default=None, description="Summary of work done")
+    input_values: dict[str, ArgumentValue] = Field(
+        default_factory=dict, description="Input values provided to this step"
+    )
     quality_attempts: int = Field(default=0, description="Number of quality gate attempts")
     sub_workflow_instance_ids: list[str] = Field(
         default_factory=list,
@@ -418,9 +393,9 @@ class WorkflowSession(BaseModel):
     job_name: str = Field(description="Name of the job")
     workflow_name: str = Field(description="Name of the workflow")
     goal: str = Field(description="User's goal for this workflow")
-    current_step_id: str = Field(description="Current step in workflow")
-    current_entry_index: int = Field(
-        default=0, description="Index of current entry in step_entries"
+    current_step_id: str = Field(description="Current step name in workflow")
+    current_step_index: int = Field(
+        default=0, description="Index of current step in workflow steps list"
     )
     step_progress: dict[str, StepProgress] = Field(
         default_factory=dict, description="Progress for each step"

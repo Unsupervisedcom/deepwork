@@ -3,94 +3,110 @@
 # This is a complete example of a job.yml file for reference.
 
 name: competitive_research
-version: "1.0.0"
 summary: "Systematic competitive analysis workflow"
-common_job_info_provided_to_all_steps_at_runtime: |
-  A comprehensive workflow for analyzing competitors in your market segment.
-  Helps product teams understand the competitive landscape through systematic
-  identification, research, comparison, and positioning recommendations.
+
+step_arguments:
+  - name: market_segment
+    description: "The market segment to analyze"
+    type: string
+
+  - name: product_category
+    description: "The product category"
+    type: string
+
+  - name: competitors_list.md
+    description: "Vetted list of direct and indirect competitors"
+    type: file_path
+
+  - name: research_notes.md
+    description: "Detailed research notes on each competitor"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Evaluate the output against these criteria:
+        - Sufficient Data: Each competitor has at least 3 data points.
+        - Sources Cited: Sources are cited for key claims.
+        - Current Information: Information is current (within last year).
+
+  - name: comparison_matrix.md
+    description: "Side-by-side comparison matrix of all competitors"
+    type: file_path
+
+  - name: positioning_report.md
+    description: "Strategic positioning recommendations"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Read the comparison_matrix.md file to verify that recommendations
+        are grounded in the competitive analysis data.
+
+        Evaluate the output against these criteria:
+        - Actionable: Recommendations are specific and actionable.
+        - Data-Backed: Recommendations are supported by the competitive analysis data.
 
 workflows:
-  - name: full_analysis
+  full_analysis:
     summary: "Complete competitive research from identification to positioning"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      A comprehensive workflow for analyzing competitors in your market segment.
+      Helps product teams understand the competitive landscape through systematic
+      identification, research, comparison, and positioning recommendations.
     steps:
-      - identify_competitors
-      - research_competitors
-      - comparative_analysis
-      - positioning_recommendations
+      - name: identify_competitors
+        instructions: |
+          Identify 5-7 key competitors in the target market segment.
+          Use web search, industry reports, and analyst coverage to build
+          a comprehensive list of direct and indirect competitors.
 
-steps:
-  - id: identify_competitors
-    name: "Identify Competitors"
-    description: "Identify 5-7 key competitors in the target market"
-    instructions_file: steps/identify_competitors.md
-    inputs:
-      - name: market_segment
-        description: "The market segment to analyze"
-      - name: product_category
-        description: "The product category"
-    outputs:
-      competitors_list.md:
-        type: file
-        description: "Vetted list of direct and indirect competitors"
-        required: true
-    dependencies: []
-    reviews: []
+          For each competitor, document:
+          - Company name and website
+          - Brief description of their product/service
+          - Why they are a competitor (direct vs indirect)
+        inputs:
+          market_segment:
+            required: true
+          product_category:
+            required: true
+        outputs:
+          competitors_list.md:
+            required: true
 
-  - id: research_competitors
-    name: "Research Competitors"
-    description: "Deep dive research on each identified competitor"
-    instructions_file: steps/research_competitors.md
-    inputs:
-      - file: competitors_list.md
-        from_step: identify_competitors
-    outputs:
-      research_notes.md:
-        type: file
-        description: "Detailed research notes on each competitor"
-        required: true
-    dependencies:
-      - identify_competitors
-    reviews:
-      - run_each: research_notes.md
-        quality_criteria:
-          "Sufficient Data": "Each competitor has at least 3 data points."
-          "Sources Cited": "Sources are cited for key claims."
-          "Current Information": "Information is current (within last year)."
+      - name: research_competitors
+        instructions: |
+          Deep dive research on each identified competitor.
+          Analyze their website, product pages, pricing, and public materials.
+          Document findings in a structured format.
+        inputs:
+          competitors_list.md:
+            required: true
+        outputs:
+          research_notes.md:
+            required: true
+        process_requirements:
+          "Consistent Style": "All research notes MUST follow the same structure."
 
-  - id: comparative_analysis
-    name: "Comparative Analysis"
-    description: "Create side-by-side comparison matrix"
-    instructions_file: steps/comparative_analysis.md
-    inputs:
-      - file: research_notes.md
-        from_step: research_competitors
-    outputs:
-      comparison_matrix.md:
-        type: file
-        description: "Side-by-side comparison matrix of all competitors"
-        required: true
-    dependencies:
-      - research_competitors
-    reviews: []
+      - name: comparative_analysis
+        instructions: |
+          Create a side-by-side comparison matrix of all competitors.
+          Compare across key dimensions: features, pricing, target market,
+          strengths, and weaknesses.
+        inputs:
+          research_notes.md:
+            required: true
+        outputs:
+          comparison_matrix.md:
+            required: true
 
-  - id: positioning_recommendations
-    name: "Positioning Recommendations"
-    description: "Strategic positioning recommendations based on analysis"
-    instructions_file: steps/positioning_recommendations.md
-    inputs:
-      - file: comparison_matrix.md
-        from_step: comparative_analysis
-    outputs:
-      positioning_report.md:
-        type: file
-        description: "Strategic positioning recommendations"
-        required: true
-    dependencies:
-      - comparative_analysis
-    reviews:
-      - run_each: positioning_report.md
-        additional_review_guidance: "Read the comparison_matrix.md file to verify that recommendations are grounded in the competitive analysis data."
-        quality_criteria:
-          "Actionable": "Recommendations are specific and actionable."
-          "Data-Backed": "Recommendations are supported by the competitive analysis data."
+      - name: positioning_recommendations
+        instructions: |
+          Based on the competitive analysis, develop strategic positioning
+          recommendations. Identify market gaps, differentiation opportunities,
+          and suggested positioning strategies.
+        inputs:
+          comparison_matrix.md:
+            required: true
+        outputs:
+          positioning_report.md:
+            required: true

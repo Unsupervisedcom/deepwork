@@ -1,22 +1,26 @@
-# yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: job_with_doc_spec
-version: "1.0.0"
 summary: "Job with typed output for testing"
-common_job_info_provided_to_all_steps_at_runtime: |
-  Reports should always include citations.
 
-steps:
-  - id: generate_report
-    name: "Generate Report"
-    description: "Generate a report"
-    instructions_file: steps/generate_report.md
-    inputs:
-      - name: report_title
-        description: "Title for the report"
-    outputs:
-      report.md:
-        type: file
-        description: "Generated report document"
-        required: true
-    dependencies: []
-    reviews: []
+step_arguments:
+  - name: report_title
+    description: "Title for the report"
+    type: string
+  - name: report
+    description: "Generated report document"
+    type: file_path
+
+workflows:
+  main:
+    summary: "Generate a report"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Reports should always include citations.
+    steps:
+      - name: generate_report
+        instructions: |
+          Generate a report with the given title.
+        inputs:
+          report_title:
+            required: true
+        outputs:
+          report:
+            required: true

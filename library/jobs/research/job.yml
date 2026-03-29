@@ -1,384 +1,1762 @@
 name: research
-version: "2.1.0"
 summary: "Research suite: deep investigation, quick summary, material ingestion, and reproduction planning"
-common_job_info_provided_to_all_steps_at_runtime: |
-  A multi-workflow research suite supporting deep investigation, quick summaries,
-  material ingestion into notes, and reproduction planning for engineering handoff.
 
-  ## Workflows
-
-  - **research**: Full multi-platform research (8+ sources) with comprehensive report and bibliography
-  - **quick**: Local-only fast research (3+ sources via WebSearch/WebFetch) with concise summary
-  - **ingest**: Import external research material (markdown, papers, URLs) into the user's notes
-  - **reproduce**: Ingest material (via nested ingest workflow), analyze for reproducibility,
-    and create an engineering plan that can be handed off to sweng workflows or issue trackers
-
-  ## Platform Support (research workflow only)
-
-  - Local: Claude's built-in WebSearch and WebFetch tools
-  - Gemini Deep Research: Comprehensive web crawling via Chrome
-  - ChatGPT: Research with citations
-  - Grok: Real-time information + social media context
-  - Perplexity: Research with inline citations
-  - Parallel mode: Multiple platforms for cross-validation
-
-  ## Notes Storage
-
-  Research material (ingest/reproduce workflows) is filed using environment variables:
-  - `NOTES_DIR`: Root notes directory (can be set in your shell profile or by your environment)
-  - `NOTES_RESEARCH_DIR`: Research subdirectory (defaults to `$NOTES_DIR/research`)
-
-  If these environment variables are not set, the workflow MUST ask the user where to store
-  notes and suggest they set `NOTES_DIR` for future runs. This keeps the workflow portable
-  across different environments.
-
-  ## Output Locations
-
-  - **deep/quick**: `research/[topic_slug]/` in the working directory
-  - **ingest**: `$NOTES_RESEARCH_DIR/[topic_slug]/` with frontmatter tags
-  - **reproduce**: reproduction plan in working directory + optional issue creation
-
-  ## Research Types
-
-  science, business, competitive, market, technical
-
-  ## Depth Levels
-
-  - Quick: 3+ sources, local only (WebSearch/WebFetch), concise output
-  - Deep: 8+ sources, multi-platform, comprehensive analysis
-
-  ## Project Integration
-
-  When a project is detected or specified, create symlinks at
-  `projects/[ProjectName]/research/[topic_slug]` pointing to the research directory.
+step_arguments:
+  - name: topic
+    description: "The research topic or question to investigate"
+    type: string
+  - name: type
+    description: "Research type: science, business, competitive, market, or technical"
+    type: string
+  - name: depth
+    description: "Depth level: quick or deep"
+    type: string
+  - name: project
+    description: "Associated project tag (optional, auto-detected from context)"
+    type: string
+  - name: platforms
+    description: "Which AI platforms to use: local, gemini, chatgpt, grok, perplexity (can select multiple for parallel)"
+    type: string
+  - name: material
+    description: "The external research material: a file path (markdown, PDF), URL, or pasted content"
+    type: string
+  - name: topic_slug
+    description: "Short slug for organizing the material (e.g., 'transformer-attention')"
+    type: string
+  - name: scope.md
+    description: "Research scope definition with question, sub-questions, and search strategy"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify the research scope file:
+        - The research question MUST be specific and answerable, not vague or overly broad.
+        - Sub-questions (3-5) MUST collectively cover the breadth of the research topic.
+        - The search strategy MUST match the research type and depth level, with appropriate source types prioritized.
+  - name: platforms.md
+    description: "Platform selection and execution plan for the gather step"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Read scope.md to verify platform selection is appropriate for the research type and depth.
+        - At least one research platform MUST be selected with a clear role and query approach.
+        - Browser tool availability MUST be confirmed for any external platforms, or a fallback to local-only MUST be documented.
+  - name: sources.md
+    description: "Consolidated sources with URLs, findings, and reliability assessments"
+    type: file_path
+  - name: analysis.md
+    description: "Synthesized analysis with findings by sub-question, cross-cutting themes, and key insights"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Read scope.md for the research question and sub-questions. Read sources.md to verify synthesis draws from multiple sources.
+        - The analysis MUST directly address the research question and all sub-questions from scope.md.
+        - Findings MUST synthesize across multiple sources rather than summarizing each source individually.
+        - Contradictions, gaps, and areas of disagreement in the evidence MUST be explicitly noted.
+  - name: README.md
+    description: "Final research report or concise summary with findings, inline citations, and key takeaways"
+    type: file_path
+  - name: bibliography.md
+    description: "Categorized bibliography with annotated source entries"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        - Sources MUST be organized by category (academic, industry reports, news, documentation, etc.).
+        - Each entry MUST have a 1-2 sentence annotation describing its relevance.
+  - name: parsed.md
+    description: "Cleaned and normalized markdown with extracted metadata in frontmatter"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        - Frontmatter MUST include title, authors (if available), date, source URL or origin, and tags.
+        - Content MUST be well-formatted markdown with no HTML artifacts or broken formatting.
+        - A summary section MUST extract the key findings or contributions from the material.
+        - The full original content MUST be present — no sections truncated, summarized away, or replaced with references like 'see above'.
+        - Original notation and formatting (tree diagrams, special characters, code blocks, tables) MUST be kept exactly as authored — not reformatted.
+  - name: filed_note.md
+    description: "The filed research note in its final location within the notes directory"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        - Material MUST be filed in $NOTES_RESEARCH_DIR/[topic_slug]/ or the user-specified notes location.
+        - The filed document MUST have proper frontmatter with tags for discoverability in the notes system.
+  - name: ingested_path
+    description: "Path reference to the ingested and filed material from the nested ingest workflow"
+    type: file_path
+  - name: reproducibility_analysis.md
+    description: "Analysis of reproducible claims with feasibility assessments and resource requirements"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Read the ingested research material (referenced in the analysis) to verify claims are accurately represented.
+        - Specific reproducible claims, experiments, or methodologies MUST be clearly listed.
+        - Each item MUST have a feasibility assessment including resource requirements and prerequisites.
+        - Items MUST be prioritized by impact and feasibility.
+  - name: reproduction_plan.md
+    description: "Structured reproduction plan with tasks, dependencies, and acceptance criteria"
+    type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Read reproducibility_analysis.md to verify the plan covers all identified reproducible items.
+        - The plan MUST contain specific, actionable tasks with clear acceptance criteria.
+        - Task dependencies and ordering MUST be clearly specified.
+        - The plan MUST be structured for handoff to a sweng workflow or issue tracker (Forgejo/GitHub).
+  - name: issues
+    description: "Created Forgejo/GitHub issues if applicable based on user preference or system context"
+    type: file_path
 
 workflows:
-  - name: research
+  research:
     summary: "Full multi-platform research with comprehensive report and bibliography"
-    steps:
-      - scope
-      - choose_platforms
-      - gather
-      - synthesize
-      - report
+    common_job_info_provided_to_all_steps_at_runtime: |
+      A multi-workflow research suite supporting deep investigation, quick summaries,
+      material ingestion into notes, and reproduction planning for engineering handoff.
 
-  - name: quick
+      ## Platform Support (research workflow only)
+
+      - Local: Claude's built-in WebSearch and WebFetch tools
+      - Gemini Deep Research: Comprehensive web crawling via Chrome
+      - ChatGPT: Research with citations
+      - Grok: Real-time information + social media context
+      - Perplexity: Research with inline citations
+      - Parallel mode: Multiple platforms for cross-validation
+
+      ## Notes Storage
+
+      Research material (ingest/reproduce workflows) is filed using environment variables:
+      - `NOTES_DIR`: Root notes directory (can be set in your shell profile or by your environment)
+      - `NOTES_RESEARCH_DIR`: Research subdirectory (defaults to `$NOTES_DIR/research`)
+
+      If these environment variables are not set, the workflow MUST ask the user where to store
+      notes and suggest they set `NOTES_DIR` for future runs.
+
+      ## Output Locations
+
+      - **deep/quick**: `research/[topic_slug]/` in the working directory
+      - **ingest**: `$NOTES_RESEARCH_DIR/[topic_slug]/` with frontmatter tags
+      - **reproduce**: reproduction plan in working directory + optional issue creation
+
+      ## Research Types
+
+      science, business, competitive, market, technical
+
+      ## Depth Levels
+
+      - Quick: 3+ sources, local only (WebSearch/WebFetch), concise output
+      - Deep: 8+ sources, multi-platform, comprehensive analysis
+
+      ## Project Integration
+
+      When a project is detected or specified, create symlinks at
+      `projects/[ProjectName]/research/[topic_slug]` pointing to the research directory.
+    steps:
+      - name: scope
+        instructions: |
+          # Define Research Scope
+
+          ## Objective
+
+          Define the research question, classify the research type and depth level, and detect whether this research is associated with an existing project. Output a `scope.md` file that guides all subsequent steps in both the **research** and **quick** workflows.
+
+          ## Task
+
+          ### Process
+
+          1. **Gather inputs using structured questions**
+
+             Ask structured questions using the AskUserQuestion tool to collect any inputs not already provided:
+
+             - **Topic**: The research question or subject. Get a clear, specific statement.
+             - **Type**: One of: science, business, competitive, market, technical.
+             - **Depth**: One of:
+               - **Quick** — Local web search summary, 3+ sources, concise output
+               - **Deep** — Thorough investigation, 8+ sources, multi-platform with browser automation
+             - **Project** (optional): An associated project tag (e.g., `#MyProject`, `#WebPlatform`).
+
+          2. **Detect project association**
+
+             Check if the topic relates to a known project:
+             - Look for `projects/README.md` or `PROJECTS.yaml` for active project tags
+             - If the user provided a project tag, validate it exists
+             - If no tag provided, check if the topic keywords match a project description
+             - If a match is found, confirm with the user
+
+          3. **Generate the topic slug**
+
+             Create a filesystem-safe slug from the topic:
+             - Lowercase, hyphens for spaces, no special characters
+             - Keep it short but descriptive (e.g., `nix-remote-builders`, `transformer-attention`)
+
+          4. **Formulate sub-questions**
+
+             Break the main research question into 3-5 sub-questions that collectively cover the topic. These guide source gathering and synthesis.
+
+          5. **Draft search strategy**
+
+             Based on the type and depth, outline what kinds of sources to seek:
+
+             | Research Type | Priority Sources |
+             |---|---|
+             | science | Academic papers, preprints, review articles, research institutions |
+             | business | Industry reports, company filings, business news, analyst coverage |
+             | competitive | Competitor websites, product reviews, pricing, feature comparisons |
+             | market | Market size reports, consumer surveys, trend analysis, demographic data |
+             | technical | Official docs, benchmarks, architecture posts, GitHub repos, RFCs |
+
+          6. **Create the research directory and scope file**
+
+             - Create `research/[topic_slug]/` directory
+             - Write `research/[topic_slug]/scope.md`
+
+          ## Output Format
+
+          ### scope.md
+
+          **Location**: `research/[topic_slug]/scope.md`
+
+          ```markdown
+          # Research Scope: [Topic Name]
+
+          **Slug**: [topic_slug]
+          **Type**: [science | business | competitive | market | technical]
+          **Depth**: [quick | deep]
+          **Project**: [#ProjectTag or N/A]
+          **Date**: [YYYY-MM-DD]
+
+          ## Research Question
+
+          [Clear, specific statement of what this research aims to answer]
+
+          ## Sub-Questions
+
+          1. [Specific sub-question that addresses one facet of the main question]
+          2. [Another sub-question]
+          3. [Another sub-question]
+          4. [Optional additional sub-question]
+          5. [Optional additional sub-question]
+
+          ## Search Strategy
+
+          **Source types to prioritize**: [based on research type]
+
+          **Depth guidance**:
+          - Minimum sources: [3 for quick, 8 for deep]
+          - Source diversity: [what kinds of sources to include]
+          - Platform approach: [local only for quick, user-selected for deep]
+
+          ## Project Context
+
+          [If associated with a project: why this research matters to the project's goals.
+          If N/A: "No project association"]
+          ```
+
+          **Concrete example**:
+
+          ```markdown
+          # Research Scope: Transformer Attention Mechanisms
+
+          **Slug**: transformer-attention
+          **Type**: science
+          **Depth**: deep
+          **Project**: #MyProject
+          **Date**: 2026-03-20
+
+          ## Research Question
+
+          What are the current state-of-the-art alternatives to standard multi-head attention in transformer architectures, and what are their trade-offs?
+
+          ## Sub-Questions
+
+          1. What attention variants have been proposed since the original transformer paper?
+          2. How do linear attention mechanisms compare to softmax attention on benchmarks?
+          3. What are the memory and compute scaling characteristics of each variant?
+          4. Which attention mechanisms are being adopted in production systems?
+
+          ## Search Strategy
+
+          **Source types to prioritize**: Academic papers (arXiv, conference proceedings), benchmark results, engineering blog posts
+
+          **Depth guidance**:
+          - Minimum sources: 8
+          - Source diversity: academic papers, benchmark comparisons, engineering blogs, documentation
+          - Platform approach: Gemini Deep Research + local WebSearch
+
+          ## Project Context
+
+          Feeds into #MyProject architecture decision. Results inform the attention mechanism selection.
+          ```
+
+          ## Context
+
+          This is the foundation step for both **research** and **quick** workflows. The scope file guides every downstream step — gather uses it to know what to search for, synthesize uses it to know what question to answer, and report uses it to structure the output. A well-defined scope prevents wasted effort in later steps.
+        inputs:
+          topic:
+            required: false
+          type:
+            required: false
+          depth:
+            required: false
+          project:
+            required: false
+        outputs:
+          scope.md: {}
+
+      - name: choose_platforms
+        instructions: |
+          # Choose Research Platforms
+
+          ## Objective
+
+          Select which AI research platforms to use for deep research and create an execution plan for the gather step.
+
+          ## Task
+
+          ### Process
+
+          1. **Read the scope**
+
+             Read the scope file from the prior step (resolved output path, typically `research/[topic_slug]/scope.md`) to understand the research question, type, and depth.
+
+          2. **Present platform options**
+
+             Ask structured questions using the AskUserQuestion tool with multiSelect enabled to let the user choose one or more platforms:
+
+             - **Local only** — Use Claude's built-in WebSearch and WebFetch tools. Fast, stays in session.
+             - **Gemini Deep Research** — Comprehensive web crawling via Chrome. Best for broad topic coverage and discovering sources. Note: Gemini asks clarifying questions and shows a research plan before starting.
+             - **ChatGPT Deep Research** — Thorough investigation with citations. Good for structured analysis and academic topics. Note: ChatGPT may ask clarifying questions before starting.
+             - **Grok** — Real-time information and social media context via X/Twitter. Best for current events and public sentiment.
+             - **Perplexity** — Research with inline citations and source quality indicators. Good for fact-checking and well-sourced summaries.
+
+             **Parallel research**: If 2+ platforms are selected, research runs in parallel across all of them and results are cross-validated in the gather step.
+
+          3. **Verify browser availability**
+
+             If any external platform is selected (not "Local only"):
+             - Check that browser automation tools are available
+             - If not available, warn the user and suggest falling back to "Local only"
+             - Ask the user what browser tools they have if unclear
+
+          4. **Write platforms.md**
+
+             Document the selection and create an execution plan for the gather step.
+
+          ## Output Format
+
+          ### platforms.md
+
+          **Location**: `research/[topic_slug]/platforms.md`
+
+          ```markdown
+          # Platform Execution Plan: [Topic Name]
+
+          **Date**: [YYYY-MM-DD]
+          **Mode**: [single | parallel]
+
+          ## Selected Platforms
+
+          ### [Platform Name]
+          - **Role**: [What this platform contributes — e.g., "broad source discovery", "academic focus"]
+          - **Query approach**: [How to query this platform for best results]
+          - **Expected output**: [What kind of sources/findings to extract]
+
+          [Repeat for each selected platform]
+
+          ## Execution Order
+
+          1. [First platform and why it goes first]
+          2. [Second platform, if applicable]
+
+          ## Cross-Validation Plan
+
+          [If parallel mode: how to compare findings across platforms]
+          [If single: "N/A — single platform mode"]
+          ```
+
+          ## Context
+
+          This step only runs in the **research** workflow. The **quick** workflow skips platform selection entirely and uses local tools only. The platform execution plan directly guides the gather step's source collection strategy.
+
+          **Clarifying questions flow**: When using Gemini or ChatGPT for deep research, these platforms follow a two-phase approach: (1) they analyze the query and may ask clarifying questions, then (2) they present a research plan for approval. The gather step handles this interaction — document it in the execution plan so the gather step knows what to expect.
+        inputs:
+          platforms:
+            required: false
+          scope.md: {}
+        outputs:
+          platforms.md: {}
+
+      - name: gather
+        instructions: |
+          # Gather Sources (Deep)
+
+          ## Objective
+
+          Collect at least 8 diverse sources from the selected research platforms, extracting key findings, URLs, and reliability assessments for each.
+
+          ## Task
+
+          ### Process
+
+          1. **Read inputs**
+
+             - Read the scope file from the prior step (resolved output path, typically `research/[topic_slug]/scope.md`) for the research question, sub-questions, type, and search strategy
+             - Read the platforms file from the prior step (resolved output path, typically `research/[topic_slug]/platforms.md`) for the platform execution plan and query approach
+
+          2. **Execute platform-specific gathering**
+
+             Follow the execution plan from platforms.md. For each platform:
+
+             **Local (WebSearch/WebFetch)**:
+             - Formulate 5-8 search queries derived from sub-questions
+             - Use WebSearch to find relevant pages
+             - Use WebFetch to extract content from promising URLs
+             - Record URL, title, key findings, and source type
+
+             **Gemini Deep Research** (browser automation):
+             - Navigate to Gemini and activate Deep Research mode
+             - Enter the research question from scope.md
+             - Answer any clarifying questions Gemini asks
+             - Review and approve the research plan
+             - Wait for completion and extract findings with source links
+             - Save raw output as `research/[topic_slug]/sources_gemini.md`
+
+             **ChatGPT Deep Research** (browser automation):
+             - Open ChatGPT and use research/browse mode
+             - Enter the research question
+             - Answer clarifications and approve the plan
+             - Extract findings with citations
+             - Save raw output as `research/[topic_slug]/sources_chatgpt.md`
+
+             **Grok** (browser automation):
+             - Open Grok and enter the research question
+             - Extract findings, especially real-time and social context
+             - Save raw output as `research/[topic_slug]/sources_grok.md`
+
+             **Perplexity** (browser automation):
+             - Open Perplexity and enter the research question
+             - Extract findings with numbered inline citations
+             - Save raw output as `research/[topic_slug]/sources_perplexity.md`
+
+             **Parallel mode (2+ platforms)**:
+             - Open each platform in separate browser tabs
+             - Enter the same research question in each
+             - Allow all platforms to research simultaneously
+             - Save platform-specific outputs under `research/[topic_slug]/`, then consolidate
+
+          3. **Consolidate and deduplicate**
+
+             After gathering from all platforms:
+             - Merge findings from all platform-specific source files
+             - Deduplicate sources (same URL from multiple platforms)
+             - Note which platform found which source
+             - Highlight areas of agreement (high confidence) and disagreement (needs verification)
+
+          4. **Assess source reliability**
+
+             For each source, assign a reliability level:
+             - **high**: Peer-reviewed, official documentation, established news outlets
+             - **medium**: Industry blogs, well-known tech publications, company pages
+             - **low**: Forums, social media, unverified claims
+
+          5. **Build coverage matrix**
+
+             Map which sources address which sub-questions to identify coverage gaps.
+
+          6. **Write sources.md**
+
+          ## Output Format
+
+          ### sources.md
+
+          **Location**: `research/[topic_slug]/sources.md`
+
+          ```markdown
+          # Sources: [Topic Name]
+
+          **Depth**: deep
+          **Platforms Used**: [comma-separated list]
+          **Sources gathered**: [count]
+          **Date**: [YYYY-MM-DD]
+
+          ## Cross-Platform Summary
+
+          **Platform agreement**: [Topics where platforms converge]
+          **Unique findings**: [Notable discoveries from individual platforms]
+          **Conflicts**: [Areas of disagreement between platforms]
+
+          ---
+
+          ## Source 1: [Title]
+
+          - **URL**: [link]
+          - **Found by**: [platform(s)]
+          - **Author/Publisher**: [name or "Unknown"]
+          - **Date**: [published date or "Accessed YYYY-MM-DD"]
+          - **Type**: [academic | news | blog | docs | report | product | forum]
+          - **Reliability**: [high | medium | low]
+
+          ### Key Findings
+
+          - [Finding relevant to the research question]
+          - [Another finding]
+
+          ### Relevant Sub-Questions
+
+          - Addresses: [sub-question numbers from scope.md, e.g., 1, 3, 4]
+
+          ---
+
+          [Repeat for each source, minimum 8]
+
+          ## Coverage Matrix
+
+          | Sub-Question | Sources Addressing It |
+          |---|---|
+          | 1. [sub-question text] | Source 1, Source 3, Source 7 |
+          | 2. [sub-question text] | Source 2, Source 4 |
+          | ... | ... |
+
+          ## Gaps
+
+          [Sub-questions with insufficient coverage, if any]
+          ```
+
+          ## Context
+
+          This is the primary data collection step of the **research** workflow. Source quality and diversity directly determine the quality of synthesis and final report. Prioritize breadth across sub-questions over depth on any single point — gaps can be noted for the synthesis step. Document enough detail that the synthesize step can work without re-visiting sources.
+        inputs:
+          scope.md: {}
+          platforms.md: {}
+        outputs:
+          sources.md:
+            review:
+              strategy: matches_together
+              instructions: |
+                Read scope.md to verify source gathering aligns with the research question and depth level.
+                - At least 8 sources MUST be gathered from diverse types (academic, news, docs, reports).
+                - Each source MUST have a URL, key excerpt or finding, and reliability assessment.
+                - Sources MUST come from the platforms specified in platforms.md.
+        process_requirements:
+          source_count: "At least 8 sources MUST be gathered from diverse types."
+          coverage: "All sub-questions from scope.md SHOULD be addressed by at least one source."
+
+      - name: synthesize
+        instructions: |
+          # Synthesize Findings
+
+          ## Objective
+
+          Analyze the gathered sources to produce a structured analysis that directly answers the research question. Synthesize across sources rather than summarizing each individually.
+
+          ## Task
+
+          ### Process
+
+          1. **Read inputs**
+
+             - Read `research/[topic_slug]/scope.md` for the research question and sub-questions
+             - Read `research/[topic_slug]/sources.md` for all gathered findings and the coverage matrix
+
+          2. **Map findings to sub-questions**
+
+             For each sub-question from the scope:
+             - Use the coverage matrix to identify which sources address it
+             - Note where sources agree, disagree, or are silent
+             - Assess evidence strength:
+               - **strong**: Multiple high-reliability sources agree
+               - **moderate**: Some support but gaps or contradictions exist
+               - **weak**: Single source or low reliability only
+
+          3. **Identify cross-cutting themes**
+
+             Look for patterns that span multiple sub-questions and sources:
+             - Recurring trends or concepts
+             - Emerging consensus or paradigm shifts
+             - Unexpected connections between sub-questions
+             - Findings not anticipated in the original scope
+
+          4. **Document contradictions and gaps**
+
+             - Where do sources disagree? What might explain the disagreement?
+             - Which sub-questions have weak evidence coverage?
+             - What important questions remain unanswered?
+
+          5. **Formulate key insights**
+
+             Distill 3-5 key insights that:
+             - Directly address the main research question
+             - Are supported by evidence from multiple sources
+             - Are actionable or decision-relevant
+             - Include confidence levels based on evidence strength
+
+          6. **Draft preliminary takeaways**
+
+             Based on the analysis, draft actionable recommendations:
+             - What should the reader do with this information?
+             - If project-associated, how does this affect the project?
+             - What further research might be needed?
+
+          7. **Write analysis.md**
+
+          ## Output Format
+
+          ### analysis.md
+
+          **Location**: `research/[topic_slug]/analysis.md`
+
+          ```markdown
+          # Analysis: [Topic Name]
+
+          **Date**: [YYYY-MM-DD]
+
+          ## Research Question
+
+          [Restated from scope.md]
+
+          ## Findings by Sub-Question
+
+          ### 1. [Sub-Question from scope.md]
+
+          **Evidence strength**: [strong | moderate | weak]
+
+          [Synthesized answer drawing from multiple sources. Cite sources inline, e.g., "According to [Source Title](url), ..."]
+
+          ### 2. [Sub-Question]
+
+          **Evidence strength**: [strong | moderate | weak]
+
+          [Synthesized answer]
+
+          [Repeat for all sub-questions]
+
+          ## Cross-Cutting Themes
+
+          ### [Theme 1: descriptive name]
+
+          [Description of the theme with references to which sub-questions and sources it spans]
+
+          ### [Theme 2: descriptive name]
+
+          [Description]
+
+          ## Contradictions and Gaps
+
+          - **[Topic]**: [Source A](url) argues X, while [Source B](url) argues Y. Possible explanation: [hypothesis]
+          - **Gap**: [Area where insufficient evidence was found]
+
+          ## Key Insights
+
+          1. **[Insight statement]** (Confidence: [high | medium | low])
+             [Explanation with source references]
+
+          2. **[Insight statement]** (Confidence: [high | medium | low])
+             [Explanation]
+
+          3. **[Insight statement]** (Confidence: [high | medium | low])
+             [Explanation]
+
+          [3-5 insights total]
+
+          ## Preliminary Takeaways
+
+          - [Actionable recommendation based on the evidence]
+          - [Another recommendation]
+          - [Further research suggestion if applicable]
+          ```
+
+          ## Context
+
+          This is the analytical core of the **research** workflow. The gather step collected raw material; this step transforms it into structured understanding. The report step that follows will present these insights to the reader, so the analysis must be rigorous enough to support clear, well-evidenced conclusions.
+        inputs:
+          sources.md: {}
+          scope.md: {}
+        outputs:
+          analysis.md: {}
+
+      - name: report
+        instructions: |
+          # Write Research Report
+
+          ## Objective
+
+          Produce the final `README.md` research report with inline citations and key takeaways. Create a `bibliography.md` if external sources were cited. Create a project symlink if applicable.
+
+          ## Task
+
+          ### Process
+
+          1. **Read all inputs**
+
+             - Read `research/[topic_slug]/scope.md` for metadata (type, depth, project, question)
+             - Read `research/[topic_slug]/analysis.md` for synthesized findings and insights
+             - Read `research/[topic_slug]/sources.md` for source details and URLs
+
+          2. **Write README.md**
+
+             Structure the report as a polished, standalone document:
+
+             - **Overview**: Research metadata (type, depth, project, date)
+             - **Research Question**: Clear statement of what was investigated
+             - **Findings**: Organized into logical sections, each citing sources with inline markdown links
+             - **Key Takeaways**: 3-5 actionable conclusions drawn from the analysis
+             - **Related**: Links to bibliography, project files, or external resources
+
+             Write for the target audience (researcher and project stakeholders). Be concise — the analysis file has detailed reasoning; the README is the polished deliverable.
+
+          3. **Create bibliography.md (conditional)**
+
+             Only create this file if external sources were cited:
+             - Group sources by category (academic, industry reports, news, documentation, etc.)
+             - Each entry: title, author/publisher, URL, access date, 1-2 sentence annotation
+             - Consistent citation format throughout
+
+          4. **Create project symlink (if applicable)**
+
+             If scope.md specifies a project tag:
+
+             ```bash
+             mkdir -p projects/[ProjectName]/research
+             ln -s ../../../research/[topic_slug] projects/[ProjectName]/research/[topic_slug]
+             ```
+
+             Verify the symlink resolves correctly.
+
+          ## Output Format
+
+          ### README.md
+
+          **Location**: `research/[topic_slug]/README.md`
+
+          ```markdown
+          # Research: [Topic Name]
+
+          ## Overview
+
+          **Type**: [science | business | competitive | market | technical]
+          **Depth**: [quick | deep]
+          **Project**: [#ProjectTag or N/A]
+          **Date**: [YYYY-MM-DD]
+
+          ## Research Question
+
+          [Clear statement of what this research aimed to answer]
+
+          ## Findings
+
+          ### [Finding Area 1]
+
+          [Findings with inline citations like [Source Title](url). Draw from the analysis
+          to present a clear narrative.]
+
+          ### [Finding Area 2]
+
+          [Findings with inline citations]
+
+          [Organize into as many sections as needed to cover the research question]
+
+          ## Key Takeaways
+
+          1. [Actionable takeaway grounded in the findings]
+          2. [Actionable takeaway]
+          3. [Actionable takeaway]
+          4. [Optional additional takeaway]
+          5. [Optional additional takeaway]
+
+          ## Related
+
+          - [Bibliography](bibliography.md)
+          - [Links to related research, project files, or external resources]
+          ```
+
+          ### bibliography.md
+
+          **Location**: `research/[topic_slug]/bibliography.md` (only if sources were cited)
+
+          ```markdown
+          # Bibliography: [Topic Name]
+
+          ## Sources
+
+          ### Academic
+
+          1. **[Title]** — [Author/Publisher]
+             - URL: [link]
+             - Accessed: [YYYY-MM-DD]
+             - [1-2 sentence annotation describing relevance]
+
+          ### Industry Reports
+
+          1. **[Title]** — [Author/Publisher]
+             - URL: [link]
+             - Accessed: [YYYY-MM-DD]
+             - [Annotation]
+
+          ### News & Analysis
+
+          [Same format, repeat for each category]
+          ```
+
+          ## Context
+
+          This is the final step of the **research** workflow. The README.md is the primary deliverable — it should stand on its own as a useful document. The bibliography provides provenance for verification. The project symlink ensures the research is discoverable from the project directory.
+        inputs:
+          analysis.md: {}
+          scope.md: {}
+          sources.md: {}
+        outputs:
+          README.md:
+            review:
+              strategy: matches_together
+              instructions: |
+                Read scope.md for the research question and analysis.md for the findings being reported.
+                - All findings MUST cite sources with inline markdown links.
+                - Key takeaways section MUST have 3-5 actionable conclusions.
+                - Report MUST follow a clear structure: overview, research question, findings, key takeaways, related links.
+          bibliography.md:
+            required: false
+
+  quick:
     summary: "Fast local-only research producing a concise summary"
-    steps:
-      - scope
-      - gather_quick
-      - summarize
+    common_job_info_provided_to_all_steps_at_runtime: |
+      A multi-workflow research suite supporting deep investigation, quick summaries,
+      material ingestion into notes, and reproduction planning for engineering handoff.
 
-  - name: ingest
+      ## Output Locations
+
+      - **deep/quick**: `research/[topic_slug]/` in the working directory
+
+      ## Research Types
+
+      science, business, competitive, market, technical
+
+      ## Depth Levels
+
+      - Quick: 3+ sources, local only (WebSearch/WebFetch), concise output
+
+      ## Project Integration
+
+      When a project is detected or specified, create symlinks at
+      `projects/[ProjectName]/research/[topic_slug]` pointing to the research directory.
+    steps:
+      - name: scope
+        instructions: |
+          # Define Research Scope
+
+          ## Objective
+
+          Define the research question, classify the research type and depth level, and detect whether this research is associated with an existing project. Output a `scope.md` file that guides all subsequent steps in both the **research** and **quick** workflows.
+
+          ## Task
+
+          ### Process
+
+          1. **Gather inputs using structured questions**
+
+             Ask structured questions using the AskUserQuestion tool to collect any inputs not already provided:
+
+             - **Topic**: The research question or subject. Get a clear, specific statement.
+             - **Type**: One of: science, business, competitive, market, technical.
+             - **Depth**: One of:
+               - **Quick** — Local web search summary, 3+ sources, concise output
+               - **Deep** — Thorough investigation, 8+ sources, multi-platform with browser automation
+             - **Project** (optional): An associated project tag (e.g., `#MyProject`, `#WebPlatform`).
+
+          2. **Detect project association**
+
+             Check if the topic relates to a known project:
+             - Look for `projects/README.md` or `PROJECTS.yaml` for active project tags
+             - If the user provided a project tag, validate it exists
+             - If no tag provided, check if the topic keywords match a project description
+             - If a match is found, confirm with the user
+
+          3. **Generate the topic slug**
+
+             Create a filesystem-safe slug from the topic:
+             - Lowercase, hyphens for spaces, no special characters
+             - Keep it short but descriptive (e.g., `nix-remote-builders`, `transformer-attention`)
+
+          4. **Formulate sub-questions**
+
+             Break the main research question into 3-5 sub-questions that collectively cover the topic. These guide source gathering and synthesis.
+
+          5. **Draft search strategy**
+
+             Based on the type and depth, outline what kinds of sources to seek:
+
+             | Research Type | Priority Sources |
+             |---|---|
+             | science | Academic papers, preprints, review articles, research institutions |
+             | business | Industry reports, company filings, business news, analyst coverage |
+             | competitive | Competitor websites, product reviews, pricing, feature comparisons |
+             | market | Market size reports, consumer surveys, trend analysis, demographic data |
+             | technical | Official docs, benchmarks, architecture posts, GitHub repos, RFCs |
+
+          6. **Create the research directory and scope file**
+
+             - Create `research/[topic_slug]/` directory
+             - Write `research/[topic_slug]/scope.md`
+
+          ## Output Format
+
+          ### scope.md
+
+          **Location**: `research/[topic_slug]/scope.md`
+
+          ```markdown
+          # Research Scope: [Topic Name]
+
+          **Slug**: [topic_slug]
+          **Type**: [science | business | competitive | market | technical]
+          **Depth**: [quick | deep]
+          **Project**: [#ProjectTag or N/A]
+          **Date**: [YYYY-MM-DD]
+
+          ## Research Question
+
+          [Clear, specific statement of what this research aims to answer]
+
+          ## Sub-Questions
+
+          1. [Specific sub-question that addresses one facet of the main question]
+          2. [Another sub-question]
+          3. [Another sub-question]
+          4. [Optional additional sub-question]
+          5. [Optional additional sub-question]
+
+          ## Search Strategy
+
+          **Source types to prioritize**: [based on research type]
+
+          **Depth guidance**:
+          - Minimum sources: [3 for quick, 8 for deep]
+          - Source diversity: [what kinds of sources to include]
+          - Platform approach: [local only for quick, user-selected for deep]
+
+          ## Project Context
+
+          [If associated with a project: why this research matters to the project's goals.
+          If N/A: "No project association"]
+          ```
+
+          ## Context
+
+          This is the foundation step for both **research** and **quick** workflows. The scope file guides every downstream step — gather uses it to know what to search for, synthesize uses it to know what question to answer, and report uses it to structure the output. A well-defined scope prevents wasted effort in later steps.
+        inputs:
+          topic:
+            required: false
+          type:
+            required: false
+          depth:
+            required: false
+          project:
+            required: false
+        outputs:
+          scope.md: {}
+
+      - name: gather_quick
+        instructions: |
+          # Gather Sources (Quick)
+
+          ## Objective
+
+          Rapidly collect at least 3 relevant sources using only local tools (WebSearch and WebFetch) to address the research question defined in the scope.
+
+          ## Task
+
+          ### Process
+
+          1. **Read the scope**
+
+             Read `research/[topic_slug]/scope.md` for the research question, sub-questions, type, and search strategy.
+
+          2. **Formulate search queries**
+
+             Derive 3-5 targeted search queries from the research question and sub-questions. Prioritize queries that are likely to surface high-value sources quickly:
+             - Lead with the most specific query (main research question)
+             - Follow with queries targeting individual sub-questions
+             - Include a query for recent developments or reviews
+
+          3. **Execute local search**
+
+             For each query:
+             - Use WebSearch to find relevant pages
+             - Use WebFetch to extract content from the most promising URLs
+             - Prioritize official documentation, reputable news, and established publications
+             - Skip sources that are paywalled, low-quality, or tangential
+
+          4. **Document sources**
+
+             For each source, record:
+             - Title and URL
+             - Key findings relevant to the research question
+             - Source type and basic reliability assessment
+
+          5. **Write sources.md**
+
+             This is a streamlined format — less detail than the deep gather but enough for the summarize step.
+
+          ## Output Format
+
+          ### sources.md
+
+          **Location**: `research/[topic_slug]/sources.md`
+
+          ```markdown
+          # Sources: [Topic Name]
+
+          **Depth**: quick
+          **Platforms Used**: local (WebSearch/WebFetch)
+          **Sources gathered**: [count]
+          **Date**: [YYYY-MM-DD]
+
+          ---
+
+          ## Source 1: [Title]
+
+          - **URL**: [link]
+          - **Author/Publisher**: [name or "Unknown"]
+          - **Date**: [published or accessed date]
+          - **Type**: [academic | news | blog | docs | report | product | forum]
+          - **Reliability**: [high | medium | low]
+
+          ### Key Findings
+
+          - [Finding relevant to the research question]
+          - [Another finding]
+
+          ---
+
+          [Repeat for each source, minimum 3]
+
+          ## Coverage Notes
+
+          **Addressed sub-questions**: [which sub-questions from scope.md have coverage]
+          **Gaps**: [any sub-questions with no sources, if applicable]
+          ```
+
+          ## Context
+
+          This step runs only in the **quick** workflow. Unlike the research workflow's gather step which uses multi-platform research and requires 8+ sources, this step uses only local tools (WebSearch/WebFetch) for speed. The output feeds directly into the summarize step, which combines synthesis and reporting into one step. Prioritize relevance and quality over quantity.
+        inputs:
+          scope.md: {}
+        outputs:
+          sources.md:
+            review:
+              strategy: matches_together
+              instructions: |
+                Read scope.md to verify sources address the research question.
+                - At least 3 sources MUST be gathered with URLs and key findings.
+                - Sources MUST be directly relevant to the research question in scope.md.
+
+      - name: summarize
+        instructions: |
+          # Summarize Research
+
+          ## Objective
+
+          Synthesize the gathered sources and produce a concise research summary in a single step. This combines the synthesis and report stages into one streamlined output for quick research.
+
+          ## Task
+
+          ### Process
+
+          1. **Read inputs**
+
+             - Read `research/[topic_slug]/scope.md` for the research question, sub-questions, and project context
+             - Read `research/[topic_slug]/sources.md` for gathered sources and findings
+
+          2. **Synthesize across sources**
+
+             For each sub-question from scope.md:
+             - Identify which sources address it
+             - Write a brief synthesized answer drawing from the sources
+             - Note any contradictions or gaps
+
+          3. **Formulate key findings**
+
+             Distill the most important findings into 3-5 clear points. Each should:
+             - Directly address some aspect of the research question
+             - Be supported by at least one source
+             - Be cited with inline markdown links
+
+          4. **Write concise takeaways**
+
+             Write 2-3 actionable takeaways. Since this is quick research, acknowledge limitations:
+             - What the evidence suggests
+             - What gaps remain that might warrant deeper research
+             - If project-associated, what this means for the project
+
+          5. **Create project symlink (if applicable)**
+
+             If scope.md specifies a project tag:
+             ```bash
+             mkdir -p projects/[ProjectName]/research
+             ln -s ../../../research/[topic_slug] projects/[ProjectName]/research/[topic_slug]
+             ```
+
+          6. **Write README.md**
+
+          ## Output Format
+
+          ### README.md
+
+          **Location**: `research/[topic_slug]/README.md`
+
+          ```markdown
+          # Research: [Topic Name]
+
+          ## Overview
+
+          **Type**: [science | business | competitive | market | technical]
+          **Depth**: quick
+          **Project**: [#ProjectTag or N/A]
+          **Date**: [YYYY-MM-DD]
+          **Sources**: [count] sources via local web search
+
+          ## Research Question
+
+          [Clear statement from scope.md]
+
+          ## Findings
+
+          ### [Finding Area 1]
+
+          [Concise findings with inline citations like [Source Title](url)]
+
+          ### [Finding Area 2]
+
+          [Concise findings with citations]
+
+          ## Key Takeaways
+
+          1. [Actionable takeaway]
+          2. [Actionable takeaway]
+          3. [Actionable takeaway]
+
+          ## Limitations
+
+          - Quick depth: [count] sources gathered via local search only
+          - [Note any sub-questions that lack coverage]
+          - [Suggest deeper research if warranted]
+
+          ## Sources
+
+          | # | Title | URL |
+          |---|-------|-----|
+          | 1 | [Source Title] | [url] |
+          | 2 | [Source Title] | [url] |
+          | 3 | [Source Title] | [url] |
+          ```
+
+          ## Context
+
+          This is the final step of the **quick** workflow. Unlike the **research** workflow which has separate synthesize and report steps, this step combines both into one streamlined output. The result should be useful on its own for quick decisions while clearly noting when deeper research would be warranted.
+        inputs:
+          sources.md: {}
+          scope.md: {}
+        outputs:
+          README.md:
+            review:
+              strategy: matches_together
+              instructions: |
+                Read scope.md for the research question. Read sources.md to verify the summary draws from gathered sources.
+                - The summary MUST be focused and concise, appropriate for quick research depth.
+                - The summary MUST directly answer the research question from scope.md.
+                - Key claims MUST cite sources with inline markdown links.
+
+  ingest:
     summary: "Import external research material into notes with tags and metadata"
-    steps:
-      - parse
-      - file
+    common_job_info_provided_to_all_steps_at_runtime: |
+      ## Notes Storage
 
-  - name: reproduce
+      Research material is filed using environment variables:
+      - `NOTES_DIR`: Root notes directory (can be set in your shell profile or by your environment)
+      - `NOTES_RESEARCH_DIR`: Research subdirectory (defaults to `$NOTES_DIR/research`)
+
+      If these environment variables are not set, the workflow MUST ask the user where to store
+      notes and suggest they set `NOTES_DIR` for future runs.
+    steps:
+      - name: parse
+        instructions: |
+          # Parse External Material
+
+          ## Objective
+
+          Parse and clean external research material (markdown copies of deep research, research papers, web articles, etc.), extract metadata, and produce a normalized markdown document ready for filing into the notes system.
+
+          ## Task
+
+          ### Process
+
+          1. **Accept the material**
+
+             The user provides research material in one of these forms:
+             - **File path**: A local markdown file, PDF, or text file
+             - **URL**: A web page to fetch and convert
+             - **Pasted content**: Inline text provided directly
+
+             Ask structured questions using the AskUserQuestion tool if the input format is unclear:
+             - What is the source material? (file path, URL, or pasted content)
+             - What topic slug should be used for organization?
+
+          2. **Retrieve the content**
+
+             Based on the input type:
+             - **File path**: Read the file directly
+             - **URL**: Use WebFetch to retrieve the page content
+             - **Pasted content**: Use the provided text as-is
+
+          3. **Extract metadata**
+
+             Parse the material to extract:
+             - **Title**: The research title or article headline
+             - **Authors**: Author names if available
+             - **Date**: Publication date or access date
+             - **Source URL**: Original URL or "local file" if from a file
+             - **Source type**: What kind of material (deep research output, academic paper, blog post, news article, documentation)
+             - **Tags**: 3-5 descriptive tags for the content (e.g., `#machine-learning`, `#attention`, `#benchmarks`)
+
+          4. **Clean and normalize the content**
+
+             - Remove HTML artifacts, broken formatting, navigation elements, ads
+             - Fix broken links where possible
+             - Preserve code blocks, tables, and structured data
+
+             **CRITICAL: Preserve original formatting.** Do NOT reformat, rephrase, or restructure the author's content. Specifically:
+             - Keep the original heading hierarchy — do not renumber or re-level headings
+             - Keep special characters and notation (tree diagrams like `├──`/`└──`, arrows `→`, emoji markers, `§` prefixes) exactly as they appear
+             - Keep the original structure of lists, tables, and code blocks
+             - If the material contains multiple reports or sections, preserve ALL of them in full
+
+             **CRITICAL: Never truncate or summarize away content.** The full original text must appear in the output. Do not replace sections with "see above" or "remaining content follows the same pattern." If the material is very large, that is fine — write the full content.
+
+          5. **Extract key findings**
+
+             Write a summary section (3-5 bullet points) capturing the most important findings or contributions from the material. This helps with future discoverability.
+
+          6. **Consider companion data files**
+
+             If the material contains structured data (catalogs, job lists, inventories, specifications), ask the user whether to extract it into a companion file (e.g., `jobs.yaml`, `data.csv`) alongside the main parsed.md. Structured data in YAML/JSON is easier to query with tools like `yq`/`jq` than embedded markdown.
+
+          7. **Write parsed.md**
+
+             Create the output in a temporary location (`research/[topic_slug]/parsed.md`) with frontmatter metadata.
+
+          ## Output Format
+
+          ### parsed.md
+
+          **Location**: `research/[topic_slug]/parsed.md`
+
+          ```markdown
+          ---
+          title: "[Extracted or provided title]"
+          authors: "[Author names, comma-separated, or 'Unknown']"
+          date: "[YYYY-MM-DD publication or access date]"
+          source: "[URL or 'local file: /path/to/file']"
+          source_type: "[deep_research | academic_paper | blog_post | news_article | documentation | other]"
+          tags:
+            - [tag1]
+            - [tag2]
+            - [tag3]
+          ingested: "[YYYY-MM-DD]"
+          slug: "[topic_slug]"
+          ---
+
+          # [Title]
+
+          ## Key Findings
+
+          - [Most important finding or contribution]
+          - [Second key finding]
+          - [Third key finding]
+          - [Optional: additional findings]
+
+          ## Content
+
+          [Cleaned and normalized content from the original material.
+          All formatting preserved, HTML artifacts removed, only broken markdown fixed without changing heading structure.]
+          ```
+
+          ## Context
+
+          This is the first step of the **ingest** workflow. The parsed output feeds into the **file** step, which places it in the user's notes directory with proper organization. Good metadata extraction here makes the material discoverable later. The same step is also invoked as a nested workflow by the **reproduce** workflow.
+        inputs:
+          material:
+            required: false
+          topic_slug:
+            required: false
+        outputs:
+          parsed.md: {}
+
+      - name: file
+        instructions: |
+          # File to Notes
+
+          ## Objective
+
+          File the parsed research material into the user's notes directory (`$NOTES_RESEARCH_DIR`) with proper frontmatter, tags, and project symlinks for long-term discoverability.
+
+          ## Task
+
+          ### Process
+
+          1. **Read the parsed material**
+
+             Read the parsed material from the prior step (resolved output path, typically `research/[topic_slug]/parsed.md`). It contains frontmatter metadata and cleaned content.
+
+          2. **Determine the notes directory**
+
+             Check for the notes storage location in this order:
+
+             a. **Environment variable `NOTES_RESEARCH_DIR`**: If set, use it directly.
+             b. **Environment variable `NOTES_DIR`**: If set, derive `NOTES_RESEARCH_DIR="${NOTES_DIR}/research"`.
+             c. **Neither set**: Ask structured questions using the AskUserQuestion tool:
+                - Where would you like research notes stored? (Look for common locations: `~/obsidian/research/`, `~/notes/research/`, or ask)
+                - After filing, **always** inform the user: "Consider adding `export NOTES_DIR=/path/to/your/notes` to your shell profile (`.zshrc`/`.bashrc`) so future ingest runs file automatically."
+
+             Create the target directory if it doesn't exist:
+             ```bash
+             NOTES_RESEARCH_DIR="${NOTES_RESEARCH_DIR:-${NOTES_DIR}/research}"
+             mkdir -p "$NOTES_RESEARCH_DIR/[topic_slug]"
+             ```
+
+          3. **File the material**
+
+             Copy the parsed content to its final location:
+             - **Primary file**: `$NOTES_RESEARCH_DIR/[topic_slug]/README.md`
+             - Preserve all frontmatter metadata from parsed.md
+             - Add a `filed_to` field in frontmatter recording the final path
+
+          4. **Create project symlink (if applicable)**
+
+             If the frontmatter tags or user context indicate a project association:
+             - Check for a `projects/` directory in the notes root
+             - Create a symlink: `projects/[ProjectName]/research/[topic_slug]` → the filed location
+
+          5. **Verify the filing**
+
+             - Confirm the file exists at the target location
+             - Confirm frontmatter is intact
+             - Confirm symlink resolves (if created)
+
+          6. **Write the filed_note.md output**
+
+             The output is the filed note itself at its final location.
+
+          ## Output Format
+
+          ### filed_note.md
+
+          **Location**: `$NOTES_RESEARCH_DIR/[topic_slug]/README.md`
+
+          The filed note is the same as `parsed.md` with an additional `filed_to` frontmatter field:
+
+          ```markdown
+          ---
+          title: "[Title from parse step]"
+          authors: "[Authors]"
+          date: "[Date]"
+          source: "[Source URL]"
+          source_type: "[Type]"
+          tags:
+            - [tag1]
+            - [tag2]
+            - [tag3]
+          ingested: "[YYYY-MM-DD]"
+          slug: "[topic_slug]"
+          filed_to: "[absolute path where this was filed]"
+          ---
+
+          # [Title]
+
+          ## Key Findings
+
+          - [Finding 1]
+          - [Finding 2]
+          - [Finding 3]
+
+          ## Content
+
+          [Full cleaned content]
+          ```
+
+          ## Context
+
+          This is the second and final step of the **ingest** workflow. The goal is long-term storage and discoverability — the filed material should be easy to find later through tags, frontmatter search, or project symlinks. The `NOTES_DIR` / `NOTES_RESEARCH_DIR` environment variables make this portable: any user can configure them in their shell profile for automatic filing.
+        inputs:
+          parsed.md: {}
+        outputs:
+          filed_note.md: {}
+
+  reproduce:
     summary: "Ingest research, analyze reproducibility, and create engineering plan or issues"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      ## Notes Storage
+
+      Research material (ingest/reproduce workflows) is filed using environment variables:
+      - `NOTES_DIR`: Root notes directory (can be set in your shell profile or by your environment)
+      - `NOTES_RESEARCH_DIR`: Research subdirectory (defaults to `$NOTES_DIR/research`)
+
+      If these environment variables are not set, the workflow MUST ask the user where to store
+      notes and suggest they set `NOTES_DIR` for future runs.
+
+      ## Output Locations
+
+      - **reproduce**: reproduction plan in working directory + optional issue creation
     steps:
-      - ingest_material
-      - analyze
-      - plan
+      - name: ingest_material
+        instructions: |
+          # Ingest Research Material
 
-steps:
-  # ── Shared steps (deep + quick) ──────────────────────────────────────
+          ## Objective
 
-  - id: scope
-    name: "Define Research Scope"
-    description: "Define the research question, type, depth level, and detect associated project"
-    instructions_file: steps/scope.md
-    inputs:
-      - name: topic
-        description: "The research topic or question to investigate"
-      - name: type
-        description: "Research type: science, business, competitive, market, or technical"
-      - name: depth
-        description: "Depth level: quick or deep"
-      - name: project
-        description: "Associated project tag (optional, auto-detected from context)"
-    outputs:
-      scope.md:
-        type: file
-        description: "Research scope definition with question, sub-questions, and search strategy"
-        required: true
-    dependencies: []
-    reviews:
-      - run_each: scope.md
-        quality_criteria:
-          "Research Question Specific": "The research question is specific and answerable, not vague or overly broad."
-          "Sub-Questions Defined": "Sub-questions (3-5) collectively cover the breadth of the research topic."
-          "Search Strategy Appropriate": "The search strategy matches the research type and depth level, with appropriate source types prioritized."
+          Import external research material by running the **ingest** workflow as a nested workflow. This step is the entry point for the **reproduce** workflow — it ensures the research material is properly parsed, cleaned, and filed before reproducibility analysis begins.
 
-  # ── Research workflow steps ──────────────────────────────────────────
+          ## Task
 
-  - id: choose_platforms
-    name: "Choose Research Platforms"
-    description: "Select which AI platforms to use for deep research"
-    instructions_file: steps/choose_platforms.md
-    inputs:
-      - name: platforms
-        description: "Which AI platforms to use: local, gemini, chatgpt, grok, perplexity (can select multiple for parallel)"
-      - file: scope.md
-        from_step: scope
-    outputs:
-      platforms.md:
-        type: file
-        description: "Platform selection and execution plan for the gather step"
-        required: true
-    dependencies:
-      - scope
-    reviews:
-      - run_each: platforms.md
-        additional_review_guidance: "Read scope.md to verify platform selection is appropriate for the research type and depth."
-        quality_criteria:
-          "Platforms Selected": "At least one research platform is selected with a clear role and query approach."
-          "Browser Availability Confirmed": "Browser tool availability is confirmed for any external platforms, or a fallback to local-only is documented."
+          ### Process
 
-  - id: gather
-    name: "Gather Sources (Deep)"
-    description: "Collect sources from selected platforms with 8+ diverse sources"
-    instructions_file: steps/gather.md
-    inputs:
-      - file: scope.md
-        from_step: scope
-      - file: platforms.md
-        from_step: choose_platforms
-    outputs:
-      sources.md:
-        type: file
-        description: "Consolidated sources with URLs, findings, and reliability assessments"
-        required: true
-    dependencies:
-      - scope
-      - choose_platforms
-    reviews:
-      - run_each: sources.md
-        additional_review_guidance: "Read scope.md to verify source gathering aligns with the research question and depth level."
-        quality_criteria:
-          "Source Count": "At least 8 sources are gathered from diverse types (academic, news, docs, reports)."
-          "Source Quality": "Each source has a URL, key excerpt or finding, and reliability assessment."
-          "Platform Coverage": "Sources come from the platforms specified in platforms.md."
+          1. **Collect material information**
 
-  - id: synthesize
-    name: "Synthesize Findings"
-    description: "Analyze gathered sources to identify key findings, themes, contradictions, and insights"
-    instructions_file: steps/synthesize.md
-    inputs:
-      - file: sources.md
-        from_step: gather
-      - file: scope.md
-        from_step: scope
-    outputs:
-      analysis.md:
-        type: file
-        description: "Synthesized analysis with findings by sub-question, cross-cutting themes, and key insights"
-        required: true
-    dependencies:
-      - gather
-      - scope
-    reviews:
-      - run_each: analysis.md
-        additional_review_guidance: "Read scope.md for the research question and sub-questions. Read sources.md to verify synthesis draws from multiple sources."
-        quality_criteria:
-          "Addresses Research Question": "The analysis directly addresses the research question and all sub-questions from scope.md."
-          "Cross-Source Synthesis": "Findings synthesize across multiple sources rather than summarizing each source individually."
-          "Gaps Identified": "Contradictions, gaps, and areas of disagreement in the evidence are explicitly noted."
+             The user provides:
+             - **material**: A file path, URL, or pasted content to ingest
+             - **topic_slug**: A short slug for organizing the material
 
-  - id: report
-    name: "Write Research Report"
-    description: "Produce final README.md with findings, bibliography, and project symlink"
-    instructions_file: steps/report.md
-    inputs:
-      - file: analysis.md
-        from_step: synthesize
-      - file: scope.md
-        from_step: scope
-      - file: sources.md
-        from_step: gather
-    outputs:
-      README.md:
-        type: file
-        description: "Final research report with findings, inline citations, and key takeaways"
-        required: true
-      bibliography.md:
-        type: file
-        description: "Categorized bibliography with annotated source entries"
-        required: false
-    dependencies:
-      - synthesize
-      - scope
-      - gather
-    reviews:
-      - run_each: README.md
-        additional_review_guidance: "Read scope.md for the research question and analysis.md for the findings being reported."
-        quality_criteria:
-          "Citations": "All findings cite sources with inline markdown links."
-          "Key Takeaways": "Key takeaways section has 3-5 actionable conclusions."
-          "Structure": "Report follows a clear structure: overview, research question, findings, key takeaways, related links."
-      - run_each: bibliography.md
-        quality_criteria:
-          "Categorized": "Sources are organized by category (academic, industry reports, news, documentation, etc.)."
-          "Annotated": "Each entry has a 1-2 sentence annotation describing its relevance."
+             If not already provided, ask structured questions using the AskUserQuestion tool:
+             - What research material do you want to analyze for reproduction? (file path, URL, or paste it)
+             - What short slug should we use? (e.g., `gpt4-scaling-laws`, `attention-benchmarks`)
 
-  # ── Quick workflow steps ──────────────────────────────────────────────
+          2. **Start the nested ingest workflow**
 
-  - id: gather_quick
-    name: "Gather Sources (Quick)"
-    description: "Fast local-only source gathering using WebSearch and WebFetch (3+ sources)"
-    instructions_file: steps/gather_quick.md
-    inputs:
-      - file: scope.md
-        from_step: scope
-    outputs:
-      sources.md:
-        type: file
-        description: "Sources gathered via local web search with URLs and key findings"
-        required: true
-    dependencies:
-      - scope
-    reviews:
-      - run_each: sources.md
-        additional_review_guidance: "Read scope.md to verify sources address the research question."
-        quality_criteria:
-          "Minimum Sources": "At least 3 sources are gathered with URLs and key findings."
-          "Relevance": "Sources are directly relevant to the research question in scope.md."
+             Use the DeepWork MCP tools to start the `ingest` workflow as a nested workflow:
 
-  - id: summarize
-    name: "Summarize Research"
-    description: "Synthesize sources and produce a concise research summary in one step"
-    instructions_file: steps/summarize.md
-    inputs:
-      - file: sources.md
-        from_step: gather_quick
-      - file: scope.md
-        from_step: scope
-    outputs:
-      README.md:
-        type: file
-        description: "Concise research summary with key findings, sources cited, and takeaways"
-        required: true
-    dependencies:
-      - gather_quick
-      - scope
-    reviews:
-      - run_each: README.md
-        additional_review_guidance: "Read scope.md for the research question. Read sources.md to verify the summary draws from gathered sources."
-        quality_criteria:
-          "Concise": "The summary is focused and concise, appropriate for quick research depth."
-          "Addresses Question": "The summary directly answers the research question from scope.md."
-          "Sources Cited": "Key claims cite sources with inline markdown links."
+             ```
+             Call start_workflow with:
+               job_name: "research"
+               workflow_name: "ingest"
+               goal: "Ingest [material description] for reproducibility analysis"
+               session_id: [your session ID]
+             ```
 
-  # ── Ingest workflow steps ─────────────────────────────────────────────
+             This pushes the `ingest` workflow onto the stack. Follow its steps:
+             - **parse**: Will parse and clean the material, extract metadata
+             - **file**: Will file it into `$NOTES_RESEARCH_DIR`
 
-  - id: parse
-    name: "Parse External Material"
-    description: "Parse and clean external research material (markdown, papers, URLs), extract metadata"
-    instructions_file: steps/parse.md
-    inputs:
-      - name: material
-        description: "The external research material: a file path (markdown, PDF), URL, or pasted content"
-      - name: topic_slug
-        description: "Short slug for organizing the ingested material (e.g., 'transformer-attention')"
-    outputs:
-      parsed.md:
-        type: file
-        description: "Cleaned and normalized markdown with extracted metadata in frontmatter"
-        required: true
-    dependencies: []
-    reviews:
-      - run_each: parsed.md
-        quality_criteria:
-          "Metadata Extracted": "Frontmatter includes title, authors (if available), date, source URL or origin, and tags."
-          "Clean Markdown": "Content is well-formatted markdown with no HTML artifacts or broken formatting."
-          "Key Findings": "A summary section extracts the key findings or contributions from the material."
-          "Content Preserved": "The full original content is present — no sections truncated, summarized away, or replaced with references like 'see above'."
-          "Formatting Preserved": "Original notation and formatting (tree diagrams, special characters, code blocks, tables) are kept exactly as authored — not reformatted."
+             Complete both steps of the nested workflow by following the instructions returned by each step.
 
-  - id: file
-    name: "File to Notes"
-    description: "File parsed material into NOTES_RESEARCH_DIR with tags, frontmatter, and project symlinks"
-    instructions_file: steps/file.md
-    inputs:
-      - file: parsed.md
-        from_step: parse
-    outputs:
-      filed_note.md:
-        type: file
-        description: "The filed research note in its final location within the notes directory"
-        required: true
-    dependencies:
-      - parse
-    reviews:
-      - run_each: filed_note.md
-        quality_criteria:
-          "Correct Location": "Material is filed in $NOTES_RESEARCH_DIR/[topic_slug]/ or the user-specified notes location."
-          "Frontmatter Tags": "The filed document has proper frontmatter with tags for discoverability in the notes system."
+          3. **Record the ingested path**
 
-  # ── Reproduce workflow steps ──────────────────────────────────────────
+             After the nested `ingest` workflow completes, record where the material was filed. Write a simple reference file that the `analyze` step can use to find the ingested content.
 
-  - id: ingest_material
-    name: "Ingest Research Material"
-    description: "Run the ingest workflow as a nested workflow to import external research material"
-    instructions_file: steps/ingest_material.md
-    inputs:
-      - name: material
-        description: "The external research material: a file path, URL, or pasted content to ingest"
-      - name: topic_slug
-        description: "Short slug for organizing the material (e.g., 'gpt4-scaling-laws')"
-    outputs:
-      ingested_path:
-        type: file
-        description: "Path reference to the ingested and filed material from the nested ingest workflow"
-        required: true
-    dependencies: []
-    reviews: []
+          ## Output Format
 
-  - id: analyze
-    name: "Analyze Reproducibility"
-    description: "Analyze ingested research for reproducible claims, experiments, and methodologies"
-    instructions_file: steps/analyze.md
-    inputs:
-      - file: ingested_path
-        from_step: ingest_material
-    outputs:
-      reproducibility_analysis.md:
-        type: file
-        description: "Analysis of reproducible claims with feasibility assessments and resource requirements"
-        required: true
-    dependencies:
-      - ingest_material
-    reviews:
-      - run_each: reproducibility_analysis.md
-        additional_review_guidance: "Read the ingested research material (referenced in the analysis) to verify claims are accurately represented."
-        quality_criteria:
-          "Claims Identified": "Specific reproducible claims, experiments, or methodologies are clearly listed."
-          "Feasibility Assessed": "Each item has a feasibility assessment including resource requirements and prerequisites."
-          "Prioritized": "Items are prioritized by impact and feasibility."
+          ### ingested_path
 
-  - id: plan
-    name: "Create Reproduction Plan"
-    description: "Create a structured reproduction plan; output as markdown, issues, or sweng handoff based on context"
-    instructions_file: steps/plan.md
-    inputs:
-      - file: reproducibility_analysis.md
-        from_step: analyze
-    outputs:
-      reproduction_plan.md:
-        type: file
-        description: "Structured reproduction plan with tasks, dependencies, and acceptance criteria"
-        required: true
-      issues:
-        type: files
-        description: "Created Forgejo/GitHub issues if applicable based on user preference or system context"
-        required: false
-    dependencies:
-      - analyze
-    reviews:
-      - run_each: reproduction_plan.md
-        additional_review_guidance: "Read reproducibility_analysis.md to verify the plan covers all identified reproducible items."
-        quality_criteria:
-          "Actionable Tasks": "The plan contains specific, actionable tasks with clear acceptance criteria."
-          "Dependencies Mapped": "Task dependencies and ordering are clearly specified."
-          "Handoff Ready": "The plan is structured for handoff to a sweng workflow or issue tracker (Forgejo/GitHub)."
+          A reference file pointing to the ingested material.
+
+          **Location**: `research/[topic_slug]/ingested_path.md`
+
+          ```markdown
+          # Ingested Material Reference
+
+          **Topic**: [topic_slug]
+          **Filed to**: [absolute path to the filed note from the ingest workflow]
+          **Ingested**: [YYYY-MM-DD]
+
+          ## Source Material
+
+          - **Type**: [file | url | pasted]
+          - **Original location**: [file path, URL, or "inline"]
+
+          ## Key Findings (from ingest)
+
+          [Copy the key findings extracted during the parse step — these seed the reproducibility analysis]
+          ```
+
+          ## Context
+
+          This is the first step of the **reproduce** workflow. It uses the **nested workflow pattern** — starting the `ingest` workflow within this step. This means the material goes through the same parse -> file pipeline as standalone ingestion, ensuring consistency. The `analyze` step that follows reads the ingested material to identify reproducible claims.
+        inputs:
+          material:
+            required: false
+          topic_slug:
+            required: false
+        outputs:
+          ingested_path: {}
+
+      - name: analyze
+        instructions: |
+          # Analyze Reproducibility
+
+          ## Objective
+
+          Analyze ingested research material to identify reproducible claims, experiments, methodologies, and technical approaches. Assess each for feasibility, resource requirements, and engineering effort.
+
+          ## Task
+
+          ### Process
+
+          1. **Read the ingested material**
+
+             Read the ingested path reference from the prior step (resolved output path, typically `research/[topic_slug]/ingested_path.md`) to locate the filed research material. Then read the full content of the filed note, paying particular attention to:
+             - Key findings listed in the frontmatter
+             - Methodology sections
+             - Experimental setups and results
+             - Technical claims about performance, behavior, or architecture
+             - Code samples, configurations, or parameters mentioned
+
+          2. **Identify reproducible items**
+
+             Scan the material for items that can be independently reproduced or validated:
+
+             - **Experiments**: Specific experiments with measurable outcomes
+             - **Claims**: Technical claims that can be verified through implementation
+             - **Methodologies**: Approaches or techniques that can be applied in a different context
+             - **Benchmarks**: Performance measurements that can be re-run
+             - **Architectures**: System designs that can be implemented
+
+             For each item, extract:
+             - What exactly is being claimed or demonstrated
+             - What would constitute successful reproduction
+             - What information is available vs. missing
+
+          3. **Assess feasibility**
+
+             For each reproducible item, evaluate:
+
+             - **Complexity**: How much engineering effort is needed? (low / medium / high)
+             - **Prerequisites**: What tools, data, infrastructure, or knowledge is required?
+             - **Data availability**: Is the data publicly available, or would substitutes be needed?
+             - **Time estimate**: Rough order of magnitude (hours / days / weeks)
+             - **Risk factors**: What could go wrong? What's underspecified?
+
+          4. **Prioritize items**
+
+             Rank by a combination of:
+             - **Impact**: How valuable is reproducing this? Does it validate a key claim?
+             - **Feasibility**: How practical is it given available resources?
+             - **Clarity**: How well-specified is the reproduction path?
+
+             Use a simple priority: P0 (do first), P1 (do next), P2 (nice to have).
+
+          5. **Write reproducibility_analysis.md**
+
+          ## Output Format
+
+          ### reproducibility_analysis.md
+
+          **Location**: `research/[topic_slug]/reproducibility_analysis.md`
+
+          ```markdown
+          # Reproducibility Analysis: [Topic Name]
+
+          **Source**: [title of ingested material]
+          **Date**: [YYYY-MM-DD]
+
+          ## Summary
+
+          [2-3 sentences: what was analyzed and how many reproducible items were identified]
+
+          ## Reproducible Items
+
+          ### 1. [Item Name] — Priority: [P0 | P1 | P2]
+
+          **Type**: [experiment | claim | methodology | benchmark | architecture]
+
+          **What to reproduce**: [Specific description of what would be reproduced]
+
+          **Success criteria**: [What constitutes successful reproduction]
+
+          **Feasibility**:
+          - Complexity: [low | medium | high]
+          - Prerequisites: [tools, data, infrastructure needed]
+          - Data availability: [available | partially available | unavailable]
+          - Time estimate: [hours | days | weeks]
+          - Risk factors: [what could block or complicate reproduction]
+
+          **Missing information**: [What's not specified in the original material]
+
+          ---
+
+          [Repeat for all identified items]
+
+          ## Priority Summary
+
+          | Priority | Count | Items |
+          |---|---|---|
+          | P0 | [n] | [item names] |
+          | P1 | [n] | [item names] |
+          | P2 | [n] | [item names] |
+
+          ## Resource Requirements
+
+          **Combined prerequisites for all P0 items**:
+          - Tools: [list]
+          - Data: [list]
+          - Infrastructure: [list]
+          - Estimated total effort: [range]
+          ```
+
+          ## Context
+
+          This is the second step of the **reproduce** workflow. The analysis here directly feeds into the **plan** step, which converts these reproducible items into actionable engineering tasks. Be thorough in identifying what's reproducible but realistic about feasibility — the plan step needs honest assessments to create useful work items.
+        inputs:
+          ingested_path: {}
+        outputs:
+          reproducibility_analysis.md: {}
+
+      - name: plan
+        instructions: |
+          # Create Reproduction Plan
+
+          ## Objective
+
+          Transform the reproducibility analysis into a structured engineering plan with actionable tasks, dependencies, and acceptance criteria. Output the plan as markdown and optionally create issues on Forgejo or GitHub based on user preference or system context.
+
+          ## Task
+
+          ### Process
+
+          1. **Read the reproducibility analysis**
+
+             Read the reproducibility analysis from the prior step (resolved output path, typically `research/[topic_slug]/reproducibility_analysis.md`). Focus on:
+             - P0 and P1 priority items (P2 items are optional)
+             - Prerequisites and resource requirements
+             - Dependencies between items
+             - Missing information that needs resolution
+
+          2. **Design the task breakdown**
+
+             For each reproducible item (starting with P0):
+
+             - Break it into concrete engineering tasks
+             - Each task should be independently assignable and completable
+             - Define clear acceptance criteria (what "done" looks like)
+             - Identify dependencies between tasks
+             - Estimate relative effort
+
+             Follow these principles:
+             - Tasks should be small enough for one work session (hours, not days)
+             - Prerequisites (setup, data acquisition) are their own tasks
+             - Validation/verification is its own task, not buried in implementation
+
+          3. **Map task dependencies**
+
+             Create a dependency graph:
+             - Which tasks must complete before others can start?
+             - Which tasks can run in parallel?
+             - What's the critical path?
+
+          4. **Determine output format**
+
+             Check the context to decide how to deliver the plan:
+
+             a. **Check for explicit user preference**: Did the user specify they want issues created?
+             b. **Check system context**: Is there a configured Forgejo or GitHub repo? Check for:
+                - `FORGEJO_HOST` / `FORGEJO_USER` environment variables
+                - `.git/config` for remote URL (GitHub or Forgejo)
+                - `gh` CLI availability
+                - `forgejo-project` CLI availability
+             c. **Default to markdown only**: If no clear context for issue creation, produce the markdown plan.
+             d. **If issue creation is appropriate**: Ask the user to confirm before creating issues.
+
+          5. **Write reproduction_plan.md**
+
+             Always produce the markdown plan regardless of whether issues are created.
+
+          6. **Create issues (optional)**
+
+             If the user wants issues and a repo is available:
+
+             **For GitHub** (`gh` CLI):
+             ```bash
+             gh issue create --title "[Task title]" --body "[Task body with acceptance criteria]" --label "reproduction"
+             ```
+
+             **For Forgejo** (`forgejo-project` or API):
+             - Create issues via the Forgejo API
+             - Optionally add them to a project board
+             - Tag with appropriate labels
+
+             Link issues in the markdown plan for reference.
+
+          ## Output Format
+
+          ### reproduction_plan.md
+
+          **Location**: `research/[topic_slug]/reproduction_plan.md`
+
+          ```markdown
+          # Reproduction Plan: [Topic Name]
+
+          **Source**: [title of original research material]
+          **Date**: [YYYY-MM-DD]
+          **Total tasks**: [count]
+          **Estimated effort**: [total range]
+
+          ## Overview
+
+          [2-3 sentences: what this plan covers and the expected outcome of completing it]
+
+          ## Prerequisites
+
+          - [ ] [Setup task or resource acquisition needed before starting]
+          - [ ] [Another prerequisite]
+
+          ## Tasks
+
+          ### Task 1: [Task Title]
+
+          **Priority**: [P0 | P1 | P2]
+          **From**: [Which reproducible item this task addresses]
+          **Effort**: [hours | days]
+          **Depends on**: [Task numbers, or "none"]
+          **Issue**: [link to created issue, or "N/A"]
+
+          **Description**:
+          [What to do, in enough detail for an engineer to start working]
+
+          **Acceptance criteria**:
+          - [ ] [Specific, verifiable criterion]
+          - [ ] [Another criterion]
+
+          ---
+
+          [Repeat for all tasks]
+
+          ## Dependency Graph
+
+          ```
+          Task 1 (setup) ──→ Task 2 (implement) ──→ Task 4 (validate)
+                          ──→ Task 3 (implement) ──↗
+          ```
+
+          ## Handoff Notes
+
+          **For sweng workflow**: To execute these tasks via the DeepWork sweng workflow, use each task as the goal parameter when starting the workflow.
+
+          **For issue tracker**: [If issues were created: "N issues created on [repo]. See links above."
+          If not: "To create issues, run this workflow again with a configured repo, or manually create from the task descriptions above."]
+
+          ## Open Questions
+
+          - [Any unresolved questions that need answers before work can begin]
+          - [Missing information from the original research]
+          ```
+
+          ## Context
+
+          This is the final step of the **reproduce** workflow. The plan bridges research and engineering — it translates "what we learned" into "what to build." The output should be immediately actionable: an engineer (or an AI agent running the sweng workflow) should be able to pick up any task and start working with minimal additional context.
+        inputs:
+          reproducibility_analysis.md: {}
+        outputs:
+          reproduction_plan.md: {}
+          issues:
+            required: false
