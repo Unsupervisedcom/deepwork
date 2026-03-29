@@ -40,6 +40,8 @@ def load_yaml(path: Path | str) -> dict[str, Any] | None:
             return data
     except yaml.YAMLError as e:
         raise YAMLError(f"Failed to parse YAML file {path_obj}: {e}") from e
+    except UnicodeDecodeError as e:
+        raise YAMLError(f"Failed to read YAML file {path_obj}: {e}") from e
     except OSError as e:
         raise YAMLError(f"Failed to read YAML file {path_obj}: {e}") from e
 
