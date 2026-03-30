@@ -187,7 +187,7 @@ Similar to how vibe coding makes it easier for anyone to produce software, this 
 
 ## DeepWork Reviews — Deep Dive
 
-Reviews are `.deepreview` config files placed anywhere in your project, scoped to the directory they live in (like `.gitignore`). When you run a review, it diffs your branch, matches changed files against your rules, and dispatches parallel AI review agents.
+Reviews are `.deepreview` config files placed anywhere in your project, scoped to the directory they live in (like `.gitignore`). DeepSchemas (in `.deepwork/schemas/`) also generate synthetic review rules automatically. When you run a review, it diffs your branch, matches changed files against your rules (from both `.deepreview` files and DeepSchemas), and dispatches parallel AI review agents.
 
 ### Why This Is Powerful
 
@@ -323,6 +323,7 @@ Send [@tylerwillis](https://x.com/tylerwillis) a message on X.
 your-project/
 ├── .deepwork/
 │   ├── tmp/               # Session state (created lazily)
+│   ├── schemas/           # DeepSchema definitions
 │   └── jobs/              # Job definitions
 │       └── job_name/
 │           └── job.yml    # Job definition (self-contained with inline instructions)

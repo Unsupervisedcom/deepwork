@@ -133,5 +133,6 @@ pytest tests/shell_script_tests/test_hook_wrappers.py -v
 | File | Purpose |
 |------|---------|
 | `wrapper.py` | Cross-platform input/output normalization |
+| `deepschema_write.py` | DeepSchema write-time validation hook |
 | `claude_hook.sh` | Shell wrapper for Claude Code |
 | `gemini_hook.sh` | Shell wrapper for Gemini CLI |
