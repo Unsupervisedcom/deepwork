@@ -61,6 +61,7 @@ The DeepSchema system provides rich, file-level schemas with automatic validatio
 4. Anonymous schema reviews MUST include only the requirements.
 5. All generated reviews MUST use the `"individual"` strategy (one file at a time).
 6. Generated reviews MUST be included in both `/review` runs and workflow quality gate checks.
+7. Review instructions MUST specify RFC 2119 severity logic: reviewers MUST fail any violation of a MUST requirement, MUST fail any SHOULD requirement that could easily be followed but is not, SHOULD give feedback without failing on other applicable items, and MUST ignore requirements that are not applicable.
 
 ## DW-REQ-011.9: MCP Tool — get_named_schemas
 
