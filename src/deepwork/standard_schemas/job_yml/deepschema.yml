@@ -25,9 +25,12 @@ requirements:
     (e.g., "Analyze competitors and produce a positioning report"), not as a label
     (e.g., "Competitive Research").
 
-  step-arguments-complete: >
-    `step_arguments` MUST declare every piece of data that flows between steps. If a step
-    produces data consumed by a later step, that data MUST have a corresponding step_argument.
+  data-flow-complete: >
+    `step_arguments` MUST declare every piece of data that flows between steps. The
+    input/output chain across steps MUST form a logical data flow: each step's inputs
+    SHOULD reference outputs from earlier steps, and steps MUST NOT declare inputs that
+    no prior step produces (unless provided via start_workflow). If a step produces data
+    consumed by a later step, that data MUST have a corresponding step_argument.
 
   step-argument-descriptions-specific: >
     Each step_argument `description` MUST be specific enough for an agent to produce or
@@ -54,20 +57,14 @@ requirements:
     the step without external guidance. Instructions SHOULD include: what to do, how to use
     inputs, and what good output looks like.
 
-  logical-data-flow: >
-    The input/output chain across steps MUST form a logical data flow. Each step's inputs
-    SHOULD reference outputs from earlier steps. Steps MUST NOT declare inputs that no
-    prior step produces (unless provided via start_workflow).
-
   every-step-has-output: >
     Every step SHOULD have at least one output. Steps that produce no outputs provide no
     reviewable artifacts and cannot pass data to subsequent steps.
 
   intermediate-outputs-path: >
     File outputs not meant to be persisted long-term SHOULD use `.deepwork/tmp/` paths.
-    However, truly transient inter-step data (feedback, summaries, user answers) SHOULD
-    use `type: string` instead of writing temporary files — see `no-temporary-files-for-transient-data`.
-    Final outputs SHOULD use descriptive names outside dot-directories.
+    Final outputs SHOULD use descriptive names outside dot-directories. For transient
+    inter-step data, see `no-temporary-files-for-transient-data`.
 
   review-criteria-specific: >
     Review `instructions` MUST be specific and actionable. "Verify the YAML has at least
@@ -99,8 +96,8 @@ requirements:
 
   succinctness: >
     Job definitions MUST be succinct. Step instructions SHOULD contain only what the agent
-    needs to act — not philosophy, not quality criteria already enforced by the workflow
-    runtime, and not domain context already in common_job_info.
+    needs to act — not philosophy, and not quality criteria already enforced by the workflow
+    runtime.
 
   prefer-deepschemas-for-file-validation: >
     Step_argument `review` blocks and step `process_requirements` SHOULD only enforce
@@ -111,17 +108,10 @@ requirements:
     SHOULD call `get_named_schemas` to check whether a DeepSchema already exists for
     that file type, and if so, rely on it rather than encoding requirements in the job.yml
     review block. If no schema exists and the file type would benefit from one, a
-    DeepSchema SHOULD be created. DeepSchemas provide write-time validation and automatic
-    review generation, making them strictly more capable than inline review instructions
-    for file-level concerns.
-
-  inline-review-complements-deepschema: >
-    When a DeepSchema exists for a step output's file type, the step_argument or step
-    output `review` block MUST NOT duplicate requirements already covered by the
-    DeepSchema. Inline reviews SHOULD focus on workflow-specific concerns that the
-    DeepSchema cannot know — e.g., "the report MUST address the specific competitors
-    identified in step 1" or "the config MUST reference the project name from the
-    user's goal."
+    DeepSchema SHOULD be created. When a DeepSchema exists, the inline review block
+    MUST NOT duplicate its requirements and SHOULD focus only on workflow-specific
+    concerns the DeepSchema cannot know — e.g., "the report MUST address the specific
+    competitors identified in step 1."
 
   use-go-to-step-not-duplication: >
     If a later step's instructions substantially repeat behavior from an earlier step
