@@ -34,15 +34,8 @@ step_arguments:
         - No Redundant Info: The instruction file avoids duplicating information that belongs in the job.yml's common_job_info_provided_to_all_steps_at_runtime section. Shared context (project background, terminology, conventions) is in common_job_info, not repeated in each step.
 
   - name: test_feedback
-    description: "Feedback from testing the workflow on a real use case"
-    type: file_path
-    review:
-      strategy: individual
-      instructions: |
-        Evaluate the output against these criteria:
-        - Test Case Documented: The feedback file describes what test case was used and what the workflow produced.
-        - Issues Identified: The feedback file lists specific issues found during output critique.
-        - Feedback Captured: User feedback and requested corrections are documented with enough detail for the iterate step to act on.
+    description: "Feedback from testing the workflow: test case description, issues found during critique, user feedback and corrections applied, and final outcome"
+    type: string
 
   - name: job_name
     description: "Name of the job that was run (optional - will auto-detect from conversation)"
@@ -87,18 +80,8 @@ workflows:
 
       ## Job Schema (CRITICAL)
 
-      Before creating or editing any `job.yml` file, you MUST read the JSON schema at
-      `.deepwork/job.schema.json`. This schema is the authoritative source of truth for
-      all valid fields, types, and structures.
-
-      Key schema rules:
-      - `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` and `json_schema`
-      - `workflows` is an object keyed by workflow name, each with {summary, steps[]}
-      - Each step has {name, instructions (inline string), inputs, outputs, process_requirements}
-      - Inputs/outputs reference step_arguments by name
-      - No `version`, no root-level `steps[]`, no `instructions_file`, no hooks, no dependencies
-
-      Always read the schema file and validate your job.yml structure against it.
+      See `steps/supplemental_file_references.md` for the job schema reference. The authoritative
+      JSON schema is at `.deepwork/job.schema.json` — always read it before creating or editing job.yml files.
     steps:
       - name: define
         instructions: |
@@ -811,7 +794,7 @@ workflows:
 
           ### Step 5: Write Test Feedback
 
-          Once the user is satisfied, write a summary of the test run to `.deepwork/tmp/test_feedback.md`. This file is consumed by the iterate step. Write each section as a markdown header (`##`) with 2-5 bullet points beneath it. Keep the total file under 500 words. Include:
+          Once the user is satisfied, compose a summary of the test run as an inline string to pass as the `test_feedback` output. This is consumed by the iterate step. Use markdown headers (`##`) with 2-5 bullet points beneath each. Keep the total under 500 words. Include:
 
           1. **Test case description** - What was tested
           2. **Issues found during critique** - The problems identified in Step 3
@@ -1137,18 +1120,8 @@ workflows:
 
       ## Job Schema (CRITICAL)
 
-      Before creating or editing any `job.yml` file, you MUST read the JSON schema at
-      `.deepwork/job.schema.json`. This schema is the authoritative source of truth for
-      all valid fields, types, and structures.
-
-      Key schema rules:
-      - `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` and `json_schema`
-      - `workflows` is an object keyed by workflow name, each with {summary, steps[]}
-      - Each step has {name, instructions (inline string), inputs, outputs, process_requirements}
-      - Inputs/outputs reference step_arguments by name
-      - No `version`, no root-level `steps[]`, no `instructions_file`, no hooks, no dependencies
-
-      Always read the schema file and validate your job.yml structure against it.
+      See `steps/supplemental_file_references.md` for the job schema reference. The authoritative
+      JSON schema is at `.deepwork/job.schema.json` — always read it before creating or editing job.yml files.
     steps:
       - name: fix_settings
         instructions: |
@@ -1334,14 +1307,14 @@ workflows:
           settings.json:
             required: true
         process_requirements:
-          "DeepWork Skills Removed": "`Skill(...)` entries matching jobs in `.deepwork/jobs/` are removed."
-          "Non-DeepWork Skills Preserved": "Skills NOT matching DeepWork jobs are left intact."
-          "Stale make_new_job.sh Removed": "Stale `Bash(...)` permissions referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` are removed."
-          "Rules Hooks Removed": "All DeepWork Rules hooks and permissions are removed."
-          "Duplicate Hooks Removed": "Duplicate hook entries are consolidated or removed."
-          "Hardcoded Paths Removed": "User-specific hardcoded paths (like `/Users/*/...`) are removed."
-          "Deprecated Commands Removed": "Deprecated commands like `deepwork hook *` are removed."
-          "Backup Created": "A backup of the original settings was created before modifications."
+          "DeepWork Skills Removed": "`Skill(...)` entries matching jobs in `.deepwork/jobs/` MUST be removed."
+          "Non-DeepWork Skills Preserved": "Skills NOT matching DeepWork jobs MUST be left intact."
+          "Stale make_new_job.sh Removed": "Stale `Bash(...)` permissions referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` MUST be removed."
+          "Rules Hooks Removed": "All DeepWork Rules hooks and permissions MUST be removed."
+          "Duplicate Hooks Removed": "Duplicate hook entries MUST be consolidated or removed."
+          "Hardcoded Paths Removed": "User-specific hardcoded paths (like `/Users/*/...`) MUST be removed."
+          "Deprecated Commands Removed": "Deprecated commands like `deepwork hook *` MUST be removed."
+          "Backup Created": "A backup of the original settings MUST be created before modifications."
 
       - name: fix_jobs
         instructions: |
@@ -1498,11 +1471,11 @@ workflows:
           step_instruction_files:
             required: true
         process_requirements:
-          "New Format Used": "All job.yml files use the new format with step_arguments, workflows{} object, and inline step instructions."
-          "No Legacy Fields": "No job.yml contains version, root-level steps[], instructions_file, hooks, dependencies, or exposed/hidden fields."
-          "Reviews Migrated": "Old review formats are converted to output-level review blocks or process_requirements."
-          "Instructions Inlined": "All step instructions are inlined in the job.yml — no instructions_file references remain."
-          "Jobs Parse Successfully": "Calling `get_workflows` from the Deepwork tool shows all expected jobs."
+          "New Format Used": "All job.yml files MUST use the new format with step_arguments, workflows{} object, and inline step instructions."
+          "No Legacy Fields": "No job.yml MUST contain version, root-level steps[], instructions_file, hooks, dependencies, or exposed/hidden fields."
+          "Reviews Migrated": "Old review formats MUST be converted to output-level review blocks or process_requirements."
+          "Instructions Inlined": "All step instructions MUST be inlined in the job.yml — no instructions_file references SHOULD remain."
+          "Jobs Parse Successfully": "Calling `get_workflows` from the Deepwork tool MUST show all expected jobs."
 
       - name: errata
         instructions: |
@@ -1687,11 +1660,11 @@ workflows:
             required: true
         outputs: {}
         process_requirements:
-          "Legacy Job Skills Removed": "Legacy skill folders for each job are removed from `.claude/skills/` and `.gemini/skills/`."
-          "Deepwork Skill Removed": "The `deepwork` skill folder has been removed from `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` (now provided by the plugin system)."
-          "Rules Folder Removed": "`.deepwork/rules/` folder is gone."
-          "Rules Job Removed": "`.deepwork/jobs/deepwork_rules/` is gone."
-          "MCP Server Entry Removed": "The `deepwork serve` entry is removed from `.mcp.json` (or the file is deleted if empty)."
+          "Legacy Job Skills Removed": "Legacy skill folders for each job MUST be removed from `.claude/skills/` and `.gemini/skills/`."
+          "Deepwork Skill Removed": "The `deepwork` skill folder MUST be removed from `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` (now provided by the plugin system)."
+          "Rules Folder Removed": "`.deepwork/rules/` folder MUST be removed."
+          "Rules Job Removed": "`.deepwork/jobs/deepwork_rules/` MUST be removed."
+          "MCP Server Entry Removed": "The `deepwork serve` entry MUST be removed from `.mcp.json` (or the file MUST be deleted if empty)."
 
   learn:
     summary: "Analyze conversation history to improve job instructions and capture learnings"
@@ -1705,18 +1678,8 @@ workflows:
 
       ## Job Schema (CRITICAL)
 
-      Before creating or editing any `job.yml` file, you MUST read the JSON schema at
-      `.deepwork/job.schema.json`. This schema is the authoritative source of truth for
-      all valid fields, types, and structures.
-
-      Key schema rules:
-      - `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` and `json_schema`
-      - `workflows` is an object keyed by workflow name, each with {summary, steps[]}
-      - Each step has {name, instructions (inline string), inputs, outputs, process_requirements}
-      - Inputs/outputs reference step_arguments by name
-      - No `version`, no root-level `steps[]`, no `instructions_file`, no hooks, no dependencies
-
-      Always read the schema file and validate your job.yml structure against it.
+      See `steps/supplemental_file_references.md` for the job schema reference. The authoritative
+      JSON schema is at `.deepwork/job.schema.json` — always read it before creating or editing job.yml files.
     steps:
       - name: learn
         instructions: |
@@ -1995,14 +1958,14 @@ workflows:
           scripts:
             required: false
         process_requirements:
-          "Conversation Analyzed": "The agent reviewed the conversation for DeepWork job executions."
-          "Confusion Identified": "The agent identified points of confusion, errors, or inefficiencies."
-          "Instructions Improved": "Job instructions were updated to address identified issues."
-          "Instructions Concise": "Instructions are free of redundancy and unnecessary verbosity."
-          "Shared Content Extracted": "Lengthy/duplicated content is extracted into referenced files."
-          "Bespoke Learnings Captured": "Run-specific learnings were added to AGENTS.md."
-          "File References Used": "AGENTS.md entries reference other files where appropriate."
-          "Working Folder Correct": "AGENTS.md is in the correct working folder for the job."
+          "Conversation Analyzed": "The agent MUST review the conversation for DeepWork job executions."
+          "Confusion Identified": "The agent MUST identify points of confusion, errors, or inefficiencies."
+          "Instructions Improved": "Job instructions MUST be updated to address identified issues."
+          "Instructions Concise": "Instructions MUST be free of redundancy and unnecessary verbosity."
+          "Shared Content Extracted": "Lengthy or duplicated content SHOULD be extracted into referenced files."
+          "Bespoke Learnings Captured": "Run-specific learnings MUST be added to AGENTS.md."
+          "File References Used": "AGENTS.md entries SHOULD reference other files where appropriate."
+          "Working Folder Correct": "AGENTS.md MUST be in the correct working folder for the job."
 
   shared_jobs:
     summary: "Make DeepWork library jobs available by configuring DEEPWORK_ADDITIONAL_JOBS_FOLDERS"
