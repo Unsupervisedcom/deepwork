@@ -20,6 +20,7 @@ from typing import Any
 
 from fastmcp import FastMCP
 
+from deepwork.codex_hooks import CodexHookSetupError, setup_codex_hooks
 from deepwork.jobs.discovery import load_all_jobs
 from deepwork.jobs.issues import Issue, detect_issues, format_issues_for_agent
 from deepwork.jobs.mcp.schemas import (
@@ -75,6 +76,12 @@ def create_server(
 
     # Copy the job schema to a stable location so agents can always reference it
     _ensure_schema_available(project_path)
+
+    if platform == "codex":
+        try:
+            setup_codex_hooks(project_path)
+        except CodexHookSetupError as e:
+            logger.warning("Could not set up Codex hooks: %s", e)
 
     # Initialize components
     state_manager = StateManager(project_root=project_path, platform=platform or "claude")
@@ -158,9 +165,9 @@ def create_server(
             "Start a new workflow session. "
             "Initializes state tracking and returns the first step's instructions. "
             "Required parameters: goal (what user wants), job_name, workflow_name, "
-            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
+            "session_id (from startup context). "
             "Optional: inputs (map of step_argument names to values for the first step), "
-            "agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents). "
+            "agent_id (from startup context, when available for sub-agents). "
             "Supports nested workflows - starting a workflow while one is active "
             "pushes onto the stack. Use abort_workflow to cancel and return to parent."
         )
@@ -206,14 +213,14 @@ def create_server(
             "'next_step' with instructions for the next step, or "
             "'workflow_complete' when finished (pops from stack if nested). "
             "Required: outputs (map of step_argument names to values), "
-            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
+            "session_id (from startup context). "
             "For outputs with type 'file_path': pass a single string path or list of paths. "
             "For outputs with type 'string': pass a string value. "
             "Outputs marked required: true must be provided; required: false outputs can be omitted. "
             "Check step_expected_outputs in the response to see each output's type and required status. "
             "Optional: work_summary describing the work done (used by process_requirements reviews). "
             "Optional: quality_review_override_reason to skip quality review (must explain why). "
-            "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents)."
+            "Optional: agent_id (from startup context, when available for sub-agents)."
         )
     )
     async def finished_step(
@@ -250,8 +257,8 @@ def create_server(
             "Abort the current workflow and return to the parent workflow (if nested). "
             "Use this when a workflow cannot be completed and needs to be abandoned. "
             "Required: explanation (why the workflow is being aborted), "
-            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
-            "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents). "
+            "session_id (from startup context). "
+            "Optional: agent_id (from startup context, when available for sub-agents). "
             "Returns the aborted workflow info and the resumed parent workflow (if any)."
         )
     )
@@ -281,8 +288,8 @@ def create_server(
             "Use this when earlier outputs need revision or quality issues are discovered. "
             "Files on disk are NOT deleted — only session tracking state is cleared. "
             "Required: step_id (the step name to go back to), "
-            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
-            "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents)."
+            "session_id (from startup context). "
+            "Optional: agent_id (from startup context, when available for sub-agents)."
         )
     )
     async def go_to_step(
@@ -404,7 +411,7 @@ _STATIC_INSTRUCTIONS = """\
 # DeepWork Workflow Server
 
 Multi-step workflows with quality gates. All tools require `session_id` \
-(CLAUDE_CODE_SESSION_ID from startup context). Sub-agents also pass `agent_id`.
+(from startup context). Sub-agents also pass `agent_id` when the platform provides one.
 
 ## Workflow Lifecycle
 

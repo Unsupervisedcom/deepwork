@@ -133,6 +133,8 @@ The serve command:
 - Creates `.deepwork/tmp/` lazily for session state
 - Launches the FastMCP server (stdio or SSE transport)
 - No config file required — works out of the box
+- When started with `--platform codex`, also ensures repo-local Codex hook files
+  exist under `.codex/` so SessionStart and PostToolUse DeepWork hooks are enabled
 
 ### 2. Hook Command (`hook.py`)
 
@@ -179,6 +181,10 @@ Platform-specific delivery is now handled by plugins in `plugins/`:
 
 - **Claude Code**: `plugins/claude/` — installed as a Claude Code plugin via marketplace
 - **Gemini CLI**: `plugins/gemini/` — skill files copied to `.gemini/skills/`
+
+Codex hook integration is repo-local rather than plugin-local today. When the MCP
+server starts with `--platform codex`, DeepWork ensures `.codex/config.toml`
+enables `codex_hooks` and `.codex/hooks.json` contains the DeepWork hook entries.
 
 Each plugin contains static files (skill, hooks, MCP config) rather than generated content. The shared skill body lives in `platform/skill-body.md` as the single source of truth.
 
@@ -1108,4 +1114,3 @@ deepwork serve --transport sse --port 8000
 - [JSON Schema](https://json-schema.org/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 - [FastMCP Documentation](https://github.com/jlowin/fastmcp)
-

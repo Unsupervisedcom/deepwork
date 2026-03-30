@@ -161,6 +161,13 @@ class TestReviewCommand:
         assert result.exit_code != 0
         assert "Missing option" in result.output or "required" in result.output.lower()
 
+    @patch("deepwork.cli.review.load_all_rules")
+    def test_codex_is_accepted_as_instructions_target(self, mock_load: Any) -> None:
+        mock_load.return_value = ([], [])
+        runner = CliRunner()
+        result = runner.invoke(review, ["--instructions-for", "codex", "--path", "."])
+        assert result.exit_code == 0
+
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.review.match_files_to_rules")

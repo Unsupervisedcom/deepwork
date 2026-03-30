@@ -28,6 +28,17 @@ Then start a new session and define your first job:
 
 > **Note:** DeepWork stores job definitions in `.deepwork/jobs/` and creates work branches in Git. Your project folder should be a Git repository. If it isn't, run `git init` first, or ask Claude to do so.
 
+### Codex
+
+When you run the DeepWork MCP server with `--platform codex`, DeepWork bootstraps
+repo-local Codex hooks for you by ensuring:
+
+- `.codex/config.toml` enables `codex_hooks`
+- `.codex/hooks.json` contains the DeepWork `SessionStart` and `PostToolUse` handlers
+
+This keeps the Codex hook setup checked into the project instead of relying on a
+manual one-time local setup step.
+
 ---
 
 ## The Problem

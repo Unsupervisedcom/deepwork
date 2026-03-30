@@ -126,6 +126,28 @@ class TestRunReview:
         with pytest.raises(ReviewToolError, match="Unsupported platform"):
             run_review(tmp_path, "unsupported_platform")
 
+    @patch("deepwork.review.mcp.write_instruction_files")
+    @patch("deepwork.review.mcp.match_files_to_rules")
+    @patch("deepwork.review.mcp.get_changed_files")
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_codex_platform_is_supported(
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, mock_write: Any, tmp_path: Path
+    ) -> None:
+        rule = _make_rule(tmp_path)
+        task = ReviewTask(
+            rule_name="test_rule",
+            files_to_review=["app.py"],
+            instructions="Review it.",
+            agent_name=None,
+        )
+        mock_load.return_value = ([rule], [])
+        mock_diff.return_value = ["app.py"]
+        mock_match.return_value = [task]
+        mock_write.return_value = [(task, tmp_path / "instr.md")]
+
+        result = run_review(tmp_path, "codex")
+        assert "Invoke the following" in result
+
     @patch("deepwork.review.mcp.match_files_to_rules")
     @patch("deepwork.review.mcp.load_all_rules")
     def test_files_are_deduplicated_and_sorted(
