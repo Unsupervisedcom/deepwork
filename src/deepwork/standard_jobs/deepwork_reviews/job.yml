@@ -226,13 +226,6 @@ workflows:
 
           The top-level `.deepreview` file containing both native review rules (alongside any pre-existing rules). If no changes were required (both rules already existed with correct configuration), still provide the `.deepreview` file path as the output to confirm the check was completed.
 
-          ## Quality Criteria
-
-          - The `.deepreview` file exists at the repository root and is valid YAML
-          - A `prompt_best_practices` rule is present with `strategy: individual` and match patterns covering prompt/instruction files
-          - A `suggest_new_reviews` rule is present with `strategy: matches_together` and broad match patterns
-          - Pre-existing rules in the file are preserved unchanged
-          - Match patterns are adapted to the project's actual structure (not just copy-pasted defaults)
         inputs: {}
         outputs:
           deepreview_file:
@@ -317,14 +310,6 @@ workflows:
 
           All backup copies of deleted skills in `.deepwork/tmp/migrated_skills/`. If no skills were migrated, this output should contain a single file `.deepwork/tmp/migrated_skills/NONE.md` stating that no review-like skills were found.
 
-          ## Quality Criteria
-
-          - Every identified review-like skill has a corresponding `.deepreview` rule
-          - Each rule's instructions faithfully capture the intent and coverage of the original skill
-          - Match patterns make sense for the file types the original skill targeted
-          - The strategy choice (individual vs matches_together) is appropriate for the review type
-          - All original skills have been backed up before deletion
-          - No plugin-provided skills were touched
         inputs: {}
         outputs:
           deepreview_files:
@@ -333,14 +318,14 @@ workflows:
             required: true
         process_requirements:
           "Replacement Rules Capture Skill Intent": >
-            Every migrated skill has a corresponding .deepreview rule whose instructions
+            Every migrated skill MUST have a corresponding .deepreview rule whose instructions
             faithfully capture the original skill's review logic. No significant review
-            checks are missing. The backup skill files are reference material only — do
+            checks MUST be missing. The backup skill files are reference material only — do
             not give feedback on them, only use them to verify the new rules are complete.
           "Replacement Rule Match Patterns Appropriate": >
-            The match.include patterns in each new .deepreview rule target the same
+            The match.include patterns in each new .deepreview rule MUST target the same
             file types and scopes that the original skill was designed to review.
-            Patterns are neither too broad nor too narrow.
+            Patterns MUST NOT be too broad or too narrow.
 
       - name: add_documentation_rules
         instructions: |
@@ -396,14 +381,6 @@ workflows:
 
           All `.deepreview` files that were created or modified.
 
-          ## Quality Criteria
-
-          - All project documentation files describing the project itself are identified
-          - External documentation and auto-generated docs are excluded
-          - Each unprotected doc file has a corresponding rule via the `add_document_update_rule` workflow
-          - The set of rules is efficient — overlapping narrow rules have been merged where appropriate
-          - Trigger scope for each rule is as narrow as possible while still catching relevant changes
-          - No documentation file is left unprotected unless it was already covered
         inputs: {}
         outputs:
           documentation_files_found:
@@ -563,14 +540,6 @@ workflows:
 
           All `.deepreview` files that were created or modified with language review rules.
 
-          ## Quality Criteria
-
-          - Each language with significant presence in the project has a review rule
-          - Convention files are concise, actionable, and based on actual project patterns (not generic boilerplate)
-          - Every rule uses `strategy: individual` (per-file reviews)
-          - Every rule includes explicit DRY-violation and comment-accuracy checks
-          - Match patterns are appropriate for the language (correct extensions, sensible excludes)
-          - Existing coding standards files are referenced rather than duplicated
         inputs: {}
         outputs:
           convention_files:
@@ -813,15 +782,6 @@ workflows:
           No overlapping rules found. The existing `python_code_review` rule matches `**/*.py` but serves a different purpose (code quality, not documentation freshness).
           ```
 
-          ## Quality Criteria
-
-          - All source files that could realistically affect the document's accuracy are identified
-          - Glob patterns correctly capture the identified dependencies
-          - The narrow vs wide decision is well-reasoned based on the dependency set size
-          - The document itself is included in the match patterns
-          - Existing .deepreview rules are checked for overlap before recommending a new rule
-          - The analysis provides clear rationale that can be verified by the reviewer
-
           ## Context
 
           This analysis is the foundation for the rule that will be created in the next step. Getting the dependency identification right is critical — too narrow means changes slip through without review, too broad means noisy reviews that get ignored. The reviewer will verify this analysis against the actual filesystem before the rule is applied.
@@ -1012,15 +972,6 @@ workflows:
               additional_context:
                 unchanged_matching_files: true
           ```
-
-          ## Quality Criteria
-
-          - The rule faithfully implements the approved dependency analysis — same patterns, strategy, and naming
-          - The `.deepreview` file is valid YAML
-          - All required fields are present (description, match.include, review.strategy, review.instructions)
-          - Review instructions clearly reference the documentation file(s) being protected
-          - `additional_context.unchanged_matching_files` is set to `true`
-          - If extending an existing rule, existing patterns are preserved and the doc is cleanly added
 
           ## Context
 

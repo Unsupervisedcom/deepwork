@@ -1334,14 +1334,14 @@ workflows:
           settings.json:
             required: true
         process_requirements:
-          "DeepWork Skills Removed": "`Skill(...)` entries matching jobs in `.deepwork/jobs/` are removed."
-          "Non-DeepWork Skills Preserved": "Skills NOT matching DeepWork jobs are left intact."
-          "Stale make_new_job.sh Removed": "Stale `Bash(...)` permissions referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` are removed."
-          "Rules Hooks Removed": "All DeepWork Rules hooks and permissions are removed."
-          "Duplicate Hooks Removed": "Duplicate hook entries are consolidated or removed."
-          "Hardcoded Paths Removed": "User-specific hardcoded paths (like `/Users/*/...`) are removed."
-          "Deprecated Commands Removed": "Deprecated commands like `deepwork hook *` are removed."
-          "Backup Created": "A backup of the original settings was created before modifications."
+          "DeepWork Skills Removed": "`Skill(...)` entries matching jobs in `.deepwork/jobs/` MUST be removed."
+          "Non-DeepWork Skills Preserved": "Skills NOT matching DeepWork jobs MUST be left intact."
+          "Stale make_new_job.sh Removed": "Stale `Bash(...)` permissions referencing `.deepwork/jobs/deepwork_jobs/make_new_job.sh` MUST be removed."
+          "Rules Hooks Removed": "All DeepWork Rules hooks and permissions MUST be removed."
+          "Duplicate Hooks Removed": "Duplicate hook entries MUST be consolidated or removed."
+          "Hardcoded Paths Removed": "User-specific hardcoded paths (like `/Users/*/...`) MUST be removed."
+          "Deprecated Commands Removed": "Deprecated commands like `deepwork hook *` MUST be removed."
+          "Backup Created": "A backup of the original settings MUST be created before modifications."
 
       - name: fix_jobs
         instructions: |
@@ -1498,11 +1498,11 @@ workflows:
           step_instruction_files:
             required: true
         process_requirements:
-          "New Format Used": "All job.yml files use the new format with step_arguments, workflows{} object, and inline step instructions."
-          "No Legacy Fields": "No job.yml contains version, root-level steps[], instructions_file, hooks, dependencies, or exposed/hidden fields."
-          "Reviews Migrated": "Old review formats are converted to output-level review blocks or process_requirements."
-          "Instructions Inlined": "All step instructions are inlined in the job.yml — no instructions_file references remain."
-          "Jobs Parse Successfully": "Calling `get_workflows` from the Deepwork tool shows all expected jobs."
+          "New Format Used": "All job.yml files MUST use the new format with step_arguments, workflows{} object, and inline step instructions."
+          "No Legacy Fields": "No job.yml MUST contain version, root-level steps[], instructions_file, hooks, dependencies, or exposed/hidden fields."
+          "Reviews Migrated": "Old review formats MUST be converted to output-level review blocks or process_requirements."
+          "Instructions Inlined": "All step instructions MUST be inlined in the job.yml — no instructions_file references MUST remain."
+          "Jobs Parse Successfully": "Calling `get_workflows` MUST show all expected jobs without errors."
 
       - name: errata
         instructions: |
@@ -1687,11 +1687,11 @@ workflows:
             required: true
         outputs: {}
         process_requirements:
-          "Legacy Job Skills Removed": "Legacy skill folders for each job are removed from `.claude/skills/` and `.gemini/skills/`."
-          "Deepwork Skill Removed": "The `deepwork` skill folder has been removed from `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` (now provided by the plugin system)."
-          "Rules Folder Removed": "`.deepwork/rules/` folder is gone."
-          "Rules Job Removed": "`.deepwork/jobs/deepwork_rules/` is gone."
-          "MCP Server Entry Removed": "The `deepwork serve` entry is removed from `.mcp.json` (or the file is deleted if empty)."
+          "Legacy Job Skills Removed": "Legacy skill folders for each job MUST be removed from `.claude/skills/` and `.gemini/skills/`."
+          "Deepwork Skill Removed": "The `deepwork` skill folder MUST be removed from `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` (now provided by the plugin system)."
+          "Rules Folder Removed": "`.deepwork/rules/` folder MUST be removed if present."
+          "Rules Job Removed": "`.deepwork/jobs/deepwork_rules/` MUST be removed if present."
+          "MCP Server Entry Removed": "The `deepwork serve` entry MUST be removed from `.mcp.json` (or the file deleted if empty)."
 
   learn:
     summary: "Analyze conversation history to improve job instructions and capture learnings"
@@ -1995,14 +1995,14 @@ workflows:
           scripts:
             required: false
         process_requirements:
-          "Conversation Analyzed": "The agent reviewed the conversation for DeepWork job executions."
-          "Confusion Identified": "The agent identified points of confusion, errors, or inefficiencies."
-          "Instructions Improved": "Job instructions were updated to address identified issues."
-          "Instructions Concise": "Instructions are free of redundancy and unnecessary verbosity."
-          "Shared Content Extracted": "Lengthy/duplicated content is extracted into referenced files."
-          "Bespoke Learnings Captured": "Run-specific learnings were added to AGENTS.md."
-          "File References Used": "AGENTS.md entries reference other files where appropriate."
-          "Working Folder Correct": "AGENTS.md is in the correct working folder for the job."
+          "Conversation Analyzed": "The agent MUST review the conversation for DeepWork job executions."
+          "Confusion Identified": "The agent MUST identify points of confusion, errors, or inefficiencies."
+          "Instructions Improved": "Job instructions MUST be updated to address identified issues."
+          "Instructions Concise": "Instructions MUST be free of redundancy and unnecessary verbosity."
+          "Shared Content Extracted": "Lengthy or duplicated content SHOULD be extracted into referenced files."
+          "Bespoke Learnings Captured": "Run-specific learnings MUST be added to AGENTS.md."
+          "File References Used": "AGENTS.md entries SHOULD reference other files where appropriate."
+          "Working Folder Correct": "AGENTS.md MUST be in the correct working folder for the job."
 
   shared_jobs:
     summary: "Make DeepWork library jobs available by configuring DEEPWORK_ADDITIONAL_JOBS_FOLDERS"

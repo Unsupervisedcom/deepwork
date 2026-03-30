@@ -82,6 +82,34 @@ class TestSchemaToReviewRule:
         assert rule is not None
         assert rule.source_file == schema.source_path
 
+    def test_named_rule_source_dir_is_project_root(self, tmp_path: Path) -> None:
+        """Named schemas use project-root-relative matchers, so source_dir must be project_root."""
+        schema = _named_schema(tmp_path, matchers=[".deepwork/jobs/*/job.yml"])
+        rule = _schema_to_review_rule(schema, tmp_path)
+        assert rule is not None
+        assert rule.source_dir == tmp_path
+
+    def test_anonymous_rule_source_dir_is_schema_parent(self, tmp_path: Path) -> None:
+        """Anonymous schemas match by filename in the same directory as the schema file."""
+        schema = _anonymous_schema(tmp_path)
+        rule = _schema_to_review_rule(schema, tmp_path)
+        assert rule is not None
+        assert rule.source_dir == schema.source_path.parent
+
+    def test_named_rule_matchers_resolve_against_project_root(self, tmp_path: Path) -> None:
+        """Matchers like '.deepwork/jobs/*/job.yml' must match files relative to project root."""
+        from deepwork.review.matcher import match_rule
+
+        schema = _named_schema(tmp_path, matchers=[".deepwork/jobs/*/job.yml"])
+        rule = _schema_to_review_rule(schema, tmp_path)
+        assert rule is not None
+
+        matched = match_rule([".deepwork/jobs/my_job/job.yml"], rule, tmp_path)
+        assert matched == [".deepwork/jobs/my_job/job.yml"]
+
+        not_matched = match_rule(["src/other/file.yml"], rule, tmp_path)
+        assert not_matched == []
+
 
 class TestBuildInstructions:
     def test_named_includes_summary_and_instructions(self, tmp_path: Path) -> None:

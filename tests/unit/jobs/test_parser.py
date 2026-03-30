@@ -697,3 +697,26 @@ class TestParseJobDefinition:
 
         with pytest.raises(ParseError, match="validation failed"):
             parse_job_definition(job_dir)
+
+
+class TestRealJobDefinitions:
+    """Validate all shipped job.yml files parse against the schema."""
+
+    _REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+
+    @pytest.mark.parametrize(
+        "job_dir",
+        sorted(
+            [
+                *(_REPO_ROOT / "src" / "deepwork" / "standard_jobs").glob("*/"),
+                *(_REPO_ROOT / "library" / "jobs").glob("*/"),
+            ]
+        ),
+        ids=lambda p: p.name,
+    )
+    def test_job_parses_successfully(self, job_dir: Path) -> None:
+        """Every standard and library job.yml must parse and validate."""
+        if not (job_dir / "job.yml").exists():
+            pytest.skip(f"No job.yml in {job_dir.name}")
+        job = parse_job_definition(job_dir)
+        assert job.name == job_dir.name
