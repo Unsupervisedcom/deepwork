@@ -1477,9 +1477,9 @@ workflows:
           "New Format Used": "All job.yml files MUST use the new format with step_arguments, workflows{} object, and inline step instructions."
           "No Legacy Fields": "No job.yml MUST contain version, root-level steps[], instructions_file, hooks, dependencies, or exposed/hidden fields."
           "Reviews Migrated": "Old review formats MUST be converted to output-level review blocks or process_requirements."
-          "Instructions Inlined": "All step instructions MUST be inlined in the job.yml — no instructions_file references SHOULD remain."
+          "Instructions Inlined": "All step instructions MUST be inlined in the job.yml — no instructions_file references MUST remain."
           "Orphaned Step Files Removed": "Step .md files that were referenced by `instructions_file` and have been inlined MUST be deleted from the steps/ directory."
-          "Jobs Parse Successfully": "Calling `get_workflows` from the Deepwork tool MUST show all expected jobs."
+          "Jobs Parse Successfully": "Calling `get_workflows` MUST show all expected jobs without errors."
 
       - name: errata
         instructions: |
@@ -1666,9 +1666,9 @@ workflows:
         process_requirements:
           "Legacy Job Skills Removed": "Legacy skill folders for each job MUST be removed from `.claude/skills/` and `.gemini/skills/`."
           "Deepwork Skill Removed": "The `deepwork` skill folder MUST be removed from `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` (now provided by the plugin system)."
-          "Rules Folder Removed": "`.deepwork/rules/` folder MUST be removed."
-          "Rules Job Removed": "`.deepwork/jobs/deepwork_rules/` MUST be removed."
-          "MCP Server Entry Removed": "The `deepwork serve` entry MUST be removed from `.mcp.json` (or the file MUST be deleted if empty)."
+          "Rules Folder Removed": "`.deepwork/rules/` folder MUST be removed if present."
+          "Rules Job Removed": "`.deepwork/jobs/deepwork_rules/` MUST be removed if present."
+          "MCP Server Entry Removed": "The `deepwork serve` entry MUST be removed from `.mcp.json` (or the file deleted if empty)."
 
   learn:
     summary: "Analyze conversation history to improve job instructions and capture learnings"

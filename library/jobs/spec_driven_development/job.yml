@@ -6,6 +6,10 @@ step_arguments:
     description: "Key priorities like code quality, testing, UX consistency, performance"
     type: string
 
+  - name: docs_folder
+    description: "Path to the project's documentation folder where the constitution and other governance files are stored"
+    type: string
+
   - name: feature_name
     description: "Name of the feature being specified (lowercase, hyphens for spaces)"
     type: string
@@ -308,18 +312,18 @@ workflows:
           3. Tell the user to run `/spec_driven_development.specify` to create their first feature specification
         inputs:
           docs_folder:
-            required: true
+            required: false
           development_priorities:
             required: false
         outputs:
           constitution.md:
             required: true
         process_requirements:
-          priorities_captured: "The agent MUST have gathered specific development priorities from the user."
+          priorities_captured: "The agent MUST gather specific development priorities from the user."
           principles_defined: "Governance principles MUST be clear and actionable."
-          technology_guidance: "The constitution MUST include relevant technology stack preferences."
+          technology_guidance: "The constitution SHOULD include relevant technology stack preferences."
           quality_standards: "Quality standards and testing expectations MUST be defined."
-          file_created: "constitution.md MUST have been created in the project's documentation folder."
+          file_created: "constitution.md MUST be created in the project's documentation folder."
 
       - name: specify
         instructions: |
@@ -619,7 +623,7 @@ workflows:
           scope_boundaries: "It MUST be clear what is in and out of scope."
           constitution_aligned: "The spec MUST respect the governance principles from the constitution."
           technology_agnostic: "The spec MUST be free of implementation details and technology choices."
-          file_created: "spec.md MUST have been created in specs/[feature-name]/."
+          file_created: "spec.md MUST be created in specs/[feature-name]/."
 
       - name: clarify
         instructions: |
@@ -1261,7 +1265,7 @@ workflows:
           3. Tell the user to run `/spec_driven_development.tasks` to generate tasks
         inputs:
           docs_folder:
-            required: true
+            required: false
           spec.md:
             required: true
           constitution.md:
@@ -1274,9 +1278,9 @@ workflows:
           data-model.md:
             required: true
           api-spec.json:
-            required: true
+            required: false
           research.md:
-            required: true
+            required: false
           architecture.md:
             required: true
         process_requirements:
@@ -1284,11 +1288,11 @@ workflows:
           technology_justified: "Technology choices MUST be explained with rationale."
           data_model_complete: "The data model MUST be documented with all entities and relationships."
           api_contracts: "API endpoints MUST be defined with request/response schemas."
-          research_documented: "Research findings or technology evaluations MUST be captured."
+          research_documented: "Research findings or technology evaluations SHOULD be captured."
           dependencies_listed: "External dependencies and their versions MUST be specified."
           constitution_respected: "The plan MUST align with governance principles."
-          architecture_doc_updated: "The project architecture document MUST have been reviewed and updated if needed."
-          files_created: "All output files MUST have been created in specs/[feature-name]/."
+          architecture_doc_updated: "The project architecture document SHOULD be reviewed and updated if needed."
+          files_created: "All output files MUST be created in specs/[feature-name]/."
 
       - name: tasks
         instructions: |
@@ -1629,7 +1633,7 @@ workflows:
           4. Tell the user to run `/spec_driven_development.implement` to begin implementation
         inputs:
           docs_folder:
-            required: true
+            required: false
           plan.md:
             required: true
           spec.md:
@@ -1643,11 +1647,11 @@ workflows:
           user_story_organization: "Tasks MUST be organized by user story."
           dependencies_sequenced: "Task dependencies MUST be correctly ordered."
           parallel_tasks_marked: "Parallelizable tasks SHOULD be identified with [P] markers."
-          file_paths_specified: "Each task MUST specify which files it creates/modifies."
+          file_paths_specified: "Each task MUST specify which files it creates or modifies."
           tdd_structure: "Test tasks MUST be included before or alongside implementation tasks."
           checkpoints_defined: "Validation checkpoints SHOULD be included between phases."
-          granularity_appropriate: "Tasks MUST be small enough to be completed in one session."
-          file_created: "tasks.md MUST have been created in specs/[feature-name]/."
+          granularity_appropriate: "Tasks SHOULD be small enough to be completed in one session."
+          file_created: "tasks.md MUST be created in specs/[feature-name]/."
 
       - name: implement
         instructions: |
@@ -2017,7 +2021,7 @@ workflows:
           4. Note any issues or follow-up items
         inputs:
           docs_folder:
-            required: true
+            required: false
           tasks.md:
             required: true
           plan.md:
@@ -2032,11 +2036,11 @@ workflows:
           test_files:
             required: true
         process_requirements:
-          prerequisites_met: "All spec/plan/tasks artifacts MUST have been validated before starting."
+          prerequisites_met: "All spec/plan/tasks artifacts MUST be validated before starting."
           task_order_followed: "Tasks MUST be executed in dependency order."
           tests_written: "Tests MUST be created alongside or before implementation."
           acceptance_criteria_met: "The implementation MUST satisfy all acceptance criteria from spec."
           code_quality: "The code MUST meet the standards defined in the constitution."
           progress_tracked: "Progress SHOULD be communicated throughout implementation."
-          all_tasks_complete: "All tasks in tasks.md MUST have been completed."
+          all_tasks_complete: "All tasks in tasks.md MUST be completed."
 

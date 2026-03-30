@@ -504,7 +504,7 @@ workflows:
 
       ## Domain Adaptation
 
-      The domain adaptation table maps generic concepts to domain-specific equivalents:
+      Valid engineering domains and their concept mappings:
 
       | Concept         | Software          | Hardware/CAD       | Firmware          | Docs             |
       |-----------------|-------------------|--------------------|-------------------|------------------|
@@ -573,8 +573,6 @@ workflows:
           ```
         inputs:
           project_path:
-            required: false
-          requirements.md:
             required: false
         outputs:
           agent_md_audit: {}
