@@ -40,8 +40,9 @@ Rules:
    Markdown table with columns `ID | Title | File`.
 5. If the requirements directory does not exist, create it along with the
    `REQUIREMENTS.md` index file.
-6. If AGENTS.md does not document the requirements path and the path is non-default,
-   add a `## Requirements` section to AGENTS.md declaring the path.
+6. If AGENTS.md does not document the requirements path and the path is non-default
+   (i.e., not `./requirements/` relative to the repository root), add a
+   `## Requirements` section to AGENTS.md declaring the path.
 
 ## Output
 

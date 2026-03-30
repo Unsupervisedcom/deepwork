@@ -32,7 +32,7 @@ engineer/
 
 - **implement**: 6-step workflow executing engineering work from product issue through PR merge and product sync
 - **requirements**: 3-step workflow to create or amend RFC 2119 requirements in the project's requirements directory
-- **doctor**: 3-step workflow validating agent.md and domain context files
+- **doctor**: 3-step workflow validating AGENTS.md and domain context files
 
 ## Requirements directory
 
@@ -56,9 +56,10 @@ falls back to `./requirements/`.
 1. **Domain-agnostic**: Domain adaptation tables (software, hardware, CAD, firmware, docs) live in `job.yml` `common_job_info`; step instructions are written to be domain-agnostic and rely on those tables
 2. **Six implement steps**: Preserves TDD discipline boundary (red tests committed before green implementation)
 3. **product_sync is separate**: Workflow can pause at finalize_pr while PR undergoes human review
-4. **Doctor focuses on agent.md**: Recommends `repo` library job for labels/branch protection/milestones
+4. **Doctor focuses on AGENTS.md**: Recommends `repo` library job for labels/branch protection/milestones
 5. **Requirements bundled**: RFC 2119 spec lives alongside job definition as `requirements.md`
+6. **Self-documenting via requirements.md**: Library jobs are exempt from the DeepWork `specs/` traceability chain. Each library job carries its own RFC 2119 spec as `requirements.md`. This is the authoritative behavioral contract for the job — no corresponding entry in `specs/` is required.
 
 ## Last Updated
-- Date: 2026-03-25
-- From conversation about: Moved from standard_jobs to library/jobs
+- Date: 2026-03-30
+- From conversation about: Added requirements workflow (discover, draft, validate), updated requirements.md with Req 9-12

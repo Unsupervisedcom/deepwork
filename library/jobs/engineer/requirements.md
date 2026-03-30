@@ -1,8 +1,8 @@
 # Engineer Job: RFC 2119 Requirements Specification
 
 This specification defines the normative requirements for the engineer job's
-`implement` and `doctor` workflows. The term "engineer" refers to the agent or
-human executing the workflow.
+`implement`, `doctor`, and `requirements` workflows. The term "engineer" refers
+to the agent or human executing the workflow.
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
 "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be
@@ -21,8 +21,10 @@ overarching user story and functional RFC 2119 requirements.
 An engineer MUST translate this Product Issue into a distinct Engineering Issue.
 
 The Engineering Issue MUST include the following payloads: the definitive
-implementation plan, applicable schematics or CAD snippets, and explicit
-definitions of expected red and green test states.
+implementation plan, applicable design artifacts (e.g., architecture diagrams,
+data models, schematics, or domain-equivalent artifacts as defined in
+`common_job_info`), and explicit definitions of expected red and green test
+states.
 
 ## 2. Version control initialization
 
@@ -57,12 +59,10 @@ finished and pushed to the remote branch.
 
 ## 5. Artifact generation and continuous integration
 
-The engineer MUST verify that the CI system produces visual representations of
-structural or interface alterations upon a successful green state. These
-artifacts MUST include any of the following that are relevant to the domain:
-rendered STLs, compiled schematics, localized DOM snapshots, or equivalent
-visual artifacts. If the CI system does not produce the expected artifacts, the
-engineer MUST document the gap and manually capture equivalents.
+The engineer MUST verify that the CI system produces visual artifacts appropriate
+to the domain (as listed in `common_job_info`) upon a successful green state. If
+the CI system does not produce the expected artifacts, the engineer MUST document
+the gap and manually capture equivalents.
 
 ## 6. Pull request finalization and handoff
 
@@ -82,9 +82,26 @@ Upon the successful merge of the PR and closure of the Engineering Issue, the
 engineer MUST author a formal comment on the parent Product Issue.
 
 This comment MUST document the high-level user stories completed and provide
-explicit, immutable links to the merged PR(s) and closed Engineering Issue(s),
-ensuring product managers maintain up-to-date visibility without parsing
-engineering telemetry.
+explicit links using the PR's permanent numeric URL (e.g.,
+`https://github.com/org/repo/pull/123`) to the merged PR(s) and closed
+Engineering Issue(s), ensuring product managers maintain up-to-date visibility
+without parsing engineering telemetry.
+
+## Doctor workflow requirements
+
+## 8. Contextual awareness and the doctor workflow
+
+To maintain a project-agnostic shared workflow, every repository MUST contain an
+AGENTS.md file (or equivalent domain documentation).
+
+This documentation MUST explicitly define the project's engineering domain (e.g.,
+AnchorCAD, web application, PCB layout) and instruct the automated agents on how
+to parse, build, and test the repository.
+
+A separate doctor workflow MUST exist and be executed to validate that the
+AGENTS.md and related context files are present, correctly linked, and
+syntactically valid, ensuring the automation agent knows how to interact with the
+repository's specific medium.
 
 ## Requirements workflow requirements
 
@@ -138,19 +155,3 @@ renumbering.
 Amendments MUST NOT silently remove or weaken existing sub-requirements. Any
 removal or weakening of a requirement MUST be explicitly noted in the commit
 message.
-
-## Doctor workflow requirements
-
-## 8. Contextual awareness and the doctor workflow
-
-To maintain a project-agnostic shared workflow, every repository MUST contain an
-agent.md file (or equivalent domain documentation).
-
-This documentation MUST explicitly define the project's engineering domain (e.g.,
-AnchorCAD, web application, PCB layout) and instruct the automated agents on how
-to parse, build, and test the repository.
-
-A separate doctor workflow MUST exist and be executed to validate that the
-agent.md and related context files are present, correctly linked, and
-syntactically valid, ensuring the automation agent knows how to interact with the
-repository's specific medium.

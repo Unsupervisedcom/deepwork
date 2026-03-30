@@ -16,6 +16,7 @@ This walks you through configuring `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` so the Dee
 
 | Job | Description |
 |-----|-------------|
+| [Engineer](./engineer) | Domain-agnostic engineering execution — TDD from product issue through PR merge, RFC 2119 requirements management, and project setup validation |
 | [Research](./research) | Multi-workflow research suite — deep investigation, quick summaries, material ingestion, and reproduction planning |
 | [Platform Engineer](./platform_engineer) | Incident response, observability, CI/CD, releases, security, cost management, and infrastructure |
 | [Repo](./repo) | Audit and configure repositories — labels, branch protection, milestones, and boards |
@@ -68,6 +69,12 @@ Each job in this library follows the same structure as the `.deepwork/jobs` subf
 library/jobs/
 ├── .deepreview              # Review rules for library job quality
 ├── README.md
+├── engineer/                # Domain-agnostic engineering (implement, requirements, doctor)
+│   ├── job.yml
+│   ├── AGENTS.md            # Agent context and design decisions
+│   ├── CLAUDE.md -> AGENTS.md
+│   ├── requirements.md      # RFC 2119 spec for the job
+│   └── steps/
 ├── platform_engineer/       # Platform engineering workflows
 │   ├── job.yml
 │   ├── AGENTS.md            # Agent context and learnings
