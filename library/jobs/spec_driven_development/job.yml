@@ -18,6 +18,10 @@ step_arguments:
     description: "High-level description of what the feature should do"
     type: string
 
+  - name: docs_folder
+    description: "Path to the project documentation folder where constitution.md and architecture.md live (e.g., 'docs' or 'doc')"
+    type: string
+
   - name: constitution.md
     description: "Foundational governance principles and development guidelines"
     type: file_path
@@ -306,16 +310,6 @@ workflows:
           1. Summarize the key principles established
           2. Confirm the file has been created
           3. Tell the user to run `/spec_driven_development.specify` to create their first feature specification
-
-          ## Quality Criteria
-
-          - Asked structured questions to understand user priorities
-          - Technology preferences are specific and versioned
-          - Quality standards include measurable thresholds
-          - Governance rules are actionable
-          - Principles are clear and will guide future decisions
-          - File created in correct location
-          - **No implementation code**: Constitution describes standards, not code examples
         inputs:
           docs_folder:
             required: false
@@ -345,9 +339,7 @@ workflows:
 
           **Important**: Use the AskUserQuestion tool to ask structured questions when gathering information from the user.
 
-          **Key Principle**: This step focuses entirely on the **"what"** and **"why"** - never the **"how"**. Technology choices and implementation details belong in the planning step.
-
-          **Critical**: Do not include any code examples, implementation snippets, or technical solutions. The specification describes user needs and acceptance criteria in plain language. Code is written only in the implement step.
+          **Critical**: Do not include any code examples, implementation snippets, or technical solutions. The specification describes user needs and acceptance criteria in plain language.
 
           ### Prerequisites
 
@@ -612,18 +604,9 @@ workflows:
           1. Summarize the key user stories
           2. Highlight any open questions that need resolution
           3. Tell the user to run `/spec_driven_development.clarify` to resolve ambiguities
-
-          ## Quality Criteria
-
-          - Asked structured questions to understand user needs
-          - All user stories are in correct format
-          - Acceptance criteria are testable
-          - Non-functional requirements are captured
-          - Scope boundaries are clear
-          - **No implementation code**: Spec describes behavior in plain language, not code
-          - Constitution principles are respected
-          - File created in correct location
         inputs:
+          docs_folder:
+            required: true
           feature_name:
             required: true
           feature_description:
@@ -656,7 +639,7 @@ workflows:
 
           **Important**: Use the AskUserQuestion tool to ask structured questions when gathering information from the user.
 
-          **Critical**: This step refines requirements, not implementation. Do not add code examples or technical solutions. Keep clarifications focused on user needs, acceptance criteria, and behavior - not how things will be coded.
+          **Critical**: Do not add code examples or technical solutions. Keep clarifications focused on user needs, acceptance criteria, and behavior.
 
           ### Prerequisites
 
@@ -895,18 +878,6 @@ workflows:
           1. Summarize the clarifications made
           2. Confirm the acceptance checklist is complete
           3. Tell the user to run `/spec_driven_development.plan` to create the technical plan
-
-          ## Quality Criteria
-
-          - All ambiguities in the spec were identified
-          - Structured questions were asked for each ambiguity
-          - Answers are documented in Clarifications section
-          - Acceptance criteria now have specific, measurable thresholds
-          - Edge cases are comprehensively covered
-          - Open questions are resolved
-          - Acceptance checklist is complete
-          - Spec is ready for technical planning
-          - **No implementation code**: Clarifications describe behavior, not code
         inputs:
           spec.md:
             required: true
@@ -927,24 +898,15 @@ workflows:
 
           ## Objective
 
-          Create a comprehensive technical implementation plan that defines architecture, technology choices, data models, and API contracts. This is where "how" decisions are made, guided by the specification ("what") and constitution (principles).
+          Create a technical implementation plan that defines architecture, technology choices, data models, and API contracts.
 
           ## Task
 
-          Analyze the clarified specification and create detailed technical planning documents that will guide implementation.
+          Analyze the clarified specification and create detailed technical planning documents.
 
           **Important**: Use the AskUserQuestion tool to ask structured questions when technology choices need user input.
 
-          **Critical**: This step produces planning documents, NOT implementation code. Do not write actual code - that happens in the implement step. You may include:
-          - API contracts (endpoints, request/response schemas)
-          - Data model schemas (tables, fields, relationships)
-          - Architecture diagrams (text-based)
-          - Technology selection rationale
-
-          Do NOT include:
-          - Actual implementation code (functions, classes, logic)
-          - Code snippets showing "how to implement" something
-          - Sample implementations or starter code
+          **Critical**: This step produces planning documents, NOT implementation code. You may include API contracts, data model schemas, architecture diagrams, and technology selection rationale. Do NOT include actual implementation code, code snippets, or sample implementations.
 
           ### Prerequisites
 
@@ -1301,19 +1263,6 @@ workflows:
           1. Summarize the architecture and key technology choices
           2. Highlight any decisions that required user input
           3. Tell the user to run `/spec_driven_development.tasks` to generate tasks
-
-          ## Quality Criteria
-
-          - Architecture clearly addresses all specification requirements
-          - Technology choices are justified with rationale
-          - Constitution principles are respected
-          - Data model is normalized and complete
-          - API contracts are well-defined
-          - Security considerations are addressed
-          - Research is documented
-          - Project architecture document reviewed and updated
-          - All planning documents created in correct location
-          - **No implementation code**: Documents contain schemas and contracts, not actual code
         inputs:
           docs_folder:
             required: false
@@ -1357,17 +1306,7 @@ workflows:
 
           Analyze the implementation plan and specification to generate a comprehensive task list organized by user story with proper dependency ordering.
 
-          **Critical**: This step produces a task breakdown, NOT implementation code. Task descriptions should specify:
-          - What files to create or modify
-          - What the file should accomplish
-          - Acceptance criteria for the task
-
-          Do NOT include:
-          - Actual code snippets or implementations
-          - "Here's how to implement this" examples
-          - Starter code or templates with real logic
-
-          The implement step is where code gets written. This step only plans the work.
+          **Critical**: This step produces a task breakdown, NOT implementation code. Task descriptions should specify what files to create/modify, what each file should accomplish, and acceptance criteria. Do NOT include actual code snippets or implementations.
 
           ### Prerequisites
 
@@ -1692,19 +1631,6 @@ workflows:
           2. Highlight parallelization opportunities
           3. Show the critical path
           4. Tell the user to run `/spec_driven_development.implement` to begin implementation
-
-          ## Quality Criteria
-
-          - Tasks are organized by user story
-          - Dependencies are correctly sequenced
-          - Parallel tasks are identified with [P]
-          - Each task specifies files to create/modify
-          - Tasks are appropriately sized
-          - Checkpoints exist between phases
-          - Testing tasks are included
-          - Critical path is identifiable
-          - File created in correct location
-          - **No implementation code**: Tasks describe what to build, not how to code it
         inputs:
           docs_folder:
             required: false
@@ -2093,17 +2019,6 @@ workflows:
           2. List all files created/modified
           3. Confirm all acceptance criteria are met
           4. Note any issues or follow-up items
-
-          ## Quality Criteria
-
-          - All prerequisite artifacts were validated before starting
-          - Tasks were executed in correct dependency order
-          - Checkpoints were validated before proceeding
-          - Code follows constitution guidelines
-          - Tests were written alongside implementation
-          - All acceptance criteria from spec are met
-          - Progress was tracked throughout
-          - Final report summarizes implementation
         inputs:
           docs_folder:
             required: false

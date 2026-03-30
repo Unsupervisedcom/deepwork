@@ -25,9 +25,12 @@ requirements:
     (e.g., "Analyze competitors and produce a positioning report"), not as a label
     (e.g., "Competitive Research").
 
-  step-arguments-complete: >
-    `step_arguments` MUST declare every piece of data that flows between steps. If a step
-    produces data consumed by a later step, that data MUST have a corresponding step_argument.
+  data-flow-complete: >
+    `step_arguments` MUST declare every piece of data that flows between steps. The
+    input/output chain across steps MUST form a logical data flow: each step's inputs
+    SHOULD reference outputs from earlier steps, and steps MUST NOT declare inputs that
+    no prior step produces (unless provided via start_workflow). If a step produces data
+    consumed by a later step, that data MUST have a corresponding step_argument.
 
   step-argument-descriptions-specific: >
     Each step_argument `description` MUST be specific enough for an agent to produce or
@@ -35,8 +38,10 @@ requirements:
     acceptable; "A YAML file" is not.
 
   type-selection: >
-    step_argument `type` MUST be `file_path` for artifacts that would be committed to Git
-    (reports, configs, code) and `string` for transient context (user answers, names, IDs).
+    step_argument `type` MUST be `file_path` for artifacts that will be committed to Git
+    or are too large for inline strings (reports, configs, code). Transient data consumed
+    only within the workflow (user answers, feedback, summaries, names, IDs) MUST use
+    `type: string`.
 
   common-job-info-present: >
     Workflows with more than one step SHOULD have `common_job_info_provided_to_all_steps_at_runtime`
@@ -52,18 +57,14 @@ requirements:
     the step without external guidance. Instructions SHOULD include: what to do, how to use
     inputs, and what good output looks like.
 
-  logical-data-flow: >
-    The input/output chain across steps MUST form a logical data flow. Each step's inputs
-    SHOULD reference outputs from earlier steps. Steps MUST NOT declare inputs that no
-    prior step produces (unless provided via start_workflow).
-
   every-step-has-output: >
     Every step SHOULD have at least one output. Steps that produce no outputs provide no
     reviewable artifacts and cannot pass data to subsequent steps.
 
   intermediate-outputs-path: >
-    Intermediate outputs not meant to be persisted SHOULD use `.deepwork/tmp/` paths in their
-    step_argument name. Final outputs SHOULD use descriptive names outside dot-directories.
+    File outputs not meant to be persisted long-term SHOULD use `.deepwork/tmp/` paths.
+    Final outputs SHOULD use descriptive names outside dot-directories. For transient
+    inter-step data, see `no-temporary-files-for-transient-data`.
 
   review-criteria-specific: >
     Review `instructions` MUST be specific and actionable. "Verify the YAML has at least
@@ -95,8 +96,47 @@ requirements:
 
   succinctness: >
     Job definitions MUST be succinct. Step instructions SHOULD contain only what the agent
-    needs to act — not philosophy, not quality criteria already enforced by the workflow
-    runtime, and not domain context already in common_job_info.
+    needs to act — not philosophy, and not quality criteria already enforced by the workflow
+    runtime.
+
+  prefer-deepschemas-for-file-validation: >
+    Step_argument `review` blocks and step `process_requirements` SHOULD only enforce
+    requirements that are process-related (e.g., "user MUST be consulted before proceeding")
+    or that apply to files too varied or ad-hoc for a reusable schema. If a step_argument
+    of type `file_path` produces files with a standardized, recurring structure (e.g.,
+    YAML configs, JSON schemas, markdown templates with a known format), the job author
+    SHOULD call `get_named_schemas` to check whether a DeepSchema already exists for
+    that file type, and if so, rely on it rather than encoding requirements in the job.yml
+    review block. If no schema exists and the file type would benefit from one, a
+    DeepSchema SHOULD be created. When a DeepSchema exists, the inline review block
+    MUST NOT duplicate its requirements and SHOULD focus only on workflow-specific
+    concerns the DeepSchema cannot know — e.g., "the report MUST address the specific
+    competitors identified in step 1."
+
+  use-go-to-step-not-duplication: >
+    If a later step's instructions substantially repeat behavior from an earlier step
+    (e.g., "revise the job.yml" repeating the same criteria as the "define" step),
+    the workflow SHOULD use `go_to_step` to revisit the earlier step instead of
+    duplicating its instructions. A step that exists only to re-do prior work with
+    minor tweaks MUST be replaced by navigating back to the original step with updated
+    inputs or context.
+
+  no-temporary-files-for-transient-data: >
+    Step arguments MUST NOT use `type: file_path` with `.deepwork/tmp/` paths for data
+    that is only consumed within the workflow and never committed to Git. Transient
+    inter-step data (summaries, feedback, user answers, test observations) MUST use
+    `type: string` instead. `file_path` is for artifacts that will be committed or
+    that are too large for inline strings. The existence of a `.deepwork/tmp/` path
+    in a step_argument name is a strong signal the argument should be `type: string`.
+
+  step-visibility-boundary: >
+    A step's instructions MUST NOT reference information from steps that have not yet
+    run in the same workflow, including steps from other workflows in the same job.
+    The executing agent only has access to outputs from earlier steps in the current
+    workflow execution. Instructions that say "as defined in the implement step" or
+    "use the output from the test step" are only valid if those steps precede the
+    current step in the same workflow. Cross-workflow references MUST use `sub_workflow`
+    or shared `step_arguments` — not prose references to another workflow's steps.
 
 examples:
   - path: "../../jobs/job.schema.json"

@@ -2,12 +2,18 @@
 
 You are reviewing a changeset to determine whether any new DeepWork review rules or DeepSchemas should be added to catch issues found in these changes going forward.
 
-## Two enforcement mechanisms
+## Three enforcement mechanisms
 
-1. **`.deepreview` rules** — review rules that run during `/review` and quality gates. Best for cross-file checks, process enforcement, and subjective quality criteria.
-2. **DeepSchemas** — rich file-level schemas (`.deepwork/schemas/<name>/deepschema.yml` for named, `.deepschema.<filename>.yml` for anonymous). Best for per-file structural requirements, JSON Schema validation, and bash verification commands. DeepSchemas automatically generate review rules AND provide write-time validation hooks.
+1. **`.deepreview` rules** — review rules that run during `/review` and quality gates. Best for requirements that apply broadly across many files of a type (e.g., "all prompts MUST use the terms X, Y, and Z") or cross-file consistency checks. Use these when the requirement is general and applies to a glob pattern of files.
 
-Use DeepSchemas when the issue is about a specific file type having structural or content requirements. Use `.deepreview` rules when the issue is about cross-file consistency, process adherence, or subjective review.
+2. **Named DeepSchemas** (`.deepwork/schemas/<name>/deepschema.yml`) — rich schemas for recurring file types matched by glob patterns. Best when a class of files shares structural or content requirements. Named DeepSchemas automatically generate review rules AND provide write-time validation.
+
+3. **Anonymous DeepSchemas** (`.deepschema.<filename>.yml`) — single-file schemas placed next to the file they govern. Best for requirements specific to one file's behavior or content (e.g., "the error message in situation X MUST include a suggestion for how to fix the problem"). These keep the requirement co-located with the implementation and provide both write-time validation and review-time checks.
+
+**Choosing between them:**
+- Requirement applies to many files matching a pattern → `.deepreview` rule or named DeepSchema
+- Requirement is about a specific file's content or behavior → anonymous DeepSchema
+- Requirement is about cross-file consistency or process → `.deepreview` rule
 
 ## Steps
 
@@ -19,7 +25,8 @@ Use DeepSchemas when the issue is about a specific file type having structural o
    - Did this change introduce a type of issue that a review rule or DeepSchema could catch?
    - Is there a pattern here that's likely to recur?
    - Would an existing rule benefit from a small scope expansion to cover a new file type?
-   - Is there a file type that would benefit from a DeepSchema (structural requirements, JSON Schema, or bash verification)?
+   - Is there a file type that would benefit from a named DeepSchema (structural requirements shared across many files)?
+   - Is there a specific file with behavioral or content requirements that would benefit from an anonymous DeepSchema placed next to it?
 
 4. **Write new rules or schemas directly**: For each rule you decide to create:
    - If it's a **new `.deepreview` rule**: add it to the appropriate `.deepreview` file with full YAML
