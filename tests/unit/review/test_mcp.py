@@ -40,7 +40,7 @@ class TestRunReview:
     def test_no_deepreview_files_returns_message(self, mock_load: Any, tmp_path: Path) -> None:
         mock_load.return_value = ([], [])
         result = run_review(tmp_path, "claude")
-        assert "No .deepreview configuration files found" in result
+        assert "No .deepreview configuration files" in result
 
     @patch("deepwork.review.mcp.get_changed_files")
     @patch("deepwork.review.mcp.load_all_rules")

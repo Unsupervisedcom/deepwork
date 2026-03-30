@@ -69,11 +69,19 @@ def run_review(
     # Step 1: Discover .deepreview files and parse rules
     rules, discovery_errors = load_all_rules(project_root)
 
+    # Step 1b: Discover DeepSchemas and generate synthetic rules
+    from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
+
+    schema_rules, schema_errors = gen_schema_rules(project_root)
+    rules.extend(schema_rules)
+    for err in schema_errors:
+        discovery_errors.append(DiscoveryError(file_path=Path(err.split(":")[0]), error=err))
+
     if not rules:
         if discovery_errors:
             warnings = _format_discovery_warnings(discovery_errors)
-            return f"No valid .deepreview rules found. Parse errors:\n{warnings}"
-        return "No .deepreview configuration files found."
+            return f"No valid review rules found. Parse errors:\n{warnings}"
+        return "No .deepreview configuration files or DeepSchema definitions found."
 
     # Step 2: Determine changed files
     if files is not None:
@@ -125,6 +133,12 @@ def get_configured_reviews(
         List of dicts with ``name``, ``description``, and ``defining_file``.
     """
     rules, errors = load_all_rules(project_root)
+
+    # Also include DeepSchema-generated rules
+    from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
+
+    schema_rules, _schema_errors = gen_schema_rules(project_root)
+    rules.extend(schema_rules)
 
     if only_rules_matching_files is not None:
         rules = [

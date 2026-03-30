@@ -40,6 +40,24 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post_commit_reminder.sh"
           }
         ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/deepschema_write.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/deepschema_write.sh"
+          }
+        ]
       }
     ]
   }

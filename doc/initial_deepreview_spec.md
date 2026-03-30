@@ -3,7 +3,7 @@ DeepWork Schemas (or DeepSchemas) are an enrichment of the DeepReview system whe
 
 ## Types of DeepSchemas
 1. `named` DeepSchemas are ones placed in `.deepwork/schemas/` or a similar schema registry. 
-2. `anonymous` DeepSchemas are ones that are declared in the normal file system alongside files they affect. These are specific to individual files, and have names of the format `.deepschema.<filename>` where `filename` is the file they apply to.
+2. `anonymous` DeepSchemas are ones that are declared in the normal file system alongside files they affect. These are specific to individual files, and have names of the format `.deepschema.<filename>.yml` where `filename` is the file they apply to.
 
 ## Named DeepSchemas
 Named DeepSchemas are directories where the final segment of the path is the name of the schema. The files inside the directories are then as follows:
@@ -12,6 +12,15 @@ Named DeepSchemas are directories where the final segment of the path is the nam
 * `references` - additional reference files relevant to the schema
 * `schema file with any name` - JSON Schema for the file or any other types of normal schemas go in the main directory. All optional
 
+### Named Schema Discovery Sources
+Named schemas are discovered from multiple directories in priority order. If the same schema name (directory name) appears in multiple sources, the first one wins.
+
+1. `<project_root>/.deepwork/schemas/` — project-local named schemas
+2. `<deepwork_package>/standard_schemas/` — built-in standard schemas shipped with DeepWork (analogous to `standard_jobs/`)
+3. `DEEPWORK_ADDITIONAL_SCHEMAS_FOLDERS` environment variable — colon-delimited list of absolute paths to additional directories containing named schema subdirectories
+
+This mirrors the job discovery system (`DEEPWORK_ADDITIONAL_JOBS_FOLDERS`).
+
 ## Anonymous DeepSchemas
 These have only the single file. That file is the same format as the `deepschema.yml` file in the named DeepSchemas.
 
@@ -19,7 +28,7 @@ These have only the single file. That file is the same format as the `deepschema
 ### deepschema.yml
 These yaml files have the following keys. They are all usable in both anonymous and named DeepSchemas, but we separate them below into the ones that are common in both and ones mostly relevant to Named ones.
 1. Common to Both
-	1. `requirements` - object where the keys are names and the bodies are descriptions of the requirements that a good document meets. These use RFC 2119 words that guide the reviews; MUST, SHOULD, etc. This is the same format / type as `process_quality_attributes` in DeepWork Jobs which needs to be updated to be called `process_requirements`
+	1. `requirements` - object where the keys are names and the bodies are descriptions of the requirements that a good document meets. These use RFC 2119 words that guide the reviews; MUST, SHOULD, etc. This is the same format / type as `process_requirements` in DeepWork Jobs
 	2. `parent_deep_schemas` - array of the names of other schemas that apply to anything this applies to.
 		1. Mostly used in anonymous DeepSchemas to reference in a named DeepSchema when needed
 	3. `json_schema_path` - relative path to a JSON schema file to enforce
@@ -31,10 +40,10 @@ These yaml files have the following keys. They are all usable in both anonymous 
 6. `matchers` - a declaration of file patterns that the schema applies to. This is an array of glob patterns
 
 ## Behavior
-1. There must be a concept of "applicable schemas" for a given file. This should be computed using a reusable method. It should match any named schemas that have matchers that match up with a given file, or anonymous schemas named appropriately for that file
-2. Whenever a file is read by an agent, there must be a message sent to the agent after the read that says "Note: this file must confirm to the DeepSchema at <project relative path/>"
-3. Whenever a file is written by an agent, the `verification_bash_command` must be executed automatically. If it fails, then a message must be returned to the agent saying "CRITICAL: DeepSchema validation failed when it tried to verify this change. Error: <stdout + stderr from the failed command/>"
+1. There must be a concept of "applicable schemas" for a given file. This should be computed using a reusable method. It should match any named schemas that have matchers that match up with a given file, or anonymous schemas named `.deepschema.<filename>.yml` for that file
+2. Whenever a file is written by an agent (PostToolUse on Write/Edit), a conformance note must be sent: "Note: this file must conform to the DeepSchema at <project relative path/>". Additionally, the `verification_bash_command` must be executed automatically. If it fails, then a message must be returned to the agent saying "CRITICAL: DeepSchema validation failed when it tried to verify this change. Error: <stdout + stderr from the failed command/>"
 	1. If there was a `json_schema_path`, then it must also generate a similar message if the file does not conform to the schema
+	2. No read hook is used — schema awareness is delivered via the write hook to avoid per-read latency
 4. DeepReview must be modified so that there are "reviews" generated for every type definition. 
 	1. These should have the relevant deepschema.yml used as the origin file.
 	2. They should all be single-file-at-a-time reviews

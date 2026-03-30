@@ -1,0 +1,90 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "DeepSchema Definition",
+    "description": "Schema for deepschema.yml files used to define file-level schemas with requirements, validation, and review generation.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "requirements": {
+            "type": "object",
+            "description": "RFC 2119 keyed requirements. Keys are requirement names, values are descriptions using MUST, SHOULD, etc.",
+            "patternProperties": {
+                "^[a-zA-Z0-9_-]+$": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "parent_deep_schemas": {
+            "type": "array",
+            "description": "Names of parent DeepSchemas whose requirements are inherited.",
+            "items": {
+                "type": "string"
+            }
+        },
+        "json_schema_path": {
+            "type": "string",
+            "description": "Relative path to a JSON Schema file to enforce on matched files."
+        },
+        "verification_bash_command": {
+            "type": "array",
+            "description": "Bash commands to run on the file for verification. Each string is a separate command.",
+            "items": {
+                "type": "string"
+            }
+        },
+        "summary": {
+            "type": "string",
+            "description": "High-level summary of the schema type. Used for search/discovery."
+        },
+        "instructions": {
+            "type": "string",
+            "description": "General instructions for dealing with files of this type."
+        },
+        "examples": {
+            "type": "array",
+            "description": "Example files of this type done well.",
+            "items": {
+                "type": "object",
+                "required": ["path", "description"],
+                "additionalProperties": false,
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Relative path from the definition file to the example."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of what makes this a good example."
+                    }
+                }
+            }
+        },
+        "references": {
+            "type": "array",
+            "description": "Reference files or URLs for detailed guidance.",
+            "items": {
+                "type": "object",
+                "required": ["path", "description"],
+                "additionalProperties": false,
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Relative path or URL to the reference."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of what this reference covers."
+                    }
+                }
+            }
+        },
+        "matchers": {
+            "type": "array",
+            "description": "Glob patterns declaring which files this schema applies to.",
+            "items": {
+                "type": "string"
+            }
+        }
+    }
+}
