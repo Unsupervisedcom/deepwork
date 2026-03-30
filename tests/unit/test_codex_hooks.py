@@ -43,11 +43,7 @@ class TestCodexHookSetup:
 
         assert changed is True
         assert config_path.read_text(encoding="utf-8") == (
-            "[features]\n"
-            "codex_hooks = true\n"
-            "\n"
-            "[features.experimental]\n"
-            "fast_mode = true\n"
+            "[features]\ncodex_hooks = true\n\n[features.experimental]\nfast_mode = true\n"
         )
 
     def test_merges_hooks_without_duplicates(self, tmp_path: Path) -> None:
