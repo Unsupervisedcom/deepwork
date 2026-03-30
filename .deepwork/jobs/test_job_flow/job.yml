@@ -16,24 +16,11 @@ step_arguments:
 
   - name: friction_report
     description: "Report documenting friction points encountered during the sub-agent job creation process, with specific transcript references and actionable observations"
-    type: file_path
-    review:
-      strategy: individual
-      instructions: |
-        Verify the friction report references specific events from the sub-agent's transcript
-        (not generic observations). Each friction point MUST be concrete enough that a developer
-        could act on it — including what step it occurred in, what happened, and what the impact was.
+    type: string
 
   - name: recommendations
     description: "Actionable engineering recommendations for reducing job creation friction, mapped to specific friction points"
-    type: file_path
-    review:
-      strategy: individual
-      instructions: |
-        Read the .deepwork/tmp/job_creation_friction.md file to verify recommendations address
-        the documented friction points. Each recommendation MUST clearly map to a friction point.
-        Recommendations MUST be specific enough to implement (pointing to files/code/workflow changes)
-        and technically feasible given the DeepWork architecture.
+    type: string
 
 workflows:
   run:
@@ -112,7 +99,7 @@ workflows:
           4. **Clean up**: Delete `.deepwork/jobs/detailed_test_review/` — it was only
              created to exercise the pipeline.
 
-          5. **Write friction report** to `.deepwork/tmp/job_creation_friction.md` with:
+          5. **Compose friction report** as a string output with:
              - Summary of how the process went
              - Completion status per workflow step
              - Each friction point with: step, what happened, impact, workaround, potential fix
@@ -132,7 +119,7 @@ workflows:
 
           ## Task
 
-          1. **Read** `.deepwork/tmp/job_creation_friction.md` and categorize each friction
+          1. **Review the friction report** (provided as input) and categorize each friction
              point by type (error, UX, missing feature, documentation gap, etc.)
 
           2. **Investigate the new_job workflow**: Read the workflow definition and step
@@ -144,8 +131,8 @@ workflows:
           4. **Develop recommendations**: For each friction point, propose changes with:
              specific file(s), why it helps, effort estimate (Small/Medium/Large), and risk.
 
-          5. **Write** `.deepwork/tmp/improvement_recommendations.md` with recommendations
-             prioritized by impact-to-effort ratio, grouped into quick wins vs larger investments.
+          5. **Compose recommendations** as a string output, prioritized by impact-to-effort
+             ratio, grouped into quick wins vs larger investments.
         inputs:
           friction_report: {}
         outputs:

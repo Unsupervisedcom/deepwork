@@ -78,10 +78,11 @@ workflows:
       confusion or inefficiencies, and improves job instructions. It also captures bespoke
       learnings specific to the current run into AGENTS.md files in the working folder.
 
-      ## Job Schema (CRITICAL)
+      ## Job Schema Reference
 
-      See `steps/supplemental_file_references.md` for the job schema reference. The authoritative
-      JSON schema is at `.deepwork/job.schema.json` — always read it before creating or editing job.yml files.
+      See `steps/supplemental_file_references.md` for available job.yml fields and structure.
+      The JSON schema at `.deepwork/job.schema.json` documents the format — DeepSchema quality
+      gates validate job.yml files automatically, so manual validation is not needed.
     steps:
       - name: define
         instructions: |
@@ -1118,10 +1119,11 @@ workflows:
       2. **Fix Jobs**: Migrate job.yml files to the current format
       3. **Errata**: Remove obsolete files and folders
 
-      ## Job Schema (CRITICAL)
+      ## Job Schema Reference
 
-      See `steps/supplemental_file_references.md` for the job schema reference. The authoritative
-      JSON schema is at `.deepwork/job.schema.json` — always read it before creating or editing job.yml files.
+      See `steps/supplemental_file_references.md` for available job.yml fields and structure.
+      The JSON schema at `.deepwork/job.schema.json` documents the format — DeepSchema quality
+      gates validate job.yml files automatically, so manual validation is not needed.
     steps:
       - name: fix_settings
         instructions: |
@@ -1678,10 +1680,11 @@ workflows:
       confusion or inefficiencies, and improves job instructions. It also captures bespoke
       learnings specific to the current run into AGENTS.md files in the working folder.
 
-      ## Job Schema (CRITICAL)
+      ## Job Schema Reference
 
-      See `steps/supplemental_file_references.md` for the job schema reference. The authoritative
-      JSON schema is at `.deepwork/job.schema.json` — always read it before creating or editing job.yml files.
+      See `steps/supplemental_file_references.md` for available job.yml fields and structure.
+      The JSON schema at `.deepwork/job.schema.json` documents the format — DeepSchema quality
+      gates validate job.yml files automatically, so manual validation is not needed.
     steps:
       - name: learn
         instructions: |
