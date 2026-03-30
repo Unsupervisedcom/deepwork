@@ -1462,6 +1462,7 @@ workflows:
           1. **Preserve custom logic** - When migrating, preserve the intent of instructions and reviews
           2. **Test after changes** - Validate YAML syntax after each job fix to catch errors early
           3. **Read step files** - When inlining instructions, read the full content of the referenced .md file
+          4. **Delete orphaned step files** - After inlining all instructions into job.yml, delete the step .md files that were referenced by `instructions_file`. These are now dead weight since the content lives in job.yml. Do NOT delete step files that are still referenced by inline instructions as supplemental references.
         inputs:
           settings.json:
             required: true
@@ -1475,6 +1476,7 @@ workflows:
           "No Legacy Fields": "No job.yml MUST contain version, root-level steps[], instructions_file, hooks, dependencies, or exposed/hidden fields."
           "Reviews Migrated": "Old review formats MUST be converted to output-level review blocks or process_requirements."
           "Instructions Inlined": "All step instructions MUST be inlined in the job.yml — no instructions_file references SHOULD remain."
+          "Orphaned Step Files Removed": "Step .md files that were referenced by `instructions_file` and have been inlined MUST be deleted from the steps/ directory."
           "Jobs Parse Successfully": "Calling `get_workflows` from the Deepwork tool MUST show all expected jobs."
 
       - name: errata
