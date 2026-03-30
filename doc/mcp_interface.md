@@ -10,7 +10,7 @@ This document describes the Model Context Protocol (MCP) tools exposed by the De
 
 ## Tools
 
-DeepWork exposes eight MCP tools:
+DeepWork exposes nine MCP tools:
 
 ### 1. `get_workflows`
 
@@ -180,7 +180,7 @@ Navigate back to a prior step in the current workflow. Clears all progress from 
 
 ### 6. `get_review_instructions`
 
-Run a review of changed files based on `.deepreview` configuration files. Returns a list of review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields for the Task tool.
+Run a review of changed files based on `.deepreview` configuration files and DeepSchema-generated synthetic review rules. Returns a list of review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields for the Task tool.
 
 This tool operates outside the workflow lifecycle — it can be called independently at any time.
 
@@ -200,7 +200,7 @@ A plain string with one of:
 
 ### 7. `get_configured_reviews`
 
-List all configured review rules from `.deepreview` files. Returns each rule's name, description, and defining file location. Optionally filters to rules matching specific files.
+List all configured review rules from `.deepreview` files and DeepSchema-generated synthetic rules. Returns each rule's name, description, and defining file location. Optionally filters to rules matching specific files.
 
 This tool operates outside the workflow lifecycle — it can be called independently at any time.
 
@@ -239,6 +239,26 @@ This tool operates outside the workflow lifecycle — it can be called independe
 A plain string with either:
 - A confirmation message (e.g., `"Review 'rule--file--hash' marked as passed."`)
 - A validation error if `review_id` is empty or contains path traversal
+
+---
+
+### 9. `get_named_schemas`
+
+List all named DeepSchemas discovered across all schema sources (project-local, standard, and env var). Returns each schema's name, summary, and matcher patterns.
+
+#### Parameters
+
+None.
+
+#### Returns
+
+```typescript
+Array<{
+  name: string;      // Schema name (directory name)
+  summary: string;   // Brief description of the schema (empty string if not set)
+  matchers: string[]; // Glob patterns this schema applies to
+}>
+```
 
 ---
 
@@ -321,7 +341,7 @@ Steps may define quality reviews that outputs must pass. When `finished_step` is
 
 1. JSON schema validation runs first (if any outputs have `json_schema` defined)
 2. Dynamic review rules are built from step output `review` blocks and `process_requirements`
-3. `.deepreview` rules are also loaded and matched against output files
+3. `.deepreview` rules and DeepSchema-generated synthetic review rules are also loaded and matched against output files
 4. If any reviews are needed, `status = "needs_work"` with review instructions
 5. If all reviews pass (or no reviews defined), workflow advances
 6. There is no maximum attempt limit — the agent can retry `finished_step` indefinitely

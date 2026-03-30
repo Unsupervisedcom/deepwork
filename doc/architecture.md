@@ -61,11 +61,20 @@ deepwork/                       # DeepWork tool repository
 │       │       └── status.py       # Status file writer for external consumers
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── wrapper.py      # Cross-platform input/output normalization
+│       │   ├── deepschema_write.py # DeepSchema write-time validation hook
 │       │   ├── claude_hook.sh  # Shell wrapper for Claude Code
 │       │   └── gemini_hook.sh  # Shell wrapper for Gemini CLI
+│       ├── deepschema/         # DeepSchema subsystem
+│       │   ├── config.py       # DeepSchema config parsing
+│       │   ├── discovery.py    # Find DeepSchema files in project tree
+│       │   ├── matcher.py      # Match files against DeepSchema rules
+│       │   ├── resolver.py     # Resolve DeepSchema definitions
+│       │   ├── review_bridge.py # Generate synthetic review rules from DeepSchemas
+│       │   └── schema.py       # DeepSchema data models
 │       ├── standard_jobs/      # Built-in job definitions
 │       │   ├── deepwork_jobs/
 │       │   └── deepwork_reviews/
+│       ├── standard_schemas/   # Built-in DeepSchema definitions
 │       ├── review/             # DeepWork Reviews system
 │       │   ├── config.py       # .deepreview config parsing + data models
 │       │   ├── discovery.py    # Find .deepreview files in project tree
@@ -76,6 +85,7 @@ deepwork/                       # DeepWork tool repository
 │       │   └── schema.py       # JSON schema loader
 │       ├── schemas/            # Definition schemas
 │       │   ├── deepreview_schema.json
+│       │   ├── deepschema_schema.json
 │       │   └── doc_spec_schema.py
 │       └── utils/
 │           ├── fs.py
@@ -94,8 +104,9 @@ deepwork/                       # DeepWork tool repository
 │   │   ├── skills/
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── review/SKILL.md
-│   │   │   └── configure_reviews/SKILL.md
-│   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh
+│   │   │   ├── configure_reviews/SKILL.md
+│   │   │   └── deepschema/SKILL.md
+│   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
 │   │   └── .mcp.json           # MCP server config
 │   └── gemini/                 # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md
@@ -141,6 +152,7 @@ deepwork review --instructions-for claude
 
 The review command:
 - Discovers `.deepreview` files throughout the project tree
+- Discovers DeepSchemas and generates synthetic review rules from them
 - Detects changed files via `git diff` against the default branch, plus untracked files via `git ls-files`
 - Matches changed files against rules using include/exclude glob patterns
 - Groups files by review strategy (`individual`, `matches_together`, `all_changed_files`)
@@ -807,7 +819,7 @@ All MCP server code lives in `src/deepwork/jobs/mcp/`.
 
 The FastMCP server definition that:
 - Creates and configures the MCP server instance
-- Registers the workflow tools and review tools (`get_review_instructions`, `get_configured_reviews`, `mark_review_as_passed`)
+- Registers the workflow tools, review tools (`get_review_instructions`, `get_configured_reviews`, `mark_review_as_passed`), and DeepSchema tools (`get_named_schemas`)
 - Detects job definition issues at startup via `issues.py` and appends warnings to tool responses
 - Provides server instructions for agents
 
@@ -902,6 +914,13 @@ Marks a review as passed so it is skipped on subsequent runs while the reviewed 
 - `review_id: str` - The deterministic review ID from the instruction file's "After Review" section.
 
 **Returns**: Confirmation string or validation error.
+
+#### 9. `get_named_schemas`
+Lists all named DeepSchemas discovered across all schema sources (project-local, standard, and env var). Returns each schema's name, summary, and matcher patterns.
+
+**Parameters**: None.
+
+**Returns**: List of `{name, summary, matchers}` dicts.
 
 ### Review Pass Caching
 

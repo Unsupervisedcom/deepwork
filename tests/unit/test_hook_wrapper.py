@@ -292,16 +292,18 @@ class TestHookOutput:
         assert result["hookSpecificOutput"]["hookEventName"] == "SessionStart"
         assert result["hookSpecificOutput"]["additionalContext"] == "Additional context here"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.6.2).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_context_for_claude_other_events(self) -> None:
-        """Test context handling for Claude non-SessionStart events."""
+        """Test context handling for Claude non-SessionStart events uses additionalContext."""
         output = HookOutput(context="Warning message")
         result = output.to_dict(Platform.CLAUDE, NormalizedEvent.AFTER_AGENT)
 
-        assert result["systemMessage"] == "Warning message"
+        assert "hookSpecificOutput" in result
+        assert result["hookSpecificOutput"]["additionalContext"] == "Warning message"
+        assert result["hookSpecificOutput"]["hookEventName"] == "Stop"
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.6.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.6.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_context_for_gemini(self) -> None:
         """Test context handling for Gemini."""

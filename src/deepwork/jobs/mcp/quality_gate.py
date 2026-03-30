@@ -11,6 +11,7 @@ import json
 import logging
 from pathlib import Path
 
+from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
 from deepwork.jobs.mcp.schemas import ArgumentValue
 from deepwork.jobs.parser import (
     JobDefinition,
@@ -319,6 +320,10 @@ def run_quality_gate(
 
     # 3. Load .deepreview rules
     deepreview_rules, _errors = load_all_rules(project_root)
+
+    # 3b. Load DeepSchema-generated review rules
+    schema_rules, _schema_errors = gen_schema_rules(project_root)
+    deepreview_rules.extend(schema_rules)
 
     # 4. Get the "changed files" list = output file paths
     output_files = _collect_output_file_paths(outputs, job)

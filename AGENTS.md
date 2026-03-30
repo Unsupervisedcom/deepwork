@@ -193,12 +193,14 @@ deepwork/
 │   ├── core/             # Core logic (doc_spec_parser)
 │   ├── jobs/             # Job discovery, parsing, schema, and MCP server
 │   │   └── mcp/          # MCP server module (the core runtime)
+│   ├── deepschema/       # DeepSchema subsystem (config, discovery, matcher, resolver, review_bridge, schema)
 │   ├── hooks/            # Hook scripts and wrappers
 │   ├── standard_jobs/    # Built-in job definitions (auto-discovered at runtime)
 │   │   ├── deepwork_jobs/
 │   │   └── deepwork_reviews/
+│   ├── standard_schemas/ # Built-in DeepSchema definitions
 │   ├── review/           # DeepWork Reviews system (.deepreview pipeline)
-│   ├── schemas/          # Definition schemas (deepreview, doc_spec)
+│   ├── schemas/          # Definition schemas (deepreview, deepschema, doc_spec)
 │   └── utils/            # Utilities (fs, git, yaml, validation)
 ├── platform/             # Shared platform-agnostic content
 │   └── skill-body.md     # Canonical skill body (source of truth)
@@ -210,8 +212,9 @@ deepwork/
 │   │   ├── skills/
 │   │   │   ├── configure_reviews/SKILL.md
 │   │   │   ├── deepwork/SKILL.md
+│   │   │   ├── deepschema/SKILL.md
 │   │   │   └── review/SKILL.md
-│   │   ├── hooks/        # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh
+│   │   ├── hooks/        # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
 │   │   └── .mcp.json     # MCP server config
 │   └── gemini/           # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md

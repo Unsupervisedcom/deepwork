@@ -1,0 +1,49 @@
+hook_output_routing:
+  description: "Ensure hooks route output to the agent via additionalContext, not systemMessage (DW-REQ-006.6)."
+  match:
+    include:
+      - "src/deepwork/hooks/**/*.py"
+      - "plugins/**/hooks/**"
+    exclude:
+      - "**/__pycache__/**"
+  review:
+    strategy: individual
+    instructions: |
+      Review this hook file for correct output routing.
+
+      Claude Code hooks have two output channels with very different behavior:
+      - `hookSpecificOutput.additionalContext` — injected into the agent's
+        conversation context. The agent (Claude) sees this and can act on it.
+      - `systemMessage` — displayed to the human user in the terminal only.
+        The agent NEVER sees this.
+
+      For any hook that produces output the agent needs to act on (validation
+      errors, conformance notes, schema warnings, etc.), the output MUST be
+      routed via `additionalContext`, not `systemMessage`.
+
+      In the Python wrapper system (`hooks/wrapper.py`), the `HookOutput.context`
+      field maps to `hookSpecificOutput.additionalContext` on all platforms.
+      Shell hooks that bypass the wrapper must emit the correct JSON directly:
+
+      ```json
+      {
+        "hookSpecificOutput": {
+          "hookEventName": "<event>",
+          "additionalContext": "<message for agent>"
+        }
+      }
+      ```
+
+      Check for:
+      - Any use of `systemMessage` in hook output — this is almost always wrong
+        unless the message is intentionally user-only (not agent-visible).
+      - Shell hooks that print plain text to stdout instead of JSON — the agent
+        will not see this.
+      - Hooks that set `HookOutput.context` correctly (this is the right pattern).
+      - PostToolUse hooks that report validation errors — these MUST use the
+        additionalContext route so the agent can fix the issue.
+
+      Output Format:
+      - PASS: Hook output is correctly routed to the agent.
+      - FAIL: Hook output uses systemMessage or plain stdout where the agent
+        needs to see it. List each instance with file, line, and fix.

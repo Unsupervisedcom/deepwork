@@ -243,25 +243,12 @@ class HookOutput:
         if self.suppress_output:
             result["suppressOutput"] = True
 
-        # Handle context (platform-specific)
+        # Handle context — route to agent via hookSpecificOutput.additionalContext
         if self.context:
-            if platform == Platform.CLAUDE:
-                # Claude uses different fields depending on event
-                if event == NormalizedEvent.SESSION_START:
-                    result.setdefault("hookSpecificOutput", {})
-                    result["hookSpecificOutput"]["hookEventName"] = NORMALIZED_TO_EVENT[platform][
-                        event
-                    ]
-                    result["hookSpecificOutput"]["additionalContext"] = self.context
-                else:
-                    result["systemMessage"] = self.context
-            else:
-                # Gemini
-                result.setdefault("hookSpecificOutput", {})
-                result["hookSpecificOutput"]["hookEventName"] = NORMALIZED_TO_EVENT[platform].get(
-                    event, str(event)
-                )
-                result["hookSpecificOutput"]["additionalContext"] = self.context
+            platform_event = NORMALIZED_TO_EVENT.get(platform, {}).get(event, str(event))
+            result.setdefault("hookSpecificOutput", {})
+            result["hookSpecificOutput"]["hookEventName"] = platform_event
+            result["hookSpecificOutput"]["additionalContext"] = self.context
 
         # Merge any raw output
         for key, value in self.raw_output.items():

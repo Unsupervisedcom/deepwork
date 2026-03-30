@@ -1,0 +1,115 @@
+summary: "Schema for DeepWork job.yml files that define multi-step AI agent workflows."
+
+instructions: |
+  job.yml files define multi-step workflows executed by AI agents. Each job has a shared
+  data vocabulary (step_arguments), one or more named workflows, and steps with explicit
+  input/output data flow. The JSON schema enforces structure; these requirements enforce
+  quality and coherence that structural validation cannot catch.
+
+  Key concepts:
+  - step_arguments are the data bus — every piece of data flowing between steps is declared here
+  - Workflows are the execution unit — agents start workflows, not steps
+  - common_job_info is prepended to every step AND every review prompt automatically
+  - Reviews cascade from three sources: step output review, step_argument review, .deepreview rules
+
+json_schema_path: "job.schema.json"
+
+matchers:
+  - ".deepwork/jobs/*/job.yml"
+  - "src/deepwork/standard_jobs/*/job.yml"
+  - "library/jobs/*/job.yml"
+
+requirements:
+  actionable-summary: >
+    The job `summary` MUST be written as an action describing what the job accomplishes
+    (e.g., "Analyze competitors and produce a positioning report"), not as a label
+    (e.g., "Competitive Research").
+
+  step-arguments-complete: >
+    `step_arguments` MUST declare every piece of data that flows between steps. If a step
+    produces data consumed by a later step, that data MUST have a corresponding step_argument.
+
+  step-argument-descriptions-specific: >
+    Each step_argument `description` MUST be specific enough for an agent to produce or
+    consume the data without ambiguity. "The job.yml definition file for the new job" is
+    acceptable; "A YAML file" is not.
+
+  type-selection: >
+    step_argument `type` MUST be `file_path` for artifacts that would be committed to Git
+    (reports, configs, code) and `string` for transient context (user answers, names, IDs).
+
+  common-job-info-present: >
+    Workflows with more than one step SHOULD have `common_job_info_provided_to_all_steps_at_runtime`
+    providing shared context (problem domain, terminology, conventions, constraints) so that
+    step instructions and review prompts do not need to repeat it.
+
+  no-duplicated-context: >
+    Step instructions MUST NOT duplicate content already in `common_job_info_provided_to_all_steps_at_runtime`.
+    Content needed by multiple steps but not all SHOULD be in a referenced file, not copy-pasted.
+
+  step-instructions-complete: >
+    Each step with inline `instructions` MUST provide enough detail for an agent to execute
+    the step without external guidance. Instructions SHOULD include: what to do, how to use
+    inputs, and what good output looks like.
+
+  logical-data-flow: >
+    The input/output chain across steps MUST form a logical data flow. Each step's inputs
+    SHOULD reference outputs from earlier steps. Steps MUST NOT declare inputs that no
+    prior step produces (unless provided via start_workflow).
+
+  every-step-has-output: >
+    Every step SHOULD have at least one output. Steps that produce no outputs provide no
+    reviewable artifacts and cannot pass data to subsequent steps.
+
+  intermediate-outputs-path: >
+    Intermediate outputs not meant to be persisted SHOULD use `.deepwork/tmp/` paths in their
+    step_argument name. Final outputs SHOULD use descriptive names outside dot-directories.
+
+  review-criteria-specific: >
+    Review `instructions` MUST be specific and actionable. "Verify the YAML has at least
+    3 steps and each step has both inputs and outputs" is acceptable; "Check if it looks good"
+    is not. Vague criteria lead to inconsistent reviews.
+
+  review-criteria-pragmatic: >
+    Review criteria MUST be pragmatic — criteria that cannot apply to a given output SHOULD
+    auto-pass rather than fail. Avoid criteria that penalize steps for not doing things
+    outside their scope.
+
+  review-no-redundant-context: >
+    Review `instructions` MUST NOT repeat domain context already in `common_job_info` since
+    the framework automatically prepends it to review prompts.
+
+  process-requirements-rfc2119: >
+    `process_requirements` values MUST use RFC 2119 keywords (MUST, SHOULD, MAY, SHALL,
+    RECOMMENDED). These are evaluated against the agent's work_summary, so they MUST
+    describe process expectations, not output format.
+
+  workflow-summary-actionable: >
+    Each workflow `summary` MUST be concise (under 200 characters) and describe what the
+    workflow accomplishes, helping agents pick the right workflow when a job has multiple.
+
+  sub-workflow-coherence: >
+    Steps using `sub_workflow` MUST NOT also have `instructions`. Cross-job sub_workflow
+    references (with `workflow_job`) SHOULD only be used when the target job is expected
+    to be available at runtime.
+
+  succinctness: >
+    Job definitions MUST be succinct. Step instructions SHOULD contain only what the agent
+    needs to act — not philosophy, not quality criteria already enforced by the workflow
+    runtime, and not domain context already in common_job_info.
+
+examples:
+  - path: "../../jobs/job.schema.json"
+    description: "The authoritative JSON Schema — defines all valid structural forms."
+  - path: "../../standard_jobs/deepwork_jobs/templates/job.yml.example"
+    description: "Complete competitive research job showing step_arguments, workflows, reviews, and data flow."
+  - path: "../../standard_jobs/deepwork_jobs/templates/job.yml.template"
+    description: "Canonical template showing all supported fields with placeholder comments."
+
+references:
+  - path: "../../../doc/job_yml_guidance.md"
+    description: "Behavioral impact of every job.yml field — what each field does at runtime."
+  - path: "../../standard_jobs/deepwork_jobs/templates/step_instruction.md.template"
+    description: "Expected structure for step instruction files (Objective, Task, Output Format, Quality Criteria)."
+  - path: "../../standard_jobs/deepwork_jobs/research_report_job_best_practices.md"
+    description: "Design patterns for report-authoring jobs (five-phase pattern, dataroom convention)."
