@@ -16,6 +16,8 @@ This walks you through configuring `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` so the Dee
 
 | Job | Description |
 |-----|-------------|
+| [Engineer](./engineer) | Domain-agnostic engineering execution from product issue through PR merge and product sync, with TDD discipline |
+| [Mech Engineer](./mech_engineer) | Design mechanical assemblies and parts with OTS sourcing, manufacturing method recommendations, BOM generation, and multi-scale production evaluation |
 | [Research](./research) | Multi-workflow research suite — deep investigation, quick summaries, material ingestion, and reproduction planning |
 | [Platform Engineer](./platform_engineer) | Incident response, observability, CI/CD, releases, security, cost management, and infrastructure |
 | [Repo](./repo) | Audit and configure repositories — labels, branch protection, milestones, and boards |
@@ -68,6 +70,15 @@ Each job in this library follows the same structure as the `.deepwork/jobs` subf
 library/jobs/
 ├── .deepreview              # Review rules for library job quality
 ├── README.md
+├── engineer/                # Domain-agnostic engineering execution (TDD, PR lifecycle)
+│   ├── job.yml
+│   ├── AGENTS.md
+│   ├── requirements.md
+│   └── steps/
+├── mech_engineer/           # Mechanical assembly and part design workflows
+│   ├── job.yml
+│   ├── AGENTS.md
+│   └── steps/
 ├── platform_engineer/       # Platform engineering workflows
 │   ├── job.yml
 │   ├── AGENTS.md            # Agent context and learnings

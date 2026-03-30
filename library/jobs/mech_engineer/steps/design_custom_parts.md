@@ -26,7 +26,7 @@ Read the assembly requirements and OTS component list to identify every sub-func
 
 ## Output Format
 
-### .deepwork/tmp/custom_parts_plan.md
+### .deepwork/tmp/custom_parts_plan.md and mech_design/{project_name}/custom_parts_plan.md
 
 ```markdown
 # Custom Parts Plan: [project_name]
