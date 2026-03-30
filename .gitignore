@@ -67,6 +67,9 @@ dmypy.json
 *~
 .DS_Store
 
+# Claude Code
+.claude/worktrees/
+
 # direnv
 .direnv/
 
