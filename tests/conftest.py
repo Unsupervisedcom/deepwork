@@ -3,6 +3,7 @@
 import tempfile
 from collections.abc import Iterator
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from git import Repo
@@ -48,3 +49,17 @@ def complex_job_fixture(fixtures_dir: Path) -> Path:
 def invalid_job_fixture(fixtures_dir: Path) -> Path:
     """Return the path to the invalid job fixture."""
     return fixtures_dir / "jobs" / "invalid_job" / "job.yml"
+
+
+@pytest.fixture
+def without_standard_schemas() -> Iterator[None]:
+    """Patch out built-in standard schemas so tests only see schemas they create.
+
+    Use this in any test that needs a clean schema environment without the
+    standard schemas shipped with DeepWork interfering with assertions.
+    """
+    with patch(
+        "deepwork.deepschema.discovery._STANDARD_SCHEMAS_DIR",
+        Path("/nonexistent/no_standard_schemas"),
+    ):
+        yield

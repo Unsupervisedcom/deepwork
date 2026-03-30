@@ -1,0 +1,23 @@
+summary: DeepSchema definition files that describe file-level schemas with requirements, validation, and review generation.
+
+instructions: |
+  DeepSchema files define rich schemas for other files. Named schemas live in
+  .deepwork/schemas/<name>/deepschema.yml. Anonymous schemas are placed alongside
+  their target file as .deepschema.<filename>.yml. All keys are optional but
+  a schema without requirements or matchers has no enforcement effect.
+
+matchers:
+  - ".deepwork/schemas/*/deepschema.yml"
+  - "**/.deepschema.*.yml"
+
+json_schema_path: "deepschema_schema.json"
+
+requirements:
+  requirements-use-rfc-2119: "Requirements MUST use RFC 2119 keywords (MUST, SHOULD, MAY, etc.) to indicate enforcement level."
+  matchers-for-named: "Named DeepSchemas SHOULD include matchers so they can match files for review generation."
+  summary-for-named: "Named DeepSchemas SHOULD include a summary for discoverability."
+  valid-parent-refs: "Any schema listed in parent_deep_schemas MUST reference an existing named schema."
+  verification-commands-safe: "Commands in verification_bash_command MUST NOT modify the file or have destructive side effects."
+  json-schema-path-valid: "If json_schema_path is set, it MUST point to a valid JSON Schema file relative to the schema directory."
+  examples-have-descriptions: "Each entry in examples SHOULD have both a path and a description."
+  references-have-descriptions: "Each entry in references SHOULD have both a path and a description."

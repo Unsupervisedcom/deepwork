@@ -63,11 +63,13 @@ class TestDeepschemaWriteHook:
         json_schema = tmp_path / ".deepwork" / "schemas" / "json_test" / "test.schema.json"
         json_schema.parent.mkdir(parents=True)
         json_schema.write_text(
-            json.dumps({
-                "type": "object",
-                "required": ["name"],
-                "properties": {"name": {"type": "string"}},
-            }),
+            json.dumps(
+                {
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {"name": {"type": "string"}},
+                }
+            ),
             encoding="utf-8",
         )
         # Create schema referencing the JSON Schema
@@ -88,11 +90,13 @@ class TestDeepschemaWriteHook:
         json_schema = tmp_path / ".deepwork" / "schemas" / "json_test" / "test.schema.json"
         json_schema.parent.mkdir(parents=True)
         json_schema.write_text(
-            json.dumps({
-                "type": "object",
-                "required": ["name"],
-                "properties": {"name": {"type": "string"}},
-            }),
+            json.dumps(
+                {
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {"name": {"type": "string"}},
+                }
+            ),
             encoding="utf-8",
         )
         (json_schema.parent / "deepschema.yml").write_text(

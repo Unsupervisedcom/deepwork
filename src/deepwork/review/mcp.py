@@ -6,6 +6,7 @@ suitable for registration as an MCP tool.
 
 from pathlib import Path
 
+from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
 from deepwork.review.discovery import DiscoveryError, load_all_rules
 from deepwork.review.formatter import format_for_claude
 from deepwork.review.instructions import INSTRUCTIONS_DIR, write_instruction_files
@@ -70,12 +71,10 @@ def run_review(
     rules, discovery_errors = load_all_rules(project_root)
 
     # Step 1b: Discover DeepSchemas and generate synthetic rules
-    from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
-
     schema_rules, schema_errors = gen_schema_rules(project_root)
     rules.extend(schema_rules)
     for err in schema_errors:
-        discovery_errors.append(DiscoveryError(file_path=Path(err.split(":")[0]), error=err))
+        discovery_errors.append(DiscoveryError(file_path=Path("deepschema"), error=err))
 
     if not rules:
         if discovery_errors:
@@ -135,8 +134,6 @@ def get_configured_reviews(
     rules, errors = load_all_rules(project_root)
 
     # Also include DeepSchema-generated rules
-    from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
-
     schema_rules, _schema_errors = gen_schema_rules(project_root)
     rules.extend(schema_rules)
 

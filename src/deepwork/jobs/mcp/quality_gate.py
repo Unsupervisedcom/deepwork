@@ -18,6 +18,7 @@ from deepwork.jobs.parser import (
     Workflow,
     WorkflowStep,
 )
+from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
 from deepwork.review.config import ReviewRule, ReviewTask
 from deepwork.review.discovery import load_all_rules
 from deepwork.review.formatter import format_for_claude
@@ -321,8 +322,6 @@ def run_quality_gate(
     deepreview_rules, _errors = load_all_rules(project_root)
 
     # 3b. Load DeepSchema-generated review rules
-    from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
-
     schema_rules, _schema_errors = gen_schema_rules(project_root)
     deepreview_rules.extend(schema_rules)
 

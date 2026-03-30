@@ -1,6 +1,7 @@
 """Tests for DeepSchema review bridge — synthetic ReviewRule generation."""
 
 from pathlib import Path
+from unittest.mock import patch
 
 from deepwork.deepschema.config import DeepSchema
 from deepwork.deepschema.review_bridge import (
@@ -114,8 +115,8 @@ class TestGenerateReviewRules:
             encoding="utf-8",
         )
         rules, errors = generate_review_rules(tmp_path)
-        assert len(rules) == 1
-        assert rules[0].name == "yml_files DeepSchema Compliance"
+        rule_names = [r.name for r in rules]
+        assert "yml_files DeepSchema Compliance" in rule_names
         assert len(errors) == 0
 
     def test_generates_from_anonymous_schema(self, tmp_path: Path) -> None:
@@ -124,5 +125,5 @@ class TestGenerateReviewRules:
             encoding="utf-8",
         )
         rules, errors = generate_review_rules(tmp_path)
-        assert len(rules) == 1
-        assert rules[0].name == "config.json DeepSchema Compliance"
+        rule_names = [r.name for r in rules]
+        assert "config.json DeepSchema Compliance" in rule_names

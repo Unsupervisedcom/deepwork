@@ -36,16 +36,23 @@ class TestFindNamedSchemas:
         _make_named_schema(tmp_path, "config")
         results = find_named_schemas(tmp_path)
         names = [p.parent.name for p in results]
-        assert sorted(names) == ["config", "job_def"]
+        # Project-local schemas plus any built-in standard schemas
+        assert "config" in names
+        assert "job_def" in names
 
-    def test_returns_empty_when_no_schemas_dir(self, tmp_path: Path) -> None:
-        assert find_named_schemas(tmp_path) == []
+    def test_returns_only_standard_when_no_project_schemas_dir(self, tmp_path: Path) -> None:
+        results = find_named_schemas(tmp_path)
+        # Only built-in standard schemas, no project-local ones
+        for r in results:
+            assert ".deepwork/schemas" not in str(r)
 
     def test_skips_directories_without_manifest(self, tmp_path: Path) -> None:
         schema_dir = tmp_path / ".deepwork" / "schemas" / "incomplete"
         schema_dir.mkdir(parents=True)
-        # No deepschema.yml inside
-        assert find_named_schemas(tmp_path) == []
+        # No deepschema.yml inside — "incomplete" should not appear
+        results = find_named_schemas(tmp_path)
+        names = [p.parent.name for p in results]
+        assert "incomplete" not in names
 
 
 class TestFindAnonymousSchemas:
@@ -174,15 +181,19 @@ class TestDiscoverAllSchemas:
         )
         _make_anonymous_schema(tmp_path, "special.json")
         schemas, errors = discover_all_schemas(tmp_path)
-        assert len(schemas) == 2
         assert len(errors) == 0
+        # At least the two we created (plus any built-in standard schemas)
+        names = {s.name for s in schemas}
+        assert "yaml_config" in names
+        assert "special.json" in names
         types = {s.schema_type for s in schemas}
-        assert types == {"named", "anonymous"}
+        assert types >= {"named", "anonymous"}
 
     def test_collects_parse_errors(self, tmp_path: Path) -> None:
         schema_dir = tmp_path / ".deepwork" / "schemas" / "bad"
         schema_dir.mkdir(parents=True)
         (schema_dir / "deepschema.yml").write_text("[invalid]", encoding="utf-8")
         schemas, errors = discover_all_schemas(tmp_path)
-        assert len(schemas) == 0
+        # The "bad" schema should produce an error; standard schemas still load
         assert len(errors) == 1
+        assert "bad" in errors[0].error or str(errors[0].file_path).endswith("bad/deepschema.yml")

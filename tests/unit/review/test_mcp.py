@@ -36,8 +36,11 @@ def _make_rule(tmp_path: Path) -> ReviewRule:
 class TestRunReview:
     """Tests for the run_review adapter function."""
 
+    @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
     @patch("deepwork.review.mcp.load_all_rules")
-    def test_no_deepreview_files_returns_message(self, mock_load: Any, tmp_path: Path) -> None:
+    def test_no_deepreview_files_returns_message(
+        self, mock_load: Any, mock_schema: Any, tmp_path: Path
+    ) -> None:
         mock_load.return_value = ([], [])
         result = run_review(tmp_path, "claude")
         assert "No .deepreview configuration files" in result
@@ -200,6 +203,7 @@ class TestReviewToolRegistration:
         assert "get_configured_reviews" in _get_tool_names(server)
 
 
+@pytest.mark.usefixtures("without_standard_schemas")
 class TestGetConfiguredReviews:
     """Tests for the get_configured_reviews adapter function — validates REVIEW-REQ-008."""
 
@@ -512,6 +516,7 @@ class TestRunReviewPassedFiltering:
         assert "No review tasks to execute" in result
 
 
+@pytest.mark.usefixtures("without_standard_schemas")
 class TestGetConfiguredReviewsUnaffectedByCache:
     """Tests that get_configured_reviews ignores pass caching — validates REVIEW-REQ-009.6."""
 
