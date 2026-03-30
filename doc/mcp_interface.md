@@ -10,7 +10,7 @@ This document describes the Model Context Protocol (MCP) tools exposed by the De
 
 ## Tools
 
-DeepWork exposes eight MCP tools:
+DeepWork exposes nine MCP tools:
 
 ### 1. `get_workflows`
 
@@ -239,6 +239,26 @@ This tool operates outside the workflow lifecycle — it can be called independe
 A plain string with either:
 - A confirmation message (e.g., `"Review 'rule--file--hash' marked as passed."`)
 - A validation error if `review_id` is empty or contains path traversal
+
+---
+
+### 9. `get_named_schemas`
+
+List all named DeepSchemas discovered across all schema sources (project-local, standard, and env var). Returns each schema's name, summary, and matcher patterns.
+
+#### Parameters
+
+None.
+
+#### Returns
+
+```typescript
+Array<{
+  name: string;      // Schema name (directory name)
+  summary: string;   // Brief description of the schema (empty string if not set)
+  matchers: string[]; // Glob patterns this schema applies to
+}>
+```
 
 ---
 

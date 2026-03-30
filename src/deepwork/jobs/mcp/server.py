@@ -301,6 +301,40 @@ def create_server(
         response = await tools.go_to_step(input_data)
         return _append_issues(response.model_dump())
 
+    # ---- DeepSchema tools ----
+
+    @mcp.tool(
+        description=(
+            "List all named DeepSchemas discovered across all schema sources "
+            "(project-local, standard, and env var). "
+            "Returns each schema's name, summary, and matcher patterns. "
+            "Useful for understanding what file types have schemas defined."
+        )
+    )
+    def get_named_schemas() -> list[dict[str, Any]]:
+        """List all named DeepSchemas with basic info."""
+        _log_tool_call("get_named_schemas")
+        from deepwork.deepschema.config import DeepSchemaError, parse_deepschema_file
+        from deepwork.deepschema.discovery import find_named_schemas
+
+        results: list[dict[str, Any]] = []
+        for manifest_path in find_named_schemas(project_path):
+            name = manifest_path.parent.name
+            try:
+                schema = parse_deepschema_file(manifest_path, "named", name)
+                results.append({
+                    "name": schema.name,
+                    "summary": schema.summary or "",
+                    "matchers": schema.matchers,
+                })
+            except DeepSchemaError:
+                results.append({
+                    "name": name,
+                    "summary": f"(failed to parse {manifest_path})",
+                    "matchers": [],
+                })
+        return results
+
     # ---- Review tool (outside the workflow lifecycle) ----
 
     from deepwork.review.mcp import ReviewToolError, run_review
