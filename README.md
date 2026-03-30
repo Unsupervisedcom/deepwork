@@ -275,6 +275,40 @@ See [README_REVIEWS.md](README_REVIEWS.md) for the full reference — strategies
 
 ---
 
+## DeepSchemas — File-Level Schemas
+
+DeepSchemas are rich, file-level schemas that give both humans and AI agents a shared understanding of what a file should look like. They provide automatic write-time validation and generate review rules that enforce requirements during `/review` and workflow quality gates.
+
+### Two Flavors
+
+**Named schemas** (`.deepwork/schemas/<name>/deepschema.yml`) match files via glob patterns and are ideal for recurring file types — configs, API specs, job definitions, etc.
+
+**Anonymous schemas** (`.deepschema.<filename>.yml`) sit next to a specific file and apply only to that file.
+
+### What They Do
+
+1. **Write-time validation** — When an agent writes or edits a file, applicable schemas are checked immediately. JSON Schema validation and custom bash commands run automatically; failures are reported inline so the agent can fix them on the spot.
+2. **Review generation** — Each schema automatically produces a review rule. During `/review` or workflow quality gates, a reviewer checks every matched file against the schema's RFC 2119 requirements (MUST/SHOULD/MAY).
+3. **Inheritance** — Anonymous schemas can reference named schemas via `parent_deep_schemas` to inherit shared requirements.
+
+### Quick Example
+
+```yaml
+# .deepwork/schemas/api_endpoint/deepschema.yml
+summary: REST API endpoint handler
+matchers:
+  - "src/api/**/*.py"
+requirements:
+  auth-required: "Every endpoint MUST enforce authentication."
+  error-handling: "Endpoints MUST return structured error responses."
+  rate-limited: "Public endpoints SHOULD be rate-limited."
+json_schema_path: "openapi_fragment.schema.json"
+```
+
+Use `/deepschema` for the full reference on creating and managing schemas.
+
+---
+
 ## Supported Platforms
 
 | Platform | Status | Notes |
