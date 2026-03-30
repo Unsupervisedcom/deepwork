@@ -4,7 +4,7 @@ DeepWork includes a library of reusable jobs that any project can adopt. These a
 
 ## Enabling Shared Jobs
 
-The fastest way to add shared jobs to your project is with the `/deepwork` skill:
+Requires the DeepWork plugin installed in your AI agent CLI. The fastest way to add shared jobs to your project is with the `/deepwork` skill:
 
 ```
 /deepwork shared_jobs
@@ -78,7 +78,10 @@ library/jobs/
 ├── mech_engineer/           # Mechanical assembly and part design workflows
 │   ├── job.yml
 │   ├── AGENTS.md
-│   └── steps/
+│   ├── hooks/
+│   ├── scripts/
+│   ├── steps/
+│   └── templates/
 ├── platform_engineer/       # Platform engineering workflows
 │   ├── job.yml
 │   ├── AGENTS.md            # Agent context and learnings
@@ -166,7 +169,7 @@ Each step has a markdown file with detailed instructions that guide the AI agent
 
 1. Browse the jobs in this directory
 2. Copy the job folder to your project's `.deepwork/jobs/` directory
-3. Run `/deepwork` to start the job — the MCP server will discover it automatically
+3. Run `/deepwork` to start the job — the skill will prompt you to select the job and workflow, and the MCP server will discover it automatically
 
 ## Using Library Jobs via Nix Dev Shell
 
@@ -268,12 +271,7 @@ git checkout -b improve/repo-job-step-name
 
 2. Make your changes to the library job files
 
-3. Run the portability review to ensure your changes are portable:
-
-```bash
-# From the upstream checkout
-/deepwork:review
-```
+3. Run the portability review to ensure your changes are portable. From inside the upstream checkout, invoke the `/deepwork:review` skill in your AI agent CLI.
 
 The `library_job_portability` review rule checks for hardcoded paths, personal information, platform-specific assumptions, and schema compliance. All library job changes must pass this review before submitting a PR.
 

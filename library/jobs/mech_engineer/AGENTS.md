@@ -9,8 +9,8 @@ It is a library job — available for users to adopt but not auto-installed by t
 
 ```
 mech_engineer/
-├── AGENTS.md              # This file
-├── CLAUDE.md -> AGENTS.md # Symlink for Claude Code
+├── AGENTS.md              # This file (source of truth)
+├── CLAUDE.md -> AGENTS.md # Symlink — Claude Code reads this
 ├── job.yml                # Job definition
 └── steps/
     ├── define_assembly_requirements.md
@@ -42,20 +42,8 @@ mech_engineer/
 3. **Shared scale tiers**: Prototype / small batch / production definitions are canonical across all workflows
 4. **`.deepwork/tmp/` for tracking files**: Final deliverables are written to `mech_design/{project_name}/` by step instructions; `.deepwork/tmp/` files are workflow tracking artifacts
 5. **`evaluate_at_scale` is standalone**: Allows re-evaluating any existing BOM without re-running the full design workflow
-6. **CAD Toolchain Adaptation table**: Like the `engineer` job's domain adaptation table, a Toolchain Adaptation table in `common_job_info` maps generic concepts (model source file, build command, model registry) to tool-specific equivalents (AnchorSCAD, OpenSCAD, FreeCAD, etc.). Steps reference `AGENTS.md` for the project's toolchain; they do NOT hardcode STL/STEP paths. STL is a build artifact, not a source file.
+6. **CAD Toolchain Adaptation table**: A Toolchain Adaptation table in `common_job_info` maps generic concepts (model source file, build command, model registry) to tool-specific equivalents (AnchorSCAD, OpenSCAD, FreeCAD, etc.). Steps MUST reference the target repo's `AGENTS.md` for toolchain details — do NOT hardcode STL/STEP paths. STL is a build artifact, not a source file.
 
-## Known Project Contexts
+## Project Context
 
-### ncrmro/plant-caravan (AnchorSCAD)
-
-The `plant-caravan` project uses AnchorSCAD — a Python-based parametric CAD framework:
-- Model source files: Python `.py` in `hardware/cad/src/` using `anchorscad-core`
-- Build command: `./bin/render` (generates `.scad` → OpenSCAD headless → `.stl`)
-- Model registry: `hardware/cad/cadeng.yaml`
-- Nix flake provides OpenSCAD with EGL headless support (no X11 needed)
-
-When running `mech_engineer` workflows in plant-caravan, model references should point to Python source files and `cadeng.yaml` entries, not raw STL files.
-
-### Other projects
-
-For projects not listed here, read the target repo's `AGENTS.md` or `CLAUDE.md` to discover the CAD toolchain, build command, and model registry. Apply the Toolchain Adaptation table from `job.yml` accordingly.
+Read the target repo's `AGENTS.md` or `CLAUDE.md` to discover the CAD toolchain, build command, and model registry. Apply the Toolchain Adaptation table from `job.yml` accordingly.
