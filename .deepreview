@@ -135,16 +135,32 @@ requirements_traceability:
 
       Tests reference requirement IDs via docstrings and traceability comments.
 
-      **Use review rules** (`.deepreview`) when evaluating the requirement
-      requires reading comprehension, judgment, or context:
-      - "Skill MUST instruct the agent to do X" — does the prose actually
-        convey X clearly enough for an agent to follow?
+      **Use `.deepreview` rules** when evaluating the requirement requires
+      judgment AND applies broadly across many files of a type:
+      - "All prompts MUST use the terms X, Y, and Z" — a general standard
+        that applies to every file matching a glob pattern
       - "Code MUST follow pattern Y" — does the implementation match the
         spirit of the pattern across multiple files?
       - "Documentation MUST stay in sync with code" — are the descriptions
         still accurate after changes?
 
-      Rules reference requirement IDs in their `description` or `instructions`.
+      **Use anonymous DeepSchemas** (`.deepschema.<filename>.yml`) when the
+      requirement is specific to a single file's behavior or content:
+      - "The error message in situation X MUST include a suggestion for how
+        to fix the problem" — place the requirement in a `.deepschema` for
+        the file that implements that functionality
+      - "This config file MUST include a timeout field" — a structural
+        requirement for one specific file
+      - "Skill MUST instruct the agent to do X" — does the prose in this
+        specific skill file convey X clearly enough?
+
+      Anonymous DeepSchemas provide both write-time validation and review-time
+      checks, and they keep the requirement co-located with the file it governs.
+      Prefer them over `.deepreview` rules whenever the requirement targets a
+      specific file rather than a class of files.
+
+      Both `.deepreview` rules and DeepSchemas reference requirement IDs in
+      their `description`, `instructions`, or `requirements` fields.
 
       ## Anti-patterns to flag
 
