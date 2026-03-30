@@ -1,5 +1,5 @@
 hook_output_routing:
-  description: "Ensure hooks route output to the agent via additionalContext, not systemMessage."
+  description: "Ensure hooks route output to the agent via additionalContext, not systemMessage (DW-REQ-006.6)."
   match:
     include:
       - "src/deepwork/hooks/**/*.py"

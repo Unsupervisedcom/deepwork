@@ -322,17 +322,21 @@ def create_server(
             name = manifest_path.parent.name
             try:
                 schema = parse_deepschema_file(manifest_path, "named", name)
-                results.append({
-                    "name": schema.name,
-                    "summary": schema.summary or "",
-                    "matchers": schema.matchers,
-                })
+                results.append(
+                    {
+                        "name": schema.name,
+                        "summary": schema.summary or "",
+                        "matchers": schema.matchers,
+                    }
+                )
             except DeepSchemaError:
-                results.append({
-                    "name": name,
-                    "summary": f"(failed to parse {manifest_path})",
-                    "matchers": [],
-                })
+                results.append(
+                    {
+                        "name": name,
+                        "summary": f"(failed to parse {manifest_path})",
+                        "matchers": [],
+                    }
+                )
         return results
 
     # ---- Review tool (outside the workflow lifecycle) ----
