@@ -1,7 +1,6 @@
 """Tests for DeepSchema review bridge — synthetic ReviewRule generation."""
 
 from pathlib import Path
-from unittest.mock import patch
 
 from deepwork.deepschema.config import DeepSchema
 from deepwork.deepschema.review_bridge import (

@@ -11,6 +11,7 @@ import json
 import logging
 from pathlib import Path
 
+from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
 from deepwork.jobs.mcp.schemas import ArgumentValue
 from deepwork.jobs.parser import (
     JobDefinition,
@@ -18,7 +19,6 @@ from deepwork.jobs.parser import (
     Workflow,
     WorkflowStep,
 )
-from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
 from deepwork.review.config import ReviewRule, ReviewTask
 from deepwork.review.discovery import load_all_rules
 from deepwork.review.formatter import format_for_claude
