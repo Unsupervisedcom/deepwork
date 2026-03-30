@@ -2,7 +2,7 @@
 
 Fires after a file is written or edited. Finds applicable DeepSchemas,
 injects a conformance note, and runs verification_bash_command and
-json_schema_path validation. Reports errors via systemMessage.
+json_schema_path validation. Reports errors via additionalContext.
 """
 
 from __future__ import annotations
@@ -114,6 +114,7 @@ def _relative_path(path: Path, project_root: Path) -> str:
 def _validate_json_schema(filepath: Path, schema_path: Path) -> str | None:
     """Validate a file against a JSON Schema.
 
+    Parses the file as YAML if it has a .yml/.yaml extension, otherwise as JSON.
     Returns error message or None on success.
     """
     if not schema_path.exists():
@@ -121,11 +122,16 @@ def _validate_json_schema(filepath: Path, schema_path: Path) -> str | None:
 
     try:
         content = filepath.read_text(encoding="utf-8")
-        parsed = json.loads(content)
+        if filepath.suffix in (".yml", ".yaml"):
+            import yaml
+
+            parsed = yaml.safe_load(content)
+        else:
+            parsed = json.loads(content)
     except json.JSONDecodeError as e:
         return f"File is not valid JSON: {e}"
-    except OSError as e:
-        return f"Cannot read file: {e}"
+    except Exception as e:
+        return f"Cannot parse file: {e}"
 
     try:
         schema_data = json.loads(schema_path.read_text(encoding="utf-8"))

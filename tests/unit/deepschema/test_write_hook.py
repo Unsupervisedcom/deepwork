@@ -111,6 +111,57 @@ class TestDeepschemaWriteHook:
         assert "must conform to the DeepSchema" in result.context
         assert "CRITICAL" not in result.context
 
+    def test_json_schema_validation_of_yaml_file(self, tmp_path: Path) -> None:
+        """YAML files validated against a JSON Schema should be parsed as YAML, not JSON."""
+        json_schema = tmp_path / ".deepwork" / "schemas" / "yml_test" / "test.schema.json"
+        json_schema.parent.mkdir(parents=True)
+        json_schema.write_text(
+            json.dumps(
+                {
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {"name": {"type": "string"}},
+                }
+            ),
+            encoding="utf-8",
+        )
+        (json_schema.parent / "deepschema.yml").write_text(
+            "matchers:\n  - '**/*.yml'\njson_schema_path: 'test.schema.json'\nrequirements:\n  r1: 'MUST conform'\n",
+            encoding="utf-8",
+        )
+        target = tmp_path / "data.yml"
+        target.write_text("name: valid\nother: field\n", encoding="utf-8")
+
+        hook_input = _make_hook_input(str(target), str(tmp_path))
+        result = deepschema_write_hook(hook_input)
+        assert "must conform to the DeepSchema" in result.context
+        assert "CRITICAL" not in result.context
+
+    def test_json_schema_validation_of_invalid_yaml_file(self, tmp_path: Path) -> None:
+        """YAML files that fail JSON Schema validation should report errors."""
+        json_schema = tmp_path / ".deepwork" / "schemas" / "yml_test" / "test.schema.json"
+        json_schema.parent.mkdir(parents=True)
+        json_schema.write_text(
+            json.dumps(
+                {
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {"name": {"type": "string"}},
+                }
+            ),
+            encoding="utf-8",
+        )
+        (json_schema.parent / "deepschema.yml").write_text(
+            "matchers:\n  - '**/*.yml'\njson_schema_path: 'test.schema.json'\nrequirements:\n  r1: 'MUST conform'\n",
+            encoding="utf-8",
+        )
+        target = tmp_path / "data.yml"
+        target.write_text("other: field\n", encoding="utf-8")
+
+        hook_input = _make_hook_input(str(target), str(tmp_path))
+        result = deepschema_write_hook(hook_input)
+        assert "CRITICAL" in result.context
+
     def test_verification_command_failure(self, tmp_path: Path) -> None:
         schema_dir = tmp_path / ".deepwork" / "schemas" / "bash_test"
         schema_dir.mkdir(parents=True)

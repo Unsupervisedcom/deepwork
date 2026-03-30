@@ -91,9 +91,8 @@ The hook wrapper system provides cross-platform compatibility for hooks running 
 
 ### DW-REQ-006.6: Context Output (Platform-Specific)
 
-1. On Claude for `SESSION_START` events, context MUST be set via `hookSpecificOutput.additionalContext` with `hookEventName` set to the platform-specific event name.
-2. On Claude for all other events, context MUST be set via `systemMessage`.
-3. On Gemini for all events, context MUST be set via `hookSpecificOutput.additionalContext` with `hookEventName`.
+1. On Claude, context MUST be set via `hookSpecificOutput.additionalContext` with `hookEventName` set to the platform-specific event name, for all event types. This ensures hook output is routed to the agent (not just displayed to the user).
+2. On Gemini for all events, context MUST be set via `hookSpecificOutput.additionalContext` with `hookEventName`.
 
 ### DW-REQ-006.7: Output Serialization
 
