@@ -82,7 +82,6 @@ class TestSchemaToReviewRule:
         assert rule is not None
         assert rule.source_file == schema.source_path
 
-
     def test_named_rule_source_dir_is_project_root(self, tmp_path: Path) -> None:
         """Named schemas use project-root-relative matchers, so source_dir must be project_root."""
         schema = _named_schema(tmp_path, matchers=[".deepwork/jobs/*/job.yml"])
