@@ -104,7 +104,8 @@ deepwork/                       # DeepWork tool repository
 │   │   ├── skills/
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── review/SKILL.md
-│   │   │   └── configure_reviews/SKILL.md
+│   │   │   ├── configure_reviews/SKILL.md
+│   │   │   └── deepschema/SKILL.md
 │   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
 │   │   └── .mcp.json           # MCP server config
 │   └── gemini/                 # Gemini CLI extension
@@ -818,7 +819,7 @@ All MCP server code lives in `src/deepwork/jobs/mcp/`.
 
 The FastMCP server definition that:
 - Creates and configures the MCP server instance
-- Registers the workflow tools and review tools (`get_review_instructions`, `get_configured_reviews`, `mark_review_as_passed`)
+- Registers the workflow tools, review tools (`get_review_instructions`, `get_configured_reviews`, `mark_review_as_passed`), and DeepSchema tools (`get_named_schemas`)
 - Detects job definition issues at startup via `issues.py` and appends warnings to tool responses
 - Provides server instructions for agents
 
@@ -913,6 +914,13 @@ Marks a review as passed so it is skipped on subsequent runs while the reviewed 
 - `review_id: str` - The deterministic review ID from the instruction file's "After Review" section.
 
 **Returns**: Confirmation string or validation error.
+
+#### 9. `get_named_schemas`
+Lists all named DeepSchemas discovered across all schema sources (project-local, standard, and env var). Returns each schema's name, summary, and matcher patterns.
+
+**Parameters**: None.
+
+**Returns**: List of `{name, summary, matchers}` dicts.
 
 ### Review Pass Caching
 

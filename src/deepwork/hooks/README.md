@@ -84,12 +84,14 @@ if __name__ == "__main__":
 
 | DeepWork Normalized | Claude Code | Gemini CLI |
 |---------------------|-------------|------------|
-| `after_agent` | Stop | AfterAgent |
+| `after_agent` | Stop, SubagentStop | AfterAgent |
 | `before_tool` | PreToolUse | BeforeTool |
 | `after_tool` | PostToolUse | AfterTool |
 | `before_prompt` | UserPromptSubmit | BeforeAgent |
 | `session_start` | SessionStart | SessionStart |
 | `session_end` | SessionEnd | SessionEnd |
+| `before_model` | — | BeforeModel |
+| `after_model` | — | AfterModel |
 
 ## Tool Name Mapping
 
@@ -101,6 +103,9 @@ if __name__ == "__main__":
 | `shell` | Bash | shell |
 | `glob` | Glob | glob |
 | `grep` | Grep | grep |
+| `web_fetch` | WebFetch | web_fetch |
+| `web_search` | WebSearch | web_search |
+| `task` | Task | — |
 
 ## Decision Values
 
@@ -136,3 +141,4 @@ pytest tests/shell_script_tests/test_hook_wrappers.py -v
 | `deepschema_write.py` | DeepSchema write-time validation hook |
 | `claude_hook.sh` | Shell wrapper for Claude Code |
 | `gemini_hook.sh` | Shell wrapper for Gemini CLI |
+| `.deepreview` | Review rule ensuring hooks use correct output routing (DW-REQ-006.6) |
