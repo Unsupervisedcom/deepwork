@@ -535,3 +535,20 @@ class TestPostCompactionHook:
         # ERR trap must exit 0
         assert "exit 0" in content
         assert "trap" in content
+
+
+# ---------------------------------------------------------------------------
+# PLUG-REQ-001.13: DeepReviews Reference Skill
+# ---------------------------------------------------------------------------
+
+
+class TestDeepReviewsSkill:
+    """Tests for the deepreviews reference skill (PLUG-REQ-001.13)."""
+
+    skill_path = SKILLS_DIR / "deepreviews" / "SKILL.md"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.13.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_skill_file_exists(self) -> None:
+        """PLUG-REQ-001.13.1: deepreviews skill exists at expected path."""
+        assert self.skill_path.exists()

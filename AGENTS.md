@@ -211,6 +211,7 @@ deepwork/
 │   │   ├── example_reviews/
 │   │   ├── skills/
 │   │   │   ├── configure_reviews/SKILL.md
+│   │   │   ├── deepreviews/SKILL.md
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── deepschema/SKILL.md
 │   │   │   └── review/SKILL.md

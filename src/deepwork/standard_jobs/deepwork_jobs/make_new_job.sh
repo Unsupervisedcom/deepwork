@@ -10,7 +10,7 @@
 #
 # Output:
 #   Creates .deepwork/jobs/<job_name>/ at the git repository root with
-#   subdirectories: steps/, hooks/, templates/, scripts/, plus AGENTS.md
+#   subdirectories: hooks/, templates/, scripts/, plus AGENTS.md
 #   and optionally .deepreview (if template.deepreview exists alongside
 #   this script).
 #
@@ -88,7 +88,7 @@ main() {
     info "Creating job directory structure for '$job_name'..."
 
     # Create main job directory and subdirectories
-    mkdir -p "$job_path"/{steps,hooks,templates,scripts}
+    mkdir -p "$job_path"/{hooks,templates,scripts}
 
     # Add .gitkeep files to empty directories
     touch "$job_path"/{hooks,templates,scripts}/.gitkeep
@@ -111,9 +111,7 @@ This folder and its subfolders are managed using `deepwork_jobs` workflows.
 .
 ├── .deepreview        # Review rules for the job itself using Deepwork Reviews
 ├── AGENTS.md          # This file - project context and guidance
-├── job.yml            # Job specification (created by define step)
-├── steps/             # Step instruction files (created by implement step)
-│   └── *.md           # One file per step
+├── job.yml            # Job definition (step instructions are inlined here)
 ├── hooks/             # Custom validation scripts and prompts
 │   └── *.md|*.sh      # Hook files referenced in job.yml
 ├── scripts/           # Reusable scripts and utilities created during job execution
@@ -144,7 +142,6 @@ EOF
     fi
     echo "  ├── AGENTS.md"
     echo "  ├── CLAUDE.md -> AGENTS.md"
-    echo "  ├── steps/"
     echo "  ├── hooks/.gitkeep"
     echo "  ├── scripts/.gitkeep"
     echo "  └── templates/.gitkeep"

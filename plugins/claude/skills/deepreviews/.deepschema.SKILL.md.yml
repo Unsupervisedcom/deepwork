@@ -1,0 +1,16 @@
+requirements:
+  documents-deepreview-format: >
+    The skill MUST document how DeepWork Reviews work, including the `.deepreview`
+    config format, review strategies (`individual`, `matches_together`,
+    `all_changed_files`), and how changed files are detected. (PLUG-REQ-001.13.2)
+
+  documents-deepschema-review-generation: >
+    The skill MUST explain how DeepSchemas automatically generate synthetic
+    review rules that run during `/review` and workflow quality gates.
+    (PLUG-REQ-001.13.3)
+
+  documents-workflow-quality-gates: >
+    The skill MUST describe workflow quality gates and how `finished_step`
+    triggers reviews on step outputs from three sources: step output reviews,
+    step argument reviews, and matching `.deepreview`/DeepSchema rules.
+    (PLUG-REQ-001.13.4)

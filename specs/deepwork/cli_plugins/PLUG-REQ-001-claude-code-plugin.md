@@ -89,3 +89,10 @@ The Claude Code plugin is the primary distribution mechanism for DeepWork on the
 4. The `SubagentStart` hook MUST also read `agent_id` from the hook input JSON and emit it as `CLAUDE_CODE_AGENT_ID` in `additionalContext`.
 5. Both hooks MUST always exit 0, even on failure (graceful degradation).
 6. The injected session and agent IDs MUST be used by the MCP server tools as the `session_id` and `agent_id` parameters for persistent state management.
+
+### PLUG-REQ-001.13: DeepReviews Reference Skill
+
+1. The plugin MUST provide a `deepreviews` reference skill at `plugins/claude/skills/deepreviews/SKILL.md`.
+2. The skill MUST document how DeepWork Reviews work, including `.deepreview` config format, review strategies (`individual`, `matches_together`, `all_changed_files`), and how changed files are detected.
+3. The skill MUST explain how DeepSchemas automatically generate synthetic review rules.
+4. The skill MUST describe workflow quality gates and how `finished_step` triggers reviews on step outputs.

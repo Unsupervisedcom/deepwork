@@ -34,15 +34,8 @@ step_arguments:
         - No Redundant Info: The instruction file avoids duplicating information that belongs in the job.yml's common_job_info_provided_to_all_steps_at_runtime section. Shared context (project background, terminology, conventions) is in common_job_info, not repeated in each step.
 
   - name: test_feedback
-    description: "Feedback from testing the workflow on a real use case"
-    type: file_path
-    review:
-      strategy: individual
-      instructions: |
-        Evaluate the output against these criteria:
-        - Test Case Documented: The feedback file describes what test case was used and what the workflow produced.
-        - Issues Identified: The feedback file lists specific issues found during output critique.
-        - Feedback Captured: User feedback and requested corrections are documented with enough detail for the iterate step to act on.
+    description: "Feedback from testing the workflow: test case description, issues found during critique, user feedback and corrections applied, and final outcome"
+    type: string
 
   - name: job_name
     description: "Name of the job that was run (optional - will auto-detect from conversation)"
@@ -85,20 +78,11 @@ workflows:
       confusion or inefficiencies, and improves job instructions. It also captures bespoke
       learnings specific to the current run into AGENTS.md files in the working folder.
 
-      ## Job Schema (CRITICAL)
+      ## Job Schema Reference
 
-      Before creating or editing any `job.yml` file, you MUST read the JSON schema at
-      `.deepwork/job.schema.json`. This schema is the authoritative source of truth for
-      all valid fields, types, and structures.
-
-      Key schema rules:
-      - `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` and `json_schema`
-      - `workflows` is an object keyed by workflow name, each with {summary, steps[]}
-      - Each step has {name, instructions (inline string), inputs, outputs, process_requirements}
-      - Inputs/outputs reference step_arguments by name
-      - No `version`, no root-level `steps[]`, no `instructions_file`, no hooks, no dependencies
-
-      Always read the schema file and validate your job.yml structure against it.
+      See `steps/supplemental_file_references.md` for available job.yml fields and structure.
+      The JSON schema at `.deepwork/job.schema.json` documents the format — DeepSchema quality
+      gates validate job.yml files automatically, so manual validation is not needed.
     steps:
       - name: define
         instructions: |
@@ -811,7 +795,7 @@ workflows:
 
           ### Step 5: Write Test Feedback
 
-          Once the user is satisfied, write a summary of the test run to `.deepwork/tmp/test_feedback.md`. This file is consumed by the iterate step. Write each section as a markdown header (`##`) with 2-5 bullet points beneath it. Keep the total file under 500 words. Include:
+          Once the user is satisfied, compose a summary of the test run as an inline string to pass as the `test_feedback` output. This is consumed by the iterate step. Use markdown headers (`##`) with 2-5 bullet points beneath each. Keep the total under 500 words. Include:
 
           1. **Test case description** - What was tested
           2. **Issues found during critique** - The problems identified in Step 3
@@ -1135,20 +1119,11 @@ workflows:
       2. **Fix Jobs**: Migrate job.yml files to the current format
       3. **Errata**: Remove obsolete files and folders
 
-      ## Job Schema (CRITICAL)
+      ## Job Schema Reference
 
-      Before creating or editing any `job.yml` file, you MUST read the JSON schema at
-      `.deepwork/job.schema.json`. This schema is the authoritative source of truth for
-      all valid fields, types, and structures.
-
-      Key schema rules:
-      - `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` and `json_schema`
-      - `workflows` is an object keyed by workflow name, each with {summary, steps[]}
-      - Each step has {name, instructions (inline string), inputs, outputs, process_requirements}
-      - Inputs/outputs reference step_arguments by name
-      - No `version`, no root-level `steps[]`, no `instructions_file`, no hooks, no dependencies
-
-      Always read the schema file and validate your job.yml structure against it.
+      See `steps/supplemental_file_references.md` for available job.yml fields and structure.
+      The JSON schema at `.deepwork/job.schema.json` documents the format — DeepSchema quality
+      gates validate job.yml files automatically, so manual validation is not needed.
     steps:
       - name: fix_settings
         instructions: |
@@ -1489,6 +1464,7 @@ workflows:
           1. **Preserve custom logic** - When migrating, preserve the intent of instructions and reviews
           2. **Test after changes** - Validate YAML syntax after each job fix to catch errors early
           3. **Read step files** - When inlining instructions, read the full content of the referenced .md file
+          4. **Delete orphaned step files** - After inlining all instructions into job.yml, delete the step .md files that were referenced by `instructions_file`. These are now dead weight since the content lives in job.yml. Do NOT delete step files that are still referenced by inline instructions as supplemental references.
         inputs:
           settings.json:
             required: true
@@ -1502,6 +1478,7 @@ workflows:
           "No Legacy Fields": "No job.yml MUST contain version, root-level steps[], instructions_file, hooks, dependencies, or exposed/hidden fields."
           "Reviews Migrated": "Old review formats MUST be converted to output-level review blocks or process_requirements."
           "Instructions Inlined": "All step instructions MUST be inlined in the job.yml — no instructions_file references MUST remain."
+          "Orphaned Step Files Removed": "Step .md files that were referenced by `instructions_file` and have been inlined MUST be deleted from the steps/ directory."
           "Jobs Parse Successfully": "Calling `get_workflows` MUST show all expected jobs without errors."
 
       - name: errata
@@ -1703,20 +1680,11 @@ workflows:
       confusion or inefficiencies, and improves job instructions. It also captures bespoke
       learnings specific to the current run into AGENTS.md files in the working folder.
 
-      ## Job Schema (CRITICAL)
+      ## Job Schema Reference
 
-      Before creating or editing any `job.yml` file, you MUST read the JSON schema at
-      `.deepwork/job.schema.json`. This schema is the authoritative source of truth for
-      all valid fields, types, and structures.
-
-      Key schema rules:
-      - `step_arguments` is an array of {name, description, type: "string"|"file_path"} with optional `review` and `json_schema`
-      - `workflows` is an object keyed by workflow name, each with {summary, steps[]}
-      - Each step has {name, instructions (inline string), inputs, outputs, process_requirements}
-      - Inputs/outputs reference step_arguments by name
-      - No `version`, no root-level `steps[]`, no `instructions_file`, no hooks, no dependencies
-
-      Always read the schema file and validate your job.yml structure against it.
+      See `steps/supplemental_file_references.md` for available job.yml fields and structure.
+      The JSON schema at `.deepwork/job.schema.json` documents the format — DeepSchema quality
+      gates validate job.yml files automatically, so manual validation is not needed.
     steps:
       - name: learn
         instructions: |

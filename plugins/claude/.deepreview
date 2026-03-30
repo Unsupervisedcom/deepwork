@@ -48,6 +48,17 @@ claude_plugin_skill_instructions:
         possible rather than creating duplicates. Verify the instructions
         clearly convey a preference for reuse over duplication.
 
+      ## deepreviews skill (plugins/claude/skills/deepreviews/SKILL.md)
+
+      - **PLUG-REQ-001.13.2**: The skill must document how DeepWork Reviews
+        work, including `.deepreview` config format, review strategies
+        (`individual`, `matches_together`, `all_changed_files`), and how
+        changed files are detected.
+      - **PLUG-REQ-001.13.3**: The skill must explain how DeepSchemas
+        automatically generate synthetic review rules.
+      - **PLUG-REQ-001.13.4**: The skill must describe workflow quality
+        gates and how `finished_step` triggers reviews on step outputs.
+
       Output Format:
       - PASS: All behavioral requirements are adequately conveyed.
       - FAIL: List each requirement ID that is not adequately covered,
