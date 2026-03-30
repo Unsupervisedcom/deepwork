@@ -12,7 +12,7 @@ instructions: |
   - common_job_info is prepended to every step AND every review prompt automatically
   - Reviews cascade from three sources: step output review, step_argument review, .deepreview rules
 
-json_schema_path: "../../jobs/job.schema.json"
+json_schema_path: "job.schema.json"
 
 matchers:
   - ".deepwork/jobs/*/job.yml"
