@@ -98,6 +98,25 @@ requirements:
     needs to act — not philosophy, not quality criteria already enforced by the workflow
     runtime, and not domain context already in common_job_info.
 
+  prefer-deepschemas-for-file-validation: >
+    Step_argument `review` blocks and step `process_requirements` SHOULD only enforce
+    requirements that are process-related (e.g., "user MUST be consulted before proceeding")
+    or that apply to files too varied or ad-hoc for a reusable schema. If a step_argument
+    of type `file_path` produces files with a standardized, recurring structure (e.g.,
+    YAML configs, JSON schemas, markdown templates with a known format), a DeepSchema
+    SHOULD be defined for that file type instead of encoding structural or content
+    requirements inline in the job.yml review block. DeepSchemas provide write-time
+    validation and automatic review generation, making them strictly more capable than
+    inline review instructions for file-level concerns.
+
+  inline-review-complements-deepschema: >
+    When a DeepSchema exists for a step output's file type, the step_argument or step
+    output `review` block SHOULD NOT duplicate requirements already covered by the
+    DeepSchema. Inline reviews SHOULD focus on workflow-specific concerns that the
+    DeepSchema cannot know — e.g., "the report MUST address the specific competitors
+    identified in step 1" or "the config MUST reference the project name from the
+    user's goal."
+
 examples:
   - path: "../../jobs/job.schema.json"
     description: "The authoritative JSON Schema — defines all valid structural forms."
