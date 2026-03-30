@@ -86,6 +86,59 @@ explicit, immutable links to the merged PR(s) and closed Engineering Issue(s),
 ensuring product managers maintain up-to-date visibility without parsing
 engineering telemetry.
 
+## Requirements workflow requirements
+
+## 9. Requirements directory and discovery
+
+Every project using the requirements workflow MUST store requirement files in a
+dedicated directory. The default path SHALL be `./requirements/` relative to the
+repository root.
+
+If a project uses a non-default path, the path MUST be documented in the
+project's agent context file (`AGENTS.md` or equivalent) under a
+`## Requirements` section so that DeepWork can locate it without conflict.
+
+The workflow MUST scan existing `REQ-*.md` files and the `REQUIREMENTS.md` index
+before creating or modifying any requirement.
+
+## 10. Requirement file format
+
+Each requirement file MUST be named `REQ-NNN-slug.md` where `NNN` is a
+zero-padded sequential number and `slug` is a lowercase hyphenated summary.
+
+Each file MUST begin with a heading `# REQ-NNN: Title` followed by a brief
+description and the RFC 2119 key words declaration paragraph.
+
+Sub-requirements MUST be numbered `REQ-NNN.X` starting at 1 and MUST each
+contain at least one RFC 2119 keyword (`MUST`, `MUST NOT`, `SHALL`,
+`SHALL NOT`, `SHOULD`, `SHOULD NOT`, `MAY`, `REQUIRED`, `OPTIONAL`) in
+uppercase.
+
+Every sub-requirement MUST describe a verifiable behavior that can be validated
+by an automated test or a DeepWork review rule.
+
+## 11. Requirements index
+
+A `REQUIREMENTS.md` file MUST exist in the requirements directory and serve as
+the index of all requirement files.
+
+The index MUST be a Markdown table with columns `ID`, `Title`, and `File`
+linking to each `REQ-*.md` file.
+
+Every `REQ-*.md` file in the directory MUST have a corresponding row in the
+index. The index MUST NOT reference files that do not exist.
+
+## 12. Amending requirements
+
+When amending an existing requirement, the engineer MUST preserve existing
+sub-requirement numbers. New sub-requirements SHALL be appended to the end of
+the existing list rather than renumbered, unless the user explicitly requests
+renumbering.
+
+Amendments MUST NOT silently remove or weaken existing sub-requirements. Any
+removal or weakening of a requirement MUST be explicitly noted in the commit
+message.
+
 ## Doctor workflow requirements
 
 ## 8. Contextual awareness and the doctor workflow

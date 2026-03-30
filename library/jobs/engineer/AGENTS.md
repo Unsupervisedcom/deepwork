@@ -20,6 +20,9 @@ engineer/
     ├── green_implementation.md
     ├── finalize_pr.md
     ├── product_sync.md
+    ├── discover_requirements.md
+    ├── draft_requirements.md
+    ├── validate_requirements.md
     ├── check_agent_md.md
     ├── check_context.md
     └── doctor_report.md
@@ -28,7 +31,25 @@ engineer/
 ## Workflows
 
 - **implement**: 6-step workflow executing engineering work from product issue through PR merge and product sync
+- **requirements**: 3-step workflow to create or amend RFC 2119 requirements in the project's requirements directory
 - **doctor**: 3-step workflow validating agent.md and domain context files
+
+## Requirements directory
+
+The `requirements` workflow stores requirement files in `./requirements/` by
+default (relative to the repository root). Each file follows the `REQ-NNN-slug.md`
+naming convention with RFC 2119 keywords.
+
+To use a custom path, add a `## Requirements` section to the project's AGENTS.md:
+
+```markdown
+## Requirements
+
+Requirements are stored in `docs/specs/requirements/`.
+```
+
+The workflow reads this section at discovery time. If no override is found, it
+falls back to `./requirements/`.
 
 ## Design Decisions
 

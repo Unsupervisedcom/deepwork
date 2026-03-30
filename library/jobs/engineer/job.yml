@@ -11,7 +11,7 @@ common_job_info_provided_to_all_steps_at_runtime: |
   ## Requirements Reference
 
   This job implements an RFC 2119 requirements specification bundled as `requirements.md`
-  in the job directory. Step instructions reference requirements by number (Req 1-8).
+  in the job directory. Step instructions reference requirements by number (Req 1-12).
   Read `requirements.md` for the full normative text.
 
   ## Domain Adaptation
@@ -52,6 +52,13 @@ workflows:
       - green_implementation
       - finalize_pr
       - product_sync
+
+  - name: requirements
+    summary: "Create or amend RFC 2119 requirements in the project's requirements directory"
+    steps:
+      - discover_requirements
+      - draft_requirements
+      - validate_requirements
 
   - name: doctor
     summary: "Validate that agent.md and domain context files are present, linked, and valid"
@@ -219,6 +226,75 @@ steps:
           "User Stories Documented": "The comment documents which high-level user stories were completed."
           "Immutable Links": "The comment contains immutable links to the merged PR and closed engineering issue."
           "Product Manager Visibility": "The comment provides enough context for product managers to understand progress without parsing engineering telemetry."
+
+  # ── Requirements Workflow ──────────────────────────────────────────
+
+  - id: discover_requirements
+    name: "Discover Requirements Context"
+    description: "Scan the project for existing requirements, determine the requirements directory path, and identify the user's intent (create, amend, or reorganize)."
+    instructions_file: steps/discover_requirements.md
+    inputs:
+      - name: goal
+        description: "What the user wants to accomplish — new requirement, amendment, or reorganization"
+    outputs:
+      .deepwork/tmp/requirements_context.md:
+        type: file
+        description: "Requirements directory path, existing requirements index, next available ID, and user intent"
+        required: true
+    dependencies: []
+    reviews:
+      - run_each: .deepwork/tmp/requirements_context.md
+        quality_criteria:
+          "Directory Identified": "The requirements directory path is explicitly stated (default ./requirements/ or custom from AGENTS.md)."
+          "Existing Requirements Listed": "All existing REQ-*.md files are inventoried with their IDs and titles."
+          "Intent Clear": "The user's intent (create, amend, or reorganize) is identified with target requirement IDs."
+
+  - id: draft_requirements
+    name: "Draft Requirements"
+    description: "Create or amend RFC 2119 requirement files and update the REQUIREMENTS.md index."
+    instructions_file: steps/draft_requirements.md
+    inputs:
+      - file: .deepwork/tmp/requirements_context.md
+        from_step: discover_requirements
+    outputs:
+      .deepwork/tmp/requirements_draft.md:
+        type: file
+        description: "List of files created or modified, index update status, and summary of changes"
+        required: true
+    dependencies:
+      - discover_requirements
+    reviews:
+      - run_each: .deepwork/tmp/requirements_draft.md
+        quality_criteria:
+          "RFC 2119 Format": "Every requirement file follows the REQ-NNN format with RFC 2119 keyword declaration and numbered sub-requirements."
+          "Keywords Present": "Every sub-requirement contains at least one RFC 2119 keyword (MUST, SHOULD, MAY, etc.) in uppercase."
+          "Index Updated": "REQUIREMENTS.md index includes all requirement files with correct IDs, titles, and links."
+          "Testable Requirements": "Each sub-requirement describes a verifiable behavior that can be validated by a test or review rule."
+
+  - id: validate_requirements
+    name: "Validate Requirements"
+    description: "Check format consistency, numbering, index completeness, and AGENTS.md documentation for the requirements directory."
+    instructions_file: steps/validate_requirements.md
+    inputs:
+      - file: .deepwork/tmp/requirements_context.md
+        from_step: discover_requirements
+      - file: .deepwork/tmp/requirements_draft.md
+        from_step: draft_requirements
+    outputs:
+      .deepwork/tmp/requirements_validation.md:
+        type: file
+        description: "Validation results for all requirement files, index status, and overall pass/fail"
+        required: true
+    dependencies:
+      - discover_requirements
+      - draft_requirements
+    reviews:
+      - run_each: .deepwork/tmp/requirements_validation.md
+        quality_criteria:
+          "All Files Checked": "Every REQ-*.md file in the requirements directory was validated."
+          "Format Compliance": "All files pass header, numbering, and keyword checks."
+          "Index Complete": "The REQUIREMENTS.md index has no missing or orphaned entries."
+          "Overall Status Clear": "The report states an unambiguous PASS or FAIL with details for any failures."
 
   # ── Doctor Workflow ────────────────────────────────────────────────
 
