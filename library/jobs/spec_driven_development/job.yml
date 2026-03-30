@@ -317,6 +317,8 @@ workflows:
           - File created in correct location
           - **No implementation code**: Constitution describes standards, not code examples
         inputs:
+          docs_folder:
+            required: false
           development_priorities:
             required: false
         outputs:
@@ -1313,6 +1315,8 @@ workflows:
           - All planning documents created in correct location
           - **No implementation code**: Documents contain schemas and contracts, not actual code
         inputs:
+          docs_folder:
+            required: false
           spec.md:
             required: true
           constitution.md:
@@ -1325,9 +1329,9 @@ workflows:
           data-model.md:
             required: true
           api-spec.json:
-            required: true
+            required: false
           research.md:
-            required: true
+            required: false
           architecture.md:
             required: true
         process_requirements:
@@ -1702,6 +1706,8 @@ workflows:
           - File created in correct location
           - **No implementation code**: Tasks describe what to build, not how to code it
         inputs:
+          docs_folder:
+            required: false
           plan.md:
             required: true
           spec.md:
@@ -2099,6 +2105,8 @@ workflows:
           - Progress was tracked throughout
           - Final report summarizes implementation
         inputs:
+          docs_folder:
+            required: false
           tasks.md:
             required: true
           plan.md:
