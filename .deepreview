@@ -100,7 +100,7 @@ suggest_new_reviews:
       file: .deepwork/review/suggest_new_reviews.md
 
 requirements_traceability:
-  description: "Verify requirements traceability between specs, code, and tests."
+  description: "Verify requirements traceability between specs, code, tests, review rules, and DeepSchemas."
   match:
     include:
       - "**/*"

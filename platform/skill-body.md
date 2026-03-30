@@ -13,15 +13,6 @@ use context and the available workflows from `get_workflows` to determine the be
 > are performed through MCP tool calls and following the instructions they return,
 > not by reading instructions from files.
 
-## Related Skills
-
-Before starting workflows, read these companion skills to fully understand the DeepWork ecosystem:
-
-- **`deepreviews`** — How `.deepreview` rules work, review strategies, quality gates, and how DeepSchemas generate automatic review rules
-- **`deepschema`** — How to define rich file schemas with automatic write-time validation and review generation
-
-Understanding these is essential for creating jobs with effective quality gates and for working with the review feedback that `finished_step` returns.
-
 ## How to Use
 
 1. Call `get_workflows` to discover available workflows
