@@ -501,17 +501,6 @@ workflows:
       The doctor workflow validates that the repository has the required context files
       for engineering workflows — agent.md (or equivalent), domain declarations,
       build/test instructions, and CODEOWNERS configuration.
-
-      ## Domain Adaptation
-
-      The domain adaptation table maps generic concepts to domain-specific equivalents:
-
-      | Concept         | Software          | Hardware/CAD       | Firmware          | Docs             |
-      |-----------------|-------------------|--------------------|-------------------|------------------|
-      | Test            | Unit/integration  | DRC/simulation     | HIL/unit test     | Link check/lint  |
-      | Build artifact  | Binary/container  | STL/STEP/Gerber    | .hex/.bin         | PDF/HTML         |
-      | CI visual       | DOM snapshot      | Rendered STL       | Logic trace       | PDF render       |
-      | Branch          | Git branch        | Git branch         | Git branch        | Git branch       |
     steps:
       - name: check_agent_md
         instructions: |
@@ -573,8 +562,6 @@ workflows:
           ```
         inputs:
           project_path:
-            required: false
-          requirements.md:
             required: false
         outputs:
           agent_md_audit: {}

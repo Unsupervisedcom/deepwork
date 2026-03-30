@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: platform_engineer
-summary: "Platform engineering workflows: incidents, observability, CI/CD, releases, security, compliance, migrations, and dev tooling."
+summary: "Investigate incidents, set up observability, optimize CI/CD, manage releases, and debug platform infrastructure."
 
 step_arguments:
   - name: context.md
