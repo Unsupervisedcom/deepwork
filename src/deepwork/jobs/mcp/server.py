@@ -236,6 +236,10 @@ def create_server(
         agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Report step completion and get next instructions."""
+        if not session_id:
+            return {
+                "error": "session_id is required. Pass CLAUDE_CODE_SESSION_ID on Claude Code, or the session_id returned by start_workflow on other platforms."
+            }
         _log_tool_call(
             "finished_step",
             {
@@ -275,6 +279,10 @@ def create_server(
         agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Abort the current workflow and return to parent."""
+        if not session_id:
+            return {
+                "error": "session_id is required. Pass CLAUDE_CODE_SESSION_ID on Claude Code, or the session_id returned by start_workflow on other platforms."
+            }
         _log_tool_call(
             "abort_workflow",
             {"explanation": explanation, "agent_id": agent_id},
@@ -307,6 +315,10 @@ def create_server(
         agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Navigate back to a prior step, clearing subsequent progress."""
+        if not session_id:
+            return {
+                "error": "session_id is required. Pass CLAUDE_CODE_SESSION_ID on Claude Code, or the session_id returned by start_workflow on other platforms."
+            }
         _log_tool_call(
             "go_to_step",
             {"step_id": step_id, "agent_id": agent_id},

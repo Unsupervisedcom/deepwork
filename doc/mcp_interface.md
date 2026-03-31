@@ -26,6 +26,7 @@ None.
 {
   jobs: JobInfo[];
   errors: JobLoadErrorInfo[];  // Jobs that failed to parse
+  issue_detected?: string;     // Present when startup issues exist; warns agent to suggest repair
 }
 ```
 
@@ -75,6 +76,7 @@ Start a new workflow session. Initializes state tracking and returns the first s
   important_note: string;     // Instruction reminding agent to clarify ambiguous requests
   begin_step: ActiveStepInfo; // Information about the first step to begin
   stack: StackEntry[];        // Current workflow stack after starting
+  issue_detected?: string;    // Present when startup issues exist; warns agent to suggest repair
 }
 ```
 
@@ -82,7 +84,7 @@ Start a new workflow session. Initializes state tracking and returns the first s
 
 ### 3. `finished_step`
 
-Report that you've finished a workflow step. Validates outputs against quality criteria (if configured), then returns the next action.
+Report that you've finished a workflow step. Validates outputs and runs quality reviews (from step definitions and .deepreview rules), then returns the next action.
 
 #### Parameters
 
@@ -113,6 +115,7 @@ Report that you've finished a workflow step. Validates outputs against quality c
 
   // Always included
   stack: StackEntry[];                 // Current workflow stack after this operation
+  issue_detected?: string;             // Present when startup issues exist; warns agent to suggest repair
 }
 ```
 
@@ -140,6 +143,7 @@ Abort the current workflow and return to the parent workflow (if nested). Use th
   stack: StackEntry[];                // Current workflow stack after abort
   resumed_workflow?: string | null;   // The workflow now active (if any)
   resumed_step?: string | null;       // The step now active (if any)
+  issue_detected?: string;            // Present when startup issues exist; warns agent to suggest repair
 }
 ```
 
@@ -164,6 +168,7 @@ Navigate back to a prior step in the current workflow. Clears all progress from 
   begin_step: ActiveStepInfo;       // Information about the step to begin working on
   invalidated_steps: string[];      // Step IDs whose progress was cleared (from target onward)
   stack: StackEntry[];              // Current workflow stack after navigation
+  issue_detected?: string;          // Present when startup issues exist; warns agent to suggest repair
 }
 ```
 
@@ -318,9 +323,9 @@ The `finished_step` tool returns one of three statuses:
    |
    Discover available jobs and workflows
    |
-2. start_workflow(goal, job_name, workflow_name, session_id)
+2. start_workflow(goal, job_name, workflow_name[, session_id])
    |
-   Get session_id, first step instructions
+   Get begin_step.session_id — use this for all subsequent calls
    |
 3. Execute step instructions, create outputs
    |
@@ -440,7 +445,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
-| 2.2.0 | `session_id` is now optional (`str | None`) on `start_workflow` only. On Claude Code (platform `"claude"`), the server raises `ToolError` if omitted. On other platforms, omitting it auto-generates a stable UUID; callers use the returned `begin_step.session_id` for all subsequent calls. `finished_step`, `abort_workflow`, and `go_to_step` continue to require `session_id`. |
+| 2.2.0 | `session_id` is now optional (`str | None`) on `start_workflow` only. On Claude Code (platform `"claude"`), the server raises `ToolError` if omitted. On other platforms, omitting it auto-generates a stable UUID; callers use the returned `begin_step.session_id` for all subsequent calls. `finished_step`, `abort_workflow`, and `go_to_step` continue to require `session_id`. Added `inputs` optional parameter to `start_workflow` for passing step argument values directly at workflow start. Added `issue_detected` optional field to all tool responses — present when the server detects configuration issues at startup; instructs agent to suggest repair to the user. |
 | 2.1.0 | Added `important_note` field to `StartWorkflowResponse` — instructs agents to clarify ambiguous user requests via `AskUserQuestion` when available. |
 | 2.0.0 | **Breaking**: `session_id` is now a required `string` parameter on all mutation tools (`start_workflow`, `finished_step`, `abort_workflow`, `go_to_step`). Added `agent_id` optional parameter for sub-agent scoping — sub-agents get their own isolated workflow stacks. State persistence path changed to `.deepwork/tmp/sessions/<platform>/session-<id>/state.json` (with sub-agent state in `agent_<agent_id>.json`). |
 | 1.9.0 | Added `go_to_step` tool for navigating back to prior steps. Clears all step progress from the target step onward, forcing re-execution of subsequent steps. Supports `session_id` for concurrent workflow safety. |
