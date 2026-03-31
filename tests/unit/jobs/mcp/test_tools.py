@@ -225,6 +225,46 @@ class TestStartWorkflow:
         assert step.step_expected_outputs[0].type == "file_path"
         assert step.step_expected_outputs[0].required is True
 
+    async def test_start_workflow_auto_generates_session_id(self, tools: WorkflowTools) -> None:
+        """Test that start_workflow auto-generates a session_id when none is provided."""
+        import re
+
+        input_data = StartWorkflowInput(
+            goal="Complete the test job",
+            job_name="test_job",
+            workflow_name="main",
+        )
+
+        response = await tools.start_workflow(input_data)
+
+        # Should return a 32-character hex string (uuid4().hex format)
+        assert re.fullmatch(r"[0-9a-f]{32}", response.begin_step.session_id)
+
+    async def test_start_workflow_auto_generated_session_id_is_stable(
+        self, tools: WorkflowTools, project_root: Path
+    ) -> None:
+        """Test that the auto-generated session_id is usable for subsequent calls."""
+        input_data = StartWorkflowInput(
+            goal="Complete the test job",
+            job_name="test_job",
+            workflow_name="main",
+        )
+
+        response = await tools.start_workflow(input_data)
+        generated_sid = response.begin_step.session_id
+
+        # Use the returned session_id to finish the first step
+        (project_root / "output1").write_text("Test output")
+        finish_input = FinishedStepInput(
+            outputs={"output1": "output1"},
+            session_id=generated_sid,
+        )
+        finish_response = await tools.finished_step(finish_input)
+
+        assert finish_response.status == StepStatus.NEXT_STEP
+        assert finish_response.begin_step is not None
+        assert finish_response.begin_step.step_id == "step2"
+
     @pytest.mark.asyncio
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.11).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
