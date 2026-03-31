@@ -15,8 +15,9 @@ class ServeError(Exception):
 @click.option(
     "--path",
     type=click.Path(exists=True, file_okay=False, path_type=Path),
-    default=".",
-    help="Path to project directory (default: current directory)",
+    default=None,
+    help="Explicit project directory. When omitted, the server resolves "
+    "the root dynamically via MCP listRoots (falling back to cwd).",
 )
 @click.option(
     "--no-quality-gate",
@@ -51,7 +52,7 @@ class ServeError(Exception):
     help="Platform identifier (e.g., 'claude'). Used by the review tool to format output.",
 )
 def serve(
-    path: Path,
+    path: Path | None,
     no_quality_gate: bool,
     transport: str,
     port: int,
@@ -77,8 +78,11 @@ def serve(
         # SSE transport for remote access
         deepwork serve --transport sse --port 8000
     """
+    explicit_path = path is not None
+    resolved_path = path if path is not None else Path.cwd()
+
     try:
-        _serve_mcp(path, transport, port, platform)
+        _serve_mcp(resolved_path, transport, port, platform, explicit_path=explicit_path)
     except ServeError as e:
         click.echo(f"Error: {e}", err=True)
         raise click.Abort() from e
@@ -92,6 +96,8 @@ def _serve_mcp(
     transport: str,
     port: int,
     platform: str | None = None,
+    *,
+    explicit_path: bool = True,
 ) -> None:
     """Start the MCP server.
 
@@ -100,6 +106,7 @@ def _serve_mcp(
         transport: Transport protocol (stdio or sse)
         port: Port for SSE transport
         platform: Platform identifier for the review tool (e.g., "claude").
+        explicit_path: Whether --path was explicitly provided by the user.
 
     Raises:
         ServeError: If server fails to start
@@ -121,6 +128,7 @@ def _serve_mcp(
     server = create_server(
         project_root=project_path,
         platform=platform,
+        explicit_path=explicit_path,
     )
 
     if transport == "stdio":

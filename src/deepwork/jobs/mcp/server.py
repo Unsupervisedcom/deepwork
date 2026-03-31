@@ -18,10 +18,11 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from fastmcp import FastMCP
+from fastmcp import Context, FastMCP
 
 from deepwork.jobs.discovery import load_all_jobs
 from deepwork.jobs.issues import Issue, detect_issues, format_issues_for_agent
+from deepwork.jobs.mcp.roots import RootResolver
 from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     ArgumentValue,
@@ -55,6 +56,8 @@ def _ensure_schema_available(project_root: Path) -> None:
 def create_server(
     project_root: Path | str,
     platform: str | None = None,
+    *,
+    explicit_path: bool = True,
     **_kwargs: Any,
 ) -> FastMCP:
     """Create and configure the MCP server.
@@ -63,6 +66,9 @@ def create_server(
         project_root: Path to the project root
         platform: Platform identifier for the review tool (e.g., "claude").
             Defaults to "claude" if not set. (default: None)
+        explicit_path: Whether project_root was explicitly provided via --path.
+            When False, tool handlers resolve the root dynamically via MCP
+            listRoots on each call. (default: True)
         **_kwargs: Accepted for backwards compatibility (enable_quality_gate,
             quality_gate_timeout, quality_gate_max_attempts, external_runner).
             These are no longer used — quality reviews now go through the
@@ -72,6 +78,7 @@ def create_server(
         Configured FastMCP server instance
     """
     project_path = Path(project_root).resolve()
+    root_resolver = RootResolver(fallback_root=project_path, explicit=explicit_path)
 
     # Copy the job schema to a stable location so agents can always reference it
     _ensure_schema_available(project_path)
@@ -147,9 +154,10 @@ def create_server(
             "Call this first to discover available workflows."
         )
     )
-    def get_workflows() -> dict[str, Any]:
+    async def get_workflows(ctx: Context) -> dict[str, Any]:
         """Get all available workflows."""
         _log_tool_call("get_workflows")
+        tools.project_root = await root_resolver.get_root(ctx)
         response = tools.get_workflows()
         return _append_issues(response.model_dump())
 
@@ -170,6 +178,7 @@ def create_server(
         job_name: str,
         workflow_name: str,
         session_id: str,
+        ctx: Context,
         inputs: dict[str, ArgumentValue] | None = None,
         agent_id: str | None = None,
     ) -> dict[str, Any]:
@@ -186,6 +195,7 @@ def create_server(
             session_id=session_id,
             agent_id=agent_id,
         )
+        tools.project_root = await root_resolver.get_root(ctx)
         input_data = StartWorkflowInput(
             goal=goal,
             job_name=job_name,
@@ -219,6 +229,7 @@ def create_server(
     async def finished_step(
         outputs: dict[str, ArgumentValue],
         session_id: str,
+        ctx: Context,
         work_summary: str | None = None,
         quality_review_override_reason: str | None = None,
         agent_id: str | None = None,
@@ -235,6 +246,7 @@ def create_server(
             session_id=session_id,
             agent_id=agent_id,
         )
+        tools.project_root = await root_resolver.get_root(ctx)
         input_data = FinishedStepInput(
             outputs=outputs,
             work_summary=work_summary,
@@ -258,6 +270,7 @@ def create_server(
     async def abort_workflow(
         explanation: str,
         session_id: str,
+        ctx: Context,
         agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Abort the current workflow and return to parent."""
@@ -267,6 +280,7 @@ def create_server(
             session_id=session_id,
             agent_id=agent_id,
         )
+        tools.project_root = await root_resolver.get_root(ctx)
         input_data = AbortWorkflowInput(
             explanation=explanation, session_id=session_id, agent_id=agent_id
         )
@@ -288,6 +302,7 @@ def create_server(
     async def go_to_step(
         step_id: str,
         session_id: str,
+        ctx: Context,
         agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Navigate back to a prior step, clearing subsequent progress."""
@@ -297,6 +312,7 @@ def create_server(
             session_id=session_id,
             agent_id=agent_id,
         )
+        tools.project_root = await root_resolver.get_root(ctx)
         input_data = GoToStepInput(step_id=step_id, session_id=session_id, agent_id=agent_id)
         response = await tools.go_to_step(input_data)
         return _append_issues(response.model_dump())
@@ -311,14 +327,15 @@ def create_server(
             "Useful for understanding what file types have schemas defined."
         )
     )
-    def get_named_schemas() -> list[dict[str, Any]]:
+    async def get_named_schemas(ctx: Context) -> list[dict[str, Any]]:
         """List all named DeepSchemas with basic info."""
         _log_tool_call("get_named_schemas")
         from deepwork.deepschema.config import DeepSchemaError, parse_deepschema_file
         from deepwork.deepschema.discovery import find_named_schemas
 
+        root = await root_resolver.get_root(ctx)
         results: list[dict[str, Any]] = []
-        for manifest_path in find_named_schemas(project_path):
+        for manifest_path in find_named_schemas(root):
             name = manifest_path.parent.name
             try:
                 schema = parse_deepschema_file(manifest_path, "named", name)
@@ -356,11 +373,12 @@ def create_server(
             "changes via git diff against the main branch."
         )
     )
-    def get_review_instructions(files: list[str] | None = None) -> str:
+    async def get_review_instructions(ctx: Context, files: list[str] | None = None) -> str:
         """Run review pipeline on changed files."""
         _log_tool_call("get_review_instructions", {"files": files})
+        root = await root_resolver.get_root(ctx)
         try:
-            return run_review(project_path, review_platform, files)
+            return run_review(root, review_platform, files)
         except ReviewToolError as e:
             return f"Review error: {e}"
 
@@ -372,7 +390,8 @@ def create_server(
             "to rules that would apply to those specific files."
         )
     )
-    def get_configured_reviews(
+    async def get_configured_reviews(
+        ctx: Context,
         only_rules_matching_files: list[str] | None = None,
     ) -> list[dict[str, str]]:
         """List configured review rules, optionally filtered by file paths."""
@@ -380,7 +399,8 @@ def create_server(
             "get_configured_reviews",
             {"only_rules_matching_files": only_rules_matching_files},
         )
-        return get_configured_reviews_fn(project_path, only_rules_matching_files)
+        root = await root_resolver.get_root(ctx)
+        return get_configured_reviews_fn(root, only_rules_matching_files)
 
     @mcp.tool(
         description=(
@@ -389,11 +409,12 @@ def create_server(
             '"After Review" section.'
         )
     )
-    def mark_review_as_passed(review_id: str) -> str:
+    async def mark_review_as_passed(review_id: str, ctx: Context) -> str:
         """Mark a review as passed by creating a .passed marker file."""
         _log_tool_call("mark_review_as_passed", {"review_id": review_id})
+        root = await root_resolver.get_root(ctx)
         try:
-            return mark_passed_fn(project_path, review_id)
+            return mark_passed_fn(root, review_id)
         except ValueError as e:
             return f"Validation error: {e}"
 

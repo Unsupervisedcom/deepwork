@@ -17,7 +17,7 @@ The Claude Code plugin is the primary distribution mechanism for DeepWork on the
 1. The plugin MUST register the DeepWork MCP server via `plugins/claude/.mcp.json`.
 2. The MCP server command MUST be `uvx` with a first argument starting with `deepwork` (to allow version-pinned variants like `deepwork==x.y.z`) and `serve` as the second argument.
 3. The MCP server arguments MUST include `--platform claude` so the server knows it is running under Claude Code.
-4. The MCP server arguments MUST include `--path .` so job discovery starts from the project root.
+4. The MCP server arguments MUST NOT include `--path` so that the server resolves the project root dynamically via MCP `listRoots` (see JOBS-REQ-011).
 
 ### PLUG-REQ-001.3: Deepwork Skill
 
