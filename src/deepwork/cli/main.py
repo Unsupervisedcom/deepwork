@@ -11,12 +11,14 @@ def cli() -> None:
 
 
 # Import commands
+from deepwork.cli.codex_hook import codex_hook  # noqa: E402
 from deepwork.cli.hook import hook  # noqa: E402
 from deepwork.cli.install import install, sync  # noqa: E402
 from deepwork.cli.jobs import jobs  # noqa: E402
 from deepwork.cli.review import review  # noqa: E402
 from deepwork.cli.serve import serve  # noqa: E402
 
+cli.add_command(codex_hook)
 cli.add_command(hook)
 cli.add_command(jobs)
 cli.add_command(review)

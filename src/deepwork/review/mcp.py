@@ -20,6 +20,7 @@ from deepwork.review.matcher import (
 
 FORMATTERS = {
     "claude": format_for_claude,
+    "codex": format_for_claude,
 }
 
 SUPPORTED_PLATFORMS = set(FORMATTERS.keys())

@@ -15,7 +15,7 @@ from deepwork.review.matcher import GitDiffError, get_changed_files, match_files
 @click.option(
     "--instructions-for",
     "instructions_for",
-    type=click.Choice(["claude"]),
+    type=click.Choice(["claude", "codex"]),
     required=True,
     help="Target platform for review instructions.",
 )
@@ -54,15 +54,15 @@ def review(
 
     \b
       # Pipe from git
-      git diff --name-only HEAD~3 | deepwork review --instructions-for claude
+      git diff --name-only HEAD~3 | deepwork review --instructions-for codex
 
     \b
       # Glob (shell expands the pattern)
-      printf '%s\n' src/**/*.py | deepwork review --instructions-for claude
+      printf '%s\n' src/**/*.py | deepwork review --instructions-for codex
 
     \b
       # find
-      find src -name '*.py' | deepwork review --instructions-for claude
+      find src -name '*.py' | deepwork review --instructions-for codex
     """
     project_root = Path(path).resolve()
 
@@ -101,7 +101,7 @@ def review(
         sys.exit(1)
 
     # Step 5: Format and output
-    if instructions_for == "claude":
+    if instructions_for in {"claude", "codex"}:
         output = format_for_claude(task_files, project_root)
         click.echo(output)
 
