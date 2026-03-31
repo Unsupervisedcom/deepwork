@@ -225,6 +225,8 @@ class TestStartWorkflow:
         assert step.step_expected_outputs[0].type == "file_path"
         assert step.step_expected_outputs[0].required is True
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow_auto_generates_session_id(self, tools: WorkflowTools) -> None:
         """Test that start_workflow auto-generates a session_id when none is provided (non-claude platform)."""
         import re
@@ -241,6 +243,8 @@ class TestStartWorkflow:
         # Should return a 32-character hex string (uuid4().hex format)
         assert re.fullmatch(r"[0-9a-f]{32}", response.begin_step.session_id)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_start_workflow_auto_generated_session_id_is_stable(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -266,9 +270,9 @@ class TestStartWorkflow:
         assert finish_response.begin_step is not None
         assert finish_response.begin_step.step_id == "step2"
 
-    async def test_start_workflow_requires_session_id_on_claude(
-        self, project_root: Path
-    ) -> None:
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_start_workflow_requires_session_id_on_claude(self, project_root: Path) -> None:
         """Test that session_id is required when platform is 'claude'."""
         claude_state = StateManager(project_root, platform="claude")
         claude_tools = WorkflowTools(project_root, claude_state)

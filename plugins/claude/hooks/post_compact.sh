@@ -38,7 +38,7 @@ fi
 CONTEXT="# DeepWork Workflow Context (Restored After Compaction)
 
 You are in the middle of a DeepWork workflow. Use the DeepWork MCP tools to continue.
-Call \`finished_step\` with your outputs when you complete the current step.
+Call \`finished_step\` with your outputs and the \`session_id\` shown below when you complete the current step.
 "
 
 for ((i = 0; i < SESSION_COUNT; i++)); do
@@ -74,7 +74,8 @@ for ((i = 0; i < SESSION_COUNT; i++)); do
   fi
 
   CONTEXT="$CONTEXT
-## Active Session: $SESSION_ID
+## Active Session
+- **session_id**: \`$SESSION_ID\` (pass this to \`finished_step\`, \`abort_workflow\`, and \`go_to_step\`)
 - **Workflow**: ${JOB_NAME}/${WORKFLOW_NAME}
 - **Goal**: $GOAL
 - **Current Step**: $STEP_LABEL"

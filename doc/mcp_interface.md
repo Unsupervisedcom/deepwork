@@ -91,7 +91,7 @@ Report that you've finished a workflow step. Validates outputs against quality c
 | `outputs` | `Record<string, string \| string[]>` | Yes | Map of step_argument names to values. For outputs declared with type `file_path`: pass a single string path or list of paths. For outputs declared with type `string`: pass a string value. Outputs with `required: false` can be omitted. Check `step_expected_outputs` to see each output's type and required status. |
 | `work_summary` | `string \| null` | No | Summary of the work done in this step. Used by process_requirements reviews to evaluate whether the work process met quality criteria. Include key decisions, approaches taken, and any deviations from the instructions. |
 | `quality_review_override_reason` | `string \| null` | No | If provided, skips quality review (must explain why) |
-| `session_id` | `string \| null` | No | Session identifier (from `begin_step.session_id` returned by `start_workflow`, or `CLAUDE_CODE_SESSION_ID` on Claude Code). Required to identify the workflow session. |
+| `session_id` | `string` | Yes | Session identifier from the `begin_step.session_id` returned by `start_workflow`. |
 | `agent_id` | `string \| null` | No | Agent identifier for sub-agent scoping (CLAUDE_CODE_AGENT_ID from startup context on Claude Code). When set, operates on this agent's scoped workflow stack. |
 
 #### Returns
@@ -127,7 +127,7 @@ Abort the current workflow and return to the parent workflow (if nested). Use th
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `explanation` | `string` | Yes | Why the workflow is being aborted |
-| `session_id` | `string \| null` | No | Session identifier (from `begin_step.session_id` or `CLAUDE_CODE_SESSION_ID` on Claude Code). |
+| `session_id` | `string` | Yes | Session identifier from the `begin_step.session_id` returned by `start_workflow`. |
 | `agent_id` | `string \| null` | No | Agent identifier for sub-agent scoping (CLAUDE_CODE_AGENT_ID from startup context on Claude Code). When set, operates on this agent's scoped workflow stack. |
 
 #### Returns
@@ -154,7 +154,7 @@ Navigate back to a prior step in the current workflow. Clears all progress from 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `step_id` | `string` | Yes | ID of the step to navigate back to. Must exist in the current workflow. |
-| `session_id` | `string \| null` | No | Session identifier (from `begin_step.session_id` or `CLAUDE_CODE_SESSION_ID` on Claude Code). |
+| `session_id` | `string` | Yes | Session identifier from the `begin_step.session_id` returned by `start_workflow`. |
 | `agent_id` | `string \| null` | No | Agent identifier for sub-agent scoping (CLAUDE_CODE_AGENT_ID from startup context on Claude Code). When set, operates on this agent's scoped workflow stack. |
 
 #### Returns
@@ -440,6 +440,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
+| 2.2.0 | `session_id` is now optional (`str | None`) on `start_workflow` only. On Claude Code (platform `"claude"`), the server raises `ToolError` if omitted. On other platforms, omitting it auto-generates a stable UUID; callers use the returned `begin_step.session_id` for all subsequent calls. `finished_step`, `abort_workflow`, and `go_to_step` continue to require `session_id`. |
 | 2.1.0 | Added `important_note` field to `StartWorkflowResponse` — instructs agents to clarify ambiguous user requests via `AskUserQuestion` when available. |
 | 2.0.0 | **Breaking**: `session_id` is now a required `string` parameter on all mutation tools (`start_workflow`, `finished_step`, `abort_workflow`, `go_to_step`). Added `agent_id` optional parameter for sub-agent scoping — sub-agents get their own isolated workflow stacks. State persistence path changed to `.deepwork/tmp/sessions/<platform>/session-<id>/state.json` (with sub-agent state in `agent_<agent_id>.json`). |
 | 1.9.0 | Added `go_to_step` tool for navigating back to prior steps. Clears all step progress from the target step onward, forcing re-execution of subsequent steps. Supports `session_id` for concurrent workflow safety. |

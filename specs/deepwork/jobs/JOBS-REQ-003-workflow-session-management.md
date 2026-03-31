@@ -15,7 +15,7 @@ The StateManager manages workflow session state with support for stack-based nes
 
 ### JOBS-REQ-003.2: Session-Scoped Storage
 
-1. Session IDs MUST be provided by the caller (e.g., from Claude Code's session context), not generated internally.
+1. On Claude Code (platform `"claude"`), session IDs MUST be provided by the caller (from `CLAUDE_CODE_SESSION_ID`). On other platforms, the server MUST auto-generate a stable session ID (UUID4 hex) when the caller omits it.
 2. Each session's state MUST be stored in its own directory: `session-{session_id}/`.
 3. The main workflow stack MUST be stored in `state.json` within the session directory.
 4. Sub-agent workflow stacks MUST be stored in `agent_{agent_id}.json` within the session directory.

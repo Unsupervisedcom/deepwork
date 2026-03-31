@@ -475,7 +475,7 @@ class WorkflowTools:
 
     async def finished_step(self, input_data: FinishedStepInput) -> FinishedStepResponse:
         """Report step completion and get next instructions."""
-        sid = self._resolve_session_id(input_data.session_id)
+        sid = input_data.session_id
         aid = input_data.agent_id
         try:
             session = self.state_manager.resolve_session(sid, aid)
@@ -580,7 +580,7 @@ class WorkflowTools:
 
     async def abort_workflow(self, input_data: AbortWorkflowInput) -> AbortWorkflowResponse:
         """Abort the current workflow and return to the previous one."""
-        sid = self._resolve_session_id(input_data.session_id)
+        sid = input_data.session_id
         aid = input_data.agent_id
         aborted_session, new_active = await self.state_manager.abort_workflow(
             sid, input_data.explanation, agent_id=aid
@@ -601,7 +601,7 @@ class WorkflowTools:
 
     async def go_to_step(self, input_data: GoToStepInput) -> GoToStepResponse:
         """Navigate back to a prior step, clearing progress from that step onward."""
-        sid = self._resolve_session_id(input_data.session_id)
+        sid = input_data.session_id
         aid = input_data.agent_id
         session = self.state_manager.resolve_session(sid, aid)
 

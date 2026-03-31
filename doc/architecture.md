@@ -843,7 +843,7 @@ Begins a new workflow session.
 - `job_name: str` - Name of the job
 - `workflow_name: str` - Name of the workflow within the job
 - `inputs: dict[str, str | list[str]] | None` - Inputs for the first step (file paths for `file_path` type, strings for `string` type)
-- `session_id: str` - Claude Code session ID (required)
+- `session_id: str | None` - Session identifier. Required on Claude Code (`CLAUDE_CODE_SESSION_ID`); auto-generated on other platforms
 - `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
 **Returns**: First step info (`ActiveStepInfo`) with resolved inputs, workflow stack
@@ -855,7 +855,7 @@ Reports step completion and gets next instructions.
 - `outputs: dict[str, str | list[str]]` - Map of output names to file path(s) or string values
 - `work_summary: str | None` - Summary of the work done in the step
 - `quality_review_override_reason: str | None` - If provided, skips quality review
-- `session_id: str` - Claude Code session ID (required)
+- `session_id: str` - Session identifier from `begin_step.session_id` returned by `start_workflow`
 - `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
 **Returns**:
@@ -869,7 +869,7 @@ Aborts the current workflow and returns to the parent (if nested).
 
 **Parameters**:
 - `explanation: str` - Why the workflow is being aborted
-- `session_id: str` - Claude Code session ID (required)
+- `session_id: str` - Session identifier from `begin_step.session_id` returned by `start_workflow`
 - `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
 **Returns**: Aborted workflow info, resumed parent info (if any), current stack
@@ -879,7 +879,7 @@ Navigates back to a prior step, clearing progress from that step onward.
 
 **Parameters**:
 - `step_id: str` - ID of the step to navigate back to
-- `session_id: str` - Claude Code session ID (required)
+- `session_id: str` - Session identifier from `begin_step.session_id` returned by `start_workflow`
 - `agent_id: str | None` - Claude Code agent ID for sub-agent scoping
 
 **Returns**: `begin_step` (step info for the target step), `invalidated_steps` (step IDs whose progress was cleared), `stack` (current workflow stack)

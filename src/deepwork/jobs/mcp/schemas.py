@@ -129,10 +129,9 @@ class FinishedStepInput(BaseModel):
         default=None,
         description="If provided, skips the quality gate review. Must explain why the review is being bypassed.",
     )
-    session_id: str | None = Field(
-        default=None,
+    session_id: str = Field(
         description=(
-            "Session identifier (from start_workflow response or CLAUDE_CODE_SESSION_ID on Claude Code). "
+            "Session identifier from the start_workflow response (begin_step.session_id). "
             "Identifies the workflow session to report completion for."
         ),
     )
@@ -149,10 +148,9 @@ class AbortWorkflowInput(BaseModel):
     """Input for abort_workflow tool."""
 
     explanation: str = Field(description="Explanation of why the workflow is being aborted")
-    session_id: str | None = Field(
-        default=None,
+    session_id: str = Field(
         description=(
-            "Session identifier (from start_workflow response or CLAUDE_CODE_SESSION_ID on Claude Code). "
+            "Session identifier from the start_workflow response (begin_step.session_id). "
             "Identifies the workflow session to abort."
         ),
     )
@@ -169,10 +167,9 @@ class GoToStepInput(BaseModel):
     """Input for go_to_step tool."""
 
     step_id: str = Field(description="Name of the step to navigate back to")
-    session_id: str | None = Field(
-        default=None,
+    session_id: str = Field(
         description=(
-            "Session identifier (from start_workflow response or CLAUDE_CODE_SESSION_ID on Claude Code). "
+            "Session identifier from the start_workflow response (begin_step.session_id). "
             "Identifies the workflow session for navigation."
         ),
     )

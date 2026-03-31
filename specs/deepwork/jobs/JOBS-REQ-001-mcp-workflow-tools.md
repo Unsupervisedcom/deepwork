@@ -34,7 +34,7 @@ The DeepWork MCP server exposes workflow tools to AI agents via the Model Contex
 ### JOBS-REQ-001.3: start_workflow Tool
 
 1. The `start_workflow` tool MUST be registered as an asynchronous MCP tool.
-2. The tool MUST require: `goal` (str), `job_name` (str), `workflow_name` (str), `session_id` (str).
+2. The tool MUST require: `goal` (str), `job_name` (str), `workflow_name` (str). It MUST accept `session_id` (str or None). On Claude Code (platform `"claude"`), the tool MUST raise `ToolError` if `session_id` is omitted. On other platforms, the tool MUST auto-generate a session ID when omitted.
 3. The tool MUST accept optional: `inputs` (dict of step_argument names to values, or None), `agent_id` (str or None).
 4. The tool MUST raise `ToolError` if the specified `job_name` does not exist.
 5. The tool MUST raise `ToolError` if the specified `workflow_name` does not match any workflow, UNLESS the job has exactly one workflow, in which case it SHALL be auto-selected.
@@ -49,7 +49,7 @@ The DeepWork MCP server exposes workflow tools to AI agents via the Model Contex
 ### JOBS-REQ-001.4: finished_step Tool
 
 1. The `finished_step` tool MUST be registered as an asynchronous MCP tool.
-2. The tool MUST require: `outputs` (dict mapping step_argument names to values), `session_id` (str).
+2. The tool MUST require: `outputs` (dict mapping step_argument names to values), `session_id` (str, from the `begin_step.session_id` returned by `start_workflow`).
 3. The tool MUST accept optional: `work_summary` (str or None), `quality_review_override_reason` (str or None), `agent_id` (str or None).
 4. The tool MUST raise `ToolError` if no active workflow session exists for the given `session_id`.
 5. The tool MUST validate submitted outputs against the current step's declared output refs (see JOBS-REQ-001.5).
@@ -80,7 +80,7 @@ The DeepWork MCP server exposes workflow tools to AI agents via the Model Contex
 ### JOBS-REQ-001.6: abort_workflow Tool
 
 1. The `abort_workflow` tool MUST be registered as an asynchronous MCP tool.
-2. The tool MUST require `explanation` (str) and `session_id` (str).
+2. The tool MUST require `explanation` (str) and `session_id` (str, from the `begin_step.session_id` returned by `start_workflow`).
 3. The tool MUST accept optional `agent_id` (str or None).
 4. The tool MUST raise `StateError` if no active workflow session exists.
 5. The tool MUST mark the session as aborted and remove it from the stack.
@@ -89,7 +89,7 @@ The DeepWork MCP server exposes workflow tools to AI agents via the Model Contex
 ### JOBS-REQ-001.7: go_to_step Tool
 
 1. The `go_to_step` tool MUST be registered as an asynchronous MCP tool.
-2. The tool MUST require `step_id` (str) and `session_id` (str). Optional: `agent_id`.
+2. The tool MUST require `step_id` (str) and `session_id` (str, from the `begin_step.session_id` returned by `start_workflow`). Optional: `agent_id`.
 3. The tool MUST raise `StateError` if no active workflow session exists.
 4. The tool MUST raise `ToolError` if `step_id` does not exist in the workflow, listing available step names.
 5. The tool MUST raise `ToolError` if the target step index is greater than the current step index (forward navigation). The error MUST direct the agent to use `finished_step`.
