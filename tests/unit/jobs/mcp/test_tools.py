@@ -227,6 +227,7 @@ class TestStartWorkflow:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @pytest.mark.asyncio
     async def test_start_workflow_auto_generates_session_id(self, tools: WorkflowTools) -> None:
         """Test that start_workflow auto-generates a session_id when none is provided (non-claude platform)."""
         import re
@@ -245,6 +246,7 @@ class TestStartWorkflow:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @pytest.mark.asyncio
     async def test_start_workflow_auto_generated_session_id_is_stable(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -272,6 +274,7 @@ class TestStartWorkflow:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @pytest.mark.asyncio
     async def test_start_workflow_requires_session_id_on_claude(self, project_root: Path) -> None:
         """Test that session_id is required when platform is 'claude'."""
         claude_state = StateManager(project_root, platform="claude")
