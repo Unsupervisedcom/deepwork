@@ -66,6 +66,25 @@ class TestGetApplicableSchemas:
         assert not get_applicable_schemas("tests/main.py", [schema], tmp_path)
 
 
+class TestAnonymousSchemaOutsideProject:
+    """Tests for _anonymous_schema_matches when target is outside project_root."""
+
+    def test_returns_false_when_target_outside_project(self, tmp_path: Path) -> None:
+        """Anonymous schema whose target resolves outside project_root returns False."""
+        from deepwork.deepschema.matcher import _anonymous_schema_matches
+
+        # Schema in /outside/ directory, target would be /outside/config.json
+        schema = DeepSchema(
+            name="config.json",
+            schema_type="anonymous",
+            source_path=Path("/outside/.deepschema.config.json.yml"),
+            requirements={"test": "MUST pass"},
+        )
+        # filepath is relative to tmp_path, but target resolves to /outside/config.json
+        result = _anonymous_schema_matches("config.json", schema, tmp_path)
+        assert result is False
+
+
 class TestGetSchemasForFileFast:
     def test_finds_named_schema(self, tmp_path: Path) -> None:
         schema_dir = tmp_path / ".deepwork" / "schemas" / "py_files"
@@ -90,5 +109,26 @@ class TestGetSchemasForFileFast:
         assert result[0].name == "app.py"
 
     def test_returns_empty_when_no_schemas(self, tmp_path: Path) -> None:
+        result = get_schemas_for_file_fast("src/app.py", tmp_path)
+        assert result == []
+
+    def test_skips_named_schema_with_parse_error(self, tmp_path: Path) -> None:
+        """Named schema with parse error is skipped, not crash."""
+        schema_dir = tmp_path / ".deepwork" / "schemas" / "broken"
+        schema_dir.mkdir(parents=True)
+        (schema_dir / "deepschema.yml").write_text("[invalid yaml]", encoding="utf-8")
+
+        # Should not raise — the broken schema is silently skipped
+        result = get_schemas_for_file_fast("src/app.py", tmp_path)
+        # No broken schemas in result
+        assert all(s.name != "broken" for s in result)
+
+    def test_skips_anonymous_schema_with_parse_error(self, tmp_path: Path) -> None:
+        """Anonymous schema with parse error is skipped, not crash."""
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / ".deepschema.app.py.yml").write_text("[invalid yaml]", encoding="utf-8")
+
+        # Should not raise — the broken anonymous schema is silently skipped
         result = get_schemas_for_file_fast("src/app.py", tmp_path)
         assert result == []

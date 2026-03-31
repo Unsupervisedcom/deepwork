@@ -53,6 +53,12 @@ python_code_review:
       - **Comment accuracy**: Are all comments, docstrings, and inline
         documentation still accurate after the changes? Flag any comments that
         describe behavior that no longer matches the code.
+      - **PR-local comments**: Flag any comments or docstrings that reference
+        specific source code line numbers (e.g., "covers lines 107-108",
+        "tests the branch at line 65"), PR numbers, or other transient context
+        that will not make sense to a future reader. Comments should describe
+        *what* and *why*, not *where in the current diff* something is. This
+        applies to both production code and test files.
 
       Output Format:
       - PASS: No issues found.

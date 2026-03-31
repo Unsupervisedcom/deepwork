@@ -275,6 +275,61 @@ class TestGetStackJobNotFound:
         assert session["job_name"] == "nonexistent_job"
 
 
+class TestListSessionsSyncErrors:
+    """Tests for _list_sessions_sync error handling."""
+
+    def test_skips_invalid_json_session_files(self, tmp_path: Path) -> None:
+        """Invalid JSON in session state files is silently skipped."""
+        from deepwork.cli.jobs import _list_sessions_sync
+
+        sessions_dir = tmp_path / ".deepwork" / "tmp"
+        state_dir = sessions_dir / "sessions" / "claude" / "session-bad"
+        state_dir.mkdir(parents=True)
+        (state_dir / "state.json").write_text("not valid json")
+
+        sessions = _list_sessions_sync(sessions_dir)
+        assert sessions == []
+
+    def test_skips_session_with_invalid_data(self, tmp_path: Path) -> None:
+        """Session with invalid data structure (ValueError) is silently skipped."""
+        from deepwork.cli.jobs import _list_sessions_sync
+
+        sessions_dir = tmp_path / ".deepwork" / "tmp"
+        state_dir = sessions_dir / "sessions" / "claude" / "session-bad"
+        state_dir.mkdir(parents=True)
+        # Valid JSON but workflow_stack entry missing required fields
+        (state_dir / "state.json").write_text(
+            json.dumps({"workflow_stack": [{"not_a_valid": "session"}]})
+        )
+
+        sessions = _list_sessions_sync(sessions_dir)
+        assert sessions == []
+
+
+class TestGetStackParseError:
+    """Tests for ParseError handling in _get_active_sessions."""
+
+    def test_session_with_unparseable_job_has_null_fields(self, tmp_path: Path) -> None:
+        """When the job.yml exists but is unparseable, common_job_info is null."""
+        sessions_dir = tmp_path / ".deepwork" / "tmp"
+        _create_session_file(sessions_dir, "abc12345", job_name="bad_job")
+
+        # Create a job dir with invalid content
+        job_dir = tmp_path / ".deepwork" / "jobs" / "bad_job"
+        job_dir.mkdir(parents=True)
+        (job_dir / "job.yml").write_text("[invalid yaml that is not a dict]")
+
+        runner = CliRunner()
+        result = runner.invoke(get_stack, ["--path", str(tmp_path)])
+        assert result.exit_code == 0
+
+        data = json.loads(result.output)
+        assert len(data["active_sessions"]) == 1
+        session = data["active_sessions"][0]
+        assert session["common_job_info"] is None
+        assert session["current_step_instructions"] is None
+
+
 class TestGetStackJsonOutput:
     """Tests for valid JSON output."""
 

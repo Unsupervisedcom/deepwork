@@ -168,6 +168,82 @@ def _get_tool_names(server: Any) -> set[str]:
     return {t.name for t in tools}
 
 
+class TestRunReviewDiscoveryWarnings:
+    """Tests for discovery warning handling in run_review."""
+
+    @patch("deepwork.review.mcp.gen_schema_rules")
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_no_valid_rules_with_parse_errors_shows_warnings(
+        self, mock_load: Any, mock_schema: Any, tmp_path: Path
+    ) -> None:
+        """When no valid rules exist but there are discovery errors, shows parse errors."""
+        from deepwork.review.discovery import DiscoveryError
+
+        mock_load.return_value = (
+            [],
+            [DiscoveryError(file_path=Path("bad/.deepreview"), error="bad yaml")],
+        )
+        mock_schema.return_value = ([], [])
+
+        result = run_review(tmp_path, "claude")
+        assert "No valid review rules found" in result
+        assert "bad/.deepreview" in result
+        assert "bad yaml" in result
+
+    @patch("deepwork.review.mcp.gen_schema_rules")
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_schema_errors_appended_to_discovery_errors(
+        self, mock_load: Any, mock_schema: Any, tmp_path: Path
+    ) -> None:
+        """DeepSchema errors are appended to discovery_errors."""
+
+        mock_load.return_value = ([], [])
+        mock_schema.return_value = ([], ["schema parse failed"])
+
+        result = run_review(tmp_path, "claude")
+        # No rules at all (empty from both sources), but there's a schema error
+        assert "No valid review rules found" in result
+        assert "schema parse failed" in result
+
+    @patch("deepwork.review.mcp.write_instruction_files")
+    @patch("deepwork.review.mcp.match_files_to_rules")
+    @patch("deepwork.review.mcp.get_changed_files")
+    @patch("deepwork.review.mcp.gen_schema_rules")
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_discovery_warnings_prepended_to_output(
+        self,
+        mock_load: Any,
+        mock_schema: Any,
+        mock_diff: Any,
+        mock_match: Any,
+        mock_write: Any,
+        tmp_path: Path,
+    ) -> None:
+        """When discovery errors exist alongside valid rules, warnings are prepended."""
+        from deepwork.review.discovery import DiscoveryError
+
+        rule = _make_rule(tmp_path)
+        task = ReviewTask(
+            rule_name="test_rule",
+            files_to_review=["app.py"],
+            instructions="Review it.",
+            agent_name=None,
+        )
+        mock_load.return_value = (
+            [rule],
+            [DiscoveryError(file_path=Path("x/.deepreview"), error="parse error")],
+        )
+        mock_schema.return_value = ([], [])
+        mock_diff.return_value = ["app.py"]
+        mock_match.return_value = [task]
+        mock_write.return_value = [(task, tmp_path / "instr.md")]
+
+        result = run_review(tmp_path, "claude")
+        assert "Warning: Some .deepreview files could not be parsed" in result
+        assert "x/.deepreview" in result
+        assert "parse error" in result
+
+
 class TestReviewToolRegistration:
     """Test that the review tool is registered on the MCP server."""
 

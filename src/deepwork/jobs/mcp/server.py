@@ -461,6 +461,9 @@ _WORKFLOW_HEADER = (
     "these, use `/deepwork` to start the workflow.\n\n"
 )
 
+# Claude Code truncates MCP server instructions at 2048 chars. Do NOT increase
+# this value — if the result exceeds this limit, the function must fall back to
+# a shorter message that tells the agent to call get_workflows instead.
 _MAX_INSTRUCTIONS_SIZE = 2048
 
 
