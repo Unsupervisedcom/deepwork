@@ -165,8 +165,9 @@ def create_server(
         description=(
             "Start a new workflow session. "
             "Initializes state tracking and returns the first step's instructions. "
-            "Required parameters: goal (what user wants), job_name, workflow_name, "
-            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Required parameters: goal (what user wants), job_name, workflow_name. "
+            "Optional: session_id — on Claude Code pass CLAUDE_CODE_SESSION_ID; "
+            "on other platforms omit it and use the session_id returned in begin_step for all subsequent calls. "
             "Optional: inputs (map of step_argument names to values for the first step), "
             "agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents). "
             "Supports nested workflows - starting a workflow while one is active "
@@ -177,8 +178,8 @@ def create_server(
         goal: str,
         job_name: str,
         workflow_name: str,
-        session_id: str,
         ctx: Context,
+        session_id: str | None = None,
         inputs: dict[str, ArgumentValue] | None = None,
         agent_id: str | None = None,
     ) -> dict[str, Any]:
@@ -215,8 +216,8 @@ def create_server(
             "'needs_work' with review instructions to follow, "
             "'next_step' with instructions for the next step, or "
             "'workflow_complete' when finished (pops from stack if nested). "
-            "Required: outputs (map of step_argument names to values), "
-            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Required: outputs (map of step_argument names to values). "
+            "Required: session_id (from begin_step.session_id returned by start_workflow, or CLAUDE_CODE_SESSION_ID on Claude Code). "
             "For outputs with type 'file_path': pass a single string path or list of paths. "
             "For outputs with type 'string': pass a string value. "
             "Outputs marked required: true must be provided; required: false outputs can be omitted. "
@@ -228,8 +229,8 @@ def create_server(
     )
     async def finished_step(
         outputs: dict[str, ArgumentValue],
-        session_id: str,
         ctx: Context,
+        session_id: str | None = None,
         work_summary: str | None = None,
         quality_review_override_reason: str | None = None,
         agent_id: str | None = None,
@@ -261,16 +262,16 @@ def create_server(
         description=(
             "Abort the current workflow and return to the parent workflow (if nested). "
             "Use this when a workflow cannot be completed and needs to be abandoned. "
-            "Required: explanation (why the workflow is being aborted), "
-            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Required: explanation (why the workflow is being aborted). "
+            "Required: session_id (from begin_step.session_id returned by start_workflow, or CLAUDE_CODE_SESSION_ID on Claude Code). "
             "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents). "
             "Returns the aborted workflow info and the resumed parent workflow (if any)."
         )
     )
     async def abort_workflow(
         explanation: str,
-        session_id: str,
         ctx: Context,
+        session_id: str | None = None,
         agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Abort the current workflow and return to parent."""
@@ -294,15 +295,15 @@ def create_server(
             "of subsequent steps to ensure consistency. "
             "Use this when earlier outputs need revision or quality issues are discovered. "
             "Files on disk are NOT deleted — only session tracking state is cleared. "
-            "Required: step_id (the step name to go back to), "
-            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Required: step_id (the step name to go back to). "
+            "Required: session_id (from begin_step.session_id returned by start_workflow, or CLAUDE_CODE_SESSION_ID on Claude Code). "
             "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents)."
         )
     )
     async def go_to_step(
         step_id: str,
-        session_id: str,
         ctx: Context,
+        session_id: str | None = None,
         agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Navigate back to a prior step, clearing subsequent progress."""
@@ -424,14 +425,18 @@ def create_server(
 _STATIC_INSTRUCTIONS = """\
 # DeepWork Workflow Server
 
-Multi-step workflows with quality gates. All tools require `session_id` \
-(CLAUDE_CODE_SESSION_ID from startup context). Sub-agents also pass `agent_id`.
+Multi-step workflows with quality gates.
+
+**Session identity**: On Claude Code pass `CLAUDE_CODE_SESSION_ID` as `session_id`. \
+On other platforms omit `session_id` in `start_workflow`; the server auto-generates one \
+and returns it in `begin_step.session_id` — use that value for all subsequent calls. \
+Sub-agents on Claude Code also pass `agent_id` (CLAUDE_CODE_AGENT_ID).
 
 ## Workflow Lifecycle
 
 1. `get_workflows` — discover available workflows
-2. `start_workflow` — begin with goal, job_name, workflow_name, session_id
-3. Follow step instructions, then call `finished_step` with outputs
+2. `start_workflow` — begin with goal, job_name, workflow_name (session_id optional — see above)
+3. Follow step instructions; use `begin_step.session_id` for all subsequent calls, then call `finished_step` with outputs
 4. If `needs_work`: fix issues and retry. If `next_step`: continue. If `workflow_complete`: done.
 
 Workflows nest via stack. Use `abort_workflow` to cancel, `go_to_step` to revisit earlier steps.
