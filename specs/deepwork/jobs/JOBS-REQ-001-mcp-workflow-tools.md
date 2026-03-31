@@ -13,11 +13,11 @@ The DeepWork MCP server exposes workflow tools to AI agents via the Model Contex
 3. The server MUST accept an optional `platform` parameter (str or None, default: `None`). When `None`, defaults to `"claude"`.
 4. The server MUST accept `**_kwargs` for backwards compatibility with removed parameters (`enable_quality_gate`, `quality_gate_timeout`, `quality_gate_max_attempts`, `external_runner`). These MUST be ignored.
 5. The server MUST accept an `explicit_path` keyword argument (bool, default: `True`). When `False`, tool handlers MUST resolve the project root dynamically via `RootResolver.get_root()` on each invocation (see JOBS-REQ-011).
-5. The server MUST be named `"deepwork"`.
-6. The server MUST include instructions text describing the workflow lifecycle.
-7. Every tool call MUST be logged with the tool name and current stack state.
-8. On startup, the server MUST copy `job.schema.json` from its package-bundled location to `.deepwork/job.schema.json` under the project root. If the copy fails, the server MUST log a warning and continue.
-9. On startup, the server MUST write an initial job manifest via `StatusWriter`.
+6. The server MUST be named `"deepwork"`.
+7. The server MUST include instructions text describing the workflow lifecycle.
+8. Every tool call MUST be logged with the tool name and current stack state.
+9. On startup, the server MUST copy `job.schema.json` from its package-bundled location to `.deepwork/job.schema.json` under the project root. If the copy fails, the server MUST log a warning and continue.
+10. On startup, the server MUST write an initial job manifest via `StatusWriter`.
 
 ### JOBS-REQ-001.2: get_workflows Tool
 
