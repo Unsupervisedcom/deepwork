@@ -68,6 +68,11 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--showlocals",
+    "--cov=deepwork",
+    "--cov-branch",
+    "--cov-report=term-missing",
+    # See tests/conftest.py::pytest_configure for how this is disabled on targeted runs.
+    "--cov-fail-under=98",
 ]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
@@ -80,6 +85,9 @@ branch = true
 precision = 2
 show_missing = true
 skip_covered = false
+# fail_under is intentionally NOT set here — it lives in addopts as
+# --cov-fail-under so tests/conftest.py::pytest_configure can override it
+# to 0 for targeted runs. See that function's docstring for full details.
 
 [tool.ruff]
 line-length = 100

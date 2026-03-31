@@ -626,6 +626,65 @@ class TestIntegration:
         assert claude_result["reason"] == gemini_result["reason"]
 
 
+class TestReadStdin:
+    """Tests for read_stdin."""
+
+    def test_returns_empty_when_stdin_is_tty(self) -> None:
+        """When stdin is a tty, read_stdin returns empty string."""
+        from unittest.mock import patch
+
+        from deepwork.hooks.wrapper import read_stdin
+
+        with patch("deepwork.hooks.wrapper.sys.stdin") as mock_stdin:
+            mock_stdin.isatty.return_value = True
+            result = read_stdin()
+        assert result == ""
+
+    def test_returns_empty_on_read_exception(self) -> None:
+        """When stdin.read() raises, read_stdin returns empty string."""
+        from unittest.mock import patch
+
+        from deepwork.hooks.wrapper import read_stdin
+
+        with patch("deepwork.hooks.wrapper.sys.stdin") as mock_stdin:
+            mock_stdin.isatty.return_value = False
+            mock_stdin.read.side_effect = OSError("broken pipe")
+            result = read_stdin()
+        assert result == ""
+
+
+class TestWriteStdout:
+    """Tests for write_stdout."""
+
+    def test_writes_to_stdout(self, capsys: object) -> None:
+        """write_stdout prints data to stdout."""
+        from deepwork.hooks.wrapper import write_stdout
+
+        write_stdout('{"test": true}')
+        captured = capsys.readouterr()  # type: ignore[attr-defined]
+        assert '{"test": true}' in captured.out
+
+
+class TestRunHookSuccess:
+    """Tests for run_hook success path."""
+
+    def test_successful_hook_returns_zero_and_outputs_json(self, capsys: object) -> None:
+        """A successful hook function returns 0 and outputs JSON."""
+        from unittest.mock import patch
+
+        def good_hook(hook_input: HookInput) -> HookOutput:
+            return HookOutput(context="All good")
+
+        with patch("deepwork.hooks.wrapper.read_stdin", return_value='{"hook_event_name": "Stop"}'):
+            exit_code = run_hook(good_hook, Platform.CLAUDE)
+
+        assert exit_code == 0
+        captured = capsys.readouterr()  # type: ignore[attr-defined]
+        result = json.loads(captured.out.strip())
+        assert "hookSpecificOutput" in result
+        assert result["hookSpecificOutput"]["additionalContext"] == "All good"
+
+
 class TestHookErrorHandling:
     """Tests for hook script error handling.
 

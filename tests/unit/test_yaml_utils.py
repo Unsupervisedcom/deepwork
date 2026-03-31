@@ -4,7 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from deepwork.utils.yaml_utils import YAMLError, load_yaml, save_yaml, validate_yaml_structure
+from deepwork.utils.yaml_utils import (
+    YAMLError,
+    load_yaml,
+    load_yaml_from_string,
+    save_yaml,
+    validate_yaml_structure,
+)
 
 
 class TestLoadYAML:
@@ -154,6 +160,21 @@ invalid:
             load_yaml(yaml_file)
 
 
+class TestLoadYAMLOSError:
+    """Tests for load_yaml OSError handling."""
+
+    def test_raises_yaml_error_on_os_error(self, temp_dir: Path) -> None:
+        """OSError during file read is wrapped in YAMLError."""
+        from unittest.mock import patch
+
+        yaml_file = temp_dir / "test.yml"
+        yaml_file.write_text("name: test")
+
+        with patch("builtins.open", side_effect=OSError("Permission denied")):
+            with pytest.raises(YAMLError, match="Failed to read YAML file"):
+                load_yaml(yaml_file)
+
+
 class TestSaveYAML:
     """Tests for save_yaml function."""
 
@@ -252,6 +273,52 @@ class TestSaveYAML:
         assert yaml_file.exists()
 
 
+class TestSaveYAMLErrors:
+    """Tests for save_yaml error handling."""
+
+    def test_raises_yaml_error_on_write_os_error(self, temp_dir: Path) -> None:
+        """OSError during file write is wrapped in YAMLError."""
+        from unittest.mock import patch
+
+        yaml_file = temp_dir / "test.yml"
+
+        with patch("builtins.open", side_effect=OSError("Disk full")):
+            with pytest.raises(YAMLError, match="Failed to write YAML file"):
+                save_yaml(yaml_file, {"name": "test"})
+
+    def test_raises_yaml_error_on_serialization_failure(self, temp_dir: Path) -> None:
+        """YAML serialization error is wrapped in YAMLError."""
+        from unittest.mock import patch
+
+        yaml_file = temp_dir / "test.yml"
+
+        with patch(
+            "deepwork.utils.yaml_utils.yaml.safe_dump",
+            side_effect=__import__("yaml").YAMLError("bad"),
+        ):
+            with pytest.raises(YAMLError, match="Failed to serialize data to YAML"):
+                save_yaml(yaml_file, {"name": "test"})
+
+
+class TestLoadYAMLFromString:
+    """Tests for load_yaml_from_string."""
+
+    def test_raises_for_non_dict_content(self) -> None:
+        """Non-dict YAML content raises YAMLError."""
+        with pytest.raises(YAMLError, match="must be a dictionary"):
+            load_yaml_from_string("- item1\n- item2\n")
+
+    def test_returns_none_for_empty_string(self) -> None:
+        """Empty string returns None."""
+        result = load_yaml_from_string("")
+        assert result is None
+
+    def test_returns_dict_for_valid_content(self) -> None:
+        """Valid YAML dict string is parsed correctly."""
+        result = load_yaml_from_string("name: test\nversion: 1")
+        assert result == {"name": "test", "version": 1}
+
+
 class TestValidateYAMLStructure:
     """Tests for validate_yaml_structure function."""
 
@@ -301,7 +368,7 @@ class TestValidateYAMLStructure:
         data = ["item1", "item2"]
 
         with pytest.raises(YAMLError, match="Data must be a dictionary"):
-            validate_yaml_structure(data, ["name"])  # type: ignore
+            validate_yaml_structure(data, ["name"])
 
     def test_accepts_empty_required_keys(self) -> None:
         """Test that validate_yaml_structure works with no required keys."""

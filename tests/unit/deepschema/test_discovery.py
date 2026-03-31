@@ -172,6 +172,83 @@ class TestFindNamedSchemasMultiSource:
         assert ".deepwork/schemas" in str(matching[0])
 
 
+class TestFindNamedSchemasPermissionError:
+    """Tests for PermissionError handling in find_named_schemas."""
+
+    def test_skips_directory_on_permission_error(self, tmp_path: Path) -> None:
+        """PermissionError during iterdir is caught and the folder is skipped."""
+        from unittest.mock import patch as mock_patch
+
+        _make_named_schema(tmp_path, "good_schema")
+
+        # Patch _STANDARD_SCHEMAS_DIR to a directory that will raise PermissionError
+        bad_dir = tmp_path / "bad_standard"
+        bad_dir.mkdir()
+
+        original_iterdir = Path.iterdir
+
+        def mock_iterdir(self: Path):  # type: ignore[no-untyped-def]
+            if self == bad_dir:
+                raise PermissionError("Access denied")
+            return original_iterdir(self)
+
+        with (
+            mock_patch("deepwork.deepschema.discovery._STANDARD_SCHEMAS_DIR", bad_dir),
+            mock_patch.object(Path, "iterdir", mock_iterdir),
+        ):
+            results = find_named_schemas(tmp_path)
+
+        # Should still find the project-local schema
+        names = [p.parent.name for p in results]
+        assert "good_schema" in names
+
+
+class TestWalkForAnonymousPermissionError:
+    """Tests for PermissionError handling in _walk_for_anonymous."""
+
+    def test_skips_directory_on_permission_error(self, tmp_path: Path) -> None:
+        """PermissionError during iterdir is caught and the directory is skipped."""
+        from unittest.mock import patch as mock_patch
+
+        # Create one valid anonymous schema
+        _make_anonymous_schema(tmp_path, "good.py")
+
+        # Create a subdirectory that will fail
+        bad_dir = tmp_path / "restricted"
+        bad_dir.mkdir()
+        _make_anonymous_schema(bad_dir, "bad.py")
+
+        original_iterdir = Path.iterdir
+
+        def mock_iterdir(self: Path):  # type: ignore[no-untyped-def]
+            if self == bad_dir:
+                raise PermissionError("Access denied")
+            return original_iterdir(self)
+
+        with mock_patch.object(Path, "iterdir", mock_iterdir):
+            results = find_anonymous_schemas(tmp_path)
+
+        # Should find the good one at root level but not the one in restricted dir
+        filenames = [p.name for p in results]
+        assert ".deepschema.good.py.yml" in filenames
+        assert ".deepschema.bad.py.yml" not in filenames
+
+
+class TestDiscoverAllSchemasAnonymousErrors:
+    """Tests for anonymous schema parse errors in discover_all_schemas."""
+
+    def test_collects_anonymous_schema_parse_errors(self, tmp_path: Path) -> None:
+        """Invalid anonymous schema files produce errors, not crashes."""
+        with patch("deepwork.deepschema.discovery._STANDARD_SCHEMAS_DIR", tmp_path / "empty"):
+            # Create an invalid anonymous schema
+            (tmp_path / ".deepschema.broken.py.yml").write_text(
+                "[invalid yaml list]", encoding="utf-8"
+            )
+            schemas, errors = discover_all_schemas(tmp_path)
+            # The broken schema should produce an error
+            assert any("broken.py" in str(e.file_path) for e in errors)
+
+
 class TestDiscoverAllSchemas:
     def test_discovers_both_types(self, tmp_path: Path) -> None:
         _make_named_schema(

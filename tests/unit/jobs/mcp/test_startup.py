@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import yaml
 
 from deepwork.jobs.issues import Issue
@@ -12,6 +13,11 @@ from deepwork.jobs.mcp.server import _build_startup_instructions
 
 class TestBuildStartupInstructions:
     """Tests for _build_startup_instructions()."""
+
+    @pytest.fixture(autouse=True)
+    def _isolate_job_discovery(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Remove DEEPWORK_ADDITIONAL_JOBS_FOLDERS so only standard jobs are discovered."""
+        monkeypatch.delenv("DEEPWORK_ADDITIONAL_JOBS_FOLDERS", raising=False)
 
     def test_includes_static_instructions_always(self, tmp_path: Path) -> None:
         """Static server instructions are always included."""
