@@ -17,7 +17,7 @@ use context and the available workflows from `get_workflows` to determine the be
 
 1. Call `get_workflows` to discover available workflows
 2. Call `start_workflow` with goal, job_name, and workflow_name
-3. Follow the step instructions returned
+3. Follow the step instructions returned; use the `session_id` from `begin_step` for all subsequent calls
 4. Call `finished_step` with your outputs when done
 5. Handle the response: `needs_work`, `next_step`, or `workflow_complete`
 

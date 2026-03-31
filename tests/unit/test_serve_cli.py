@@ -61,6 +61,31 @@ class TestServeCLI:
         call_args = mock_serve.call_args[0]
         assert call_args[3] == "claude"  # platform
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.4.1).
+    @patch("deepwork.cli.serve._serve_mcp")
+    def test_no_path_passes_explicit_false(self, mock_serve: MagicMock) -> None:
+        """When --path is omitted, explicit_path=False is passed to _serve_mcp."""
+        runner = CliRunner()
+        result = runner.invoke(serve, [])
+        if result.exit_code != 0 and result.exception:
+            raise result.exception
+
+        mock_serve.assert_called_once()
+        assert mock_serve.call_args[1]["explicit_path"] is False
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.4.2).
+    @patch("deepwork.cli.serve._serve_mcp")
+    def test_explicit_path_passes_explicit_true(self, mock_serve: MagicMock, tmp_path: str) -> None:
+        """When --path is provided, explicit_path=True is passed to _serve_mcp."""
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+            result = runner.invoke(serve, ["--path", td])
+            if result.exit_code != 0 and result.exception:
+                raise result.exception
+
+        mock_serve.assert_called_once()
+        assert mock_serve.call_args[1]["explicit_path"] is True
+
     def test_help_shows_options(self) -> None:
         """Test that --help shows the available options."""
         runner = CliRunner()

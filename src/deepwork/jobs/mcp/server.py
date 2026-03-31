@@ -18,10 +18,11 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from fastmcp import FastMCP
+from fastmcp import Context, FastMCP
 
 from deepwork.jobs.discovery import load_all_jobs
 from deepwork.jobs.issues import Issue, detect_issues, format_issues_for_agent
+from deepwork.jobs.mcp.roots import RootResolver
 from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     ArgumentValue,
@@ -55,6 +56,8 @@ def _ensure_schema_available(project_root: Path) -> None:
 def create_server(
     project_root: Path | str,
     platform: str | None = None,
+    *,
+    explicit_path: bool = True,
     **_kwargs: Any,
 ) -> FastMCP:
     """Create and configure the MCP server.
@@ -63,6 +66,9 @@ def create_server(
         project_root: Path to the project root
         platform: Platform identifier for the review tool (e.g., "claude").
             Defaults to "claude" if not set. (default: None)
+        explicit_path: Whether project_root was explicitly provided via --path.
+            When False, tool handlers resolve the root dynamically via MCP
+            listRoots on each call. (default: True)
         **_kwargs: Accepted for backwards compatibility (enable_quality_gate,
             quality_gate_timeout, quality_gate_max_attempts, external_runner).
             These are no longer used — quality reviews now go through the
@@ -72,6 +78,7 @@ def create_server(
         Configured FastMCP server instance
     """
     project_path = Path(project_root).resolve()
+    root_resolver = RootResolver(fallback_root=project_path, explicit=explicit_path)
 
     # Copy the job schema to a stable location so agents can always reference it
     _ensure_schema_available(project_path)
@@ -147,9 +154,10 @@ def create_server(
             "Call this first to discover available workflows."
         )
     )
-    def get_workflows() -> dict[str, Any]:
+    async def get_workflows(ctx: Context) -> dict[str, Any]:
         """Get all available workflows."""
         _log_tool_call("get_workflows")
+        tools.project_root = await root_resolver.get_root(ctx)
         response = tools.get_workflows()
         return _append_issues(response.model_dump())
 
@@ -157,8 +165,9 @@ def create_server(
         description=(
             "Start a new workflow session. "
             "Initializes state tracking and returns the first step's instructions. "
-            "Required parameters: goal (what user wants), job_name, workflow_name, "
-            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Required parameters: goal (what user wants), job_name, workflow_name. "
+            "Optional: session_id — on Claude Code pass CLAUDE_CODE_SESSION_ID; "
+            "on other platforms omit it and use the session_id returned in begin_step for all subsequent calls. "
             "Optional: inputs (map of step_argument names to values for the first step), "
             "agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents). "
             "Supports nested workflows - starting a workflow while one is active "
@@ -169,7 +178,8 @@ def create_server(
         goal: str,
         job_name: str,
         workflow_name: str,
-        session_id: str,
+        ctx: Context,
+        session_id: str | None = None,
         inputs: dict[str, ArgumentValue] | None = None,
         agent_id: str | None = None,
     ) -> dict[str, Any]:
@@ -186,6 +196,7 @@ def create_server(
             session_id=session_id,
             agent_id=agent_id,
         )
+        tools.project_root = await root_resolver.get_root(ctx)
         input_data = StartWorkflowInput(
             goal=goal,
             job_name=job_name,
@@ -205,8 +216,8 @@ def create_server(
             "'needs_work' with review instructions to follow, "
             "'next_step' with instructions for the next step, or "
             "'workflow_complete' when finished (pops from stack if nested). "
-            "Required: outputs (map of step_argument names to values), "
-            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Required: outputs (map of step_argument names to values). "
+            "Required: session_id (from begin_step.session_id returned by start_workflow, or CLAUDE_CODE_SESSION_ID on Claude Code). "
             "For outputs with type 'file_path': pass a single string path or list of paths. "
             "For outputs with type 'string': pass a string value. "
             "Outputs marked required: true must be provided; required: false outputs can be omitted. "
@@ -218,12 +229,17 @@ def create_server(
     )
     async def finished_step(
         outputs: dict[str, ArgumentValue],
-        session_id: str,
+        ctx: Context,
+        session_id: str | None = None,
         work_summary: str | None = None,
         quality_review_override_reason: str | None = None,
         agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Report step completion and get next instructions."""
+        if not session_id:
+            return {
+                "error": "session_id is required. Pass CLAUDE_CODE_SESSION_ID on Claude Code, or the session_id returned by start_workflow on other platforms."
+            }
         _log_tool_call(
             "finished_step",
             {
@@ -235,6 +251,7 @@ def create_server(
             session_id=session_id,
             agent_id=agent_id,
         )
+        tools.project_root = await root_resolver.get_root(ctx)
         input_data = FinishedStepInput(
             outputs=outputs,
             work_summary=work_summary,
@@ -249,24 +266,30 @@ def create_server(
         description=(
             "Abort the current workflow and return to the parent workflow (if nested). "
             "Use this when a workflow cannot be completed and needs to be abandoned. "
-            "Required: explanation (why the workflow is being aborted), "
-            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Required: explanation (why the workflow is being aborted). "
+            "Required: session_id (from begin_step.session_id returned by start_workflow, or CLAUDE_CODE_SESSION_ID on Claude Code). "
             "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents). "
             "Returns the aborted workflow info and the resumed parent workflow (if any)."
         )
     )
     async def abort_workflow(
         explanation: str,
-        session_id: str,
+        ctx: Context,
+        session_id: str | None = None,
         agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Abort the current workflow and return to parent."""
+        if not session_id:
+            return {
+                "error": "session_id is required. Pass CLAUDE_CODE_SESSION_ID on Claude Code, or the session_id returned by start_workflow on other platforms."
+            }
         _log_tool_call(
             "abort_workflow",
             {"explanation": explanation, "agent_id": agent_id},
             session_id=session_id,
             agent_id=agent_id,
         )
+        tools.project_root = await root_resolver.get_root(ctx)
         input_data = AbortWorkflowInput(
             explanation=explanation, session_id=session_id, agent_id=agent_id
         )
@@ -280,23 +303,29 @@ def create_server(
             "of subsequent steps to ensure consistency. "
             "Use this when earlier outputs need revision or quality issues are discovered. "
             "Files on disk are NOT deleted — only session tracking state is cleared. "
-            "Required: step_id (the step name to go back to), "
-            "session_id (CLAUDE_CODE_SESSION_ID from startup context). "
+            "Required: step_id (the step name to go back to). "
+            "Required: session_id (from begin_step.session_id returned by start_workflow, or CLAUDE_CODE_SESSION_ID on Claude Code). "
             "Optional: agent_id (CLAUDE_CODE_AGENT_ID from startup context, for sub-agents)."
         )
     )
     async def go_to_step(
         step_id: str,
-        session_id: str,
+        ctx: Context,
+        session_id: str | None = None,
         agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Navigate back to a prior step, clearing subsequent progress."""
+        if not session_id:
+            return {
+                "error": "session_id is required. Pass CLAUDE_CODE_SESSION_ID on Claude Code, or the session_id returned by start_workflow on other platforms."
+            }
         _log_tool_call(
             "go_to_step",
             {"step_id": step_id, "agent_id": agent_id},
             session_id=session_id,
             agent_id=agent_id,
         )
+        tools.project_root = await root_resolver.get_root(ctx)
         input_data = GoToStepInput(step_id=step_id, session_id=session_id, agent_id=agent_id)
         response = await tools.go_to_step(input_data)
         return _append_issues(response.model_dump())
@@ -311,14 +340,15 @@ def create_server(
             "Useful for understanding what file types have schemas defined."
         )
     )
-    def get_named_schemas() -> list[dict[str, Any]]:
+    async def get_named_schemas(ctx: Context) -> list[dict[str, Any]]:
         """List all named DeepSchemas with basic info."""
         _log_tool_call("get_named_schemas")
         from deepwork.deepschema.config import DeepSchemaError, parse_deepschema_file
         from deepwork.deepschema.discovery import find_named_schemas
 
+        root = await root_resolver.get_root(ctx)
         results: list[dict[str, Any]] = []
-        for manifest_path in find_named_schemas(project_path):
+        for manifest_path in find_named_schemas(root):
             name = manifest_path.parent.name
             try:
                 schema = parse_deepschema_file(manifest_path, "named", name)
@@ -356,11 +386,12 @@ def create_server(
             "changes via git diff against the main branch."
         )
     )
-    def get_review_instructions(files: list[str] | None = None) -> str:
+    async def get_review_instructions(ctx: Context, files: list[str] | None = None) -> str:
         """Run review pipeline on changed files."""
         _log_tool_call("get_review_instructions", {"files": files})
+        root = await root_resolver.get_root(ctx)
         try:
-            return run_review(project_path, review_platform, files)
+            return run_review(root, review_platform, files)
         except ReviewToolError as e:
             return f"Review error: {e}"
 
@@ -372,7 +403,8 @@ def create_server(
             "to rules that would apply to those specific files."
         )
     )
-    def get_configured_reviews(
+    async def get_configured_reviews(
+        ctx: Context,
         only_rules_matching_files: list[str] | None = None,
     ) -> list[dict[str, str]]:
         """List configured review rules, optionally filtered by file paths."""
@@ -380,7 +412,8 @@ def create_server(
             "get_configured_reviews",
             {"only_rules_matching_files": only_rules_matching_files},
         )
-        return get_configured_reviews_fn(project_path, only_rules_matching_files)
+        root = await root_resolver.get_root(ctx)
+        return get_configured_reviews_fn(root, only_rules_matching_files)
 
     @mcp.tool(
         description=(
@@ -389,11 +422,12 @@ def create_server(
             '"After Review" section.'
         )
     )
-    def mark_review_as_passed(review_id: str) -> str:
+    async def mark_review_as_passed(review_id: str, ctx: Context) -> str:
         """Mark a review as passed by creating a .passed marker file."""
         _log_tool_call("mark_review_as_passed", {"review_id": review_id})
+        root = await root_resolver.get_root(ctx)
         try:
-            return mark_passed_fn(project_path, review_id)
+            return mark_passed_fn(root, review_id)
         except ValueError as e:
             return f"Validation error: {e}"
 
@@ -403,14 +437,18 @@ def create_server(
 _STATIC_INSTRUCTIONS = """\
 # DeepWork Workflow Server
 
-Multi-step workflows with quality gates. All tools require `session_id` \
-(CLAUDE_CODE_SESSION_ID from startup context). Sub-agents also pass `agent_id`.
+Multi-step workflows with quality gates.
+
+**Session identity**: On Claude Code pass `CLAUDE_CODE_SESSION_ID` as `session_id`. \
+On other platforms omit `session_id` in `start_workflow`; the server auto-generates one \
+and returns it in `begin_step.session_id` — use that value for all subsequent calls. \
+Sub-agents on Claude Code also pass `agent_id` (CLAUDE_CODE_AGENT_ID).
 
 ## Workflow Lifecycle
 
 1. `get_workflows` — discover available workflows
-2. `start_workflow` — begin with goal, job_name, workflow_name, session_id
-3. Follow step instructions, then call `finished_step` with outputs
+2. `start_workflow` — begin with goal, job_name, workflow_name (session_id optional — see above)
+3. Follow step instructions; use `begin_step.session_id` for all subsequent calls, then call `finished_step` with outputs
 4. If `needs_work`: fix issues and retry. If `next_step`: continue. If `workflow_complete`: done.
 
 Workflows nest via stack. Use `abort_workflow` to cancel, `go_to_step` to revisit earlier steps.

@@ -26,6 +26,7 @@ None.
 {
   jobs: JobInfo[];
   errors: JobLoadErrorInfo[];  // Jobs that failed to parse
+  issue_detected?: string;     // Present when startup issues exist; warns agent to suggest repair
 }
 ```
 
@@ -64,9 +65,9 @@ Start a new workflow session. Initializes state tracking and returns the first s
 | `goal` | `string` | Yes | What the user wants to accomplish |
 | `job_name` | `string` | Yes | Name of the job |
 | `workflow_name` | `string` | Yes | Name of the workflow within the job. If the name doesn't match but the job has only one workflow, that workflow is selected automatically. If the job has multiple workflows, an error is returned listing the available workflow names. |
-| `session_id` | `string` | Yes | The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). Identifies the persistent state storage for this agent session. |
+| `session_id` | `string \| null` | No | Session identifier for persistent state storage. For Claude Code: use `CLAUDE_CODE_SESSION_ID` from startup context. For other platforms: omit to auto-generate; then use the value returned in `begin_step.session_id` for all subsequent calls. |
 | `inputs` | `Record<string, string \| string[]> \| null` | No | Optional input values for the first step. Map of step_argument names to values. For file_path type arguments: pass a file path string or list of file path strings. For string type arguments: pass a string value. These values are made available to the first step and flow through the workflow. |
-| `agent_id` | `string \| null` | No | The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), if running as a sub-agent. When set, this workflow is scoped to this agent. |
+| `agent_id` | `string \| null` | No | Agent identifier for sub-agent scoping (CLAUDE_CODE_AGENT_ID from startup context on Claude Code). When set, this workflow is scoped to this agent. |
 
 #### Returns
 
@@ -75,6 +76,7 @@ Start a new workflow session. Initializes state tracking and returns the first s
   important_note: string;     // Instruction reminding agent to clarify ambiguous requests
   begin_step: ActiveStepInfo; // Information about the first step to begin
   stack: StackEntry[];        // Current workflow stack after starting
+  issue_detected?: string;    // Present when startup issues exist; warns agent to suggest repair
 }
 ```
 
@@ -82,7 +84,7 @@ Start a new workflow session. Initializes state tracking and returns the first s
 
 ### 3. `finished_step`
 
-Report that you've finished a workflow step. Validates outputs against quality criteria (if configured), then returns the next action.
+Report that you've finished a workflow step. Validates outputs and runs quality reviews (from step definitions and .deepreview rules), then returns the next action.
 
 #### Parameters
 
@@ -91,12 +93,10 @@ Report that you've finished a workflow step. Validates outputs against quality c
 | `outputs` | `Record<string, string \| string[]>` | Yes | Map of step_argument names to values. For outputs declared with type `file_path`: pass a single string path or list of paths. For outputs declared with type `string`: pass a string value. Outputs with `required: false` can be omitted. Check `step_expected_outputs` to see each output's type and required status. |
 | `work_summary` | `string \| null` | No | Summary of the work done in this step. Used by process_requirements reviews to evaluate whether the work process met quality criteria. Include key decisions, approaches taken, and any deviations from the instructions. |
 | `quality_review_override_reason` | `string \| null` | No | If provided, skips quality review (must explain why) |
-| `session_id` | `string` | Yes | The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). Identifies the persistent state storage for this agent session. |
-| `agent_id` | `string \| null` | No | The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), if running as a sub-agent. When set, operates on this agent's scoped workflow stack. |
+| `session_id` | `string` | Yes | Session identifier from the `begin_step.session_id` returned by `start_workflow`. |
+| `agent_id` | `string \| null` | No | Agent identifier for sub-agent scoping (CLAUDE_CODE_AGENT_ID from startup context on Claude Code). When set, operates on this agent's scoped workflow stack. |
 
 #### Returns
-
-The response varies based on the `status` field:
 
 ```typescript
 {
@@ -115,6 +115,7 @@ The response varies based on the `status` field:
 
   // Always included
   stack: StackEntry[];                 // Current workflow stack after this operation
+  issue_detected?: string;             // Present when startup issues exist; warns agent to suggest repair
 }
 ```
 
@@ -129,8 +130,8 @@ Abort the current workflow and return to the parent workflow (if nested). Use th
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `explanation` | `string` | Yes | Why the workflow is being aborted |
-| `session_id` | `string` | Yes | The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). Identifies the persistent state storage for this agent session. |
-| `agent_id` | `string \| null` | No | The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), if running as a sub-agent. When set, operates on this agent's scoped workflow stack. |
+| `session_id` | `string` | Yes | Session identifier from the `begin_step.session_id` returned by `start_workflow`. |
+| `agent_id` | `string \| null` | No | Agent identifier for sub-agent scoping (CLAUDE_CODE_AGENT_ID from startup context on Claude Code). When set, operates on this agent's scoped workflow stack. |
 
 #### Returns
 
@@ -142,6 +143,7 @@ Abort the current workflow and return to the parent workflow (if nested). Use th
   stack: StackEntry[];                // Current workflow stack after abort
   resumed_workflow?: string | null;   // The workflow now active (if any)
   resumed_step?: string | null;       // The step now active (if any)
+  issue_detected?: string;            // Present when startup issues exist; warns agent to suggest repair
 }
 ```
 
@@ -156,8 +158,8 @@ Navigate back to a prior step in the current workflow. Clears all progress from 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `step_id` | `string` | Yes | ID of the step to navigate back to. Must exist in the current workflow. |
-| `session_id` | `string` | Yes | The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). Identifies the persistent state storage for this agent session. |
-| `agent_id` | `string \| null` | No | The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), if running as a sub-agent. When set, operates on this agent's scoped workflow stack. |
+| `session_id` | `string` | Yes | Session identifier from the `begin_step.session_id` returned by `start_workflow`. |
+| `agent_id` | `string \| null` | No | Agent identifier for sub-agent scoping (CLAUDE_CODE_AGENT_ID from startup context on Claude Code). When set, operates on this agent's scoped workflow stack. |
 
 #### Returns
 
@@ -166,6 +168,7 @@ Navigate back to a prior step in the current workflow. Clears all progress from 
   begin_step: ActiveStepInfo;       // Information about the step to begin working on
   invalidated_steps: string[];      // Step IDs whose progress was cleared (from target onward)
   stack: StackEntry[];              // Current workflow stack after navigation
+  issue_detected?: string;          // Present when startup issues exist; warns agent to suggest repair
 }
 ```
 
@@ -284,7 +287,7 @@ interface StepInputInfo {
 }
 
 interface ActiveStepInfo {
-  session_id: string;              // Unique session identifier
+  session_id: string;              // Session ID — use this for all subsequent finished_step, abort_workflow, go_to_step calls
   step_id: string;                 // ID of the current step
   job_dir: string;                 // Absolute path to job directory (templates, scripts, etc.)
   step_expected_outputs: ExpectedOutput[]; // Expected outputs with type and format hints
@@ -320,9 +323,9 @@ The `finished_step` tool returns one of three statuses:
    |
    Discover available jobs and workflows
    |
-2. start_workflow(goal, job_name, workflow_name, session_id)
+2. start_workflow(goal, job_name, workflow_name[, session_id])
    |
-   Get session_id, first step instructions
+   Get begin_step.session_id — use this for all subsequent calls
    |
 3. Execute step instructions, create outputs
    |
@@ -442,6 +445,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
+| 2.2.0 | `session_id` is now optional (`str | None`) on `start_workflow` only. On Claude Code (platform `"claude"`), the server raises `ToolError` if omitted. On other platforms, omitting it auto-generates a stable UUID; callers use the returned `begin_step.session_id` for all subsequent calls. `finished_step`, `abort_workflow`, and `go_to_step` continue to require `session_id`. Added `inputs` optional parameter to `start_workflow` for passing step argument values directly at workflow start. Added `issue_detected` optional field to all tool responses — present when the server detects configuration issues at startup; instructs agent to suggest repair to the user. |
 | 2.1.0 | Added `important_note` field to `StartWorkflowResponse` — instructs agents to clarify ambiguous user requests via `AskUserQuestion` when available. |
 | 2.0.0 | **Breaking**: `session_id` is now a required `string` parameter on all mutation tools (`start_workflow`, `finished_step`, `abort_workflow`, `go_to_step`). Added `agent_id` optional parameter for sub-agent scoping — sub-agents get their own isolated workflow stacks. State persistence path changed to `.deepwork/tmp/sessions/<platform>/session-<id>/state.json` (with sub-agent state in `agent_<agent_id>.json`). |
 | 1.9.0 | Added `go_to_step` tool for navigating back to prior steps. Clears all step progress from the target step onward, forcing re-execution of subsequent steps. Supports `session_id` for concurrent workflow safety. |

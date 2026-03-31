@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
 from deepwork.jobs.discovery import JobLoadError, find_job_dir, load_all_jobs
 from deepwork.jobs.mcp.quality_gate import run_quality_gate
@@ -75,6 +76,22 @@ class WorkflowTools:
         self.project_root = project_root
         self.state_manager = state_manager
         self.status_writer = status_writer
+
+    @property
+    def platform(self) -> str:
+        """Return the platform from the state manager."""
+        return self.state_manager.platform
+
+    def _resolve_session_id(self, session_id: str | None) -> str:
+        """Resolve session_id: require it on Claude Code, auto-generate otherwise."""
+        if session_id:
+            return session_id
+        if self.platform == "claude":
+            raise ToolError(
+                "session_id is required on Claude Code. "
+                "Pass CLAUDE_CODE_SESSION_ID from startup context."
+            )
+        return uuid4().hex
 
     def _write_session_status(self, session_id: str) -> None:
         """Write session status file if status_writer is configured.
@@ -419,7 +436,7 @@ class WorkflowTools:
 
         first_step = workflow.steps[0]
 
-        sid = input_data.session_id
+        sid = self._resolve_session_id(input_data.session_id)
         aid = input_data.agent_id
 
         # Create session (use resolved workflow name in case it was auto-selected)
@@ -465,7 +482,7 @@ class WorkflowTools:
         except StateError as err:
             raise ToolError(
                 "No active workflow session. "
-                "The finished_step tool reports completion of a step within a running workflow. "
+                "Provide the session_id from the start_workflow response (begin_step.session_id). "
                 "If you want to resume a workflow, just start it again and call finished_step "
                 "with quality_review_override_reason until you get back to your prior step."
             ) from err
