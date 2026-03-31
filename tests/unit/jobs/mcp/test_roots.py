@@ -73,10 +73,12 @@ async def test_fallback_on_exception() -> None:
 @pytest.mark.asyncio
 async def test_skips_non_file_roots(tmp_path: Path) -> None:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.2.2, JOBS-REQ-011.2.7).
-    ctx = _make_ctx([
-        _make_root("https://example.com"),
-        _make_root(tmp_path.as_uri()),
-    ])
+    ctx = _make_ctx(
+        [
+            _make_root("https://example.com"),
+            _make_root(tmp_path.as_uri()),
+        ]
+    )
     result = await resolve_project_root(ctx, FALLBACK)
     assert result == tmp_path.resolve()
 
