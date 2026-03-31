@@ -226,9 +226,10 @@ class TestStartWorkflow:
         assert step.step_expected_outputs[0].required is True
 
     async def test_start_workflow_auto_generates_session_id(self, tools: WorkflowTools) -> None:
-        """Test that start_workflow auto-generates a session_id when none is provided."""
+        """Test that start_workflow auto-generates a session_id when none is provided (non-claude platform)."""
         import re
 
+        # tools fixture uses platform="test", so auto-generation should work
         input_data = StartWorkflowInput(
             goal="Complete the test job",
             job_name="test_job",
@@ -264,6 +265,22 @@ class TestStartWorkflow:
         assert finish_response.status == StepStatus.NEXT_STEP
         assert finish_response.begin_step is not None
         assert finish_response.begin_step.step_id == "step2"
+
+    async def test_start_workflow_requires_session_id_on_claude(
+        self, project_root: Path
+    ) -> None:
+        """Test that session_id is required when platform is 'claude'."""
+        claude_state = StateManager(project_root, platform="claude")
+        claude_tools = WorkflowTools(project_root, claude_state)
+
+        input_data = StartWorkflowInput(
+            goal="Complete the test job",
+            job_name="test_job",
+            workflow_name="main",
+        )
+
+        with pytest.raises(ToolError, match="session_id is required"):
+            await claude_tools.start_workflow(input_data)
 
     @pytest.mark.asyncio
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.11).

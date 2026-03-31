@@ -77,6 +77,22 @@ class WorkflowTools:
         self.state_manager = state_manager
         self.status_writer = status_writer
 
+    @property
+    def platform(self) -> str:
+        """Return the platform from the state manager."""
+        return self.state_manager.platform
+
+    def _resolve_session_id(self, session_id: str | None) -> str:
+        """Resolve session_id: require it on Claude Code, auto-generate otherwise."""
+        if session_id:
+            return session_id
+        if self.platform == "claude":
+            raise ToolError(
+                "session_id is required on Claude Code. "
+                "Pass CLAUDE_CODE_SESSION_ID from startup context."
+            )
+        return uuid4().hex
+
     def _write_session_status(self, session_id: str) -> None:
         """Write session status file if status_writer is configured.
 
@@ -420,7 +436,7 @@ class WorkflowTools:
 
         first_step = workflow.steps[0]
 
-        sid = input_data.session_id or uuid4().hex
+        sid = self._resolve_session_id(input_data.session_id)
         aid = input_data.agent_id
 
         # Create session (use resolved workflow name in case it was auto-selected)
@@ -459,7 +475,7 @@ class WorkflowTools:
 
     async def finished_step(self, input_data: FinishedStepInput) -> FinishedStepResponse:
         """Report step completion and get next instructions."""
-        sid = input_data.session_id
+        sid = self._resolve_session_id(input_data.session_id)
         aid = input_data.agent_id
         try:
             session = self.state_manager.resolve_session(sid, aid)
@@ -564,7 +580,7 @@ class WorkflowTools:
 
     async def abort_workflow(self, input_data: AbortWorkflowInput) -> AbortWorkflowResponse:
         """Abort the current workflow and return to the previous one."""
-        sid = input_data.session_id
+        sid = self._resolve_session_id(input_data.session_id)
         aid = input_data.agent_id
         aborted_session, new_active = await self.state_manager.abort_workflow(
             sid, input_data.explanation, agent_id=aid
@@ -585,7 +601,7 @@ class WorkflowTools:
 
     async def go_to_step(self, input_data: GoToStepInput) -> GoToStepResponse:
         """Navigate back to a prior step, clearing progress from that step onward."""
-        sid = input_data.session_id
+        sid = self._resolve_session_id(input_data.session_id)
         aid = input_data.agent_id
         session = self.state_manager.resolve_session(sid, aid)
 
