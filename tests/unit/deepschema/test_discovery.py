@@ -173,11 +173,11 @@ class TestFindNamedSchemasMultiSource:
 
 
 class TestFindNamedSchemasPermissionError:
-    """Tests for PermissionError handling in find_named_schemas (lines 107-108)."""
+    """Tests for PermissionError handling in find_named_schemas."""
 
     def test_skips_directory_on_permission_error(self, tmp_path: Path) -> None:
         """PermissionError during iterdir is caught and the folder is skipped."""
-        from unittest.mock import patch as mock_patch, PropertyMock
+        from unittest.mock import patch as mock_patch
 
         _make_named_schema(tmp_path, "good_schema")
 
@@ -204,7 +204,7 @@ class TestFindNamedSchemasPermissionError:
 
 
 class TestWalkForAnonymousPermissionError:
-    """Tests for PermissionError handling in _walk_for_anonymous (lines 134-135)."""
+    """Tests for PermissionError handling in _walk_for_anonymous."""
 
     def test_skips_directory_on_permission_error(self, tmp_path: Path) -> None:
         """PermissionError during iterdir is caught and the directory is skipped."""
@@ -235,7 +235,7 @@ class TestWalkForAnonymousPermissionError:
 
 
 class TestDiscoverAllSchemasAnonymousErrors:
-    """Tests for anonymous schema parse errors in discover_all_schemas (lines 198-199)."""
+    """Tests for anonymous schema parse errors in discover_all_schemas."""
 
     def test_collects_anonymous_schema_parse_errors(self, tmp_path: Path) -> None:
         """Invalid anonymous schema files produce errors, not crashes."""

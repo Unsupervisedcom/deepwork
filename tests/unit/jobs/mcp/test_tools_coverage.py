@@ -1,7 +1,7 @@
 """Additional tests for MCP workflow tools to cover edge cases and error paths."""
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -10,7 +10,6 @@ from deepwork.jobs.mcp.schemas import (
     GoToStepInput,
     StartWorkflowInput,
     StartWorkflowResponse,
-    StepStatus,
 )
 from deepwork.jobs.mcp.state import StateError, StateManager
 from deepwork.jobs.mcp.tools import ToolError, WorkflowTools
@@ -178,7 +177,7 @@ class TestStatusWriterIntegration:
     async def test_write_session_status_swallows_exception(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
-        """_write_session_status logs and swallows exceptions (lines 85-90)."""
+        """_write_session_status logs and swallows exceptions."""
         mock_writer = MagicMock()
         mock_writer.write_session_status.side_effect = RuntimeError("status write failed")
 
@@ -190,7 +189,7 @@ class TestStatusWriterIntegration:
     def test_write_manifest_swallows_exception(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
-        """_write_manifest logs and swallows exceptions (lines 97-102)."""
+        """_write_manifest logs and swallows exceptions."""
         mock_writer = MagicMock()
         mock_writer.write_manifest.side_effect = RuntimeError("manifest write failed")
 
@@ -202,7 +201,7 @@ class TestStatusWriterIntegration:
     async def test_get_workflows_writes_manifest(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
-        """get_workflows calls write_manifest on status_writer (lines 404-407)."""
+        """get_workflows calls write_manifest on status_writer."""
         mock_writer = MagicMock()
         tools = WorkflowTools(project_root, state_manager, status_writer=mock_writer)
 
@@ -212,7 +211,7 @@ class TestStatusWriterIntegration:
     async def test_get_workflows_handles_manifest_failure(
         self, project_root: Path, state_manager: StateManager
     ) -> None:
-        """get_workflows continues if write_manifest fails (line 418)."""
+        """get_workflows continues if write_manifest fails."""
         mock_writer = MagicMock()
         mock_writer.write_manifest.side_effect = RuntimeError("fail")
 
@@ -228,11 +227,9 @@ class TestStatusWriterIntegration:
 
 
 class TestGetJobParsing:
-    """Tests for _get_job error handling (lines 148-149)."""
+    """Tests for _get_job error handling."""
 
-    def test_raises_on_parse_error(
-        self, project_root: Path, state_manager: StateManager
-    ) -> None:
+    def test_raises_on_parse_error(self, project_root: Path, state_manager: StateManager) -> None:
         """_get_job wraps ParseError into ToolError."""
         # Overwrite job.yml with invalid content
         job_file = project_root / ".deepwork" / "jobs" / "test_job" / "job.yml"
@@ -249,7 +246,7 @@ class TestGetJobParsing:
 
 
 class TestGetWorkflowAutoSelect:
-    """Tests for _get_workflow auto-selection (line 162)."""
+    """Tests for _get_workflow auto-selection."""
 
     def test_auto_selects_single_workflow(
         self, tmp_path: Path, state_manager: StateManager, monkeypatch: pytest.MonkeyPatch
@@ -291,9 +288,7 @@ workflows:
         wf = tools._get_workflow(job, "wrong_name")
         assert wf.name == "only_wf"
 
-    def test_raises_when_multiple_workflows_and_wrong_name(
-        self, tools: WorkflowTools
-    ) -> None:
+    def test_raises_when_multiple_workflows_and_wrong_name(self, tools: WorkflowTools) -> None:
         """_get_workflow raises ToolError when multiple workflows and name doesn't match."""
         job = tools._get_job("test_job")
         with pytest.raises(ToolError, match="not found"):
@@ -314,7 +309,7 @@ class TestValidateOutputsEdgeCases:
     """
 
     def test_file_path_list_with_non_string(self, tools: WorkflowTools) -> None:
-        """file_path list with non-string elements raises ToolError (line 239)."""
+        """file_path list with non-string elements raises ToolError."""
         job = tools._get_job("test_job")
         wf = tools._get_workflow(job, "main")
         step = wf.steps[0]  # step1 has output1 (file_path)
@@ -323,7 +318,7 @@ class TestValidateOutputsEdgeCases:
             tools._validate_outputs({"output1": [123, "valid.md"]}, step, job)
 
     def test_file_path_wrong_type(self, tools: WorkflowTools) -> None:
-        """file_path with non-string/non-list type raises ToolError (line 247)."""
+        """file_path with non-string/non-list type raises ToolError."""
         job = tools._get_job("test_job")
         wf = tools._get_workflow(job, "main")
         step = wf.steps[0]
@@ -341,19 +336,17 @@ class TestBuildStepInstructions:
     """Tests for _build_step_instructions with various input scenarios."""
 
     async def test_input_not_yet_available(self, tools: WorkflowTools) -> None:
-        """Input with no value shows 'not yet available' (line 325)."""
+        """Input with no value shows 'not yet available'."""
         await _start_workflow(tools, inputs=None)
 
         # step1 expects input1 but we didn't provide it
-        resp = await _start_workflow(
-            tools, session_id="session2", inputs=None
-        )
+        resp = await _start_workflow(tools, session_id="session2", inputs=None)
         step = resp.begin_step
         # input1 is required but not provided, should show "not yet available"
         assert "not yet available" in step.step_instructions
 
     async def test_sub_workflow_step_instructions(self, tools: WorkflowTools) -> None:
-        """Sub-workflow step generates delegation instructions (lines 341, 346-348)."""
+        """Sub-workflow step generates delegation instructions."""
         resp = await _start_workflow(
             tools, workflow_name="with_sub_workflow", session_id="sub-wf-session"
         )
@@ -363,7 +356,7 @@ class TestBuildStepInstructions:
         assert "single_step" in step.step_instructions
 
     async def test_cross_job_sub_workflow_instructions(self, tools: WorkflowTools) -> None:
-        """Cross-job sub-workflow step references the correct job name (line 353->356)."""
+        """Cross-job sub-workflow step references the correct job name."""
         resp = await _start_workflow(
             tools, workflow_name="cross_job_sub", session_id="cross-session"
         )
@@ -374,14 +367,14 @@ class TestBuildStepInstructions:
     async def test_file_path_input_list_display(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
-        """File path input as list is displayed with backticks (line 337)."""
+        """File path input as list is displayed with backticks."""
         # Start main workflow with a list input
         out1 = project_root / "a.md"
         out2 = project_root / "b.md"
         out1.write_text("a")
         out2.write_text("b")
 
-        resp = await _start_workflow(tools)
+        await _start_workflow(tools)
         # Complete step1 with a file path output
         inp = FinishedStepInput(
             outputs={"output1": ["a.md", "b.md"]},
@@ -403,7 +396,7 @@ class TestBuildStepInstructions:
 
 
 class TestGoToStepNoSession:
-    """Tests for go_to_step when no session exists (line 480)."""
+    """Tests for go_to_step when no session exists."""
 
     async def test_go_to_step_no_active_session(self, tools: WorkflowTools) -> None:
         """go_to_step raises StateError when no session exists."""
@@ -418,20 +411,14 @@ class TestGoToStepNoSession:
 
 
 class TestResolveInputValues:
-    """Tests for _resolve_input_values edge cases (lines 185-186, 191)."""
+    """Tests for _resolve_input_values edge cases."""
 
-    async def test_provided_inputs_override_previous_outputs(
-        self, tools: WorkflowTools
-    ) -> None:
-        """Provided inputs take priority over previous step outputs (line 191)."""
-        resp = await _start_workflow(
-            tools, inputs={"input1": "provided_value"}
-        )
+    async def test_provided_inputs_override_previous_outputs(self, tools: WorkflowTools) -> None:
+        """Provided inputs take priority over previous step outputs."""
+        resp = await _start_workflow(tools, inputs={"input1": "provided_value"})
         # input1 should be resolved from provided inputs
         step = resp.begin_step
-        input_info = next(
-            (i for i in step.step_inputs if i.name == "input1"), None
-        )
+        input_info = next((i for i in step.step_inputs if i.name == "input1"), None)
         assert input_info is not None
         assert input_info.value == "provided_value"
 
@@ -454,8 +441,6 @@ class TestResolveInputValues:
 
         # step2 should have output1 as input resolved from previous outputs
         assert resp.begin_step is not None
-        input_info = next(
-            (i for i in resp.begin_step.step_inputs if i.name == "output1"), None
-        )
+        input_info = next((i for i in resp.begin_step.step_inputs if i.name == "output1"), None)
         assert input_info is not None
         assert input_info.value == "out1.md"

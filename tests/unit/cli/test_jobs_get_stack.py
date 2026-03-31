@@ -276,7 +276,7 @@ class TestGetStackJobNotFound:
 
 
 class TestListSessionsSyncErrors:
-    """Tests for _list_sessions_sync error handling (lines 60-61)."""
+    """Tests for _list_sessions_sync error handling."""
 
     def test_skips_invalid_json_session_files(self, tmp_path: Path) -> None:
         """Invalid JSON in session state files is silently skipped."""
@@ -307,7 +307,7 @@ class TestListSessionsSyncErrors:
 
 
 class TestGetStackParseError:
-    """Tests for ParseError handling in _get_active_sessions (lines 114-115)."""
+    """Tests for ParseError handling in _get_active_sessions."""
 
     def test_session_with_unparseable_job_has_null_fields(self, tmp_path: Path) -> None:
         """When the job.yml exists but is unparseable, common_job_info is null."""

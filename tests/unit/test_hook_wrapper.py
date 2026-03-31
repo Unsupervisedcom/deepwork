@@ -627,11 +627,12 @@ class TestIntegration:
 
 
 class TestReadStdin:
-    """Tests for read_stdin (line 299)."""
+    """Tests for read_stdin."""
 
     def test_returns_empty_when_stdin_is_tty(self) -> None:
         """When stdin is a tty, read_stdin returns empty string."""
         from unittest.mock import patch
+
         from deepwork.hooks.wrapper import read_stdin
 
         with patch("deepwork.hooks.wrapper.sys.stdin") as mock_stdin:
@@ -642,17 +643,18 @@ class TestReadStdin:
     def test_returns_empty_on_read_exception(self) -> None:
         """When stdin.read() raises, read_stdin returns empty string."""
         from unittest.mock import patch
+
         from deepwork.hooks.wrapper import read_stdin
 
         with patch("deepwork.hooks.wrapper.sys.stdin") as mock_stdin:
             mock_stdin.isatty.return_value = False
-            mock_stdin.read.side_effect = IOError("broken pipe")
+            mock_stdin.read.side_effect = OSError("broken pipe")
             result = read_stdin()
         assert result == ""
 
 
 class TestWriteStdout:
-    """Tests for write_stdout (line 308)."""
+    """Tests for write_stdout."""
 
     def test_writes_to_stdout(self, capsys: object) -> None:
         """write_stdout prints data to stdout."""
@@ -664,11 +666,10 @@ class TestWriteStdout:
 
 
 class TestRunHookSuccess:
-    """Tests for run_hook success path (lines 390-395)."""
+    """Tests for run_hook success path."""
 
     def test_successful_hook_returns_zero_and_outputs_json(self, capsys: object) -> None:
         """A successful hook function returns 0 and outputs JSON."""
-        from deepwork.hooks.wrapper import read_stdin
         from unittest.mock import patch
 
         def good_hook(hook_input: HookInput) -> HookOutput:

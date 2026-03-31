@@ -11,8 +11,6 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
 from deepwork.deepschema.config import DeepSchema
 from deepwork.hooks.deepschema_write import (
     _relative_path,
@@ -23,10 +21,10 @@ from deepwork.hooks.deepschema_write import (
 )
 from deepwork.hooks.wrapper import HookInput, HookOutput, NormalizedEvent, Platform
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_hook_input(
     event: NormalizedEvent = NormalizedEvent.AFTER_TOOL,
@@ -72,6 +70,7 @@ _RESOLVER_PATCH = "deepwork.deepschema.resolver.resolve_all"
 # deepschema_write_hook — early returns
 # ---------------------------------------------------------------------------
 
+
 class TestDeepschemaWriteHookEarlyReturns:
     """Tests for early-return branches in deepschema_write_hook."""
 
@@ -84,12 +83,12 @@ class TestDeepschemaWriteHookEarlyReturns:
         assert deepschema_write_hook(inp) == HookOutput()
 
     def test_ignores_empty_file_path(self) -> None:
-        """Line 36: empty file_path returns early."""
+        """Empty file_path triggers early return."""
         inp = _make_hook_input(file_path="")
         assert deepschema_write_hook(inp) == HookOutput()
 
     def test_relative_file_path_used_directly(self) -> None:
-        """Lines 47-48: non-absolute path is used as-is for rel_path."""
+        """Non-absolute path is passed as-is to the schema matcher."""
         inp = _make_hook_input(file_path="src/foo.py")
         with patch(_MATCHER_PATCH, return_value=[]) as mock_get:
             result = deepschema_write_hook(inp)
@@ -97,15 +96,15 @@ class TestDeepschemaWriteHookEarlyReturns:
         assert result == HookOutput()
 
     def test_value_error_on_relative_to_returns_empty(self) -> None:
-        """Lines 48-49: file outside project_root triggers ValueError -> empty output."""
+        """Absolute path outside project_root raises ValueError, producing empty output."""
         # /other/root/file.py is absolute but not under /project, so
-        # Path.relative_to raises ValueError, caught at line 48-49.
+        # Path.relative_to raises ValueError which is caught and suppressed.
         inp = _make_hook_input(file_path="/other/root/file.py", cwd="/project")
         result = deepschema_write_hook(inp)
         assert result == HookOutput()
 
     def test_matcher_exception_returns_empty(self) -> None:
-        """Lines 56-57: exception in get_schemas_for_file_fast -> empty output."""
+        """Exception in get_schemas_for_file_fast produces empty output."""
         inp = _make_hook_input()
         with patch(_MATCHER_PATCH, side_effect=RuntimeError("boom")):
             result = deepschema_write_hook(inp)
@@ -122,11 +121,12 @@ class TestDeepschemaWriteHookEarlyReturns:
 # deepschema_write_hook — schema found paths
 # ---------------------------------------------------------------------------
 
+
 class TestDeepschemaWriteHookWithSchemas:
     """Tests when schemas are found — conformance notes and validation."""
 
     def test_resolve_all_failure_continues(self) -> None:
-        """Lines 67-68: resolve_all raises -> hook continues with unresolved schemas."""
+        """resolve_all raising does not abort the hook — it continues with unresolved schemas."""
         schema = _make_schema(source_path=Path("/project/.deepschema/test/deepschema.yml"))
         with (
             patch(_MATCHER_PATCH, return_value=[schema]),
@@ -137,7 +137,7 @@ class TestDeepschemaWriteHookWithSchemas:
         assert "conform" in result.context.lower()
 
     def test_conformance_note_only_when_no_errors(self) -> None:
-        """Line 101: returns conformance note context when no validation errors."""
+        """Returns a conformance-note context (no CRITICAL) when there are no validation errors."""
         schema = _make_schema(source_path=Path("/project/schemas/deepschema.yml"))
         with (
             patch(_MATCHER_PATCH, return_value=[schema]),
@@ -149,7 +149,7 @@ class TestDeepschemaWriteHookWithSchemas:
         assert "CRITICAL" not in result.context
 
     def test_returns_error_context_on_json_schema_failure(self) -> None:
-        """Lines 95-99: json schema errors produce CRITICAL context."""
+        """JSON schema validation errors produce a CRITICAL context message."""
         schema = _make_schema(
             source_path=Path("/project/schemas/deepschema.yml"),
             json_schema_path="schema.json",
@@ -168,7 +168,7 @@ class TestDeepschemaWriteHookWithSchemas:
         assert "validation failed" in result.context
 
     def test_verification_command_error_included(self) -> None:
-        """Lines 89-92: bash verification error is appended."""
+        """A failing bash verification command appends a CRITICAL error to the context."""
         schema = _make_schema(
             source_path=Path("/project/schemas/deepschema.yml"),
             verification_bash_command=["check.sh"],
@@ -187,7 +187,7 @@ class TestDeepschemaWriteHookWithSchemas:
         assert "cmd failed" in result.context
 
     def test_verification_command_success_no_error(self) -> None:
-        """Line 91->89: verification command succeeds -> no error appended."""
+        """A passing verification command produces only the conformance note, no CRITICAL."""
         schema = _make_schema(
             source_path=Path("/project/schemas/deepschema.yml"),
             verification_bash_command=["true"],
@@ -222,13 +222,14 @@ class TestDeepschemaWriteHookWithSchemas:
 # _relative_path
 # ---------------------------------------------------------------------------
 
+
 class TestRelativePath:
     def test_relative_when_inside_root(self) -> None:
         result = _relative_path(Path("/project/src/foo.py"), Path("/project"))
         assert result == "src/foo.py"
 
     def test_falls_back_to_str_when_outside_root(self) -> None:
-        """Lines 110-111: ValueError fallback."""
+        """Falls back to the absolute string path when the file is outside project root."""
         result = _relative_path(Path("/other/foo.py"), Path("/project"))
         assert result == "/other/foo.py"
 
@@ -237,15 +238,16 @@ class TestRelativePath:
 # _validate_json_schema
 # ---------------------------------------------------------------------------
 
+
 class TestValidateJsonSchema:
     def test_schema_file_not_found(self, tmp_path: Path) -> None:
-        """Line 121: schema file doesn't exist."""
+        """Returns an error string when the JSON schema file does not exist."""
         result = _validate_json_schema(tmp_path / "data.json", tmp_path / "no.json")
         assert result is not None
         assert "not found" in result
 
     def test_invalid_json_file(self, tmp_path: Path) -> None:
-        """Lines 131-132: file is not valid JSON."""
+        """Returns an error string when the data file is not valid JSON."""
         data_file = tmp_path / "data.json"
         data_file.write_text("not json")
         schema_file = tmp_path / "schema.json"
@@ -255,18 +257,20 @@ class TestValidateJsonSchema:
         assert "not valid JSON" in result
 
     def test_generic_parse_error(self, tmp_path: Path) -> None:
-        """Lines 133-134: generic parse error (non-JSON, non-YAML read failure)."""
+        """Returns a 'Cannot parse file' error when reading the data file raises a decode error."""
         data_file = tmp_path / "data.yml"
         schema_file = tmp_path / "schema.json"
         schema_file.write_text("{}")
         # Patch read_text to raise a generic exception
-        with patch.object(Path, "read_text", side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "bad")):
+        with patch.object(
+            Path, "read_text", side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "bad")
+        ):
             result = _validate_json_schema(data_file, schema_file)
         assert result is not None
         assert "Cannot parse file" in result
 
     def test_invalid_schema_file_json(self, tmp_path: Path) -> None:
-        """Lines 138-139: schema file is not valid JSON."""
+        """Returns a 'Cannot read JSON Schema' error when the schema file is not valid JSON."""
         data_file = tmp_path / "data.json"
         data_file.write_text('{"key": "value"}')
         schema_file = tmp_path / "schema.json"
@@ -276,7 +280,7 @@ class TestValidateJsonSchema:
         assert "Cannot read JSON Schema" in result
 
     def test_schema_file_oserror(self, tmp_path: Path) -> None:
-        """Lines 138-139: OSError reading schema file."""
+        """Returns a 'Cannot read JSON Schema' error when an OSError occurs reading the schema file."""
         data_file = tmp_path / "data.json"
         data_file.write_text('{"key": "value"}')
         schema_file = tmp_path / "schema.json"
@@ -284,12 +288,14 @@ class TestValidateJsonSchema:
         # Patch only the second read_text call (schema file)
         original_read = Path.read_text
         call_count = 0
+
         def patched_read(self_path: Path, *args: object, **kwargs: object) -> str:
             nonlocal call_count
             call_count += 1
             if call_count == 2:
                 raise OSError("permission denied")
             return original_read(self_path, *args, **kwargs)  # type: ignore[arg-type]
+
         with patch.object(Path, "read_text", patched_read):
             result = _validate_json_schema(data_file, schema_file)
         assert result is not None
@@ -300,10 +306,14 @@ class TestValidateJsonSchema:
         data_file = tmp_path / "data.json"
         data_file.write_text('{"name": "test"}')
         schema_file = tmp_path / "schema.json"
-        schema_file.write_text(json.dumps({
-            "type": "object",
-            "properties": {"name": {"type": "string"}},
-        }))
+        schema_file.write_text(
+            json.dumps(
+                {
+                    "type": "object",
+                    "properties": {"name": {"type": "string"}},
+                }
+            )
+        )
         result = _validate_json_schema(data_file, schema_file)
         assert result is None
 
@@ -312,10 +322,14 @@ class TestValidateJsonSchema:
         data_file = tmp_path / "data.json"
         data_file.write_text('{"name": 123}')
         schema_file = tmp_path / "schema.json"
-        schema_file.write_text(json.dumps({
-            "type": "object",
-            "properties": {"name": {"type": "string"}},
-        }))
+        schema_file.write_text(
+            json.dumps(
+                {
+                    "type": "object",
+                    "properties": {"name": {"type": "string"}},
+                }
+            )
+        )
         result = _validate_json_schema(data_file, schema_file)
         assert result is not None
         assert "validation failed" in result.lower()
@@ -325,10 +339,14 @@ class TestValidateJsonSchema:
         data_file = tmp_path / "data.yml"
         data_file.write_text("name: test\n")
         schema_file = tmp_path / "schema.json"
-        schema_file.write_text(json.dumps({
-            "type": "object",
-            "properties": {"name": {"type": "string"}},
-        }))
+        schema_file.write_text(
+            json.dumps(
+                {
+                    "type": "object",
+                    "properties": {"name": {"type": "string"}},
+                }
+            )
+        )
         result = _validate_json_schema(data_file, schema_file)
         assert result is None
 
@@ -336,6 +354,7 @@ class TestValidateJsonSchema:
 # ---------------------------------------------------------------------------
 # _run_verification_command
 # ---------------------------------------------------------------------------
+
 
 class TestRunVerificationCommand:
     def test_successful_command(self, tmp_path: Path) -> None:
@@ -345,7 +364,7 @@ class TestRunVerificationCommand:
         assert result is None
 
     def test_failing_command_includes_output(self, tmp_path: Path) -> None:
-        """Lines 165-166: non-zero exit code includes stdout+stderr."""
+        """Non-zero exit code produces an error string that includes captured stdout/stderr."""
         filepath = tmp_path / "file.txt"
         filepath.write_text("hello")
         result = _run_verification_command("echo fail && exit 1", filepath, tmp_path)
@@ -355,7 +374,7 @@ class TestRunVerificationCommand:
         assert "fail" in result  # stdout captured
 
     def test_timeout(self) -> None:
-        """Lines 167-168: command times out."""
+        """TimeoutExpired produces an error string mentioning 'timed out' and the timeout value."""
         with patch(
             "deepwork.hooks.deepschema_write.subprocess.run",
             side_effect=subprocess.TimeoutExpired(cmd="sleep", timeout=30),
@@ -366,7 +385,7 @@ class TestRunVerificationCommand:
         assert "30s" in result
 
     def test_oserror(self) -> None:
-        """Lines 169-170: OS error running command."""
+        """OSError while running the command produces a 'Failed to run' error string."""
         with patch(
             "deepwork.hooks.deepschema_write.subprocess.run",
             side_effect=OSError("No such file"),
@@ -376,7 +395,7 @@ class TestRunVerificationCommand:
         assert "Failed to run" in result
 
     def test_returns_none_on_zero_exit(self, tmp_path: Path) -> None:
-        """Line 172: explicit None return on success."""
+        """Returns None when the command exits successfully."""
         filepath = tmp_path / "file.txt"
         filepath.write_text("ok")
         result = _run_verification_command("exit 0", filepath, tmp_path)
@@ -387,9 +406,10 @@ class TestRunVerificationCommand:
 # main() and __main__ block
 # ---------------------------------------------------------------------------
 
+
 class TestMainEntryPoint:
     def test_main_delegates_to_run_hook(self) -> None:
-        """Lines 177-178: main() creates Platform and calls run_hook."""
+        """main() reads DEEPWORK_HOOK_PLATFORM env var and delegates to run_hook."""
         with patch("deepwork.hooks.deepschema_write.run_hook", return_value=0) as mock_run:
             with patch.dict("os.environ", {"DEEPWORK_HOOK_PLATFORM": "gemini"}):
                 ret = main()
@@ -398,23 +418,25 @@ class TestMainEntryPoint:
         assert mock_run.call_args[0][1] == Platform("gemini")
 
     def test_main_defaults_to_claude(self) -> None:
-        """Line 177: missing env var defaults to 'claude'."""
+        """Missing DEEPWORK_HOOK_PLATFORM env var defaults platform to 'claude'."""
         with patch("deepwork.hooks.deepschema_write.run_hook", return_value=0) as mock_run:
             with patch.dict("os.environ", {}, clear=True):
                 main()
         assert mock_run.call_args[0][1] == Platform.CLAUDE
 
     def test_dunder_main_runs_as_script(self) -> None:
-        """Lines 182-186: running module as __main__ invokes main() and exits."""
+        """Running the module as __main__ invokes main() and exits cleanly."""
         result = subprocess.run(
             [
-                sys.executable, "-m", "deepwork.hooks.deepschema_write",
+                sys.executable,
+                "-m",
+                "deepwork.hooks.deepschema_write",
             ],
             capture_output=True,
             text=True,
             timeout=10,
             input="{}",
-            cwd="/Users/noah/Documents/GitHub/deep-work",
+            cwd=str(Path(__file__).resolve().parents[2]),
         )
         # Hook reads stdin JSON; empty {} means no meaningful event, so it
         # should exit 0 with an allow response (empty JSON or {}).

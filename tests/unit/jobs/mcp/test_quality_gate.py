@@ -661,7 +661,7 @@ class TestValidateJsonSchemasExtra:
     """Additional tests for validate_json_schemas to cover missing lines."""
 
     def test_skips_nonexistent_file(self, tmp_path: Path) -> None:
-        """When the output file doesn't exist on disk, it is silently skipped (line 60)."""
+        """When the output file doesn't exist on disk, it is silently skipped."""
         schema = {"type": "object"}
         arg = StepArgument(
             name="data", description="JSON data", type="file_path", json_schema=schema
@@ -692,9 +692,7 @@ class TestValidateJsonSchemasExtra:
         (tmp_path / "good.json").write_text(json.dumps({"x": 1}))
         (tmp_path / "bad.json").write_text(json.dumps({"x": "not_int"}))
 
-        errors = validate_json_schemas(
-            {"data": ["good.json", "bad.json"]}, step, job, tmp_path
-        )
+        errors = validate_json_schemas({"data": ["good.json", "bad.json"]}, step, job, tmp_path)
         assert len(errors) == 1
         assert "bad.json" in errors[0]
 
@@ -708,7 +706,7 @@ class TestCollectOutputFilePaths:
     """Tests for _collect_output_file_paths."""
 
     def test_skips_unknown_argument(self, tmp_path: Path) -> None:
-        """Outputs whose argument is not found in the job are skipped (line 86->84)."""
+        """Outputs whose argument is not found in the job are skipped."""
         from deepwork.jobs.mcp.quality_gate import _collect_output_file_paths
 
         arg = StepArgument(name="known", description="Known", type="file_path")
@@ -721,7 +719,7 @@ class TestCollectOutputFilePaths:
         assert paths == ["a.md"]
 
     def test_handles_list_value(self, tmp_path: Path) -> None:
-        """List values for file_path outputs are extended into the result (line 88)."""
+        """List values for file_path outputs are extended into the result."""
         from deepwork.jobs.mcp.quality_gate import _collect_output_file_paths
 
         arg = StepArgument(name="files", description="Files", type="file_path")
@@ -754,7 +752,7 @@ class TestBuildInputContext:
     """Tests for _build_input_context."""
 
     def test_skips_unknown_input_argument(self, tmp_path: Path) -> None:
-        """Input whose argument doesn't exist in job is skipped (line 109)."""
+        """Input whose argument doesn't exist in job is skipped."""
         from deepwork.jobs.mcp.quality_gate import _build_input_context
 
         # Step references "missing_arg" but job has no such argument
@@ -768,7 +766,7 @@ class TestBuildInputContext:
         assert "missing_arg" not in result.split("Step Inputs")[1]
 
     def test_renders_file_path_list_input(self, tmp_path: Path) -> None:
-        """File-path list inputs render as comma-separated @-prefixed paths (lines 118-120)."""
+        """File-path list inputs render as comma-separated @-prefixed paths."""
         from deepwork.jobs.mcp.quality_gate import _build_input_context
 
         arg = StepArgument(name="refs", description="Ref files", type="file_path")
@@ -781,7 +779,7 @@ class TestBuildInputContext:
         assert "@b.md" in result
 
     def test_renders_file_path_single_input(self, tmp_path: Path) -> None:
-        """File-path single input renders as @path (lines 121-122)."""
+        """File-path single input renders as @path."""
         from deepwork.jobs.mcp.quality_gate import _build_input_context
 
         arg = StepArgument(name="ref", description="Ref file", type="file_path")
@@ -802,7 +800,7 @@ class TestBuildDynamicReviewRulesExtra:
     """Additional tests for build_dynamic_review_rules to cover missing lines."""
 
     def test_skips_output_with_unknown_argument(self, tmp_path: Path) -> None:
-        """When a step output's argument is not found in job, it is skipped (line 162)."""
+        """When a step output's argument is not found in job, it is skipped."""
         review = ReviewBlock(strategy="individual", instructions="Check it")
         # Define a step with an output that references "missing" argument
         output_ref = StepOutputRef(argument_name="missing", required=True, review=review)
@@ -811,14 +809,18 @@ class TestBuildDynamicReviewRulesExtra:
         job, workflow = _make_job(tmp_path, [], step)
 
         rules = build_dynamic_review_rules(
-            step=step, job=job, workflow=workflow,
+            step=step,
+            job=job,
+            workflow=workflow,
             outputs={"missing": "file.md"},
-            input_values={}, work_summary=None, project_root=tmp_path,
+            input_values={},
+            work_summary=None,
+            project_root=tmp_path,
         )
         assert rules == []
 
     def test_skips_output_with_none_value(self, tmp_path: Path) -> None:
-        """When the output value is None, it is skipped (line 177)."""
+        """When the output value is None, it is skipped."""
         review = ReviewBlock(strategy="individual", instructions="Check it")
         arg = StepArgument(name="report", description="Report", type="file_path")
         output_ref = StepOutputRef(argument_name="report", required=True, review=review)
@@ -826,14 +828,18 @@ class TestBuildDynamicReviewRulesExtra:
         job, workflow = _make_job(tmp_path, [arg], step)
 
         rules = build_dynamic_review_rules(
-            step=step, job=job, workflow=workflow,
+            step=step,
+            job=job,
+            workflow=workflow,
             outputs={},  # "report" not in outputs -> value is None
-            input_values={}, work_summary=None, project_root=tmp_path,
+            input_values={},
+            work_summary=None,
+            project_root=tmp_path,
         )
         assert rules == []
 
     def test_string_output_with_review_produces_no_file_rule(self, tmp_path: Path) -> None:
-        """String-type output with a review block has empty file_paths (line 184)."""
+        """String-type output with a review block has empty file_paths."""
         review = ReviewBlock(strategy="individual", instructions="Check summary")
         arg = StepArgument(name="summary", description="Summary", type="string")
         output_ref = StepOutputRef(argument_name="summary", required=True, review=review)
@@ -841,15 +847,19 @@ class TestBuildDynamicReviewRulesExtra:
         job, workflow = _make_job(tmp_path, [arg], step)
 
         rules = build_dynamic_review_rules(
-            step=step, job=job, workflow=workflow,
+            step=step,
+            job=job,
+            workflow=workflow,
             outputs={"summary": "I did the work"},
-            input_values={}, work_summary=None, project_root=tmp_path,
+            input_values={},
+            work_summary=None,
+            project_root=tmp_path,
         )
-        # String type has empty file_paths, so no rule is created (line 197 check)
+        # String type has empty file_paths, so no rule is created
         assert rules == []
 
     def test_process_requirements_with_list_file_and_string_outputs(self, tmp_path: Path) -> None:
-        """Process requirements correctly render list file_path and string outputs (lines 235-240)."""
+        """Process requirements correctly render list file_path and string outputs."""
         file_arg = StepArgument(name="files", description="Files", type="file_path")
         str_arg = StepArgument(name="note", description="Note", type="string")
         file_ref = StepOutputRef(argument_name="files", required=True)
@@ -862,9 +872,12 @@ class TestBuildDynamicReviewRulesExtra:
         job, workflow = _make_job(tmp_path, [file_arg, str_arg], step)
 
         rules = build_dynamic_review_rules(
-            step=step, job=job, workflow=workflow,
+            step=step,
+            job=job,
+            workflow=workflow,
             outputs={"files": ["a.md", "b.md"], "note": "all good"},
-            input_values={}, work_summary="Did the work",
+            input_values={},
+            work_summary="Did the work",
             project_root=tmp_path,
         )
 
@@ -876,7 +889,7 @@ class TestBuildDynamicReviewRulesExtra:
         assert "all good" in rule.instructions
 
     def test_process_requirements_skipped_when_no_output_paths(self, tmp_path: Path) -> None:
-        """When there are no file_path outputs, PQA rule is not created (line 269->286)."""
+        """When there are no file_path outputs, PQA rule is not created."""
         str_arg = StepArgument(name="note", description="Note", type="string")
         str_ref = StepOutputRef(argument_name="note", required=True)
         step = WorkflowStep(
@@ -887,9 +900,12 @@ class TestBuildDynamicReviewRulesExtra:
         job, workflow = _make_job(tmp_path, [str_arg], step)
 
         rules = build_dynamic_review_rules(
-            step=step, job=job, workflow=workflow,
+            step=step,
+            job=job,
+            workflow=workflow,
             outputs={"note": "text"},
-            input_values={}, work_summary="Did stuff",
+            input_values={},
+            work_summary="Did stuff",
             project_root=tmp_path,
         )
         assert rules == []
@@ -904,7 +920,7 @@ class TestRunQualityGateExtra:
     """Additional tests for run_quality_gate to cover edge cases."""
 
     def test_no_deepreview_rules_and_no_output_files_skips_matching(self, tmp_path: Path) -> None:
-        """When there are no output files, matching is skipped (line 333->339)."""
+        """When there are no output files, matching is skipped."""
         # Use string-type output only — no file paths
         str_arg = StepArgument(name="note", description="Note", type="string")
         output_ref = StepOutputRef(argument_name="note", required=True)
@@ -913,9 +929,12 @@ class TestRunQualityGateExtra:
 
         with patch("deepwork.jobs.mcp.quality_gate.load_all_rules", return_value=([], [])):
             result = run_quality_gate(
-                step=step, job=job, workflow=workflow,
+                step=step,
+                job=job,
+                workflow=workflow,
                 outputs={"note": "some text"},
-                input_values={}, work_summary=None,
+                input_values={},
+                work_summary=None,
                 project_root=tmp_path,
             )
 

@@ -6,15 +6,12 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from deepwork.jobs.issues import Issue
 from deepwork.jobs.mcp.server import (
-    _build_startup_instructions,
-    _ensure_schema_available,
-    _MAX_INSTRUCTIONS_SIZE,
     _STATIC_INSTRUCTIONS,
     _WORKFLOW_HEADER,
+    _build_startup_instructions,
+    _ensure_schema_available,
     create_server,
 )
 
@@ -514,9 +511,7 @@ class TestReviewTools:
             patch("deepwork.review.mcp.run_review", return_value="Review task list"),
         ):
             mcp = create_server(project_root=tmp_path)
-            result = await mcp.call_tool(
-                "get_review_instructions", {"files": ["src/foo.py"]}
-            )
+            result = await mcp.call_tool("get_review_instructions", {"files": ["src/foo.py"]})
 
         data = result.structured_content["result"]
         assert data == "Review task list"
@@ -580,9 +575,7 @@ class TestReviewTools:
             ),
         ):
             mcp = create_server(project_root=tmp_path)
-            result = await mcp.call_tool(
-                "mark_review_as_passed", {"review_id": "abc123"}
-            )
+            result = await mcp.call_tool("mark_review_as_passed", {"review_id": "abc123"})
 
         data = result.structured_content["result"]
         assert "abc123" in data
@@ -601,9 +594,7 @@ class TestReviewTools:
             ),
         ):
             mcp = create_server(project_root=tmp_path)
-            result = await mcp.call_tool(
-                "mark_review_as_passed", {"review_id": "bad"}
-            )
+            result = await mcp.call_tool("mark_review_as_passed", {"review_id": "bad"})
 
         data = result.structured_content["result"]
         assert "Validation error" in data

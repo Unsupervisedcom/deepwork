@@ -721,7 +721,7 @@ class TestGitUntrackedFiles:
 
 
 class TestMatchRuleSourceDirOutsideProject:
-    """Tests for match_rule when source_dir is not under project_root (lines 289-291)."""
+    """Tests for match_rule when source_dir is not under project_root."""
 
     def test_source_dir_not_under_project_root_returns_empty(self, tmp_path: Path) -> None:
         """When source_dir is outside project_root, match_rule returns []."""
@@ -734,7 +734,7 @@ class TestMatchRuleSourceDirOutsideProject:
 
 
 class TestGlobMatchExtra:
-    """Additional tests for _glob_match to cover ? and ** at end (lines 377-378, 383-384)."""
+    """Additional tests for _glob_match to cover ? and ** at end."""
 
     def test_question_mark_matches_single_char(self) -> None:
         """? matches a single non-/ character."""
@@ -752,7 +752,7 @@ class TestGlobMatchExtra:
 
 
 class TestFormatSourceLocationExtra:
-    """Tests for format_source_location edge cases (lines 418-419)."""
+    """Tests for format_source_location edge cases."""
 
     def test_source_file_outside_project_root(self, tmp_path: Path) -> None:
         """When source_file is not under project_root, uses the absolute path."""
@@ -771,7 +771,7 @@ class TestFindUnchangedMatchingFilesExtra:
     """Tests for _find_unchanged_matching_files edge cases."""
 
     def test_source_dir_outside_project_returns_empty(self, tmp_path: Path) -> None:
-        """source_dir outside project_root returns [] (lines 448-449)."""
+        """source_dir outside project_root returns []."""
         from deepwork.review.matcher import _find_unchanged_matching_files
 
         rule = _make_rule(
@@ -782,7 +782,7 @@ class TestFindUnchangedMatchingFilesExtra:
         assert result == []
 
     def test_skips_directories_in_glob(self, tmp_path: Path) -> None:
-        """Directories matched by glob are skipped (line 457)."""
+        """Directories matched by glob are skipped."""
         from deepwork.review.matcher import _find_unchanged_matching_files
 
         # Create a directory that matches the glob pattern name
@@ -799,12 +799,12 @@ class TestFindUnchangedMatchingFilesExtra:
         assert "src/app.py" not in result
 
     def test_skips_file_not_relative_to_project(self, tmp_path: Path) -> None:
-        """Files that can't be made relative to project_root are skipped (lines 462-463)."""
+        """Files that can't be made relative to project_root are skipped."""
         from deepwork.review.matcher import _find_unchanged_matching_files
 
         # This is hard to trigger naturally since source_dir is under project_root
         # at this point. We use a symlink to create a file that resolves outside.
-        # Instead, test the rel_to_source None path (line 472).
+        # Instead, test the rel_to_source None path.
         (tmp_path / "subdir").mkdir()
         (tmp_path / "subdir" / "file.py").write_text("# file")
 
@@ -816,7 +816,7 @@ class TestFindUnchangedMatchingFilesExtra:
         assert "subdir/file.py" in result
 
     def test_exclude_patterns_filter_unchanged_files(self, tmp_path: Path) -> None:
-        """Exclude patterns filter out unchanged files (line 476)."""
+        """Exclude patterns filter out unchanged files."""
         from deepwork.review.matcher import _find_unchanged_matching_files
 
         (tmp_path / "app.py").write_text("# app")
@@ -833,7 +833,7 @@ class TestFindUnchangedMatchingFilesExtra:
 
 
 class TestMatchFilesToRulesAllChangedFiles:
-    """Test the all_changed_files strategy branch more thoroughly (line 255->217)."""
+    """Test the all_changed_files strategy branch more thoroughly."""
 
     def test_all_changed_files_strategy_with_agent(self, tmp_path: Path) -> None:
         """all_changed_files strategy passes all files and resolves agent."""

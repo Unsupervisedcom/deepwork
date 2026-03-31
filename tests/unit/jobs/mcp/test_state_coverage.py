@@ -26,7 +26,7 @@ def state_manager(project_root: Path) -> StateManager:
 
 
 class TestReadCompletedWorkflowsEdgeCases:
-    """Tests for _read_completed_workflows error paths (lines 110, 117-118)."""
+    """Tests for _read_completed_workflows error paths."""
 
     async def test_returns_empty_when_file_missing(self, state_manager: StateManager) -> None:
         """_read_completed_workflows returns [] when state file does not exist."""
@@ -44,11 +44,9 @@ class TestReadCompletedWorkflowsEdgeCases:
 
 
 class TestWriteStackEdgeCases:
-    """Tests for _write_stack error handling (lines 153-154, 164-170)."""
+    """Tests for _write_stack error handling."""
 
-    async def test_preserves_completed_even_if_corrupt(
-        self, state_manager: StateManager
-    ) -> None:
+    async def test_preserves_completed_even_if_corrupt(self, state_manager: StateManager) -> None:
         """_write_stack handles corrupt existing file when preserving completed_workflows."""
         # Create a corrupt state file
         state_file = state_manager._state_file(SESSION_ID)
@@ -63,10 +61,8 @@ class TestWriteStackEdgeCases:
         assert data["workflow_stack"] == []
         assert "completed_workflows" not in data
 
-    async def test_write_failure_cleans_up_temp_file(
-        self, state_manager: StateManager
-    ) -> None:
-        """_write_stack cleans up temp file if write fails (lines 164-170)."""
+    async def test_write_failure_cleans_up_temp_file(self, state_manager: StateManager) -> None:
+        """_write_stack cleans up temp file if write fails."""
         state_file = state_manager._state_file(SESSION_ID)
         state_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -83,7 +79,7 @@ class TestWriteStackEdgeCases:
 
 
 class TestEmptyStackErrors:
-    """Tests for StateError when stack is empty (lines 264, 300, 335, 360, 395, 433, 472)."""
+    """Tests for StateError when stack is empty."""
 
     async def test_start_step_empty_stack(self, state_manager: StateManager) -> None:
         """start_step raises StateError when no active session."""
@@ -95,9 +91,7 @@ class TestEmptyStackErrors:
         with pytest.raises(StateError, match="No active workflow session"):
             await state_manager.complete_step(SESSION_ID, "step1", {"out": "x.md"})
 
-    async def test_record_quality_attempt_empty_stack(
-        self, state_manager: StateManager
-    ) -> None:
+    async def test_record_quality_attempt_empty_stack(self, state_manager: StateManager) -> None:
         """record_quality_attempt raises StateError when no active session."""
         with pytest.raises(StateError, match="No active workflow session"):
             await state_manager.record_quality_attempt(SESSION_ID, "step1")
@@ -124,7 +118,7 @@ class TestEmptyStackErrors:
 
 
 class TestStartStepExistingProgress:
-    """Tests for start_step when step already has progress (lines 278-280)."""
+    """Tests for start_step when step already has progress."""
 
     async def test_updates_existing_step_progress(self, state_manager: StateManager) -> None:
         """start_step updates started_at and input_values on existing progress entry."""
@@ -139,7 +133,7 @@ class TestStartStepExistingProgress:
         # Start step1 initially
         await state_manager.start_step(SESSION_ID, "step1", input_values={"a": "old"})
         session = state_manager.resolve_session(SESSION_ID)
-        first_started_at = session.step_progress["step1"].started_at
+        _first_started_at = session.step_progress["step1"].started_at
 
         # Start step1 again with new input values
         await state_manager.start_step(SESSION_ID, "step1", input_values={"a": "new"})
@@ -149,9 +143,7 @@ class TestStartStepExistingProgress:
         # started_at should be updated (different timestamp)
         assert session.step_progress["step1"].started_at is not None
 
-    async def test_updates_existing_without_input_values(
-        self, state_manager: StateManager
-    ) -> None:
+    async def test_updates_existing_without_input_values(self, state_manager: StateManager) -> None:
         """start_step on existing progress without new input_values keeps old ones."""
         await state_manager.create_session(
             session_id=SESSION_ID,
@@ -172,11 +164,9 @@ class TestStartStepExistingProgress:
 
 
 class TestResolveSessionCorruptJSON:
-    """Tests for resolve_session with corrupt JSON (line 249 - empty stack)."""
+    """Tests for resolve_session with corrupt JSON."""
 
-    def test_resolve_session_empty_stack_in_valid_json(
-        self, state_manager: StateManager
-    ) -> None:
+    def test_resolve_session_empty_stack_in_valid_json(self, state_manager: StateManager) -> None:
         """resolve_session raises StateError when JSON is valid but stack is empty."""
         state_file = state_manager._state_file(SESSION_ID)
         state_file.parent.mkdir(parents=True, exist_ok=True)
@@ -187,7 +177,7 @@ class TestResolveSessionCorruptJSON:
 
 
 class TestGetStackCorruptJSON:
-    """Tests for get_stack with corrupt JSON files (lines 521-522, 534-535)."""
+    """Tests for get_stack with corrupt JSON files."""
 
     def test_corrupt_main_json(self, state_manager: StateManager) -> None:
         """get_stack returns empty when main state file has corrupt JSON."""
@@ -215,7 +205,7 @@ class TestGetStackCorruptJSON:
 
 
 class TestGetAllSessionDataEdgeCases:
-    """Tests for get_all_session_data edge cases (lines 572, 576-577, 589)."""
+    """Tests for get_all_session_data edge cases."""
 
     def test_skips_non_json_files(self, state_manager: StateManager) -> None:
         """get_all_session_data ignores non-.json files in the session directory."""
@@ -278,11 +268,9 @@ class TestGetAllSessionDataEdgeCases:
 
 
 class TestCreateSessionCrossAgent:
-    """Tests for create_session cross-agent sub-workflow tracking (line 216->229)."""
+    """Tests for create_session cross-agent sub-workflow tracking."""
 
-    async def test_cross_agent_without_main_stack(
-        self, state_manager: StateManager
-    ) -> None:
+    async def test_cross_agent_without_main_stack(self, state_manager: StateManager) -> None:
         """Creating an agent session when main stack is empty does not crash."""
         # No main stack - just create an agent session directly
         session = await state_manager.create_session(

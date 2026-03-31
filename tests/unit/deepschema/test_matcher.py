@@ -67,7 +67,7 @@ class TestGetApplicableSchemas:
 
 
 class TestAnonymousSchemaOutsideProject:
-    """Tests for _anonymous_schema_matches when target is outside project_root (lines 122-123)."""
+    """Tests for _anonymous_schema_matches when target is outside project_root."""
 
     def test_returns_false_when_target_outside_project(self, tmp_path: Path) -> None:
         """Anonymous schema whose target resolves outside project_root returns False."""
@@ -113,7 +113,7 @@ class TestGetSchemasForFileFast:
         assert result == []
 
     def test_skips_named_schema_with_parse_error(self, tmp_path: Path) -> None:
-        """Named schema with parse error is skipped, not crash (lines 74-75)."""
+        """Named schema with parse error is skipped, not crash."""
         schema_dir = tmp_path / ".deepwork" / "schemas" / "broken"
         schema_dir.mkdir(parents=True)
         (schema_dir / "deepschema.yml").write_text("[invalid yaml]", encoding="utf-8")
@@ -124,7 +124,7 @@ class TestGetSchemasForFileFast:
         assert all(s.name != "broken" for s in result)
 
     def test_skips_anonymous_schema_with_parse_error(self, tmp_path: Path) -> None:
-        """Anonymous schema with parse error is skipped, not crash (lines 88-89)."""
+        """Anonymous schema with parse error is skipped, not crash."""
         src = tmp_path / "src"
         src.mkdir()
         (src / ".deepschema.app.py.yml").write_text("[invalid yaml]", encoding="utf-8")

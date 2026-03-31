@@ -1,12 +1,11 @@
 """Tests for hook CLI command."""
 
-import sys
 import types
 from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
 
-from deepwork.cli.hook import HookError, hook
+from deepwork.cli.hook import hook
 
 
 class TestHookCLI:
@@ -19,10 +18,10 @@ class TestHookCLI:
 
         runner = CliRunner()
         with patch("importlib.import_module", return_value=mock_module) as mock_import:
-            result = runner.invoke(hook, ["my_hook"])
+            runner.invoke(hook, ["my_hook"])
 
         mock_import.assert_called_once_with("deepwork.hooks.my_hook")
-        mock_module.main.assert_called_once()  # type: ignore[attr-defined]
+        mock_module.main.assert_called_once()
 
     def test_hook_with_dotted_name_uses_full_module_path(self) -> None:
         """Test that a dotted hook name is treated as a full module path."""
@@ -31,7 +30,7 @@ class TestHookCLI:
 
         runner = CliRunner()
         with patch("importlib.import_module", return_value=mock_module) as mock_import:
-            result = runner.invoke(hook, ["custom.hooks.check"])
+            runner.invoke(hook, ["custom.hooks.check"])
 
         mock_import.assert_called_once_with("custom.hooks.check")
 
@@ -42,7 +41,9 @@ class TestHookCLI:
             result = runner.invoke(hook, ["nonexistent_hook"])
 
         assert result.exit_code != 0
-        assert "not found" in result.output.lower() or "not found" in (result.output + getattr(result, 'stderr', ''))
+        assert "not found" in result.output.lower() or "not found" in (
+            result.output + getattr(result, "stderr", "")
+        )
 
     def test_hook_module_without_main_prints_error(self) -> None:
         """Test that a hook module without main() prints an error."""

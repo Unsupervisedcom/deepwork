@@ -112,7 +112,7 @@ class TestSchemaToReviewRule:
 
 
 class TestAnonymousSchemaRuleOutsideProject:
-    """Tests for _anonymous_schema_rule when target is outside project_root (lines 99-100)."""
+    """Tests for _anonymous_schema_rule when target is outside project_root."""
 
     def test_returns_none_when_target_outside_project(self, tmp_path: Path) -> None:
         """Anonymous schema whose target resolves outside project_root returns None."""

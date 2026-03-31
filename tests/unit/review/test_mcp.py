@@ -169,17 +169,20 @@ def _get_tool_names(server: Any) -> set[str]:
 
 
 class TestRunReviewDiscoveryWarnings:
-    """Tests for discovery warning handling in run_review (lines 43, 77, 81-82, 114-115)."""
+    """Tests for discovery warning handling in run_review."""
 
     @patch("deepwork.review.mcp.gen_schema_rules")
     @patch("deepwork.review.mcp.load_all_rules")
     def test_no_valid_rules_with_parse_errors_shows_warnings(
         self, mock_load: Any, mock_schema: Any, tmp_path: Path
     ) -> None:
-        """When no valid rules exist but there are discovery errors, shows parse errors (lines 81-82)."""
+        """When no valid rules exist but there are discovery errors, shows parse errors."""
         from deepwork.review.discovery import DiscoveryError
 
-        mock_load.return_value = ([], [DiscoveryError(file_path=Path("bad/.deepreview"), error="bad yaml")])
+        mock_load.return_value = (
+            [],
+            [DiscoveryError(file_path=Path("bad/.deepreview"), error="bad yaml")],
+        )
         mock_schema.return_value = ([], [])
 
         result = run_review(tmp_path, "claude")
@@ -192,8 +195,7 @@ class TestRunReviewDiscoveryWarnings:
     def test_schema_errors_appended_to_discovery_errors(
         self, mock_load: Any, mock_schema: Any, tmp_path: Path
     ) -> None:
-        """DeepSchema errors are appended to discovery_errors (line 77)."""
-        from deepwork.review.discovery import DiscoveryError
+        """DeepSchema errors are appended to discovery_errors."""
 
         mock_load.return_value = ([], [])
         mock_schema.return_value = ([], ["schema parse failed"])
@@ -209,10 +211,15 @@ class TestRunReviewDiscoveryWarnings:
     @patch("deepwork.review.mcp.gen_schema_rules")
     @patch("deepwork.review.mcp.load_all_rules")
     def test_discovery_warnings_prepended_to_output(
-        self, mock_load: Any, mock_schema: Any, mock_diff: Any,
-        mock_match: Any, mock_write: Any, tmp_path: Path,
+        self,
+        mock_load: Any,
+        mock_schema: Any,
+        mock_diff: Any,
+        mock_match: Any,
+        mock_write: Any,
+        tmp_path: Path,
     ) -> None:
-        """When discovery errors exist alongside valid rules, warnings are prepended (lines 114-115)."""
+        """When discovery errors exist alongside valid rules, warnings are prepended."""
         from deepwork.review.discovery import DiscoveryError
 
         rule = _make_rule(tmp_path)
@@ -222,7 +229,10 @@ class TestRunReviewDiscoveryWarnings:
             instructions="Review it.",
             agent_name=None,
         )
-        mock_load.return_value = ([rule], [DiscoveryError(file_path=Path("x/.deepreview"), error="parse error")])
+        mock_load.return_value = (
+            [rule],
+            [DiscoveryError(file_path=Path("x/.deepreview"), error="parse error")],
+        )
         mock_schema.return_value = ([], [])
         mock_diff.return_value = ["app.py"]
         mock_match.return_value = [task]

@@ -18,7 +18,7 @@ def pytest_configure(config: pytest.Config) -> None:
     Coverage is configured in three places that interact:
 
     1. **pyproject.toml [tool.pytest.ini_options].addopts** — sets
-       ``--cov=deepwork --cov-branch --cov-report=term-missing --cov-fail-under=95``.
+       ``--cov=deepwork --cov-branch --cov-report=term-missing --cov-fail-under=98``.
        These flags are injected into every pytest invocation via addopts.
 
     2. **pyproject.toml [tool.coverage.report]** — configures coverage.py's
@@ -50,7 +50,6 @@ def pytest_configure(config: pytest.Config) -> None:
         cov = config.pluginmanager.get_plugin("_cov")
         if cov:
             cov.options.cov_fail_under = 0
-
 
 
 @pytest.fixture

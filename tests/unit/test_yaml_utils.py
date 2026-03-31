@@ -161,11 +161,11 @@ invalid:
 
 
 class TestLoadYAMLOSError:
-    """Tests for load_yaml OSError handling (line 46)."""
+    """Tests for load_yaml OSError handling."""
 
     def test_raises_yaml_error_on_os_error(self, temp_dir: Path) -> None:
         """OSError during file read is wrapped in YAMLError."""
-        from unittest.mock import patch, mock_open
+        from unittest.mock import patch
 
         yaml_file = temp_dir / "test.yml"
         yaml_file.write_text("name: test")
@@ -274,10 +274,10 @@ class TestSaveYAML:
 
 
 class TestSaveYAMLErrors:
-    """Tests for save_yaml error handling (lines 68-71)."""
+    """Tests for save_yaml error handling."""
 
     def test_raises_yaml_error_on_write_os_error(self, temp_dir: Path) -> None:
-        """OSError during file write is wrapped in YAMLError (lines 70-71)."""
+        """OSError during file write is wrapped in YAMLError."""
         from unittest.mock import patch
 
         yaml_file = temp_dir / "test.yml"
@@ -287,21 +287,24 @@ class TestSaveYAMLErrors:
                 save_yaml(yaml_file, {"name": "test"})
 
     def test_raises_yaml_error_on_serialization_failure(self, temp_dir: Path) -> None:
-        """YAML serialization error is wrapped in YAMLError (lines 68-69)."""
+        """YAML serialization error is wrapped in YAMLError."""
         from unittest.mock import patch
 
         yaml_file = temp_dir / "test.yml"
 
-        with patch("deepwork.utils.yaml_utils.yaml.safe_dump", side_effect=__import__("yaml").YAMLError("bad")):
+        with patch(
+            "deepwork.utils.yaml_utils.yaml.safe_dump",
+            side_effect=__import__("yaml").YAMLError("bad"),
+        ):
             with pytest.raises(YAMLError, match="Failed to serialize data to YAML"):
                 save_yaml(yaml_file, {"name": "test"})
 
 
 class TestLoadYAMLFromString:
-    """Tests for load_yaml_from_string (line 92)."""
+    """Tests for load_yaml_from_string."""
 
     def test_raises_for_non_dict_content(self) -> None:
-        """Non-dict YAML content raises YAMLError (line 92)."""
+        """Non-dict YAML content raises YAMLError."""
         with pytest.raises(YAMLError, match="must be a dictionary"):
             load_yaml_from_string("- item1\n- item2\n")
 
@@ -365,7 +368,7 @@ class TestValidateYAMLStructure:
         data = ["item1", "item2"]
 
         with pytest.raises(YAMLError, match="Data must be a dictionary"):
-            validate_yaml_structure(data, ["name"])  # type: ignore
+            validate_yaml_structure(data, ["name"])
 
     def test_accepts_empty_required_keys(self) -> None:
         """Test that validate_yaml_structure works with no required keys."""

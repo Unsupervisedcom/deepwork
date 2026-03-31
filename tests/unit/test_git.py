@@ -191,11 +191,13 @@ class TestCreateBranch:
 
 
 class TestGetRepoRootBareRepo:
-    """Tests for get_repo_root with bare repo (line 65)."""
+    """Tests for get_repo_root with bare repo."""
 
     def test_raises_for_bare_repo(self, temp_dir: Path) -> None:
         """A bare repo has no working_tree_dir, so get_repo_root raises GitError."""
-        from unittest.mock import patch as mock_patch, MagicMock
+        from unittest.mock import MagicMock
+        from unittest.mock import patch as mock_patch
+
         from deepwork.utils.git import get_repo_root
 
         mock_repo = MagicMock()
@@ -207,7 +209,7 @@ class TestGetRepoRootBareRepo:
 
 
 class TestGetCurrentBranchDetached:
-    """Tests for get_current_branch with detached HEAD (line 85)."""
+    """Tests for get_current_branch with detached HEAD."""
 
     def test_raises_for_detached_head(self, mock_git_repo: Path) -> None:
         """When HEAD is detached, get_current_branch raises GitError."""
@@ -221,11 +223,12 @@ class TestGetCurrentBranchDetached:
 
 
 class TestCreateBranchGitCommandError:
-    """Tests for create_branch GitCommandError (lines 131-132)."""
+    """Tests for create_branch GitCommandError."""
 
     def test_raises_git_error_on_command_failure(self, mock_git_repo: Path) -> None:
         """GitCommandError during branch creation is wrapped in GitError."""
         from unittest.mock import patch as mock_patch
+
         from git import GitCommandError
 
         with mock_patch("deepwork.utils.git.get_repo") as mock_get_repo:

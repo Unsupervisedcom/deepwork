@@ -43,7 +43,7 @@ You end up babysitting the agent, which defeats the purpose of automation.
 
 ## How DeepWork Solves This
 
-DeepWork gives you two complementary systems that work together to make agents trustworthy:
+DeepWork gives you three complementary systems that work together to make agents trustworthy:
 
 ### Workflows: Structured Execution with Quality Gates
 
@@ -75,15 +75,26 @@ One command. Every rule you've defined runs in parallel, each review agent scope
 
 Reviews catch what workflows can't: style regressions, documentation falling out of sync, security issues in code the workflow didn't directly touch, requirements that lost their test coverage.
 
-### Together: Trust Through Process + Verification
+### DeepSchemas: Shared Contracts Between You and the Agent
 
-Workflows ensure the agent follows the right process. Reviews ensure the output meets your standards. The combination is what makes the difference:
+DeepSchemas are file-level schemas that define what a file should look like — its structure, requirements, and validation rules. They act as contracts: when an agent writes or edits a file, applicable schemas are checked immediately. Failures are caught at write time, before they ever reach review.
+
+```
+/deepschema
+```
+
+Define a schema once for a file type (API endpoints, configs, job definitions), and every file matching that pattern is validated automatically — both at write time and during reviews. Requirements use RFC 2119 keywords (MUST/SHOULD/MAY) so enforcement severity is explicit.
+
+### Together: Process + Contracts + Verification
+
+Workflows ensure the agent follows the right process. DeepSchemas ensure individual files meet their contracts. Reviews verify the overall output meets your standards. The three layers reinforce each other:
 
 | Without DeepWork | With DeepWork |
 |-----------------|---------------|
 | Agent skips steps or invents shortcuts | Workflow enforces every step in order |
 | No quality checks on output | Quality gates block progress until standards are met |
 | Inconsistent results every run | Same process, same structure, every time |
+| File format requirements live in tribal knowledge | DeepSchemas enforce file contracts at write time |
 | Changes break things silently | Review rules catch regressions automatically |
 | You babysit the agent | You review the finished work |
 

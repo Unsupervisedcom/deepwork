@@ -1,6 +1,7 @@
 """Tests for deepreview configuration parsing (deepwork.review.config) — validates REVIEW-REQ-001."""
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -377,7 +378,7 @@ rule_b:
         assert rule_map["rule_b"].source_line == 9
 
     def test_file_reference_read_error_raises_config_error(self, tmp_path: Path) -> None:
-        """OSError reading an instructions file raises ConfigError (lines 171-172)."""
+        """OSError reading an instructions file raises ConfigError."""
         from unittest.mock import patch
 
         # Create the file so the "not found" check passes
@@ -401,7 +402,7 @@ my_rule:
         # Make the file unreadable by patching Path.read_text
         original_read_text = Path.read_text
 
-        def mock_read_text(self_path: Path, *args: object, **kwargs: object) -> str:
+        def mock_read_text(self_path: Path, *args: Any, **kwargs: Any) -> str:
             if self_path.name == "review_guide.md":
                 raise OSError("Permission denied")
             return original_read_text(self_path, *args, **kwargs)
@@ -412,7 +413,7 @@ my_rule:
 
 
 class TestGetSchemaPath:
-    """Tests for get_schema_path (schema.py line 31)."""
+    """Tests for get_schema_path."""
 
     def test_returns_path_to_json_schema(self) -> None:
         """get_schema_path returns a Path to the deepreview_schema.json file."""
@@ -422,11 +423,12 @@ class TestGetSchemaPath:
 
 
 class TestFindRuleLineNumbers:
-    """Tests for _find_rule_line_numbers edge cases (lines 190-191)."""
+    """Tests for _find_rule_line_numbers edge cases."""
 
     def test_returns_empty_on_os_error(self, tmp_path: Path) -> None:
         """OSError reading .deepreview file returns empty dict."""
         from unittest.mock import patch
+
         from deepwork.review.config import _find_rule_line_numbers
 
         filepath = tmp_path / ".deepreview"
