@@ -650,3 +650,273 @@ class TestRunQualityGate:
         assert all_tasks[0].rule_name == "step_write_output_report"
         assert all_tasks[1].rule_name == "external_rule"
         assert result is not None
+
+
+# ---------------------------------------------------------------------------
+# TestValidateJsonSchemas — additional coverage
+# ---------------------------------------------------------------------------
+
+
+class TestValidateJsonSchemasExtra:
+    """Additional tests for validate_json_schemas to cover missing lines."""
+
+    def test_skips_nonexistent_file(self, tmp_path: Path) -> None:
+        """When the output file doesn't exist on disk, it is silently skipped (line 60)."""
+        schema = {"type": "object"}
+        arg = StepArgument(
+            name="data", description="JSON data", type="file_path", json_schema=schema
+        )
+        output_ref = StepOutputRef(argument_name="data", required=True)
+        step = WorkflowStep(name="generate", outputs={"data": output_ref})
+        job, _ = _make_job(tmp_path, [arg], step)
+
+        # Do NOT create the file — it should be skipped
+        errors = validate_json_schemas({"data": "nonexistent.json"}, step, job, tmp_path)
+        assert errors == []
+
+    def test_validates_list_of_file_paths(self, tmp_path: Path) -> None:
+        """When the output value is a list of paths, each file is validated."""
+        schema = {
+            "type": "object",
+            "properties": {"x": {"type": "integer"}},
+            "required": ["x"],
+        }
+        arg = StepArgument(
+            name="data", description="JSON files", type="file_path", json_schema=schema
+        )
+        output_ref = StepOutputRef(argument_name="data", required=True)
+        step = WorkflowStep(name="gen", outputs={"data": output_ref})
+        job, _ = _make_job(tmp_path, [arg], step)
+
+        # One valid, one invalid
+        (tmp_path / "good.json").write_text(json.dumps({"x": 1}))
+        (tmp_path / "bad.json").write_text(json.dumps({"x": "not_int"}))
+
+        errors = validate_json_schemas(
+            {"data": ["good.json", "bad.json"]}, step, job, tmp_path
+        )
+        assert len(errors) == 1
+        assert "bad.json" in errors[0]
+
+
+# ---------------------------------------------------------------------------
+# TestCollectOutputFilePaths
+# ---------------------------------------------------------------------------
+
+
+class TestCollectOutputFilePaths:
+    """Tests for _collect_output_file_paths."""
+
+    def test_skips_unknown_argument(self, tmp_path: Path) -> None:
+        """Outputs whose argument is not found in the job are skipped (line 86->84)."""
+        from deepwork.jobs.mcp.quality_gate import _collect_output_file_paths
+
+        arg = StepArgument(name="known", description="Known", type="file_path")
+        output_ref = StepOutputRef(argument_name="known", required=True)
+        step = WorkflowStep(name="s", outputs={"known": output_ref})
+        job, _ = _make_job(tmp_path, [arg], step)
+
+        # "unknown" has no matching argument
+        paths = _collect_output_file_paths({"known": "a.md", "unknown": "b.md"}, job)
+        assert paths == ["a.md"]
+
+    def test_handles_list_value(self, tmp_path: Path) -> None:
+        """List values for file_path outputs are extended into the result (line 88)."""
+        from deepwork.jobs.mcp.quality_gate import _collect_output_file_paths
+
+        arg = StepArgument(name="files", description="Files", type="file_path")
+        output_ref = StepOutputRef(argument_name="files", required=True)
+        step = WorkflowStep(name="s", outputs={"files": output_ref})
+        job, _ = _make_job(tmp_path, [arg], step)
+
+        paths = _collect_output_file_paths({"files": ["a.md", "b.md"]}, job)
+        assert paths == ["a.md", "b.md"]
+
+    def test_skips_string_type_argument(self, tmp_path: Path) -> None:
+        """String-type arguments are not collected as file paths."""
+        from deepwork.jobs.mcp.quality_gate import _collect_output_file_paths
+
+        arg = StepArgument(name="summary", description="Summary", type="string")
+        output_ref = StepOutputRef(argument_name="summary", required=True)
+        step = WorkflowStep(name="s", outputs={"summary": output_ref})
+        job, _ = _make_job(tmp_path, [arg], step)
+
+        paths = _collect_output_file_paths({"summary": "some text"}, job)
+        assert paths == []
+
+
+# ---------------------------------------------------------------------------
+# TestBuildInputContext
+# ---------------------------------------------------------------------------
+
+
+class TestBuildInputContext:
+    """Tests for _build_input_context."""
+
+    def test_skips_unknown_input_argument(self, tmp_path: Path) -> None:
+        """Input whose argument doesn't exist in job is skipped (line 109)."""
+        from deepwork.jobs.mcp.quality_gate import _build_input_context
+
+        # Step references "missing_arg" but job has no such argument
+        input_ref = StepInputRef(argument_name="missing_arg", required=True)
+        step = WorkflowStep(name="s", inputs={"missing_arg": input_ref}, outputs={})
+        job, _ = _make_job(tmp_path, [], step)
+
+        result = _build_input_context(step, job, {"missing_arg": "val"})
+        # Should contain the header but no input entries
+        assert "Step Inputs" in result
+        assert "missing_arg" not in result.split("Step Inputs")[1]
+
+    def test_renders_file_path_list_input(self, tmp_path: Path) -> None:
+        """File-path list inputs render as comma-separated @-prefixed paths (lines 118-120)."""
+        from deepwork.jobs.mcp.quality_gate import _build_input_context
+
+        arg = StepArgument(name="refs", description="Ref files", type="file_path")
+        input_ref = StepInputRef(argument_name="refs", required=True)
+        step = WorkflowStep(name="s", inputs={"refs": input_ref}, outputs={})
+        job, _ = _make_job(tmp_path, [arg], step)
+
+        result = _build_input_context(step, job, {"refs": ["a.md", "b.md"]})
+        assert "@a.md" in result
+        assert "@b.md" in result
+
+    def test_renders_file_path_single_input(self, tmp_path: Path) -> None:
+        """File-path single input renders as @path (lines 121-122)."""
+        from deepwork.jobs.mcp.quality_gate import _build_input_context
+
+        arg = StepArgument(name="ref", description="Ref file", type="file_path")
+        input_ref = StepInputRef(argument_name="ref", required=True)
+        step = WorkflowStep(name="s", inputs={"ref": input_ref}, outputs={})
+        job, _ = _make_job(tmp_path, [arg], step)
+
+        result = _build_input_context(step, job, {"ref": "report.md"})
+        assert "@report.md" in result
+
+
+# ---------------------------------------------------------------------------
+# TestBuildDynamicReviewRules — additional coverage
+# ---------------------------------------------------------------------------
+
+
+class TestBuildDynamicReviewRulesExtra:
+    """Additional tests for build_dynamic_review_rules to cover missing lines."""
+
+    def test_skips_output_with_unknown_argument(self, tmp_path: Path) -> None:
+        """When a step output's argument is not found in job, it is skipped (line 162)."""
+        review = ReviewBlock(strategy="individual", instructions="Check it")
+        # Define a step with an output that references "missing" argument
+        output_ref = StepOutputRef(argument_name="missing", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"missing": output_ref})
+        # Job has no "missing" argument
+        job, workflow = _make_job(tmp_path, [], step)
+
+        rules = build_dynamic_review_rules(
+            step=step, job=job, workflow=workflow,
+            outputs={"missing": "file.md"},
+            input_values={}, work_summary=None, project_root=tmp_path,
+        )
+        assert rules == []
+
+    def test_skips_output_with_none_value(self, tmp_path: Path) -> None:
+        """When the output value is None, it is skipped (line 177)."""
+        review = ReviewBlock(strategy="individual", instructions="Check it")
+        arg = StepArgument(name="report", description="Report", type="file_path")
+        output_ref = StepOutputRef(argument_name="report", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"report": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        rules = build_dynamic_review_rules(
+            step=step, job=job, workflow=workflow,
+            outputs={},  # "report" not in outputs -> value is None
+            input_values={}, work_summary=None, project_root=tmp_path,
+        )
+        assert rules == []
+
+    def test_string_output_with_review_produces_no_file_rule(self, tmp_path: Path) -> None:
+        """String-type output with a review block has empty file_paths (line 184)."""
+        review = ReviewBlock(strategy="individual", instructions="Check summary")
+        arg = StepArgument(name="summary", description="Summary", type="string")
+        output_ref = StepOutputRef(argument_name="summary", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"summary": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        rules = build_dynamic_review_rules(
+            step=step, job=job, workflow=workflow,
+            outputs={"summary": "I did the work"},
+            input_values={}, work_summary=None, project_root=tmp_path,
+        )
+        # String type has empty file_paths, so no rule is created (line 197 check)
+        assert rules == []
+
+    def test_process_requirements_with_list_file_and_string_outputs(self, tmp_path: Path) -> None:
+        """Process requirements correctly render list file_path and string outputs (lines 235-240)."""
+        file_arg = StepArgument(name="files", description="Files", type="file_path")
+        str_arg = StepArgument(name="note", description="Note", type="string")
+        file_ref = StepOutputRef(argument_name="files", required=True)
+        str_ref = StepOutputRef(argument_name="note", required=True)
+        step = WorkflowStep(
+            name="analyze",
+            outputs={"files": file_ref, "note": str_ref},
+            process_requirements={"done": "Must be done"},
+        )
+        job, workflow = _make_job(tmp_path, [file_arg, str_arg], step)
+
+        rules = build_dynamic_review_rules(
+            step=step, job=job, workflow=workflow,
+            outputs={"files": ["a.md", "b.md"], "note": "all good"},
+            input_values={}, work_summary="Did the work",
+            project_root=tmp_path,
+        )
+
+        assert len(rules) == 1
+        rule = rules[0]
+        assert "step_analyze_process_quality" == rule.name
+        assert "@a.md" in rule.instructions
+        assert "@b.md" in rule.instructions
+        assert "all good" in rule.instructions
+
+    def test_process_requirements_skipped_when_no_output_paths(self, tmp_path: Path) -> None:
+        """When there are no file_path outputs, PQA rule is not created (line 269->286)."""
+        str_arg = StepArgument(name="note", description="Note", type="string")
+        str_ref = StepOutputRef(argument_name="note", required=True)
+        step = WorkflowStep(
+            name="analyze",
+            outputs={"note": str_ref},
+            process_requirements={"done": "Must be done"},
+        )
+        job, workflow = _make_job(tmp_path, [str_arg], step)
+
+        rules = build_dynamic_review_rules(
+            step=step, job=job, workflow=workflow,
+            outputs={"note": "text"},
+            input_values={}, work_summary="Did stuff",
+            project_root=tmp_path,
+        )
+        assert rules == []
+
+
+# ---------------------------------------------------------------------------
+# TestRunQualityGate — additional coverage
+# ---------------------------------------------------------------------------
+
+
+class TestRunQualityGateExtra:
+    """Additional tests for run_quality_gate to cover edge cases."""
+
+    def test_no_deepreview_rules_and_no_output_files_skips_matching(self, tmp_path: Path) -> None:
+        """When there are no output files, matching is skipped (line 333->339)."""
+        # Use string-type output only — no file paths
+        str_arg = StepArgument(name="note", description="Note", type="string")
+        output_ref = StepOutputRef(argument_name="note", required=True)
+        step = WorkflowStep(name="write", outputs={"note": output_ref})
+        job, workflow = _make_job(tmp_path, [str_arg], step)
+
+        with patch("deepwork.jobs.mcp.quality_gate.load_all_rules", return_value=([], [])):
+            result = run_quality_gate(
+                step=step, job=job, workflow=workflow,
+                outputs={"note": "some text"},
+                input_values={}, work_summary=None,
+                project_root=tmp_path,
+            )
+
+        assert result is None

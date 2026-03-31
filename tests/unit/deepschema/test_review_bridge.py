@@ -111,6 +111,23 @@ class TestSchemaToReviewRule:
         assert not_matched == []
 
 
+class TestAnonymousSchemaRuleOutsideProject:
+    """Tests for _anonymous_schema_rule when target is outside project_root (lines 99-100)."""
+
+    def test_returns_none_when_target_outside_project(self, tmp_path: Path) -> None:
+        """Anonymous schema whose target resolves outside project_root returns None."""
+        from deepwork.deepschema.review_bridge import _anonymous_schema_rule
+
+        schema = DeepSchema(
+            name="config.json",
+            schema_type="anonymous",
+            source_path=Path("/outside/.deepschema.config.json.yml"),
+            requirements={"r1": "MUST be valid"},
+        )
+        rule = _anonymous_schema_rule(schema, tmp_path)
+        assert rule is None
+
+
 class TestBuildInstructions:
     def test_named_includes_summary_and_instructions(self, tmp_path: Path) -> None:
         schema = _named_schema(tmp_path, summary="YAML configs", instructions="Validate carefully")

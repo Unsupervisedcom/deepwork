@@ -9,6 +9,50 @@ import pytest
 from git import Repo
 
 
+@pytest.hookimpl(trylast=True)
+def pytest_configure(config: pytest.Config) -> None:
+    """Disable coverage fail-under when running a subset of tests.
+
+    ## How coverage enforcement works in this project
+
+    Coverage is configured in three places that interact:
+
+    1. **pyproject.toml [tool.pytest.ini_options].addopts** — sets
+       ``--cov=deepwork --cov-branch --cov-report=term-missing --cov-fail-under=95``.
+       These flags are injected into every pytest invocation via addopts.
+
+    2. **pyproject.toml [tool.coverage.report]** — configures coverage.py's
+       report format (precision, show_missing, skip_covered). The ``fail_under``
+       setting is intentionally NOT set here; it is only controlled via the
+       pytest-cov ``--cov-fail-under`` flag so that this hook can override it.
+
+    3. **This hook (tests/conftest.py)** — detects targeted runs (e.g.
+       ``pytest tests/unit/test_git.py``) and disables the fail-under threshold
+       so that running a subset of tests still shows the coverage report but
+       doesn't fail because only a fraction of the codebase was exercised.
+
+    ### Why we need to set BOTH config.option AND cov.options
+
+    pytest-cov creates its ``CovPlugin`` during ``pytest_load_initial_conftests``
+    (very early, before conftest ``pytest_configure`` hooks run). The plugin
+    stores ``self.options = early_config.known_args_namespace``, which SHOULD
+    be the same object as ``config.option`` — but in practice, overriding
+    ``config.option.cov_fail_under`` alone does not reliably propagate to the
+    plugin's copy. Directly setting ``cov.options.cov_fail_under`` on the
+    registered ``_cov`` plugin ensures the value is updated where pytest-cov
+    reads it during ``pytest_terminal_summary`` (the "Required test coverage"
+    message) and ``pytest_sessionfinish`` (the "Coverage failure" exit code).
+    """
+    testpaths = config.getini("testpaths")
+    is_targeted = config.args != testpaths or config.option.keyword
+    if is_targeted:
+        config.option.cov_fail_under = 0
+        cov = config.pluginmanager.get_plugin("_cov")
+        if cov:
+            cov.options.cov_fail_under = 0
+
+
+
 @pytest.fixture
 def temp_dir() -> Iterator[Path]:
     """Create a temporary directory for testing."""

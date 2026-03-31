@@ -1,6 +1,7 @@
 """Tests for Git utilities."""
 
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -187,6 +188,54 @@ class TestCreateBranch:
 
         with pytest.raises(GitError, match="already exists"):
             create_branch(mock_git_repo, "duplicate-branch")
+
+
+class TestGetRepoRootBareRepo:
+    """Tests for get_repo_root with bare repo (line 65)."""
+
+    def test_raises_for_bare_repo(self, temp_dir: Path) -> None:
+        """A bare repo has no working_tree_dir, so get_repo_root raises GitError."""
+        from unittest.mock import patch as mock_patch, MagicMock
+        from deepwork.utils.git import get_repo_root
+
+        mock_repo = MagicMock()
+        mock_repo.working_tree_dir = None
+
+        with mock_patch("deepwork.utils.git.get_repo", return_value=mock_repo):
+            with pytest.raises(GitError, match="no working tree"):
+                get_repo_root(temp_dir)
+
+
+class TestGetCurrentBranchDetached:
+    """Tests for get_current_branch with detached HEAD (line 85)."""
+
+    def test_raises_for_detached_head(self, mock_git_repo: Path) -> None:
+        """When HEAD is detached, get_current_branch raises GitError."""
+        repo = get_repo(mock_git_repo)
+        # Detach HEAD by checking out the commit directly
+        repo.head.reference = repo.head.commit
+        assert repo.head.is_detached
+
+        with pytest.raises(GitError, match="HEAD is detached"):
+            get_current_branch(mock_git_repo)
+
+
+class TestCreateBranchGitCommandError:
+    """Tests for create_branch GitCommandError (lines 131-132)."""
+
+    def test_raises_git_error_on_command_failure(self, mock_git_repo: Path) -> None:
+        """GitCommandError during branch creation is wrapped in GitError."""
+        from unittest.mock import patch as mock_patch
+        from git import GitCommandError
+
+        with mock_patch("deepwork.utils.git.get_repo") as mock_get_repo:
+            mock_repo = MagicMock()
+            mock_repo.heads = []  # branch_exists returns False
+            mock_repo.create_head.side_effect = GitCommandError("git branch", "error creating")
+            mock_get_repo.return_value = mock_repo
+
+            with pytest.raises(GitError, match="Failed to create branch"):
+                create_branch(mock_git_repo, "new-branch")
 
 
 class TestHasUncommittedChanges:
