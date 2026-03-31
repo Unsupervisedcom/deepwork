@@ -114,15 +114,13 @@ class TestMCPServerRegistration:
         platform_idx = args.index("--platform")
         assert args[platform_idx + 1] == "claude"
 
-    def test_mcp_args_include_path_dot(self) -> None:
+    def test_mcp_args_omit_path(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.2.4).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-        """PLUG-REQ-001.2.4: arguments include --path ."""
+        """PLUG-REQ-001.2.4: arguments MUST NOT include --path (uses listRoots)."""
         data = json.loads(self.mcp_json_path.read_text())
         args = data["mcpServers"]["deepwork"]["args"]
-        assert "--path" in args
-        path_idx = args.index("--path")
-        assert args[path_idx + 1] == "."
+        assert "--path" not in args
 
 
 # ---------------------------------------------------------------------------

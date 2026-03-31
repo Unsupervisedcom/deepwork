@@ -16,7 +16,7 @@ The DeepWork CLI provides four active commands: `serve` (starts the MCP server),
 ### DW-REQ-005.2: serve Command
 
 1. The `serve` command MUST be a Click command.
-2. The `serve` command MUST accept a `--path` option (default: `"."`, must exist, must be a directory).
+2. The `serve` command MUST accept a `--path` option (default: `None`, must exist if provided, must be a directory). When omitted, the server MUST resolve the project root dynamically via MCP `listRoots` on each tool call, falling back to the process working directory at startup and when `listRoots` is unavailable. When `--path` is explicitly provided, the server MUST use the given path for all operations and MUST NOT consult `listRoots` (see JOBS-REQ-011).
 3. The `serve` command MUST accept a `--no-quality-gate` flag (default: False). When set, quality gate evaluation MUST be disabled.
 4. The `serve` command MUST accept a `--transport` option with choices `"stdio"` or `"sse"` (default: `"stdio"`).
 5. The `serve` command MUST accept a `--port` option (integer, default: 8000) for SSE transport.
