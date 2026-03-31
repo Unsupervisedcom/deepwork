@@ -4,20 +4,34 @@ AI agents are powerful, but they're unreliable. They go off-script, skip steps, 
 
 DeepWork fixes this with two systems: **Workflows** that force agents to follow a structured process step by step, and **Reviews** that automatically verify every change against your rules. Together, they make agents trustworthy enough to run autonomously on real work.
 
-## Install
+## Quickstart
 
 ### Claude Code (Terminal)
 ```
 claude plugin marketplace add Unsupervisedcom/deepwork
 claude plugin install deepwork@deepwork-plugins
+
+claude
 ```
 
-Then start a new session and define your first job:
+Then start a new session. First, do the task you want to automate — just ask Claude to do it, and work with Claude to refine it as you go:
 ```
-/deepwork Make a job for doing competitive research. It will take the URL of the competitor as an input, and should make report including a SWOT analysis for that competitor.
+Research our top 3 competitors and write a SWOT analysis for each one.
 ```
+Then you will iterate with feedback as you go - `Don't include feature X from competitor Y - they are sunsetting it`, `Be sure to always include pricing approach in the analysis`, etc as you go.
 
-### Claude Desktop
+Once you're happy with the result, turn it into a reusable workflow:
+```
+/deepwork Create a job called "competitive_research" with a workflow called "update_swot" that does what we just did.
+```
+It will ask you some clarification questions to make sure it is tuning it in well for you, then make a repeatable flow.
+
+Then you can call it anytime with `/deepwork update_swot`. It will do it repeatably and reliably.
+
+For bonus points, try `/deepwork learn` after running your workflow as well, and watch it auto-tune itself.
+
+<details>
+<summary><strong>Claude Desktop</strong></summary>
 
 1. Enter Cowork mode (toggle at top of screen)
 2. Select `Customize with plugins` at the bottom of the page.
@@ -26,7 +40,8 @@ Then start a new session and define your first job:
 5. Select the deepwork plugin and click Install.
 6. In Cowork mode, select 'Start a deepwork workflow'
 
-> **Note:** DeepWork stores job definitions in `.deepwork/jobs/` and creates work branches in Git. Your project folder should be a Git repository. If it isn't, run `git init` first, or ask Claude to do so.
+</details>
+
 
 ---
 
@@ -49,13 +64,19 @@ DeepWork gives you three complementary systems that work together to make agents
 
 Workflows force the agent to follow a strict, step-by-step process. Each step has defined inputs, outputs, and quality checks. The agent can't skip ahead or go off-script — it must complete each step and pass its quality gates before moving on.
 
-You define workflows by describing what you want in plain English. DeepWork asks you questions to refine the process, then generates a hardened multi-step workflow that the agent follows consistently every time.
+The fastest way to create a workflow: **do the task once with Claude, then turn it into a workflow.** Claude already has the full context of what worked, so it can generate a hardened, repeatable process from what it just did.
 
 ```
-/deepwork write a tutorial for how to use a new feature we just launched
+Write a tutorial for the new export feature we just launched.
 ```
 
-DeepWork asks you questions (~10 minutes), then writes the steps. After that, you can run it whenever:
+Claude does the work. You review the result, give feedback, iterate. Once you're happy:
+
+```
+/deepwork Create a job called "tutorial_writer" with a workflow called "write_tutorial" that does what we just did.
+```
+
+DeepWork asks you a few questions (~10 minutes), then generates the steps. After that, you can run it whenever:
 
 ```
 /deepwork tutorial_writer
@@ -114,25 +135,35 @@ Start a new Claude Code session after installing.
 
 > **Note:** If your folder isn't a Git repo yet, run `git init` first.
 
-### 2. Define Your First Workflow
+### 2. Do the Task Once
 
-Start simple — something you do manually in 15-30 minutes:
-
-```
-/deepwork write a tutorial for how to use a new feature we just launched
-```
-
-DeepWork asks you questions (~10 minutes) then writes the steps. You're creating a **reusable skill** — you only do this once.
-
-### 3. Run It
+Start a fresh session and ask Claude to do the thing you want to automate. Something you do regularly that takes 15-60 minutes:
 
 ```
-/deepwork tutorial_writer
+Audit our API endpoints for missing authentication checks and write up the findings.
 ```
 
-Claude follows the workflow step by step.
+Claude does the work. Review the output, give feedback, iterate until you're satisfied.
 
-### 4. Set Up Reviews
+### 3. Turn It Into a Workflow
+
+Once you're happy with the result, tell DeepWork to capture it:
+
+```
+/deepwork Create a job called "api_security_audit" with a workflow called "audit_and_report" that does what we just did.
+```
+
+DeepWork asks a few questions to refine the process (~10 minutes), then generates a hardened, multi-step workflow. You're creating a **reusable skill** — you only do this once.
+
+### 4. Run It Anytime
+
+```
+/deepwork api_security_audit
+```
+
+Claude follows the workflow step by step, the same way every time.
+
+### 5. Set Up Reviews
 
 ```
 /configure_reviews
@@ -144,13 +175,22 @@ DeepWork analyzes your project and creates `.deepreview` files with review rules
 
 ## Example: Competitive Research Workflow
 
-You can make a DeepWork job that automatically runs deep competitive research:
-- Run `/deepwork` in Claude Code
-- Explain your process — _e.g. "Go look at my company's website and social channels to capture any new developments, look at our existing list of competitors, do broad web searches to identify any new competitors, and then do deep research on each competitor and produce a comprehensive set of md reports including a summary report for me."_
+Start a fresh Claude Code session and do the research yourself with Claude:
 
-DeepWork asks you questions to improve the plan and makes a hardened automation workflow (~10 minutes). Then it documents how Claude should execute each step (~2-5 minutes).
+```
+Look at our company's website and social channels to capture recent developments.
+Then identify our top competitors, do deep research on each one, and write up a
+comprehensive set of reports including a summary with strategic recommendations.
+```
 
-After that, you can run the workflow at any time. Output looks something like:
+Claude does the research, writes the reports, you iterate. Once you're satisfied with the process:
+
+```
+/deepwork Create a job called "competitive_research" with a workflow called
+"research_and_report" that does what we just did.
+```
+
+DeepWork captures the process as a reusable workflow (~10 minutes of Q&A). After that, you can run it anytime. Output looks something like:
 
 ```
 # On your work branch (deepwork/competitive_research-acme-2026-02-21):
