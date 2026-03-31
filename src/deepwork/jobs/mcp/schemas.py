@@ -85,17 +85,20 @@ class StartWorkflowInput(BaseModel):
             "These values are made available to the first step and flow through the workflow."
         ),
     )
-    session_id: str = Field(
+    session_id: str | None = Field(
+        default=None,
         description=(
-            "The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). "
-            "Identifies the persistent state storage for this agent session."
+            "Session identifier for persistent state storage. "
+            "For Claude Code: use CLAUDE_CODE_SESSION_ID from startup context. "
+            "For other platforms: omit to have the server auto-generate a stable session ID, "
+            "then use the session_id returned in begin_step for all subsequent calls."
         ),
     )
     agent_id: str | None = Field(
         default=None,
         description=(
-            "The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), "
-            "if running as a sub-agent. When set, this workflow is scoped to this agent — "
+            "Agent identifier for sub-agent scoping (CLAUDE_CODE_AGENT_ID from startup context "
+            "on Claude Code). When set, this workflow is scoped to this agent — "
             "other agents in the same session won't see it in their stack."
         ),
     )
@@ -128,15 +131,15 @@ class FinishedStepInput(BaseModel):
     )
     session_id: str = Field(
         description=(
-            "The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). "
-            "Identifies the persistent state storage for this agent session."
+            "Session identifier from the start_workflow response (begin_step.session_id). "
+            "Identifies the workflow session to report completion for."
         ),
     )
     agent_id: str | None = Field(
         default=None,
         description=(
-            "The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), "
-            "if running as a sub-agent. When set, operates on this agent's scoped workflow stack."
+            "Agent identifier for sub-agent scoping (CLAUDE_CODE_AGENT_ID from startup context "
+            "on Claude Code). When set, operates on this agent's scoped workflow stack."
         ),
     )
 
@@ -147,15 +150,15 @@ class AbortWorkflowInput(BaseModel):
     explanation: str = Field(description="Explanation of why the workflow is being aborted")
     session_id: str = Field(
         description=(
-            "The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). "
-            "Identifies the persistent state storage for this agent session."
+            "Session identifier from the start_workflow response (begin_step.session_id). "
+            "Identifies the workflow session to abort."
         ),
     )
     agent_id: str | None = Field(
         default=None,
         description=(
-            "The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), "
-            "if running as a sub-agent. When set, operates on this agent's scoped workflow stack."
+            "Agent identifier for sub-agent scoping (CLAUDE_CODE_AGENT_ID from startup context "
+            "on Claude Code). When set, operates on this agent's scoped workflow stack."
         ),
     )
 
@@ -166,15 +169,15 @@ class GoToStepInput(BaseModel):
     step_id: str = Field(description="Name of the step to navigate back to")
     session_id: str = Field(
         description=(
-            "The Claude Code session ID (CLAUDE_CODE_SESSION_ID from startup context). "
-            "Identifies the persistent state storage for this agent session."
+            "Session identifier from the start_workflow response (begin_step.session_id). "
+            "Identifies the workflow session for navigation."
         ),
     )
     agent_id: str | None = Field(
         default=None,
         description=(
-            "The Claude Code agent ID (CLAUDE_CODE_AGENT_ID from startup context), "
-            "if running as a sub-agent. When set, operates on this agent's scoped workflow stack."
+            "Agent identifier for sub-agent scoping (CLAUDE_CODE_AGENT_ID from startup context "
+            "on Claude Code). When set, operates on this agent's scoped workflow stack."
         ),
     )
 
@@ -219,8 +222,9 @@ class ActiveStepInfo(BaseModel):
 
     session_id: str = Field(
         description=(
-            "The Claude Code session ID (CLAUDE_CODE_SESSION_ID). "
-            "This is the same session ID the agent received at startup."
+            "The session ID for this workflow. "
+            "Use this value as session_id in all subsequent calls to finished_step, "
+            "abort_workflow, and go_to_step."
         )
     )
     step_id: str = Field(description="Name of the current step")
@@ -381,10 +385,7 @@ class WorkflowSession(BaseModel):
     """State for an active workflow session."""
 
     session_id: str = Field(
-        description=(
-            "The Claude Code session ID (CLAUDE_CODE_SESSION_ID). "
-            "This is the same session ID the agent received at startup."
-        )
+        description="Session identifier used as the storage key for this workflow's state."
     )
     workflow_instance_id: str = Field(
         default_factory=lambda: uuid4().hex,
