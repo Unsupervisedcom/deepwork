@@ -6,6 +6,7 @@ instructions: |
   their target file as .deepschema.<filename>.yml. All keys are optional but
   a schema without requirements or matchers has no enforcement effect.
 
+
 matchers:
   - ".deepwork/schemas/*/deepschema.yml"
   - "**/.deepschema.*.yml"
@@ -14,6 +15,7 @@ json_schema_path: "deepschema_schema.json"
 
 requirements:
   requirements-use-rfc-2119: "Requirements MUST use RFC 2119 keywords (MUST, SHOULD, MAY, etc.) to indicate enforcement level."
+  requirements-filesystem-verifiable: "Each requirement MUST be verifiable by examining files on the filesystem. Requirements about processes, user behavior, or context not present in files SHOULD be in the instructions section instead."
   matchers-for-named: "Named DeepSchemas SHOULD include matchers so they can match files for review generation."
   summary-for-named: "Named DeepSchemas SHOULD include a summary for discoverability."
   valid-parent-refs: "Any schema listed in parent_deep_schemas MUST reference an existing named schema."
