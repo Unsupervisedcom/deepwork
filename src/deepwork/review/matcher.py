@@ -192,6 +192,75 @@ def _git_untracked_files(project_root: Path) -> list[str]:
         raise GitDiffError(f"git ls-files failed: {e.stderr.strip()}") from e
 
 
+def _should_inject_diff(rule: ReviewRule) -> bool:
+    """Check if a rule qualifies for git diff injection.
+
+    Rules with ``all_changed_files`` or ``matches_together`` strategy and
+    a ``**/*`` include pattern get the diff injected to reduce reviewer
+    turn count.
+    """
+    if rule.strategy not in ("all_changed_files", "matches_together"):
+        return False
+    return "**/*" in rule.include_patterns
+
+
+def _sort_diff_by_path(diff_text: str) -> str:
+    """Sort a unified diff's file hunks by path.
+
+    Splits on ``diff --git`` boundaries, sorts the chunks
+    alphabetically by file path (which naturally groups by directory),
+    and rejoins them.
+    """
+    if not diff_text.strip():
+        return diff_text
+
+    # Split into per-file chunks.  The first element before the first
+    # "diff --git" marker is usually empty or whitespace — preserve it.
+    parts = re.split(r"(?=^diff --git )", diff_text, flags=re.MULTILINE)
+    chunks: list[tuple[str, str]] = []
+    preamble = ""
+    for part in parts:
+        if part.startswith("diff --git "):
+            # Extract the b-side path: "diff --git a/x b/y" → "y"
+            first_line = part.split("\n", 1)[0]
+            b_path = first_line.rsplit(" b/", 1)[-1] if " b/" in first_line else first_line
+            chunks.append((b_path, part))
+        elif part.strip():
+            preamble += part
+
+    chunks.sort(key=lambda c: c[0])
+    sorted_parts = [c[1] for c in chunks]
+    if preamble:
+        sorted_parts.insert(0, preamble)
+    return "".join(sorted_parts)
+
+
+def _get_git_diff(project_root: Path, scope_dir: Path | None = None) -> str:
+    """Run ``git diff <base>..HEAD`` and return the output, sorted by path.
+
+    Uses the same base-ref detection logic as changed-file detection.
+    When *scope_dir* is provided and differs from *project_root*, the
+    diff is restricted to that subdirectory via ``-- <relpath>``.
+    The output is sorted by file path so that files in the same
+    directory are grouped together.
+    Returns an empty string on failure.
+    """
+    base_ref = _detect_base_ref(project_root)
+    merge_base = _get_merge_base(project_root, base_ref)
+    args = ["diff", f"{merge_base}..HEAD"]
+    if scope_dir is not None and scope_dir != project_root:
+        try:
+            rel = scope_dir.relative_to(project_root)
+            args += ["--", str(rel)]
+        except ValueError:
+            pass
+    try:
+        result = _run_git(project_root, *args)
+        return _sort_diff_by_path(result.stdout)
+    except subprocess.CalledProcessError:
+        return ""
+
+
 def match_files_to_rules(
     changed_files: list[str],
     rules: list[ReviewRule],
@@ -213,6 +282,8 @@ def match_files_to_rules(
         List of ReviewTask objects.
     """
     tasks: list[ReviewTask] = []
+    # Lazy-compute diff per source_dir, shared across qualifying rules
+    _cached_diffs: dict[Path, str] = {}
 
     for rule in rules:
         matched = match_rule(changed_files, rule, project_root)
@@ -222,6 +293,14 @@ def match_files_to_rules(
         agent_name = _resolve_agent(rule, platform)
         all_filenames = changed_files if rule.all_changed_filenames else None
         source_location = format_source_location(rule, project_root)
+
+        # Lazily fetch diff for broad rules to reduce reviewer turn count
+        diff_output: str | None = None
+        if _should_inject_diff(rule):
+            scope = rule.source_dir
+            if scope not in _cached_diffs:
+                _cached_diffs[scope] = _get_git_diff(project_root, scope)
+            diff_output = _cached_diffs[scope] or None
 
         if rule.strategy == "individual":
             for filepath in matched:
@@ -249,6 +328,7 @@ def match_files_to_rules(
                     source_location=source_location,
                     additional_files=additional,
                     all_changed_filenames=all_filenames,
+                    git_diff_output=diff_output,
                 )
             )
 
@@ -261,6 +341,7 @@ def match_files_to_rules(
                     agent_name=agent_name,
                     source_location=source_location,
                     all_changed_filenames=all_filenames,
+                    git_diff_output=diff_output,
                 )
             )
 

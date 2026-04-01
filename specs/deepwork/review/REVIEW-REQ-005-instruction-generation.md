@@ -16,6 +16,13 @@ For each `ReviewTask`, the system generates a self-contained markdown instructio
 6. When the task has `additional_files` (unchanged matching files), the file MUST contain an "Unchanged Matching Files" section listing those file paths.
 7. When the task has `all_changed_filenames`, the file MUST contain an "All Changed Files" section listing every changed filename for context.
 
+### REVIEW-REQ-005.7: Git Diff Section
+
+1. When a `ReviewTask` has a non-null `git_diff_output`, the instruction file MUST contain a section headed `## Output from \`git diff main..HEAD\` for you to review (sorted by filepath)`.
+2. The diff output MUST be rendered inside a fenced code block with the `diff` language tag.
+3. This section MUST appear after the "Files to Review" section and before the "All Changed Files" section.
+4. When `git_diff_output` is `None`, this section MUST be omitted.
+
 ### REVIEW-REQ-005.2: File Path Formatting
 
 1. File paths in the "Files to Review" section MUST be prefixed with `@` to trigger Claude Code's file-reading behavior (e.g., `@src/app.py`).

@@ -18,16 +18,12 @@ Only proceed past this section if the user wants to **run** reviews.
 
 ## How to Run
 
-1. First, call `mcp__deepwork__get_configured_reviews` to see what review rules are configured. This returns each rule's name, description, and which `.deepreview` file defines it. If reviewing specific files, pass `only_rules_matching_files` to see only the rules that apply. Share a brief summary of the active rules with the user before proceeding.
-   - **If no rules are configured**:
-     1. Use AskUserQuestion to tell the user there are no `.deepreview` rules set up yet and ask if they'd like the agent to auto-discover and suggest rules for this project.
-     2. If yes, invoke the `/deepwork` skill with the `deepwork_reviews` job's `discover_rules` workflow (which sets up native reviews, skill migration, documentation rules, and language-specific code review).
-     3. Stop here — do not proceed with running reviews if there are no rules.
-2. Call the `mcp__deepwork__get_review_instructions` tool:
+1. Call the `mcp__deepwork__get_review_instructions` tool directly:
    - **No arguments** to review the current branch's changes (auto-detects via git diff against the main branch).
    - **With `files`** to review only specific files: `mcp__deepwork__get_review_instructions(files=["src/app.py", "src/lib.py"])`. When provided, only reviews whose include/exclude patterns match the given files will be returned. Use this when the user asks to review a particular file or set of files rather than the whole branch.
-3. The output will list review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields — these map directly to the Task tool parameters. Launch all of them as parallel Task agents.
-4. Collect the results from all review agents.
+   - **If the result says no rules are configured**: Ask the user if they'd like to auto-discover and set up rules. If yes, invoke the `/deepwork` skill with the `deepwork_reviews` job's `discover_rules` workflow. Stop here — do not proceed with running reviews if there are no rules.
+2. The output will list review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields — these map directly to the Task tool parameters. Launch all of them as parallel Task agents.
+3. Collect the results from all review agents.
 
 ## Acting on Results
 
