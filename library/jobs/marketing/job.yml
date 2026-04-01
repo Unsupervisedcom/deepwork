@@ -1,0 +1,860 @@
+name: marketing
+summary: "Marketing workflows: competitive content analysis across channels and content types"
+
+step_arguments:
+  - name: project_name
+    description: "Name of the project or brand to analyze"
+    type: string
+
+  - name: competitors
+    description: "Comma-separated competitor names or URLs to analyze"
+    type: string
+
+  - name: content_focus
+    description: "Content area to focus on: blog, social, docs, video, or all"
+    type: string
+
+  - name: user_materials
+    description: "Optional user-provided competitor content (file paths, URLs, or pasted content)"
+    type: string
+
+  - name: competitor_name
+    description: "Name of a single competitor (used by research_one_competitor sub-workflow)"
+    type: string
+
+  - name: context_brief.md
+    description: "Project context, brand positioning, resolved output paths, and competitor list"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Evaluate the context brief for completeness and correctness:
+        - Brand summary MUST be present and specific to the project, not generic.
+        - Output location MUST be resolved and documented.
+        - Each competitor MUST have a name and at least one verified URL.
+        - Content focus areas MUST be explicitly listed with specific channels mapped.
+        - Target audience for the final report MUST be identified.
+
+  - name: raw_content.md
+    description: "Raw collected content from a single competitor"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Evaluate the raw content collection:
+        - Content MUST be gathered from at least 2 distinct channels.
+        - Each content sample MUST include a source URL.
+        - Content samples SHOULD be from the last 6 months.
+        - Each channel section MUST include publishing frequency estimates.
+
+  - name: competitor_report.md
+    description: "Content analysis report for a single competitor"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Evaluate the competitor content report:
+        - Content inventory MUST cover at least 3 content channels or types.
+        - Publishing cadence MUST include specific frequency data, not vague estimates.
+        - Tone and voice analysis MUST include concrete examples from the competitor's content.
+        - Sources MUST be cited for all claims about the competitor's content strategy.
+
+  - name: competitor_reports_manifest.md
+    description: "Index of all per-competitor report files with paths and summaries"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Read context_brief.md to get the full competitor list.
+        - Every competitor from context_brief.md MUST have an entry in the manifest.
+        - Each entry MUST include a valid file path to the competitor's report.
+        - Each entry MUST include a one-line summary of key findings.
+        - Any failures or skipped competitors MUST be explicitly documented with reasons.
+
+  - name: content_patterns.md
+    description: "Cross-competitor thematic analysis of content strategies"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Read all competitor_report files referenced in competitor_reports_manifest.md.
+        - Patterns MUST be derived from actual competitor data, not generic marketing advice.
+        - Analysis MUST compare across competitors, not summarize each individually.
+        - Quantitative comparisons (frequency, format mix) MUST be present where data supports them.
+
+  - name: gap_analysis.md
+    description: "Content gaps and opportunities scored by impact and effort"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Read context_brief.md for brand positioning and content_patterns.md for competitive landscape.
+        - Gaps MUST be specific and grounded in the competitive data, not generic content marketing advice.
+        - Each opportunity MUST have an impact/effort score or ranking.
+        - Opportunities MUST be actionable with clear next steps.
+
+  - name: competitive_content_report.md
+    description: "Final competitive content analysis with executive summary and recommendations"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Read all prior outputs (context_brief.md, content_patterns.md, gap_analysis.md).
+        - Executive summary MUST be concise (under 500 words) and highlight the top 3-5 findings.
+        - Recommendations MUST be prioritized and tied to specific competitive gaps.
+        - All claims MUST trace back to data in the supporting analysis files.
+        - Report MUST be structured for the intended audience identified in context_brief.md.
+
+workflows:
+  competitive_content_analysis:
+    summary: "Analyze competitors' content strategies, identify gaps, and produce actionable recommendations"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Competitive content analysis workflow for evaluating how competitors create,
+      distribute, and position their content relative to your brand.
+
+      ## Outputs
+
+      The final report and supporting research are durable notes. If the user has
+      a notes directory (NOTES_DIR or ZK_NOTEBOOK_DIR), follow its AGENTS.md
+      conventions for note creation and placement. Supporting research goes as
+      literature notes linked from the report. Fall back to .deepwork/tmp/ only
+      if no notes directory exists.
+
+      ## Research approach
+
+      Use WebSearch and WebFetch for active competitor research. When the user
+      provides supplemental materials, ingest those alongside web research.
+      Prefer primary sources (the competitor's own content) over third-party
+      commentary.
+
+    steps:
+      - name: discover_context
+        instructions: |
+          # Discover project context
+
+          ## Objective
+
+          Establish the project context, validate the competitor list, resolve output
+          paths, and produce a context brief that all subsequent steps depend on.
+
+          ## Task
+
+          This step has string-type inputs. Ask structured questions using the
+          AskUserQuestion tool if any inputs are ambiguous or missing.
+
+          ### Process
+
+          1. **Read project context**
+             - Read the project's AGENTS.md (or equivalent) to understand brand name,
+               positioning, market segment, existing content, and target audience.
+             - If the project has a hub note in a notes directory (e.g., an index
+               note), read that for additional context.
+             - If project context is unclear, ask structured questions to clarify.
+
+          2. **Resolve output location**
+             - Check `NOTES_DIR` or `ZK_NOTEBOOK_DIR` for a notes directory.
+             - If found, read its AGENTS.md for note creation conventions.
+             - Fall back to `.deepwork/tmp/` if no notes directory exists.
+             - Record the resolved output path in the context brief.
+
+          3. **Validate competitors**
+             - If the user provided specific competitor names, use WebSearch to find
+               their primary URLs and verify they are real companies.
+             - If competitors are vague or incomplete, use WebSearch to identify 3-7
+               direct competitors in the market segment. Ask the user to confirm the
+               list using AskUserQuestion.
+
+          4. **Map content focus**
+             - Parse the content_focus input into specific channels: blog posts, social
+               media, documentation, video, newsletters, podcasts, whitepapers, case studies.
+             - If "all", select the top channels relevant to this market segment.
+
+          5. **Ingest user materials** (if provided)
+             - Note any user-provided URLs, files, or content for use in later steps.
+             - Map materials to specific competitors where possible.
+
+          ## Output format
+
+          ### context_brief.md
+
+          ```markdown
+          # Competitive content analysis: [Brand Name]
+
+          ## Brand context
+          - **Brand**: [Brand name]
+          - **Market segment**: [Segment]
+          - **Positioning**: [How the brand positions itself]
+          - **Target audience**: [Primary audience]
+          - **Existing content**: [Brief summary of current content presence]
+
+          ## Configuration
+          - **Output location**: [Resolved notes directory path, or ".deepwork/tmp/"]
+          - **Report audience**: [Who will read the final report]
+
+          ## Competitors
+
+          | # | Competitor | URL | Notes |
+          |---|-----------|-----|-------|
+          | 1 | [Name]    | [URL] | [Why included] |
+          | 2 | [Name]    | [URL] | [Why included] |
+
+          ## Content focus areas
+          - [Channel 1]: [What to analyze]
+          - [Channel 2]: [What to analyze]
+
+          ## User-provided materials
+          - [Material 1]: [Mapped to competitor X]
+          - None provided
+          ```
+
+          ## Quality criteria
+
+          - Brand summary is specific to this project, not generic marketing language.
+          - Output location is resolved and documented.
+          - Each competitor has a verified name and at least one working URL.
+          - Content focus areas list specific channels, not just "all."
+          - Target audience for the report is identified.
+        inputs:
+          project_name:
+            required: true
+          competitors:
+            required: true
+          content_focus:
+            required: true
+          user_materials:
+            required: false
+        outputs:
+          context_brief.md:
+            required: true
+        process_requirements:
+          "Output Location Resolved": "The output location MUST be resolved before proceeding."
+          "Competitors Validated": "Each competitor MUST have a verified name and at least one primary URL."
+
+      - name: research_all_competitors
+        instructions: |
+          # Research all competitors
+
+          ## Objective
+
+          Orchestrate parallel research across all competitors by launching the
+          `research_one_competitor` sub-workflow for each competitor independently.
+
+          ## Task
+
+          ### Process
+
+          1. **Read context_brief.md** to get:
+             - The validated competitor list (names and URLs)
+             - The content focus areas
+             - The resolved output directory path
+
+          2. **Launch parallel research for each competitor**
+
+             For each competitor, launch an Agent (Task tool) to research that
+             competitor's content. Two approaches are acceptable:
+
+             **Option A (formal sub-workflow):** Call `start_workflow` with
+             `job_name: "marketing"`, `workflow_name: "research_one_competitor"`,
+             passing `competitor_name` and `content_focus` as inputs.
+
+             **Option B (direct research agent):** Launch a market-researcher or
+             general-purpose agent with a prompt that covers both gather and
+             analyze phases. This is faster when the formal sub-workflow review
+             overhead is not needed.
+
+             In either case:
+             - Pass the competitor's name, content focus areas, and the note
+               creation conventions from context_brief.md
+             - Each agent should produce a `competitor_report.md` file
+             - Launch all agents in parallel since each competitor is independent
+
+          3. **Collect results**
+             - Wait for all sub-workflows to complete.
+             - Gather the file paths of each competitor_report.md produced.
+
+          4. **Write manifest**
+             - Create competitor_reports_manifest.md listing all results.
+             - If any sub-workflow failed, document the failure and proceed with
+               available results.
+
+          ## Output format
+
+          ### competitor_reports_manifest.md
+
+          ```markdown
+          # Competitor reports manifest
+
+          **Analysis date**: [Date]
+          **Total competitors**: [N]
+          **Successful**: [N] | **Failed**: [N]
+
+          ## Reports
+
+          | Competitor | Report path | Key finding |
+          |-----------|-------------|-------------|
+          | [Name 1]  | [path/to/competitor_report.md] | [One-line summary] |
+          | [Name 2]  | [path/to/competitor_report.md] | [One-line summary] |
+
+          ## Failures (if any)
+
+          | Competitor | Reason |
+          |-----------|--------|
+          | [Name]    | [What went wrong] |
+          ```
+
+          ## Quality criteria
+
+          - Every competitor from context_brief.md has an entry in the manifest.
+          - Each successful entry includes a valid file path and a one-line summary.
+          - Any failures are documented with reasons.
+          - Sub-workflows were launched in parallel where possible.
+        inputs:
+          context_brief.md:
+            required: true
+        outputs:
+          competitor_reports_manifest.md:
+            required: true
+        process_requirements:
+          "Parallel Execution": "Competitor research SHOULD be launched in parallel using sub-agents."
+          "All Competitors Covered": "Every competitor in context_brief.md MUST have an entry in the manifest."
+
+      - name: analyze_patterns
+        instructions: |
+          # Analyze content patterns
+
+          ## Objective
+
+          Synthesize findings from all per-competitor reports into a cross-competitor
+          analysis that identifies shared patterns, divergent strategies, and market
+          content density.
+
+          ## Task
+
+          ### Process
+
+          1. **Read inputs**
+             - Read competitor_reports_manifest.md to find all report paths.
+             - Read each competitor_report.md file referenced in the manifest.
+
+          2. **Cross-competitor analysis**
+
+             Analyze across all competitors along these dimensions:
+
+             - **Content themes**: Topics competitors consistently cover vs. topics
+               unique to specific competitors. Identify the "table stakes" themes
+               every competitor addresses.
+             - **Publishing cadence**: Frequency by channel. Which competitors publish
+               most actively? Which channels get the most investment?
+             - **Format mix**: Distribution of content formats (long-form articles,
+               short posts, video, infographics, interactive tools, case studies,
+               whitepapers). Which formats dominate this market?
+             - **Channel strategy**: Where competitors concentrate effort. Which
+               channels correlate with apparent success?
+             - **Engagement signals**: Any visible metrics — social shares, comments,
+               backlinks, follower counts — that indicate what resonates.
+             - **Content quality**: Production value, depth, originality across
+               competitors. Who sets the quality bar?
+
+          3. **Identify patterns**
+             - Common strategies shared by 3+ competitors
+             - Divergent approaches that stand out from the pack
+             - Content areas with high competitor density (saturated)
+             - Content areas with sparse coverage (potential opportunities)
+
+          4. **Build comparison tables**
+             - Use data tables for quantitative comparisons where the data supports it.
+             - Avoid subjective rankings without evidence.
+
+          ## Output format
+
+          ### content_patterns.md
+
+          ```markdown
+          # Cross-competitor content patterns
+
+          ## Theme analysis
+
+          ### Table-stakes themes (covered by most competitors)
+          | Theme | Competitors covering it | Typical format |
+          |-------|----------------------|----------------|
+          | [Theme] | [Names] | [Format] |
+
+          ### Unique themes
+          | Theme | Competitor | Differentiation |
+          |-------|-----------|-----------------|
+          | [Theme] | [Name] | [How it differs] |
+
+          ## Publishing cadence comparison
+
+          | Competitor | Blog | Social | Video | Newsletter |
+          |-----------|------|--------|-------|------------|
+          | [Name]    | [Freq] | [Freq] | [Freq] | [Freq] |
+
+          ## Format distribution
+
+          | Competitor | Long-form | Short-form | Video | Case studies | Other |
+          |-----------|-----------|------------|-------|-------------|-------|
+          | [Name]    | [%/count] | [%/count]  | [%/count] | [%/count] | [Details] |
+
+          ## Channel strategy
+
+          [Analysis of where competitors invest and what appears to work]
+
+          ## Engagement signals
+
+          [Observable engagement data across competitors]
+
+          ## Quality benchmark
+
+          [Who sets the quality bar and how]
+
+          ## Key patterns
+
+          1. [Pattern 1 — supported by data above]
+          2. [Pattern 2]
+          3. [Pattern 3]
+
+          ## Saturation vs. opportunity signals
+
+          - **Saturated areas**: [Topics/formats with heavy competitor presence]
+          - **Sparse areas**: [Topics/formats with little competition]
+          ```
+
+          ## Quality criteria
+
+          - Patterns are derived from actual competitor data, not generic advice.
+          - Analysis compares across competitors, not per-competitor summaries.
+          - Quantitative comparisons use data tables where possible.
+          - Key patterns are numbered and tied to supporting evidence.
+        inputs:
+          competitor_reports_manifest.md:
+            required: true
+        outputs:
+          content_patterns.md:
+            required: true
+
+      - name: gap_analysis
+        instructions: |
+          # Gap analysis
+
+          ## Objective
+
+          Map the brand's current content against the competitive landscape to
+          identify gaps and score opportunities by impact, effort, and urgency.
+
+          ## Task
+
+          ### Process
+
+          1. **Read inputs**
+             - Read context_brief.md for brand positioning and current content state.
+             - Read content_patterns.md for the competitive landscape.
+
+          2. **Map content gaps**
+             - **Coverage gaps**: Topics competitors cover that the brand does not.
+             - **White space**: Topics no competitor covers well — first-mover opportunities.
+             - **Format gaps**: Content formats competitors use that the brand has not explored.
+             - **Channel gaps**: Channels where competitors are active but the brand is absent.
+             - **Audience gaps**: Segments competitors target that the brand underserves.
+
+          3. **Score each opportunity**
+             - **Impact** (high/medium/low): How much would this gap improve the
+               brand's competitive position?
+             - **Effort** (high/medium/low): How much work to create this content?
+               Consider production complexity, expertise needed, and ongoing commitment.
+             - **Urgency** (high/medium/low): Are competitors actively expanding here?
+               Is there a window closing?
+
+          4. **Prioritize**
+             - Quick wins: high impact, low effort
+             - Strategic investments: high impact, high effort
+             - Low-priority: low impact regardless of effort
+             - Each opportunity must link to specific competitive evidence.
+
+          ## Output format
+
+          ### gap_analysis.md
+
+          ```markdown
+          # Content gap analysis: [Brand Name]
+
+          ## Quick wins (high impact, low effort)
+
+          | # | Opportunity | Impact | Effort | Urgency | Evidence |
+          |---|-----------|--------|--------|---------|----------|
+          | 1 | [Gap description] | High | Low | [H/M/L] | [Which competitors, what data] |
+
+          ## Strategic investments (high impact, high effort)
+
+          | # | Opportunity | Impact | Effort | Urgency | Evidence |
+          |---|-----------|--------|--------|---------|----------|
+          | 1 | [Gap description] | High | High | [H/M/L] | [Evidence] |
+
+          ## Additional opportunities
+
+          | # | Opportunity | Impact | Effort | Urgency | Evidence |
+          |---|-----------|--------|--------|---------|----------|
+          | 1 | [Gap description] | [Level] | [Level] | [Level] | [Evidence] |
+
+          ## White space opportunities
+
+          [Topics or formats where no competitor has strong presence]
+
+          ## Summary
+
+          - **Total opportunities identified**: [N]
+          - **Quick wins**: [N]
+          - **Strategic investments**: [N]
+          - **Top recommendation**: [One-sentence summary of highest-priority action]
+          ```
+
+          ## Quality criteria
+
+          - Gaps are specific and grounded in competitive data from content_patterns.md.
+          - Every opportunity has an impact/effort/urgency score.
+          - Opportunities link to specific competitive evidence.
+          - Quick wins are clearly distinguished from strategic investments.
+        inputs:
+          content_patterns.md:
+            required: true
+          context_brief.md:
+            required: true
+        outputs:
+          gap_analysis.md:
+            required: true
+
+      - name: final_report
+        instructions: |
+          # Final competitive content report
+
+          ## Objective
+
+          Synthesize all prior analysis into a single executive-ready report with
+          prioritized recommendations.
+
+          ## Task
+
+          ### Process
+
+          1. **Read all prior outputs**
+             - context_brief.md — brand context and audience
+             - competitor_reports_manifest.md — per-competitor summaries
+             - content_patterns.md — cross-competitor patterns
+             - gap_analysis.md — scored opportunities
+
+          2. **Write the report** following the structure below. The report should
+             be self-contained — a reader should not need to reference the supporting
+             files to understand the findings and act on the recommendations.
+
+          3. **Save to the output location** resolved in context_brief.md.
+             Follow the notes directory conventions if one was found.
+
+          ## Output format
+
+          ### competitive_content_report.md
+
+          ```markdown
+          # Competitive content analysis: [Brand Name]
+
+          **Date**: [Date]
+          **Prepared for**: [Audience from context_brief.md]
+
+          ## Executive summary
+
+          [Under 500 words. Key findings, top 3-5 opportunities, and overall
+          competitive positioning assessment. A reader who only reads this section
+          should walk away with the critical insights.]
+
+          ## Competitive landscape
+
+          ### Market content maturity
+          [Is this market content-mature or still emerging? How sophisticated
+          are competitors' content operations?]
+
+          ### Competitor profiles
+          | Competitor | Content strength | Primary channels | Notable approach |
+          |-----------|-----------------|-----------------|-----------------|
+          | [Name]    | [Brief]         | [Channels]      | [What stands out] |
+
+          ## Content patterns
+
+          ### What competitors do well
+          [Key patterns from content_patterns.md — themes, formats, cadence]
+
+          ### Where competitors fall short
+          [Weaknesses and gaps observed across the landscape]
+
+          ## Opportunities
+
+          ### Quick wins
+          [Top opportunities from gap_analysis.md — high impact, low effort]
+
+          ### Strategic investments
+          [Longer-term opportunities — high impact, high effort]
+
+          ## Recommendations
+
+          ### Priority 1: [Most important action]
+          - **What**: [Specific content initiative]
+          - **Why**: [Competitive gap it addresses]
+          - **How**: [Channel, format, cadence]
+
+          ### Priority 2: [Second action]
+          [Same structure]
+
+          ### Priority 3: [Third action]
+          [Same structure]
+
+          ### Suggested content cadence
+          | Channel | Recommended frequency | Rationale |
+          |---------|---------------------|-----------|
+          | [Channel] | [Frequency] | [Why this cadence] |
+
+          ## Methodology
+
+          [Brief note on how many competitors were analyzed, what channels were
+          covered, and what data sources were used.]
+          ```
+
+          ## Quality criteria
+
+          - Executive summary is under 500 words and highlights top 3-5 findings.
+          - Recommendations are prioritized and tied to specific competitive gaps.
+          - All claims trace back to data in the supporting analysis files.
+          - Report is structured for the audience identified in context_brief.md.
+          - Report is self-contained — readable without the supporting files.
+        inputs:
+          context_brief.md:
+            required: true
+          competitor_reports_manifest.md:
+            required: true
+          content_patterns.md:
+            required: true
+          gap_analysis.md:
+            required: true
+        outputs:
+          competitive_content_report.md:
+            required: true
+
+  research_one_competitor:
+    summary: "Deep-dive content analysis for a single competitor"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Sub-workflow for researching one competitor's content strategy in depth.
+      Launched in parallel by the competitive_content_analysis main workflow.
+
+      Use WebSearch and WebFetch to actively research the competitor's content.
+      When user-provided materials are available, incorporate them alongside
+      web research. Prefer primary sources over third-party commentary.
+    steps:
+      - name: gather_content
+        instructions: |
+          # Gather competitor content
+
+          ## Objective
+
+          Collect content samples and metadata from a single competitor across
+          all relevant channels within the specified content focus areas.
+
+          ## Task
+
+          ### Process
+
+          1. **Find the competitor's content channels**
+
+             Use WebSearch to locate:
+             - Website and blog (look for /blog, /resources, /insights paths)
+             - Social media profiles (LinkedIn, X/Twitter, YouTube, Instagram)
+             - Documentation or knowledge base
+             - Newsletters (check for archive pages or sign-up pages)
+             - Podcasts, webinars, or video content
+             - Community presence (forums, Reddit, Discord)
+
+          2. **Collect content per channel**
+
+             For each channel found within the content focus areas:
+             - Gather 5-10 recent content samples (last 3-6 months)
+             - Note the publishing frequency (posts per week/month)
+             - Record content topics and recurring themes
+             - Note format and typical length/duration
+             - Capture any visible engagement metrics
+
+          3. **Ingest user-provided materials** (if available)
+             - Integrate any user-supplied content for this competitor.
+             - Cross-reference with web research findings.
+
+          4. **Document sources**
+             - Include URLs for every piece of content referenced.
+             - Note the date each piece was published (where visible).
+
+          ## Output format
+
+          ### raw_content.md
+
+          ```markdown
+          # Raw content: [Competitor Name]
+
+          **Collection date**: [Date]
+          **Channels found**: [N]
+
+          ## Blog / Website content
+          **URL**: [Blog URL]
+          **Frequency**: [Estimated posts per month]
+
+          | Date | Title | URL | Format | Topic |
+          |------|-------|-----|--------|-------|
+          | [Date] | [Title] | [URL] | [Article/Guide/etc] | [Topic] |
+
+          **Themes observed**: [List of recurring topics]
+
+          ## Social media: [Platform]
+          **Profile URL**: [URL]
+          **Frequency**: [Estimated posts per week]
+          **Follower count**: [If visible]
+
+          | Date | Content summary | URL | Engagement |
+          |------|----------------|-----|------------|
+          | [Date] | [Brief summary] | [URL] | [Likes/shares if visible] |
+
+          **Themes observed**: [List of recurring topics]
+
+          [Repeat for each channel]
+
+          ## Channels not found
+          - [Channel]: [Searched but not found / not applicable]
+          ```
+
+          ## Quality criteria
+
+          - Content gathered from at least 2 distinct channels.
+          - Every content sample includes a source URL.
+          - Content samples are from the last 6 months where possible.
+          - Each channel section includes a publishing frequency estimate.
+          - Channels that were searched but not found are documented.
+        inputs:
+          competitor_name:
+            required: true
+          content_focus:
+            required: true
+        outputs:
+          raw_content.md:
+            required: true
+        process_requirements:
+          "Multiple Channels": "Content MUST be gathered from at least 2 distinct channels."
+          "Recent Content": "Content samples SHOULD be from the last 6 months."
+
+      - name: analyze_content
+        instructions: |
+          # Analyze competitor content
+
+          ## Objective
+
+          Analyze the raw content collected for a single competitor and produce a
+          structured assessment of their content strategy.
+
+          ## Task
+
+          ### Process
+
+          1. **Read raw_content.md** for this competitor.
+
+          2. **Analyze content strategy dimensions**
+
+             - **Content themes**: What topics do they write about? What is their
+               content positioning? Are they thought-leadership, educational,
+               product-focused, or community-driven?
+             - **Publishing cadence**: How often per channel? Any patterns (e.g.,
+               weekly blog, daily social, monthly webinar)?
+             - **Format mix**: Distribution across long-form articles, short posts,
+               video, infographics, case studies, whitepapers, interactive tools.
+             - **Tone and voice**: Professional, casual, technical, inspirational?
+               Include 2-3 specific quotes or excerpts as examples.
+             - **Channel strategy**: Where do they invest most effort? Which channels
+               appear highest-performing based on visible signals?
+             - **Content quality**: Production value, depth, originality, accuracy.
+               How does it compare to typical industry content?
+             - **SEO signals**: Target keywords (inferred from titles/headings),
+               content structure, internal linking patterns (where observable).
+
+          3. **Assess strengths and weaknesses**
+             - What does this competitor do well with their content?
+             - Where are the gaps or weaknesses in their strategy?
+
+          ## Output format
+
+          ### competitor_report.md
+
+          ```markdown
+          # Content analysis: [Competitor Name]
+
+          **Analysis date**: [Date]
+          **Channels analyzed**: [List]
+
+          ## Content strategy summary
+
+          [2-3 sentence overview of their approach]
+
+          ## Theme analysis
+
+          ### Primary themes
+          | Theme | Frequency | Channels | Example |
+          |-------|-----------|----------|---------|
+          | [Theme] | [How often] | [Where] | [Link to example] |
+
+          ### Content positioning
+          [Thought-leadership / Educational / Product-led / Community-driven / Mix]
+
+          ## Publishing cadence
+
+          | Channel | Frequency | Consistency | Trend |
+          |---------|-----------|------------|-------|
+          | [Channel] | [Posts per period] | [Regular/Irregular] | [Increasing/Stable/Declining] |
+
+          ## Format mix
+
+          | Format | Share | Quality | Notes |
+          |--------|-------|---------|-------|
+          | [Format] | [Approx %] | [High/Med/Low] | [Details] |
+
+          ## Tone and voice
+
+          **Style**: [Professional/Casual/Technical/etc.]
+
+          **Examples**:
+          > "[Quote from their content]" — [Source URL]
+          > "[Another quote]" — [Source URL]
+
+          ## Channel strategy
+
+          **Primary channel**: [Channel] — [Why it appears primary]
+          **Secondary channels**: [Channels]
+          **Absent from**: [Channels not used]
+
+          ## SEO observations
+
+          - **Target keywords**: [Inferred keywords]
+          - **Content structure**: [How they structure for search]
+
+          ## Competitive assessment
+
+          ### Strengths
+          - [Strength 1 — with evidence]
+          - [Strength 2]
+
+          ### Weaknesses
+          - [Weakness 1 — with evidence]
+          - [Weakness 2]
+          ```
+
+          ## Quality criteria
+
+          - Content inventory covers at least 3 content channels or types.
+          - Publishing cadence includes specific frequency data.
+          - Tone and voice analysis includes concrete examples with source URLs.
+          - All claims about the competitor's strategy cite specific content.
+          - Strengths and weaknesses are evidence-based.
+        inputs:
+          raw_content.md:
+            required: true
+        outputs:
+          competitor_report.md:
+            required: true
