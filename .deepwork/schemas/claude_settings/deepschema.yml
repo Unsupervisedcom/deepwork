@@ -1,0 +1,100 @@
+summary: "Claude Code settings.json and settings.local.json configuration files."
+
+instructions: |
+  Claude Code settings files control permissions, hooks, sandbox, model preferences,
+  and plugin configuration. There are three scopes with distinct purposes:
+
+  - `.claude/settings.json` — shared project settings, committed to git. Team-wide
+    permissions, hooks, and MCP server approvals.
+  - `.claude/settings.local.json` — personal per-project overrides, gitignored.
+    Sensitive credentials, personal MCP configs, local permission tweaks.
+  - `~/.claude/settings.json` — user-global defaults for all projects.
+
+  Precedence (highest to lowest): managed → CLI args → settings.local.json →
+  settings.json → ~/.claude/settings.json → defaults. Deny rules at ANY level
+  cannot be overridden by allow rules at any other level.
+
+  Key sections: permissions (allow/ask/deny tool rules), hooks (lifecycle event
+  handlers), sandbox (OS-level isolation), env (environment variables), and
+  various global config fields (model, attribution, autoMode, etc.).
+
+matchers:
+  - ".claude/settings.json"
+  - ".claude/settings.local.json"
+  - "**/.claude/settings.json"
+  - "**/.claude/settings.local.json"
+
+json_schema_path: "claude_settings.schema.json"
+
+requirements:
+  bash-wildcard-word-boundaries: >
+    Bash permission patterns SHOULD use a space before the wildcard to enforce
+    word boundaries: `Bash(npm run *)` matches `npm run build` but not `npmrc`.
+    Omitting the space (`Bash(npm*)`) matches any command starting with "npm"
+    including unintended matches. Patterns MUST be reviewed for unintended
+    broad matching.
+
+  read-edit-path-prefixes: >
+    Read and Edit permission specifiers MUST use the correct path prefix
+    convention: `./**` or bare paths for project-relative, `~` for home
+    directory, `//` (double slash) for absolute filesystem paths. A single
+    leading `/` is project-relative, NOT absolute — this is a common mistake.
+
+  no-secrets-in-shared-settings: >
+    `.claude/settings.json` (the shared, committed file) MUST NOT contain
+    secrets, API keys, tokens, or credentials. Sensitive values MUST go in
+    `.claude/settings.local.json` (gitignored) or environment variables.
+
+  deny-rules-are-final: >
+    Authors SHOULD understand that deny rules cannot be overridden at any scope.
+    If a tool is denied in shared project settings, no user-level or local
+    setting can re-allow it. Deny rules SHOULD be used intentionally for
+    hard security boundaries, not for soft preferences.
+
+  sandbox-path-semantics-differ: >
+    Sandbox path settings (`sandbox.filesystem.allowRead`, `allowWrite`, etc.)
+    use DIFFERENT prefix semantics than permission rules: `/path` means absolute
+    (not project-relative), `~/` means home directory, `./` or bare path means
+    project root. Authors MUST NOT confuse sandbox path semantics with
+    permission rule path semantics.
+
+  automode-not-in-shared-settings: >
+    `autoMode` configuration MUST NOT appear in `.claude/settings.json` (shared
+    project settings). Claude Code ignores autoMode from shared project settings
+    to prevent malicious repos from weakening security. Use user-level or
+    managed settings instead.
+
+  automode-replaces-defaults: >
+    When `autoMode.allow` or `autoMode.soft_deny` arrays are set, they MUST
+    contain all desired rules because they completely replace the built-in
+    defaults rather than merging with them. Authors SHOULD review defaults via
+    `claude auto-mode defaults` before overriding.
+
+  attribution-over-deprecated: >
+    The `attribution` object SHOULD be used instead of the deprecated
+    `includeCoAuthoredBy` boolean. If both are present, `attribution` takes
+    precedence.
+
+  mcp-tools-pattern-valid: >
+    MCP tool permission patterns MUST follow the format
+    `mcp__<server_name>__<tool_name>` or use a wildcard `mcp__<server_name>__*`
+    for all tools from a server. The double-underscore separators are required.
+
+  local-settings-gitignored: >
+    `.claude/settings.local.json` SHOULD be listed in `.gitignore`. This file
+    is intended for personal overrides and sensitive configuration that MUST NOT
+    be committed to version control.
+
+  sandbox-enabled-with-paths: >
+    When `sandbox.enabled` is `true`, at minimum `sandbox.filesystem.allowWrite`
+    SHOULD include the project directory and any tool output directories.
+    An overly restrictive sandbox without necessary write paths will cause
+    tool failures.
+
+references:
+  - path: "https://json.schemastore.org/claude-code-settings.json"
+    description: "Community-maintained JSON Schema on SchemaStore — the most comprehensive structural schema available. Consider syncing our local schema with this periodically."
+  - path: "https://docs.anthropic.com/en/docs/claude-code/settings"
+    description: "Official Claude Code settings documentation — complete field reference and precedence rules."
+  - path: "https://docs.anthropic.com/en/docs/claude-code/security"
+    description: "Claude Code security model — permissions, sandboxing, and managed settings."

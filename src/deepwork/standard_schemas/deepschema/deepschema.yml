@@ -23,3 +23,4 @@ requirements:
   json-schema-path-valid: "If json_schema_path is set, it MUST point to a valid JSON Schema file relative to the schema directory."
   examples-have-descriptions: "Each entry in examples SHOULD have both a path and a description."
   references-have-descriptions: "Each entry in references SHOULD have both a path and a description."
+  no-structural-requirements: "Requirements MUST NOT restate constraints that are already enforced by the schema's json_schema_path or verification_bash_command. This includes syntactic validity (e.g., 'must be valid JSON'), field types (e.g., 'must be an array of strings'), allowed enum values, required fields, and structural shape. These SHOULD be expressed in the JSON Schema file. Requirements SHOULD focus on semantic rules, behavioral gotchas, and cross-field concerns that JSON Schema cannot express."
