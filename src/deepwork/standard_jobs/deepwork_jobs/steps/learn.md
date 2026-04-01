@@ -79,6 +79,8 @@ For each learning identified, determine if it is:
 - Depends on local conventions or structure
 - References specific files or paths
 - Would not apply to other uses of this job
+- Includes local policy overrides where a project intentionally diverges from a
+  generic workflow or convention
 - Examples:
   - "In this codebase, API endpoints are in `src/api/`"
   - "This project uses camelCase for function names"
@@ -94,11 +96,15 @@ For each generalizable learning:
    - If `job_dir` is read-only, map the same relative job path into the editable source repo you identified in Step 1 and edit that file instead
 
 2. **Make targeted improvements**
-   - Add missing context or clarification
-   - Include helpful examples
-   - Clarify ambiguous instructions
-   - Update quality criteria if needed
-   - If you identify problems in the outcomes of steps, those usually should be reflected in an update to the `reviews` for that step in `job.yml` (adjusting criteria names, statements, or `run_each` targeting)
+  - Add missing context or clarification
+  - Include helpful examples
+  - Clarify ambiguous instructions
+  - Update quality criteria if needed
+  - If the error came from a generic workflow or convention conflicting with a
+    project-local policy, update the generic instructions only enough to teach
+    agents to look for and preserve local policy instead of hard-coding the
+    generic behavior
+  - If you identify problems in the outcomes of steps, those usually should be reflected in an update to the `reviews` for that step in `job.yml` (adjusting criteria names, statements, or `run_each` targeting)
 
 3. **Keep instructions concise**
    - Avoid redundancy - don't repeat the same guidance in multiple places
@@ -141,10 +147,11 @@ Review all instruction files for the job and identify content that:
 The AGENTS.md file captures project-specific knowledge that helps future agent runs.
 
 1. **Determine the correct location**
-   - Place AGENTS.md in the deepest common folder that would contain all work on the topic in the future
-   - This ensures the knowledge is available when working in that context
-   - If uncertain, place at the project root
-   - If the run uncovered a local policy about mirroring DeepWork job fixes into a shared library checkout, capture that policy in the local project's AGENTS.md
+  - Place AGENTS.md in the deepest common folder that would contain all work on the topic in the future
+  - This ensures the knowledge is available when working in that context
+  - If uncertain, place at the project root
+  - If the run uncovered a local policy about mirroring DeepWork job fixes into a shared library checkout, capture that policy in the local project's AGENTS.md
+  - If the run uncovered a local policy override to a generic workflow or convention, capture that override in the local project's AGENTS.md with file references to the authoritative local source
 
 2. **Use file references where possible**
    - Instead of duplicating information, reference source files

@@ -95,7 +95,13 @@ For **trunk-based**:
 For **release branches**:
 - Document the branch naming convention (`release/X.Y`)
 - Document who creates release branches and the merge flow (release branch merges to main AND tag)
-- Configure branch protection for `release/*` if supported
+- Configure branch protection or rules for `release/*` if supported by the hosting platform
+- Before promising "only CI may create `release/*`," verify that the hosting platform can actually express that policy for this repo and automation identity
+- If the platform cannot enforce CI-only branch creation, implement the strongest enforceable fallback instead:
+  - enforce PR-only updates to existing `release/*` branches
+  - remove bypass actors unless the user explicitly wants an administrative bypass
+  - require human approval for stabilization changes when the release process calls for it
+  - document branch creation as operator policy rather than claiming host enforcement that does not exist
 
 For **GitFlow**:
 - Document the full branch hierarchy and merge directions
@@ -104,6 +110,16 @@ For **GitFlow**:
 **In all cases:**
 - Write the branching strategy documentation to a discoverable location (e.g., `docs/releasing.md` or a section in `CONTRIBUTING.md`)
 - Document the strategy in `release_docs.md`
+- Determine the default branch name from the hosting platform, not by assumption
+- If GitHub or Forgejo is detected, verify and configure remote branch protection or rules for:
+  - the default branch
+  - `release/*` branches when the chosen model uses them
+  - `hotfix/*` branches when the chosen model uses them
+- On GitHub, prefer repository rulesets over the legacy branch protection endpoint when deciding whether protection already exists or when creating new protections
+- If the platform supports both exact-branch rules and wildcard rules, choose the smallest rule set that enforces the documented strategy
+- If the platform rejects the desired automation-bypass or branch-creation restriction, do not leave the setup half-implicit. Record the exact API or UI limitation, configure the strongest supported rule set, and update the repo docs so they distinguish host-enforced rules from process-only expectations.
+- If authentication or permissions prevent modifying the remote rules, document the exact blocker and the commands or UI path needed to finish the setup
+- After changing remote branch rules, update any repository docs or workflow artifacts that still describe those rules as pending manual follow-up
 
 #### 5. Create CI Release Workflow (Convention 27)
 
@@ -169,6 +185,8 @@ Use `AskUserQuestion` to determine publish targets:
 - Use CI provider secret management for registry credentials — NEVER hardcode tokens
 - Add comments in the workflow explaining each stage
 - Document which secrets need to be configured in CI settings (e.g., `NPM_TOKEN`, `PYPI_TOKEN`)
+- Ensure the workflow and branch rules are compatible. For example, a protected default branch may require pull requests, while `release/*` rules may allow only maintainers or release automation to push tags or merge stabilization changes.
+- Do not claim compatibility that has not been verified. If the host cannot express the desired release-branch creation policy, keep the workflow compatible with the actual rules and document the remaining human or operator responsibility explicitly.
 
 #### 6. Configure Automated Artifact Publishing (Convention 28)
 
@@ -257,6 +275,10 @@ Write to `.deepwork/tmp/platform_engineer/release_builder/release_docs.md`:
 - **Model**: <trunk-based / release branches / gitflow>
 - **Branch naming**: <pattern>
 - **Documentation**: <path to strategy docs>
+- **Remote branch rules**:
+  - Default branch: <configured state and how it was verified>
+  - Release branches: <configured state and how it was verified>
+  - Hotfix branches: <configured state and how it was verified, if applicable>
 
 ### CI Release Pipeline
 - **Workflow file**: <path>
@@ -285,7 +307,7 @@ Write to `.deepwork/tmp/platform_engineer/release_builder/release_docs.md`:
 
 <List any manual steps the user needs to complete, such as:
 - Adding CI secrets
-- Enabling branch protection
+- Enabling or finishing branch protection or rules on the host platform
 - Configuring registry access
 - First release dry-run>
 
@@ -307,6 +329,8 @@ Write to `.deepwork/tmp/platform_engineer/release_builder/release_docs.md`:
 - **Versioning Configured**: Semantic versioning is set up with a concrete version bumping mechanism appropriate to the project's stack. The user knows exactly how to bump a version.
 - **Release Notes Configured**: Changelog or release notes generation is configured and integrated into the release workflow per convention 29. The tool parses commits or PRs automatically.
 - **Branch Strategy Documented**: The release branching strategy is documented in a discoverable location within the repository, not just in the artifact.
+- **Branch Rules Configured**: When GitHub or Forgejo is detected, default-branch and release-branch protection or rules are actually configured or verified on the host platform, not merely described in repository docs. If configuration is blocked by permissions, the blocker is explicit.
+- **Docs Synchronized**: When remote branch rules are created or changed, repository docs and workflow artifacts are updated so they reflect the real host state instead of stale planned state.
 - **Decisions Documented**: All setup decisions (tool choices, publish targets, branching model) are recorded in `release_docs.md` with rationale. A new team member could understand the release process by reading this document.
 - **Secrets Not Exposed**: No secret values, tokens, or credentials appear in any created files. CI secrets are referenced by name only, with instructions for how to set them up.
 - **User Consulted**: Decisions requiring user judgment (registry targets, branching model, changelog approach) were surfaced via `AskUserQuestion` rather than assumed.

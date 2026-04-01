@@ -61,7 +61,23 @@ Examine each category of release infrastructure. For each item, record whether i
 
 **Release branch patterns:**
 - Run `git branch -r | grep -iE 'release|hotfix'` to check for release branch naming patterns
-- Check for branch protection rules if GitHub CLI is available: `gh api repos/{owner}/{repo}/branches`
+- Determine the remote hosting platform from the git remote URL
+- If GitHub is detected and `gh` is authenticated, check the default branch name and read branch protection or rulesets for:
+  - the default branch
+  - any existing `release/*` branches
+  - any existing `hotfix/*` branches
+- On GitHub, treat repository rulesets as authoritative protection state. Do not conclude a branch is unprotected only because `repos/{owner}/{repo}/branches/{branch}/protection` returns 404.
+- When reading GitHub rulesets, inspect both:
+  - explicit ref patterns like `refs/heads/release/*`
+  - default-branch targeting via ruleset conditions such as `~DEFAULT_BRANCH`
+- If Forgejo is detected, use the Forgejo API or CLI available in the environment to inspect branch protection or rules for:
+  - the default branch
+  - any existing `release/*` branches
+  - any existing `hotfix/*` branches
+- If no release branches exist yet, explicitly record whether the hosting platform has wildcard or templated protection or rules support that could cover `release/*`
+- If the intended release model requires CI or release automation to create `release/*` branches, explicitly check whether the hosting platform can express that restriction. Do not assume that "protected branch" support automatically means "only CI may create the branch."
+- On GitHub, verify whether the repo can grant the desired bypass actor or automation identity to the relevant ruleset. If the platform rejects that configuration, record the exact limitation and treat it as a capability gap rather than silently assuming the policy is enforceable.
+- Do not stop at repository files. This part of the audit MUST check remote host configuration when GitHub or Forgejo is detected and authentication is available.
 - Look for documentation of branching strategy in README, CONTRIBUTING, or docs/
 
 **Tag conventions:**
@@ -183,7 +199,10 @@ Write the audit to `.deepwork/tmp/platform_engineer/release_builder/release_audi
 
 ### Release Branches
 - **Pattern detected**: <release/* / hotfix/* / none>
-- **Branch protection**: <configured / not configured / not checked>
+- **Default branch**: <branch name>
+- **Default branch rules**: <configured / not configured / not checked> — <tool or API used>
+- **Release branch rules**: <configured / not configured / not checked> — <tool or API used>
+- **Creation control**: <host-enforced / process-only / not supported / not checked> — <how branch creation is restricted, or why it cannot be restricted>
 - **Strategy documented**: yes / no — <location if yes>
 
 ### Release Scripts
@@ -232,6 +251,9 @@ strategy to adopt in setup_release_pipeline.>
 - **Current State Documented**: The existing release process (or lack thereof) is fully documented with specific file paths, tool names, and configuration details. No area is left as "did not check."
 - **Gaps Identified**: Missing components are identified by systematically checking against each of the six release management conventions (24-29). Each gap includes a concrete recommendation, not just "add this."
 - **Versioning Assessed**: The current versioning scheme is documented with the actual version value, tag history, and a clear assessment of SemVer compliance. The assessment includes a recommendation for the version bumping approach.
+- **Branch Rules Assessed**: The audit explicitly checks default-branch and release-branch protection or rules on the hosting platform when GitHub or Forgejo is in use. If authentication blocks the check, that blocker is called out explicitly.
+- **Ruleset-Aware**: On GitHub, repository rulesets are treated as authoritative branch protection state, and `branches/{branch}/protection` 404 responses are interpreted in that context rather than treated as definitive proof that no protection exists.
+- **Capability-Aware**: The audit distinguishes between policies the hosting platform can enforce directly and policies that remain process-only. If CI-only release-branch creation is not expressible on the host, that limitation is documented explicitly.
 - **Actionable for Next Step**: The audit contains enough detail that `setup_release_pipeline` can act on every gap without re-scanning the repository. File paths, tool names, and specific missing pieces are all documented.
 - **No Changes Made**: This step is read-only. No files in the repository are created or modified. Only the output artifact is written.
 

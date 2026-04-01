@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=.deepwork/schemas/job.schema.json
 name: platform_engineer
-version: "1.0.1"
+version: "1.1.2"
 summary: "Platform engineering workflows: incidents, observability, CI/CD, releases, security, compliance, migrations, and dev tooling."
 common_job_info_provided_to_all_steps_at_runtime: |
   Platform engineering job for discovering gaps, setting up infrastructure, and maintaining
@@ -404,6 +404,7 @@ steps:
           "Current State Documented": "The existing release process (or lack thereof) is fully documented."
           "Gaps Identified": "Missing components are identified by checking against release management conventions 24-29."
           "Versioning Assessed": "Current versioning scheme is documented and assessed for SemVer compliance."
+          "Branch Rules Assessed": "Default-branch and release-branch protection or rules are explicitly checked on the hosting platform when GitHub or Forgejo is detected."
 
   - id: setup_release_pipeline
     name: "Set Up Release Pipeline"
@@ -435,6 +436,7 @@ steps:
           "Versioning Configured": "Semantic versioning is set up with automated version bumping."
           "Release Notes": "Changelog/release notes generation is configured per convention 29."
           "Branch Strategy Documented": "Release branch strategy is documented in the repository."
+          "Branch Rules Configured": "Default-branch and release-branch protection or rules are configured on GitHub or Forgejo when those platforms are detected, or an explicit blocker is documented."
           "Decisions Documented": "All setup decisions are documented in release_docs.md."
 
   # ── Audit & Cost ────────────────────────────────────────────────────────
