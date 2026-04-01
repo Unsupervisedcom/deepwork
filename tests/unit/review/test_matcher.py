@@ -1006,6 +1006,8 @@ class TestGetGitDiff:
         result = _get_git_diff(tmp_path)
         assert result == ""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.11.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher._run_git")
     def test_scopes_diff_to_subdirectory(self, mock_run: Any, tmp_path: Path) -> None:
         sub = tmp_path / "src" / "deepwork"
@@ -1019,14 +1021,14 @@ class TestGetGitDiff:
         ]
         result = _get_git_diff(tmp_path, scope_dir=sub)
         assert "scoped diff" in result
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.11.6).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         # Both git diff calls (stat + full) must include -- src/deepwork pathspec
         stat_call = mock_run.call_args_list[-2]
         diff_call = mock_run.call_args_list[-1]
         assert "src/deepwork" in stat_call[0][1:]
         assert "src/deepwork" in diff_call[0][1:]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.11.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.matcher._run_git")
     def test_no_scope_when_source_dir_is_project_root(self, mock_run: Any, tmp_path: Path) -> None:
         mock_run.side_effect = [
@@ -1038,8 +1040,6 @@ class TestGetGitDiff:
         ]
         result = _get_git_diff(tmp_path, scope_dir=tmp_path)
         assert "full diff" in result
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.11.6).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         # No pathspec should be present when source_dir equals project_root
         stat_call = mock_run.call_args_list[-2]
         diff_call = mock_run.call_args_list[-1]

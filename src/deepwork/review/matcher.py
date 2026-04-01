@@ -258,15 +258,11 @@ def _get_git_diff(project_root: Path, scope_dir: Path | None = None) -> str:
 
     try:
         # Stat summary for a quick overview
-        stat_result = _run_git(
-            project_root, "diff", "--stat", f"{merge_base}..HEAD", *pathspec
-        )
+        stat_result = _run_git(project_root, "diff", "--stat", f"{merge_base}..HEAD", *pathspec)
         stat = stat_result.stdout.strip()
 
         # Full diff with extended context
-        diff_result = _run_git(
-            project_root, "diff", "-U8", f"{merge_base}..HEAD", *pathspec
-        )
+        diff_result = _run_git(project_root, "diff", "-U8", f"{merge_base}..HEAD", *pathspec)
         diff = _sort_diff_by_path(diff_result.stdout)
 
         if stat and diff:
