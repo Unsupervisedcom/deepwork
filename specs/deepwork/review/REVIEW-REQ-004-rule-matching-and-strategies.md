@@ -80,3 +80,5 @@ After discovering review rules (REVIEW-REQ-002) and changed files (REVIEW-REQ-00
 4. Rules with strategy `"individual"` MUST NOT receive `git_diff_output`, regardless of their include patterns.
 5. The `ReviewTask` dataclass MUST include a `git_diff_output: str | None` field defaulting to `None`.
 6. When a rule's `source_dir` is a subdirectory of the project root, the git diff MUST be scoped to that subdirectory (via `-- <relpath>` pathspec). When `source_dir` equals the project root, the diff MUST cover the entire repository.
+7. The git diff output MUST begin with a `git diff --stat` summary showing per-file change counts, followed by the full diff.
+8. The full diff MUST use 8 lines of context (`-U8`) to give reviewers enough surrounding code to understand hunk placement.

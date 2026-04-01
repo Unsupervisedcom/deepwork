@@ -959,11 +959,46 @@ class TestGetGitDiff:
             MagicMock(stdout="abc123\n"),
             # _get_merge_base
             MagicMock(stdout="def456\n"),
-            # git diff
+            # git diff --stat
+            MagicMock(stdout=" f.py | 1 +\n 1 file changed\n"),
+            # git diff -U8
             MagicMock(stdout="diff --git a/f.py b/f.py\n+hello\n"),
         ]
         result = _get_git_diff(tmp_path)
         assert "diff --git" in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.11.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @patch("deepwork.review.matcher._run_git")
+    def test_includes_stat_summary(self, mock_run: Any, tmp_path: Path) -> None:
+        mock_run.side_effect = [
+            MagicMock(stdout="refs/remotes/origin/main\n"),
+            MagicMock(stdout="abc123\n"),
+            MagicMock(stdout="def456\n"),
+            MagicMock(stdout=" f.py | 1 +\n 1 file changed\n"),
+            MagicMock(stdout="diff --git a/f.py b/f.py\n+hello\n"),
+        ]
+        result = _get_git_diff(tmp_path)
+        # Stat summary should appear before the diff
+        assert "1 file changed" in result
+        assert result.index("1 file changed") < result.index("diff --git")
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.11.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @patch("deepwork.review.matcher._run_git")
+    def test_uses_extended_context(self, mock_run: Any, tmp_path: Path) -> None:
+        mock_run.side_effect = [
+            MagicMock(stdout="refs/remotes/origin/main\n"),
+            MagicMock(stdout="abc123\n"),
+            MagicMock(stdout="def456\n"),
+            MagicMock(stdout=""),
+            MagicMock(stdout="diff output\n"),
+        ]
+        _get_git_diff(tmp_path)
+        # The full diff call (last one) should include -U8
+        diff_call = mock_run.call_args_list[-1]
+        diff_args = diff_call[0][1:]  # skip project_root
+        assert "-U8" in diff_args
 
     @patch("deepwork.review.matcher._run_git")
     def test_returns_empty_on_failure(self, mock_run: Any, tmp_path: Path) -> None:
@@ -984,16 +1019,18 @@ class TestGetGitDiff:
             MagicMock(stdout="abc123\n"),
             # _get_merge_base
             MagicMock(stdout="def456\n"),
-            # git diff
-            MagicMock(stdout="scoped diff\n"),
+            # git diff --stat
+            MagicMock(stdout="scoped stat\n"),
+            # git diff -U8
+            MagicMock(stdout="diff --git a/src/deepwork/f.py b/src/deepwork/f.py\nscoped diff\n"),
         ]
         result = _get_git_diff(tmp_path, scope_dir=sub)
-        assert result == "scoped diff\n"
-        # The final git diff call should include -- src/deepwork
+        assert "scoped diff" in result
+        # Both git diff calls should include -- src/deepwork
+        stat_call = mock_run.call_args_list[-2]
         diff_call = mock_run.call_args_list[-1]
-        diff_args = diff_call[0][1:]  # skip project_root
-        assert "--" in diff_args
-        assert "src/deepwork" in diff_args
+        assert "src/deepwork" in stat_call[0][1:]
+        assert "src/deepwork" in diff_call[0][1:]
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.11.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -1003,13 +1040,31 @@ class TestGetGitDiff:
             MagicMock(stdout="refs/remotes/origin/main\n"),
             MagicMock(stdout="abc123\n"),
             MagicMock(stdout="def456\n"),
-            MagicMock(stdout="full diff\n"),
+            MagicMock(stdout="stat\n"),
+            MagicMock(stdout="diff --git a/f.py b/f.py\nfull diff\n"),
         ]
         result = _get_git_diff(tmp_path, scope_dir=tmp_path)
-        assert result == "full diff\n"
+        assert "full diff" in result
         diff_call = mock_run.call_args_list[-1]
         diff_args = diff_call[0][1:]
         assert "--" not in diff_args
+
+
+class TestReviewTaskGitDiffField:
+    """Tests for ReviewTask.git_diff_output field — validates REVIEW-REQ-004.11.5."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.11.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_git_diff_output_defaults_to_none(self) -> None:
+        from deepwork.review.config import ReviewTask
+
+        task = ReviewTask(
+            rule_name="x",
+            files_to_review=["f"],
+            instructions="i",
+            agent_name=None,
+        )
+        assert task.git_diff_output is None
 
 
 class TestDiffInjectionInMatchFilesToRules:

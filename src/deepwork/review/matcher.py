@@ -241,22 +241,37 @@ def _get_git_diff(project_root: Path, scope_dir: Path | None = None) -> str:
     Uses the same base-ref detection logic as changed-file detection.
     When *scope_dir* is provided and differs from *project_root*, the
     diff is restricted to that subdirectory via ``-- <relpath>``.
-    The output is sorted by file path so that files in the same
-    directory are grouped together.
+    The output includes a stat summary header, uses 8 lines of context
+    (``-U8``) for better placement understanding, and is sorted by file
+    path so that files in the same directory are grouped together.
     Returns an empty string on failure.
     """
     base_ref = _detect_base_ref(project_root)
     merge_base = _get_merge_base(project_root, base_ref)
-    args = ["diff", f"{merge_base}..HEAD"]
+    pathspec: list[str] = []
     if scope_dir is not None and scope_dir != project_root:
         try:
             rel = scope_dir.relative_to(project_root)
-            args += ["--", str(rel)]
+            pathspec = ["--", str(rel)]
         except ValueError:
             pass
+
     try:
-        result = _run_git(project_root, *args)
-        return _sort_diff_by_path(result.stdout)
+        # Stat summary for a quick overview
+        stat_result = _run_git(
+            project_root, "diff", "--stat", f"{merge_base}..HEAD", *pathspec
+        )
+        stat = stat_result.stdout.strip()
+
+        # Full diff with extended context
+        diff_result = _run_git(
+            project_root, "diff", "-U8", f"{merge_base}..HEAD", *pathspec
+        )
+        diff = _sort_diff_by_path(diff_result.stdout)
+
+        if stat and diff:
+            return f"{stat}\n\n{diff}"
+        return diff or stat
     except subprocess.CalledProcessError:
         return ""
 
