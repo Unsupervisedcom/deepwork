@@ -18,6 +18,7 @@ def _make_task(
     source_location: str = ".deepreview:1",
     additional_files: list[str] | None = None,
     all_changed_filenames: list[str] | None = None,
+    git_diff_output: str | None = None,
 ) -> ReviewTask:
     """Create a ReviewTask with sensible defaults."""
     return ReviewTask(
@@ -28,6 +29,7 @@ def _make_task(
         source_location=source_location,
         additional_files=additional_files or [],
         all_changed_filenames=all_changed_filenames,
+        git_diff_output=git_diff_output,
     )
 
 
@@ -137,6 +139,35 @@ class TestBuildInstructionFile:
         content = build_instruction_file(task)
         last_nonblank = [line for line in content.strip().split("\n") if line.strip()][-1]
         assert "This review was requested" in last_nonblank
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.7.1, REVIEW-REQ-005.7.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_includes_git_diff_section(self) -> None:
+        task = _make_task(git_diff_output="diff --git a/f.py b/f.py\n+hello\n")
+        content = build_instruction_file(task)
+        assert "## Output from `git diff main..HEAD` for you to review" in content
+        assert "```diff" in content
+        assert "+hello" in content
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.7.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_omits_git_diff_section_when_none(self) -> None:
+        task = _make_task(git_diff_output=None)
+        content = build_instruction_file(task)
+        assert "git diff" not in content
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.7.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_git_diff_section_after_files_before_all_changed(self) -> None:
+        task = _make_task(
+            git_diff_output="diff output",
+            all_changed_filenames=["a.py", "b.py"],
+        )
+        content = build_instruction_file(task)
+        files_idx = content.index("## Files to Review")
+        diff_idx = content.index("## Output from `git diff main..HEAD`")
+        changed_idx = content.index("## All Changed Files")
+        assert files_idx < diff_idx < changed_idx
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.4.1, REVIEW-REQ-009.4.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
