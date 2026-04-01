@@ -483,7 +483,7 @@ DeepWork includes a built-in job called `deepwork_jobs` for managing jobs. It pr
 - **`repair`** workflow: `fix_settings` → `fix_jobs` → `errata`
   - Cleans up and migrates DeepWork configurations from prior versions
 - **`learn`** workflow: `learn`
-  - Analyzes conversation history to improve job instructions and capture learnings
+  - Analyzes conversation history to improve job instructions, capture learnings, and create preventive automation (DeepSchemas and DeepReview rules)
 
 These are auto-discovered at runtime by the MCP server from the Python package.
 
@@ -532,7 +532,7 @@ User: /deepwork new_job
 
 ### The `learn` Workflow
 
-Analyzes conversation history to improve job instructions and capture learnings:
+Analyzes conversation history to improve job instructions, capture learnings, and create preventive automation:
 
 ```
 User: /deepwork_jobs.learn
@@ -551,10 +551,14 @@ Claude: I'll analyze this conversation for DeepWork job executions...
         Bespoke learnings captured:
         ✓ Created AGENTS.md with project-specific notes about this competitive research instance
 
+        Prevention opportunities evaluated:
+        ✓ Created DeepSchema for competitor_profiles/ output format
+        ✓ Added DeepReview rule to enforce source prioritization in research steps
+
         Job instructions updated in place. Changes take effect on next workflow run.
 ```
 
-This standalone skill can be run anytime after executing a job to capture learnings and improve instructions.
+This standalone skill can be run anytime after executing a job to capture learnings, improve instructions, and create preventive automation (DeepSchemas and DeepReview rules).
 
 ### Step Instructions at Runtime
 
@@ -742,6 +746,7 @@ The `/deepwork_jobs.define` command:
 The `/deepwork_jobs.learn` command:
 1. Identifies doc spec-related learnings (quality criteria issues, structure changes)
 2. Updates doc spec files with improvements
+3. Evaluates prevention opportunities and creates DeepSchemas and DeepReview rules
 
 See `doc/doc-specs.md` for complete documentation.
 
