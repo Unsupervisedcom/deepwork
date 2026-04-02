@@ -93,44 +93,91 @@ When the user invokes `/<skill-name>`, parse their intent:
 - The skill body should NOT duplicate workflow instructions — those come from
   the MCP server via `start_workflow`.
 
+## Proactive invocation
+
+A routing skill doesn't have to wait for an explicit `/command`. The skill
+description in the frontmatter tells the agent when to activate. If the
+description says "TRIGGER when: user asks to build a feature, fix a bug, or
+add functionality," the agent invokes the skill automatically when it
+recognizes that intent — the same way a Claude Code skill with a TRIGGER
+clause works.
+
+This is the key difference between a routing skill and a plain workflow
+shortcut. The routing skill encodes domain knowledge about *when* to start
+a workflow, not just *which* workflow to start.
+
+### Example: spec-driven feature request
+
+The user says:
+
+> Add a WebSocket notification system so users get real-time updates when
+> their reports finish processing.
+
+The agent recognizes this is new functionality that needs a spec before
+implementation. The `/engineering` skill activates proactively:
+
+1. The skill calls `get_workflows` and finds both `engineer/implement` and
+   `spec_driven_development/full` are available.
+2. The user's request describes net-new functionality with no existing spec
+   or issue — this matches `spec_driven_development/full` (constitution →
+   specification → planning → task generation → implementation).
+3. The skill calls `start_workflow` with
+   `job_name: "spec_driven_development"`, `workflow_name: "full"`.
+4. Once the spec workflow completes and produces an implementation plan, the
+   agent can start `engineer/implement` to execute the plan with TDD
+   discipline.
+
+If instead the user said "fix the login bug from issue #42," the skill would
+route to `engineer/implement` directly — the issue already exists and no spec
+phase is needed.
+
 ## Example: `/engineering`
 
-Routes to the `engineer` library job. A focused routing skill over a single
-job with two workflows.
+Routes to the `engineer` and `spec_driven_development` library jobs. The
+skill decides whether the user's request needs a spec phase first or can go
+straight to implementation.
 
 ```markdown
 ---
 name: engineering
-description: "Engineering execution: implement features with TDD, validate repo health"
+description: >-
+  Engineering execution: spec-driven development, TDD implementation,
+  repo health. TRIGGER when: user asks to build a feature, fix a bug,
+  add functionality, or check repo health.
 ---
 
 # Engineering
 
-Domain-agnostic engineering execution from product issue through PR merge,
-with TDD discipline and repo health checks.
+Domain-agnostic engineering execution — from spec through PR merge — with
+TDD discipline and repo health checks.
 
 ## Routing table
 
 | Intent pattern | Job | Workflow | When to use |
 |----------------|-----|----------|-------------|
-| implement, build, fix, issue, feature, bug | engineer | implement | Execute engineering work from issue through PR merge |
+| new feature, new system, design, spec, plan | spec_driven_development | full | Net-new functionality that needs a spec before code |
+| implement, build, fix, issue, bug, from issue | engineer | implement | Execute from an existing issue or spec through PR merge |
 | doctor, check, health, validate, setup | engineer | doctor | Validate agent.md and domain context files |
 
 ## How to use
 
 1. Call `get_workflows` to discover available workflows
-2. Filter results to jobs: `engineer`
+2. Filter results to jobs: `engineer`, `spec_driven_development`
 3. Parse the user's intent against the routing table
-4. Call `start_workflow` with `job_name: "engineer"` and the matched workflow
+4. Call `start_workflow` with the matched job_name and workflow_name
 5. Follow the standard workflow lifecycle
 
 ## Intent parsing
 
-When the user invokes `/engineering`, parse their intent:
+When the user invokes `/engineering` (or the skill activates proactively):
 1. **Explicit workflow**: `/engineering implement` or `/engineering doctor`
-2. **General request**: `/engineering fix the login bug from issue #42`
-   → infer `engineer/implement`
-3. **No context**: `/engineering` alone → present the two workflows and ask
+2. **New functionality**: "add a caching layer to the API" → no existing
+   issue or spec → route to `spec_driven_development/full`
+3. **Existing issue**: "fix the login bug from issue #42" → issue exists
+   → route to `engineer/implement`
+4. **Repo health**: "check if the repo is ready for engineering workflows"
+   → route to `engineer/doctor`
+5. **No context**: `/engineering` alone → present the three workflows and ask
 ```
 
 ## Example: `/business`
