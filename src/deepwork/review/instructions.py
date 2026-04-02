@@ -90,11 +90,13 @@ def write_instruction_files(
     """
     instructions_dir = project_root / INSTRUCTIONS_DIR
 
-    # Clear previous .md instruction files (preserve .passed markers)
+    # Clear stale .md instruction files (preserve .passed markers and their .md files)
     if instructions_dir.exists():
         for child in instructions_dir.iterdir():
             if child.suffix == ".md":
-                child.unlink()
+                passed_marker = child.with_suffix(".passed")
+                if not passed_marker.exists():
+                    child.unlink()
     instructions_dir.mkdir(parents=True, exist_ok=True)
 
     results: list[tuple[ReviewTask, Path]] = []

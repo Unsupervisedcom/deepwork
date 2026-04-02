@@ -44,10 +44,11 @@ The mechanism relies on a deterministic `review_id` that encodes the rule name, 
 2. The "After Review" section MUST appear after the files-to-review section and before the traceability blurb (if present).
 3. The section MUST include the exact `mark_review_as_passed` tool name and the exact `review_id` value for the task.
 
-### REVIEW-REQ-009.5: Cleanup Preserves `.passed` Files
+### REVIEW-REQ-009.5: Cleanup Preserves `.passed` Files and Their Instructions
 
-1. When `write_instruction_files` clears previous instruction files, it MUST delete only `.md` files, not `.passed` files.
+1. When `write_instruction_files` clears previous instruction files, it MUST delete only `.md` files that do NOT have a corresponding `.passed` marker.
 2. `.passed` files MUST survive across multiple calls to `write_instruction_files`.
+3. `.md` files with a corresponding `.passed` marker MUST be preserved so that passed review instructions remain readable.
 
 ### REVIEW-REQ-009.6: `get_configured_reviews` Unaffected
 
