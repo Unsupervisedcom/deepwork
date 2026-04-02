@@ -132,3 +132,25 @@ class TestGetSchemasForFileFast:
         # Should not raise — the broken anonymous schema is silently skipped
         result = get_schemas_for_file_fast("src/app.py", tmp_path)
         assert result == []
+
+    def test_returns_both_named_and_anonymous(self, tmp_path: Path) -> None:
+        """When both a named and anonymous schema apply, both are returned."""
+        # Named schema matching *.yml files
+        schema_dir = tmp_path / ".deepwork" / "schemas" / "yml_files"
+        schema_dir.mkdir(parents=True)
+        (schema_dir / "deepschema.yml").write_text(
+            "matchers:\n  - '**/*.yml'\nrequirements:\n  generic: 'MUST be valid'\n",
+            encoding="utf-8",
+        )
+        # Anonymous schema for a specific yml file
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / ".deepschema.config.yml.yml").write_text(
+            "requirements:\n  specific: 'MUST have timeout field'\n",
+            encoding="utf-8",
+        )
+        result = get_schemas_for_file_fast("src/config.yml", tmp_path)
+        assert len(result) == 2
+        names = {s.name for s in result}
+        assert "yml_files" in names
+        assert "config.yml" in names
