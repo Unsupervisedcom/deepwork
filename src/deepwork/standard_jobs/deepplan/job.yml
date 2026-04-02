@@ -1,0 +1,195 @@
+name: deepplan
+summary: "Structured planning workflow that produces an executable DeepWork job definition"
+
+step_arguments:
+  - name: original_user_request
+    description: "Verbatim capture of the user's request and any clarifying discussion"
+    type: string
+
+  - name: key_reference_files
+    description: "File paths that are relevant to understanding the request"
+    type: file_path
+
+  - name: draft_plan_file
+    description: "The plan document written to the plan file"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Review whether this plan document achieves the original_user_request.
+        Check that:
+        - All aspects of the user's request are addressed
+        - The plan is actionable and specific (not vague or hand-wavy)
+        - No requirements from the original request are missing
+
+  - name: session_job_name
+    description: "The name of the registered session job that will execute this plan"
+    type: string
+
+  - name: key_affected_files
+    description: "Full paths of key files that will be created or modified"
+    type: file_path
+
+workflows:
+  create_deep_plan:
+    summary: "Guide an agent through structured planning to produce an executable job"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      You are running the DeepPlan workflow. This workflow supersedes the default
+      planning phases (Initial Understanding, Design, Review, Final Plan). Follow
+      these step instructions instead of the default planning phases.
+
+      You are in plan mode — file writes are restricted to the plan file only.
+      MCP tool calls (like register_session_job) can write files on your behalf.
+    steps:
+      - name: initial_understanding
+        instructions: |
+          Explore and understand the user's request and the relevant codebase/context.
+
+          1. Use Explore agents (up to 3 in parallel) to investigate the codebase,
+             find relevant files, and understand existing patterns.
+          2. Look for documentation files that seem relevant to the request.
+          3. Use AskUserQuestion for anything unclear about the request.
+
+          When finished, capture the user's request verbatim in the `original_user_request`
+          output using this format:
+
+          ```
+          # User's Request (Verbatims)
+          ## Original Request
+          <verbatim of the original request>
+          ## Discussion
+          <All messages exchanged with the user, NOT status messages>
+          Agent: Question
+          User: Answer or extra statement
+          ```
+        outputs:
+          original_user_request:
+            required: true
+          key_reference_files:
+            required: false
+
+      - name: design_alternatives
+        instructions: |
+          Generate competing design alternatives for how to achieve the user's request.
+
+          1. Launch Plan agents (up to 3 in parallel) with different perspectives to
+             design competing approaches. Provide each agent with the full context
+             from the initial_understanding step.
+          2. As agents return their ideas, review each for whether it achieves the
+             user's request. If an idea has gaps, tell the agent and ask it to resolve them.
+          3. Unless the user has told you otherwise or the functionality is trivial,
+             launch an Explore agent to search for existing open-source libraries that
+             could provide substantial functionality. If found, kick off a Plan agent
+             building an approach that uses those libraries.
+          4. If questions arise from the plans, use AskUserQuestion to clarify with the user.
+
+          This step has no outputs — the designs inform the next step.
+        inputs:
+          original_user_request:
+            required: true
+          key_reference_files:
+            required: false
+
+      - name: review_and_synthesize
+        instructions: |
+          Synthesize the design alternatives into a draft plan document.
+
+          1. Write the draft plan to the plan file. DO NOT call ExitPlanMode yet.
+          2. For any new libraries or dependencies in the plan, start an Explore agent
+             to search the web for the latest versions and check for compatibility issues.
+             The plan should include specific versions of libraries to use.
+          3. Include a verification section describing how to test the changes.
+
+          Output the plan file path as `draft_plan_file` and list key affected files.
+        inputs:
+          original_user_request:
+            required: true
+          key_reference_files:
+            required: false
+        outputs:
+          draft_plan_file:
+            required: true
+          key_affected_files:
+            required: false
+
+      - name: enrich_the_plan
+        instructions: |
+          Convert the draft plan into an executable DeepWork job definition.
+
+          1. Break the plan into multiple steps, where each step has validation
+             criteria to verify the output is correct.
+          2. If there is work appropriate for parallelization, define separate
+             workflows for those streams and have the main workflow include a step
+             that instructs starting separate agents to run those flows.
+          3. The final step of the job MUST be `verify_completes_request`, which
+             reviews that the `original_user_request` has been satisfied, or writes
+             a compelling summary of why the implementation differs.
+          4. Call `register_session_job` with the job definition YAML. If it returns
+             validation errors, fix them and call it again.
+          5. You can call `register_session_job` multiple times — each call overwrites
+             the previous definition.
+
+          Output the registered job name as `session_job_name`.
+        inputs:
+          original_user_request:
+            required: true
+          key_reference_files:
+            required: false
+          draft_plan_file:
+            required: true
+          key_affected_files:
+            required: false
+        outputs:
+          session_job_name:
+            required: true
+            review:
+              strategy: individual
+              instructions: |
+                Call `get_session_job` to retrieve the registered job definition.
+                Review whether the job definition faithfully completes the
+                `original_user_request`. Check that:
+                - All requirements from the original request are covered by steps
+                - Each step has clear validation criteria
+                - The final step is verify_completes_request
+                - The step ordering makes sense (dependencies flow correctly)
+          draft_plan_file:
+            required: true
+            review:
+              strategy: individual
+              instructions: |
+                Verify the draft plan file aligns with the registered session job.
+                The plan and the job definition should describe the same work — if
+                they diverge, flag which one needs updating.
+
+      - name: present_plan
+        instructions: |
+          Present the plan to the user for approval.
+
+          1. Amend the plan file to include these execution instructions at the top:
+             ```
+             > **Execution**: Before starting implementation, complete the DeepPlan
+             > workflow by calling `finished_step` on the `present_plan` step, then
+             > call `start_workflow` with job_name=`<session_job_name>`, workflow_name=`main`.
+             ```
+          2. Call `ExitPlanMode` to present the plan to the user. Do NOT call
+             `finished_step` on this step yet — the workflow stays open.
+          3. If the user requests changes after seeing the plan, use `go_to_step`
+             to return to `enrich_the_plan` and revise.
+          4. After the user approves the plan, follow the execution instructions
+             in the plan file: call `finished_step` on this step, then start the
+             session job workflow.
+        inputs:
+          original_user_request:
+            required: true
+          session_job_name:
+            required: true
+          draft_plan_file:
+            required: true
+        outputs:
+          draft_plan_file:
+            required: true
+
+    post_workflow_instructions: |
+      The plan has been approved and the DeepPlan workflow is complete.
+      Now start the execution workflow by calling `start_workflow` with the
+      session job name from the plan's execution instructions.

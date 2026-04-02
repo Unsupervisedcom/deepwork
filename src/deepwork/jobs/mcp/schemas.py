@@ -350,6 +350,37 @@ class GoToStepResponse(BaseModel):
 
 
 # =============================================================================
+# Session Job Models
+# NOTE: These models support register_session_job / get_session_job tools.
+#       Update doc/mcp_interface.md when modifying.
+# =============================================================================
+
+
+class RegisterSessionJobInput(BaseModel):
+    """Input for register_session_job tool."""
+
+    job_name: str = Field(description="Name for the session job (must match ^[a-z][a-z0-9_]*$)")
+    job_definition_yaml: str = Field(
+        description="The full content of a job.yml definition as a YAML string"
+    )
+    session_id: str = Field(
+        description=(
+            "Session identifier. On Claude Code: pass CLAUDE_CODE_SESSION_ID. "
+            "The job is stored under this session and discoverable by start_workflow."
+        ),
+    )
+
+
+class GetSessionJobInput(BaseModel):
+    """Input for get_session_job tool."""
+
+    job_name: str = Field(description="Name of the session job to retrieve")
+    session_id: str = Field(
+        description="Session identifier used when the job was registered.",
+    )
+
+
+# =============================================================================
 # Session State Models
 # =============================================================================
 

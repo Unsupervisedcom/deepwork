@@ -27,7 +27,9 @@ from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     ArgumentValue,
     FinishedStepInput,
+    GetSessionJobInput,
     GoToStepInput,
+    RegisterSessionJobInput,
     StartWorkflowInput,
 )
 from deepwork.jobs.mcp.state import StateManager
@@ -329,6 +331,80 @@ def create_server(
         input_data = GoToStepInput(step_id=step_id, session_id=session_id, agent_id=agent_id)
         response = await tools.go_to_step(input_data)
         return _append_issues(response.model_dump())
+
+    # ---- Session Job tools ----
+
+    @mcp.tool(
+        description=(
+            "Register a transient job definition scoped to the current session. "
+            "The job is validated against the job schema and stored so that "
+            "start_workflow can discover it. Can be called multiple times to overwrite. "
+            "Required: session_id (CLAUDE_CODE_SESSION_ID on Claude Code), "
+            "job_name (lowercase identifier), "
+            "job_definition_yaml (full content of a job.yml as a YAML string). "
+            "Returns validation errors if the definition is invalid."
+        )
+    )
+    async def register_session_job(
+        job_name: str,
+        job_definition_yaml: str,
+        ctx: Context,
+        session_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Register a session-scoped job definition."""
+        if not session_id:
+            return {
+                "error": "session_id is required. Pass CLAUDE_CODE_SESSION_ID on Claude Code."
+            }
+        _log_tool_call(
+            "register_session_job",
+            {"job_name": job_name},
+            session_id=session_id,
+        )
+        tools.project_root = await root_resolver.get_root(ctx)
+        input_data = RegisterSessionJobInput(
+            job_name=job_name,
+            job_definition_yaml=job_definition_yaml,
+            session_id=session_id,
+        )
+        try:
+            result = await tools.register_session_job(input_data)
+        except Exception as e:
+            return _append_issues({"error": str(e)})
+        return _append_issues(result)
+
+    @mcp.tool(
+        description=(
+            "Retrieve the YAML content of a session-scoped job definition "
+            "previously registered with register_session_job. "
+            "Required: session_id, job_name."
+        )
+    )
+    async def get_session_job(
+        job_name: str,
+        ctx: Context,
+        session_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Get a session-scoped job definition."""
+        if not session_id:
+            return {
+                "error": "session_id is required. Pass CLAUDE_CODE_SESSION_ID on Claude Code."
+            }
+        _log_tool_call(
+            "get_session_job",
+            {"job_name": job_name},
+            session_id=session_id,
+        )
+        tools.project_root = await root_resolver.get_root(ctx)
+        input_data = GetSessionJobInput(
+            job_name=job_name,
+            session_id=session_id,
+        )
+        try:
+            result = await tools.get_session_job(input_data)
+        except Exception as e:
+            return _append_issues({"error": str(e)})
+        return _append_issues(result)
 
     # ---- DeepSchema tools ----
 
