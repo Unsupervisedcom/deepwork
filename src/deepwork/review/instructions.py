@@ -159,7 +159,9 @@ def build_instruction_file(task: ReviewTask, review_id: str = "") -> str:
 
     # Pre-fetched git diff for broad rules
     if task.git_diff_output:
-        parts.append("## Output from `git diff main..HEAD` for you to review (sorted by filepath)\n")
+        parts.append(
+            "## Output from `git diff main..HEAD` for you to review (sorted by filepath)\n"
+        )
         parts.append("```diff")
         parts.append(task.git_diff_output.rstrip())
         parts.append("```")
