@@ -19,7 +19,7 @@ After discovering review rules (REVIEW-REQ-002) and changed files (REVIEW-REQ-00
 ### REVIEW-REQ-004.2: Review Task Data Model
 
 1. Each review task MUST be represented as a `ReviewTask` dataclass.
-2. The `ReviewTask` MUST contain: `rule_name` (str), `files_to_review` (list[str] — paths relative to repo root), `instructions` (str), `agent_name` (str | None), `source_location` (str — formatted as `"path:line"`), `additional_files` (list[str] — unchanged matching files, relative to repo root), `all_changed_filenames` (list[str] | None), `git_diff_output` (str | None — pre-fetched diff for broad rules, see REVIEW-REQ-004.11).
+2. The `ReviewTask` MUST contain: `rule_name` (str), `files_to_review` (list[str] — paths relative to repo root), `instructions` (str), `agent_name` (str | None), `source_location` (str — formatted as `"path:line"`), `additional_files` (list[str] — unchanged matching files, relative to repo root), `all_changed_filenames` (list[str] | None).
 3. `files_to_review` MUST always contain at least one file path.
 4. `source_location` MUST be formatted as `"{relative_path}:{line_number}"` where the path is relative to the project root (e.g., `"src/.deepreview:5"`).
 
@@ -71,12 +71,3 @@ After discovering review rules (REVIEW-REQ-002) and changed files (REVIEW-REQ-00
 1. Rules with the same name defined in different `.deepreview` files MUST produce independent `ReviewTask` objects. The system MUST NOT merge or combine matched files across rules from different source directories.
 2. When two `.deepreview` files in different directories define a rule with the same name and the same strategy, and changed files match both rules, the system MUST create separate `ReviewTask` objects — one per directory — each containing only the files that matched within its own `source_dir`.
 3. This isolation is a consequence of REVIEW-REQ-004.1.2 (files outside `source_dir` do not match) but is stated explicitly because `.deepreview` files can be templated or symlinked across directories, making same-name rules a common scenario.
-
-### REVIEW-REQ-004.11: Git Diff Injection for Broad Rules
-
-1. When a rule has strategy `"all_changed_files"` or `"matches_together"` AND its `include` patterns contain `**/*`, the system MUST run `git diff <merge-base>..HEAD` and attach the output to the resulting `ReviewTask` as `git_diff_output`.
-2. The git diff MUST be computed at most once per unique `source_dir` per `match_files_to_rules` invocation, even if multiple rules with the same `source_dir` qualify for injection.
-3. If the git diff command fails or produces empty output, `git_diff_output` MUST be `None`.
-4. Rules with strategy `"individual"` MUST NOT receive `git_diff_output`, regardless of their include patterns.
-5. The `ReviewTask` dataclass MUST include a `git_diff_output: str | None` field defaulting to `None`.
-6. When a rule's `source_dir` is a subdirectory of the project root, the git diff MUST be scoped to that subdirectory (via `-- <relpath>` pathspec). When `source_dir` equals the project root, the diff MUST cover the entire repository.
