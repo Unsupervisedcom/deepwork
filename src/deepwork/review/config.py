@@ -49,7 +49,6 @@ class ReviewTask:
     source_location: str = ""  # e.g. "src/.deepreview:5"
     additional_files: list[str] = field(default_factory=list)  # Unchanged matching files
     all_changed_filenames: list[str] | None = None
-    git_diff_output: str | None = None  # Pre-fetched git diff for broad rules
 
 
 def parse_deepreview_file(filepath: Path) -> list[ReviewRule]:
