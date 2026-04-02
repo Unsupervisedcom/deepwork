@@ -104,6 +104,22 @@ Put in requirements (not the JSON Schema):
 
 **Build the JSON Schema to be as strict and comprehensive as possible.** Use `additionalProperties: false` to catch typos. Use enums for closed sets. Use `if/then` for conditional requirements. Use `pattern` for string formats. Use `$defs` and `$ref` for reusable types. Use `anyOf` for discriminated unions. Use `uniqueItems`, `minLength`, `minItems` where appropriate. A good JSON Schema catches errors at write time before a reviewer ever sees the file. Requirements that duplicate what the schema already enforces are noise — they dilute the reviewer's attention and risk contradicting the schema.
 
+### Verification Commands for Non-JSON Files
+
+For files that aren't JSON or YAML (markdown, shell scripts, plain text, custom formats), `verification_bash_command` serves the same role as `json_schema_path` — it's the primary structural enforcement mechanism. The same principle applies: anything a command can check exactly MUST go in a verification command, not in requirements.
+
+```yaml
+# Example: RFC 2119 requirements files (markdown)
+verification_bash_command:
+  - "grep -nE '^[0-9]+\\.' \"$1\" | grep -vE 'MUST|SHALL|SHOULD|MAY|REQUIRED|RECOMMENDED|OPTIONAL' | { if read -r line; then echo \"FAIL: Requirement without RFC 2119 keyword: $line\"; exit 1; fi; }"
+
+requirements:
+  # Only semantic rules the command can't check
+  testability: "Each requirement MUST be specific enough to be verifiable."
+```
+
+Commands receive the file path as `$1`, must exit 0 on success and non-zero on failure, and have a 30-second timeout.
+
 ### Check SchemaStore for Existing Schemas
 
 Before writing a JSON Schema from scratch, check whether a published schema already exists at [SchemaStore](https://www.schemastore.org/) (`https://json.schemastore.org/<name>.json`). SchemaStore hosts community-maintained schemas for hundreds of config file formats.
