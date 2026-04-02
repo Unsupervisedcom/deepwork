@@ -109,6 +109,7 @@ WRAPPER
                 echo "Commands:"
                 echo "  deepwork --help    CLI (development version)"
                 echo "  claude             Claude Code (with deepwork + learning_agents plugins)"
+                echo "  ./scripts/setup_codex_local_dev.sh  Repoint local Codex state to this checkout"
                 echo "  pytest             Run tests"
                 echo "  ruff check src/    Lint code"
                 echo "  mypy src/          Type check"

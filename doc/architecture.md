@@ -181,11 +181,19 @@ The `get-stack` subcommand:
 Platform-specific delivery is now handled by plugins in `plugins/`:
 
 - **Claude Code**: `plugins/claude/` — installed as a Claude Code plugin via marketplace
+- **Codex**: `plugins/deepwork/` — local Codex plugin bundle surfaced through `.agents/plugins/marketplace.json`
 - **Gemini CLI**: `plugins/gemini/` — skill files copied to `.gemini/skills/`
 
 Codex hook integration is repo-local rather than plugin-local today. When the MCP
 server starts with `--platform codex`, DeepWork ensures `.codex/config.toml`
-enables `codex_hooks` and `.codex/hooks.json` contains the DeepWork hook entries.
+enables `codex_hooks` and `.codex/hooks.json` contains the DeepWork hook entries
+for startup context restoration, post-commit review reminders, and DeepSchema
+write/edit validation.
+
+For contributors, `scripts/setup_codex_local_dev.sh` also updates personal Codex
+state so `~/.codex/config.toml` points `deepwork_current_repo` at the checkout
+where the script was run. If a repo-local Codex plugin bundle exists, the script
+also updates `~/.agents/plugins/marketplace.json` and repoints `~/plugins/deepwork`.
 
 Each plugin contains static files (skill, hooks, MCP config) rather than generated content. The shared skill body lives in `platform/skill-body.md` as the single source of truth.
 

@@ -105,6 +105,7 @@ When debugging issues in this codebase, **always consult `doc/debugging_history/
 
 Current debugging history files:
 - `doc/debugging_history/hooks.md` - Hooks system debugging (rules_check, blocking, queue management)
+- `doc/debugging_history/codex.md` - Codex local dev setup and config drift issues
 
 ## Development Environment
 
@@ -115,6 +116,7 @@ This project uses **Nix Flakes** to provide a reproducible development environme
 - **With direnv (Recommended)**: Just `cd` into the directory. The `.envrc` will automatically load the flake environment.
 - **Without direnv**: Run `nix develop` to enter the shell.
 - **Building**: Run `nix build` to build the package.
+- **Codex local dev**: After switching clones or worktrees, run `nix develop -c ./scripts/setup_codex_local_dev.sh` to repoint local Codex state at this checkout. This updates `~/.codex/config.toml` and, when a repo-local Codex plugin bundle exists, also refreshes `~/plugins/deepwork` and `~/.agents/plugins/marketplace.json`.
 
 **Note**: The flake is configured to automatically allow unfree packages (required for the BSL 1.1 license), so you do not need to set `NIXPKGS_ALLOW_UNFREE=1`.
 
@@ -216,6 +218,16 @@ deepwork/
 │   │   │   ├── deepschema/SKILL.md
 │   │   │   └── review/SKILL.md
 │   │   ├── hooks/        # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
+│   │   └── .mcp.json     # MCP server config
+│   ├── deepwork/         # Codex plugin bundle
+│   │   ├── .codex-plugin/plugin.json
+│   │   ├── README_REVIEWS.md
+│   │   ├── example_reviews/
+│   │   ├── skills/
+│   │   │   ├── configure_reviews/SKILL.md
+│   │   │   ├── deepwork/SKILL.md
+│   │   │   ├── deepschema/SKILL.md
+│   │   │   └── review/SKILL.md
 │   │   └── .mcp.json     # MCP server config
 │   └── gemini/           # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md

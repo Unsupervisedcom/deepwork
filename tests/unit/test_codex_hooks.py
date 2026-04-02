@@ -7,12 +7,14 @@ from pathlib import Path
 from unittest.mock import patch
 
 from deepwork.codex_hooks import (
+    build_deepschema_output,
     build_post_tool_use_output,
     build_session_start_output,
     ensure_codex_hook_entries,
     ensure_codex_hooks_enabled,
     setup_codex_hooks,
 )
+from deepwork.hooks.wrapper import HookOutput
 from deepwork.jobs.mcp.server import create_server
 
 
@@ -86,6 +88,8 @@ class TestCodexHookSetup:
 
         post_tool_groups = hooks["hooks"]["PostToolUse"]
         assert any(group.get("matcher") == "Bash" for group in post_tool_groups)
+        assert any(group.get("matcher") == "Write" for group in post_tool_groups)
+        assert any(group.get("matcher") == "Edit" for group in post_tool_groups)
 
     @patch("deepwork.jobs.mcp.server.setup_codex_hooks")
     def test_create_server_sets_up_codex_hooks(
@@ -156,3 +160,38 @@ class TestCodexHookOutputs:
         )
         assert commit_output["hookSpecificOutput"]["hookEventName"] == "PostToolUse"
         assert "review" in commit_output["hookSpecificOutput"]["additionalContext"].lower()
+
+    def test_build_deepschema_output_uses_tool_input_file_path(self) -> None:
+        with patch("deepwork.codex_hooks.deepschema_write_hook") as mock_hook:
+            mock_hook.return_value = HookOutput(context="schema note")
+
+            result = build_deepschema_output(
+                {
+                    "cwd": "/project",
+                    "tool_input": {"file_path": "src/app.py"},
+                },
+                "write_file",
+            )
+
+        assert result["hookSpecificOutput"]["hookEventName"] == "PostToolUse"
+        assert result["hookSpecificOutput"]["additionalContext"] == "schema note"
+        hook_input = mock_hook.call_args.args[0]
+        assert hook_input.tool_name == "write_file"
+        assert hook_input.tool_input["file_path"] == "src/app.py"
+
+    def test_build_deepschema_output_supports_top_level_file_path_fallback(self) -> None:
+        with patch("deepwork.codex_hooks.deepschema_write_hook") as mock_hook:
+            mock_hook.return_value = HookOutput()
+
+            result = build_deepschema_output(
+                {
+                    "cwd": "/project",
+                    "file_path": "src/app.py",
+                },
+                "edit_file",
+            )
+
+        assert result == {}
+        hook_input = mock_hook.call_args.args[0]
+        assert hook_input.tool_name == "edit_file"
+        assert hook_input.tool_input["file_path"] == "src/app.py"

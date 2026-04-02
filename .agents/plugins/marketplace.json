@@ -1,0 +1,20 @@
+{
+  "name": "deepwork-local",
+  "interface": {
+    "displayName": "DeepWork Local"
+  },
+  "plugins": [
+    {
+      "name": "deepwork",
+      "source": {
+        "source": "local",
+        "path": "./plugins/deepwork"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

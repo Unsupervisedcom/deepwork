@@ -235,6 +235,33 @@ uvx deepwork --version
 uvx deepwork serve --path . --external-runner claude
 ```
 
+## Codex Local Plugin Dev
+
+If you want Codex to point at the DeepWork checkout you are actively developing,
+use the helper script:
+
+```bash
+nix develop -c ./scripts/setup_codex_local_dev.sh
+```
+
+The script is idempotent. It:
+
+1. Updates `~/.codex/config.toml` so `deepwork_current_repo` points at this checkout
+2. Marks this checkout as trusted in Codex
+3. If a repo-local Codex plugin bundle exists, updates `~/.agents/plugins/marketplace.json`
+4. If a repo-local Codex plugin bundle exists, repoints `~/plugins/deepwork` at this checkout
+
+If it makes changes, it prints `changed` and tells you to restart Codex. If
+everything is already aligned, it prints `no-op`.
+
+This repository also ships a repo-local Codex marketplace at
+`.agents/plugins/marketplace.json`, which points at `./plugins/deepwork`.
+After restarting Codex in this checkout, you should see a `DeepWork Local`
+marketplace in the Plugins UI.
+
+When you switch to another clone or worktree, rerun the script from that checkout
+so local Codex state follows the version you are editing.
+
 ## Installing Pre-Release Versions
 
 DeepWork uses pre-release versions (e.g., `0.7.0a1`) during development. By default, `uv` and `pip` skip pre-release versions, so you need to opt in explicitly.

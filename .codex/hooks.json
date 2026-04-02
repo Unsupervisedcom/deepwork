@@ -1,0 +1,48 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx deepwork codex-hook session_start",
+            "statusMessage": "Loading DeepWork context"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx deepwork codex-hook post_tool_use",
+            "statusMessage": "Checking DeepWork post-tool hooks"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx deepwork codex-hook post_write",
+            "statusMessage": "Validating DeepSchema after write"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx deepwork codex-hook post_edit",
+            "statusMessage": "Validating DeepSchema after edit"
+          }
+        ]
+      }
+    ]
+  }
+}

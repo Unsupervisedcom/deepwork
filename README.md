@@ -30,14 +30,28 @@ Then start a new session and define your first job:
 
 ### Codex
 
-When you run the DeepWork MCP server with `--platform codex`, DeepWork bootstraps
-repo-local Codex hooks for you by ensuring:
+This repo includes a Codex plugin bundle at `plugins/deepwork/` plus a repo-local
+marketplace at `.agents/plugins/marketplace.json`. The Codex bundle includes the
+DeepWork skills, bundled review documentation, and MCP configuration.
+
+After restarting Codex in this checkout, open **Plugins**, choose the
+`DeepWork Local` marketplace, and install `deepwork`.
+
+The plugin bundles Codex skills and MCP configuration. DeepWork still keeps
+Codex hooks repo-local: when you run the DeepWork MCP server with
+`--platform codex`, it ensures:
 
 - `.codex/config.toml` enables `codex_hooks`
-- `.codex/hooks.json` contains the DeepWork `SessionStart` and `PostToolUse` handlers
+- `.codex/hooks.json` contains the DeepWork `SessionStart` and `PostToolUse` handlers,
+  including commit reminders and DeepSchema write/edit validation
 
-This keeps the Codex hook setup checked into the project instead of relying on a
-manual one-time local setup step.
+This keeps hook setup checked into the project instead of relying on plugin-local
+hook registration.
+
+For contributors working on DeepWork itself, run `nix develop -c ./scripts/setup_codex_local_dev.sh`
+after switching clones or worktrees so local Codex state points at the checkout
+you are editing. The script reports whether it changed anything and tells you to
+restart Codex when needed.
 
 ---
 

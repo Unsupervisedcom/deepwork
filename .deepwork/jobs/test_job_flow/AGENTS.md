@@ -13,9 +13,9 @@ This folder and its subfolders are managed using `deepwork_jobs` workflows.
 ```
 .
 ├── AGENTS.md          # This file - project context and guidance
-├── job.yml            # Job specification (created by define step)
-├── steps/             # Step instruction files (created by implement step)
-│   └── *.md           # One file per step
+├── job.yml            # Canonical job definition
+├── steps/             # Historical step notes from the original generated job
+│   └── *.md           # Legacy reference material
 ├── hooks/             # Custom validation scripts and prompts
 │   └── *.md|*.sh      # Hook files referenced in job.yml
 ├── scripts/           # Reusable scripts and utilities created during job execution
@@ -29,4 +29,4 @@ This folder and its subfolders are managed using `deepwork_jobs` workflows.
 1. **Use workflows** for structural changes (adding steps, modifying job.yml)
 2. **Direct edits** are fine for minor instruction tweaks
 3. **Run `deepwork_jobs/learn`** after executing job steps to capture improvements
-4. **Run `deepwork install`** after any changes to regenerate commands
+4. The inline `instructions` in `job.yml` are the canonical runtime source for this job

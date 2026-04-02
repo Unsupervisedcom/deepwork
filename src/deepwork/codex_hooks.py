@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from deepwork.cli.jobs import _get_active_sessions
+from deepwork.hooks.deepschema_write import deepschema_write_hook
+from deepwork.hooks.wrapper import HookInput, HookOutput, NormalizedEvent, Platform
 from deepwork.utils.fs import ensure_dir
 
 _TABLE_HEADER_RE = re.compile(r"^\s*\[\[?.*?\]\]?\s*(?:#.*)?$")
@@ -19,6 +21,8 @@ _CODEX_HOOKS_KEY_RE = re.compile(r"^\s*codex_hooks\s*=")
 
 _SESSION_START_COMMAND = "uvx deepwork codex-hook session_start"
 _POST_TOOL_USE_COMMAND = "uvx deepwork codex-hook post_tool_use"
+_POST_WRITE_COMMAND = "uvx deepwork codex-hook post_write"
+_POST_EDIT_COMMAND = "uvx deepwork codex-hook post_edit"
 
 _REVIEW_REMINDER = (
     "You MUST offer to run the `review` skill to review the changes you just committed "
@@ -105,6 +109,20 @@ def ensure_codex_hook_entries(hooks_path: Path) -> bool:
         command=_POST_TOOL_USE_COMMAND,
         status_message="Checking DeepWork post-tool hooks",
     )
+    changed |= _ensure_command_hook(
+        hooks=hooks,
+        event_name="PostToolUse",
+        matcher="Write",
+        command=_POST_WRITE_COMMAND,
+        status_message="Validating DeepSchema after write",
+    )
+    changed |= _ensure_command_hook(
+        hooks=hooks,
+        event_name="PostToolUse",
+        matcher="Edit",
+        command=_POST_EDIT_COMMAND,
+        status_message="Validating DeepSchema after edit",
+    )
 
     if not changed and hooks_path.exists():
         return False
@@ -159,6 +177,24 @@ def build_post_tool_use_output(hook_input: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def build_deepschema_output(
+    hook_input: dict[str, Any],
+    tool_name: str,
+) -> dict[str, Any]:
+    """Build Codex PostToolUse hook output for DeepSchema write/edit validation."""
+    normalized = HookInput(
+        platform=Platform.CLAUDE,
+        event=NormalizedEvent.AFTER_TOOL,
+        session_id=str(hook_input.get("session_id") or ""),
+        cwd=str(hook_input.get("cwd") or ""),
+        tool_name=tool_name,
+        tool_input=_extract_tool_input(hook_input),
+        raw_input=hook_input,
+    )
+    result = deepschema_write_hook(normalized)
+    return _hook_output_to_codex_payload(result)
+
+
 def run_codex_hook(hook_name: str, raw_input: str) -> str:
     """Execute a DeepWork Codex hook and return a JSON response string."""
     try:
@@ -173,6 +209,10 @@ def run_codex_hook(hook_name: str, raw_input: str) -> str:
         output = build_session_start_output(parsed)
     elif hook_name == "post_tool_use":
         output = build_post_tool_use_output(parsed)
+    elif hook_name == "post_write":
+        output = build_deepschema_output(parsed, "write_file")
+    elif hook_name == "post_edit":
+        output = build_deepschema_output(parsed, "edit_file")
     else:
         raise CodexHookSetupError(f"Unknown Codex hook: {hook_name}")
 
@@ -222,6 +262,41 @@ def _find_matching_line(lines: list[str], pattern: re.Pattern[str]) -> int | Non
         if pattern.match(line):
             return i
     return None
+
+
+def _extract_tool_input(hook_input: dict[str, Any]) -> dict[str, Any]:
+    """Extract tool input from Codex hook payloads."""
+    tool_input = hook_input.get("tool_input")
+    if isinstance(tool_input, dict):
+        return tool_input
+
+    fallback: dict[str, Any] = {}
+    if "file_path" in hook_input:
+        fallback["file_path"] = hook_input["file_path"]
+    if "command" in hook_input:
+        fallback["command"] = hook_input["command"]
+    return fallback
+
+
+def _hook_output_to_codex_payload(output: HookOutput) -> dict[str, Any]:
+    """Convert a normalized hook output into Codex command-hook JSON."""
+    if output.context:
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PostToolUse",
+                "additionalContext": output.context,
+            }
+        }
+    if output.raw_output:
+        return output.raw_output
+    if output.decision or output.reason:
+        payload: dict[str, Any] = {}
+        if output.decision:
+            payload["decision"] = output.decision
+        if output.reason:
+            payload["reason"] = output.reason
+        return payload
+    return {}
 
 
 def _ensure_command_hook(

@@ -1,0 +1,39 @@
+{
+  "name": "deepwork",
+  "version": "0.10.0",
+  "description": "Framework for AI-powered multi-step workflows with quality gates",
+  "author": {
+    "name": "DeepWork",
+    "url": "https://github.com/Unsupervisedcom/deepwork"
+  },
+  "homepage": "https://github.com/Unsupervisedcom/deepwork#readme",
+  "repository": "https://github.com/Unsupervisedcom/deepwork",
+  "license": "BUSL-1.1",
+  "keywords": [
+    "agents",
+    "workflow",
+    "automation",
+    "review"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "DeepWork",
+    "shortDescription": "Structured multi-step workflows for Codex",
+    "longDescription": "Run DeepWork workflows in Codex with bundled skills and MCP configuration, while keeping DeepWork's Codex hooks repo-local.",
+    "developerName": "DeepWork",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/Unsupervisedcom/deepwork",
+    "defaultPrompt": [
+      "Use DeepWork to create a reusable workflow for competitive research.",
+      "Use DeepWork to continue the active workflow in this repository.",
+      "Use DeepWork to inspect the available workflows and help me pick one."
+    ],
+    "brandColor": "#0F766E",
+    "screenshots": []
+  }
+}

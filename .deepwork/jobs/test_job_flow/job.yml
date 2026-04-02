@@ -5,22 +5,12 @@ step_arguments:
   - name: job_yml
     description: "The job.yml file created by the sub-agent for the detailed_test_review job"
     type: file_path
-    review:
-      strategy: individual
-      instructions: |
-        Verify this job.yml defines two steps (run_tests and update_readme) with correct
-        data flow. run_tests MUST have both test_files and coverage_report outputs.
-        update_readme MUST take coverage_report as input and produce a readme output.
-        Reviews MUST be defined: a per-file review on test_files for on-topic tests,
-        and a step-level review for coverage threshold on run_tests.
-
   - name: friction_report
-    description: "Report documenting friction points encountered during the sub-agent job creation process, with specific transcript references and actionable observations"
-    type: string
-
+    description: "Markdown report describing friction encountered during the nested job-creation run"
+    type: file_path
   - name: recommendations
-    description: "Actionable engineering recommendations for reducing job creation friction, mapped to specific friction points"
-    type: string
+    description: "Markdown report with actionable improvements to reduce job-creation friction"
+    type: file_path
 
 workflows:
   run:
@@ -40,103 +30,83 @@ workflows:
     steps:
       - name: create_test_review_job
         instructions: |
-          # Create Test Review Job via Sub-Agent
+          Launch the DeepWork `deepwork_jobs/new_job` workflow as a nested workflow to create a temporary job called `detailed_test_review`. This step should exercise the full job creation pipeline end-to-end without needing user clarification.
 
-          Launch the DeepWork `new_job` workflow as a nested sub-agent to create a job
-          called `detailed_test_review`. This exercises the full job creation pipeline end-to-end.
+          Use a goal that contains all of the following requirements:
 
-          ## Task
+          - Job name: `detailed_test_review`
+          - Summary: `Run tests with coverage and update README with results`
+          - Two steps named `run_tests` and `update_readme`
+          - `run_tests` must run the project's tests with coverage enabled
+          - `run_tests` must output all executed test files and the coverage report
+          - `run_tests` must include review coverage for test relevance and coverage threshold
+          - `update_readme` must consume the coverage report and update the README with coverage percentage and an as-of date at the end
 
-          Start the `deepwork_jobs/new_job` workflow as a nested workflow (using `start_workflow`),
-          providing prescriptive instructions so the sub-agent completes without user questions.
-
-          ### Process
-
-          1. **Start the nested workflow**
-             Call `start_workflow` with `job_name: deepwork_jobs`, `workflow_name: new_job`,
-             `instance_id: detailed_test_review`. Use a goal containing ALL details below.
-
-          2. **Guide through the `define` step** with these specs:
-
-             **Job name**: `detailed_test_review`
-             **Summary**: "Run tests with coverage and update README with results"
-
-             **Step 1 - `run_tests`**: Run all tests with coverage. No user inputs.
-             - Output `test_files` (type: file_path): all test files executed
-             - Output `coverage_report` (type: file_path): the coverage report
-             - Review on test_files: check each file's tests are on-topic
-             - Process requirement: coverage MUST be above 60%
-
-             **Step 2 - `update_readme`**: Update README with coverage numbers.
-             - Input: coverage_report from run_tests
-             - Output `readme` (type: file_path): updated README with coverage % and as-of date
-
-          3. **Follow through all nested workflow steps** (define, implement, test, iterate)
-
-          4. **Collect output**: the job.yml at `.deepwork/jobs/detailed_test_review/job.yml`
+          Follow the nested workflow through all of its steps until it completes. When done, return `.deepwork/jobs/detailed_test_review/job.yml` as the `job_yml` output.
         outputs:
-          job_yml: {}
+          job_yml:
+            required: true
+            review:
+              strategy: matches_together
+              instructions: |
+                Review the generated job definition.
+
+                Confirm all of the following:
+                - It defines exactly two steps named `run_tests` and `update_readme`.
+                - `run_tests` produces outputs for the executed test files and the coverage report.
+                - `run_tests` includes review coverage for both test relevance and the coverage threshold.
+                - `update_readme` consumes the coverage report and produces a README output.
 
       - name: review_creation_process
         instructions: |
-          # Review Sub-Agent Transcript and Document Friction
+          Review the nested workflow execution from the previous step and write a friction report at `.deepwork/tmp/job_creation_friction.md`.
 
-          Review the transcript from step 1's sub-agent, verify it completed successfully,
-          and document friction points encountered during job creation.
+          The report must:
+          - reference concrete events from the nested execution or resulting artifacts
+          - note which workflow phases completed cleanly versus requiring retries or workarounds
+          - identify friction such as validation failures, confusing instructions, unnecessary retries, or missing guidance
+          - describe impact and an initial direction for fixing each friction point
 
-          ## Task
-
-          1. **Review the transcript**: Note each workflow step executed and whether it
-             completed on first try or required retries.
-
-          2. **Verify completion**: Confirm `.deepwork/jobs/detailed_test_review/job.yml`
-             exists with expected structure (2 steps, correct outputs, reviews). Check
-             step instruction files exist in `steps/`.
-
-          3. **Identify friction points**: Look for errors, workarounds, retries, confusion,
-             unnecessary steps, slow paths, and missing guidance in the transcript.
-
-          4. **Clean up**: Delete `.deepwork/jobs/detailed_test_review/` — it was only
-             created to exercise the pipeline.
-
-          5. **Compose friction report** as a string output with:
-             - Summary of how the process went
-             - Completion status per workflow step
-             - Each friction point with: step, what happened, impact, workaround, potential fix
-             - Things that worked well
-             - Overall assessment
+          Also verify that `.deepwork/jobs/detailed_test_review/job.yml` was created as expected, note any deviations from the requested spec, and then delete the temporary `.deepwork/jobs/detailed_test_review/` job directory after the review is complete.
         inputs:
-          job_yml: {}
+          job_yml:
+            required: true
         outputs:
-          friction_report: {}
+          friction_report:
+            required: true
+            review:
+              strategy: matches_together
+              instructions: |
+                Review the friction report.
+
+                Confirm all of the following:
+                - It references specific events from the nested workflow execution or resulting files.
+                - The documented friction points are concrete and actionable.
+                - It distinguishes what went smoothly from what created avoidable friction.
 
       - name: identify_improvements
         instructions: |
-          # Investigate Code and Propose Improvements
+          Read the friction report, then investigate the DeepWork instructions and code to identify concrete improvements.
 
-          Read the friction report, investigate DeepWork system code, and propose concrete
-          improvements to reduce job creation friction.
+          At minimum:
+          - inspect the `deepwork_jobs/new_job` workflow definition and related instructions/templates
+          - inspect the code paths in `src/deepwork/` that appear related to the documented friction
+          - turn each friction point into one or more implementation recommendations with clear file targets, expected impact, effort, and risk
+          - prioritize the recommendations into quick wins versus larger investments
 
-          ## Task
-
-          1. **Review the friction report** (provided as input) and categorize each friction
-             point by type (error, UX, missing feature, documentation gap, etc.)
-
-          2. **Investigate the new_job workflow**: Read the workflow definition and step
-             instruction files in `src/deepwork/standard_jobs/deepwork_jobs/`
-
-          3. **Investigate system code**: Look at MCP server code in `src/deepwork/`,
-             templates, scripts, and tooling. Identify code-level friction causes.
-
-          4. **Develop recommendations**: For each friction point, propose changes with:
-             specific file(s), why it helps, effort estimate (Small/Medium/Large), and risk.
-
-          5. **Compose recommendations** as a string output, prioritized by impact-to-effort
-             ratio, grouped into quick wins vs larger investments.
+          Write the recommendations report to `.deepwork/tmp/improvement_recommendations.md` and return it as the `recommendations` output.
         inputs:
-          friction_report: {}
+          friction_report:
+            required: true
         outputs:
-          recommendations: {}
-        process_requirements:
-          addresses_friction: "Each recommendation MUST clearly map to a documented friction point from the friction report."
-          actionable: "Recommendations MUST point to specific files and describe concrete changes, not abstract suggestions."
+          recommendations:
+            required: true
+            review:
+              strategy: matches_together
+              instructions: |
+                Read `friction_report` while reviewing the recommendations.
+
+                Confirm all of the following:
+                - Each recommendation clearly addresses a documented friction point.
+                - Recommendations are specific enough to implement, including the relevant files or subsystems.
+                - Recommendations are technically feasible within the DeepWork architecture.
