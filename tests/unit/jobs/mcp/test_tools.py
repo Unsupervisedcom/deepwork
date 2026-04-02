@@ -219,6 +219,7 @@ class TestStartWorkflow:
 
         assert step.session_id == SESSION_ID
         assert step.step_id == "step1"
+        assert step.project_root == str(tools.project_root)
         assert "Do the first step" in step.step_instructions
         assert len(step.step_expected_outputs) == 1
         assert step.step_expected_outputs[0].name == "output1"

@@ -267,6 +267,7 @@ class TestStartWorkflowTool:
                 begin_step=ActiveStepInfo(
                     session_id="sess-1",
                     step_id="step1",
+                    project_root=str(tmp_path),
                     job_dir="/tmp/jobs/myjob",
                     step_instructions="Do the thing",
                     step_expected_outputs=[],
@@ -304,6 +305,7 @@ class TestStartWorkflowTool:
                 begin_step=ActiveStepInfo(
                     session_id="s",
                     step_id="s1",
+                    project_root=str(tmp_path),
                     job_dir="/tmp/jobs/j",
                     step_instructions="go",
                     step_expected_outputs=[],
@@ -418,6 +420,7 @@ class TestGoToStepTool:
                 begin_step=ActiveStepInfo(
                     session_id="s",
                     step_id="step1",
+                    project_root=str(tmp_path),
                     job_dir="/tmp/jobs/j",
                     step_instructions="Redo",
                     step_expected_outputs=[],

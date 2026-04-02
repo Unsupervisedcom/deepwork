@@ -42,7 +42,7 @@ The DeepWork MCP server exposes workflow tools to AI agents via the Model Contex
 7. The tool MUST create a new workflow session via `StateManager`.
 8. The tool MUST resolve input values for the first step from provided `inputs` and previous step outputs.
 9. The tool MUST mark the first step as started with resolved input values.
-10. The response MUST contain a `begin_step` (`ActiveStepInfo`) with: `session_id`, `step_id`, `job_dir`, `step_expected_outputs`, `step_inputs`, `step_instructions`, `common_job_info`.
+10. The response MUST contain a `begin_step` (`ActiveStepInfo`) with: `session_id`, `step_id`, `project_root`, `job_dir`, `step_expected_outputs`, `step_inputs`, `step_instructions`, `common_job_info`. The `project_root` field MUST be the absolute path the MCP server uses for job discovery and `.deepwork/` operations.
 11. The response MUST contain a `stack` field and an `important_note` field instructing the agent to clarify ambiguous requests.
 12. Each expected output MUST include `name`, `type`, `description`, `required`, and `syntax_for_finished_step_tool`.
 

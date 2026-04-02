@@ -348,17 +348,17 @@ workflows:
 
           Only after you have complete understanding, create the job directory and `job.yml` file.
 
-          **Note**: `[job_dir]` refers to the `job_dir` path returned in the workflow response when this workflow was started. It points to the directory containing this job's definition, scripts, and templates.
+          **Note**: `[job_dir]` refers to the `job_dir` path returned in the workflow response when this workflow was started. It points to the directory containing this job's definition, scripts, and templates. `[project_root]` refers to the `project_root` path from the same response — the MCP server's canonical root directory.
 
           **First, create the directory structure** using the `make_new_job.sh` script:
 
           ```bash
-          [job_dir]/make_new_job.sh [job_name]
+          [job_dir]/make_new_job.sh --project-root [project_root] [job_name]
           ```
 
-          **Then create the job.yml file** at `.deepwork/jobs/[job_name]/job.yml`
+          **Then create the job.yml file** at `[project_root]/.deepwork/jobs/[job_name]/job.yml`
 
-          (Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`. Replace `[job_dir]` with the actual `job_dir` path from the workflow response.)
+          (Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`. Replace `[job_dir]` and `[project_root]` with the actual paths from the workflow response.)
 
           **Template reference**: See `[job_dir]/templates/job.yml.template` for the standard structure.
 
