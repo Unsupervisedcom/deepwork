@@ -289,6 +289,7 @@ interface StepInputInfo {
 interface ActiveStepInfo {
   session_id: string;              // Session ID — use this for all subsequent finished_step, abort_workflow, go_to_step calls
   step_id: string;                 // ID of the current step
+  project_root: string;            // Absolute path to the MCP server's project root (use for .deepwork/ operations)
   job_dir: string;                 // Absolute path to job directory (templates, scripts, etc.)
   step_expected_outputs: ExpectedOutput[]; // Expected outputs with type and format hints
   step_inputs: StepInputInfo[];    // Inputs provided to this step with their values
@@ -445,6 +446,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
+| 2.3.0 | Added `project_root` field to `ActiveStepInfo` — the absolute path to the MCP server's project root. Agents use this as the base directory for `.deepwork/` operations (e.g. creating jobs at `[project_root]/.deepwork/jobs/`). The `make_new_job.sh` script now requires `--project-root` instead of inferring the root from `git rev-parse`. |
 | 2.2.0 | `session_id` is now optional (`str | None`) on `start_workflow` only. On Claude Code (platform `"claude"`), the server raises `ToolError` if omitted. On other platforms, omitting it auto-generates a stable UUID; callers use the returned `begin_step.session_id` for all subsequent calls. `finished_step`, `abort_workflow`, and `go_to_step` continue to require `session_id`. Added `inputs` optional parameter to `start_workflow` for passing step argument values directly at workflow start. Added `issue_detected` optional field to all tool responses — present when the server detects configuration issues at startup; instructs agent to suggest repair to the user. |
 | 2.1.0 | Added `important_note` field to `StartWorkflowResponse` — instructs agents to clarify ambiguous user requests via `AskUserQuestion` when available. |
 | 2.0.0 | **Breaking**: `session_id` is now a required `string` parameter on all mutation tools (`start_workflow`, `finished_step`, `abort_workflow`, `go_to_step`). Added `agent_id` optional parameter for sub-agent scoping — sub-agents get their own isolated workflow stacks. State persistence path changed to `.deepwork/tmp/sessions/<platform>/session-<id>/state.json` (with sub-agent state in `agent_<agent_id>.json`). |

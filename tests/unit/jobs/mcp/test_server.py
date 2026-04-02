@@ -122,6 +122,7 @@ class TestCreateServerWithIssues:
         with patch("deepwork.jobs.mcp.server.detect_issues", return_value=[issue]):
             mcp = create_server(project_root=tmp_path)
 
+        assert mcp.instructions is not None
         assert "ISSUE DETECTED" in mcp.instructions
 
     def test_no_issue_warning_when_no_issues(self, tmp_path: Path) -> None:
@@ -129,6 +130,7 @@ class TestCreateServerWithIssues:
         with patch("deepwork.jobs.mcp.server.detect_issues", return_value=[]):
             mcp = create_server(project_root=tmp_path)
 
+        assert mcp.instructions is not None
         assert "ISSUE DETECTED" not in mcp.instructions
 
 
@@ -300,8 +302,6 @@ class TestStartWorkflowTool:
         mcp, mock_tools = _make_server_with_mocked_tools(tmp_path)
         mock_tools.start_workflow = AsyncMock(
             return_value=StartWorkflowResponse(
-                job_name="j",
-                workflow_name="w",
                 begin_step=ActiveStepInfo(
                     session_id="s",
                     step_id="s1",
@@ -516,6 +516,7 @@ class TestReviewTools:
             mcp = create_server(project_root=tmp_path)
             result = await mcp.call_tool("get_review_instructions", {"files": ["src/foo.py"]})
 
+        assert result.structured_content is not None
         data = result.structured_content["result"]
         assert data == "Review task list"
 
@@ -537,6 +538,7 @@ class TestReviewTools:
             mcp = create_server(project_root=tmp_path)
             result = await mcp.call_tool("get_review_instructions", {})
 
+        assert result.structured_content is not None
         data = result.structured_content["result"]
         assert "Review error" in data
         assert "git not found" in data
@@ -560,6 +562,7 @@ class TestReviewTools:
                 {"only_rules_matching_files": ["test.py"]},
             )
 
+        assert result.structured_content is not None
         data = result.structured_content["result"]
         assert len(data) == 1
         assert data[0]["name"] == "rule1"
@@ -580,6 +583,7 @@ class TestReviewTools:
             mcp = create_server(project_root=tmp_path)
             result = await mcp.call_tool("mark_review_as_passed", {"review_id": "abc123"})
 
+        assert result.structured_content is not None
         data = result.structured_content["result"]
         assert "abc123" in data
 
@@ -599,6 +603,7 @@ class TestReviewTools:
             mcp = create_server(project_root=tmp_path)
             result = await mcp.call_tool("mark_review_as_passed", {"review_id": "bad"})
 
+        assert result.structured_content is not None
         data = result.structured_content["result"]
         assert "Validation error" in data
         assert "Invalid review_id" in data
