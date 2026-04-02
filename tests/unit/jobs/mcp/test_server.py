@@ -476,9 +476,7 @@ class TestRegisterSessionJobTool:
     async def test_register_session_job_handles_exception(self, tmp_path: Path) -> None:
         """register_session_job catches exceptions and returns error."""
         mcp, mock_tools = _make_server_with_mocked_tools(tmp_path)
-        mock_tools.register_session_job = AsyncMock(
-            side_effect=Exception("validation failed")
-        )
+        mock_tools.register_session_job = AsyncMock(side_effect=Exception("validation failed"))
 
         result = await mcp.call_tool(
             "register_session_job",
@@ -524,9 +522,7 @@ class TestGetSessionJobTool:
     async def test_get_session_job_handles_exception(self, tmp_path: Path) -> None:
         """get_session_job catches exceptions and returns error."""
         mcp, mock_tools = _make_server_with_mocked_tools(tmp_path)
-        mock_tools.get_session_job = AsyncMock(
-            side_effect=Exception("not found")
-        )
+        mock_tools.get_session_job = AsyncMock(side_effect=Exception("not found"))
 
         result = await mcp.call_tool(
             "get_session_job",

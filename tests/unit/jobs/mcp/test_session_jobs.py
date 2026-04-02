@@ -8,7 +8,6 @@ from deepwork.jobs.mcp.schemas import (
     GetSessionJobInput,
     RegisterSessionJobInput,
     StartWorkflowInput,
-    StepStatus,
 )
 from deepwork.jobs.mcp.state import StateManager
 from deepwork.jobs.mcp.tools import ToolError, WorkflowTools
@@ -73,7 +72,7 @@ def tools(project_root: Path, state_manager: StateManager) -> WorkflowTools:
 
 
 class TestRegisterSessionJob:
-    @pytest.mark.anyio
+    @pytest.mark.asyncio
     async def test_register_valid_job(self, tools: WorkflowTools) -> None:
         inp = RegisterSessionJobInput(
             job_name="my_plan",
@@ -84,7 +83,7 @@ class TestRegisterSessionJob:
         assert result["status"] == "registered"
         assert result["job_name"] == "my_plan"
 
-    @pytest.mark.anyio
+    @pytest.mark.asyncio
     async def test_register_invalid_yaml_syntax(self, tools: WorkflowTools) -> None:
         inp = RegisterSessionJobInput(
             job_name="bad",
@@ -94,7 +93,7 @@ class TestRegisterSessionJob:
         with pytest.raises(ToolError, match="Invalid YAML syntax"):
             await tools.register_session_job(inp)
 
-    @pytest.mark.anyio
+    @pytest.mark.asyncio
     async def test_register_invalid_schema(self, tools: WorkflowTools) -> None:
         inp = RegisterSessionJobInput(
             job_name="my_plan",
@@ -104,7 +103,7 @@ class TestRegisterSessionJob:
         with pytest.raises(ToolError, match="validation failed"):
             await tools.register_session_job(inp)
 
-    @pytest.mark.anyio
+    @pytest.mark.asyncio
     async def test_register_invalid_job_name(self, tools: WorkflowTools) -> None:
         inp = RegisterSessionJobInput(
             job_name="Bad-Name",
@@ -114,7 +113,7 @@ class TestRegisterSessionJob:
         with pytest.raises(ToolError, match="Invalid job name"):
             await tools.register_session_job(inp)
 
-    @pytest.mark.anyio
+    @pytest.mark.asyncio
     async def test_register_overwrites(self, tools: WorkflowTools) -> None:
         inp = RegisterSessionJobInput(
             job_name="my_plan",
@@ -139,7 +138,7 @@ class TestRegisterSessionJob:
 
 
 class TestGetSessionJob:
-    @pytest.mark.anyio
+    @pytest.mark.asyncio
     async def test_get_registered_job(self, tools: WorkflowTools) -> None:
         reg_inp = RegisterSessionJobInput(
             job_name="my_plan",
@@ -153,7 +152,7 @@ class TestGetSessionJob:
         assert result["job_name"] == "my_plan"
         assert "my_plan" in result["job_definition_yaml"]
 
-    @pytest.mark.anyio
+    @pytest.mark.asyncio
     async def test_get_nonexistent_job(self, tools: WorkflowTools) -> None:
         get_inp = GetSessionJobInput(job_name="nonexistent", session_id=SESSION_ID)
         with pytest.raises(ToolError, match="not found"):
@@ -161,7 +160,7 @@ class TestGetSessionJob:
 
 
 class TestSessionJobDiscovery:
-    @pytest.mark.anyio
+    @pytest.mark.asyncio
     async def test_start_workflow_finds_session_job(
         self, tools: WorkflowTools, project_root: Path
     ) -> None:
@@ -182,10 +181,8 @@ class TestSessionJobDiscovery:
         response = await tools.start_workflow(start_inp)
         assert response.begin_step.step_id == "do_work"
 
-    @pytest.mark.anyio
-    async def test_session_job_isolated_by_session_id(
-        self, tools: WorkflowTools
-    ) -> None:
+    @pytest.mark.asyncio
+    async def test_session_job_isolated_by_session_id(self, tools: WorkflowTools) -> None:
         """A session job registered under one session_id should not be found by another."""
         reg_inp = RegisterSessionJobInput(
             job_name="my_plan",

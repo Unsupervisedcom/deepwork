@@ -353,9 +353,7 @@ def create_server(
     ) -> dict[str, Any]:
         """Register a session-scoped job definition."""
         if not session_id:
-            return {
-                "error": "session_id is required. Pass CLAUDE_CODE_SESSION_ID on Claude Code."
-            }
+            return {"error": "session_id is required. Pass CLAUDE_CODE_SESSION_ID on Claude Code."}
         _log_tool_call(
             "register_session_job",
             {"job_name": job_name},
@@ -387,9 +385,7 @@ def create_server(
     ) -> dict[str, Any]:
         """Get a session-scoped job definition."""
         if not session_id:
-            return {
-                "error": "session_id is required. Pass CLAUDE_CODE_SESSION_ID on Claude Code."
-            }
+            return {"error": "session_id is required. Pass CLAUDE_CODE_SESSION_ID on Claude Code."}
         _log_tool_call(
             "get_session_job",
             {"job_name": job_name},

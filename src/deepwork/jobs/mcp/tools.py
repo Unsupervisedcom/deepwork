@@ -160,9 +160,7 @@ class WorkflowTools:
             workflows=workflows,
         )
 
-    def _get_job(
-        self, job_name: str, session_id: str | None = None
-    ) -> JobDefinition:
+    def _get_job(self, job_name: str, session_id: str | None = None) -> JobDefinition:
         """Get a specific job by name.
 
         Checks session-scoped jobs first (if session_id provided),
@@ -175,9 +173,7 @@ class WorkflowTools:
                 try:
                     return parse_job_definition(session_job_dir)
                 except ParseError as e:
-                    raise ToolError(
-                        f"Failed to parse session job '{job_name}': {e}"
-                    ) from e
+                    raise ToolError(f"Failed to parse session job '{job_name}': {e}") from e
 
         job_dir = find_job_dir(self.project_root, job_name)
         if job_dir is None:
@@ -689,9 +685,7 @@ class WorkflowTools:
         """Get the directory for session-scoped jobs."""
         return self.state_manager.sessions_dir / f"session-{session_id}" / "jobs"
 
-    async def register_session_job(
-        self, input_data: RegisterSessionJobInput
-    ) -> dict[str, str]:
+    async def register_session_job(self, input_data: RegisterSessionJobInput) -> dict[str, str]:
         """Register a transient job definition scoped to the current session.
 
         Writes the job YAML to a session-scoped directory and validates it
@@ -706,9 +700,7 @@ class WorkflowTools:
 
         # Validate job name format
         if not re.match(r"^[a-z][a-z0-9_]*$", job_name):
-            raise ToolError(
-                f"Invalid job name '{job_name}': must match ^[a-z][a-z0-9_]*$"
-            )
+            raise ToolError(f"Invalid job name '{job_name}': must match ^[a-z][a-z0-9_]*$")
 
         # Write YAML to session jobs directory
         job_dir = self._session_jobs_dir(sid) / job_name
@@ -752,11 +744,9 @@ class WorkflowTools:
         job_file = self._session_jobs_dir(sid) / input_data.job_name / "job.yml"
 
         if not job_file.exists():
-            raise ToolError(
-                f"Session job '{input_data.job_name}' not found for session '{sid}'."
-            )
+            raise ToolError(f"Session job '{input_data.job_name}' not found for session '{sid}'.")
 
-        async with aiofiles.open(job_file, "r") as f:
+        async with aiofiles.open(job_file) as f:
             content = await f.read()
 
         return {

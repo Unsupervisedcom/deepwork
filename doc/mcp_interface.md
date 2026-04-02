@@ -10,7 +10,7 @@ This document describes the Model Context Protocol (MCP) tools exposed by the De
 
 ## Tools
 
-DeepWork exposes nine MCP tools:
+DeepWork exposes eleven MCP tools:
 
 ### 1. `get_workflows`
 
@@ -263,6 +263,51 @@ Array<{
 }>
 ```
 
+### 10. `register_session_job`
+
+Register a transient job definition scoped to the current session. The job is validated against the job schema and stored so that `start_workflow` can discover it. Can be called multiple times to overwrite.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `job_name` | `string` | Yes | Lowercase identifier for the job (must match `^[a-z][a-z0-9_]*$`) |
+| `job_definition_yaml` | `string` | Yes | Full content of a job.yml definition as a YAML string |
+| `session_id` | `string` | Yes | Session identifier (CLAUDE_CODE_SESSION_ID on Claude Code) |
+
+#### Returns
+
+```typescript
+{
+  status: "registered";
+  job_name: string;
+  job_dir: string;       // Absolute path to the session job directory
+  message: string;       // Confirmation message
+}
+```
+
+On validation failure, returns `{ error: string }` with details about what failed.
+
+### 11. `get_session_job`
+
+Retrieve the YAML content of a session-scoped job definition previously registered with `register_session_job`.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `job_name` | `string` | Yes | Name of the session job to retrieve |
+| `session_id` | `string` | Yes | Session identifier used when the job was registered |
+
+#### Returns
+
+```typescript
+{
+  job_name: string;
+  job_definition_yaml: string;  // Full YAML content of the job definition
+}
+```
+
 ---
 
 ## Shared Types
@@ -446,7 +491,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
-| 2.3.0 | Added `project_root` field to `ActiveStepInfo` — the absolute path to the MCP server's project root. Agents use this as the base directory for `.deepwork/` operations (e.g. creating jobs at `[project_root]/.deepwork/jobs/`). The `make_new_job.sh` script now requires `--project-root` instead of inferring the root from `git rev-parse`. |
+| 2.3.0 | Added `project_root` field to `ActiveStepInfo` — the absolute path to the MCP server's project root. Added `register_session_job` and `get_session_job` tools for transient session-scoped job definitions. Session jobs are discoverable by `start_workflow` via `session_id` lookup — they take priority over standard discovery. Added `deepplan` standard job with `create_deep_plan` workflow. |
 | 2.2.0 | `session_id` is now optional (`str | None`) on `start_workflow` only. On Claude Code (platform `"claude"`), the server raises `ToolError` if omitted. On other platforms, omitting it auto-generates a stable UUID; callers use the returned `begin_step.session_id` for all subsequent calls. `finished_step`, `abort_workflow`, and `go_to_step` continue to require `session_id`. Added `inputs` optional parameter to `start_workflow` for passing step argument values directly at workflow start. Added `issue_detected` optional field to all tool responses — present when the server detects configuration issues at startup; instructs agent to suggest repair to the user. |
 | 2.1.0 | Added `important_note` field to `StartWorkflowResponse` — instructs agents to clarify ambiguous user requests via `AskUserQuestion` when available. |
 | 2.0.0 | **Breaking**: `session_id` is now a required `string` parameter on all mutation tools (`start_workflow`, `finished_step`, `abort_workflow`, `go_to_step`). Added `agent_id` optional parameter for sub-agent scoping — sub-agents get their own isolated workflow stacks. State persistence path changed to `.deepwork/tmp/sessions/<platform>/session-<id>/state.json` (with sub-agent state in `agent_<agent_id>.json`). |
