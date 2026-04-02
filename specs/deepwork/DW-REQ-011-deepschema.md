@@ -1,5 +1,7 @@
 # DW-REQ-011: DeepSchema System
 
+## Overview
+
 The DeepSchema system provides rich, file-level schemas with automatic validation on writes and synthetic review rule generation.
 
 ## DW-REQ-011.1: Schema Types
@@ -42,13 +44,13 @@ The DeepSchema system provides rich, file-level schemas with automatic validatio
 
 1. A file MUST match a named schema if any of the schema's `matchers` glob patterns match the file's project-relative path.
 2. A file MUST match an anonymous schema if a `.deepschema.<filename>.yml` file exists alongside it.
-3. The `get_schemas_for_file_fast()` function MUST avoid full tree walks — it MUST only scan named schema folders and check for the anonymous schema file at O(1).
+3. The `get_schemas_for_file_fast()` function MUST avoid full tree walks by only scanning named schema folders and checking for the anonymous schema file at O(1).
 
 ## DW-REQ-011.7: Write Hook (PostToolUse)
 
 1. The write hook MUST fire on PostToolUse events for Write and Edit tools.
 2. For each applicable schema, the hook MUST inject a conformance note: "Note: this file must conform to the DeepSchema at `<path>`".
-3. If `json_schema_path` is set, the hook MUST validate the written file against the JSON Schema. YAML files (`.yml`/`.yaml`) MUST be parsed as YAML before validation.
+3. If `json_schema_path` is set, the hook MUST validate the written file against the JSON Schema, parsing YAML files (`.yml`/`.yaml`) as YAML before validation.
 4. If `verification_bash_command` is set, the hook MUST execute each command with the file path as `$1`, with a 30-second timeout.
 5. Validation failures MUST be reported via `hookSpecificOutput.additionalContext` so the agent can act on them.
 6. The hook MUST NOT use `systemMessage` for validation output — that route is user-visible only.
@@ -61,10 +63,17 @@ The DeepSchema system provides rich, file-level schemas with automatic validatio
 4. Anonymous schema reviews MUST include only the requirements.
 5. All generated reviews MUST use the `"individual"` strategy (one file at a time).
 6. Generated reviews MUST be included in both `/review` runs and workflow quality gate checks.
-7. Review instructions MUST specify RFC 2119 severity logic: reviewers MUST fail any violation of a MUST requirement, MUST fail any SHOULD requirement that could easily be followed but is not, SHOULD give feedback without failing on other applicable items, and MUST ignore requirements that are not applicable.
+7. Review instructions MUST specify RFC 2119 severity logic: fail any violation of a MUST requirement, fail any SHOULD requirement that could easily be followed but is not, give feedback without failing on other applicable items, and ignore requirements that are not applicable.
 
 ## DW-REQ-011.9: MCP Tool — get_named_schemas
 
 1. The `get_named_schemas` MCP tool MUST return all discovered named schemas.
 2. Each entry MUST include `name`, `summary`, and `matchers` fields.
 3. Schemas that fail to parse MUST still appear in the results with an error summary instead of a real summary.
+
+## DW-REQ-011.10: Requirement Quality Constraints
+
+1. Each requirement in the `requirements` field MUST be verifiable by examining files on the filesystem.
+2. Requirements about processes, user behavior, or context not present in files SHOULD be placed in the `instructions` section instead.
+3. Requirements MUST NOT restate constraints that are already enforced by the schema's `json_schema_path` or `verification_bash_command`, including syntactic validity (e.g., "must be valid JSON"), field types, allowed enum values, required fields, and structural shape.
+4. Requirements SHOULD focus on semantic rules, behavioral gotchas, and cross-field concerns that JSON Schema cannot express.

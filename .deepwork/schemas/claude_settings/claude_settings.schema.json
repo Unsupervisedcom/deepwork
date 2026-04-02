@@ -10,8 +10,8 @@
       "examples": [
         "Bash",
         "Bash(npm run build)",
-        "Bash(git commit *)",
-        "Bash(npm run *)",
+        "Bash(git commit:*)",
+        "Bash(npm run:*)",
         "Bash(ls*)",
         "Bash(git * main)",
         "Edit",
@@ -24,7 +24,8 @@
         "WebFetch",
         "WebFetch(domain:example.com)",
         "mcp__puppeteer",
-        "mcp__github__search_repositories"
+        "mcp__github__search_repositories",
+        "mcp__github__*"
       ]
     },
     "hookCommand": {

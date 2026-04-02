@@ -1,0 +1,78 @@
+summary: "RFC 2119 requirements specification files."
+
+instructions: |
+  Requirements files define formal specifications using RFC 2119 keywords.
+  They follow the naming convention `REQ-NNN-<topic>.md` where NNN is a
+  zero-padded number.
+
+  Each file has:
+  - A `# REQ-NNN: Title` top-level heading matching the filename prefix.
+  - An `## Overview` section describing the subsystem.
+  - A `## Requirements` section containing one or more `### REQ-NNN.M: Title`
+    subsections, each with a numbered list of requirements.
+
+  Every requirement statement must be specific enough to be verifiable by either
+  an automated test or a DeepReview rule. Vague requirements like "SHOULD be fast"
+  or "MUST be user-friendly" are not acceptable — they must include a concrete,
+  evaluable criterion.
+
+  When adding new requirements:
+  - Assign the next sequential section number (REQ-NNN.M where M is next unused).
+  - Number requirements sequentially within each section (1, 2, 3...).
+  - Each requirement gets exactly one RFC 2119 keyword (MUST, SHOULD, MAY, etc.).
+
+  Requirement ID stability:
+  - Never change or reassign an existing requirement's number.
+  - New requirements always go at the end of their section.
+  - If a requirement is removed, keep its number and replace the body with
+    "REQUIREMENT REMOVED" so external references (tests, review rules) remain valid.
+
+matchers:
+  - "**/*REQ-*.md"
+
+requirements:
+  rfc-2119-keyword: >
+    Every numbered requirement statement MUST contain exactly one RFC 2119
+    keyword (MUST, MUST NOT, SHALL, SHALL NOT, SHOULD, SHOULD NOT, RECOMMENDED,
+    MAY, OPTIONAL, REQUIRED). A requirement without a keyword is ambiguous and
+    MUST be flagged.
+
+  unique-section-ids: >
+    Each `### REQ-NNN.M:` section heading MUST have a unique ID within the
+    file. The NNN portion MUST match the filename's prefix (e.g., sections in
+    `REQ-001-application-shell.md` MUST all use `REQ-001.X`).
+
+  sequential-numbering: >
+    Requirements within each section MUST be sequentially numbered starting
+    from 1, with no gaps or duplicates. Section sub-IDs (the .M part) MUST
+    also be sequential within the file.
+
+  testability: >
+    Each requirement MUST be specific enough to be verifiable — either by an
+    automated test (for concrete, machine-checkable facts) or by a DeepReview
+    rule (for judgment-based, cross-file concerns). Requirements that cannot
+    be objectively evaluated MUST be rewritten with concrete criteria.
+
+  overview-section: >
+    Requirements files MUST begin with a top-level heading matching the
+    filename prefix, followed by an `## Overview` section that describes the
+    subsystem's purpose and scope.
+
+  no-orphan-requirements: >
+    Every MUST or SHALL requirement MUST have a corresponding test, DeepSchema
+    requirement, or DeepReview rule that validates it. Requirements without any
+    validation mechanism SHOULD be flagged during review.
+
+  requirement-id-stability: >
+    Existing requirement numbers MUST NOT be changed or reassigned. New
+    requirements MUST be appended to the end of their section with the next
+    sequential number. If a requirement is fully removed, its number MUST
+    remain in place with the body replaced by "REQUIREMENT REMOVED" so that
+    all other IDs remain stable and external references do not break.
+
+verification_bash_command:
+  - "grep -nE '^[0-9]+\\.' \"$1\" | grep -vE 'MUST|SHALL|SHOULD|MAY|REQUIRED|RECOMMENDED|OPTIONAL' | { if read -r line; then echo \"FAIL: Requirement without RFC 2119 keyword: $line\"; exit 1; fi; }"
+
+references:
+  - path: "https://www.ietf.org/rfc/rfc2119.txt"
+    description: "RFC 2119 — Key words for use in RFCs to Indicate Requirement Levels."
