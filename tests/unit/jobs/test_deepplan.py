@@ -13,9 +13,7 @@ from deepwork.utils.yaml_utils import load_yaml
 
 _REPO_ROOT = Path(__file__).parent.parent.parent.parent
 _DEEPPLAN_DIR = _REPO_ROOT / "src" / "deepwork" / "standard_jobs" / "deepplan"
-_STARTUP_HOOK = (
-    _REPO_ROOT / "plugins" / "claude" / "hooks" / "startup_context.sh"
-)
+_STARTUP_HOOK = _REPO_ROOT / "plugins" / "claude" / "hooks" / "startup_context.sh"
 
 
 class TestDeepplanJobDefinition:

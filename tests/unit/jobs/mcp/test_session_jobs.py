@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from deepwork.jobs.mcp.schemas import (
+    FinishedStepInput,
     GetSessionJobInput,
     RegisterSessionJobInput,
     StartWorkflowInput,
@@ -302,10 +303,7 @@ class TestSessionJobStoragePath:
         await tools.start_workflow(start_inp)
 
         # finished_step should resolve the session job
-        from deepwork.jobs.mcp.schemas import FinishedStepInput
-
         finish_inp = FinishedStepInput(
-            step_id="do_work",
             session_id=SESSION_ID,
             outputs={"result": "done"},
         )

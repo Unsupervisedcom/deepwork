@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New `/deepplan` skill for Claude Code plugin
   - Startup context hook auto-triggers DeepPlan when entering plan mode
   - Session jobs are discoverable by `start_workflow` and take priority over standard discovery
+- `/review` skill now checks changelog accuracy and PR description during reviews (#331)
 
 ### Changed
 
