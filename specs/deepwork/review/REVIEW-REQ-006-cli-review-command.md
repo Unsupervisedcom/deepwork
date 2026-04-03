@@ -35,6 +35,7 @@ The `deepwork review` CLI command orchestrates the full DeepWork Reviews pipelin
    c. A `subagent_type` field set to the agent persona name (from the rule's `agent.claude` value) or `"general-purpose"` if no persona is specified.
    d. A `prompt` field referencing the instruction file path relative to the project root, prefixed with `@` (e.g., `@.deepwork/tmp/review_instructions/7142141.md`).
 4. The instruction file paths MUST be relative to the project root.
+5. When running inside a git worktree, the formatter MUST resolve `@file` paths relative to the main working tree root (not the worktree root), because Claude Code expands `@file` references relative to the main repo root. The main repo root MUST be detected via `git rev-parse --path-format=absolute --git-common-dir`. If git is unavailable or the directory is not a worktree, the formatter MUST fall back to using the project root.
 
 ### REVIEW-REQ-006.4: Empty Results
 

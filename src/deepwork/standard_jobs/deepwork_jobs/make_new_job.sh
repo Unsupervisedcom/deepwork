@@ -2,14 +2,16 @@
 #
 # make_new_job.sh - Create directory structure for a new DeepWork job
 #
-# Usage: ./make_new_job.sh <job_name>
+# Usage: ./make_new_job.sh --project-root DIR <job_name>
 #
 # Input:
-#   job_name - Lowercase name using only letters, numbers, and underscores.
-#              Must start with a letter.
+#   --project-root DIR - Required. The MCP server's project root directory.
+#                        Jobs are created at DIR/.deepwork/jobs/<job_name>/.
+#   job_name           - Lowercase name using only letters, numbers, and
+#                        underscores. Must start with a letter.
 #
 # Output:
-#   Creates .deepwork/jobs/<job_name>/ at the git repository root with
+#   Creates .deepwork/jobs/<job_name>/ under the specified project root with
 #   subdirectories: hooks/, templates/, scripts/, plus AGENTS.md
 #   and optionally .deepreview (if template.deepreview exists alongside
 #   this script).
@@ -17,7 +19,7 @@
 # Exit codes:
 #   0 - Success
 #   1 - Usage error (missing args, invalid job name, job already exists,
-#       not a git repository)
+#       missing --project-root)
 #
 
 set -euo pipefail
@@ -54,28 +56,52 @@ main() {
     local script_dir
     script_dir="$(cd "$(dirname "$0")" && pwd)"
 
+    # Parse --project-root flag
+    local project_root=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --project-root)
+                if [[ $# -lt 2 ]]; then
+                    error "--project-root requires a directory argument"
+                fi
+                project_root="$2"
+                shift 2
+                ;;
+            -*)
+                error "Unknown option: $1"
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+
+    if [[ -z "$project_root" ]]; then
+        error "--project-root is required. Pass the project_root from the MCP workflow response."
+    fi
+
+    if [[ ! -d "$project_root" ]]; then
+        error "Project root directory does not exist: $project_root"
+    fi
+
     if [[ $# -lt 1 ]]; then
-        echo "Usage: $0 <job_name>"
+        echo "Usage: $0 --project-root DIR <job_name>"
         echo ""
         echo "Creates the directory structure for a new DeepWork job."
         echo ""
         echo "Arguments:"
-        echo "  job_name    Name of the job (lowercase, underscores allowed)"
+        echo "  --project-root DIR   Project root directory (required)"
+        echo "  job_name             Name of the job (lowercase, underscores allowed)"
         echo ""
         echo "Example:"
-        echo "  $0 competitive_research"
+        echo "  $0 --project-root /path/to/project competitive_research"
         exit 1
     fi
 
     local job_name="$1"
     validate_job_name "$job_name"
 
-    # Determine the base path by anchoring to the git repository root
-    local repo_root
-    if ! repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
-        error "Not inside a git repository. Run this from within a git repo."
-    fi
-    local base_path="${repo_root}/.deepwork/jobs"
+    local base_path="${project_root}/.deepwork/jobs"
     mkdir -p "$base_path"
 
     local job_path="${base_path}/${job_name}"

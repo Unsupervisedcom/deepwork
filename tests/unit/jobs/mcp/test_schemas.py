@@ -217,6 +217,7 @@ class TestActiveStepInfo:
         step_info = ActiveStepInfo(
             session_id="abc123",
             step_id="step1",
+            project_root="/tmp/project",
             job_dir="/tmp/test_job",
             step_expected_outputs=expected,
             step_inputs=step_inputs,
@@ -226,6 +227,7 @@ class TestActiveStepInfo:
 
         assert step_info.session_id == "abc123"
         assert step_info.step_id == "step1"
+        assert step_info.project_root == "/tmp/project"
         assert step_info.job_dir == "/tmp/test_job"
         assert len(step_info.step_expected_outputs) == 1
         assert step_info.step_expected_outputs[0].name == "output.md"
@@ -242,6 +244,7 @@ class TestActiveStepInfo:
         step_info = ActiveStepInfo(
             session_id="abc123",
             step_id="step1",
+            project_root="/tmp/project",
             job_dir="/tmp/test_job",
             step_expected_outputs=[
                 ExpectedOutput(
@@ -262,6 +265,7 @@ class TestActiveStepInfo:
         step_info = ActiveStepInfo(
             session_id="abc123",
             step_id="step1",
+            project_root="/tmp/project",
             job_dir="/tmp/test_job",
             step_expected_outputs=[
                 ExpectedOutput(
@@ -287,6 +291,7 @@ class TestStartWorkflowResponse:
             begin_step=ActiveStepInfo(
                 session_id="abc123",
                 step_id="step1",
+                project_root="/tmp/project",
                 job_dir="/tmp/test_job",
                 step_expected_outputs=[
                     ExpectedOutput(
@@ -328,6 +333,7 @@ class TestFinishedStepResponse:
             begin_step=ActiveStepInfo(
                 session_id="abc123",
                 step_id="step2",
+                project_root="/tmp/project",
                 job_dir="/tmp/test_job",
                 step_expected_outputs=[
                     ExpectedOutput(
