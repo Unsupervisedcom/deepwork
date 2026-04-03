@@ -593,12 +593,14 @@ tests/
 │   ├── jobs/
 │   │   ├── test_parser.py      # Job parser and dataclasses
 │   │   ├── test_discovery.py   # Job folder discovery
+│   │   ├── test_deepplan.py    # DeepPlan job definition tests
 │   │   └── mcp/
 │   │       ├── test_tools.py          # MCP tool implementations
 │   │       ├── test_state.py          # State management
 │   │       ├── test_quality_gate.py   # Quality gate (DeepWork Reviews)
 │   │       ├── test_schemas.py        # Pydantic models
 │   │       ├── test_server.py         # Server creation
+│   │       ├── test_session_jobs.py   # Session job registration
 │   │       └── test_async_interface.py
 │   ├── cli/
 │   │   └── test_jobs_get_stack.py
