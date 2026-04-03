@@ -107,7 +107,7 @@ class TestValidateJsonSchemas:
 
         errors = validate_json_schemas({"data": "data.json"}, step, job, tmp_path)
         assert len(errors) == 1
-        assert "failed to parse as JSON" in errors[0]
+        assert "failed to parse" in errors[0]
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.2.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -146,6 +146,64 @@ class TestValidateJsonSchemas:
 
         errors = validate_json_schemas({"data": "just a string value"}, step, job, tmp_path)
         assert errors == []
+
+    def test_passes_when_yaml_file_matches_schema(self, tmp_path: Path) -> None:
+        """YAML files should be parsed with yaml.safe_load, not json.loads."""
+        schema = {
+            "type": "object",
+            "properties": {"title": {"type": "string"}},
+            "required": ["title"],
+        }
+        arg = StepArgument(
+            name="data", description="YAML data", type="file_path", json_schema=schema
+        )
+        output_ref = StepOutputRef(argument_name="data", required=True)
+        step = WorkflowStep(name="generate", outputs={"data": output_ref})
+        job, _ = _make_job(tmp_path, [arg], step)
+
+        data_file = tmp_path / "data.yml"
+        data_file.write_text("title: Hello\n")
+
+        errors = validate_json_schemas({"data": "data.yml"}, step, job, tmp_path)
+        assert errors == []
+
+    def test_fails_when_yaml_file_violates_schema(self, tmp_path: Path) -> None:
+        """YAML files that don't match the schema produce errors."""
+        schema = {
+            "type": "object",
+            "properties": {"count": {"type": "integer"}},
+            "required": ["count"],
+        }
+        arg = StepArgument(
+            name="data", description="YAML data", type="file_path", json_schema=schema
+        )
+        output_ref = StepOutputRef(argument_name="data", required=True)
+        step = WorkflowStep(name="generate", outputs={"data": output_ref})
+        job, _ = _make_job(tmp_path, [arg], step)
+
+        data_file = tmp_path / "data.yaml"
+        data_file.write_text("count: not_an_integer\n")
+
+        errors = validate_json_schemas({"data": "data.yaml"}, step, job, tmp_path)
+        assert len(errors) == 1
+        assert "schema validation failed" in errors[0]
+
+    def test_fails_when_yaml_is_invalid(self, tmp_path: Path) -> None:
+        """Invalid YAML content produces a parse error."""
+        schema = {"type": "object"}
+        arg = StepArgument(
+            name="data", description="YAML data", type="file_path", json_schema=schema
+        )
+        output_ref = StepOutputRef(argument_name="data", required=True)
+        step = WorkflowStep(name="generate", outputs={"data": output_ref})
+        job, _ = _make_job(tmp_path, [arg], step)
+
+        data_file = tmp_path / "data.yml"
+        data_file.write_text(":\n  bad: [yaml\n  unclosed")
+
+        errors = validate_json_schemas({"data": "data.yml"}, step, job, tmp_path)
+        assert len(errors) == 1
+        assert "failed to parse" in errors[0]
 
 
 # ---------------------------------------------------------------------------

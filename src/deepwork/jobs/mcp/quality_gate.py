@@ -60,9 +60,18 @@ def validate_json_schemas(
                 continue
             try:
                 content = full_path.read_text(encoding="utf-8")
-                parsed = json.loads(content)
+                if full_path.suffix in (".yml", ".yaml"):
+                    import yaml
+
+                    parsed = yaml.safe_load(content)
+                else:
+                    parsed = json.loads(content)
             except (json.JSONDecodeError, UnicodeDecodeError) as e:
-                errors.append(f"Output '{output_name}' file '{path}': failed to parse as JSON: {e}")
+                errors.append(f"Output '{output_name}' file '{path}': failed to parse: {e}")
+                continue
+            except Exception as e:
+                # Covers yaml.YAMLError and other parsing failures
+                errors.append(f"Output '{output_name}' file '{path}': failed to parse: {e}")
                 continue
 
             try:
