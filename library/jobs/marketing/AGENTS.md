@@ -54,8 +54,8 @@ to `.deepwork/tmp/` only if no notes directory exists.
 This job does not embed note creation mechanics (zk commands, frontmatter
 format, tag conventions) because those vary by user setup. The user's notes
 repo AGENTS.md and the agent's platform conventions are the source of truth for
-how to create notes. See `process.notes` and `tool.zk-notes` for the canonical
-rules if available in the agent's instruction context.
+how to create notes. Follow the user's notes-directory conventions and any
+applicable instructions available in the agent's instruction context.
 
 ## Quality review learnings
 

@@ -75,11 +75,11 @@ Library jobs that produce durable outputs (reports, research, decisions) should 
 
 **How it works in practice**:
 
-1. The job's `discover_context` step checks `NOTES_DIR` or `ZK_NOTEBOOK_DIR` and reads the AGENTS.md there.
-2. The agent's platform conventions (e.g., `process.notes`, `tool.zk-notes`) provide the mechanics for note creation.
+1. The job's `discover_context` step checks for a user-configured notes directory (e.g., via `NOTES_DIR`) and reads the AGENTS.md there when available.
+2. The user's environment-specific conventions provide the mechanics for note creation.
 3. If no notes directory exists, the job falls back to `.deepwork/tmp/` with plain markdown.
 
-This separation means the same library job works for a Keystone user with a zk notebook, an Obsidian user, or someone with no notes system at all.
+This separation means the same library job works for users with different note-taking setups, as well as someone with no notes system at all.
 
 ## Structure
 
