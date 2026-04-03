@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "deepwork-dev": {
+      "command": "uv",
+      "args": ["run", "deepwork", "serve", "--platform", "claude"]
+    }
+  }
+}
