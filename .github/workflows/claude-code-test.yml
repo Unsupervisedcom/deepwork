@@ -248,8 +248,8 @@ jobs:
           "
 
           echo "Fresh test project setup complete"
-          echo "Available skills:"
-          ls -la test_project/.claude/skills/
+          echo "MCP config:"
+          cat test_project/.mcp.json
 
       # STEP 1: Use /deepwork to CREATE the fruits job via MCP workflow
       #
