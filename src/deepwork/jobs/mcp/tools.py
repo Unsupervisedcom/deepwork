@@ -6,6 +6,8 @@ This module provides the core tools for guiding agents through workflows:
 - finished_step: Report step completion and get next instructions
 - abort_workflow: Abort the current workflow
 - go_to_step: Navigate back to a prior step
+- register_session_job: Register a transient job definition for the session
+- get_session_job: Retrieve a session-scoped job definition
 """
 
 from __future__ import annotations
@@ -14,6 +16,8 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import uuid4
+
+import aiofiles
 
 from deepwork.jobs.discovery import JobLoadError, find_job_dir, load_all_jobs
 from deepwork.jobs.mcp.quality_gate import run_quality_gate
@@ -25,11 +29,13 @@ from deepwork.jobs.mcp.schemas import (
     ExpectedOutput,
     FinishedStepInput,
     FinishedStepResponse,
+    GetSessionJobInput,
     GetWorkflowsResponse,
     GoToStepInput,
     GoToStepResponse,
     JobInfo,
     JobLoadErrorInfo,
+    RegisterSessionJobInput,
     StartWorkflowInput,
     StartWorkflowResponse,
     StepInputInfo,
@@ -154,8 +160,21 @@ class WorkflowTools:
             workflows=workflows,
         )
 
-    def _get_job(self, job_name: str) -> JobDefinition:
-        """Get a specific job by name."""
+    def _get_job(self, job_name: str, session_id: str | None = None) -> JobDefinition:
+        """Get a specific job by name.
+
+        Checks session-scoped jobs first (if session_id provided),
+        then falls back to standard discovery.
+        """
+        # Check session jobs first
+        if session_id:
+            session_job_dir = self._session_jobs_dir(session_id) / job_name
+            if session_job_dir.is_dir() and (session_job_dir / "job.yml").exists():
+                try:
+                    return parse_job_definition(session_job_dir)
+                except ParseError as e:
+                    raise ToolError(f"Failed to parse session job '{job_name}': {e}") from e
+
         job_dir = find_job_dir(self.project_root, job_name)
         if job_dir is None:
             raise ToolError(f"Job not found: {job_name}")
@@ -428,8 +447,8 @@ class WorkflowTools:
 
     async def start_workflow(self, input_data: StartWorkflowInput) -> StartWorkflowResponse:
         """Start a new workflow session."""
-        # Load job and workflow
-        job = self._get_job(input_data.job_name)
+        # Load job and workflow (check session jobs first)
+        job = self._get_job(input_data.job_name, session_id=input_data.session_id)
         workflow = self._get_workflow(job, input_data.workflow_name)
 
         if not workflow.steps:
@@ -489,8 +508,8 @@ class WorkflowTools:
             ) from err
         current_step_name = session.current_step_id
 
-        # Load job and workflow
-        job = self._get_job(session.job_name)
+        # Load job and workflow (check session jobs first)
+        job = self._get_job(session.job_name, session_id=sid)
         workflow = self._get_workflow(job, session.workflow_name)
         current_step = workflow.get_step(current_step_name)
 
@@ -606,8 +625,8 @@ class WorkflowTools:
         aid = input_data.agent_id
         session = self.state_manager.resolve_session(sid, aid)
 
-        # Load job and workflow
-        job = self._get_job(session.job_name)
+        # Load job and workflow (check session jobs first)
+        job = self._get_job(session.job_name, session_id=sid)
         workflow = self._get_workflow(job, session.workflow_name)
 
         # Validate target step exists in workflow
@@ -657,3 +676,80 @@ class WorkflowTools:
         )
         self._write_session_status(sid)
         return response
+
+    # =========================================================================
+    # Session Job Tools
+    # =========================================================================
+
+    def _session_jobs_dir(self, session_id: str) -> Path:
+        """Get the directory for session-scoped jobs."""
+        return self.state_manager.sessions_dir / f"session-{session_id}" / "jobs"
+
+    async def register_session_job(self, input_data: RegisterSessionJobInput) -> dict[str, str]:
+        """Register a transient job definition scoped to the current session.
+
+        Writes the job YAML to a session-scoped directory and validates it
+        against the job schema. Can be called multiple times to overwrite.
+        """
+        import re
+
+        import yaml
+
+        sid = input_data.session_id
+        job_name = input_data.job_name
+
+        # Validate job name format
+        if not re.match(r"^[a-z][a-z0-9_]*$", job_name):
+            raise ToolError(f"Invalid job name '{job_name}': must match ^[a-z][a-z0-9_]*$")
+
+        # Write YAML to session jobs directory
+        job_dir = self._session_jobs_dir(sid) / job_name
+        job_dir.mkdir(parents=True, exist_ok=True)
+        job_file = job_dir / "job.yml"
+
+        # Validate YAML syntax first
+        try:
+            yaml.safe_load(input_data.job_definition_yaml)
+        except yaml.YAMLError as e:
+            raise ToolError(f"Invalid YAML syntax: {e}") from e
+
+        # Write the file
+        async with aiofiles.open(job_file, "w") as f:
+            await f.write(input_data.job_definition_yaml)
+
+        # Validate against job schema by parsing
+        try:
+            parse_job_definition(job_dir)
+        except ParseError as e:
+            # Keep the file so the agent can see what went wrong, but report errors
+            raise ToolError(
+                f"Job definition validation failed: {e}\n"
+                f"The file was written to {job_file} for inspection. "
+                f"Fix the issues and call register_session_job again."
+            ) from e
+
+        return {
+            "status": "registered",
+            "job_name": job_name,
+            "job_dir": str(job_dir),
+            "message": (
+                f"Session job '{job_name}' registered successfully. "
+                f"It can be started with start_workflow(job_name='{job_name}', ...)."
+            ),
+        }
+
+    async def get_session_job(self, input_data: GetSessionJobInput) -> dict[str, str]:
+        """Retrieve the YAML content of a session-scoped job definition."""
+        sid = input_data.session_id
+        job_file = self._session_jobs_dir(sid) / input_data.job_name / "job.yml"
+
+        if not job_file.exists():
+            raise ToolError(f"Session job '{input_data.job_name}' not found for session '{sid}'.")
+
+        async with aiofiles.open(job_file) as f:
+            content = await f.read()
+
+        return {
+            "job_name": input_data.job_name,
+            "job_definition_yaml": content,
+        }

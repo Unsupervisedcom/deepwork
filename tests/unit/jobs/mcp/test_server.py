@@ -437,6 +437,105 @@ class TestGoToStepTool:
         assert data["invalidated_steps"] == ["step1", "step2"]
 
 
+class TestRegisterSessionJobTool:
+    """Test the register_session_job MCP tool."""
+
+    async def test_register_session_job_delegates(self, tmp_path: Path) -> None:
+        """register_session_job passes through to WorkflowTools."""
+        mcp, mock_tools = _make_server_with_mocked_tools(tmp_path)
+        mock_tools.register_session_job = AsyncMock(
+            return_value={"status": "registered", "job_name": "my_plan"}
+        )
+
+        result = await mcp.call_tool(
+            "register_session_job",
+            {
+                "job_name": "my_plan",
+                "job_definition_yaml": "name: my_plan\n",
+                "session_id": "sess-1",
+            },
+        )
+        data = result.structured_content
+        assert data["status"] == "registered"
+        mock_tools.register_session_job.assert_called_once()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-013.5.1, JOBS-REQ-013.5.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_register_session_job_missing_session_id(self, tmp_path: Path) -> None:
+        """register_session_job returns error when session_id is missing."""
+        mcp, _ = _make_server_with_mocked_tools(tmp_path)
+
+        result = await mcp.call_tool(
+            "register_session_job",
+            {
+                "job_name": "my_plan",
+                "job_definition_yaml": "name: my_plan\n",
+            },
+        )
+        data = result.structured_content
+        assert "error" in data
+
+    async def test_register_session_job_handles_exception(self, tmp_path: Path) -> None:
+        """register_session_job catches exceptions and returns error."""
+        mcp, mock_tools = _make_server_with_mocked_tools(tmp_path)
+        mock_tools.register_session_job = AsyncMock(side_effect=Exception("validation failed"))
+
+        result = await mcp.call_tool(
+            "register_session_job",
+            {
+                "job_name": "my_plan",
+                "job_definition_yaml": "bad yaml",
+                "session_id": "s",
+            },
+        )
+        data = result.structured_content
+        assert "error" in data
+        assert "validation failed" in data["error"]
+
+
+class TestGetSessionJobTool:
+    """Test the get_session_job MCP tool."""
+
+    async def test_get_session_job_delegates(self, tmp_path: Path) -> None:
+        """get_session_job passes through to WorkflowTools."""
+        mcp, mock_tools = _make_server_with_mocked_tools(tmp_path)
+        mock_tools.get_session_job = AsyncMock(
+            return_value={"job_name": "my_plan", "job_definition_yaml": "name: my_plan\n"}
+        )
+
+        result = await mcp.call_tool(
+            "get_session_job",
+            {"job_name": "my_plan", "session_id": "s"},
+        )
+        data = result.structured_content
+        assert data["job_name"] == "my_plan"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-013.5.1, JOBS-REQ-013.5.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    async def test_get_session_job_missing_session_id(self, tmp_path: Path) -> None:
+        """get_session_job returns error when session_id is missing."""
+        mcp, _ = _make_server_with_mocked_tools(tmp_path)
+
+        result = await mcp.call_tool(
+            "get_session_job",
+            {"job_name": "my_plan"},
+        )
+        data = result.structured_content
+        assert "error" in data
+
+    async def test_get_session_job_handles_exception(self, tmp_path: Path) -> None:
+        """get_session_job catches exceptions and returns error."""
+        mcp, mock_tools = _make_server_with_mocked_tools(tmp_path)
+        mock_tools.get_session_job = AsyncMock(side_effect=Exception("not found"))
+
+        result = await mcp.call_tool(
+            "get_session_job",
+            {"job_name": "missing", "session_id": "s"},
+        )
+        data = result.structured_content
+        assert "error" in data
+
+
 class TestGetNamedSchemasTool:
     """Test get_named_schemas MCP tool."""
 
