@@ -51,11 +51,11 @@ matchers:
   - "src/configs/**/*.json"
 
 requirements:
-  has-version: "Every config file MUST include a version field."
+  # Semantic rules only — structural constraints go in config.schema.json
   documented-fields: "All fields SHOULD have inline comments explaining their purpose."
   no-secrets: "Config files MUST NOT contain secrets or credentials."
 
-# Optional: structural validation
+# Structural validation — enforce types, required fields, enums, etc. here
 json_schema_path: "config.schema.json"
 
 # Optional: custom validation commands (file path passed as $1)
@@ -72,12 +72,68 @@ Place a `.deepschema.<filename>.yml` file next to the target file:
 ```yaml
 requirements:
   api-key-rotated: "The API key MUST be rotated every 90 days."
-  format-valid: "The file MUST be valid YAML."
+  no-plaintext-secrets: "Credentials MUST use environment variable references, not literal values."
 
 # Reference a named schema for shared requirements
 parent_deep_schemas:
   - api_endpoint
 ```
+
+## JSON Schema First: Maximize Structural Validation
+
+**The `json_schema_path` file is the primary enforcement mechanism.** Every constraint that _can_ be expressed structurally MUST go in the JSON Schema, not in requirements. Requirements exist only for semantic rules that JSON Schema cannot express.
+
+Put in the JSON Schema (not requirements):
+- File format validity (valid JSON, valid YAML)
+- Field types (string, number, boolean, array, object)
+- Required fields
+- Allowed property names (`additionalProperties: false`)
+- Enum values and allowed constants
+- Array item types and constraints (`minItems`, `uniqueItems`)
+- Numeric ranges (`minimum`, `maximum`)
+- String patterns (`pattern`, `format`)
+- Conditional field presence (`if`/`then` — e.g., "when type is 'http', url is required")
+- Nested object shapes and their constraints
+
+Put in requirements (not the JSON Schema):
+- Semantic rules about _meaning_ ("secrets MUST NOT appear in shared settings")
+- Cross-file concerns ("this field MUST reference an existing named schema")
+- Behavioral gotchas ("sandbox paths use different prefix semantics than permission paths")
+- Design guidance ("deny rules SHOULD be used for hard security boundaries, not soft preferences")
+- Anything requiring judgment or context a machine validator cannot assess
+
+**Build the JSON Schema to be as strict and comprehensive as possible.** Use `additionalProperties: false` to catch typos. Use enums for closed sets. Use `if/then` for conditional requirements. Use `pattern` for string formats. Use `$defs` and `$ref` for reusable types. Use `anyOf` for discriminated unions. Use `uniqueItems`, `minLength`, `minItems` where appropriate. A good JSON Schema catches errors at write time before a reviewer ever sees the file. Requirements that duplicate what the schema already enforces are noise — they dilute the reviewer's attention and risk contradicting the schema.
+
+### Verification Commands for Non-JSON Files
+
+For files that aren't JSON or YAML (markdown, shell scripts, plain text, custom formats), `verification_bash_command` serves the same role as `json_schema_path` — it's the primary structural enforcement mechanism. The same principle applies: anything a command can check exactly MUST go in a verification command, not in requirements.
+
+```yaml
+# Example: RFC 2119 requirements files (markdown)
+verification_bash_command:
+  - "grep -nE '^[0-9]+\\.' \"$1\" | grep -vE 'MUST|SHALL|SHOULD|MAY|REQUIRED|RECOMMENDED|OPTIONAL' | { if read -r line; then echo \"FAIL: Requirement without RFC 2119 keyword: $line\"; exit 1; fi; }"
+
+requirements:
+  # Only semantic rules the command can't check
+  testability: "Each requirement MUST be specific enough to be verifiable."
+```
+
+Commands receive the file path as `$1`, must exit 0 on success and non-zero on failure, and have a 30-second timeout.
+
+### Check SchemaStore for Existing Schemas
+
+Before writing a JSON Schema from scratch, check whether a published schema already exists at [SchemaStore](https://www.schemastore.org/) (`https://json.schemastore.org/<name>.json`). SchemaStore hosts community-maintained schemas for hundreds of config file formats.
+
+If a good schema exists:
+1. **Vendor a local copy** into your schema directory (e.g., `claude_settings.schema.json`)
+2. **Add a `_source` field** at the top of the file with the original URL and sync date:
+   ```json
+   {
+     "_source": "Vendored from https://json.schemastore.org/example.json. To update: fetch the latest version from that URL and replace this file. Last synced: 2026-04-01."
+   }
+   ```
+3. **Point `json_schema_path`** at the local copy — this avoids network dependencies during validation
+4. **Periodically re-fetch** the upstream schema to pick up improvements — the `_source` field tells future maintainers where to look
 
 ## Schema Fields Reference
 

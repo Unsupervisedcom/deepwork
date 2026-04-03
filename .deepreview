@@ -131,13 +131,33 @@ requirements_traceability:
       false confidence (a passing test that doesn't actually verify anything)
       or wastes reviewer judgment on something a machine can check exactly.
 
+      **Use anonymous DeepSchemas** (`.deepschema.<filename>.yml`) when
+      requirements target a specific file — whether structural or semantic:
+      - "This config file MUST include a timeout field" — structural check
+        for one file (use `json_schema_path` or `verification_bash_command`
+        for exact verification)
+      - "The learn workflow MUST accept X and Y step arguments" — the
+        requirement governs a specific YAML file's content
+      - "Skill MUST instruct the agent to do X" — judgment-based check
+        of prose in one specific file
+      - "The error message MUST include a suggestion for how to fix the
+        problem" — governs a specific source file's behavior
+
+      Anonymous DeepSchemas provide both write-time validation and review-time
+      checks, and they keep the requirement co-located with the file it governs.
+      **Prefer them over both tests and `.deepreview` rules whenever the
+      requirement targets a specific file** rather than a class of files.
+      DeepSchemas can enforce structural requirements via `json_schema_path`
+      or `verification_bash_command` just as precisely as a test, while also
+      supporting judgment-based requirements in the same schema.
+
       **Use automated tests** (`tests/`) when the requirement specifies a
-      concrete, machine-verifiable fact:
-      - File exists at a specific path
-      - JSON/YAML field has a specific value
-      - Config contains a specific identifier (e.g., `mcp__deepwork__get_review_instructions`)
+      concrete, machine-verifiable fact that spans multiple files or is not
+      tied to a single file's content:
       - File A is byte-identical to file B
-      - A data structure has a required shape
+      - A Python function returns the correct value for given inputs
+      - A CLI command produces expected output
+      - A data structure assembled from multiple sources has a required shape
 
       Tests reference requirement IDs via docstrings and traceability comments.
 
@@ -149,21 +169,6 @@ requirements_traceability:
         spirit of the pattern across multiple files?
       - "Documentation MUST stay in sync with code" — are the descriptions
         still accurate after changes?
-
-      **Use anonymous DeepSchemas** (`.deepschema.<filename>.yml`) when the
-      requirement is specific to a single file's behavior or content:
-      - "The error message in situation X MUST include a suggestion for how
-        to fix the problem" — place the requirement in a `.deepschema` for
-        the file that implements that functionality
-      - "This config file MUST include a timeout field" — a structural
-        requirement for one specific file
-      - "Skill MUST instruct the agent to do X" — does the prose in this
-        specific skill file convey X clearly enough?
-
-      Anonymous DeepSchemas provide both write-time validation and review-time
-      checks, and they keep the requirement co-located with the file it governs.
-      Prefer them over `.deepreview` rules whenever the requirement targets a
-      specific file rather than a class of files.
 
       Both `.deepreview` rules and DeepSchemas reference requirement IDs in
       their `description`, `instructions`, or `requirements` fields.
@@ -456,7 +461,7 @@ deepreview_config_quality:
         and a specific recommendation.
 
 job_schema_instruction_compatibility:
-  description: "Verify deepwork_jobs job.yml inline instructions are compatible with the job schema."
+  description: "Verify all standard and library job.yml definitions and templates are compatible with the job schema."
   match:
     include:
       - "src/deepwork/jobs/job.schema.json"

@@ -206,7 +206,7 @@ jobs:
         if: steps.check-key.outputs.has_key == 'true'
         run: |
           # Create a fresh project with NO pre-existing job definitions
-          mkdir -p test_project/.claude/skills/deepwork
+          mkdir -p test_project/.claude
 
           cd test_project
           git init
@@ -216,16 +216,14 @@ jobs:
           git add . && git commit -m "init"
           cd ..
 
-          # Copy plugin skill into the test project (replaces old `deepwork install`)
-          cp plugins/claude/skills/deepwork/SKILL.md test_project/.claude/skills/deepwork/
-
-          # Write MCP config using bare `deepwork` command (CI has it on PATH
-          # via .venv/bin; the plugin's .mcp.json uses `uvx` which isn't available here)
+          # The plugin (--plugin-dir) provides skills, hooks, and MCP server config.
+          # Override the plugin's MCP config to use the bare `deepwork` command
+          # (the plugin uses `uvx` which may not resolve the local venv install).
           python3 -c "
           import json
           mcp = {'mcpServers': {'deepwork': {
               'command': 'deepwork',
-              'args': ['serve', '--path', '.', '--external-runner', 'claude']
+              'args': ['serve', '--path', '.', '--platform', 'claude']
           }}}
           with open('test_project/.mcp.json', 'w') as f:
               json.dump(mcp, f, indent=2)
@@ -240,7 +238,8 @@ jobs:
                       'Bash(*)', 'Read(./**)', 'Edit(./**)', 'Write(./**)', 'Skill(*)',
                       'mcp__deepwork__get_workflows', 'mcp__deepwork__start_workflow',
                       'mcp__deepwork__finished_step', 'mcp__deepwork__abort_workflow',
-                      'mcp__deepwork__go_to_step'
+                      'mcp__deepwork__go_to_step',
+                      'mcp__deepwork__mark_review_as_passed'
                   ]
               }
           }
@@ -249,8 +248,8 @@ jobs:
           "
 
           echo "Fresh test project setup complete"
-          echo "Available skills:"
-          ls -la test_project/.claude/skills/
+          echo "MCP config:"
+          cat test_project/.mcp.json
 
       # STEP 1: Use /deepwork to CREATE the fruits job via MCP workflow
       #
@@ -269,7 +268,7 @@ jobs:
           # Use --debug and --output-format stream-json for diagnosing failures.
           # stream-json shows every tool call; output is captured to a file for the failure handler.
           set -o pipefail
-          claude --print --verbose --output-format stream-json --max-turns 20 --debug --model claude-sonnet-4-6 --dangerously-skip-permissions <<'PROMPT_EOF' | tee ../claude-create-job.jsonl
+          claude --print --verbose --output-format stream-json --max-turns 25 --debug --model claude-sonnet-4-6 --dangerously-skip-permissions --plugin-dir "$GITHUB_WORKSPACE/plugins/claude" <<'PROMPT_EOF' | tee ../claude-create-job.jsonl
           /deepwork I want to create a simple job called "fruits" for identifying and classifying fruits.
 
           Here are the EXACT specifications.
@@ -380,7 +379,7 @@ jobs:
           echo "=== Running fruits workflow with test input via /deepwork ==="
 
           set -o pipefail
-          claude --print --verbose --output-format stream-json --max-turns 20 --debug --model claude-sonnet-4-6 --dangerously-skip-permissions <<'PROMPT_EOF' | tee ../claude-run-workflow.jsonl
+          claude --print --verbose --output-format stream-json --max-turns 25 --debug --model claude-sonnet-4-6 --dangerously-skip-permissions --plugin-dir "$GITHUB_WORKSPACE/plugins/claude" <<'PROMPT_EOF' | tee ../claude-run-workflow.jsonl
           /deepwork Run the fruits full workflow. Process the list to the file and don't give any extra commentary or text output.
           NEVER use AskUserQuestion — you already have all the information you need.
           You MUST complete all tool calls needed. Do not stop early.

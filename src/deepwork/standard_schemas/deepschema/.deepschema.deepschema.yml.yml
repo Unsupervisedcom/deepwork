@@ -1,0 +1,12 @@
+# This file is confusing in name because it is such a special case:
+# This is the Anonymous DeepsShema for the DeepSchema file format itself.
+requirements:
+  requirements-filesystem-verifiable-present: >
+    The deepschema standard schema MUST include a requirement enforcing that
+    DeepSchema requirements are verifiable by examining files on the
+    filesystem. (DW-REQ-011.10.1)
+
+  no-structural-requirements-present: >
+    The deepschema standard schema MUST include a requirement enforcing that
+    DeepSchema requirements do not restate constraints already enforced by
+    json_schema_path or verification_bash_command. (DW-REQ-011.10.3)

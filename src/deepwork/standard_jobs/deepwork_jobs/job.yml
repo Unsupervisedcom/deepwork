@@ -49,6 +49,14 @@ step_arguments:
     description: "Scripts to run parts of the job more efficiently"
     type: file_path
 
+  - name: deepschemas
+    description: "DeepSchema files (named or anonymous) created to prevent recurring issues"
+    type: file_path
+
+  - name: deepreviews
+    description: "DeepReview rules (.deepreview files) created to catch issues during code review"
+    type: file_path
+
   - name: settings.json
     description: "Cleaned up Claude settings file with legacy permissions removed"
     type: file_path
@@ -1671,7 +1679,7 @@ workflows:
           "MCP Server Entry Removed": "The `deepwork serve` entry MUST be removed from `.mcp.json` (or the file deleted if empty)."
 
   learn:
-    summary: "Analyze conversation history to improve job instructions and capture learnings"
+    summary: "Analyze conversation history to improve job instructions, capture learnings, and create preventive automation"
     common_job_info_provided_to_all_steps_at_runtime: |
       Core commands for managing DeepWork jobs. These commands help you define new multi-step
       workflows, test them on real use cases, and learn from running them.
@@ -1679,6 +1687,8 @@ workflows:
       The `learn` skill reflects on conversations where DeepWork jobs were run, identifies
       confusion or inefficiencies, and improves job instructions. It also captures bespoke
       learnings specific to the current run into AGENTS.md files in the working folder.
+      Additionally, it evaluates whether deepschemas or deepreview rules could prevent
+      issues encountered during the session — turning one-time fixes into lasting automation.
 
       ## Job Schema Reference
 
@@ -1742,6 +1752,13 @@ workflows:
              - Efficient approaches worth preserving
              - Good examples that could be added to instructions
 
+          5. **Prevention opportunities** (deepschemas and deepreviews)
+             - Files that had structural or formatting issues a schema could validate
+             - Classes of bugs or mistakes a review rule could catch automatically
+             - Consistency problems across files of the same type
+             - Patterns the agent repeated incorrectly until corrected
+             - If the entire session was about fixing an issue, could a schema or review have prevented it?
+
           ### Step 3: Classify Learnings
 
           For each learning identified, determine if it is:
@@ -1765,6 +1782,17 @@ workflows:
             - "In this codebase, API endpoints are in `src/api/`"
             - "This project uses camelCase for function names"
             - "The main config file is at `config/settings.yml`"
+
+          **Preventable** (should become a deepschema or deepreview rule):
+          - Structural or format requirements on specific files → **anonymous deepschema** (`.deepschema.<filename>.yml` next to the file)
+          - Structural or format requirements on a category of files → **named deepschema** (`.deepwork/schemas/<name>/deepschema.yml` with glob matchers)
+          - Cross-file consistency checks, style enforcement, or patterns that should be reviewed on every PR → **deepreview rule** (`.deepreview` file with match patterns and review instructions)
+          - Look at both the process (mistakes the agent made, corrections the user gave) AND the substance (what the whole session was about — if it was fixing a bug, could automation have caught it?)
+          - Examples:
+            - Agent kept producing YAML with wrong field order → anonymous deepschema on that file with requirements
+            - Config files across the project lack version fields → named deepschema for `**/*.config.yml`
+            - Session was fixing a security issue in auth code → deepreview rule on `src/auth/**` to check for that class of issue
+            - Migration files keep breaking because they're not tested → deepreview rule on `migrations/**`
 
           ### Step 4: Update Job Instructions (Generalizable Learnings)
 
@@ -1854,6 +1882,43 @@ workflows:
 
           4. **Reference from instructions** - Update the relevant step instruction files to reference the new scripts so future runs use them.
 
+          ### Step 7: Create DeepSchemas and DeepReview Rules (Preventable Learnings)
+
+          For each learning classified as **preventable** in Step 3, create the appropriate automation:
+
+          #### Anonymous DeepSchemas (single-file requirements)
+
+          When a specific file had structural or content issues:
+          1. Create `.deepschema.<filename>.yml` in the same directory as the file
+          2. Add `requirements` using RFC 2119 keywords (MUST/SHOULD/MAY)
+          3. Optionally add `json_schema_path` for structural validation
+          4. Optionally inherit from a named schema via `parent_deep_schemas`
+
+          #### Named DeepSchemas (category-wide requirements)
+
+          When a class of files shares requirements:
+          1. Create `.deepwork/schemas/<name>/deepschema.yml`
+          2. Define `matchers` with glob patterns for the files
+          3. Add `requirements`, `instructions`, and optional `json_schema_path`
+          4. Check if an existing named schema already covers this — extend it rather than duplicating
+
+          #### DeepReview Rules (review-time enforcement)
+
+          When issues should be caught during code review:
+          1. Add rules to the nearest `.deepreview` file (create one if needed)
+          2. Choose the right strategy:
+             - `individual` — per-file review (style, structure, correctness)
+             - `matches_together` — cross-file consistency (versions in sync, naming conventions)
+             - `all_changed_files` — tripwire reviews (security-sensitive areas)
+          3. Write focused review instructions — the reviewer only sees the matched files, so be specific about what to check
+          4. For lengthy instructions, extract to `.deepwork/review/<name>.md` and reference via `instructions: { file: ... }`
+
+          #### Verify your changes
+
+          After creating schemas or review rules, verify they work:
+          - For deepschemas: check that the file exists and the YAML is valid
+          - For deepreview rules: call `mcp__deepwork__get_review_instructions` to confirm rules are discovered
+
           ## File Reference Patterns
 
           When adding entries to AGENTS.md, prefer these patterns:
@@ -1923,9 +1988,17 @@ workflows:
              - From conversation about: Initial competitive analysis run
              ```
 
+          3. Created `.deepschema.competitor_list.md.yml` (anonymous schema):
+             - Requirement: Each competitor entry MUST include a pricing section
+             - Prevents the missing-pricing issue from recurring on future runs
+
+          **Prevention Opportunities**
+
+          - No deepreview rules needed — the issues were specific to job instructions and file structure, not cross-file consistency.
+
           **Summary**
 
-          Updated job instructions and created AGENTS.md with bespoke learnings.
+          Updated job instructions, created AGENTS.md, and added a deepschema to enforce pricing data in competitor files.
           ```
 
           ## Handling Edge Cases
@@ -1962,6 +2035,10 @@ workflows:
             required: true
           scripts:
             required: false
+          deepschemas:
+            required: false
+          deepreviews:
+            required: false
         process_requirements:
           "Conversation Analyzed": "The agent MUST review the conversation for DeepWork job executions."
           "Confusion Identified": "The agent MUST identify points of confusion, errors, or inefficiencies."
@@ -1971,6 +2048,7 @@ workflows:
           "Bespoke Learnings Captured": "Run-specific learnings MUST be added to AGENTS.md."
           "File References Used": "AGENTS.md entries SHOULD reference other files where appropriate."
           "Working Folder Correct": "AGENTS.md MUST be in the correct working folder for the job."
+          "Prevention Opportunities Evaluated": "The agent MUST evaluate whether deepschemas or deepreview rules could prevent issues encountered in the session. If opportunities exist, they SHOULD be created. If none are found, the agent MUST state why."
 
   shared_jobs:
     summary: "Make DeepWork library jobs available by configuring DEEPWORK_ADDITIONAL_JOBS_FOLDERS"
