@@ -1,0 +1,84 @@
+summary: "Schema for .deepreview config files that define automated code review rules."
+
+instructions: |
+  .deepreview files define review rules that match changed files by glob pattern and
+  run AI-powered reviews against them. Each rule has a description, match patterns,
+  a review strategy, and instructions for the reviewer. The JSON schema enforces
+  structure; these requirements enforce quality that structural validation cannot catch.
+
+  Key concepts:
+  - Rules are scoped by directory — a .deepreview file governs files relative to its location
+  - Strategies control batching: individual (one task per file), matches_together (one task
+    for all matched files), all_changed_files (one task with every changed file in the PR)
+  - Instructions can be inline or referenced from a markdown file
+  - precomputed_info_for_reviewer_bash_command runs before the reviewer and injects output
+    as context, avoiding the need for the reviewer to run tools itself
+  - additional_context.unchanged_matching_files pulls in unchanged files that match the
+    pattern, useful for cross-file consistency checks
+
+json_schema_path: "deepreview_schema.json"
+
+matchers:
+  - "**/.deepreview"
+
+requirements:
+  description-matches-instructions: >
+    Each rule's `description` MUST accurately reflect what the rule's instructions
+    actually check. A description saying "Review for security" when instructions only
+    check formatting is misleading. Descriptions are used for rule discovery and
+    triage — inaccurate descriptions waste reviewer time.
+
+  strategy-matches-intent: >
+    The `strategy` MUST match the rule's review intent. Use `individual` when each
+    file can be reviewed independently. Use `matches_together` when the reviewer needs
+    to see all matched files together (e.g., cross-file consistency, DRY checks). Use
+    `all_changed_files` when the reviewer needs full PR context regardless of match
+    patterns (e.g., requirements traceability). A rule using `matches_together` or
+    `all_changed_files` whose instructions only examine each file in isolation SHOULD
+    use `individual` instead.
+
+  instructions-actionable: >
+    Rule instructions MUST be specific enough for a reviewer to produce a consistent
+    PASS/FAIL verdict. "Check if it looks good" is not actionable. Instructions SHOULD
+    enumerate concrete checks and specify the output format (PASS with no issues, or
+    FAIL with file, line, and description for each issue).
+
+  instructions-not-overly-broad: >
+    A single rule MUST NOT contain per-file or per-path conditional logic in its
+    instructions (e.g., "For files in src/foo/, check X; for files in src/bar/,
+    check Y"). If instructions vary by file path, the rule SHOULD be split into
+    multiple narrower rules with appropriate match patterns.
+
+  placement-near-target: >
+    Rules SHOULD live in the .deepreview file closest to the files they govern. If
+    all of a rule's match patterns target files within a single subdirectory, the
+    rule SHOULD be in that subdirectory's .deepreview file, not the project root.
+    Exception: rules that intentionally span multiple top-level directories or use
+    `all_changed_files` strategy are project-wide by nature.
+
+  no-overlapping-rules: >
+    Rules in the same .deepreview file (or at the same directory level) whose match
+    patterns overlap substantially SHOULD be combined into a single rule — unless
+    merging would make instructions unfocused (over ~2000 words), or the rules use
+    different `agent` personas. Duplicate coverage wastes reviewer time and can
+    produce contradictory findings.
+
+  precompute-runnable-commands: >
+    If a rule's instructions tell the reviewer to run a shell command (e.g.,
+    `uv run ruff`, `make lint`, `pytest`), that command SHOULD be moved to
+    `precomputed_info_for_reviewer_bash_command` instead. The reviewer receives
+    precomputed output as context automatically, which is faster and more reliable
+    than having the reviewer invoke tools. Instructions SHOULD then reference the
+    precomputed output rather than telling the reviewer to run commands.
+
+  file-reference-for-long-instructions: >
+    Rules with inline instructions exceeding ~80 lines SHOULD use a file reference
+    (`instructions: { file: path/to/instructions.md }`) instead. Long inline YAML
+    blocks are hard to read, edit, and diff. The referenced file can use full markdown
+    formatting.
+
+  auto-fix-rules-clearly-marked: >
+    Rules that instruct the reviewer to edit files (auto-fix rules) MUST clearly
+    state "This is an auto-fix rule — you SHOULD edit files to resolve issues" at
+    the top of their instructions. This distinguishes them from read-only review
+    rules and sets correct expectations for the reviewer agent.
