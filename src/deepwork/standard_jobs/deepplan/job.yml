@@ -27,7 +27,7 @@ step_arguments:
     type: string
 
   - name: key_affected_files
-    description: "Full paths of key files that will be created or modified"
+    description: "Full paths of existing files that will be modified (not new files — only files that already exist on disk)"
     type: file_path
 
 workflows:
@@ -100,7 +100,9 @@ workflows:
              The plan should include specific versions of libraries to use.
           3. Include a verification section describing how to test the changes.
 
-          Output the plan file path as `draft_plan_file` and list key affected files.
+          Output the plan file path as `draft_plan_file` and list existing files
+          that will be modified as `key_affected_files` (do not include new files
+          that don't exist yet — only files already on disk).
         inputs:
           original_user_request:
             required: true

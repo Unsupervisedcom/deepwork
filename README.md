@@ -106,6 +106,16 @@ DeepSchemas are file-level schemas that define what a file should look like — 
 
 Define a schema once for a file type (API endpoints, configs, job definitions), and every file matching that pattern is validated automatically — both at write time and during reviews. Requirements use RFC 2119 keywords (MUST/SHOULD/MAY) so enforcement severity is explicit.
 
+### DeepPlan: Structured Planning That Produces Executable Plans
+
+When a task is complex enough to need planning, `/deepplan` guides the agent through a structured process: explore the codebase, generate competing design alternatives, synthesize a plan, and convert it into a validated DeepWork job definition. The result isn't just a text document — it's an executable workflow that runs with quality gates.
+
+```
+/deepplan
+```
+
+The agent enters plan mode and follows the DeepPlan workflow automatically. After you approve the plan, it executes using the same workflow engine that powers everything else.
+
 ### Together: Process + Contracts + Verification
 
 Workflows ensure the agent follows the right process. DeepSchemas ensure individual files meet their contracts. Reviews verify the overall output meets your standards. The three layers reinforce each other:
