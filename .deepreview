@@ -206,23 +206,58 @@ requirements_traceability:
          review rules used for machine-verifiable requirements.
       3. Flag any test modifications where the underlying requirement did
          not also change.
-      4. For test-validated requirements, verify traceability comments are
-         present, correctly reference requirement IDs, and use the standard
-         two-line format:
-         ```
-         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5).
-         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-         ```
-         Both lines are required. They must appear immediately before the
-         `def` line (not inside the method body). If tests have REQ references
-         only in docstrings but are missing the formal comment block, flag
-         them. If the second line is missing, flag that too.
-      5. For rule-validated requirements, verify the `.deepreview` rule's
+      4. For rule-validated requirements, verify the `.deepreview` rule's
          description or instructions reference the requirement ID and that
          the rule's scope covers the requirement's intent.
 
       Produce a structured review with Coverage Gaps, Test Stability
-      Violations, Traceability Issues, and a Summary with PASS/FAIL verdicts.
+      Violations, and a Summary with PASS/FAIL verdicts.
+
+test_file_quality:
+  description: "Verify test traceability comments are present, correctly formatted, and reference valid requirement IDs."
+  match:
+    include:
+      - "tests/**/*.py"
+    exclude:
+      - "tests/fixtures/**"
+  review:
+    strategy: individual
+    instructions: |
+      Review this test file for traceability comment quality.
+
+      Tests that validate a formal requirement MUST have a two-line
+      traceability comment immediately before the `def` line:
+      ```
+      # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5).
+      # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+      def test_something(self):
+      ```
+
+      Check the following:
+
+      1. **Both lines present**: Every test with a `THIS TEST VALIDATES`
+         comment must also have the `YOU MUST NOT MODIFY` line. Flag any
+         test where only one of the two lines is present.
+
+      2. **Placement**: The two-line comment must appear immediately before
+         the `def` line (not inside the method body, not separated by
+         blank lines or other comments).
+
+      3. **Valid REQ ID**: The requirement ID in parentheses must follow the
+         pattern `{PREFIX}-REQ-NNN.M` where PREFIX is one of: DW-REQ,
+         JOBS-REQ, REVIEW-REQ, LA-REQ, PLUG-REQ.
+
+      4. **Consistency**: If a test references a REQ ID only in a docstring
+         but is missing the formal two-line comment block, flag it.
+
+      Do NOT flag tests that lack any requirement reference — only tests
+      that are utility/edge-case tests without a requirement mapping do not
+      need traceability comments.
+
+      Output Format:
+      - PASS: All traceability comments are correctly formatted.
+      - FAIL: Issues found. List each with the test function name, line
+        number, and a concise description of the issue.
 
 requirement_file_format:
   description: "Validate RFC 2119 compliance, unique IDs, and sequential numbering in requirement spec files."
