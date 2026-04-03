@@ -192,6 +192,7 @@ class TestValidateJsonSchemas:
         assert len(errors) == 1
         assert "schema validation failed" in errors[0]
 
+
 # ---------------------------------------------------------------------------
 # TestBuildDynamicReviewRules
 # ---------------------------------------------------------------------------
