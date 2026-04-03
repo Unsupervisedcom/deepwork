@@ -15,8 +15,8 @@ The quality review system evaluates step outputs against defined quality criteri
 ### JOBS-REQ-004.2: JSON Schema Validation
 
 1. `validate_json_schemas()` MUST check all `file_path` type outputs that have a `json_schema` defined on their `StepArgument`.
-2. For each such output, the file content MUST be parsed as JSON and validated against the schema.
-3. If JSON parsing fails, the error MUST be included in the returned error list.
+2. For each such output, the file content MUST be parsed and validated against the schema. Files with `.yml` or `.yaml` extensions MUST be parsed as YAML; all other files MUST be parsed as JSON.
+3. If file parsing fails, the error MUST be included in the returned error list.
 4. If schema validation fails, the error MUST be included in the returned error list.
 5. Files that do not exist MUST be skipped (not treated as errors by this function).
 6. `run_quality_gate()` MUST run JSON schema validation before building review rules. If schema errors exist, it MUST return an error message listing them without proceeding to reviews.

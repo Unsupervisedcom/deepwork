@@ -64,7 +64,7 @@ You define quality criteria once, and they apply everywhere. If three workflows 
 
 ### `json_schema`
 
-Only applies to `file_path` arguments. When set, the framework parses each output file as JSON and validates it against the schema **before any reviews run**. If validation fails, `finished_step` returns the error immediately -- reviews are skipped entirely. This is a hard gate, not a soft review. Use for structured outputs where format correctness is non-negotiable.
+Only applies to `file_path` arguments. When set, the framework parses each output file (JSON or YAML based on file extension) and validates it against the schema **before any reviews run**. If validation fails, `finished_step` returns the error immediately -- reviews are skipped entirely. This is a hard gate, not a soft review. Use for structured outputs where format correctness is non-negotiable.
 
 ---
 
@@ -152,7 +152,7 @@ A map of step_argument names to output configuration. When the agent calls `fini
 
 1. **Completeness**: All required outputs must be present. No unknown output names allowed.
 2. **Type validation**: `file_path` values must point to existing files. `string` values must be strings.
-3. **JSON schema**: If the step_argument has `json_schema`, file contents are parsed and validated. Failures are returned immediately; reviews are skipped.
+3. **JSON schema**: If the step_argument has `json_schema`, file contents are parsed (JSON or YAML based on extension) and validated. Failures are returned immediately; reviews are skipped.
 4. **Quality reviews**: Dynamic reviews from the output ref and step_argument, plus .deepreview rules.
 
 **Important**: The agent must provide ALL required outputs on every `finished_step` call, even outputs whose files have not changed since a previous attempt. The framework re-validates everything each time.

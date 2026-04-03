@@ -147,6 +147,8 @@ class TestValidateJsonSchemas:
         errors = validate_json_schemas({"data": "just a string value"}, step, job, tmp_path)
         assert errors == []
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.2.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_passes_when_yaml_file_matches_schema(self, tmp_path: Path) -> None:
         """YAML files should be parsed with yaml.safe_load, not json.loads."""
         schema = {
@@ -167,6 +169,8 @@ class TestValidateJsonSchemas:
         errors = validate_json_schemas({"data": "data.yml"}, step, job, tmp_path)
         assert errors == []
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.2.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_fails_when_yaml_file_violates_schema(self, tmp_path: Path) -> None:
         """YAML files that don't match the schema produce errors."""
         schema = {
@@ -188,6 +192,8 @@ class TestValidateJsonSchemas:
         assert len(errors) == 1
         assert "schema validation failed" in errors[0]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.2.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_fails_when_yaml_is_invalid(self, tmp_path: Path) -> None:
         """Invalid YAML content produces a parse error."""
         schema = {"type": "object"}
@@ -498,7 +504,7 @@ class TestRunQualityGate:
 
         assert result is None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.4.8).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.2.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_feedback_when_json_schema_fails(self, tmp_path: Path) -> None:
         """Schema validation failure returns an error string without running reviews."""
