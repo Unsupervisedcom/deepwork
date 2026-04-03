@@ -49,6 +49,8 @@ For each finding from the review agents:
   3. If a finding seems minor or debatable, include an option to suppress that error in the future — such as a clarification to the rule if it is too narrow, or a comment on the offending content if comments work in that context.
   4. Be concise — quote the key finding, don't dump the full review.
 
+When a finding is dismissed (user chooses "Skip" or you determine it's not actionable for this PR), call `mcp__deepwork__mark_review_as_passed` with the review's ID so it won't re-run on subsequent iterations.
+
 ## Iterate
 
 After making any changes:
