@@ -1,9 +1,12 @@
 """Tests for review instruction file generation (deepwork.review.instructions) — validates REVIEW-REQ-005, REVIEW-REQ-009."""
 
 from pathlib import Path
+from unittest.mock import patch
 
 from deepwork.review.config import ReviewTask
 from deepwork.review.instructions import (
+    _run_precompute_command,
+    _run_precompute_commands,
     build_instruction_file,
     compute_review_id,
     write_instruction_files,
@@ -18,6 +21,7 @@ def _make_task(
     source_location: str = ".deepreview:1",
     additional_files: list[str] | None = None,
     all_changed_filenames: list[str] | None = None,
+    precomputed_info_bash_command: str | None = None,
 ) -> ReviewTask:
     """Create a ReviewTask with sensible defaults."""
     return ReviewTask(
@@ -28,6 +32,7 @@ def _make_task(
         source_location=source_location,
         additional_files=additional_files or [],
         all_changed_filenames=all_changed_filenames,
+        precomputed_info_bash_command=precomputed_info_bash_command,
     )
 
 
@@ -398,3 +403,100 @@ class TestComputeReviewId:
         assert _sanitize_for_id("my rule@v2!") == "my-rule-v2-"
         # Also verify it preserves allowed chars: alphanumeric, dash, underscore, dot
         assert _sanitize_for_id("rule_name-1.0") == "rule_name-1.0"
+
+
+class TestPrecomputedContext:
+    """Tests for precomputed info command execution — validates REVIEW-REQ-001.9, REVIEW-REQ-005.7."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.9.1, REVIEW-REQ-005.7.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_run_precompute_command_captures_stdout(self, tmp_path: Path) -> None:
+        script = tmp_path / "info.sh"
+        script.write_text("#!/usr/bin/env bash\necho 'hello world'")
+        script.chmod(0o755)
+        result = _run_precompute_command(str(script), tmp_path)
+        assert "hello world" in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.9.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_run_precompute_command_failure_returns_error(self, tmp_path: Path) -> None:
+        script = tmp_path / "fail.sh"
+        script.write_text("#!/usr/bin/env bash\necho 'oops' >&2\nexit 1")
+        script.chmod(0o755)
+        result = _run_precompute_command(str(script), tmp_path)
+        assert "Precompute command failed" in result
+        assert "exit code 1" in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.9.4, REVIEW-REQ-001.9.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_run_precompute_command_timeout(self, tmp_path: Path) -> None:
+        script = tmp_path / "slow.sh"
+        script.write_text("#!/usr/bin/env bash\nsleep 120")
+        script.chmod(0o755)
+        with patch("deepwork.review.instructions.PRECOMPUTE_TIMEOUT_SECONDS", 1):
+            result = _run_precompute_command(str(script), tmp_path)
+        assert "timed out" in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.9.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_run_precompute_command_uses_project_root_as_cwd(self, tmp_path: Path) -> None:
+        script = tmp_path / "cwd.sh"
+        script.write_text("#!/usr/bin/env bash\npwd")
+        script.chmod(0o755)
+        result = _run_precompute_command(str(script), tmp_path)
+        assert str(tmp_path) in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.9.6, REVIEW-REQ-001.9.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_run_precompute_commands_deduplicates_and_parallelizes(self, tmp_path: Path) -> None:
+        script = tmp_path / "echo.sh"
+        script.write_text("#!/usr/bin/env bash\necho 'output'")
+        script.chmod(0o755)
+        commands = {str(script)}
+        results = _run_precompute_commands(commands, tmp_path)
+        assert str(script) in results
+        assert "output" in results[str(script)]
+
+    def test_run_precompute_commands_empty_set(self, tmp_path: Path) -> None:
+        results = _run_precompute_commands(set(), tmp_path)
+        assert results == {}
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.7.1, REVIEW-REQ-005.7.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_build_instruction_file_includes_precomputed_section(self) -> None:
+        task = _make_task()
+        content = build_instruction_file(task, "review-id", precomputed_info="# Data\nsome info")
+        assert "## Precomputed Context" in content
+        assert "# Data\nsome info" in content
+        # Must be the last content section, after files and before After Review
+        files_idx = content.index("## Files to Review")
+        precomputed_idx = content.index("## Precomputed Context")
+        after_review_idx = content.index("## After Review")
+        assert files_idx < precomputed_idx < after_review_idx
+
+    def test_build_instruction_file_omits_precomputed_when_none(self) -> None:
+        task = _make_task()
+        content = build_instruction_file(task, "review-id")
+        assert "## Precomputed Context" not in content
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.7.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_build_instruction_file_includes_error_on_failure(self) -> None:
+        task = _make_task()
+        error_msg = "**Precompute command failed** (exit code 1):\n```\noops\n```"
+        content = build_instruction_file(task, "review-id", precomputed_info=error_msg)
+        assert "## Precomputed Context" in content
+        assert "Precompute command failed" in content
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.9.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_write_instruction_files_runs_precompute(self, tmp_path: Path) -> None:
+        script = tmp_path / "info.sh"
+        script.write_text("#!/usr/bin/env bash\necho 'precomputed data'")
+        script.chmod(0o755)
+        task = _make_task(precomputed_info_bash_command=str(script))
+        results = write_instruction_files([task], tmp_path)
+        assert len(results) == 1
+        content = results[0][1].read_text()
+        assert "## Precomputed Context" in content
+        assert "precomputed data" in content

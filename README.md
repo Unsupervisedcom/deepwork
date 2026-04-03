@@ -459,4 +459,12 @@ We're iterating fast. [Open an issue](https://github.com/Unsupervisedcom/deepwor
 
 ---
 
+## References
+
+- [`job.yml` format](src/deepwork/standard_schemas/job_yml/deepschema.yml) — schema defining the structure of job definitions
+- [`.deepreview` format](src/deepwork/schemas/deepreview_schema.json) — JSON schema for review config files
+- [`.deepschema.yml` format](src/deepwork/standard_schemas/deepschema/deepschema.yml) — schema for DeepSchema definitions
+
+---
+
 <sub>Inspired by [GitHub's spec-kit](https://github.com/github/spec-kit)</sub>

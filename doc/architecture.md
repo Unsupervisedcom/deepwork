@@ -58,6 +58,7 @@ deepwork/                       # DeepWork tool repository
 │       │       ├── state.py        # Workflow session state management
 │       │       ├── schemas.py      # Pydantic models for I/O
 │       │       ├── quality_gate.py # Quality gate via DeepWork Reviews
+│       │       ├── roots.py        # MCP root resolver
 │       │       └── status.py       # Status file writer for external consumers
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── wrapper.py      # Cross-platform input/output normalization

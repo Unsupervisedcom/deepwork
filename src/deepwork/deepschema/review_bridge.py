@@ -78,6 +78,7 @@ def _named_schema_rule(
         agent=None,
         all_changed_filenames=False,
         unchanged_matching_files=False,
+        precomputed_info_bash_command=None,
         # Named schemas use project-root-relative matchers, so source_dir
         # must be the project root for the review matcher to resolve paths.
         source_dir=project_root,
@@ -111,6 +112,7 @@ def _anonymous_schema_rule(
         agent=None,
         all_changed_filenames=False,
         unchanged_matching_files=False,
+        precomputed_info_bash_command=None,
         source_dir=schema.source_path.parent,
         source_file=schema.source_path,
         source_line=0,
