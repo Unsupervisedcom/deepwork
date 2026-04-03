@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Startup context hook auto-triggers DeepPlan when entering plan mode
   - Session jobs are discoverable by `start_workflow` and take priority over standard discovery
 - `/review` skill now checks changelog accuracy and PR description during reviews (#331)
+- `.deepreview` rules can now declare a `precomputed_info_for_reviewer_bash_command` that runs before the review and injects stdout into the instruction file as precomputed context (#337)
+  - Commands run in parallel across rules with a 60-second timeout and graceful error handling
+  - Applied to `requirements_traceability` rule to eliminate redundant agent tool calls
 
 ### Changed
 
