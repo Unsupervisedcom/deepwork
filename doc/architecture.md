@@ -501,7 +501,7 @@ DeepWork includes a built-in job called `deepwork_reviews` for managing `.deepre
 
 ### Standard Job: `deepplan`
 
-DeepWork includes a built-in job called `deepplan` for structured planning. When an agent enters plan mode, it starts the `create_deep_plan` workflow which produces a validated, executable DeepWork job definition.
+DeepWork includes a built-in job called `deepplan` for structured planning. This job is only used when the agent is in planning mode — the startup context hook injects a trigger that auto-starts the `create_deep_plan` workflow when plan mode begins. The workflow produces a validated, executable DeepWork job definition.
 
 **Workflows**:
 - **`create_deep_plan`** workflow: `initial_understanding` → `design_alternatives` → `review_and_synthesize` → `enrich_the_plan` → `present_plan`
