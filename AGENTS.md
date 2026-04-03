@@ -40,6 +40,7 @@ When creating or modifying jobs in this repository, you MUST understand which ty
 **Current standard jobs**:
 - `deepwork_jobs` - Core job management (define, implement, learn)
 - `deepwork_reviews` - DeepWork job review and quality control workflows
+- `deepplan` - Structured planning workflow that produces an executable DeepWork job definition
 
 **Editing rules**:
 - Source of truth is ALWAYS in `src/deepwork/standard_jobs/`
@@ -201,7 +202,8 @@ deepwork/
 │   ├── hooks/            # Hook scripts and wrappers
 │   ├── standard_jobs/    # Built-in job definitions (auto-discovered at runtime)
 │   │   ├── deepwork_jobs/
-│   │   └── deepwork_reviews/
+│   │   ├── deepwork_reviews/
+│   │   └── deepplan/
 │   ├── standard_schemas/ # Built-in DeepSchema definitions
 │   ├── review/           # DeepWork Reviews system (.deepreview pipeline)
 │   ├── schemas/          # Definition schemas (deepreview, deepschema, doc_spec)
@@ -215,6 +217,7 @@ deepwork/
 │   │   ├── example_reviews/
 │   │   ├── skills/
 │   │   │   ├── configure_reviews/SKILL.md
+│   │   │   ├── deepplan/SKILL.md
 │   │   │   ├── deepreviews/SKILL.md
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── deepschema/SKILL.md

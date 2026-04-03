@@ -73,7 +73,8 @@ deepwork/                       # DeepWork tool repository
 │       │   └── schema.py       # DeepSchema data models
 │       ├── standard_jobs/      # Built-in job definitions
 │       │   ├── deepwork_jobs/
-│       │   └── deepwork_reviews/
+│       │   ├── deepwork_reviews/
+│       │   └── deepplan/
 │       ├── standard_schemas/   # Built-in DeepSchema definitions
 │       ├── review/             # DeepWork Reviews system
 │       │   ├── config.py       # .deepreview config parsing + data models
@@ -102,11 +103,12 @@ deepwork/                       # DeepWork tool repository
 │   │   │   ├── prompt_best_practices.md
 │   │   │   └── suggest_new_reviews.md
 │   │   ├── skills/
-│   │   │   ├── deepwork/SKILL.md
-│   │   │   ├── review/SKILL.md
 │   │   │   ├── configure_reviews/SKILL.md
+│   │   │   ├── deepplan/SKILL.md
 │   │   │   ├── deepreviews/SKILL.md
-│   │   │   └── deepschema/SKILL.md
+│   │   │   ├── deepwork/SKILL.md
+│   │   │   ├── deepschema/SKILL.md
+│   │   │   └── review/SKILL.md
 │   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
 │   │   └── .mcp.json           # MCP server config
 │   └── gemini/                 # Gemini CLI extension
@@ -497,6 +499,14 @@ DeepWork includes a built-in job called `deepwork_reviews` for managing `.deepre
 - **`add_document_update_rule`** workflow: `analyze_dependencies` → `apply_rule`
   - Adds a review rule to keep a specific documentation file up-to-date when related source files change
 
+### Standard Job: `deepplan`
+
+DeepWork includes a built-in job called `deepplan` for structured planning. This job is only used when the agent is in planning mode — the startup context hook injects a trigger that auto-starts the `create_deep_plan` workflow when plan mode begins. The workflow produces a validated, executable DeepWork job definition.
+
+**Workflows**:
+- **`create_deep_plan`** workflow: `initial_understanding` → `design_alternatives` → `review_and_synthesize` → `enrich_the_plan` → `present_plan`
+  - Guides agents through structured planning: exploring the codebase, generating competing designs, synthesizing a plan, enriching it into an executable session job via `register_session_job`, and presenting for user approval
+
 ### Library Job: `engineer`
 
 The `engineer` job lives in `library/jobs/engineer/` and is available for users to adopt. It provides domain-agnostic engineering execution:
@@ -583,12 +593,14 @@ tests/
 │   ├── jobs/
 │   │   ├── test_parser.py      # Job parser and dataclasses
 │   │   ├── test_discovery.py   # Job folder discovery
+│   │   ├── test_deepplan.py    # DeepPlan job definition tests
 │   │   └── mcp/
 │   │       ├── test_tools.py          # MCP tool implementations
 │   │       ├── test_state.py          # State management
 │   │       ├── test_quality_gate.py   # Quality gate (DeepWork Reviews)
 │   │       ├── test_schemas.py        # Pydantic models
 │   │       ├── test_server.py         # Server creation
+│   │       ├── test_session_jobs.py   # Session job registration
 │   │       └── test_async_interface.py
 │   ├── cli/
 │   │   └── test_jobs_get_stack.py
@@ -825,7 +837,7 @@ All MCP server code lives in `src/deepwork/jobs/mcp/`.
 
 The FastMCP server definition that:
 - Creates and configures the MCP server instance
-- Registers the workflow tools, review tools (`get_review_instructions`, `get_configured_reviews`, `mark_review_as_passed`), and DeepSchema tools (`get_named_schemas`)
+- Registers the workflow tools, review tools (`get_review_instructions`, `get_configured_reviews`, `mark_review_as_passed`), DeepSchema tools (`get_named_schemas`), and session job tools (`register_session_job`, `get_session_job`)
 - Detects job definition issues at startup via `issues.py` and appends warnings to tool responses
 - Provides server instructions for agents
 
@@ -928,6 +940,20 @@ Lists all named DeepSchemas discovered across all schema sources (project-local,
 
 **Returns**: List of `{name, summary, matchers}` dicts.
 
+#### 10. `register_session_job`
+Register a transient job definition scoped to the current session. Validates against the job schema and stores it so `start_workflow` can discover it. Can be called multiple times to overwrite.
+
+**Parameters**: `job_name` (string), `job_definition_yaml` (string), `session_id` (string).
+
+**Returns**: `{status, job_name, job_dir, message}` on success, `{error}` on validation failure.
+
+#### 11. `get_session_job`
+Retrieve the YAML content of a session-scoped job definition previously registered with `register_session_job`.
+
+**Parameters**: `job_name` (string), `session_id` (string).
+
+**Returns**: `{job_name, job_definition_yaml}`.
+
 ### Review Pass Caching
 
 Each review task is assigned a deterministic `review_id` encoding the rule name, file paths, and a SHA-256 content hash (first 12 hex chars). When `get_review_instructions` generates instruction files, it names them `{review_id}.md` and checks for a corresponding `{review_id}.passed` marker. If the marker exists, the review is skipped.
@@ -1010,7 +1036,7 @@ Status writes are fire-and-forget: failures are logged as warnings and never fai
 ### Schemas (`jobs/mcp/schemas.py`)
 
 Pydantic models for all tool inputs and outputs:
-- `StartWorkflowInput`, `FinishedStepInput`, `AbortWorkflowInput`, `GoToStepInput`
+- `StartWorkflowInput`, `FinishedStepInput`, `AbortWorkflowInput`, `GoToStepInput`, `RegisterSessionJobInput`, `GetSessionJobInput`
 - `GetWorkflowsResponse`, `StartWorkflowResponse`, `FinishedStepResponse`, `AbortWorkflowResponse`, `GoToStepResponse`
 - `ActiveStepInfo`, `StepInputInfo`, `ExpectedOutput`, `StackEntry`
 - `JobInfo`, `WorkflowInfo`, `JobLoadErrorInfo`

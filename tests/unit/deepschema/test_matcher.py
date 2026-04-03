@@ -133,7 +133,7 @@ class TestGetSchemasForFileFast:
         result = get_schemas_for_file_fast("src/app.py", tmp_path)
         assert result == []
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.1, DW-REQ-011.6.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_both_named_and_anonymous(self, tmp_path: Path) -> None:
         """When both a named and anonymous schema apply, both are returned."""

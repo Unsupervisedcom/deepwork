@@ -23,7 +23,20 @@ Only proceed past this section if the user wants to **run** reviews.
    - **With `files`** to review only specific files: `mcp__deepwork__get_review_instructions(files=["src/app.py", "src/lib.py"])`. When provided, only reviews whose include/exclude patterns match the given files will be returned. Use this when the user asks to review a particular file or set of files rather than the whole branch.
    - **If the result says no rules are configured**: Ask the user if they'd like to auto-discover and set up rules. If yes, invoke the `/deepwork` skill with the `deepwork_reviews` job's `discover_rules` workflow. Stop here — do not proceed with running reviews if there are no rules.
 2. The output will list review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields — these map directly to the Task tool parameters. Launch all of them as parallel Task agents.
-3. Collect the results from all review agents.
+3. **While review agents run**, check for a changelog and open PR (see below).
+4. Collect the results from all review agents.
+
+## Changelog & PR Description Check
+
+Run this concurrently with the review agents (step 2 above) — don't wait for reviews to finish first.
+
+1. Check if the project has a changelog file (e.g., `CHANGELOG.md`, `CHANGELOG`, `CHANGES.md`).
+2. If a changelog exists and there are commits on the current branch beyond the main branch:
+   - Read the changelog and the branch's commit log (`git log main..HEAD --oneline`).
+   - Verify the changelog's unreleased/current section accurately reflects what the branch does. If entries are missing, outdated, or inaccurate, update the changelog.
+3. If a PR is open for the current branch (check with `gh pr view`):
+   - If you updated the changelog, also verify the PR description matches. Update it with `gh pr edit` if needed.
+   - If the changelog was already accurate, skip the PR description check.
 
 ## Acting on Results
 
@@ -35,6 +48,8 @@ For each finding from the review agents:
   2. For each question, provide several concrete fix approaches as options when there are reasonable alternatives (e.g., "Update the spec to match the code" vs "Update the code to match the spec" vs "Skip").
   3. If a finding seems minor or debatable, include an option to suppress that error in the future — such as a clarification to the rule if it is too narrow, or a comment on the offending content if comments work in that context.
   4. Be concise — quote the key finding, don't dump the full review.
+
+When a finding is dismissed (user chooses "Skip" or you determine it's not actionable for this PR), call `mcp__deepwork__mark_review_as_passed` with the review's ID so it won't re-run on subsequent iterations.
 
 ## Iterate
 

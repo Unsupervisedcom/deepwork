@@ -1,0 +1,67 @@
+requirements:
+  workflow-name: >
+    The deepplan job MUST define a workflow named `create_deep_plan`.
+    (JOBS-REQ-014.2.1)
+
+  workflow-step-order: >
+    The `create_deep_plan` workflow MUST contain exactly five steps in this
+    order: `initial_understanding`, `design_alternatives`, `review_and_synthesize`,
+    `enrich_the_plan`, `present_plan`. (JOBS-REQ-014.2.2)
+
+  common-job-info: >
+    The workflow MUST define `common_job_info_provided_to_all_steps_at_runtime`
+    that tells the agent its instructions supersede default planning phases.
+    (JOBS-REQ-014.2.3)
+
+  post-workflow-instructions: >
+    The workflow MUST define `post_workflow_instructions` that guide the agent
+    to start the session job after completion. (JOBS-REQ-014.2.4)
+
+  step-arg-original-user-request: >
+    The job MUST define an `original_user_request` step argument of type
+    `string`. (JOBS-REQ-014.3.1)
+
+  step-arg-draft-plan-file: >
+    The job MUST define a `draft_plan_file` step argument of type `file_path`.
+    (JOBS-REQ-014.3.2)
+
+  step-arg-session-job-name: >
+    The job MUST define a `session_job_name` step argument of type `string`.
+    (JOBS-REQ-014.3.3)
+
+  initial-understanding-outputs: >
+    The `initial_understanding` step MUST output `original_user_request` as
+    required. (JOBS-REQ-014.4.1)
+
+  design-alternatives-inputs: >
+    The `design_alternatives` step MUST accept `original_user_request` as a
+    required input. (JOBS-REQ-014.4.2)
+
+  review-and-synthesize-outputs: >
+    The `review_and_synthesize` step MUST output `draft_plan_file` as required.
+    (JOBS-REQ-014.4.3)
+
+  enrich-the-plan-outputs: >
+    The `enrich_the_plan` step MUST output `session_job_name` as required.
+    (JOBS-REQ-014.4.4)
+
+  present-plan-inputs: >
+    The `present_plan` step MUST accept `session_job_name` and `draft_plan_file`
+    as required inputs. (JOBS-REQ-014.4.5)
+
+  original-user-request-flows: >
+    The `original_user_request` MUST flow through all steps after
+    `initial_understanding` as an input. (JOBS-REQ-014.4.6)
+
+  draft-plan-review: >
+    The `draft_plan_file` step argument MUST have a review checking whether it
+    achieves the `original_user_request`. (JOBS-REQ-014.6.1)
+
+  session-job-name-review: >
+    The `enrich_the_plan` step MUST have a review on `session_job_name` checking
+    whether the registered job completes the `original_user_request`.
+    (JOBS-REQ-014.6.2)
+
+  plan-alignment-review: >
+    The `enrich_the_plan` step MUST have a review on `draft_plan_file` checking
+    alignment with the session job. (JOBS-REQ-014.6.3)
