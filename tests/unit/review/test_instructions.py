@@ -245,17 +245,17 @@ class TestWriteInstructionFiles:
 
         assert passed_file.exists()
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.5.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.5.1, REVIEW-REQ-009.5.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_clears_old_md_files_but_not_passed(self, tmp_path: Path) -> None:
+    def test_preserves_md_files_with_passed_marker(self, tmp_path: Path) -> None:
         instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
         instructions_dir.mkdir(parents=True)
-        (instructions_dir / "old_review.md").write_text("stale")
+        (instructions_dir / "old_review.md").write_text("passed content")
         (instructions_dir / "old_review.passed").write_bytes(b"")
 
         write_instruction_files([_make_task()], tmp_path)
 
-        assert not (instructions_dir / "old_review.md").exists()
+        assert (instructions_dir / "old_review.md").exists()
         assert (instructions_dir / "old_review.passed").exists()
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.3.3).

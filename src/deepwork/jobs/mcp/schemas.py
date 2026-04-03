@@ -228,6 +228,11 @@ class ActiveStepInfo(BaseModel):
         )
     )
     step_id: str = Field(description="Name of the current step")
+    project_root: str = Field(
+        description="Absolute path to the MCP server's project root. "
+        "Use this as the base directory for .deepwork/ operations "
+        "(e.g. creating jobs at [project_root]/.deepwork/jobs/)."
+    )
     job_dir: str = Field(
         description="Absolute path to the job directory. Templates, scripts, "
         "and other files referenced in step instructions live here."

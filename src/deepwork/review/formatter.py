@@ -4,9 +4,68 @@ Formats ReviewTask results into structured text that AI agent platforms
 (e.g., Claude Code) can use to dispatch parallel review agents.
 """
 
+from __future__ import annotations
+
+import subprocess
 from pathlib import Path
 
 from deepwork.review.config import ReviewTask
+
+
+def _git_common_dir(project_root: Path) -> Path | None:
+    """Return the absolute path to the git common directory.
+
+    In a normal repo this is ``<repo>/.git``.  In a linked worktree it
+    still points to the *main* repo's ``.git`` directory, which lets
+    callers discover the main working-tree root.
+
+    Returns ``None`` when *project_root* is not inside a git repository
+    or the ``git`` command is unavailable.
+    """
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(project_root),
+                "rev-parse",
+                "--path-format=absolute",
+                "--git-common-dir",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode != 0:
+            return None
+        raw = result.stdout.strip()
+        if not raw:
+            return None
+        return Path(raw)
+    except Exception:
+        return None
+
+
+def _resolve_file_ref_root(project_root: Path) -> Path:
+    """Resolve the root directory for ``@file`` references.
+
+    In a git worktree, Claude Code expands ``@file`` paths relative to
+    the *main* working tree — not the worktree.  This function detects
+    worktrees and returns the main repo root so that formatted paths
+    resolve correctly.
+
+    Falls back to *project_root* when not in a worktree or when git is
+    unavailable.
+    """
+    git_common = _git_common_dir(project_root)
+    if git_common is None:
+        return project_root
+
+    main_root = git_common.parent
+    if main_root != project_root and project_root.is_relative_to(main_root):
+        return main_root
+
+    return project_root
 
 
 def format_for_claude(
@@ -28,6 +87,8 @@ def format_for_claude(
     if not task_files:
         return "No review tasks to execute."
 
+    file_ref_root = _resolve_file_ref_root(project_root)
+
     lines: list[str] = []
     lines.append("Invoke the following list of Tasks in parallel.")
     lines.append(
@@ -36,9 +97,10 @@ def format_for_claude(
     )
 
     for task, file_path in task_files:
-        # Make the instruction file path relative to project root
+        # Make the instruction file path relative to the file-ref root
+        # (main repo root in a worktree, project_root otherwise)
         try:
-            rel_path = file_path.relative_to(project_root)
+            rel_path = file_path.relative_to(file_ref_root)
         except ValueError:
             rel_path = file_path
 

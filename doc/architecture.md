@@ -929,7 +929,7 @@ Each review task is assigned a deterministic `review_id` encoding the rule name,
 
 After a review passes, the reviewing agent calls `mark_review_as_passed` with the `review_id` (included in the instruction file's "After Review" section). This creates the `.passed` marker in `.deepwork/tmp/review_instructions/`. When file contents change, the content hash changes, producing a new `review_id` with no matching marker — so the review runs again automatically.
 
-Cleanup between runs deletes only `.md` files, preserving `.passed` markers across runs.
+Cleanup between runs deletes stale `.md` files (those without a corresponding `.passed` marker), preserving both `.passed` markers and their associated `.md` files across runs.
 
 ### State Management (`jobs/mcp/state.py`)
 

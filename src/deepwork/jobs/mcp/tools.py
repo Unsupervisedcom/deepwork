@@ -388,6 +388,7 @@ class WorkflowTools:
         return ActiveStepInfo(
             session_id=session_id,
             step_id=step.name,
+            project_root=str(self.project_root),
             job_dir=str(job.job_dir),
             step_expected_outputs=step_outputs,
             step_inputs=step_inputs,

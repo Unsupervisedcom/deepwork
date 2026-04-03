@@ -211,7 +211,7 @@ class TestStartWorkflow:
     """Tests for start_workflow tool."""
 
     @pytest.mark.asyncio
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.8).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.8, JOBS-REQ-001.3.10).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_creates_session_and_returns_first_step(self, tools: WorkflowTools) -> None:
         resp = await _start_main_workflow(tools)
@@ -219,6 +219,7 @@ class TestStartWorkflow:
 
         assert step.session_id == SESSION_ID
         assert step.step_id == "step1"
+        assert step.project_root == str(tools.project_root)
         assert "Do the first step" in step.step_instructions
         assert len(step.step_expected_outputs) == 1
         assert step.step_expected_outputs[0].name == "output1"

@@ -348,17 +348,17 @@ workflows:
 
           Only after you have complete understanding, create the job directory and `job.yml` file.
 
-          **Note**: `[job_dir]` refers to the `job_dir` path returned in the workflow response when this workflow was started. It points to the directory containing this job's definition, scripts, and templates.
+          **Note**: `[job_dir]` refers to the `job_dir` path returned in the workflow response when this workflow was started. It points to the directory containing this job's definition, scripts, and templates. `[project_root]` refers to the `project_root` path from the same response — the MCP server's canonical root directory.
 
           **First, create the directory structure** using the `make_new_job.sh` script:
 
           ```bash
-          [job_dir]/make_new_job.sh [job_name]
+          [job_dir]/make_new_job.sh --project-root [project_root] [job_name]
           ```
 
-          **Then create the job.yml file** at `.deepwork/jobs/[job_name]/job.yml`
+          **Then create the job.yml file** at `[project_root]/.deepwork/jobs/[job_name]/job.yml`
 
-          (Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`. Replace `[job_dir]` with the actual `job_dir` path from the workflow response.)
+          (Where `[job_name]` is the name of the NEW job you're creating, e.g., `competitive_research`. Replace `[job_dir]` and `[project_root]` with the actual paths from the workflow response.)
 
           **Template reference**: See `[job_dir]/templates/job.yml.template` for the standard structure.
 
@@ -503,7 +503,7 @@ workflows:
 
           The complete YAML specification file (example shown in Step 5 above).
 
-          **Location**: `.deepwork/jobs/[job_name]/job.yml`
+          **Location**: `[project_root]/.deepwork/jobs/[job_name]/job.yml`
 
           (Where `[job_name]` is the name of the new job being created)
 
@@ -587,12 +587,12 @@ workflows:
 
           Read the `job.yml` specification file created by the define step and generate comprehensive instruction files for each step. The define step has already created the job directory structure.
 
-          **Note**: Throughout this document, `<job_dir>` refers to the `job_dir` path returned in the workflow response when this workflow was started. It points to the directory containing this job's definition and templates.
+          **Note**: Throughout this document, `<job_dir>` refers to the `job_dir` path returned in the workflow response when this workflow was started. It points to the directory containing this job's definition and templates. `[project_root]` refers to the `project_root` path from the same response — the MCP server's canonical root directory.
 
           ### Step 1: Read and Validate the Specification
 
           1. **Locate the job.yml file**
-             - Read `.deepwork/jobs/[job_name]/job.yml` from the define step
+             - Read `[project_root]/.deepwork/jobs/[job_name]/job.yml` from the define step
              - Parse the YAML content
 
           2. **Validate the specification**
@@ -607,7 +607,7 @@ workflows:
 
           ### Step 2: Generate Step Instruction Files
 
-          For each step in the job.yml, create a comprehensive instruction file at `.deepwork/jobs/[job_name]/steps/[step_name].md`.
+          For each step in the job.yml, create a comprehensive instruction file at `[project_root]/.deepwork/jobs/[job_name]/steps/[step_name].md`.
 
           **Template reference**: See `<job_dir>/templates/step_instruction.md.template` for the standard structure.
 
@@ -683,8 +683,8 @@ workflows:
           ### Step 3: Verify Files
 
           Verify that all files are in their correct locations:
-          - `job.yml` at `.deepwork/jobs/[job_name]/job.yml` (created by define step)
-          - Step instruction files at `.deepwork/jobs/[job_name]/steps/[step_name].md`
+          - `job.yml` at `[project_root]/.deepwork/jobs/[job_name]/job.yml` (created by define step)
+          - Step instruction files at `[project_root]/.deepwork/jobs/[job_name]/steps/[step_name].md`
 
           ## Example Implementation
 
@@ -947,7 +947,7 @@ workflows:
 
           For each step that needs improvement:
 
-          1. **Read the current instruction file** at `.deepwork/jobs/[job_name]/steps/[step_name].md`
+          1. **Read the current instruction file** at `[project_root]/.deepwork/jobs/[job_name]/steps/[step_name].md`
 
           2. **Make targeted improvements**:
              - Add missing context or clarification
@@ -1358,7 +1358,7 @@ workflows:
 
           First, read the job.yml JSON Schema at `.deepwork/job.schema.json` to understand the current valid structure. Use it as the source of truth.
 
-          Then audit and repair the job at `.deepwork/jobs/[job_name]/job.yml`. The current format requires:
+          Then audit and repair the job at `[project_root]/.deepwork/jobs/[job_name]/job.yml`. The current format requires:
 
           1. Root fields: `name`, `summary`, `step_arguments`, `workflows`
           2. NO `version` field
@@ -1771,7 +1771,7 @@ workflows:
           For each generalizable learning:
 
           1. **Locate the instruction file**
-             - Path: `.deepwork/jobs/[job_name]/steps/[step_name].md`
+             - Path: `[project_root]/.deepwork/jobs/[job_name]/steps/[step_name].md`
 
           2. **Make targeted improvements**
              - Add missing context or clarification
@@ -1799,7 +1799,7 @@ workflows:
 
           **Extract to shared files:**
 
-          1. **Create shared files** in `.deepwork/jobs/[job_name]/steps/shared/`
+          1. **Create shared files** in `[project_root]/.deepwork/jobs/[job_name]/steps/shared/`
              - `conventions.md` - Coding/formatting conventions used across steps
              - `examples.md` - Common examples referenced by multiple steps
              - `schemas.md` - Data structures or formats used throughout
