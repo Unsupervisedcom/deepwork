@@ -99,6 +99,10 @@
                                 }
                             ]
                         },
+                        "precomputed_info_for_reviewer_bash_command": {
+                            "type": "string",
+                            "description": "A shell command whose stdout is captured and injected into the review instruction file as precomputed context. The command path is resolved relative to the .deepreview file's directory and executed from the project root."
+                        },
                         "additional_context": {
                             "type": "object",
                             "description": "Optional flags to include additional context in the AI's prompt.",

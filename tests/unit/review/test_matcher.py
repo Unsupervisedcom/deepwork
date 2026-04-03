@@ -32,6 +32,7 @@ def _make_rule(
     agent: dict[str, str] | None = None,
     all_changed_filenames: bool = False,
     unchanged_matching_files: bool = False,
+    precomputed_info_bash_command: str | None = None,
     source_dir: Path = Path("/project"),
     source_file: Path | None = None,
     source_line: int = 1,
@@ -47,6 +48,7 @@ def _make_rule(
         agent=agent,
         all_changed_filenames=all_changed_filenames,
         unchanged_matching_files=unchanged_matching_files,
+        precomputed_info_bash_command=precomputed_info_bash_command,
         source_dir=source_dir,
         source_file=source_file or source_dir / ".deepreview",
         source_line=source_line,
@@ -851,3 +853,39 @@ class TestMatchFilesToRulesAllChangedFiles:
         assert len(tasks) == 1
         assert set(tasks[0].files_to_review) == {"app.py", "lib.py", "main.ts"}
         assert tasks[0].agent_name == "reviewer"
+
+
+class TestPrecomputedInfoThreading:
+    """Tests that precomputed_info_bash_command threads from rule to task."""
+
+    def test_individual_strategy_threads_command(self, tmp_path: Path) -> None:
+        rule = _make_rule(
+            strategy="individual",
+            precomputed_info_bash_command="/path/to/info.sh",
+            source_dir=tmp_path,
+        )
+        tasks = match_files_to_rules(["app.py"], [rule], tmp_path)
+        assert tasks[0].precomputed_info_bash_command == "/path/to/info.sh"
+
+    def test_matches_together_strategy_threads_command(self, tmp_path: Path) -> None:
+        rule = _make_rule(
+            strategy="matches_together",
+            precomputed_info_bash_command="/path/to/info.sh",
+            source_dir=tmp_path,
+        )
+        tasks = match_files_to_rules(["app.py", "lib.py"], [rule], tmp_path)
+        assert tasks[0].precomputed_info_bash_command == "/path/to/info.sh"
+
+    def test_all_changed_files_strategy_threads_command(self, tmp_path: Path) -> None:
+        rule = _make_rule(
+            strategy="all_changed_files",
+            precomputed_info_bash_command="/path/to/info.sh",
+            source_dir=tmp_path,
+        )
+        tasks = match_files_to_rules(["app.py"], [rule], tmp_path)
+        assert tasks[0].precomputed_info_bash_command == "/path/to/info.sh"
+
+    def test_none_command_threads_as_none(self, tmp_path: Path) -> None:
+        rule = _make_rule(strategy="individual", source_dir=tmp_path)
+        tasks = match_files_to_rules(["app.py"], [rule], tmp_path)
+        assert tasks[0].precomputed_info_bash_command is None

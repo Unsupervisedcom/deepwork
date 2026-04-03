@@ -67,7 +67,9 @@ echo ""
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
 PR_BODY=$(gh pr view "$CURRENT_BRANCH" --json body --jq '.body' 2>/dev/null || true)
 if [ -n "$PR_BODY" ]; then
+  echo '```text'
   echo "$PR_BODY"
+  echo '```'
 else
   echo "[No PR found for branch '${CURRENT_BRANCH}']"
 fi

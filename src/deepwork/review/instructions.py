@@ -7,6 +7,8 @@ additional context. Written to .deepwork/tmp/review_instructions/.
 
 import hashlib
 import re
+import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from deepwork.review.config import ReviewTask
@@ -70,6 +72,65 @@ def _content_hash(files: list[str], project_root: Path) -> str:
     return h.hexdigest()[:12]
 
 
+PRECOMPUTE_TIMEOUT_SECONDS = 60
+
+
+def _run_precompute_command(command: str, project_root: Path) -> str:
+    """Run a single precompute bash command and return its stdout.
+
+    Args:
+        command: Resolved absolute path to the command to execute.
+        project_root: Working directory for command execution.
+
+    Returns:
+        Command stdout on success, or an error message on failure.
+    """
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            timeout=PRECOMPUTE_TIMEOUT_SECONDS,
+        )
+        if result.returncode != 0:
+            return (
+                f"**Precompute command failed** (exit code {result.returncode}):\n"
+                f"```\n{result.stderr.strip()}\n```"
+            )
+        return result.stdout
+    except subprocess.TimeoutExpired:
+        return f"**Precompute command timed out** after {PRECOMPUTE_TIMEOUT_SECONDS}s:\n`{command}`"
+    except OSError as e:
+        return f"**Precompute command error**: {e}"
+
+
+def _run_precompute_commands(commands: set[str], project_root: Path) -> dict[str, str]:
+    """Run multiple precompute commands in parallel.
+
+    Args:
+        commands: Set of unique command strings to execute.
+        project_root: Working directory for command execution.
+
+    Returns:
+        Dict mapping command string to its stdout or error message.
+    """
+    if not commands:
+        return {}
+
+    results: dict[str, str] = {}
+    with ThreadPoolExecutor() as executor:
+        futures = {
+            executor.submit(_run_precompute_command, cmd, project_root): cmd for cmd in commands
+        }
+        for future in as_completed(futures):
+            cmd = futures[future]
+            results[cmd] = future.result()
+
+    return results
+
+
 def write_instruction_files(
     tasks: list[ReviewTask],
     project_root: Path,
@@ -99,6 +160,14 @@ def write_instruction_files(
                     child.unlink()
     instructions_dir.mkdir(parents=True, exist_ok=True)
 
+    # Run all precompute commands in parallel before building files
+    unique_commands = {
+        task.precomputed_info_bash_command
+        for task in tasks
+        if task.precomputed_info_bash_command is not None
+    }
+    precompute_results = _run_precompute_commands(unique_commands, project_root)
+
     results: list[tuple[ReviewTask, Path]] = []
 
     for task in tasks:
@@ -109,7 +178,12 @@ def write_instruction_files(
         if passed_marker.exists():
             continue
 
-        content = build_instruction_file(task, review_id)
+        precomputed_info = (
+            precompute_results.get(task.precomputed_info_bash_command)
+            if task.precomputed_info_bash_command
+            else None
+        )
+        content = build_instruction_file(task, review_id, precomputed_info)
         file_path = instructions_dir / f"{review_id}.md"
 
         safe_write(file_path, content)
@@ -118,13 +192,18 @@ def write_instruction_files(
     return results
 
 
-def build_instruction_file(task: ReviewTask, review_id: str = "") -> str:
+def build_instruction_file(
+    task: ReviewTask,
+    review_id: str = "",
+    precomputed_info: str | None = None,
+) -> str:
     """Build the markdown content for a single review instruction file.
 
     Args:
         task: The ReviewTask to generate instructions for.
         review_id: The deterministic review ID for this task (used in the
             "After Review" section).
+        precomputed_info: Pre-executed command output to include as context.
 
     Returns:
         Markdown string containing the complete review instructions.
@@ -166,6 +245,12 @@ def build_instruction_file(task: ReviewTask, review_id: str = "") -> str:
         )
         for filepath in task.all_changed_filenames:
             parts.append(f"- {filepath}")
+        parts.append("")
+
+    # Precomputed context (at the end, after all file sections)
+    if precomputed_info is not None:
+        parts.append("## Precomputed Context\n")
+        parts.append(precomputed_info.rstrip())
         parts.append("")
 
     # After Review: instruct agent to mark review as passed

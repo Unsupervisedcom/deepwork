@@ -437,3 +437,66 @@ class TestFindRuleLineNumbers:
         with patch.object(Path, "read_text", side_effect=OSError("Permission denied")):
             result = _find_rule_line_numbers(filepath)
         assert result == {}
+
+
+class TestPrecomputedInfoBashCommand:
+    """Tests for precomputed_info_for_reviewer_bash_command parsing — validates REVIEW-REQ-001.9."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.9.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_parses_precomputed_command(self, tmp_path: Path) -> None:
+        (tmp_path / "info.sh").write_text("#!/usr/bin/env bash\necho hi")
+        filepath = _write_deepreview(
+            tmp_path,
+            """
+my_rule:
+  description: "Test rule."
+  match:
+    include: ["**/*.py"]
+  review:
+    strategy: individual
+    precomputed_info_for_reviewer_bash_command: info.sh
+    instructions: "Review."
+""",
+        )
+        rules = parse_deepreview_file(filepath)
+        assert rules[0].precomputed_info_bash_command is not None
+        assert rules[0].precomputed_info_bash_command.endswith("info.sh")
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.9.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_precomputed_command_resolved_relative_to_deepreview_dir(self, tmp_path: Path) -> None:
+        subdir = tmp_path / "subdir"
+        subdir.mkdir()
+        (subdir / "gather.sh").write_text("#!/usr/bin/env bash\necho data")
+        filepath = _write_deepreview(
+            subdir,
+            """
+my_rule:
+  description: "Test rule."
+  match:
+    include: ["**/*.py"]
+  review:
+    strategy: individual
+    precomputed_info_for_reviewer_bash_command: gather.sh
+    instructions: "Review."
+""",
+        )
+        rules = parse_deepreview_file(filepath)
+        assert rules[0].precomputed_info_bash_command == str((subdir / "gather.sh").resolve())
+
+    def test_precomputed_command_defaults_to_none(self, tmp_path: Path) -> None:
+        filepath = _write_deepreview(
+            tmp_path,
+            """
+my_rule:
+  description: "Test rule."
+  match:
+    include: ["**/*.py"]
+  review:
+    strategy: individual
+    instructions: "Review."
+""",
+        )
+        rules = parse_deepreview_file(filepath)
+        assert rules[0].precomputed_info_bash_command is None

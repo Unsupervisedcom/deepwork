@@ -116,6 +116,7 @@ requirements_traceability:
     strategy: all_changed_files
     agent:
       claude: requirements-reviewer
+    precomputed_info_for_reviewer_bash_command: .deepwork/requirements_traceability_info.sh
     instructions: |
       Review the changed files for requirements traceability.
 

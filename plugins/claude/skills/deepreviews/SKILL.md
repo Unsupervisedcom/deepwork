@@ -48,6 +48,7 @@ rule_name:
       Review this file for ...
     agent:                                # Optional: platform-specific agent persona
       claude: "security-expert"
+    precomputed_info_for_reviewer_bash_command: .deepwork/review/gather_context.sh  # Optional
     additional_context:                   # Optional
       all_changed_filenames: true         # Include all changed files list
       unchanged_matching_files: true      # Include unchanged files matching the pattern
@@ -108,6 +109,24 @@ All three run automatically. If any review fails, `finished_step` returns `needs
 
 - `all_changed_filenames: true` — gives the reviewer a list of every changed file, even those outside this rule's scope. Useful for spotting related changes.
 - `unchanged_matching_files: true` — includes files matching the pattern that weren't changed. Useful for sync checks (e.g., "are all version files still in sync?").
+
+## Precomputed Context
+
+The `precomputed_info_for_reviewer_bash_command` field runs a shell command before the review and injects its stdout into the instruction file as a "Precomputed Context" section. This eliminates the need for the reviewer agent to run many tool calls to gather context.
+
+```yaml
+review:
+  strategy: all_changed_files
+  precomputed_info_for_reviewer_bash_command: .deepwork/requirements_traceability_info.sh
+  instructions: |
+    Review changed files for requirements traceability...
+```
+
+Behavior:
+- The command path is resolved relative to the `.deepreview` file's directory
+- The command runs from the project root with a 60-second timeout
+- If the command fails or times out, an error message is injected instead — the review pipeline does not crash
+- When multiple rules have precompute commands, all unique commands run in parallel
 
 ## Agent Personas
 

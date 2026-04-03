@@ -22,6 +22,7 @@ def _make_rule(tmp_path: Path) -> ReviewRule:
         agent=None,
         all_changed_filenames=False,
         unchanged_matching_files=False,
+        precomputed_info_bash_command=None,
         source_dir=tmp_path,
         source_file=tmp_path / ".deepreview",
         source_line=1,
