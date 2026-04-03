@@ -224,47 +224,6 @@ requirements_traceability:
       Produce a structured review with Coverage Gaps, Test Stability
       Violations, Traceability Issues, and a Summary with PASS/FAIL verdicts.
 
-requirement_file_format:
-  description: "Validate RFC 2119 compliance, unique IDs, and sequential numbering in requirement spec files."
-  match:
-    include:
-      - "specs/**/*-REQ-*.md"
-  review:
-    strategy: individual
-    instructions: |
-      Review this requirements specification file for format correctness.
-
-      Check the following:
-
-      1. **RFC 2119 keywords**: Every requirement statement MUST use at least one
-         RFC 2119 keyword (MUST, MUST NOT, SHALL, SHALL NOT, SHOULD, SHOULD NOT,
-         MAY, REQUIRED, RECOMMENDED, OPTIONAL). Flag any numbered requirement
-         that lacks an RFC 2119 keyword — e.g., "The system generates a UUID"
-         should be "The system MUST generate a UUID."
-
-      2. **Unique requirement IDs**: Each section heading must follow the pattern
-         `### {PREFIX}-REQ-NNN.M: Title` where PREFIX matches the filename prefix
-         (e.g., JOBS-REQ for JOBS-REQ-001-*.md). Within each section, requirements
-         are numbered lists (1., 2., 3., ...). Flag any duplicate section IDs.
-
-      3. **Sequential numbering**: Within each section, numbered requirements
-         should be sequential without gaps (1, 2, 3 — not 1, 2, 4). Flag gaps
-         or out-of-order numbers.
-
-      4. **Section ID consistency**: The section ID prefix must match the file's
-         naming convention. For example, in `JOBS-REQ-001-mcp-workflow-tools.md`,
-         all sections should use `JOBS-REQ-001.X` (not `JOBS-REQ-002.X`).
-
-      5. **Testability**: Each requirement should be specific enough to be
-         verifiable — either by an automated test or a review rule. Flag vague
-         requirements that cannot be objectively evaluated (e.g., "The system
-         SHOULD be fast" — fast compared to what?).
-
-      Output Format:
-      - PASS: All requirements are properly formatted.
-      - FAIL: Issues found. List each with the section ID, requirement number,
-        and a concise description of the issue.
-
 update_documents_relating_to_src_deepwork:
   description: "Ensure project documentation stays current when DeepWork source files, plugins, or platform content change."
   match:

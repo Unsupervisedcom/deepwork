@@ -103,11 +103,12 @@ deepwork/                       # DeepWork tool repository
 │   │   │   ├── prompt_best_practices.md
 │   │   │   └── suggest_new_reviews.md
 │   │   ├── skills/
-│   │   │   ├── deepwork/SKILL.md
-│   │   │   ├── review/SKILL.md
 │   │   │   ├── configure_reviews/SKILL.md
+│   │   │   ├── deepplan/SKILL.md
 │   │   │   ├── deepreviews/SKILL.md
-│   │   │   └── deepschema/SKILL.md
+│   │   │   ├── deepwork/SKILL.md
+│   │   │   ├── deepschema/SKILL.md
+│   │   │   └── review/SKILL.md
 │   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
 │   │   └── .mcp.json           # MCP server config
 │   └── gemini/                 # Gemini CLI extension

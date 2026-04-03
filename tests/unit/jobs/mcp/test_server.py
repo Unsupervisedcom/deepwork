@@ -459,6 +459,8 @@ class TestRegisterSessionJobTool:
         assert data["status"] == "registered"
         mock_tools.register_session_job.assert_called_once()
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-013.5.1, JOBS-REQ-013.5.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_register_session_job_missing_session_id(self, tmp_path: Path) -> None:
         """register_session_job returns error when session_id is missing."""
         mcp, _ = _make_server_with_mocked_tools(tmp_path)
@@ -508,6 +510,8 @@ class TestGetSessionJobTool:
         data = result.structured_content
         assert data["job_name"] == "my_plan"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-013.5.1, JOBS-REQ-013.5.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_get_session_job_missing_session_id(self, tmp_path: Path) -> None:
         """get_session_job returns error when session_id is missing."""
         mcp, _ = _make_server_with_mocked_tools(tmp_path)

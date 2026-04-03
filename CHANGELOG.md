@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add DeepPlan — structured planning workflow that produces executable DeepWork job definitions (#331)
+  - New `deepplan` standard job with `create_deep_plan` workflow (5 steps: explore, design alternatives, synthesize, enrich, present)
+  - New `register_session_job` and `get_session_job` MCP tools for transient session-scoped job definitions
+  - New `/deepplan` skill for Claude Code plugin
+  - Startup context hook auto-triggers DeepPlan when entering plan mode
+  - Session jobs are discoverable by `start_workflow` and take priority over standard discovery
+
 ### Changed
 
 ### Fixed
