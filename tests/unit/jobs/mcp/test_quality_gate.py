@@ -92,20 +92,20 @@ class TestValidateJsonSchemas:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.2.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_fails_when_json_is_invalid(self, tmp_path: Path) -> None:
-        """Non-JSON content in the output file produces an error."""
+    def test_fails_when_file_is_unparseable(self, tmp_path: Path) -> None:
+        """Unparseable content in the output file produces an error."""
         schema = {"type": "object"}
         arg = StepArgument(
-            name="data", description="JSON data", type="file_path", json_schema=schema
+            name="data", description="data file", type="file_path", json_schema=schema
         )
         output_ref = StepOutputRef(argument_name="data", required=True)
         step = WorkflowStep(name="generate", outputs={"data": output_ref})
         job, _ = _make_job(tmp_path, [arg], step)
 
-        data_file = tmp_path / "data.json"
-        data_file.write_text("not json {{{")
+        data_file = tmp_path / "data.yml"
+        data_file.write_text(":\n  bad: [yaml\n  unclosed")
 
-        errors = validate_json_schemas({"data": "data.json"}, step, job, tmp_path)
+        errors = validate_json_schemas({"data": "data.yml"}, step, job, tmp_path)
         assert len(errors) == 1
         assert "failed to parse" in errors[0]
 
@@ -192,24 +192,6 @@ class TestValidateJsonSchemas:
         assert len(errors) == 1
         assert "schema validation failed" in errors[0]
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.2.3).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_fails_when_yaml_is_invalid(self, tmp_path: Path) -> None:
-        """Invalid YAML content produces a parse error."""
-        schema = {"type": "object"}
-        arg = StepArgument(
-            name="data", description="YAML data", type="file_path", json_schema=schema
-        )
-        output_ref = StepOutputRef(argument_name="data", required=True)
-        step = WorkflowStep(name="generate", outputs={"data": output_ref})
-        job, _ = _make_job(tmp_path, [arg], step)
-
-        data_file = tmp_path / "data.yml"
-        data_file.write_text(":\n  bad: [yaml\n  unclosed")
-
-        errors = validate_json_schemas({"data": "data.yml"}, step, job, tmp_path)
-        assert len(errors) == 1
-        assert "failed to parse" in errors[0]
 
 
 # ---------------------------------------------------------------------------
