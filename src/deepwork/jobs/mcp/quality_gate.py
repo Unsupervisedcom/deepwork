@@ -7,9 +7,10 @@ step output reviews and process requirements. These are merged with
 
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
+
+import yaml
 
 from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
 from deepwork.jobs.mcp.schemas import ArgumentValue
@@ -60,9 +61,9 @@ def validate_json_schemas(
                 continue
             try:
                 content = full_path.read_text(encoding="utf-8")
-                parsed = json.loads(content)
-            except (json.JSONDecodeError, UnicodeDecodeError) as e:
-                errors.append(f"Output '{output_name}' file '{path}': failed to parse as JSON: {e}")
+                parsed = yaml.safe_load(content)
+            except (yaml.YAMLError, UnicodeDecodeError) as e:
+                errors.append(f"Output '{output_name}' file '{path}': failed to parse: {e}")
                 continue
 
             try:

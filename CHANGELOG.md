@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Quality gate `validate_json_schemas()` now uses `yaml.safe_load` (a JSON superset) instead of `json.loads`, so YAML output files are validated correctly
+
 ### Removed
 ## [0.12.0] - 2026-04-03
 
