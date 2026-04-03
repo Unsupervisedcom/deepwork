@@ -10,6 +10,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import yaml
+
 from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
 from deepwork.jobs.mcp.schemas import ArgumentValue
 from deepwork.jobs.parser import (
@@ -58,11 +60,9 @@ def validate_json_schemas(
             if not full_path.exists():
                 continue
             try:
-                import yaml
-
                 content = full_path.read_text(encoding="utf-8")
                 parsed = yaml.safe_load(content)
-            except Exception as e:
+            except (yaml.YAMLError, UnicodeDecodeError) as e:
                 errors.append(f"Output '{output_name}' file '{path}': failed to parse: {e}")
                 continue
 
