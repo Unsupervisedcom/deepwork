@@ -184,6 +184,10 @@ Each step:
 7. **Succinctness**: Jobs, documentation, and code MUST be succinct. Avoid verbose preambles, redundant explanations, and duplicated content. Step instructions should contain only what the agent needs to act — not philosophy, not quality criteria already enforced by the workflow runtime, and not domain tables already in `common_job_info`. If it can be said in one sentence, do not use three.
 8. **Documentation Sync**: When making implementation changes, update `doc/architecture.md` and `README.md` to reflect those changes.
 
+## MCP Tool Naming in This Repo
+
+This repo has **two** MCP server instances: one from the plugin (`plugin:deepwork:deepwork`, tools prefixed `mcp__plugin_deepwork_deepwork__`) and one from the project-level `.mcp.json` (`deepwork`, tools prefixed `mcp__deepwork__`). **Always use the non-plugin prefix** (`mcp__deepwork__*`) when calling MCP tools in this repo — including in the e2e CI test (`claude-code-test.yml`), workflow prompts, and any scripted Claude sessions. The non-plugin server is configured for development/testing (bare `deepwork` command, `--path .`), while the plugin server uses `uvx` and is meant for end-user installations. Note: `how_to_invoke` in `src/deepwork/jobs/mcp/tools.py` hardcodes the `mcp__plugin_deepwork_deepwork__` prefix — this is correct for end-user plugin installations but causes confusion when both servers are present in development.
+
 ## Appendix: Project Structure
 
 ```
