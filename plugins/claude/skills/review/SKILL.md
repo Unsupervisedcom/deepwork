@@ -23,7 +23,20 @@ Only proceed past this section if the user wants to **run** reviews.
    - **With `files`** to review only specific files: `mcp__deepwork__get_review_instructions(files=["src/app.py", "src/lib.py"])`. When provided, only reviews whose include/exclude patterns match the given files will be returned. Use this when the user asks to review a particular file or set of files rather than the whole branch.
    - **If the result says no rules are configured**: Ask the user if they'd like to auto-discover and set up rules. If yes, invoke the `/deepwork` skill with the `deepwork_reviews` job's `discover_rules` workflow. Stop here — do not proceed with running reviews if there are no rules.
 2. The output will list review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields — these map directly to the Task tool parameters. Launch all of them as parallel Task agents.
-3. Collect the results from all review agents.
+3. **While review agents run**, check for a changelog and open PR (see below).
+4. Collect the results from all review agents.
+
+## Changelog & PR Description Check
+
+Run this concurrently with the review agents (step 2 above) — don't wait for reviews to finish first.
+
+1. Check if the project has a changelog file (e.g., `CHANGELOG.md`, `CHANGELOG`, `CHANGES.md`).
+2. If a changelog exists and there are commits on the current branch beyond the main branch:
+   - Read the changelog and the branch's commit log (`git log main..HEAD --oneline`).
+   - Verify the changelog's unreleased/current section accurately reflects what the branch does. If entries are missing, outdated, or inaccurate, update the changelog.
+3. If a PR is open for the current branch (check with `gh pr view`):
+   - If you updated the changelog, also verify the PR description matches. Update it with `gh pr edit` if needed.
+   - If the changelog was already accurate, skip the PR description check.
 
 ## Acting on Results
 
