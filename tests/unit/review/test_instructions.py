@@ -448,9 +448,7 @@ class TestPrecomputedContext:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.9.6, REVIEW-REQ-001.9.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_run_precompute_commands_deduplicates_and_parallelizes(
-        self, tmp_path: Path
-    ) -> None:
+    def test_run_precompute_commands_deduplicates_and_parallelizes(self, tmp_path: Path) -> None:
         script = tmp_path / "echo.sh"
         script.write_text("#!/usr/bin/env bash\necho 'output'")
         script.chmod(0o755)

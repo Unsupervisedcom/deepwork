@@ -114,9 +114,168 @@ if [ -n "$HINTS" ]; then
   echo -e "$HINTS"
 fi
 
-# ==== Section 2: Diffs by top-level directory ====
+# ==== Section 2: Requirement IDs referenced in changed files ====
 
-echo "## 2. Diffs"
+echo "## 2. Requirement IDs Referenced in Changed Files"
+echo ""
+echo '```'
+IN_PLAY_REQS=""
+if [ -n "$ALL_FILES" ]; then
+  while IFS= read -r f; do
+    if [ -f "$f" ]; then
+      REFS=$(grep -oE '[A-Z]+-REQ-[0-9]+(\.[0-9]+)*' "$f" 2>/dev/null | sort -u || true)
+      if [ -n "$REFS" ]; then
+        echo "$f:"
+        echo "$REFS" | sed 's/^/  /'
+        IN_PLAY_REQS="${IN_PLAY_REQS}${REFS}"$'\n'
+      fi
+    fi
+  done <<< "$ALL_FILES"
+fi
+echo '```'
+echo ""
+
+# Build the set of in-play requirement section IDs (unique, section-level)
+IN_PLAY_SECTIONS=$(echo "$IN_PLAY_REQS" | grep -oE '[A-Z]+-REQ-[0-9]+' | sort -u || true)
+
+# Also include sections from changed spec files
+if [ -n "$CHANGED_SPECS" ]; then
+  SPEC_SECTIONS=$(grep -roh '^### [A-Z]*-REQ-[0-9.]*' ${CHANGED_SPECS} 2>/dev/null | \
+    sed 's/^### //' | grep -oE '[A-Z]+-REQ-[0-9]+' | sort -u || true)
+  IN_PLAY_SECTIONS=$(echo -e "${IN_PLAY_SECTIONS}\n${SPEC_SECTIONS}" | sort -u || true)
+fi
+
+# ==== Section 3: Files that reference each in-play requirement ====
+
+echo "## 3. Files That Reference Each In-Play Requirement"
+echo ""
+echo "Scoped to requirements referenced by changed files or in changed specs."
+echo "Check the full repo if you need coverage for other requirements."
+echo ""
+
+# Collect in-play REQ IDs at full granularity from specs
+IN_PLAY_REQ_IDS=""
+if [ -n "$IN_PLAY_SECTIONS" ]; then
+  while IFS= read -r section; do
+    [ -z "$section" ] && continue
+    SECTION_REQS=$(grep -roh "^### ${section}\.[0-9.]*" "$SPEC_DIR/" 2>/dev/null | sed 's/^### //' || true)
+    IN_PLAY_REQ_IDS="${IN_PLAY_REQ_IDS}${section}"$'\n'"${SECTION_REQS}"$'\n'
+  done <<< "$IN_PLAY_SECTIONS"
+  IN_PLAY_REQ_IDS=$(echo "$IN_PLAY_REQ_IDS" | sort -u | grep -v '^$' || true)
+fi
+
+echo '```'
+if [ -n "$IN_PLAY_REQ_IDS" ]; then
+  while IFS= read -r req_id; do
+    [ -z "$req_id" ] && continue
+    MATCHES=$(grep ":${req_id}$" "$TMPDIR_TRACE/all_refs.txt" 2>/dev/null | cut -d: -f1 | sort -u || true)
+    if [ -z "$MATCHES" ]; then
+      echo "${req_id}: (not referenced)"
+    else
+      echo "${req_id}:"
+      echo "$MATCHES" | sed 's/^/  /'
+    fi
+  done <<< "$IN_PLAY_REQ_IDS"
+else
+  echo "(no in-play requirements)"
+fi
+echo '```'
+echo ""
+
+# ==== Section 4: Test stability cross-reference ====
+
+echo "## 4. Test Stability Cross-Reference"
+echo ""
+echo "For each changed test file: which requirements it validates and whether"
+echo "those requirements also changed in this branch."
+echo ""
+
+# Collect REQ IDs from changed spec files
+CHANGED_REQ_IDS=""
+if [ -n "$CHANGED_SPECS" ]; then
+  CHANGED_REQ_IDS=$(grep -ohE '[A-Z]+-REQ-[0-9]+(\.[0-9]+)*' ${CHANGED_SPECS} 2>/dev/null | sort -u || true)
+fi
+
+if [ -n "$CHANGED_TESTS" ]; then
+  while IFS= read -r test_file; do
+    [ -z "$test_file" ] || [ ! -f "$test_file" ] && continue
+    TEST_REQS=$(grep -oE '[A-Z]+-REQ-[0-9]+(\.[0-9]+)*' "$test_file" 2>/dev/null | sort -u || true)
+
+    echo "### ${test_file}"
+    echo ""
+
+    if [ -z "$TEST_REQS" ]; then
+      echo "Referenced requirements: (none)"
+      echo ""
+      continue
+    fi
+
+    # Split into changed and unchanged requirements
+    CHANGED_LIST=""
+    UNCHANGED_LIST=""
+    while IFS= read -r req; do
+      REQ_SECTION=$(echo "$req" | grep -oE '[A-Z]+-REQ-[0-9]+')
+      if echo "$CHANGED_REQ_IDS" | grep -q "^${req}$" 2>/dev/null || \
+         echo "$CHANGED_REQ_IDS" | grep -q "^${REQ_SECTION}\." 2>/dev/null; then
+        CHANGED_LIST="${CHANGED_LIST}  ${req}"$'\n'
+      else
+        UNCHANGED_LIST="${UNCHANGED_LIST}  ${req}"$'\n'
+      fi
+    done <<< "$TEST_REQS"
+
+    if [ -n "$CHANGED_LIST" ]; then
+      echo "With spec changes:"
+      echo "$CHANGED_LIST"
+    fi
+    if [ -n "$UNCHANGED_LIST" ]; then
+      UNCHANGED_COUNT=$(echo "$UNCHANGED_LIST" | grep -c '[A-Z]' || true)
+      echo "WITHOUT spec changes (${UNCHANGED_COUNT}):"
+      echo "$UNCHANGED_LIST"
+    fi
+    echo ""
+  done <<< "$CHANGED_TESTS"
+else
+  echo "(no test files changed)"
+  echo ""
+fi
+echo ""
+
+# ==== Section 5: New or changed requirements in this branch ====
+
+echo "## 5. New or Changed Requirements in This Branch"
+echo ""
+if [ -n "$CHANGED_SPECS" ]; then
+  ADDED_SECTIONS=$(git diff "${MERGE_BASE}" -- ${CHANGED_SPECS} 2>/dev/null | grep -E '^\+###' | sed 's/^\+### //' | sort -u || true)
+  REMOVED_SECTIONS=$(git diff "${MERGE_BASE}" -- ${CHANGED_SPECS} 2>/dev/null | grep -E '^-###' | sed 's/^-### //' | sort -u || true)
+
+  if [ -n "$ADDED_SECTIONS" ]; then
+    echo "**Added sections:**"
+    echo '```'
+    echo "$ADDED_SECTIONS"
+    echo '```'
+    echo ""
+  fi
+  if [ -n "$REMOVED_SECTIONS" ]; then
+    echo "**Removed sections:**"
+    echo '```'
+    echo "$REMOVED_SECTIONS"
+    echo '```'
+    echo ""
+  fi
+  if [ -z "$ADDED_SECTIONS" ] && [ -z "$REMOVED_SECTIONS" ]; then
+    echo "No section headings added or removed (changes were within existing sections)."
+    echo ""
+    echo "Changed spec files: ${CHANGED_SPECS}" | tr '\n' ', '
+    echo ""
+  fi
+else
+  echo "(no spec files changed)"
+fi
+echo ""
+
+# ==== Section 6: Diffs (ALL REMAINING CONTENT IS DIFFS) ====
+
+echo "## 6. Diffs (ALL REMAINING CONTENT IS DIFFS)"
 echo ""
 echo "### Stat"
 echo '```'
@@ -166,129 +325,3 @@ if [ -n "$TOP_DIRS" ]; then
     fi
   done <<< "$TOP_DIRS"
 fi
-
-# ==== Section 3: Requirement IDs referenced in changed files ====
-
-echo "## 3. Requirement IDs Referenced in Changed Files"
-echo ""
-echo '```'
-IN_PLAY_REQS=""
-if [ -n "$ALL_FILES" ]; then
-  while IFS= read -r f; do
-    if [ -f "$f" ]; then
-      REFS=$(grep -oE '[A-Z]+-REQ-[0-9]+(\.[0-9]+)*' "$f" 2>/dev/null | sort -u || true)
-      if [ -n "$REFS" ]; then
-        echo "$f:"
-        echo "$REFS" | sed 's/^/  /'
-        IN_PLAY_REQS="${IN_PLAY_REQS}${REFS}"$'\n'
-      fi
-    fi
-  done <<< "$ALL_FILES"
-fi
-echo '```'
-echo ""
-
-# Build the set of in-play requirement section IDs (unique, section-level)
-IN_PLAY_SECTIONS=$(echo "$IN_PLAY_REQS" | grep -oE '[A-Z]+-REQ-[0-9]+' | sort -u || true)
-
-# Also include sections from changed spec files
-if [ -n "$CHANGED_SPECS" ]; then
-  SPEC_SECTIONS=$(grep -roh '^### [A-Z]*-REQ-[0-9.]*' ${CHANGED_SPECS} 2>/dev/null | \
-    sed 's/^### //' | grep -oE '[A-Z]+-REQ-[0-9]+' | sort -u || true)
-  IN_PLAY_SECTIONS=$(echo -e "${IN_PLAY_SECTIONS}\n${SPEC_SECTIONS}" | sort -u || true)
-fi
-
-# ==== Section 4: Files that reference each in-play requirement ====
-
-echo "## 4. Files That Reference Each In-Play Requirement"
-echo ""
-echo "Scoped to requirements referenced by changed files or in changed specs."
-echo "Check the full repo if you need coverage for other requirements."
-echo ""
-
-# Collect in-play REQ IDs at full granularity from specs
-IN_PLAY_REQ_IDS=""
-if [ -n "$IN_PLAY_SECTIONS" ]; then
-  while IFS= read -r section; do
-    [ -z "$section" ] && continue
-    SECTION_REQS=$(grep -roh "^### ${section}\.[0-9.]*" "$SPEC_DIR/" 2>/dev/null | sed 's/^### //' || true)
-    IN_PLAY_REQ_IDS="${IN_PLAY_REQ_IDS}${section}"$'\n'"${SECTION_REQS}"$'\n'
-  done <<< "$IN_PLAY_SECTIONS"
-  IN_PLAY_REQ_IDS=$(echo "$IN_PLAY_REQ_IDS" | sort -u | grep -v '^$' || true)
-fi
-
-echo '```'
-if [ -n "$IN_PLAY_REQ_IDS" ]; then
-  while IFS= read -r req_id; do
-    [ -z "$req_id" ] && continue
-    MATCHES=$(grep ":${req_id}$" "$TMPDIR_TRACE/all_refs.txt" 2>/dev/null | cut -d: -f1 | sort -u || true)
-    if [ -z "$MATCHES" ]; then
-      echo "${req_id}: (not referenced)"
-    else
-      echo "${req_id}:"
-      echo "$MATCHES" | sed 's/^/  /'
-    fi
-  done <<< "$IN_PLAY_REQ_IDS"
-else
-  echo "(no in-play requirements)"
-fi
-echo '```'
-echo ""
-
-# ==== Section 5: Test stability cross-reference ====
-
-echo "## 5. Test Stability Cross-Reference"
-echo ""
-echo "For each changed test file: which requirements it validates and whether"
-echo "those requirements also changed in this branch."
-echo ""
-
-# Collect REQ IDs from changed spec files
-CHANGED_REQ_IDS=""
-if [ -n "$CHANGED_SPECS" ]; then
-  CHANGED_REQ_IDS=$(grep -ohE '[A-Z]+-REQ-[0-9]+(\.[0-9]+)*' ${CHANGED_SPECS} 2>/dev/null | sort -u || true)
-fi
-
-echo '```'
-if [ -n "$CHANGED_TESTS" ]; then
-  echo "CHANGED TEST FILE | REFERENCED REQS | REQ ALSO CHANGED?"
-  echo "--- | --- | ---"
-  while IFS= read -r test_file; do
-    [ -z "$test_file" ] || [ ! -f "$test_file" ] && continue
-    TEST_REQS=$(grep -oE '[A-Z]+-REQ-[0-9]+(\.[0-9]+)*' "$test_file" 2>/dev/null | sort -u || true)
-    if [ -z "$TEST_REQS" ]; then
-      echo "${test_file} | (none) | n/a"
-    else
-      while IFS= read -r req; do
-        REQ_SECTION=$(echo "$req" | grep -oE '[A-Z]+-REQ-[0-9]+')
-        if echo "$CHANGED_REQ_IDS" | grep -q "^${req}$" 2>/dev/null || \
-           echo "$CHANGED_REQ_IDS" | grep -q "^${REQ_SECTION}\." 2>/dev/null; then
-          echo "${test_file} | ${req} | YES"
-        else
-          echo "${test_file} | ${req} | **NO — POTENTIAL VIOLATION**"
-        fi
-      done <<< "$TEST_REQS"
-    fi
-  done <<< "$CHANGED_TESTS"
-else
-  echo "(no test files changed)"
-fi
-echo '```'
-echo ""
-
-# ==== Section 6: New or changed requirements in this branch ====
-
-echo "## 6. New or Changed Requirements in This Branch"
-echo ""
-echo '```'
-if [ -n "$CHANGED_SPECS" ]; then
-  while IFS= read -r spec_file; do
-    echo "=== ${spec_file} ==="
-    git diff "${MERGE_BASE}" -- "$spec_file" 2>/dev/null | grep -E '^\+###|^-###' || echo "  (no heading changes)"
-    git diff "${MERGE_BASE}" -- "$spec_file" 2>/dev/null | grep -E '^\+[0-9]+\.|^-[0-9]+\.' | head -20 || true
-    echo ""
-  done <<< "$CHANGED_SPECS"
-else
-  echo "(no spec files changed)"
-fi
-echo '```'
