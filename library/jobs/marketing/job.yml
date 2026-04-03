@@ -1,5 +1,5 @@
 name: marketing
-summary: "Marketing workflows for competitive analysis, content strategy, and campaign planning"
+summary: "Analyze competitors' content strategies, define brand content plans, and create tracked marketing campaigns"
 
 step_arguments:
   - name: project_name
@@ -204,7 +204,7 @@ workflows:
           ### context_brief.md
 
           ```markdown
-          # Competitive content analysis: [Brand Name]
+          # Marketing context: [Brand Name]
 
           ## Brand context
           - **Brand**: [Brand name]
@@ -275,10 +275,17 @@ workflows:
              - `inputs`: `topic` = "[Competitor Name] content strategy: [content focus areas]",
                `type` = "competitive", `depth` = "quick"
 
-             Launch all competitors in parallel since each is independent.
+             Launch all competitors in parallel using the Agent tool — one
+             agent per competitor, each calling `start_workflow` independently.
+
              The research job produces `sources.md`, `analysis.md`, and
              `README.md` per competitor — the README serves as the competitor
              report.
+
+             **Fallback**: If the research job is not available, launch a
+             market-researcher or general-purpose agent per competitor with a
+             prompt covering both gather and analyze phases via WebSearch and
+             WebFetch directly.
 
           3. **Collect results**
              - Wait for all research workflows to complete.
@@ -649,7 +656,7 @@ workflows:
           ### competitive_content_report.md
 
           ```markdown
-          # Competitive content analysis: [Brand Name]
+          # Marketing context: [Brand Name]
 
           **Date**: [Date]
           **Prepared for**: [Audience from context_brief.md]
@@ -823,6 +830,11 @@ workflows:
              mention specific ideas, dig deeper — ask about format, audience,
              cadence, and how it connects to the competitive gaps.
 
+             If the user provides sparse answers, propose additional ideas based
+             on the competitive analysis and ask the user to confirm or modify
+             them. The minimum ideas requirement can be met with a mix of user
+             ideas and agent-proposed ideas that the user approves.
+
           3. **Synthesize into a content plan comment**
              - Group ideas by channel/format
              - Note which competitive gaps each idea addresses
@@ -961,7 +973,7 @@ workflows:
           ### context_brief.md
 
           ```markdown
-          # Competitive content analysis: [Brand Name]
+          # Marketing context: [Brand Name]
 
           ## Brand context
           - **Brand**: [Brand name]
@@ -1239,7 +1251,7 @@ workflows:
           ## Objective
 
           Create a milestone and parent issue on the user's project tracker so the
-          analysis leads to tracked, actionable work.
+          strategy work leads to tracked, actionable work.
 
           ## Task
 
@@ -1255,26 +1267,23 @@ workflows:
                a tracker, confirm with the user rather than asking from scratch.
 
           2. **Create a milestone**
-             - Name: "[Year] Marketing Campaign" (e.g., "2026 Marketing Campaign")
-             - Description: One-line summary referencing the competitive analysis.
+             - Name: "[Year] Social Media Strategy" (e.g., "2026 Social Media Strategy")
+             - Description: One-line summary referencing the content strategy.
 
           3. **Create the parent issue**
-             - Title: "[Year] marketing campaign"
-             - Body should distill the competitive_content_report.md into an
-               actionable issue format:
-               - Context paragraph summarizing the competitive landscape
-               - Key findings as a numbered list (top 5)
-               - Competitive landscape comparison table
-               - Priority recommendations (top 3) with what/why/how
-               - Suggested content cadence table
-               - Strategic investments as a checklist
-               - Link back to the full report and supporting notes
+             - Title: "[Year] social media strategy"
+             - Body should distill content_strategy.md into an actionable issue:
+               - Brand overview and target audience
+               - Content pillars summary
+               - Posting schedule table by platform
+               - Brand voice do's and don'ts
+               - Link back to the full strategy document
              - Assign the issue to the milestone.
 
-          4. **Record the issue URL** for use in the next step.
+          4. **Record the issue URL** for use in future steps.
 
         inputs:
-          competitive_content_report.md:
+          content_strategy.md:
             required: true
           context_brief.md:
             required: true
@@ -1283,6 +1292,6 @@ workflows:
             required: true
         process_requirements:
           "User Confirmed Tracker": "The project tracker MUST be confirmed with the user before creating issues."
-          "Issue Links to Report": "The campaign issue MUST link back to the full analysis report."
-          "Issue Self-Contained": "The issue body MUST be readable without opening the full report."
-          "Issue URL Captured": "The issue URL MUST be recorded as output for the brainstorm step."
+          "Issue Links to Strategy": "The campaign issue MUST link back to the full content strategy document."
+          "Issue Self-Contained": "The issue body MUST be readable without opening the full strategy."
+          "Issue URL Captured": "The issue URL MUST be recorded as output."
