@@ -17,7 +17,7 @@ This walks you through configuring `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` so the Dee
 | Job | Description |
 |-----|-------------|
 | [Engineer](./engineer) | Domain-agnostic engineering execution from product issue through PR merge and product sync, with TDD discipline |
-| [Marketing](./marketing) | Competitive content analysis across channels with parallel per-competitor research |
+| [Marketing](./marketing) | Competitive analysis, content strategy, and social media planning with shared steps across workflows |
 | [Research](./research) | Multi-workflow research suite — deep investigation, quick summaries, material ingestion, and reproduction planning |
 | [Platform Engineer](./platform_engineer) | Incident response, observability, CI/CD, releases, security, cost management, and infrastructure |
 | [Repo](./repo) | Audit and configure repositories — labels, branch protection, milestones, and boards |
@@ -96,6 +96,10 @@ library/jobs/
 │   ├── CLAUDE.md -> AGENTS.md
 │   ├── requirements.md      # RFC 2119 requirements specification
 │   └── steps/               # Step instruction files (also inlined in job.yml)
+├── marketing/               # Competitive content analysis workflows
+│   ├── job.yml
+│   ├── AGENTS.md            # Agent context and learnings
+│   └── CLAUDE.md -> AGENTS.md
 ├── platform_engineer/       # Platform engineering workflows
 │   ├── job.yml
 │   ├── AGENTS.md            # Agent context and learnings
