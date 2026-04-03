@@ -33,6 +33,7 @@ class ReviewRule:
     agent: dict[str, str] | None
     all_changed_filenames: bool
     unchanged_matching_files: bool
+    precomputed_info_bash_command: str | None  # Resolved absolute command path
     source_dir: Path  # Directory containing the .deepreview file
     source_file: Path  # Path to the .deepreview file
     source_line: int  # Line number of the rule name in the .deepreview file
@@ -49,6 +50,7 @@ class ReviewTask:
     source_location: str = ""  # e.g. "src/.deepreview:5"
     additional_files: list[str] = field(default_factory=list)  # Unchanged matching files
     all_changed_filenames: list[str] | None = None
+    precomputed_info_bash_command: str | None = None  # Resolved command to run
 
 
 def parse_deepreview_file(filepath: Path) -> list[ReviewRule]:
@@ -128,6 +130,10 @@ def _parse_rule(
     all_changed_filenames = additional_context.get("all_changed_filenames", False)
     unchanged_matching_files = additional_context.get("unchanged_matching_files", False)
 
+    precomputed_cmd = _resolve_precomputed_command(
+        review_data.get("precomputed_info_for_reviewer_bash_command"), source_dir
+    )
+
     return ReviewRule(
         name=name,
         description=description,
@@ -138,6 +144,7 @@ def _parse_rule(
         agent=agent,
         all_changed_filenames=all_changed_filenames,
         unchanged_matching_files=unchanged_matching_files,
+        precomputed_info_bash_command=precomputed_cmd,
         source_dir=source_dir,
         source_file=source_file,
         source_line=source_line,
@@ -170,6 +177,23 @@ def _resolve_instructions(instructions: str | dict[str, Any], source_dir: Path) 
         return file_path.read_text(encoding="utf-8")
     except OSError as e:
         raise ConfigError(f"Failed to read instructions file {file_path}: {e}") from e
+
+
+def _resolve_precomputed_command(raw_command: str | None, source_dir: Path) -> str | None:
+    """Resolve a precomputed info bash command relative to the source directory.
+
+    Args:
+        raw_command: The raw command string from YAML, or None.
+        source_dir: Directory containing the .deepreview file.
+
+    Returns:
+        The resolved command string with the path made absolute, or None.
+    """
+    if raw_command is None:
+        return None
+
+    resolved = str((source_dir / raw_command).resolve())
+    return resolved
 
 
 # Matches a top-level YAML key (no leading whitespace, followed by colon)

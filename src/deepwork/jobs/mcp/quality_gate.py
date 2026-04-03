@@ -214,6 +214,7 @@ def build_dynamic_review_rules(
                         review_block.additional_context
                         and review_block.additional_context.get("unchanged_matching_files")
                     ),
+                    precomputed_info_bash_command=None,
                     source_dir=project_root,
                     source_file=job.job_dir / "job.yml",
                     source_line=0,
@@ -277,6 +278,7 @@ Evaluate whether the work described in the `work_summary` meets each requirement
                 agent=None,
                 all_changed_filenames=False,
                 unchanged_matching_files=False,
+                precomputed_info_bash_command=None,
                 source_dir=project_root,
                 source_file=job.job_dir / "job.yml",
                 source_line=0,
