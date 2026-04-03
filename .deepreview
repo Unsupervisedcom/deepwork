@@ -74,19 +74,17 @@ python_lint:
       - "tests/fixtures/**"
   review:
     strategy: matches_together
+    precomputed_info_for_reviewer_bash_command: make lint
     instructions: |
       This is an auto-fix rule — you SHOULD edit files to resolve issues.
 
-      Run ruff and mypy on the changed Python files listed below. Fix what you
-      can automatically, then report only issues that remain unresolved.
+      The precomputed lint output above shows the results of running `make lint`
+      (ruff format, ruff check --fix, mypy) on the entire project.
 
-      Steps:
-      1. Run `uv run ruff check --fix` on all listed files.
-      2. Run `uv run ruff format` on all listed files.
-      3. Run `uv run mypy` on all listed files.
-      4. Fix any remaining issues you can resolve (e.g., adding type annotations,
+      If there are remaining errors:
+      1. Fix any issues you can resolve (e.g., adding type annotations,
          renaming ambiguous variables).
-      5. Re-run all three checks to confirm your fixes are clean.
+      2. Re-run `make lint` to confirm your fixes are clean.
 
       Output Format:
       - PASS: All checks pass (no remaining issues).
