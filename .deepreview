@@ -417,6 +417,8 @@ agents_md_claude_md_symlink:
   review:
     strategy: individual
     instructions: |
+      This is an auto-fix rule — you SHOULD edit files to resolve issues.
+
       Claude Code reads CLAUDE.md for project context but does not read AGENTS.md.
       Every AGENTS.md file MUST have a sibling CLAUDE.md that is a symlink pointing
       to AGENTS.md, so that Claude Code picks up the same content.

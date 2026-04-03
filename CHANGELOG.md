@@ -18,7 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `/review` skill now checks changelog accuracy and PR description during reviews (#331)
 - `.deepreview` rules can now declare a `precomputed_info_for_reviewer_bash_command` that runs before the review and injects stdout into the instruction file as precomputed context (#337)
   - Commands run in parallel across rules with a 60-second timeout and graceful error handling
-  - Applied to `requirements_traceability` rule to eliminate redundant agent tool calls
+  - Applied to `requirements_traceability` and `python_lint` rules to eliminate redundant agent tool calls
+- New `deepreview` standard DeepSchema with semantic quality requirements for `.deepreview` config files (#337)
+- `Makefile` with `lint` target that auto-fixes formatting/linting and runs type checking (#337)
 
 ### Changed
 
