@@ -1,4 +1,4 @@
-"""Tests for deepwork setup (Claude platform)."""
+"""Tests for deepwork setup (Claude platform). Validates DW-REQ-005.6."""
 
 from __future__ import annotations
 
@@ -33,6 +33,7 @@ class TestClaudeSetupFreshFile:
     """When settings.json does not exist yet."""
 
     def test_creates_settings(self, claude_home: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.6.3)
         changes = claude_setup()
         assert len(changes) == 3
         settings = _read_settings(claude_home)
@@ -42,6 +43,7 @@ class TestClaudeSetupFreshFile:
         src = settings["extraKnownMarketplaces"][MARKETPLACE_KEY]["source"]
         assert src["source"] == "github"
         assert src["repo"] == "Unsupervisedcom/deepwork"
+        assert settings["extraKnownMarketplaces"][MARKETPLACE_KEY]["autoUpdate"] is True
 
         # plugin enabled
         assert settings["enabledPlugins"][PLUGIN_KEY] is True
@@ -54,6 +56,7 @@ class TestClaudeSetupIdempotent:
     """Running setup twice should be a no-op the second time."""
 
     def test_no_changes_on_rerun(self, claude_home: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.6.4)
         claude_setup()
         changes = claude_setup()
         assert changes == []
@@ -63,6 +66,7 @@ class TestClaudeSetupPreservesExisting:
     """Existing settings are preserved when adding DeepWork entries."""
 
     def test_existing_allow_rules_kept(self, claude_home: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.6.5)
         settings_path = claude_home / ".claude" / "settings.json"
         existing = {
             "permissions": {"allow": ["Bash(git:*)"]},
@@ -81,6 +85,7 @@ class TestClaudeSetupNoClaudeDir:
     """When ~/.claude does not exist, setup creates it."""
 
     def test_creates_claude_dir(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.6.6)
         fake_home = tmp_path / "empty"
         fake_home.mkdir()
         monkeypatch.setattr(Path, "home", staticmethod(lambda: fake_home))

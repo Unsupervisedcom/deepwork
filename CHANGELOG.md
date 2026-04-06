@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `deepwork setup` CLI command that auto-configures Claude Code settings (marketplace, plugin, MCP permissions, auto-update) (#343)
+
 ### Changed
 
 ### Fixed
