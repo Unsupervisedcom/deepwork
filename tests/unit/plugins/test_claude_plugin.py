@@ -536,6 +536,55 @@ class TestPostCompactionHook:
 
 
 # ---------------------------------------------------------------------------
+# PLUG-REQ-001.12: Session and Agent Identity Injection
+# ---------------------------------------------------------------------------
+
+
+class TestSessionIdentityInjection:
+    """Tests for session/agent identity injection hooks (PLUG-REQ-001.12)."""
+
+    hooks_json_path = PLUGIN_DIR / "hooks" / "hooks.json"
+    hook_script_path = PLUGIN_DIR / "hooks" / "startup_context.sh"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.12.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_hooks_json_registers_session_start_identity_hook(self) -> None:
+        """PLUG-REQ-001.12.1: hooks.json registers SessionStart hook with empty matcher."""
+        data = json.loads(self.hooks_json_path.read_text())
+        session_start = data["hooks"]["SessionStart"]
+        assert any(entry.get("matcher") == "" for entry in session_start), (
+            "hooks.json must have a SessionStart entry with empty matcher for identity injection"
+        )
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.12.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_hooks_json_registers_subagent_start_identity_hook(self) -> None:
+        """PLUG-REQ-001.12.2: hooks.json registers SubagentStart hook with empty matcher."""
+        data = json.loads(self.hooks_json_path.read_text())
+        subagent_start = data["hooks"]["SubagentStart"]
+        assert any(entry.get("matcher") == "" for entry in subagent_start), (
+            "hooks.json must have a SubagentStart entry with empty matcher for identity injection"
+        )
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.12.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_startup_context_emits_session_id(self) -> None:
+        """PLUG-REQ-001.12.3: startup_context.sh reads session_id and emits CLAUDE_CODE_SESSION_ID."""
+        content = self.hook_script_path.read_text()
+        assert "session_id" in content, "Script must read session_id from hook input"
+        assert "CLAUDE_CODE_SESSION_ID" in content, "Script must emit CLAUDE_CODE_SESSION_ID"
+        assert "additionalContext" in content, "Script must use additionalContext output"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.12.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_startup_context_emits_agent_id(self) -> None:
+        """PLUG-REQ-001.12.4: startup_context.sh reads agent_id and emits CLAUDE_CODE_AGENT_ID."""
+        content = self.hook_script_path.read_text()
+        assert "agent_id" in content, "Script must read agent_id from hook input"
+        assert "CLAUDE_CODE_AGENT_ID" in content, "Script must emit CLAUDE_CODE_AGENT_ID"
+
+
+# ---------------------------------------------------------------------------
 # PLUG-REQ-001.13: DeepReviews Reference Skill
 # ---------------------------------------------------------------------------
 

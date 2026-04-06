@@ -1,4 +1,7 @@
-"""Tests for YAML utilities."""
+"""Tests for YAML utilities.
+
+Validates requirements: DW-REQ-010.7, DW-REQ-010.8, DW-REQ-010.9.
+"""
 
 from pathlib import Path
 
@@ -309,11 +312,13 @@ class TestLoadYAMLFromString:
             load_yaml_from_string("- item1\n- item2\n")
 
     def test_returns_none_for_empty_string(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.7.7).
         """Empty string returns None."""
         result = load_yaml_from_string("")
         assert result is None
 
     def test_returns_dict_for_valid_content(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.7.6).
         """Valid YAML dict string is parsed correctly."""
         result = load_yaml_from_string("name: test\nversion: 1")
         assert result == {"name": "test", "version": 1}

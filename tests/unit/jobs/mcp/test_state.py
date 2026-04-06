@@ -1,4 +1,10 @@
-"""Tests for MCP state management."""
+"""Tests for MCP state management.
+
+Validates requirements: JOBS-REQ-003, JOBS-REQ-003.1, JOBS-REQ-003.2, JOBS-REQ-003.3,
+JOBS-REQ-003.4, JOBS-REQ-003.5, JOBS-REQ-003.6, JOBS-REQ-003.7, JOBS-REQ-003.8,
+JOBS-REQ-003.9, JOBS-REQ-003.10, JOBS-REQ-003.11, JOBS-REQ-003.12, JOBS-REQ-003.13,
+JOBS-REQ-003.14, JOBS-REQ-003.15, JOBS-REQ-003.16, JOBS-REQ-003.17.
+"""
 
 import json
 from pathlib import Path
@@ -789,6 +795,8 @@ class TestCrashResilience:
         assert "workflow_stack" in data
         assert len(data["workflow_stack"]) == 1
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.4.6, JOBS-REQ-003.17.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_no_in_memory_caching(
         self, state_manager: StateManager, project_root: Path
     ) -> None:
@@ -813,6 +821,8 @@ class TestCrashResilience:
         session = state_manager.resolve_session(SESSION_ID)
         assert session.current_step_id == "step2"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_get_stack_without_agent_returns_main_only(
         self, state_manager: StateManager
     ) -> None:

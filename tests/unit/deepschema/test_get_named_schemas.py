@@ -1,4 +1,7 @@
-"""Tests for get_named_schemas MCP tool."""
+"""Tests for get_named_schemas MCP tool.
+
+Validates requirements: DW-REQ-011.9.
+"""
 
 from pathlib import Path
 
@@ -13,10 +16,12 @@ class TestGetNamedSchemas:
     """Tests for the get_named_schemas tool logic."""
 
     def test_returns_empty_when_no_schemas(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.9.1).
         results = find_named_schemas(tmp_path)
         assert results == []
 
     def test_returns_named_schema_info(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.9.1, DW-REQ-011.9.2).
         schema_dir = tmp_path / ".deepwork" / "schemas" / "my_config"
         schema_dir.mkdir(parents=True)
         (schema_dir / "deepschema.yml").write_text(
@@ -33,6 +38,7 @@ class TestGetNamedSchemas:
         assert schema.matchers == ["**/*.cfg"]
 
     def test_multiple_schemas_returned(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.9.1).
         for name in ["alpha", "beta"]:
             d = tmp_path / ".deepwork" / "schemas" / name
             d.mkdir(parents=True)
@@ -47,6 +53,7 @@ class TestGetNamedSchemas:
         assert names == {"alpha", "beta"}
 
     def test_malformed_schema_raises_error(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.9.3).
         schema_dir = tmp_path / ".deepwork" / "schemas" / "bad"
         schema_dir.mkdir(parents=True)
         (schema_dir / "deepschema.yml").write_text(
@@ -61,6 +68,7 @@ class TestGetNamedSchemas:
             parse_deepschema_file(manifests[0], "named", "bad")
 
     def test_schema_without_summary_returns_none(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.2.2, DW-REQ-011.9.2).
         schema_dir = tmp_path / ".deepwork" / "schemas" / "minimal"
         schema_dir.mkdir(parents=True)
         (schema_dir / "deepschema.yml").write_text(

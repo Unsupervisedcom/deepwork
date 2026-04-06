@@ -1,4 +1,8 @@
-"""Tests for the deepplan standard job definition and integration."""
+"""Tests for the deepplan standard job definition and integration.
+
+Validates requirements: JOBS-REQ-014, JOBS-REQ-014.1, JOBS-REQ-014.2, JOBS-REQ-014.3,
+JOBS-REQ-014.4, JOBS-REQ-014.5, JOBS-REQ-014.6.
+"""
 
 from __future__ import annotations
 
@@ -106,6 +110,7 @@ class TestDeepplanStartupHook:
         reason="startup_context.sh not found",
     )
     def test_startup_hook_is_executable(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-014.5.1).
         """startup_context.sh has execute permission."""
         import os
 

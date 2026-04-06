@@ -1,4 +1,8 @@
-"""Additional tests for MCP workflow tools to cover edge cases and error paths."""
+"""Additional tests for MCP workflow tools to cover edge cases and error paths.
+
+Validates requirements: JOBS-REQ-001.8, JOBS-REQ-001.9, JOBS-REQ-010.3.1, JOBS-REQ-010.3.2,
+JOBS-REQ-010.12.1, JOBS-REQ-010.12.3.
+"""
 
 from pathlib import Path
 from unittest.mock import MagicMock

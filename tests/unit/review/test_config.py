@@ -1,4 +1,9 @@
-"""Tests for deepreview configuration parsing (deepwork.review.config) — validates REVIEW-REQ-001."""
+"""Tests for deepreview configuration parsing (deepwork.review.config).
+
+Validates requirements: REVIEW-REQ-001, REVIEW-REQ-001.1, REVIEW-REQ-001.2,
+REVIEW-REQ-001.3, REVIEW-REQ-001.4, REVIEW-REQ-001.5, REVIEW-REQ-001.6,
+REVIEW-REQ-001.7, REVIEW-REQ-001.8.
+"""
 
 from pathlib import Path
 from typing import Any
@@ -307,11 +312,13 @@ my_rule:
             parse_deepreview_file(filepath)
 
     def test_empty_file_returns_empty_list(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.1.2).
         filepath = _write_deepreview(tmp_path, "")
         rules = parse_deepreview_file(filepath)
         assert rules == []
 
     def test_nonexistent_file_raises_error(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.7.4).
         filepath = tmp_path / ".deepreview"
         with pytest.raises(ConfigError, match="File not found"):
             parse_deepreview_file(filepath)
@@ -336,6 +343,7 @@ python_review:
         assert rules[0].source_file == filepath
 
     def test_source_line_for_single_rule(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.8.5).
         filepath = _write_deepreview(
             tmp_path,
             """python_review:
@@ -352,6 +360,7 @@ python_review:
         assert rules[0].source_line == 1
 
     def test_source_line_for_multiple_rules(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.8.5).
         filepath = _write_deepreview(
             tmp_path,
             """rule_a:
@@ -378,6 +387,7 @@ rule_b:
         assert rule_map["rule_b"].source_line == 9
 
     def test_file_reference_read_error_raises_config_error(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.4.5).
         """OSError reading an instructions file raises ConfigError."""
         from unittest.mock import patch
 
@@ -416,6 +426,7 @@ class TestGetSchemaPath:
     """Tests for get_schema_path."""
 
     def test_returns_path_to_json_schema(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.7.1).
         """get_schema_path returns a Path to the deepreview_schema.json file."""
         path = get_schema_path()
         assert path.name == "deepreview_schema.json"
@@ -426,6 +437,7 @@ class TestFindRuleLineNumbers:
     """Tests for _find_rule_line_numbers edge cases."""
 
     def test_returns_empty_on_os_error(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.8.5).
         """OSError reading .deepreview file returns empty dict."""
         from unittest.mock import patch
 

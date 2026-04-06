@@ -1,4 +1,7 @@
-"""Tests for DeepSchema file matching."""
+"""Tests for DeepSchema file matching.
+
+Validates requirements: DW-REQ-011.6.
+"""
 
 from pathlib import Path
 
@@ -34,33 +37,39 @@ def _anonymous_schema(
 
 class TestGetApplicableSchemas:
     def test_matches_named_schema_by_glob(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.1).
         schema = _named_schema("py_files", ["**/*.py"])
         result = get_applicable_schemas("src/app.py", [schema], tmp_path)
         assert len(result) == 1
         assert result[0].name == "py_files"
 
     def test_no_match_for_wrong_extension(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.1).
         schema = _named_schema("py_files", ["**/*.py"])
         result = get_applicable_schemas("src/app.js", [schema], tmp_path)
         assert len(result) == 0
 
     def test_matches_anonymous_schema(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.2).
         schema = _anonymous_schema("config.json", tmp_path / "src")
         result = get_applicable_schemas("src/config.json", [schema], tmp_path)
         assert len(result) == 1
 
     def test_anonymous_no_match_different_dir(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.2).
         schema = _anonymous_schema("config.json", tmp_path / "src")
         result = get_applicable_schemas("other/config.json", [schema], tmp_path)
         assert len(result) == 0
 
     def test_multiple_schemas_match(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.1, DW-REQ-011.6.2).
         named = _named_schema("all_yml", ["**/*.yml"])
         anon = _anonymous_schema("config.yml", tmp_path / "src")
         result = get_applicable_schemas("src/config.yml", [named, anon], tmp_path)
         assert len(result) == 2
 
     def test_named_schema_specific_dir_pattern(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.1).
         schema = _named_schema("src_only", ["src/**/*.py"])
         assert get_applicable_schemas("src/main.py", [schema], tmp_path)
         assert not get_applicable_schemas("tests/main.py", [schema], tmp_path)
@@ -70,6 +79,7 @@ class TestAnonymousSchemaOutsideProject:
     """Tests for _anonymous_schema_matches when target is outside project_root."""
 
     def test_returns_false_when_target_outside_project(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.2).
         """Anonymous schema whose target resolves outside project_root returns False."""
         from deepwork.deepschema.matcher import _anonymous_schema_matches
 
@@ -87,6 +97,7 @@ class TestAnonymousSchemaOutsideProject:
 
 class TestGetSchemasForFileFast:
     def test_finds_named_schema(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.3).
         schema_dir = tmp_path / ".deepwork" / "schemas" / "py_files"
         schema_dir.mkdir(parents=True)
         (schema_dir / "deepschema.yml").write_text(
@@ -98,6 +109,7 @@ class TestGetSchemasForFileFast:
         assert result[0].name == "py_files"
 
     def test_finds_anonymous_schema(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.3).
         src = tmp_path / "src"
         src.mkdir()
         (src / ".deepschema.app.py.yml").write_text(
@@ -109,10 +121,12 @@ class TestGetSchemasForFileFast:
         assert result[0].name == "app.py"
 
     def test_returns_empty_when_no_schemas(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.3).
         result = get_schemas_for_file_fast("src/app.py", tmp_path)
         assert result == []
 
     def test_skips_named_schema_with_parse_error(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.3).
         """Named schema with parse error is skipped, not crash."""
         schema_dir = tmp_path / ".deepwork" / "schemas" / "broken"
         schema_dir.mkdir(parents=True)
@@ -124,6 +138,7 @@ class TestGetSchemasForFileFast:
         assert all(s.name != "broken" for s in result)
 
     def test_skips_anonymous_schema_with_parse_error(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.3).
         """Anonymous schema with parse error is skipped, not crash."""
         src = tmp_path / "src"
         src.mkdir()

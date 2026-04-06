@@ -1,4 +1,7 @@
-"""Tests for the DeepSchema write hook."""
+"""Tests for the DeepSchema write hook.
+
+Validates requirements: DW-REQ-011.7.
+"""
 
 import json
 from pathlib import Path
@@ -23,12 +26,14 @@ def _make_hook_input(
 
 class TestDeepschemaWriteHook:
     def test_no_schemas_returns_empty(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.1).
         hook_input = _make_hook_input(str(tmp_path / "test.py"), str(tmp_path))
         result = deepschema_write_hook(hook_input)
         assert result.context == ""
         assert result.decision == ""
 
     def test_injects_conformance_note(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.2).
         # Create a named schema matching .py files
         schema_dir = tmp_path / ".deepwork" / "schemas" / "py_schema"
         schema_dir.mkdir(parents=True)
@@ -46,6 +51,7 @@ class TestDeepschemaWriteHook:
         assert "must conform to the DeepSchema" in result.context
 
     def test_anonymous_schema_conformance_note(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.2).
         # Create anonymous schema
         (tmp_path / ".deepschema.config.json.yml").write_text(
             "requirements:\n  r1: 'MUST be valid'\n",
@@ -59,6 +65,7 @@ class TestDeepschemaWriteHook:
         assert "must conform to the DeepSchema" in result.context
 
     def test_json_schema_validation_failure(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.3, DW-REQ-011.7.5).
         # Create a JSON Schema
         json_schema = tmp_path / ".deepwork" / "schemas" / "json_test" / "test.schema.json"
         json_schema.parent.mkdir(parents=True)
@@ -87,6 +94,7 @@ class TestDeepschemaWriteHook:
         assert "validation failed" in result.context.lower()
 
     def test_json_schema_validation_success(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.3).
         json_schema = tmp_path / ".deepwork" / "schemas" / "json_test" / "test.schema.json"
         json_schema.parent.mkdir(parents=True)
         json_schema.write_text(
@@ -112,6 +120,7 @@ class TestDeepschemaWriteHook:
         assert "CRITICAL" not in result.context
 
     def test_json_schema_validation_of_yaml_file(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.3).
         """YAML files validated against a JSON Schema should be parsed as YAML, not JSON."""
         json_schema = tmp_path / ".deepwork" / "schemas" / "yml_test" / "test.schema.json"
         json_schema.parent.mkdir(parents=True)
@@ -138,6 +147,7 @@ class TestDeepschemaWriteHook:
         assert "CRITICAL" not in result.context
 
     def test_json_schema_validation_of_invalid_yaml_file(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.3, DW-REQ-011.7.5).
         """YAML files that fail JSON Schema validation should report errors."""
         json_schema = tmp_path / ".deepwork" / "schemas" / "yml_test" / "test.schema.json"
         json_schema.parent.mkdir(parents=True)
@@ -163,6 +173,7 @@ class TestDeepschemaWriteHook:
         assert "CRITICAL" in result.context
 
     def test_verification_command_failure(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.4, DW-REQ-011.7.5).
         schema_dir = tmp_path / ".deepwork" / "schemas" / "bash_test"
         schema_dir.mkdir(parents=True)
         (schema_dir / "deepschema.yml").write_text(
@@ -177,6 +188,7 @@ class TestDeepschemaWriteHook:
         assert "CRITICAL" in result.context
 
     def test_ignores_non_write_events(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.1).
         hook_input = HookInput(
             platform=Platform.CLAUDE,
             event=NormalizedEvent.BEFORE_TOOL,
@@ -188,6 +200,7 @@ class TestDeepschemaWriteHook:
         assert result.context == ""
 
     def test_ignores_non_write_tools(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.1).
         hook_input = HookInput(
             platform=Platform.CLAUDE,
             event=NormalizedEvent.AFTER_TOOL,

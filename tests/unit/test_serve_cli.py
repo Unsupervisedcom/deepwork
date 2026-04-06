@@ -1,4 +1,7 @@
-"""Tests for serve CLI command options."""
+"""Tests for serve CLI command options.
+
+Validates requirements: DW-REQ-005, DW-REQ-005.1, DW-REQ-005.2.
+"""
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -13,6 +16,7 @@ class TestServeCLI:
 
     @patch("deepwork.cli.serve._serve_mcp")
     def test_default_invocation(self, mock_serve: MagicMock, tmp_path: str) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.4, DW-REQ-005.2.5).
         """Test that serve calls _serve_mcp with correct defaults."""
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
@@ -50,6 +54,7 @@ class TestServeCLI:
 
     @patch("deepwork.cli.serve._serve_mcp")
     def test_platform_option(self, mock_serve: MagicMock, tmp_path: str) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.8).
         """Test that --platform passes through to _serve_mcp."""
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
@@ -87,6 +92,7 @@ class TestServeCLI:
         assert mock_serve.call_args[1]["explicit_path"] is True
 
     def test_help_shows_options(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.1).
         """Test that --help shows the available options."""
         runner = CliRunner()
         result = runner.invoke(serve, ["--help"])

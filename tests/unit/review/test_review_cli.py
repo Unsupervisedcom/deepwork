@@ -1,4 +1,8 @@
-"""Tests for the deepwork review CLI command (deepwork.cli.review) — validates REVIEW-REQ-006."""
+"""Tests for the deepwork review CLI command (deepwork.cli.review).
+
+Validates requirements: REVIEW-REQ-006, REVIEW-REQ-006.1, REVIEW-REQ-006.2,
+REVIEW-REQ-006.3, REVIEW-REQ-006.4, REVIEW-REQ-006.5, REVIEW-REQ-006.6.
+"""
 
 from pathlib import Path
 from typing import Any

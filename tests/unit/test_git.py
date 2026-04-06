@@ -1,4 +1,8 @@
-"""Tests for Git utilities."""
+"""Tests for Git utilities.
+
+Validates requirements: DW-REQ-007, DW-REQ-007.1, DW-REQ-007.2, DW-REQ-007.3,
+DW-REQ-007.4, DW-REQ-007.5.
+"""
 
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -194,6 +198,7 @@ class TestGetRepoRootBareRepo:
     """Tests for get_repo_root with bare repo."""
 
     def test_raises_for_bare_repo(self, temp_dir: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-007.2.5).
         """A bare repo has no working_tree_dir, so get_repo_root raises GitError."""
         from unittest.mock import MagicMock
         from unittest.mock import patch as mock_patch
@@ -212,6 +217,7 @@ class TestGetCurrentBranchDetached:
     """Tests for get_current_branch with detached HEAD."""
 
     def test_raises_for_detached_head(self, mock_git_repo: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-007.3.2).
         """When HEAD is detached, get_current_branch raises GitError."""
         repo = get_repo(mock_git_repo)
         # Detach HEAD by checking out the commit directly
@@ -226,6 +232,7 @@ class TestCreateBranchGitCommandError:
     """Tests for create_branch GitCommandError."""
 
     def test_raises_git_error_on_command_failure(self, mock_git_repo: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-007.3.10, DW-REQ-007.5.1).
         """GitCommandError during branch creation is wrapped in GitError."""
         from unittest.mock import patch as mock_patch
 

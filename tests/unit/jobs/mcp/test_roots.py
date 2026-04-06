@@ -1,4 +1,8 @@
-"""Tests for JOBS-REQ-011: MCP root resolution via listRoots."""
+"""Tests for JOBS-REQ-011: MCP root resolution via listRoots.
+
+Validates requirements: JOBS-REQ-011, JOBS-REQ-011.1, JOBS-REQ-011.2, JOBS-REQ-011.3,
+JOBS-REQ-011.4.
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,8 @@
-"""Tests for MCP quality gate (reviews-based implementation)."""
+"""Tests for MCP quality gate (reviews-based implementation).
+
+Validates requirements: JOBS-REQ-004, JOBS-REQ-004.1, JOBS-REQ-004.2, JOBS-REQ-004.3,
+JOBS-REQ-004.4, JOBS-REQ-004.5, JOBS-REQ-004.6, JOBS-REQ-004.7.
+"""
 
 from __future__ import annotations
 

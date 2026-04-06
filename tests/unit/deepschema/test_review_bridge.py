@@ -1,4 +1,7 @@
-"""Tests for DeepSchema review bridge — synthetic ReviewRule generation."""
+"""Tests for DeepSchema review bridge — synthetic ReviewRule generation.
+
+Validates requirements: DW-REQ-011.6, DW-REQ-011.8.
+"""
 
 from pathlib import Path
 
@@ -49,6 +52,7 @@ def _anonymous_schema(
 
 class TestSchemaToReviewRule:
     def test_named_schema_produces_rule(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1, DW-REQ-011.8.2, DW-REQ-011.8.5).
         schema = _named_schema(tmp_path)
         rule = _schema_to_review_rule(schema, tmp_path)
         assert rule is not None
@@ -57,6 +61,7 @@ class TestSchemaToReviewRule:
         assert rule.include_patterns == ["**/*.yml"]
 
     def test_anonymous_schema_produces_rule(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1, DW-REQ-011.8.2, DW-REQ-011.8.5).
         schema = _anonymous_schema(tmp_path)
         rule = _schema_to_review_rule(schema, tmp_path)
         assert rule is not None
@@ -65,24 +70,28 @@ class TestSchemaToReviewRule:
         assert rule.include_patterns == ["config.json"]
 
     def test_named_without_matchers_returns_none(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1).
         schema = _named_schema(tmp_path)
         schema.matchers = []
         rule = _schema_to_review_rule(schema, tmp_path)
         assert rule is None
 
     def test_schema_without_requirements_returns_none(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1).
         schema = _named_schema(tmp_path)
         schema.requirements = {}
         rule = _schema_to_review_rule(schema, tmp_path)
         assert rule is None
 
     def test_rule_source_file_points_to_schema(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1).
         schema = _named_schema(tmp_path)
         rule = _schema_to_review_rule(schema, tmp_path)
         assert rule is not None
         assert rule.source_file == schema.source_path
 
     def test_named_rule_source_dir_is_project_root(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1).
         """Named schemas use project-root-relative matchers, so source_dir must be project_root."""
         schema = _named_schema(tmp_path, matchers=[".deepwork/jobs/*/job.yml"])
         rule = _schema_to_review_rule(schema, tmp_path)
@@ -90,6 +99,7 @@ class TestSchemaToReviewRule:
         assert rule.source_dir == tmp_path
 
     def test_anonymous_rule_source_dir_is_schema_parent(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1).
         """Anonymous schemas match by filename in the same directory as the schema file."""
         schema = _anonymous_schema(tmp_path)
         rule = _schema_to_review_rule(schema, tmp_path)
@@ -97,6 +107,7 @@ class TestSchemaToReviewRule:
         assert rule.source_dir == schema.source_path.parent
 
     def test_named_rule_matchers_resolve_against_project_root(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.1).
         """Matchers like '.deepwork/jobs/*/job.yml' must match files relative to project root."""
         from deepwork.review.matcher import match_rule
 
@@ -115,6 +126,7 @@ class TestAnonymousSchemaRuleOutsideProject:
     """Tests for _anonymous_schema_rule when target is outside project_root."""
 
     def test_returns_none_when_target_outside_project(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1).
         """Anonymous schema whose target resolves outside project_root returns None."""
         from deepwork.deepschema.review_bridge import _anonymous_schema_rule
 
@@ -130,6 +142,7 @@ class TestAnonymousSchemaRuleOutsideProject:
 
 class TestBuildInstructions:
     def test_named_includes_summary_and_instructions(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.3).
         schema = _named_schema(tmp_path, summary="YAML configs", instructions="Validate carefully")
         text = _build_named_instructions(schema)
         assert "test_schema" in text
@@ -138,12 +151,14 @@ class TestBuildInstructions:
         assert "MUST be valid" in text
 
     def test_anonymous_is_simpler(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.4).
         schema = _anonymous_schema(tmp_path)
         text = _build_anonymous_instructions(schema)
         assert "has requirements" in text
         assert "MUST be valid" in text
 
     def test_requirements_body_includes_rfc_guidance(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.7).
         body = _build_requirements_body({"r1": "MUST exist", "r2": "SHOULD be nice"})
         assert "fail reviews over anything that is MUST" in body
         assert "r1" in body
@@ -152,6 +167,7 @@ class TestBuildInstructions:
 
 class TestGenerateReviewRules:
     def test_generates_from_named_schema(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.6).
         schema_dir = tmp_path / ".deepwork" / "schemas" / "yml_files"
         schema_dir.mkdir(parents=True)
         (schema_dir / "deepschema.yml").write_text(
@@ -164,6 +180,7 @@ class TestGenerateReviewRules:
         assert len(errors) == 0
 
     def test_generates_from_anonymous_schema(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.6).
         (tmp_path / ".deepschema.config.json.yml").write_text(
             "requirements:\n  r1: 'MUST be valid JSON'\n",
             encoding="utf-8",

@@ -1,4 +1,9 @@
-"""Tests for the review MCP adapter (deepwork.review.mcp)."""
+"""Tests for the review MCP adapter (deepwork.review.mcp).
+
+Validates requirements: REVIEW-REQ-002, REVIEW-REQ-002.1, REVIEW-REQ-002.2,
+REVIEW-REQ-002.3, REVIEW-REQ-002.4, REVIEW-REQ-008, REVIEW-REQ-008.1, REVIEW-REQ-008.2,
+REVIEW-REQ-008.3, REVIEW-REQ-008.4.
+"""
 
 from pathlib import Path
 from typing import Any
@@ -41,6 +46,7 @@ class TestRunReview:
     def test_no_deepreview_files_returns_message(
         self, mock_load: Any, mock_schema: Any, tmp_path: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.4.1).
         mock_load.return_value = ([], [])
         result = run_review(tmp_path, "claude")
         assert "No .deepreview configuration files" in result
@@ -50,6 +56,7 @@ class TestRunReview:
     def test_no_changed_files_git_diff(
         self, mock_load: Any, mock_diff: Any, tmp_path: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.4.2).
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_diff.return_value = []
         result = run_review(tmp_path, "claude")
@@ -57,6 +64,7 @@ class TestRunReview:
 
     @patch("deepwork.review.mcp.load_all_rules")
     def test_no_changed_files_explicit_empty_list(self, mock_load: Any, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.4.2).
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         result = run_review(tmp_path, "claude", files=[])
         assert "No changed files detected" in result
@@ -67,6 +75,7 @@ class TestRunReview:
     def test_no_rules_match(
         self, mock_load: Any, mock_diff: Any, mock_match: Any, tmp_path: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.4.3).
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_diff.return_value = ["app.ts"]
         mock_match.return_value = []
@@ -78,6 +87,7 @@ class TestRunReview:
     def test_git_diff_error_raises_review_tool_error(
         self, mock_load: Any, mock_diff: Any, tmp_path: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.5.2).
         from deepwork.review.matcher import GitDiffError
 
         mock_load.return_value = ([_make_rule(tmp_path)], [])
@@ -91,6 +101,7 @@ class TestRunReview:
     def test_explicit_files_bypass_git_diff(
         self, mock_load: Any, mock_diff: Any, mock_match: Any, tmp_path: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.6.1).
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_match.return_value = []
         run_review(tmp_path, "claude", files=["src/a.py", "src/b.py"])
@@ -106,6 +117,7 @@ class TestRunReview:
     def test_full_pipeline_returns_formatted_output(
         self, mock_load: Any, mock_diff: Any, mock_match: Any, mock_write: Any, tmp_path: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.2.1, REVIEW-REQ-006.3.2).
         rule = _make_rule(tmp_path)
         task = ReviewTask(
             rule_name="test_rule",
@@ -123,6 +135,7 @@ class TestRunReview:
         mock_write.assert_called_once()
 
     def test_unsupported_platform_raises_review_tool_error(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.1.3).
         with pytest.raises(ReviewToolError, match="Unsupported platform"):
             run_review(tmp_path, "unsupported_platform")
 
@@ -131,6 +144,7 @@ class TestRunReview:
     def test_files_are_deduplicated_and_sorted(
         self, mock_load: Any, mock_match: Any, tmp_path: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.6.4).
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_match.return_value = []
         run_review(tmp_path, "claude", files=["z.py", "a.py", "z.py"])
@@ -144,6 +158,7 @@ class TestRunReview:
     def test_write_error_raises_review_tool_error(
         self, mock_load: Any, mock_diff: Any, mock_match: Any, mock_write: Any, tmp_path: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.5.3).
         rule = _make_rule(tmp_path)
         task = ReviewTask(
             rule_name="test_rule",
@@ -176,6 +191,7 @@ class TestRunReviewDiscoveryWarnings:
     def test_no_valid_rules_with_parse_errors_shows_warnings(
         self, mock_load: Any, mock_schema: Any, tmp_path: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
         """When no valid rules exist but there are discovery errors, shows parse errors."""
         from deepwork.review.discovery import DiscoveryError
 
@@ -195,6 +211,7 @@ class TestRunReviewDiscoveryWarnings:
     def test_schema_errors_appended_to_discovery_errors(
         self, mock_load: Any, mock_schema: Any, tmp_path: Path
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
         """DeepSchema errors are appended to discovery_errors."""
 
         mock_load.return_value = ([], [])
@@ -219,6 +236,7 @@ class TestRunReviewDiscoveryWarnings:
         mock_write: Any,
         tmp_path: Path,
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
         """When discovery errors exist alongside valid rules, warnings are prepended."""
         from deepwork.review.discovery import DiscoveryError
 
@@ -248,6 +266,7 @@ class TestReviewToolRegistration:
     """Test that the review tool is registered on the MCP server."""
 
     def test_review_tool_is_registered(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-008.1.1).
         """Review tool is registered on the MCP server with or without explicit platform."""
         from deepwork.jobs.mcp.server import create_server
 

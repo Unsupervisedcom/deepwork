@@ -1,4 +1,9 @@
-"""Tests for review instruction file generation (deepwork.review.instructions) — validates REVIEW-REQ-005, REVIEW-REQ-009."""
+"""Tests for review instruction file generation (deepwork.review.instructions).
+
+Validates requirements: REVIEW-REQ-005, REVIEW-REQ-005.1, REVIEW-REQ-005.2,
+REVIEW-REQ-005.3, REVIEW-REQ-005.4, REVIEW-REQ-005.5, REVIEW-REQ-005.6,
+REVIEW-REQ-009, REVIEW-REQ-009.4, REVIEW-REQ-009.5.
+"""
 
 from pathlib import Path
 
@@ -88,21 +93,25 @@ class TestBuildInstructionFile:
                 )
 
     def test_omits_unchanged_section_when_empty(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.6).
         task = _make_task(additional_files=[])
         content = build_instruction_file(task)
         assert "## Unchanged Matching Files" not in content
 
     def test_omits_all_changed_section_when_none(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.7).
         task = _make_task(all_changed_filenames=None)
         content = build_instruction_file(task)
         assert "## All Changed Files" not in content
 
     def test_single_file_scope_description(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.2).
         task = _make_task(files=["src/app.py"])
         content = build_instruction_file(task)
         assert "src/app.py" in content.split("\n")[0]
 
     def test_multi_file_scope_description(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.2).
         task = _make_task(files=["a.py", "b.py", "c.py"])
         content = build_instruction_file(task)
         assert "3 files" in content.split("\n")[0]
@@ -133,6 +142,7 @@ class TestBuildInstructionFile:
         assert "This review was requested" not in content
 
     def test_traceability_is_at_end(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.6.1).
         task = _make_task(source_location=".deepreview:1")
         content = build_instruction_file(task)
         last_nonblank = [line for line in content.strip().split("\n") if line.strip()][-1]
