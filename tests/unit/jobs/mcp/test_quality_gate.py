@@ -665,6 +665,10 @@ class TestRunQualityGate:
                 return_value=([deepreview_rule], []),
             ),
             patch(
+                "deepwork.jobs.mcp.quality_gate.get_changed_files",
+                return_value=["report.md"],
+            ),
+            patch(
                 "deepwork.jobs.mcp.quality_gate.match_files_to_rules",
                 side_effect=[[deepreview_task], [dynamic_task]],
             ),
@@ -696,6 +700,58 @@ class TestRunQualityGate:
         assert all_tasks[0].rule_name == "step_write_output_report"
         assert all_tasks[1].rule_name == "external_rule"
         assert result is not None
+
+    def test_deepreview_rules_skip_unchanged_output_files(self, tmp_path: Path) -> None:
+        """Deepreview rules should only match output files that are actually changed in git."""
+        arg = StepArgument(name="refs", description="Reference files", type="file_path")
+        output_ref = StepOutputRef(argument_name="refs", required=False)
+        step = WorkflowStep(name="explore", outputs={"refs": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        deepreview_rule = ReviewRule(
+            name="python_lint",
+            description="Lint Python files",
+            include_patterns=["**/*.py"],
+            exclude_patterns=[],
+            strategy="matches_together",
+            instructions="Run linting",
+            agent=None,
+            all_changed_filenames=False,
+            unchanged_matching_files=False,
+            precomputed_info_bash_command=None,
+            source_dir=tmp_path,
+            source_file=tmp_path / ".deepreview",
+            source_line=1,
+        )
+
+        with (
+            patch(
+                "deepwork.jobs.mcp.quality_gate.load_all_rules",
+                return_value=([deepreview_rule], []),
+            ),
+            # git says no files changed — output files are just references
+            patch(
+                "deepwork.jobs.mcp.quality_gate.get_changed_files",
+                return_value=[],
+            ),
+            patch(
+                "deepwork.jobs.mcp.quality_gate.match_files_to_rules",
+            ) as mock_match,
+        ):
+            result = run_quality_gate(
+                step=step,
+                job=job,
+                workflow=workflow,
+                outputs={"refs": ["src/foo.py", "src/bar.py"]},
+                input_values={},
+                work_summary=None,
+                project_root=tmp_path,
+            )
+
+        # match_files_to_rules should not be called for deepreview since
+        # no output files are in the git changed set
+        assert mock_match.call_count == 0
+        assert result is None
 
 
 # ---------------------------------------------------------------------------
