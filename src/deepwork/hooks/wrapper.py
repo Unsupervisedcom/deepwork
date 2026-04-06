@@ -122,6 +122,7 @@ TOOL_TO_NORMALIZED: dict[Platform, dict[str, str]] = {
         "WebFetch": "web_fetch",
         "WebSearch": "web_search",
         "Task": "task",
+        "ExitPlanMode": "exit_plan_mode",
     },
     Platform.GEMINI: {
         # Gemini already uses snake_case
@@ -148,6 +149,7 @@ NORMALIZED_TO_TOOL: dict[Platform, dict[str, str]] = {
         "web_fetch": "WebFetch",
         "web_search": "WebSearch",
         "task": "Task",
+        "exit_plan_mode": "ExitPlanMode",
     },
     Platform.GEMINI: {
         # Gemini already uses snake_case
