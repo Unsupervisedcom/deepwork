@@ -29,7 +29,7 @@ The quality review system evaluates step outputs against defined quality criteri
 4. Each rule's `instructions` MUST be prefixed with a preamble containing workflow `common_job_info` and input context (if available).
 5. Outputs with no review blocks MUST be skipped.
 6. Outputs with `None` values MUST be skipped.
-7. Only `file_path` type arguments with actual file paths generate `ReviewRule` objects.
+7. Only `file_path` type arguments with actual file paths MUST generate `ReviewRule` objects.
 
 ### JOBS-REQ-004.4: Process Requirements
 
@@ -41,12 +41,13 @@ The quality review system evaluates step outputs against defined quality criteri
 ### JOBS-REQ-004.5: Review Pipeline Integration
 
 1. `run_quality_gate()` MUST load `.deepreview` rules via `load_all_rules()`.
-2. `.deepreview` rules MUST be matched against output file paths via `match_files_to_rules()`.
-3. Dynamic rules (from step reviews) MUST also be matched via `match_files_to_rules()`.
-4. All matched tasks (dynamic + `.deepreview`) MUST be combined.
-5. Combined tasks MUST be passed to `write_instruction_files()`, which honors `.passed` marker files.
-6. If `write_instruction_files()` returns no task files (all already passed), `run_quality_gate()` MUST return `None`.
-7. Remaining task files MUST be formatted via `format_for_claude()`.
+2. `.deepreview` rules MUST be matched only against output file paths that also appear in `get_changed_files()` (i.e., files actually modified in git). Unchanged reference files in outputs MUST NOT trigger `.deepreview` rules.
+3. Dynamic rules (from step reviews) MUST be matched against all output file paths via `match_files_to_rules()`, regardless of git change status.
+4. If `get_changed_files()` fails, `.deepreview` matching MUST be skipped (no `.deepreview` tasks produced). Dynamic rules MUST be unaffected.
+5. All matched tasks (dynamic + `.deepreview`) MUST be combined.
+6. Combined tasks MUST be passed to `write_instruction_files()`, which honors `.passed` marker files.
+7. If `write_instruction_files()` returns no task files (all already passed), `run_quality_gate()` MUST return `None`.
+8. Remaining task files MUST be formatted via `format_for_claude()`.
 
 ### JOBS-REQ-004.6: Review Guidance Output
 

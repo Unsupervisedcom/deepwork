@@ -518,7 +518,7 @@ class TestRunQualityGate:
         assert "JSON schema validation failed" in result
         assert "finished_step" in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.1.3, JOBS-REQ-004.5.7, JOBS-REQ-004.6.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.1.3, JOBS-REQ-004.5.8, JOBS-REQ-004.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_review_instructions_when_reviews_exist(self, tmp_path: Path) -> None:
         """When dynamic rules produce tasks, review instructions are returned."""
@@ -573,7 +573,7 @@ class TestRunQualityGate:
         assert "Quality reviews are required" in result
         assert "step_write_output_report" in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.6).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_none_when_all_reviews_already_passed(self, tmp_path: Path) -> None:
         """If write_instruction_files returns empty (all .passed), result is None."""
@@ -616,7 +616,7 @@ class TestRunQualityGate:
 
         assert result is None
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.5).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_merges_deepreview_and_dynamic_tasks(self, tmp_path: Path) -> None:
         """Both .deepreview rules and dynamic rules are processed together."""
@@ -665,6 +665,10 @@ class TestRunQualityGate:
                 return_value=([deepreview_rule], []),
             ),
             patch(
+                "deepwork.jobs.mcp.quality_gate.get_changed_files",
+                return_value=["report.md"],
+            ),
+            patch(
                 "deepwork.jobs.mcp.quality_gate.match_files_to_rules",
                 side_effect=[[deepreview_task], [dynamic_task]],
             ),
@@ -695,6 +699,187 @@ class TestRunQualityGate:
         assert len(all_tasks) == 2
         assert all_tasks[0].rule_name == "step_write_output_report"
         assert all_tasks[1].rule_name == "external_rule"
+        assert result is not None
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_deepreview_rules_skip_unchanged_output_files(self, tmp_path: Path) -> None:
+        """Deepreview rules should only match output files that are actually changed in git."""
+        arg = StepArgument(name="refs", description="Reference files", type="file_path")
+        output_ref = StepOutputRef(argument_name="refs", required=False)
+        step = WorkflowStep(name="explore", outputs={"refs": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        deepreview_rule = ReviewRule(
+            name="python_lint",
+            description="Lint Python files",
+            include_patterns=["**/*.py"],
+            exclude_patterns=[],
+            strategy="matches_together",
+            instructions="Run linting",
+            agent=None,
+            all_changed_filenames=False,
+            unchanged_matching_files=False,
+            precomputed_info_bash_command=None,
+            source_dir=tmp_path,
+            source_file=tmp_path / ".deepreview",
+            source_line=1,
+        )
+
+        with (
+            patch(
+                "deepwork.jobs.mcp.quality_gate.load_all_rules",
+                return_value=([deepreview_rule], []),
+            ),
+            # git says no files changed — output files are just references
+            patch(
+                "deepwork.jobs.mcp.quality_gate.get_changed_files",
+                return_value=[],
+            ),
+            patch(
+                "deepwork.jobs.mcp.quality_gate.match_files_to_rules",
+            ) as mock_match,
+        ):
+            result = run_quality_gate(
+                step=step,
+                job=job,
+                workflow=workflow,
+                outputs={"refs": ["src/foo.py", "src/bar.py"]},
+                input_values={},
+                work_summary=None,
+                project_root=tmp_path,
+            )
+
+        # match_files_to_rules should not be called for deepreview since
+        # no output files are in the git changed set
+        assert mock_match.call_count == 0
+        assert result is None
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_dynamic_rules_match_all_outputs_regardless_of_git(self, tmp_path: Path) -> None:
+        """Dynamic rules run against all output files even when git says nothing changed."""
+        review = ReviewBlock(strategy="individual", instructions="Check it")
+        arg = StepArgument(name="report", description="Report", type="file_path")
+        output_ref = StepOutputRef(argument_name="report", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"report": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        dynamic_task = ReviewTask(
+            rule_name="step_write_output_report",
+            files_to_review=["report.md"],
+            instructions="Check it",
+            agent_name=None,
+        )
+        instruction_path = tmp_path / ".deepwork" / "tmp" / "instr.md"
+        instruction_path.parent.mkdir(parents=True, exist_ok=True)
+        instruction_path.write_text("content")
+
+        with (
+            patch(
+                "deepwork.jobs.mcp.quality_gate.load_all_rules",
+                return_value=([], []),
+            ),
+            patch(
+                "deepwork.jobs.mcp.quality_gate.match_files_to_rules",
+                return_value=[dynamic_task],
+            ) as mock_match,
+            patch(
+                "deepwork.jobs.mcp.quality_gate.write_instruction_files",
+                return_value=[(dynamic_task, instruction_path)],
+            ),
+            patch(
+                "deepwork.jobs.mcp.quality_gate.format_for_claude",
+                return_value="formatted",
+            ),
+        ):
+            result = run_quality_gate(
+                step=step,
+                job=job,
+                workflow=workflow,
+                outputs={"report": "report.md"},
+                input_values={},
+                work_summary=None,
+                project_root=tmp_path,
+            )
+
+        # Dynamic rules matched even though no deepreview rules exist and
+        # get_changed_files was never called (no deepreview rules to trigger it)
+        mock_match.assert_called_once()
+        assert result is not None
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_deepreview_skipped_when_get_changed_files_fails(self, tmp_path: Path) -> None:
+        """If get_changed_files() fails, .deepreview matching is skipped; dynamic rules unaffected."""
+        review = ReviewBlock(strategy="individual", instructions="Check it")
+        arg = StepArgument(name="report", description="Report", type="file_path")
+        output_ref = StepOutputRef(argument_name="report", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"report": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        deepreview_rule = ReviewRule(
+            name="lint",
+            description="Lint",
+            include_patterns=["*.md"],
+            exclude_patterns=[],
+            strategy="individual",
+            instructions="Lint it",
+            agent=None,
+            all_changed_filenames=False,
+            unchanged_matching_files=False,
+            precomputed_info_bash_command=None,
+            source_dir=tmp_path,
+            source_file=tmp_path / ".deepreview",
+            source_line=1,
+        )
+
+        dynamic_task = ReviewTask(
+            rule_name="step_write_output_report",
+            files_to_review=["report.md"],
+            instructions="Check it",
+            agent_name=None,
+        )
+        instruction_path = tmp_path / ".deepwork" / "tmp" / "instr.md"
+        instruction_path.parent.mkdir(parents=True, exist_ok=True)
+        instruction_path.write_text("content")
+
+        from deepwork.review.matcher import GitDiffError
+
+        with (
+            patch(
+                "deepwork.jobs.mcp.quality_gate.load_all_rules",
+                return_value=([deepreview_rule], []),
+            ),
+            patch(
+                "deepwork.jobs.mcp.quality_gate.get_changed_files",
+                side_effect=GitDiffError("git not available"),
+            ),
+            patch(
+                "deepwork.jobs.mcp.quality_gate.match_files_to_rules",
+                return_value=[dynamic_task],
+            ) as mock_match,
+            patch(
+                "deepwork.jobs.mcp.quality_gate.write_instruction_files",
+                return_value=[(dynamic_task, instruction_path)],
+            ),
+            patch(
+                "deepwork.jobs.mcp.quality_gate.format_for_claude",
+                return_value="formatted",
+            ),
+        ):
+            result = run_quality_gate(
+                step=step,
+                job=job,
+                workflow=workflow,
+                outputs={"report": "report.md"},
+                input_values={},
+                work_summary=None,
+                project_root=tmp_path,
+            )
+
+        # match_files_to_rules called only once (for dynamic rules, not deepreview)
+        mock_match.assert_called_once()
         assert result is not None
 
 

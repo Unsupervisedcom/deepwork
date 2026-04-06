@@ -1001,7 +1001,7 @@ The quality gate integrates with the DeepWork Reviews infrastructure rather than
 
 3. **Process requirements**: If the step defines `process_requirements`, a review is created that evaluates the `work_summary` against those requirements using RFC 2119 semantics. MUST/SHALL violations cause failure; SHOULD/RECOMMENDED violations fail only if easily achievable; other requirements produce feedback without failure.
 
-4. **Merge with `.deepreview` rules**: The dynamically built rules are merged with any `.deepreview` file-defined rules that match the output files. The changed file list comes from the `outputs` parameter (not git diff).
+4. **Merge with `.deepreview` rules**: `.deepreview` file-defined rules and DeepSchema-generated synthetic rules are matched against output files that are *actually changed* (via git diff). Output files that were provided as unchanged references are excluded from `.deepreview` matching. Dynamic rules (from step output `review` blocks) still run against all output files regardless of git status.
 
 5. **Apply review strategies**: Review strategies (`individual`, `matches_together`, etc.) work normally on the merged rule set.
 
