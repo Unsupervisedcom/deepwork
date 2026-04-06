@@ -29,7 +29,7 @@ The quality review system evaluates step outputs against defined quality criteri
 4. Each rule's `instructions` MUST be prefixed with a preamble containing workflow `common_job_info` and input context (if available).
 5. Outputs with no review blocks MUST be skipped.
 6. Outputs with `None` values MUST be skipped.
-7. Only `file_path` type arguments with actual file paths generate `ReviewRule` objects.
+7. Only `file_path` type arguments with actual file paths MUST generate `ReviewRule` objects.
 
 ### JOBS-REQ-004.4: Process Requirements
 
