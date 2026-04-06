@@ -45,9 +45,10 @@ The quality review system evaluates step outputs against defined quality criteri
 3. Dynamic rules (from step reviews) MUST be matched against all output file paths via `match_files_to_rules()`, regardless of git change status.
 4. If `get_changed_files()` fails, `.deepreview` matching MUST be skipped (no `.deepreview` tasks produced). Dynamic rules MUST be unaffected.
 5. All matched tasks (dynamic + `.deepreview`) MUST be combined.
-6. Combined tasks MUST be passed to `write_instruction_files()`, which honors `.passed` marker files.
-7. If `write_instruction_files()` returns no task files (all already passed), `run_quality_gate()` MUST return `None`.
-8. Remaining task files MUST be formatted via `format_for_claude()`.
+6. Combined tasks MUST be passed to `write_instruction_files()`.
+7. `write_instruction_files()` MUST skip any review task whose `review_id` has a corresponding `.passed` marker file (per REVIEW-REQ-009). If a file was edited in the PR but a prior review already passed for that exact content (same rule, same files, same content hash), the review MUST NOT run again.
+8. If `write_instruction_files()` returns no task files (all already passed), `run_quality_gate()` MUST return `None`.
+9. Remaining task files MUST be formatted via `format_for_claude()`.
 
 ### JOBS-REQ-004.6: Review Guidance Output
 
