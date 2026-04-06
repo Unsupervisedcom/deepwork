@@ -33,16 +33,23 @@ def claude_setup() -> list[str]:
     # 1. Ensure marketplace is registered in extraKnownMarketplaces
     marketplaces = settings.setdefault("extraKnownMarketplaces", {})
     if MARKETPLACE_KEY not in marketplaces:
-        marketplaces[MARKETPLACE_KEY] = {"source": MARKETPLACE_SOURCE}
+        marketplaces[MARKETPLACE_KEY] = {
+            "source": MARKETPLACE_SOURCE,
+            "autoUpdate": True,
+        }
         changes.append(f"Added '{MARKETPLACE_KEY}' to extraKnownMarketplaces")
     else:
-        existing_source = marketplaces[MARKETPLACE_KEY].get("source", {})
+        entry = marketplaces[MARKETPLACE_KEY]
+        existing_source = entry.get("source", {})
         if (
             existing_source.get("source") != MARKETPLACE_SOURCE["source"]
             or existing_source.get("repo") != MARKETPLACE_SOURCE["repo"]
         ):
-            marketplaces[MARKETPLACE_KEY]["source"] = MARKETPLACE_SOURCE
+            entry["source"] = MARKETPLACE_SOURCE
             changes.append(f"Updated '{MARKETPLACE_KEY}' marketplace source")
+        if entry.get("autoUpdate") is not True:
+            entry["autoUpdate"] = True
+            changes.append(f"Enabled auto-update for '{MARKETPLACE_KEY}' marketplace")
 
     # 2. Ensure plugin is enabled
     enabled_plugins = settings.setdefault("enabledPlugins", {})
