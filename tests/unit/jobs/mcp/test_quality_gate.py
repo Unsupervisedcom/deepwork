@@ -701,6 +701,7 @@ class TestRunQualityGate:
         assert all_tasks[1].rule_name == "external_rule"
         assert result is not None
 
+    # Validates JOBS-REQ-004.5.2 (deepreview rules matched only against git-changed output files)
     def test_deepreview_rules_skip_unchanged_output_files(self, tmp_path: Path) -> None:
         """Deepreview rules should only match output files that are actually changed in git."""
         arg = StepArgument(name="refs", description="Reference files", type="file_path")
