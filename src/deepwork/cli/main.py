@@ -10,7 +10,8 @@ def cli() -> None:
     pass
 
 
-# Import commands
+# Imported after cli is defined to avoid circular dependencies with command modules.
+
 from deepwork.cli.hook import hook  # noqa: E402
 from deepwork.cli.install import install, sync  # noqa: E402
 from deepwork.cli.jobs import jobs  # noqa: E402
