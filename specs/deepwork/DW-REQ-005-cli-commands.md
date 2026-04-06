@@ -56,20 +56,6 @@ The DeepWork CLI provides five active commands: `serve` (starts the MCP server),
 10. The subcommand MUST output valid JSON to stdout with an `active_sessions` array.
 11. If no `.deepwork/tmp/` directory exists or no active sessions are found, the subcommand MUST output `{"active_sessions": []}`.
 
-### DW-REQ-005.6: setup Command
-
-1. The `setup` command MUST be a Click command.
-2. The `setup` command MUST detect Claude Code by checking for the `~/.claude` directory.
-3. When Claude Code is detected, the command MUST configure `~/.claude/settings.json` with:
-   1. The DeepWork marketplace in `extraKnownMarketplaces` with source `{"source": "github", "repo": "Unsupervisedcom/deepwork"}`.
-   2. `autoUpdate: true` on the marketplace entry.
-   3. The `deepwork@deepwork-plugins` plugin set to `true` in `enabledPlugins`.
-   4. The `mcp__plugin_deepwork_deepwork__*` permission in `permissions.allow`.
-4. The command MUST be idempotent — running it when settings are already configured MUST produce no changes and no file write.
-5. The command MUST preserve existing settings (other plugins, permissions, etc.) when adding DeepWork entries.
-6. The command MUST create `~/.claude` and `settings.json` if they do not exist.
-7. When no supported platform is detected, the command MUST print a message indicating no platforms were found.
-
 ### DW-REQ-005.5: Deprecated install and sync Commands
 
 > **SCHEDULED REMOVAL: June 1st, 2026; details in PR https://github.com/Unsupervisedcom/deepwork/pull/227.** These commands exist only for
@@ -86,3 +72,17 @@ The DeepWork CLI provides five active commands: `serve` (starts the MCP server),
 6. The written `enabledPlugins` MUST set `deepwork@deepwork-plugins` and `learning-agents@deepwork-plugins` to `true`.
 7. If `.claude/settings.json` exists but contains invalid JSON, the command MUST treat it as an empty settings object (not crash).
 8. Both commands MUST print a deprecation message that includes `brew uninstall deepwork` and `uv tool uninstall deepwork` instructions.
+
+### DW-REQ-005.6: setup Command
+
+1. The `setup` command MUST be a Click command.
+2. The `setup` command MUST detect Claude Code by checking for the `~/.claude` directory.
+3. When Claude Code is detected, the command MUST configure `~/.claude/settings.json` with:
+   1. The DeepWork marketplace in `extraKnownMarketplaces` with source `{"source": "github", "repo": "Unsupervisedcom/deepwork"}`.
+   2. `autoUpdate: true` on the marketplace entry.
+   3. The `deepwork@deepwork-plugins` plugin set to `true` in `enabledPlugins`.
+   4. The `mcp__plugin_deepwork_deepwork__*` permission in `permissions.allow`.
+4. The command MUST be idempotent — running it when settings are already configured MUST produce no changes and no file write.
+5. The command MUST preserve existing settings (other plugins, permissions, etc.) when adding DeepWork entries.
+6. The command MUST create `~/.claude` and `settings.json` if they do not exist.
+7. When no supported platform is detected, the command MUST print a message indicating no platforms were found.
