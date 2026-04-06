@@ -390,7 +390,7 @@ Steps may define quality reviews that outputs must pass. When `finished_step` is
 
 1. JSON schema validation runs first (if any outputs have `json_schema` defined)
 2. Dynamic review rules are built from step output `review` blocks and `process_requirements`
-3. `.deepreview` rules and DeepSchema-generated synthetic review rules are also loaded and matched against output files
+3. `.deepreview` rules and DeepSchema-generated synthetic review rules are loaded and matched against output files that are actually changed (via git diff). Dynamic rules from step `review` blocks run against all output files regardless of git status.
 4. If any reviews are needed, `status = "needs_work"` with review instructions
 5. If all reviews pass (or no reviews defined), workflow advances
 6. There is no maximum attempt limit — the agent can retry `finished_step` indefinitely
