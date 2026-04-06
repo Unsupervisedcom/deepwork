@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Removed
+## [0.13.1] - 2026-04-06
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
 ## [0.13.0] - 2026-04-03
 
 ### Added
@@ -406,7 +415,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.0...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.1...HEAD
+[0.13.1]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.1
 [0.13.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.0
 [0.12.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.12.0
 [0.11.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.11.0
