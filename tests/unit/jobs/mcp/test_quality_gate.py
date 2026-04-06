@@ -519,7 +519,7 @@ class TestRunQualityGate:
         assert "JSON schema validation failed" in result
         assert "finished_step" in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.1.3, JOBS-REQ-004.5.8, JOBS-REQ-004.6.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.1.3, JOBS-REQ-004.5.9, JOBS-REQ-004.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_review_instructions_when_reviews_exist(self, tmp_path: Path) -> None:
         """When dynamic rules produce tasks, review instructions are returned."""
@@ -574,7 +574,7 @@ class TestRunQualityGate:
         assert "Quality reviews are required" in result
         assert "step_write_output_report" in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.7).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.8).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_none_when_all_reviews_already_passed(self, tmp_path: Path) -> None:
         """If write_instruction_files returns empty (all .passed), result is None."""
@@ -1235,9 +1235,7 @@ class TestQualityGatePassCaching:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_reruns_review_when_file_content_changes_after_pass(
-        self, tmp_path: Path
-    ) -> None:
+    def test_reruns_review_when_file_content_changes_after_pass(self, tmp_path: Path) -> None:
         """Quality gate runs review again when file content changes after a prior pass.
 
         Verifies that changing file content produces a different review_id,

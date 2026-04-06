@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Integration tests for quality gate review caching (JOBS-REQ-004.5.7)
+
 ### Changed
+
+- JOBS-REQ-004.5.7 strengthened to explicit MUST requirement for skipping already-passed reviews
 
 ### Fixed
 
