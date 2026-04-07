@@ -1,0 +1,105 @@
+requirements:
+  # LA-REQ-007.1
+  not-user-invocable: >
+    The skill frontmatter MUST set `user-invocable: false` so it cannot be
+    directly invoked by the user.
+
+  # LA-REQ-007.2
+  input-argument-path: >
+    The skill MUST accept a single argument: the path to the session/agent_id
+    folder (e.g., `.deepwork/tmp/agent_sessions/<session_id>/<agent_id>/`).
+
+  # LA-REQ-007.3
+  agent-context-loading: >
+    The skill MUST dynamically load the agent name from `$ARGUMENTS/agent_used`,
+    the last learning timestamp from `$ARGUMENTS/learning_last_performed_timestamp`,
+    and additional identification guidelines from
+    `.deepwork/learning-agents/<agent-name>/additional_learning_guidelines/issue_identification.md`.
+
+  # LA-REQ-007.4
+  transcript-location: >
+    The skill MUST instruct the agent to read the transcript from the session
+    folder. The transcript file MUST be located relative to `$ARGUMENTS`.
+
+  # LA-REQ-007.5
+  missing-transcript-handling: >
+    The skill MUST instruct the agent to report an error and stop if no
+    transcript file is found, without creating any issue files.
+
+  # LA-REQ-007.6
+  transcript-format-jsonl: >
+    The skill MUST instruct the agent to parse the transcript as JSONL and focus
+    on `type: "assistant"` messages and `type: "tool_result"` entries to evaluate
+    agent behavior.
+
+  # LA-REQ-007.7
+  incremental-processing: >
+    The skill MUST instruct the agent to skip transcript lines before
+    `learning_last_performed_timestamp` when that value exists, analyzing only
+    interactions since the last learning cycle.
+
+  # LA-REQ-007.9
+  issue-categories: >
+    The skill MUST enumerate all five issue categories: incorrect outputs,
+    knowledge gaps, missed context, poor judgment, and pattern failures.
+
+  # LA-REQ-007.10
+  trivial-issue-filtering: >
+    The skill MUST instruct the agent to skip trivial issues including minor
+    formatting differences, environmental failures, and issues already covered
+    by existing learnings or issue files.
+
+  # LA-REQ-007.11
+  report-via-sub-skill: >
+    The skill MUST instruct the agent to invoke the `report-issue` skill once
+    per issue found, passing the session folder path and a description of the
+    problem.
+
+  # LA-REQ-007.12
+  no-duplicate-issues: >
+    The skill MUST instruct the agent to avoid creating duplicate issue files
+    for the same problem, including by listing existing issue files for
+    reference.
+
+  # LA-REQ-007.13
+  no-root-cause-investigation: >
+    The skill MUST explicitly prohibit root cause investigation, deferring that
+    to the `investigate-issues` skill.
+
+  # LA-REQ-007.14
+  no-knowledge-base-modification: >
+    The skill MUST explicitly prohibit modification of the agent's knowledge
+    base (core-knowledge.md, topics, or learnings).
+
+  # LA-REQ-007.15
+  summary-output: >
+    The skill MUST instruct the agent to output a summary containing session ID,
+    agent name, count of issues found, and a table listing each issue with its
+    category and description (or a message indicating no issues were found).
+
+  # LA-REQ-007.8
+  agent-focus: >
+    The skill MUST focus on interactions involving the agent identified in
+    the agent_used file and SHOULD NOT analyze interactions with other
+    agents.
+
+  # LA-REQ-007, LA-REQ-007.16
+  allowed-tools-only: >
+    The skill MUST restrict tool usage to only: Read, Grep, Glob, Skill.
+
+  # LA-REQ-005.8
+  timestamp-source-accuracy: >
+    The skill MUST instruct that seen_at_timestamps come from either exact
+    transcript line timestamps or the current UTC time when reviewing live
+    sessions.
+
+  # LA-REQ-005.11
+  investigation-report-content: >
+    The skill MUST instruct that investigation_report fields contain specific
+    line numbers from the transcript as evidence.
+
+  # LA-REQ-005.13
+  no-duplicate-issues-lifecycle: >
+    The skill MUST instruct the agent to check for existing issues before
+    creating new ones, preventing duplicate issue files for the same problem
+    within a single session.

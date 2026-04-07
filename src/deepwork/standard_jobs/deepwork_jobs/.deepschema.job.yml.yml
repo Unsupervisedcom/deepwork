@@ -1,21 +1,23 @@
 requirements:
+  # JOBS-REQ-012, JOBS-REQ-012.3
   learn-workflow-step-arguments: >
     The learn workflow MUST accept `deepschemas` and `deepreviews` step
     arguments for outputting created DeepSchema and DeepReview rule files.
-    (JOBS-REQ-012.3)
 
+  # JOBS-REQ-012.1
   learn-workflow-classification: >
     The learn workflow's step instructions MUST describe how to classify
     each learning as either generalizable (applied to job instructions) or
-    bespoke (captured in AGENTS.md). (JOBS-REQ-012.1)
+    bespoke (captured in AGENTS.md).
 
+  # JOBS-REQ-012.2
   learn-workflow-prevention-evaluation: >
     The learn workflow MUST include instructions for evaluating whether
     DeepSchemas or DeepReview rules could prevent issues encountered during
     the session, and MUST require the agent to state why if none are found.
-    (JOBS-REQ-012.2)
 
+  # JOBS-REQ-012.4
   learn-workflow-process-requirements: >
     The learn workflow's quality review MUST enforce "Generalizable Learnings
     Applied", "Bespoke Learnings Captured", and "Prevention Opportunities
-    Evaluated" as process requirements. (JOBS-REQ-012.4)
+    Evaluated" as process requirements.

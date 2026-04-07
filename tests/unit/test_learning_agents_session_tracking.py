@@ -1,4 +1,9 @@
-"""Tests for session tracking hooks (LA-REQ-004).
+"""Tests for session tracking hooks.
+
+Validates requirements: LA-REQ-004, LA-REQ-004.1, LA-REQ-004.2, LA-REQ-004.3,
+LA-REQ-004.4, LA-REQ-004.5, LA-REQ-004.6, LA-REQ-004.7, LA-REQ-004.8, LA-REQ-004.9,
+LA-REQ-004.10, LA-REQ-004.11, LA-REQ-004.12, LA-REQ-004.13, LA-REQ-004.14,
+LA-REQ-004.15, LA-REQ-004.16, LA-REQ-004.17, LA-REQ-004.18.
 
 Each test maps to a numbered requirement in
 specs/learning-agents/LA-REQ-004-session-tracking.md.

@@ -1,4 +1,7 @@
-"""Tests for the learning-agents plugin — validates LA-REQ-001.
+"""Tests for the learning-agents plugin.
+
+Validates requirements: LA-REQ-001, LA-REQ-001.1, LA-REQ-001.2, LA-REQ-001.3,
+LA-REQ-001.4, LA-REQ-001.5, LA-REQ-001.6, LA-REQ-001.7, LA-REQ-001.8.
 
 Each test class maps to a numbered requirement section in
 specs/learning-agents/LA-REQ-001-plugin-structure.md.

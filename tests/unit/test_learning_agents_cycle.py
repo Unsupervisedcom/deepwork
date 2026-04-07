@@ -1,5 +1,11 @@
 """Tests for LA-REQ-006 (Learning Cycle) and LA-REQ-010 (Issue Reporting).
 
+Validates requirements: LA-REQ-006, LA-REQ-006.1, LA-REQ-006.2, LA-REQ-006.3,
+LA-REQ-006.4, LA-REQ-006.5, LA-REQ-006.6, LA-REQ-006.7, LA-REQ-006.8, LA-REQ-006.9,
+LA-REQ-006.10, LA-REQ-006.11, LA-REQ-006.12, LA-REQ-006.13,
+LA-REQ-010, LA-REQ-010.1, LA-REQ-010.2, LA-REQ-010.3, LA-REQ-010.4, LA-REQ-010.5,
+LA-REQ-010.6, LA-REQ-010.7, LA-REQ-010.8, LA-REQ-010.9, LA-REQ-010.10, LA-REQ-010.11.
+
 Each test class maps to a numbered requirement section. Only deterministic,
 boolean-verifiable requirements are tested here. These tests inspect the
 SKILL.md files directly for correct orchestration patterns, routing,

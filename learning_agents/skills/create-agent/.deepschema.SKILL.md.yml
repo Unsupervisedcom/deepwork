@@ -1,0 +1,67 @@
+# DeepSchema for create-agent skill — validates LA-REQ-002 judgment-based requirements
+requirements:
+  # LA-REQ-002.1
+  skill-invocation-and-name-prompt: >
+    The skill MUST be invocable via /learning-agents create <name>, and if
+    no name is provided, MUST prompt the user for a name.
+
+  # LA-REQ-002.2
+  name-normalization: >
+    The skill MUST normalize agent names by converting spaces and uppercase
+    to lowercase dashes (e.g. "Rails ActiveJob" -> "rails-activejob").
+
+  # LA-REQ-002.3
+  pre-scaffold-validation: >
+    The skill MUST check that .deepwork/learning-agents/ exists (or create it)
+    and verify no agent with the same name already exists before scaffolding.
+
+  # LA-REQ-002.4
+  agent-directory-path: >
+    The skill MUST place the new agent under .deepwork/learning-agents/<name>/.
+
+  # LA-REQ-002.5
+  scaffold-invocation: >
+    The skill MUST invoke the create_agent.sh script to create the directory
+    structure rather than creating files inline.
+
+  # LA-REQ-002.7
+  file-paths-for-scaffold: >
+    The skill MUST pass the correct agent name and plugin root path to the
+    scaffold script so it creates files in the right locations.
+
+  # LA-REQ-002.9
+  claude-agent-file-config: >
+    The skill MUST configure the Claude Code agent file with appropriate
+    name, description, and model settings after scaffolding.
+
+  # LA-REQ-002.12
+  interactive-configuration: >
+    After scaffolding, the skill MUST ask the user about the agent's domain
+    of expertise and update core-knowledge.md and the agent file accordingly.
+
+  # LA-REQ-002.13
+  optional-knowledge-seeding: >
+    The skill MUST offer the user the option to seed initial topics or
+    learnings, creating files following the formats from LA-REQ-003.
+
+  # LA-REQ-002.14
+  creation-summary: >
+    Upon completion, the skill MUST output a summary listing created files,
+    usage instructions for invoking the agent, and a note about the learning
+    cycle.
+
+  # LA-REQ-002.15
+  no-overwrites: >
+    The skill MUST NOT overwrite any existing file without explicit user
+    confirmation.
+
+  # LA-REQ-002.23
+  template-configuration-guidance: >
+    When a template was used, the skill MUST present the copied core-knowledge.md
+    and offer to keep, modify, or replace it, and list copied topics/learnings
+    for review.
+
+  # LA-REQ-002.24
+  template-summary: >
+    When a template was used, the completion summary MUST note which template
+    was used and how many files were seeded from it.

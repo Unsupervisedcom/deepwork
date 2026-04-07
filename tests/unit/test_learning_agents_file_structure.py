@@ -1,9 +1,18 @@
 """Tests for LearningAgent file structure (LA-REQ-003) and issue lifecycle (LA-REQ-005).
 
+Validates requirements: LA-REQ-003, LA-REQ-003.1, LA-REQ-003.2, LA-REQ-003.3,
+LA-REQ-003.4, LA-REQ-003.5, LA-REQ-003.6, LA-REQ-003.7, LA-REQ-003.8, LA-REQ-003.9,
+LA-REQ-003.10, LA-REQ-003.11, LA-REQ-003.12, LA-REQ-003.13, LA-REQ-003.14,
+LA-REQ-003.15, LA-REQ-003.16, LA-REQ-003.17, LA-REQ-003.18,
+LA-REQ-005, LA-REQ-005.1, LA-REQ-005.2, LA-REQ-005.3, LA-REQ-005.4, LA-REQ-005.5,
+LA-REQ-005.6, LA-REQ-005.7, LA-REQ-005.8, LA-REQ-005.9, LA-REQ-005.10, LA-REQ-005.11,
+LA-REQ-005.12, LA-REQ-005.13.
+
 Each test class maps to a numbered requirement section in the corresponding
 spec under specs/learning-agents/.
 
 Only deterministic, boolean-verifiable requirements have tests here.
+Judgment-based requirements are covered by DeepSchemas on the relevant skill files.
 """
 
 from __future__ import annotations
