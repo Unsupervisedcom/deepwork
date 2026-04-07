@@ -4,7 +4,7 @@
 
 DeepWork is a framework for enabling AI agents to perform complex, multi-step work tasks across any domain. Inspired by spec-kit's approach to software development, DeepWork generalizes the pattern to support any job type—from competitive research to ad campaign design to monthly reporting.
 
-**Key Insight**: DeepWork is delivered as a **plugin** for AI agent CLIs (Claude Code, Gemini CLI, etc.). The plugin provides a skill, MCP server configuration, and hooks. The MCP server (`deepwork serve`) is the core runtime — the CLI has no install/sync commands.
+**Key Insight**: DeepWork is delivered as a **plugin** for AI agent CLIs (Claude Code, Gemini CLI, etc.). The plugin provides a skill, MCP server configuration, and hooks. The MCP server (`deepwork serve`) is the core runtime. The `deepwork setup` command configures platform settings automatically.
 
 ## Core Design Principles
 
@@ -14,7 +14,7 @@ DeepWork is a framework for enabling AI agents to perform complex, multi-step wo
 4. **Plugin-Based**: Delivered as platform plugins (Claude Code plugin, Gemini extension)
 5. **AI-Neutral**: Support for multiple AI platforms (Claude Code, Gemini, Copilot, etc.)
 6. **Stateless Execution**: All state is stored in filesystem artifacts, enabling resumability and transparency
-7. **MCP-Powered**: The MCP server is the core runtime — no install/sync CLI commands needed
+7. **MCP-Powered**: The MCP server is the core runtime — `deepwork setup` handles platform configuration
 
 ## Architecture Overview
 
@@ -43,6 +43,7 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── hook.py         # Hook runner command
 │       │   ├── jobs.py         # Job inspection commands (get-stack)
 │       │   ├── review.py       # Review command (CLI entry for reviews)
+│       │   ├── setup.py        # Platform setup command
 │       │   └── install.py      # Deprecated install/sync (back-compat)
 │       ├── core/
 │       │   └── doc_spec_parser.py   # Doc spec parsing
@@ -60,6 +61,9 @@ deepwork/                       # DeepWork tool repository
 │       │       ├── quality_gate.py # Quality gate via DeepWork Reviews
 │       │       ├── roots.py        # MCP root resolver
 │       │       └── status.py       # Status file writer for external consumers
+│       ├── setup/              # Platform setup helpers
+│       │   ├── __init__.py
+│       │   └── claude.py       # Claude Code settings configuration
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── wrapper.py      # Cross-platform input/output normalization
 │       │   ├── deepschema_write.py # DeepSchema write-time validation hook
@@ -123,7 +127,7 @@ deepwork/                       # DeepWork tool repository
 
 ## DeepWork CLI Components
 
-The CLI has four active commands: `serve`, `hook`, `review`, and `jobs`. Deprecated back-compat commands `install` and `sync` are also registered (hidden) to guide users toward the plugin system. The old adapters, detector, and generator have been replaced by the plugin system.
+The CLI has five active commands: `serve`, `hook`, `review`, `jobs`, and `setup`. Deprecated back-compat commands `install` and `sync` are also registered (hidden) to guide users toward the plugin system.
 
 ### 1. Serve Command (`serve.py`)
 
@@ -177,7 +181,21 @@ The `get-stack` subcommand:
 - Enriches each session with job definition context (common info, step instructions, step position)
 - Outputs JSON to stdout — used by the post-compaction hook to restore workflow context
 
-### 5. Plugin System (replaces adapters/detector/generator)
+### 5. Setup Command (`setup.py`)
+
+Configures the current environment for DeepWork by detecting installed AI agent platforms and updating their settings:
+
+```bash
+deepwork setup
+```
+
+The setup command:
+- Detects Claude Code by checking for `~/.claude` directory
+- Configures `~/.claude/settings.json` with marketplace, plugin, MCP permissions, and auto-update
+- Idempotent — safe to run multiple times
+- Preserves existing settings
+
+### 6. Plugin System (replaces adapters/detector/generator)
 
 Platform-specific delivery is now handled by plugins in `plugins/`:
 

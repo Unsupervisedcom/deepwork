@@ -2,7 +2,7 @@
 
 ## Overview
 
-The DeepWork CLI provides four active commands: `serve` (starts the MCP server), `hook` (runs hook scripts), `jobs` (job inspection), and `review` (review instructions), plus two deprecated back-compat commands: `install` and `sync`. The CLI is built with Click and serves as the entry point for `deepwork` executable. The `serve` command is the primary runtime entry point, `hook` provides a generic mechanism for running Python hook modules, and `jobs` provides subcommands for inspecting active workflow sessions.
+The DeepWork CLI provides five active commands: `serve` (starts the MCP server), `hook` (runs hook scripts), `jobs` (job inspection), `review` (review instructions), and `setup` (platform configuration), plus two deprecated back-compat commands: `install` and `sync`. The CLI is built with Click and serves as the entry point for `deepwork` executable. The `serve` command is the primary runtime entry point, `hook` provides a generic mechanism for running Python hook modules, and `jobs` provides subcommands for inspecting active workflow sessions.
 
 ## Requirements
 
@@ -10,7 +10,7 @@ The DeepWork CLI provides four active commands: `serve` (starts the MCP server),
 
 1. The CLI MUST be a Click group command named `cli`.
 2. The CLI MUST provide a `--version` option sourced from the `deepwork` package version.
-3. The CLI MUST register `serve`, `hook`, `jobs`, `review`, `install`, and `sync` as subcommands.
+3. The CLI MUST register `serve`, `hook`, `jobs`, `review`, `setup`, `install`, and `sync` as subcommands.
 4. The CLI MUST be callable as `deepwork` from the command line (via package entry point).
 
 ### DW-REQ-005.2: serve Command
@@ -72,3 +72,17 @@ The DeepWork CLI provides four active commands: `serve` (starts the MCP server),
 6. The written `enabledPlugins` MUST set `deepwork@deepwork-plugins` and `learning-agents@deepwork-plugins` to `true`.
 7. If `.claude/settings.json` exists but contains invalid JSON, the command MUST treat it as an empty settings object (not crash).
 8. Both commands MUST print a deprecation message that includes `brew uninstall deepwork` and `uv tool uninstall deepwork` instructions.
+
+### DW-REQ-005.6: setup Command
+
+1. The `setup` command MUST be a Click command.
+2. The `setup` command MUST detect Claude Code by checking for the `~/.claude` directory.
+3. When Claude Code is detected, the command MUST configure `~/.claude/settings.json` with:
+   1. The DeepWork marketplace in `extraKnownMarketplaces` with source `{"source": "github", "repo": "Unsupervisedcom/deepwork"}`.
+   2. `autoUpdate: true` on the marketplace entry.
+   3. The `deepwork@deepwork-plugins` plugin set to `true` in `enabledPlugins`.
+   4. The `mcp__plugin_deepwork_deepwork__*` permission in `permissions.allow`.
+4. The command MUST be idempotent — running it when settings are already configured MUST produce no changes and no file write.
+5. The command MUST preserve existing settings (other plugins, permissions, etc.) when adding DeepWork entries.
+6. The command MUST create `~/.claude` and `settings.json` if they do not exist.
+7. When no supported platform is detected, the command MUST print a message indicating no platforms were found.

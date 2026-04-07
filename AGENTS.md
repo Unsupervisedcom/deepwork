@@ -6,7 +6,7 @@ This file contains critical instructions for AI agents working on this codebase.
 
 DeepWork is a framework for enabling AI agents to perform complex, multi-step work tasks across any domain. It is inspired by GitHub's spec-kit but generalized for any job type - from competitive research to ad campaign design to monthly reporting.
 
-**Key Insight**: DeepWork is delivered as a **plugin** for AI agent CLIs (Claude Code, Gemini CLI, etc.). The plugin provides a skill, MCP server configuration, and hooks. The MCP server (`deepwork serve`) is the core runtime — the CLI has no install/sync commands.
+**Key Insight**: DeepWork is delivered as a **plugin** for AI agent CLIs (Claude Code, Gemini CLI, etc.). The plugin provides a skill, MCP server configuration, and hooks. The MCP server (`deepwork serve`) is the core runtime. The `deepwork setup` command configures platform settings automatically.
 
 ## Core Concepts
 
@@ -25,7 +25,7 @@ Each job consists of reviewable steps with clear inputs and outputs. For example
 4. **Plugin-Based**: Delivered as platform plugins (Claude Code plugin, Gemini extension)
 5. **AI-Neutral**: Supports multiple AI platforms (Claude Code, Gemini, Copilot, etc.)
 6. **Stateless Execution**: All state stored in filesystem artifacts for transparency
-7. **MCP-Powered**: The MCP server is the core runtime — no install/sync CLI commands needed
+7. **MCP-Powered**: The MCP server is the core runtime — `deepwork setup` handles platform configuration
 
 ## CRITICAL: Job Type Classification
 
@@ -194,10 +194,11 @@ This repo has **two** MCP server instances: one from the plugin (`plugin:deepwor
 ```
 deepwork/
 ├── src/deepwork/
-│   ├── cli/              # CLI commands (serve, hook, review, jobs)
+│   ├── cli/              # CLI commands (serve, hook, review, jobs, setup)
 │   ├── core/             # Core logic (doc_spec_parser)
 │   ├── jobs/             # Job discovery, parsing, schema, and MCP server
 │   │   └── mcp/          # MCP server module (the core runtime)
+│   ├── setup/            # Platform setup helpers (claude.py)
 │   ├── deepschema/       # DeepSchema subsystem (config, discovery, matcher, resolver, review_bridge, schema)
 │   ├── hooks/            # Hook scripts and wrappers
 │   ├── standard_jobs/    # Built-in job definitions (auto-discovered at runtime)

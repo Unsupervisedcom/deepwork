@@ -10,17 +10,20 @@ def cli() -> None:
     pass
 
 
-# Import commands
+# Imported after cli is defined to avoid circular dependencies with command modules.
+
 from deepwork.cli.hook import hook  # noqa: E402
 from deepwork.cli.install import install, sync  # noqa: E402
 from deepwork.cli.jobs import jobs  # noqa: E402
 from deepwork.cli.review import review  # noqa: E402
 from deepwork.cli.serve import serve  # noqa: E402
+from deepwork.cli.setup import setup  # noqa: E402
 
 cli.add_command(hook)
 cli.add_command(jobs)
 cli.add_command(review)
 cli.add_command(serve)
+cli.add_command(setup)
 
 # DEPRECATION NOTICE: Remove after June 1st, 2026; details in PR https://github.com/Unsupervisedcom/deepwork/pull/227
 # install and sync are hidden back-compat commands that tell users
