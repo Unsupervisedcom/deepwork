@@ -16,8 +16,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import tempfile
+from glob import glob
 from pathlib import Path
 from typing import Any
 
@@ -85,6 +87,17 @@ def _make_hook_input(
     if transcript_path is not None:
         data["transcript_path"] = transcript_path
     return json.dumps(data)
+
+
+def _locate_reminder_file() -> Path:
+    """Return the path to learning_agent_post_task_reminder.md, searching the
+    repository if the canonical location does not exist."""
+    canonical = PROJECT_ROOT / "learning_agents" / "doc" / "learning_agent_post_task_reminder.md"
+    if canonical.is_file():
+        return canonical
+    matches = glob(str(PROJECT_ROOT / "**/learning_agent_post_task_reminder.md"), recursive=True)
+    assert matches, "Cannot find learning_agent_post_task_reminder.md anywhere"
+    return Path(matches[0])
 
 
 # ===========================================================================
@@ -342,8 +355,6 @@ class TestNeedsLearningTimestamp:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.8).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Timestamp file must contain ISO 8601 UTC format (YYYY-MM-DDTHH:MM:SSZ)."""
-        import re
-
         with tempfile.TemporaryDirectory() as tmpdir:
             agent_dir = Path(tmpdir) / ".deepwork" / "learning-agents" / "my-agent"
             agent_dir.mkdir(parents=True)
@@ -490,19 +501,7 @@ class TestPostTaskReminderContent:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.11).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Reminder must instruct users to resume the same task rather than starting a new one."""
-        reminder_path = (
-            PROJECT_ROOT / "learning_agents" / "doc" / "learning_agent_post_task_reminder.md"
-        )
-        if not reminder_path.is_file():
-            # Try alternate location
-            from glob import glob
-
-            matches = glob(
-                str(PROJECT_ROOT / "**/learning_agent_post_task_reminder.md"), recursive=True
-            )
-            assert matches, "Cannot find learning_agent_post_task_reminder.md anywhere"
-            reminder_path = Path(matches[0])
-        content = reminder_path.read_text().lower()
+        content = _locate_reminder_file().read_text().lower()
         assert "resume" in content or "same task" in content, (
             "Reminder must mention resuming the same task"
         )
@@ -511,18 +510,7 @@ class TestPostTaskReminderContent:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.11).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Reminder must mention /learning-agents report_issue or resuming for mistakes."""
-        reminder_path = (
-            PROJECT_ROOT / "learning_agents" / "doc" / "learning_agent_post_task_reminder.md"
-        )
-        if not reminder_path.is_file():
-            from glob import glob
-
-            matches = glob(
-                str(PROJECT_ROOT / "**/learning_agent_post_task_reminder.md"), recursive=True
-            )
-            assert matches, "Cannot find learning_agent_post_task_reminder.md anywhere"
-            reminder_path = Path(matches[0])
-        content = reminder_path.read_text().lower()
+        content = _locate_reminder_file().read_text().lower()
         assert "report" in content or "issue" in content, "Reminder must mention reporting issues"
 
 

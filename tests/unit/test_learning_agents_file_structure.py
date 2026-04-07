@@ -414,6 +414,7 @@ class TestCreateAgentScript:
                 cwd=tmp,
                 capture_output=True,
                 text=True,
+                check=True,
             )
             ck = tmp / ".deepwork" / "learning-agents" / "fm-test-agent" / "core-knowledge.md"
             assert ck.is_file()
@@ -432,6 +433,7 @@ class TestCreateAgentScript:
                 cwd=tmp,
                 capture_output=True,
                 text=True,
+                check=True,
             )
             claude_file = tmp / ".claude" / "agents" / "cf-test-agent.md"
             fm = _parse_yaml_frontmatter(claude_file)
@@ -450,6 +452,7 @@ class TestCreateAgentScript:
                 cwd=tmp,
                 capture_output=True,
                 text=True,
+                check=True,
             )
             claude_file = tmp / ".claude" / "agents" / "ref-test-agent.md"
             text = claude_file.read_text()

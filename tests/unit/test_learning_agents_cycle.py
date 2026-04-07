@@ -15,6 +15,7 @@ invocation sequences, and structural properties.
 from __future__ import annotations
 
 import re
+from functools import cache
 from pathlib import Path
 from typing import Any
 
@@ -26,8 +27,9 @@ SKILLS_DIR = PROJECT_ROOT / "learning_agents" / "skills"
 SCRIPTS_DIR = PROJECT_ROOT / "learning_agents" / "scripts"
 
 
+@cache
 def _read_skill(name: str) -> str:
-    """Read the SKILL.md content for a given skill directory name."""
+    """Read the SKILL.md content for a given skill directory name (cached)."""
     path = SKILLS_DIR / name / "SKILL.md"
     assert path.exists(), f"Skill {name} SKILL.md not found at {path}"
     return path.read_text()
@@ -65,6 +67,7 @@ class TestLearnSkillInvocation:
         """LA-REQ-006.1: frontmatter name is 'learn'."""
         fm = _parse_frontmatter(_read_skill("learn"))
         assert fm["name"] == "learn"
+
 
 # LA-REQ-006.1 "ignores arguments after `learn`" is judgment-based and
 # enforced by the deepschema at learning_agents/skills/learn/.deepschema.SKILL.md.yml.
@@ -175,6 +178,8 @@ class TestThreePhaseProcessing:
         content = _read_skill("learn")
         identify_pos = content.find("learning-agents:identify")
         investigate_pos = content.find("learning-agents:investigate-issues")
+        assert identify_pos >= 0, "Must reference learning-agents:identify"
+        assert investigate_pos >= 0, "Must reference learning-agents:investigate-issues"
         assert identify_pos < investigate_pos, "identify must appear before investigate-issues"
 
     def test_investigate_before_incorporate(self) -> None:
@@ -184,6 +189,8 @@ class TestThreePhaseProcessing:
         content = _read_skill("learn")
         investigate_pos = content.find("learning-agents:investigate-issues")
         incorporate_pos = content.find("learning-agents:incorporate-learnings")
+        assert investigate_pos >= 0, "Must reference learning-agents:investigate-issues"
+        assert incorporate_pos >= 0, "Must reference learning-agents:incorporate-learnings"
         assert investigate_pos < incorporate_pos, (
             "investigate-issues must appear before incorporate-learnings"
         )
