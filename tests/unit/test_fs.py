@@ -1,4 +1,9 @@
-"""Tests for filesystem utilities."""
+"""Tests for filesystem utilities.
+
+Validates requirements: DW-REQ-010, DW-REQ-010.1, DW-REQ-010.2, DW-REQ-010.3,
+DW-REQ-010.4, DW-REQ-010.5, DW-REQ-010.6, DW-REQ-010.7, DW-REQ-010.8, DW-REQ-010.9,
+DW-REQ-010.10.
+"""
 
 from pathlib import Path
 

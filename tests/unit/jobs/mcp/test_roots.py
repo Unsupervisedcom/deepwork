@@ -1,4 +1,8 @@
-"""Tests for JOBS-REQ-011: MCP root resolution via listRoots."""
+"""Tests for JOBS-REQ-011: MCP root resolution via listRoots.
+
+Validates requirements: JOBS-REQ-011, JOBS-REQ-011.1, JOBS-REQ-011.2, JOBS-REQ-011.3,
+JOBS-REQ-011.4.
+"""
 
 from __future__ import annotations
 
@@ -39,6 +43,7 @@ FALLBACK = Path("/fallback/dir")
 @pytest.mark.asyncio
 async def test_resolve_single_file_root(tmp_path: Path) -> None:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.2.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     ctx = _make_ctx([_make_root(tmp_path.as_uri())])
     result = await resolve_project_root(ctx, FALLBACK)
     assert result == tmp_path.resolve()
@@ -47,6 +52,7 @@ async def test_resolve_single_file_root(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_resolve_uri_with_spaces(tmp_path: Path) -> None:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.2.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     spaced = tmp_path / "my project"
     spaced.mkdir()
     ctx = _make_ctx([_make_root(spaced.as_uri())])
@@ -57,6 +63,7 @@ async def test_resolve_uri_with_spaces(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_fallback_on_empty_roots() -> None:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.2.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     ctx = _make_ctx(None)  # empty list
     result = await resolve_project_root(ctx, FALLBACK)
     assert result == FALLBACK
@@ -65,6 +72,7 @@ async def test_fallback_on_empty_roots() -> None:
 @pytest.mark.asyncio
 async def test_fallback_on_exception() -> None:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.2.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     ctx = _make_ctx(RuntimeError("no client"))
     result = await resolve_project_root(ctx, FALLBACK)
     assert result == FALLBACK
@@ -73,6 +81,7 @@ async def test_fallback_on_exception() -> None:
 @pytest.mark.asyncio
 async def test_skips_non_file_roots(tmp_path: Path) -> None:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.2.2, JOBS-REQ-011.2.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     ctx = _make_ctx(
         [
             _make_root("https://example.com"),
@@ -86,6 +95,7 @@ async def test_skips_non_file_roots(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_fallback_when_no_file_roots() -> None:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.2.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     ctx = _make_ctx([_make_root("https://example.com")])
     result = await resolve_project_root(ctx, FALLBACK)
     assert result == FALLBACK
@@ -99,6 +109,7 @@ async def test_fallback_when_no_file_roots() -> None:
 @pytest.mark.asyncio
 async def test_explicit_always_returns_fallback() -> None:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.1.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     resolver = RootResolver(fallback_root=FALLBACK, explicit=True)
     ctx = _make_ctx([_make_root("file:///other/path")])
     result = await resolver.get_root(ctx)
@@ -108,6 +119,7 @@ async def test_explicit_always_returns_fallback() -> None:
 
 def test_startup_root_returns_fallback() -> None:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.1.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     resolver = RootResolver(fallback_root=FALLBACK, explicit=False)
     assert resolver.startup_root == FALLBACK
 
@@ -120,6 +132,7 @@ def test_startup_root_returns_fallback() -> None:
 @pytest.mark.asyncio
 async def test_dynamic_calls_list_roots_every_time() -> None:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.1.4, JOBS-REQ-011.1.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     resolver = RootResolver(fallback_root=FALLBACK, explicit=False)
 
     root1 = _make_root("file:///first")
@@ -139,6 +152,7 @@ async def test_dynamic_calls_list_roots_every_time() -> None:
 @pytest.mark.asyncio
 async def test_dynamic_falls_back_on_error() -> None:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.1.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     resolver = RootResolver(fallback_root=FALLBACK, explicit=False)
     ctx = _make_ctx(RuntimeError("disconnected"))
     result = await resolver.get_root(ctx)

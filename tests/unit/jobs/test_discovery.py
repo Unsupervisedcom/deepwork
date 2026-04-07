@@ -1,4 +1,8 @@
-"""Tests for job folder discovery (deepwork.jobs.discovery)."""
+"""Tests for job folder discovery (deepwork.jobs.discovery).
+
+Validates requirements: JOBS-REQ-008, JOBS-REQ-008.1, JOBS-REQ-008.2, JOBS-REQ-008.3,
+JOBS-REQ-008.4, JOBS-REQ-008.5.
+"""
 
 from pathlib import Path
 

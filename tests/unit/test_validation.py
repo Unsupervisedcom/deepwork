@@ -1,4 +1,7 @@
-"""Tests for validation utilities."""
+"""Tests for validation utilities.
+
+Validates requirements: DW-REQ-010.10.
+"""
 
 from pathlib import Path
 

@@ -1,4 +1,7 @@
-"""Tests for serve CLI command options."""
+"""Tests for serve CLI command options.
+
+Validates requirements: DW-REQ-005, DW-REQ-005.1, DW-REQ-005.2.
+"""
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -13,6 +16,8 @@ class TestServeCLI:
 
     @patch("deepwork.cli.serve._serve_mcp")
     def test_default_invocation(self, mock_serve: MagicMock, tmp_path: str) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.4, DW-REQ-005.2.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that serve calls _serve_mcp with correct defaults."""
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
@@ -50,6 +55,8 @@ class TestServeCLI:
 
     @patch("deepwork.cli.serve._serve_mcp")
     def test_platform_option(self, mock_serve: MagicMock, tmp_path: str) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.8).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that --platform passes through to _serve_mcp."""
         runner = CliRunner()
         with runner.isolated_filesystem(temp_dir=tmp_path) as td:
@@ -62,6 +69,7 @@ class TestServeCLI:
         assert call_args[3] == "claude"  # platform
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.4.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.serve._serve_mcp")
     def test_no_path_passes_explicit_false(self, mock_serve: MagicMock) -> None:
         """When --path is omitted, explicit_path=False is passed to _serve_mcp."""
@@ -74,6 +82,7 @@ class TestServeCLI:
         assert mock_serve.call_args[1]["explicit_path"] is False
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-011.4.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.cli.serve._serve_mcp")
     def test_explicit_path_passes_explicit_true(self, mock_serve: MagicMock, tmp_path: str) -> None:
         """When --path is provided, explicit_path=True is passed to _serve_mcp."""
@@ -87,6 +96,8 @@ class TestServeCLI:
         assert mock_serve.call_args[1]["explicit_path"] is True
 
     def test_help_shows_options(self) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.2.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Test that --help shows the available options."""
         runner = CliRunner()
         result = runner.invoke(serve, ["--help"])

@@ -1,4 +1,9 @@
-"""Tests for MCP status file writer."""
+"""Tests for MCP status file writer.
+
+Validates requirements: JOBS-REQ-010, JOBS-REQ-010.1, JOBS-REQ-010.2, JOBS-REQ-010.3,
+JOBS-REQ-010.4, JOBS-REQ-010.5, JOBS-REQ-010.6, JOBS-REQ-010.7, JOBS-REQ-010.8,
+JOBS-REQ-010.9, JOBS-REQ-010.10, JOBS-REQ-010.11, JOBS-REQ-010.12, JOBS-REQ-010.13.
+"""
 
 from __future__ import annotations
 
@@ -169,6 +174,8 @@ class TestWriteManifest:
         assert wf_names == ["alpha_wf", "beta_wf"]
 
     def test_empty_jobs_list(self, status_writer: StatusWriter) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.2.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         status_writer.write_manifest([])
         data = yaml.safe_load(status_writer.manifest_path.read_text())
         assert data["jobs"] == []
@@ -426,6 +433,8 @@ class TestWriteSessionStatus:
         status_writer: StatusWriter,
         state_manager: StateManager,
     ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.12.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """write_session_status with non-existent session is a no-op."""
         status_writer.write_session_status("nonexistent", state_manager, self._job_loader())
         assert not status_writer.sessions_dir.exists() or not list(

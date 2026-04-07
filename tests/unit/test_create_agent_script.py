@@ -1,7 +1,13 @@
 """Tests for create_agent.sh -- validates learning-agents LA-REQ-002.
 
+Validates requirements: LA-REQ-002, LA-REQ-002.6, LA-REQ-002.8, LA-REQ-002.10,
+LA-REQ-002.11, LA-REQ-002.16, LA-REQ-002.17, LA-REQ-002.18, LA-REQ-002.19,
+LA-REQ-002.20, LA-REQ-002.21, LA-REQ-002.22.
+
 These tests validate the scaffold script behavior for agent creation,
 including template-based agent seeding (LA-REQ-002.16 through LA-REQ-002.22).
+Judgment-based skill requirements (LA-REQ-002.1-5, .7, .9, .12-15, .23-24)
+are validated by the DeepSchema on the create-agent skill file.
 """
 
 import subprocess

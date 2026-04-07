@@ -1,4 +1,8 @@
-"""Tests for session job registration and retrieval MCP tools."""
+"""Tests for session job registration and retrieval MCP tools.
+
+Validates requirements: JOBS-REQ-013, JOBS-REQ-013.1, JOBS-REQ-013.2, JOBS-REQ-013.3,
+JOBS-REQ-013.4, JOBS-REQ-013.5.
+"""
 
 from pathlib import Path
 
