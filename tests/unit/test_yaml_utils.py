@@ -373,7 +373,7 @@ class TestValidateYAMLStructure:
         data = ["item1", "item2"]
 
         with pytest.raises(YAMLError, match="Data must be a dictionary"):
-            validate_yaml_structure(data, ["name"])
+            validate_yaml_structure(data, ["name"])  # type: ignore[arg-type]
 
     def test_accepts_empty_required_keys(self) -> None:
         """Test that validate_yaml_structure works with no required keys."""

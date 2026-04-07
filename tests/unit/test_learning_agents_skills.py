@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -32,11 +33,11 @@ def _read_skill(name: str) -> str:
     return path.read_text()
 
 
-def _parse_frontmatter(content: str) -> dict:
+def _parse_frontmatter(content: str) -> dict[str, Any]:
     """Parse YAML frontmatter from a SKILL.md file."""
     match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
     assert match, "No YAML frontmatter found"
-    return yaml.safe_load(match.group(1))
+    return dict(yaml.safe_load(match.group(1)))
 
 
 # ---------------------------------------------------------------------------
@@ -79,17 +80,17 @@ class TestArgumentParsing:
         """LA-REQ-011.2: SKILL.md describes splitting $ARGUMENTS on first whitespace."""
         content = _read_skill("learning-agents")
         assert "$ARGUMENTS" in content
-        assert re.search(
-            r"split.*\$ARGUMENTS.*first\s+whitespace", content, re.IGNORECASE
-        ), "Must describe splitting $ARGUMENTS on first whitespace"
+        assert re.search(r"split.*\$ARGUMENTS.*first\s+whitespace", content, re.IGNORECASE), (
+            "Must describe splitting $ARGUMENTS on first whitespace"
+        )
 
     def test_first_token_is_subcommand(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.2).
         """LA-REQ-011.2: first token is the sub-command (case-insensitive)."""
         content = _read_skill("learning-agents")
-        assert re.search(
-            r"first token.*sub-command.*case-insensitive", content, re.IGNORECASE
-        ), "Must identify first token as case-insensitive sub-command"
+        assert re.search(r"first token.*sub-command.*case-insensitive", content, re.IGNORECASE), (
+            "Must identify first token as case-insensitive sub-command"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -104,9 +105,9 @@ class TestUnderscoreDashEquivalence:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.3).
         """LA-REQ-011.3: SKILL.md states underscore-dash equivalence."""
         content = _read_skill("learning-agents")
-        assert re.search(
-            r"underscores?\s+and\s+dashes?", content, re.IGNORECASE
-        ), "Must document underscore-dash equivalence"
+        assert re.search(r"underscores?\s+and\s+dashes?", content, re.IGNORECASE), (
+            "Must document underscore-dash equivalence"
+        )
 
     def test_report_issue_example_uses_underscore(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.3).
@@ -127,33 +128,31 @@ class TestCreateSubCommand:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.4).
         """LA-REQ-011.4: create routes to Skill learning-agents:create-agent."""
         content = _read_skill("learning-agents")
-        assert re.search(
-            r"Skill\s+learning-agents:create-agent", content
-        ), "Must invoke Skill learning-agents:create-agent"
+        assert re.search(r"Skill\s+learning-agents:create-agent", content), (
+            "Must invoke Skill learning-agents:create-agent"
+        )
 
     def test_create_accepts_name_argument(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.4).
         """LA-REQ-011.4: create sub-command takes a <name> argument."""
         content = _read_skill("learning-agents")
-        assert re.search(
-            r"###\s+`create\s+<name>", content
-        ), "Must show create <name> heading"
+        assert re.search(r"###\s+`create\s+<name>", content), "Must show create <name> heading"
 
     def test_create_accepts_optional_template_path(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.4).
         """LA-REQ-011.4: create sub-command accepts optional [template-path]."""
         content = _read_skill("learning-agents")
-        assert re.search(
-            r"create\s+<name>\s+\[template-path\]", content
-        ), "Must show optional [template-path] argument"
+        assert re.search(r"create\s+<name>\s+\[template-path\]", content), (
+            "Must show optional [template-path] argument"
+        )
 
     def test_create_example_with_template(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.4).
         """LA-REQ-011.4: example shows template-path being passed through."""
         content = _read_skill("learning-agents")
-        assert re.search(
-            r"create-agent\s+\S+\s+\.deepwork/learning-agents/", content
-        ), "Must show example passing template path to create-agent skill"
+        assert re.search(r"create-agent\s+\S+\s+\.deepwork/learning-agents/", content), (
+            "Must show example passing template path to create-agent skill"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -168,9 +167,9 @@ class TestLearnSubCommand:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.5).
         """LA-REQ-011.5: learn routes to Skill learning-agents:learn."""
         content = _read_skill("learning-agents")
-        assert re.search(
-            r"Skill\s+learning-agents:learn\b", content
-        ), "Must invoke Skill learning-agents:learn"
+        assert re.search(r"Skill\s+learning-agents:learn\b", content), (
+            "Must invoke Skill learning-agents:learn"
+        )
 
     def test_learn_ignores_extra_arguments(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.5).
@@ -195,9 +194,9 @@ class TestReportIssueSubCommand:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.6).
         """LA-REQ-011.6: report_issue routes to Skill learning-agents:report-issue."""
         content = _read_skill("learning-agents")
-        assert re.search(
-            r"Skill\s+learning-agents:report-issue", content
-        ), "Must invoke Skill learning-agents:report-issue"
+        assert re.search(r"Skill\s+learning-agents:report-issue", content), (
+            "Must invoke Skill learning-agents:report-issue"
+        )
 
     def test_report_issue_searches_agent_sessions(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.6).
@@ -209,9 +208,9 @@ class TestReportIssueSubCommand:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.6).
         """LA-REQ-011.6: if no match found, inform the user."""
         content = _read_skill("learning-agents")
-        assert re.search(
-            r"no\s+match.*inform", content, re.IGNORECASE
-        ), "Must describe informing user when no match found"
+        assert re.search(r"no\s+match.*inform", content, re.IGNORECASE), (
+            "Must describe informing user when no match found"
+        )
 
     def test_report_issue_uses_most_recent_on_multiple(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.6).
@@ -236,9 +235,9 @@ class TestHelpText:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.7).
         """LA-REQ-011.7: skill has a section for no arguments / ambiguous input."""
         content = _read_skill("learning-agents")
-        assert re.search(
-            r"no\s+arguments\s+or\s+ambiguous", content, re.IGNORECASE
-        ), "Must have a section for no arguments or ambiguous input"
+        assert re.search(r"no\s+arguments\s+or\s+ambiguous", content, re.IGNORECASE), (
+            "Must have a section for no arguments or ambiguous input"
+        )
 
     def test_help_lists_all_subcommands(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.7).
@@ -319,9 +318,7 @@ class TestAvailableSubCommands:
         content = _read_skill("learning-agents")
         # Find routing section headings (### `command ...`)
         # Exclude the "No arguments" section which is not a sub-command
-        routing_headings = re.findall(
-            r"^###\s+`(\w+)", content, re.MULTILINE
-        )
+        routing_headings = re.findall(r"^###\s+`(\w+)", content, re.MULTILINE)
         assert routing_headings == ["create", "learn", "report_issue"], (
             f"Expected exactly [create, learn, report_issue], got {routing_headings}"
         )
@@ -370,18 +367,14 @@ class TestSubSkillRegistry:
         """LA-REQ-011.11: every required skill has a directory under skills/."""
         for skill_name in REQUIRED_SKILLS:
             skill_dir = SKILLS_DIR / skill_name
-            assert skill_dir.is_dir(), (
-                f"Required skill directory missing: {skill_name}"
-            )
+            assert skill_dir.is_dir(), f"Required skill directory missing: {skill_name}"
 
     def test_all_required_skills_have_skill_md(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.11).
         """LA-REQ-011.11: every required skill has a SKILL.md file."""
         for skill_name in REQUIRED_SKILLS:
             skill_file = SKILLS_DIR / skill_name / "SKILL.md"
-            assert skill_file.exists(), (
-                f"Required SKILL.md missing: {skill_name}/SKILL.md"
-            )
+            assert skill_file.exists(), f"Required SKILL.md missing: {skill_name}/SKILL.md"
 
     def test_all_required_skills_have_valid_frontmatter(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.11).
@@ -433,9 +426,7 @@ class TestPromptReviewIndependence:
         content = _read_skill("learning-agents")
         # The dispatch skill routes to create-agent, learn, report-issue only.
         # prompt-review must NOT appear as a routing target.
-        routing_targets = re.findall(
-            r"Skill\s+learning-agents:(\S+)", content
-        )
+        routing_targets = re.findall(r"Skill\s+learning-agents:(\S+)", content)
         assert "prompt-review" not in routing_targets, (
             "prompt-review must not be routed through the dispatch skill"
         )
@@ -460,14 +451,12 @@ class TestExistingAgentsListing:
         """LA-REQ-011.13: uses a dynamic shell command (!) to list agents."""
         content = _read_skill("learning-agents")
         # The skill uses !`ls ...` syntax for dynamic execution
-        assert re.search(
-            r"!`ls\s+.*\.deepwork/learning-agents/", content
-        ), "Must use dynamic shell command to list agents"
+        assert re.search(r"!`ls\s+.*\.deepwork/learning-agents/", content), (
+            "Must use dynamic shell command to list agents"
+        )
 
     def test_fallback_when_no_agents(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.13).
         """LA-REQ-011.13: shows fallback (none) when no agents exist."""
         content = _read_skill("learning-agents")
-        assert "(none)" in content, (
-            "Must include (none) fallback for empty agent listing"
-        )
+        assert "(none)" in content, "Must include (none) fallback for empty agent listing"

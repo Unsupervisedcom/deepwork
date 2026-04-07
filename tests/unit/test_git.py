@@ -61,7 +61,7 @@ class TestGetRepo:
         repo = get_repo(mock_git_repo)
 
         assert repo is not None
-        assert Path(repo.working_tree_dir) == mock_git_repo
+        assert Path(repo.working_tree_dir) == mock_git_repo  # type: ignore[arg-type]
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-007.2.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -72,7 +72,7 @@ class TestGetRepo:
 
         repo = get_repo(subdir)
 
-        assert Path(repo.working_tree_dir) == mock_git_repo
+        assert Path(repo.working_tree_dir) == mock_git_repo  # type: ignore[arg-type]
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-007.2.3, DW-REQ-007.5.1, DW-REQ-007.5.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES

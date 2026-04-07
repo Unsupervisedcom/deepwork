@@ -2,14 +2,15 @@
 requirements:
   # LA-REQ-006.8
   sequential-session-processing: >
-    The skill MUST process sessions one at a time (sequentially, not in
-    parallel) to avoid conflicts when multiple sessions involve the same
-    agent.
+    The SKILL.md MUST instruct the agent to process sessions one at a time
+    (sequentially, not in parallel) to avoid conflicts when multiple sessions
+    involve the same agent.
 
   # LA-REQ-006.10
   missing-transcript-handling: >
-    If a session's transcript cannot be found, the skill MUST skip that
-    session and report the issue in the final summary.
+    The SKILL.md MUST instruct the agent that, if a session's transcript
+    cannot be found, it should skip that session and report the issue in the
+    final summary.
 
   # LA-REQ-003.12
   topics-vs-learnings-distinction: >

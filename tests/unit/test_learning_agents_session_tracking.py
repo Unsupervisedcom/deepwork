@@ -19,6 +19,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 HOOKS_DIR = PROJECT_ROOT / "learning_agents" / "hooks"
@@ -76,7 +77,7 @@ def _make_hook_input(
     transcript_path: str | None = None,
 ) -> str:
     """Build a valid hook input JSON string."""
-    data: dict = {
+    data: dict[str, Any] = {
         "session_id": session_id,
         "tool_input": {"name": agent_name},
         "tool_response": {"agentId": agent_id},
@@ -92,7 +93,6 @@ def _make_hook_input(
 
 
 class TestPostToolUseHookTrigger:
-
     def test_hooks_json_has_post_tool_use_section(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.1).
         """hooks.json must contain a PostToolUse section."""
@@ -122,7 +122,6 @@ class TestPostToolUseHookTrigger:
 
 
 class TestPostTaskInputParsing:
-
     def test_script_reads_stdin(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.2).
         """post_task.sh reads JSON from stdin."""
@@ -150,7 +149,6 @@ class TestPostTaskInputParsing:
 
 
 class TestSessionIdExtraction:
-
     def test_script_extracts_session_id_via_jq(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.3).
         """Script must use jq to extract .session_id."""
@@ -173,7 +171,6 @@ class TestSessionIdExtraction:
 
 
 class TestAgentNameExtraction:
-
     def test_script_extracts_agent_name_from_tool_input(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.4).
         """Script must extract agent name from .tool_input.name."""
@@ -183,7 +180,9 @@ class TestAgentNameExtraction:
     def test_missing_agent_name_returns_empty_json(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.4).
         """Missing agent name must produce '{}' and exit 0."""
-        data = json.dumps({"session_id": "s1", "tool_input": {}, "tool_response": {"agentId": "a1"}})
+        data = json.dumps(
+            {"session_id": "s1", "tool_input": {}, "tool_response": {"agentId": "a1"}}
+        )
         with tempfile.TemporaryDirectory() as tmpdir:
             result = _run_post_task(stdin_data=data, cwd=tmpdir)
         assert result.returncode == 0
@@ -196,7 +195,6 @@ class TestAgentNameExtraction:
 
 
 class TestAgentIdExtraction:
-
     def test_script_extracts_agent_id_with_fallback(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.5).
         """Script must extract from .tool_response.agentId with fallback to .tool_response.agent_id."""
@@ -220,15 +218,19 @@ class TestAgentIdExtraction:
             # Create the agent dir so detection passes
             agent_dir = Path(tmpdir) / ".deepwork" / "learning-agents" / "foo"
             agent_dir.mkdir(parents=True)
-            data = json.dumps({
-                "session_id": "s1",
-                "tool_input": {"name": "foo"},
-                "tool_response": {"agent_id": "fallback-id"},
-            })
+            data = json.dumps(
+                {
+                    "session_id": "s1",
+                    "tool_input": {"name": "foo"},
+                    "tool_response": {"agent_id": "fallback-id"},
+                }
+            )
             env = {"CLAUDE_PLUGIN_ROOT": str(Path(tmpdir) / "nonexistent-plugin")}
             result = _run_post_task(stdin_data=data, cwd=tmpdir, env_overrides=env)
             assert result.returncode == 0
-            session_dir = Path(tmpdir) / ".deepwork" / "tmp" / "agent_sessions" / "s1" / "fallback-id"
+            session_dir = (
+                Path(tmpdir) / ".deepwork" / "tmp" / "agent_sessions" / "s1" / "fallback-id"
+            )
             assert session_dir.is_dir(), "Session dir should be created using fallback agent_id"
 
 
@@ -238,7 +240,6 @@ class TestAgentIdExtraction:
 
 
 class TestLearningAgentDetection:
-
     def test_script_checks_agent_directory_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.6).
         """Script must check for .deepwork/learning-agents/<agent-name>/ directory."""
@@ -266,7 +267,6 @@ class TestLearningAgentDetection:
 
 
 class TestSessionDirectoryCreation:
-
     def test_script_creates_session_dir_with_mkdir_p(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.7).
         """Script must use mkdir -p for session directory."""
@@ -287,7 +287,9 @@ class TestSessionDirectoryCreation:
             env = {"CLAUDE_PLUGIN_ROOT": str(Path(tmpdir) / "nonexistent-plugin")}
             result = _run_post_task(stdin_data=data, cwd=tmpdir, env_overrides=env)
             assert result.returncode == 0
-            expected_dir = Path(tmpdir) / ".deepwork" / "tmp" / "agent_sessions" / "sess-abc" / "agent-xyz"
+            expected_dir = (
+                Path(tmpdir) / ".deepwork" / "tmp" / "agent_sessions" / "sess-abc" / "agent-xyz"
+            )
             assert expected_dir.is_dir(), f"Expected session dir at {expected_dir}"
 
 
@@ -297,7 +299,6 @@ class TestSessionDirectoryCreation:
 
 
 class TestNeedsLearningTimestamp:
-
     def test_timestamp_file_created(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.8).
         """needs_learning_as_of_timestamp file must be created in session dir."""
@@ -308,7 +309,15 @@ class TestNeedsLearningTimestamp:
             env = {"CLAUDE_PLUGIN_ROOT": str(Path(tmpdir) / "nonexistent-plugin")}
             result = _run_post_task(stdin_data=data, cwd=tmpdir, env_overrides=env)
             assert result.returncode == 0
-            ts_file = Path(tmpdir) / ".deepwork" / "tmp" / "agent_sessions" / "sess-123" / "agent-456" / "needs_learning_as_of_timestamp"
+            ts_file = (
+                Path(tmpdir)
+                / ".deepwork"
+                / "tmp"
+                / "agent_sessions"
+                / "sess-123"
+                / "agent-456"
+                / "needs_learning_as_of_timestamp"
+            )
             assert ts_file.is_file()
 
     def test_timestamp_file_contains_iso8601_utc(self) -> None:
@@ -322,7 +331,15 @@ class TestNeedsLearningTimestamp:
             data = _make_hook_input(agent_name="my-agent")
             env = {"CLAUDE_PLUGIN_ROOT": str(Path(tmpdir) / "nonexistent-plugin")}
             _run_post_task(stdin_data=data, cwd=tmpdir, env_overrides=env)
-            ts_file = Path(tmpdir) / ".deepwork" / "tmp" / "agent_sessions" / "sess-123" / "agent-456" / "needs_learning_as_of_timestamp"
+            ts_file = (
+                Path(tmpdir)
+                / ".deepwork"
+                / "tmp"
+                / "agent_sessions"
+                / "sess-123"
+                / "agent-456"
+                / "needs_learning_as_of_timestamp"
+            )
             content = ts_file.read_text().strip()
             assert re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", content), (
                 f"Timestamp '{content}' does not match ISO 8601 UTC format"
@@ -341,7 +358,6 @@ class TestNeedsLearningTimestamp:
 
 
 class TestAgentUsedFile:
-
     def test_agent_used_file_created(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.9).
         """agent_used file must be created in session dir."""
@@ -351,7 +367,15 @@ class TestAgentUsedFile:
             data = _make_hook_input(agent_name="my-agent")
             env = {"CLAUDE_PLUGIN_ROOT": str(Path(tmpdir) / "nonexistent-plugin")}
             _run_post_task(stdin_data=data, cwd=tmpdir, env_overrides=env)
-            agent_file = Path(tmpdir) / ".deepwork" / "tmp" / "agent_sessions" / "sess-123" / "agent-456" / "agent_used"
+            agent_file = (
+                Path(tmpdir)
+                / ".deepwork"
+                / "tmp"
+                / "agent_sessions"
+                / "sess-123"
+                / "agent-456"
+                / "agent_used"
+            )
             assert agent_file.is_file()
 
     def test_agent_used_file_contains_agent_name(self) -> None:
@@ -363,7 +387,15 @@ class TestAgentUsedFile:
             data = _make_hook_input(agent_name="my-agent")
             env = {"CLAUDE_PLUGIN_ROOT": str(Path(tmpdir) / "nonexistent-plugin")}
             _run_post_task(stdin_data=data, cwd=tmpdir, env_overrides=env)
-            agent_file = Path(tmpdir) / ".deepwork" / "tmp" / "agent_sessions" / "sess-123" / "agent-456" / "agent_used"
+            agent_file = (
+                Path(tmpdir)
+                / ".deepwork"
+                / "tmp"
+                / "agent_sessions"
+                / "sess-123"
+                / "agent-456"
+                / "agent_used"
+            )
             assert agent_file.read_text().strip() == "my-agent"
 
 
@@ -373,7 +405,6 @@ class TestAgentUsedFile:
 
 
 class TestPostTaskReminderMessage:
-
     def test_script_reads_reminder_file(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.10).
         """Script must read learning_agent_post_task_reminder.md from CLAUDE_PLUGIN_ROOT/doc/."""
@@ -421,21 +452,27 @@ class TestPostTaskReminderMessage:
 
 
 class TestPostTaskReminderContent:
-
     def test_reminder_file_exists_in_repo(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.11).
         """The post-task reminder file must exist in the plugin."""
-        reminder_path = PROJECT_ROOT / "learning_agents" / "doc" / "learning_agent_post_task_reminder.md"
+        reminder_path = (
+            PROJECT_ROOT / "learning_agents" / "doc" / "learning_agent_post_task_reminder.md"
+        )
         assert reminder_path.is_file(), f"Expected reminder file at {reminder_path}"
 
     def test_reminder_mentions_resume_task(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.11).
         """Reminder must instruct users to resume the same task rather than starting a new one."""
-        reminder_path = PROJECT_ROOT / "learning_agents" / "doc" / "learning_agent_post_task_reminder.md"
+        reminder_path = (
+            PROJECT_ROOT / "learning_agents" / "doc" / "learning_agent_post_task_reminder.md"
+        )
         if not reminder_path.is_file():
             # Try alternate location
             from glob import glob
-            matches = glob(str(PROJECT_ROOT / "**/learning_agent_post_task_reminder.md"), recursive=True)
+
+            matches = glob(
+                str(PROJECT_ROOT / "**/learning_agent_post_task_reminder.md"), recursive=True
+            )
             assert matches, "Cannot find learning_agent_post_task_reminder.md anywhere"
             reminder_path = Path(matches[0])
         content = reminder_path.read_text().lower()
@@ -446,16 +483,19 @@ class TestPostTaskReminderContent:
     def test_reminder_mentions_report_issue(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.11).
         """Reminder must mention /learning-agents report_issue or resuming for mistakes."""
-        reminder_path = PROJECT_ROOT / "learning_agents" / "doc" / "learning_agent_post_task_reminder.md"
+        reminder_path = (
+            PROJECT_ROOT / "learning_agents" / "doc" / "learning_agent_post_task_reminder.md"
+        )
         if not reminder_path.is_file():
             from glob import glob
-            matches = glob(str(PROJECT_ROOT / "**/learning_agent_post_task_reminder.md"), recursive=True)
+
+            matches = glob(
+                str(PROJECT_ROOT / "**/learning_agent_post_task_reminder.md"), recursive=True
+            )
             assert matches, "Cannot find learning_agent_post_task_reminder.md anywhere"
             reminder_path = Path(matches[0])
         content = reminder_path.read_text().lower()
-        assert "report" in content or "issue" in content, (
-            "Reminder must mention reporting issues"
-        )
+        assert "report" in content or "issue" in content, "Reminder must mention reporting issues"
 
 
 # ===========================================================================
@@ -464,7 +504,6 @@ class TestPostTaskReminderContent:
 
 
 class TestStopHookTrigger:
-
     def test_hooks_json_has_stop_section(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.12).
         """hooks.json must contain a Stop section."""
@@ -494,7 +533,6 @@ class TestStopHookTrigger:
 
 
 class TestStopHookNoSessionsDir:
-
     def test_no_sessions_dir_returns_empty_json(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.13).
         """If .deepwork/tmp/agent_sessions does not exist, output '{}' and exit 0."""
@@ -517,7 +555,6 @@ class TestStopHookNoSessionsDir:
 
 
 class TestStopHookPendingDetection:
-
     def test_script_searches_for_needs_learning_files(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.14).
         """Script must search for needs_learning_as_of_timestamp files."""
@@ -543,7 +580,6 @@ class TestStopHookPendingDetection:
 
 
 class TestStopHookAgentNameResolution:
-
     def test_script_reads_agent_used_file(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.15).
         """Script must read agent_used file to determine agent name."""
@@ -563,7 +599,6 @@ class TestStopHookAgentNameResolution:
 
 
 class TestStopHookLearningSuggestion:
-
     def test_pending_sessions_output_system_message(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.16).
         """When pending sessions exist, output must contain systemMessage."""
@@ -602,7 +637,10 @@ class TestStopHookLearningSuggestion:
             (session_dir / "agent_used").write_text("my-agent")
             result = _run_session_stop(cwd=tmpdir)
         output = json.loads(result.stdout.strip())
-        assert "/learning-agents learn" in output["systemMessage"] or "learning-agents learn" in output["systemMessage"]
+        assert (
+            "/learning-agents learn" in output["systemMessage"]
+            or "learning-agents learn" in output["systemMessage"]
+        )
 
     def test_deduplication_in_message(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.16).
@@ -626,7 +664,6 @@ class TestStopHookLearningSuggestion:
 
 
 class TestSessionDirectoryLocation:
-
     def test_post_task_uses_correct_base_path(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.17).
         """Session tracking files must be under .deepwork/tmp/agent_sessions/."""
@@ -646,7 +683,6 @@ class TestSessionDirectoryLocation:
 
 
 class TestTimestampFileUpdateSemantics:
-
     def test_timestamp_overwritten_not_appended(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.18).
         """Running the hook twice for the same agent/session must overwrite the timestamp."""
@@ -657,13 +693,23 @@ class TestTimestampFileUpdateSemantics:
             env = {"CLAUDE_PLUGIN_ROOT": str(Path(tmpdir) / "nonexistent-plugin")}
             # First invocation
             _run_post_task(stdin_data=data, cwd=tmpdir, env_overrides=env)
-            ts_file = Path(tmpdir) / ".deepwork" / "tmp" / "agent_sessions" / "sess-123" / "agent-456" / "needs_learning_as_of_timestamp"
+            ts_file = (
+                Path(tmpdir)
+                / ".deepwork"
+                / "tmp"
+                / "agent_sessions"
+                / "sess-123"
+                / "agent-456"
+                / "needs_learning_as_of_timestamp"
+            )
             first_content = ts_file.read_text()
             # Second invocation
             _run_post_task(stdin_data=data, cwd=tmpdir, env_overrides=env)
             second_content = ts_file.read_text()
         # File should contain exactly one timestamp line (overwritten, not appended)
-        assert second_content.count("\n") <= 1, "Timestamp file should contain a single line (overwrite, not append)"
+        assert second_content.count("\n") <= 1, (
+            "Timestamp file should contain a single line (overwrite, not append)"
+        )
         # Both should be valid single timestamps
         assert first_content.strip().count("T") == 1
         assert second_content.strip().count("T") == 1

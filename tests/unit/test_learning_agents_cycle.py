@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -32,11 +33,11 @@ def _read_skill(name: str) -> str:
     return path.read_text()
 
 
-def _parse_frontmatter(content: str) -> dict:
+def _parse_frontmatter(content: str) -> dict[str, Any]:
     """Parse YAML frontmatter from a SKILL.md file."""
     match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
     assert match, "No YAML frontmatter found"
-    return yaml.safe_load(match.group(1))
+    return dict(yaml.safe_load(match.group(1)))
 
 
 # ===========================================================================
@@ -67,9 +68,9 @@ class TestLearnSkillInvocation:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.1).
         """LA-REQ-006.1: skill states it takes no arguments."""
         content = _read_skill("learn")
-        assert re.search(
-            r"no\s+arguments", content, re.IGNORECASE
-        ), "Must state it takes no arguments"
+        assert re.search(r"no\s+arguments", content, re.IGNORECASE), (
+            "Must state it takes no arguments"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -96,9 +97,9 @@ class TestAutomaticSessionDiscovery:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.2).
         """LA-REQ-006.2: skill uses dynamic include (!) to list pending sessions."""
         content = _read_skill("learn")
-        assert re.search(
-            r"!`.*list_pending_sessions", content
-        ), "Must use dynamic include to discover pending sessions"
+        assert re.search(r"!`.*list_pending_sessions", content), (
+            "Must use dynamic include to discover pending sessions"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -113,9 +114,9 @@ class TestNoPendingSessions:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.3).
         """LA-REQ-006.3: instructs to inform user when list is empty."""
         content = _read_skill("learn")
-        assert re.search(
-            r"(list|above)\s+(is\s+)?empty", content, re.IGNORECASE
-        ), "Must handle empty session list"
+        assert re.search(r"(list|above)\s+(is\s+)?empty", content, re.IGNORECASE), (
+            "Must handle empty session list"
+        )
 
     def test_handles_missing_directory(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.3).
@@ -131,9 +132,9 @@ class TestNoPendingSessions:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.3).
         """LA-REQ-006.3: instructs to inform user and stop."""
         content = _read_skill("learn")
-        assert re.search(
-            r"no\s+pending\s+sessions.*stop", content, re.IGNORECASE
-        ), "Must instruct to inform user and stop"
+        assert re.search(r"no\s+pending\s+sessions.*stop", content, re.IGNORECASE), (
+            "Must instruct to inform user and stop"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -170,25 +171,23 @@ class TestThreePhaseProcessing:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.5).
         """LA-REQ-006.5: skill references the identify phase."""
         content = _read_skill("learn")
-        assert re.search(
-            r"learning-agents:identify", content
-        ), "Must reference identify skill"
+        assert re.search(r"learning-agents:identify", content), "Must reference identify skill"
 
     def test_investigate_phase_present(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.5).
         """LA-REQ-006.5: skill references the investigate-issues phase."""
         content = _read_skill("learn")
-        assert re.search(
-            r"learning-agents:investigate-issues", content
-        ), "Must reference investigate-issues skill"
+        assert re.search(r"learning-agents:investigate-issues", content), (
+            "Must reference investigate-issues skill"
+        )
 
     def test_incorporate_phase_present(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.5).
         """LA-REQ-006.5: skill references the incorporate-learnings phase."""
         content = _read_skill("learn")
-        assert re.search(
-            r"learning-agents:incorporate-learnings", content
-        ), "Must reference incorporate-learnings skill"
+        assert re.search(r"learning-agents:incorporate-learnings", content), (
+            "Must reference incorporate-learnings skill"
+        )
 
     def test_identify_before_investigate(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.5).
@@ -196,9 +195,7 @@ class TestThreePhaseProcessing:
         content = _read_skill("learn")
         identify_pos = content.find("learning-agents:identify")
         investigate_pos = content.find("learning-agents:investigate-issues")
-        assert identify_pos < investigate_pos, (
-            "identify must appear before investigate-issues"
-        )
+        assert identify_pos < investigate_pos, "identify must appear before investigate-issues"
 
     def test_investigate_before_incorporate(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.5).
@@ -224,9 +221,9 @@ class TestTaskToolUsage:
         """LA-REQ-006.6: identify phase uses Task tool call."""
         content = _read_skill("learn")
         # Find the identify section and verify it uses Task tool call
-        assert re.search(
-            r"Task\s+tool\s+call.*identify", content, re.DOTALL | re.IGNORECASE
-        ), "identify phase must use Task tool call"
+        assert re.search(r"Task\s+tool\s+call.*identify", content, re.DOTALL | re.IGNORECASE), (
+            "identify phase must use Task tool call"
+        )
 
     def test_investigate_and_incorporate_combined_task(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.6).
@@ -265,32 +262,28 @@ class TestSubTaskModelSelection:
         """LA-REQ-006.7: identify Task specifies model: sonnet."""
         content = _read_skill("learn")
         # Check the identify task block uses sonnet
-        identify_section = content[
-            content.find("Identify"):content.find("1b")
-        ]
-        assert re.search(
-            r"model:\s*sonnet", identify_section, re.IGNORECASE
-        ), "identify Task must specify sonnet model"
+        identify_section = content[content.find("Identify") : content.find("1b")]
+        assert re.search(r"model:\s*sonnet", identify_section, re.IGNORECASE), (
+            "identify Task must specify sonnet model"
+        )
 
     def test_investigate_incorporate_task_uses_sonnet(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.7).
         """LA-REQ-006.7: investigate+incorporate Task specifies model: sonnet."""
         content = _read_skill("learn")
         # Check the investigate+incorporate task block uses sonnet
-        invest_section = content[
-            content.find("1b"):content.find("Handling failures")
-        ]
-        assert re.search(
-            r"model:\s*sonnet", invest_section, re.IGNORECASE
-        ), "investigate+incorporate Task must specify sonnet model"
+        invest_section = content[content.find("1b") : content.find("Handling failures")]
+        assert re.search(r"model:\s*sonnet", invest_section, re.IGNORECASE), (
+            "investigate+incorporate Task must specify sonnet model"
+        )
 
     def test_guardrail_mentions_sonnet(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.7).
         """LA-REQ-006.7: guardrails mention using Sonnet model."""
         content = _read_skill("learn")
-        assert re.search(
-            r"Sonnet\s+model.*Task\s+spawns", content, re.IGNORECASE
-        ), "Guardrails must mention Sonnet model for Task spawns"
+        assert re.search(r"Sonnet\s+model.*Task\s+spawns", content, re.IGNORECASE), (
+            "Guardrails must mention Sonnet model for Task spawns"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -305,17 +298,17 @@ class TestFailureHandling:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.9).
         """LA-REQ-006.9: instructs to log the failure."""
         content = _read_skill("learn")
-        assert re.search(
-            r"log\s+the\s+failure", content, re.IGNORECASE
-        ), "Must instruct to log failure"
+        assert re.search(r"log\s+the\s+failure", content, re.IGNORECASE), (
+            "Must instruct to log failure"
+        )
 
     def test_skip_failed_session(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.9).
         """LA-REQ-006.9: instructs to skip the failed session."""
         content = _read_skill("learn")
-        assert re.search(
-            r"skip\s+that\s+session", content, re.IGNORECASE
-        ), "Must instruct to skip failed session"
+        assert re.search(r"skip\s+that\s+session", content, re.IGNORECASE), (
+            "Must instruct to skip failed session"
+        )
 
     def test_continue_remaining_sessions(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.9).
@@ -350,41 +343,41 @@ class TestSummaryOutput:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.11).
         """LA-REQ-006.11: summary includes sessions processed count."""
         content = _read_skill("learn")
-        assert re.search(
-            r"Sessions\s+processed", content, re.IGNORECASE
-        ), "Summary must include sessions processed"
+        assert re.search(r"Sessions\s+processed", content, re.IGNORECASE), (
+            "Summary must include sessions processed"
+        )
 
     def test_summary_total_issues(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.11).
         """LA-REQ-006.11: summary includes total issues identified count."""
         content = _read_skill("learn")
-        assert re.search(
-            r"Total\s+issues\s+identified", content, re.IGNORECASE
-        ), "Summary must include total issues identified"
+        assert re.search(r"Total\s+issues\s+identified", content, re.IGNORECASE), (
+            "Summary must include total issues identified"
+        )
 
     def test_summary_agents_updated(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.11).
         """LA-REQ-006.11: summary includes list of agents updated."""
         content = _read_skill("learn")
-        assert re.search(
-            r"Agents\s+updated", content, re.IGNORECASE
-        ), "Summary must include agents updated"
+        assert re.search(r"Agents\s+updated", content, re.IGNORECASE), (
+            "Summary must include agents updated"
+        )
 
     def test_summary_key_learnings(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.11).
         """LA-REQ-006.11: summary includes key learnings per agent."""
         content = _read_skill("learn")
-        assert re.search(
-            r"Key\s+learnings", content, re.IGNORECASE
-        ), "Summary must include key learnings"
+        assert re.search(r"Key\s+learnings", content, re.IGNORECASE), (
+            "Summary must include key learnings"
+        )
 
     def test_summary_skipped_sessions(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.11).
         """LA-REQ-006.11: summary includes skipped sessions with reasons."""
         content = _read_skill("learn")
-        assert re.search(
-            r"Skipped\s+sessions", content, re.IGNORECASE
-        ), "Summary must include skipped sessions"
+        assert re.search(r"Skipped\s+sessions", content, re.IGNORECASE), (
+            "Summary must include skipped sessions"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -428,9 +421,9 @@ class TestDynamicPendingSessionList:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.13).
         """LA-REQ-006.13: uses !` backtick syntax for dynamic execution."""
         content = _read_skill("learn")
-        assert re.search(
-            r"!`.*list_pending_sessions\.sh`", content
-        ), "Must use dynamic include with list_pending_sessions.sh"
+        assert re.search(r"!`.*list_pending_sessions\.sh`", content), (
+            "Must use dynamic include with list_pending_sessions.sh"
+        )
 
     def test_list_pending_sessions_script_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.13).
@@ -506,9 +499,9 @@ class TestReportIssueInputArguments:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.2).
         """LA-REQ-010.2: $1 is brief description of the issue."""
         content = _read_skill("report-issue")
-        assert re.search(
-            r"\$1.*description\s+of\s+the\s+issue", content, re.IGNORECASE
-        ), "Must document $1 as issue description"
+        assert re.search(r"\$1.*description\s+of\s+the\s+issue", content, re.IGNORECASE), (
+            "Must document $1 as issue description"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -541,9 +534,9 @@ class TestMissingDescriptionValidation:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.4).
         """LA-REQ-010.4: error message when $1 not provided or empty."""
         content = _read_skill("report-issue")
-        assert (
-            "Error: issue description is required." in content
-        ), "Must contain exact error message for missing description"
+        assert "Error: issue description is required." in content, (
+            "Must contain exact error message for missing description"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -558,25 +551,23 @@ class TestIssueNameDerivation:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.5).
         """LA-REQ-010.5: instructs to derive kebab-case filename."""
         content = _read_skill("report-issue")
-        assert re.search(
-            r"kebab-case", content, re.IGNORECASE
-        ), "Must instruct to derive kebab-case name"
+        assert re.search(r"kebab-case", content, re.IGNORECASE), (
+            "Must instruct to derive kebab-case name"
+        )
 
     def test_name_length_constraint(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.5).
         """LA-REQ-010.5: name limited to 3-6 words maximum."""
         content = _read_skill("report-issue")
-        assert re.search(
-            r"3-6\s+words", content, re.IGNORECASE
-        ), "Must specify 3-6 word limit"
+        assert re.search(r"3-6\s+words", content, re.IGNORECASE), "Must specify 3-6 word limit"
 
     def test_avoid_filler_words(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.5).
         """LA-REQ-010.5: instructs to avoid filler words."""
         content = _read_skill("report-issue")
-        assert re.search(
-            r"[Aa]void\s+filler\s+words", content
-        ), "Must instruct to avoid filler words"
+        assert re.search(r"[Aa]void\s+filler\s+words", content), (
+            "Must instruct to avoid filler words"
+        )
 
     def test_kebab_case_examples(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.5).
@@ -598,9 +589,9 @@ class TestIssueFileCreation:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.6).
         """LA-REQ-010.6: file created at $0/<issue-name>.issue.yml."""
         content = _read_skill("report-issue")
-        assert re.search(
-            r"\$0/.*\.issue\.yml", content
-        ), "Must create file at $0/<issue-name>.issue.yml"
+        assert re.search(r"\$0/.*\.issue\.yml", content), (
+            "Must create file at $0/<issue-name>.issue.yml"
+        )
 
     def test_status_field(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.6).
@@ -624,9 +615,9 @@ class TestIssueFileCreation:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.6).
         """LA-REQ-010.6: seen_at_timestamps contains ISO 8601 UTC timestamp."""
         content = _read_skill("report-issue")
-        assert re.search(
-            r"ISO\s+8601", content, re.IGNORECASE
-        ), "Must reference ISO 8601 timestamp format"
+        assert re.search(r"ISO\s+8601", content, re.IGNORECASE), (
+            "Must reference ISO 8601 timestamp format"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -641,17 +632,17 @@ class TestIssueDescriptionContent:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.7).
         """LA-REQ-010.7: instructs to focus on PROBLEM, not the cause."""
         content = _read_skill("report-issue")
-        assert re.search(
-            r"PROBLEM.*not\s+the\s+cause", content, re.IGNORECASE
-        ), "Must instruct to focus on problem, not cause"
+        assert re.search(r"PROBLEM.*not\s+the\s+cause", content, re.IGNORECASE), (
+            "Must instruct to focus on problem, not cause"
+        )
 
     def test_guardrail_symptoms_not_root_causes(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.7).
         """LA-REQ-010.7: guardrails say describe symptoms, not root causes."""
         content = _read_skill("report-issue")
-        assert re.search(
-            r"symptoms.*not\s+root\s+causes", content, re.IGNORECASE
-        ), "Guardrails must say describe symptoms, not root causes"
+        assert re.search(r"symptoms.*not\s+root\s+causes", content, re.IGNORECASE), (
+            "Guardrails must say describe symptoms, not root causes"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -746,25 +737,21 @@ class TestConfirmationOutput:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.11).
         """LA-REQ-010.11: confirmation includes 'Created: <path>' line."""
         content = _read_skill("report-issue")
-        assert re.search(
-            r"Created:\s+<path", content
-        ), "Must output 'Created: <path>' line"
+        assert re.search(r"Created:\s+<path", content), "Must output 'Created: <path>' line"
 
     def test_recorded_line(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.11).
         """LA-REQ-010.11: confirmation includes 'Recorded: <summary>' line."""
         content = _read_skill("report-issue")
-        assert re.search(
-            r"Recorded:\s+<", content
-        ), "Must output 'Recorded: <summary>' line"
+        assert re.search(r"Recorded:\s+<", content), "Must output 'Recorded: <summary>' line"
 
     def test_two_line_confirmation_documented(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-010.11).
         """LA-REQ-010.11: describes output as two-line confirmation."""
         content = _read_skill("report-issue")
-        assert re.search(
-            r"two-line\s+confirmation", content, re.IGNORECASE
-        ), "Must describe output as two-line confirmation"
+        assert re.search(r"two-line\s+confirmation", content, re.IGNORECASE), (
+            "Must describe output as two-line confirmation"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -779,9 +766,9 @@ class TestIdentifyInvokesReportIssue:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.5).
         """LA-REQ-006.5: identify skill invokes learning-agents:report-issue."""
         content = _read_skill("identify")
-        assert re.search(
-            r"learning-agents:report-issue", content
-        ), "identify must invoke report-issue skill"
+        assert re.search(r"learning-agents:report-issue", content), (
+            "identify must invoke report-issue skill"
+        )
 
     def test_identify_does_not_investigate(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.5).
@@ -797,6 +784,6 @@ class TestIdentifyInvokesReportIssue:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-006.12).
         """LA-REQ-006.12: identify skill guardrail says not to modify agent knowledge base."""
         content = _read_skill("identify")
-        assert re.search(
-            r"do\s+NOT\s+modify\s+the\s+agent", content, re.IGNORECASE
-        ), "identify must not modify agent knowledge base"
+        assert re.search(r"do\s+NOT\s+modify\s+the\s+agent", content, re.IGNORECASE), (
+            "identify must not modify agent knowledge base"
+        )

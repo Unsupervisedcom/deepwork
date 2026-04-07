@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 # Project root — navigate up from this test file
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -80,14 +81,12 @@ class TestPluginManifest:
 class TestMarketplaceRegistration:
     """Tests for marketplace registration (LA-REQ-001.2)."""
 
-    def _get_learning_agents_entry(self) -> dict:
+    def _get_learning_agents_entry(self) -> dict[str, Any]:
         data = json.loads(MARKETPLACE_PATH.read_text())
         for plugin in data["plugins"]:
             if plugin["name"] == "learning-agents":
-                return plugin
-        raise AssertionError(
-            "No plugin with name 'learning-agents' found in marketplace.json"
-        )
+                return dict(plugin)
+        raise AssertionError("No plugin with name 'learning-agents' found in marketplace.json")
 
     def test_marketplace_file_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.2).
@@ -149,7 +148,7 @@ class TestHooksConfiguration:
     hooks_path = PLUGIN_DIR / "hooks" / "hooks.json"
 
     def _load_hooks(self) -> dict:
-        return json.loads(self.hooks_path.read_text())
+        return dict(json.loads(self.hooks_path.read_text()))
 
     def test_hooks_json_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.4).
@@ -162,9 +161,7 @@ class TestHooksConfiguration:
         data = self._load_hooks()
         post_tool_use = data["hooks"]["PostToolUse"]
         assert len(post_tool_use) >= 1
-        task_hook = next(
-            (h for h in post_tool_use if h["matcher"] == "Task"), None
-        )
+        task_hook = next((h for h in post_tool_use if h["matcher"] == "Task"), None)
         assert task_hook is not None, "No PostToolUse hook with matcher 'Task'"
         cmd = task_hook["hooks"][0]["command"]
         assert cmd.endswith("post_task.sh")
@@ -175,9 +172,7 @@ class TestHooksConfiguration:
         data = self._load_hooks()
         stop_hooks = data["hooks"]["Stop"]
         assert len(stop_hooks) >= 1
-        stop_hook = next(
-            (h for h in stop_hooks if h["matcher"] == ""), None
-        )
+        stop_hook = next((h for h in stop_hooks if h["matcher"] == ""), None)
         assert stop_hook is not None, "No Stop hook with empty matcher"
         cmd = stop_hook["hooks"][0]["command"]
         assert cmd.endswith("session_stop.sh")
@@ -234,8 +229,7 @@ class TestHookScriptsExitCode:
             # Strip trailing whitespace/newlines and check last non-empty line
             lines = [ln.strip() for ln in content.strip().splitlines() if ln.strip()]
             assert lines[-1] == "exit 0", (
-                f"{script.name} does not end with 'exit 0' "
-                f"(last line: '{lines[-1]}')"
+                f"{script.name} does not end with 'exit 0' (last line: '{lines[-1]}')"
             )
 
 
@@ -267,15 +261,11 @@ class TestHookScriptsOutputFormat:
         for script in self.HOOK_SCRIPTS:
             content = script.read_text()
             # Each script should have at least one structured JSON output path
-            has_structured = (
-                "systemMessage" in content or "hookSpecificOutput" in content
-            )
+            has_structured = "systemMessage" in content or "hookSpecificOutput" in content
             has_noop = "echo '{}'" in content or 'echo "{}"' in content
             # Scripts must have both a structured output and a no-op path
             assert has_noop, f"{script.name} missing no-op JSON output"
-            assert has_structured or has_noop, (
-                f"{script.name} missing structured JSON output"
-            )
+            assert has_structured, f"{script.name} missing structured JSON output"
 
 
 # ---------------------------------------------------------------------------
@@ -314,6 +304,4 @@ class TestMetaAgentDefinition:
         assert len(md_files) > 0, "No .md files found in doc/"
         for md_file in md_files:
             expected_ref = f"${{CLAUDE_PLUGIN_ROOT}}/doc/{md_file.name}"
-            assert expected_ref in content, (
-                f"Meta-agent does not load doc file: {md_file.name}"
-            )
+            assert expected_ref in content, f"Meta-agent does not load doc file: {md_file.name}"

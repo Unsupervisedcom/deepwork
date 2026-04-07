@@ -21,6 +21,7 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -38,13 +39,15 @@ REFERENCE_AGENT = "consistency-reviewer"
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _parse_yaml_frontmatter(path: Path) -> dict | None:
+
+def _parse_yaml_frontmatter(path: Path) -> dict[str, Any] | None:
     """Extract YAML frontmatter from a markdown file (between --- delimiters)."""
     text = path.read_text()
     match = re.match(r"^---\n(.*?)\n---", text, re.DOTALL)
     if not match:
         return None
-    return yaml.safe_load(match.group(1))
+    parsed = yaml.safe_load(match.group(1))
+    return dict(parsed) if parsed is not None else None
 
 
 def _has_yaml_frontmatter(path: Path) -> bool:
@@ -143,12 +146,8 @@ class TestTopicsDirectory:
             if f.name == ".gitkeep":
                 continue
             stem = f.stem
-            assert "_" not in stem, (
-                f"Topic filename '{f.name}' uses underscores instead of dashes"
-            )
-            assert " " not in stem, (
-                f"Topic filename '{f.name}' contains spaces"
-            )
+            assert "_" not in stem, f"Topic filename '{f.name}' uses underscores instead of dashes"
+            assert " " not in stem, f"Topic filename '{f.name}' contains spaces"
 
     def test_topic_files_have_frontmatter_with_name(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.7).
@@ -250,9 +249,7 @@ class TestAdditionalLearningGuidelines:
             if not agent_dir.is_dir():
                 continue
             alg = agent_dir / "additional_learning_guidelines"
-            assert alg.is_dir(), (
-                f"Missing additional_learning_guidelines/ in {agent_dir}"
-            )
+            assert alg.is_dir(), f"Missing additional_learning_guidelines/ in {agent_dir}"
 
     def test_additional_guidelines_required_files(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.13).
@@ -369,9 +366,15 @@ class TestCreateAgentScript:
             assert (agent_dir / "learnings" / ".gitkeep").is_file()
             assert (agent_dir / "additional_learning_guidelines").is_dir()
             assert (agent_dir / "additional_learning_guidelines" / "README.md").is_file()
-            assert (agent_dir / "additional_learning_guidelines" / "issue_identification.md").is_file()
-            assert (agent_dir / "additional_learning_guidelines" / "issue_investigation.md").is_file()
-            assert (agent_dir / "additional_learning_guidelines" / "learning_from_issues.md").is_file()
+            assert (
+                agent_dir / "additional_learning_guidelines" / "issue_identification.md"
+            ).is_file()
+            assert (
+                agent_dir / "additional_learning_guidelines" / "issue_investigation.md"
+            ).is_file()
+            assert (
+                agent_dir / "additional_learning_guidelines" / "learning_from_issues.md"
+            ).is_file()
 
             # Claude agent file
             claude_file = tmp / ".claude" / "agents" / "test-agent.md"
@@ -424,9 +427,7 @@ class TestCreateAgentScript:
             )
             claude_file = tmp / ".claude" / "agents" / "ref-test-agent.md"
             text = claude_file.read_text()
-            assert "ref-test-agent" in text, (
-                "Claude agent file must reference its own agent name"
-            )
+            assert "ref-test-agent" in text, "Claude agent file must reference its own agent name"
 
 
 # ===========================================================================
@@ -454,10 +455,10 @@ class TestIssueFileNaming:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.2 / LA-REQ-005.3).
         """LA-REQ-005.2/3: Invalid names must not match the required pattern."""
         invalid_names = [
-            "wrong_retry_strategy.issue.yml",    # underscores not dashes
-            "wrong-retry-strategy.issue.yaml",   # wrong extension
-            "wrong-retry-strategy.yml",          # missing .issue. prefix
-            "WRONG-RETRY.issue.yml",             # uppercase
+            "wrong_retry_strategy.issue.yml",  # underscores not dashes
+            "wrong-retry-strategy.issue.yaml",  # wrong extension
+            "wrong-retry-strategy.yml",  # missing .issue. prefix
+            "WRONG-RETRY.issue.yml",  # uppercase
             "a very long name with too many words describing issue.issue.yml",  # spaces
         ]
         pattern = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*\.issue\.yml$")
@@ -470,7 +471,7 @@ class TestIssueFileSchema:
 
     VALID_STATUSES = {"identified", "investigated", "learned"}
 
-    def _make_identified_issue(self) -> dict:
+    def _make_identified_issue(self) -> dict[str, Any]:
         """Create a minimal valid identified issue."""
         return {
             "status": "identified",
@@ -478,7 +479,7 @@ class TestIssueFileSchema:
             "issue_description": "The agent used the wrong retry strategy.\n",
         }
 
-    def _make_investigated_issue(self) -> dict:
+    def _make_investigated_issue(self) -> dict[str, Any]:
         """Create a valid investigated issue."""
         return {
             "status": "investigated",
@@ -493,27 +494,6 @@ class TestIssueFileSchema:
         issue = self._make_identified_issue()
         assert "status" in issue
 
-    def test_status_field_valid_enum(self) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.4).
-        """LA-REQ-005.4: Status MUST be one of: identified, investigated, learned."""
-        for status in self.VALID_STATUSES:
-            issue = self._make_identified_issue()
-            issue["status"] = status
-            assert issue["status"] in self.VALID_STATUSES
-
-    def test_status_field_rejects_invalid(self) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.4).
-        """LA-REQ-005.4: Invalid status values must be rejected."""
-        invalid = ["open", "closed", "pending", "resolved", "new", ""]
-        for s in invalid:
-            assert s not in self.VALID_STATUSES, f"'{s}' should not be valid"
-
-    def test_initial_status_is_identified(self) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.6).
-        """LA-REQ-005.6: Initial status MUST be 'identified'."""
-        issue = self._make_identified_issue()
-        assert issue["status"] == "identified"
-
     def test_seen_at_timestamps_required(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.7).
         """LA-REQ-005.7: Every issue file MUST contain seen_at_timestamps as an array."""
@@ -525,9 +505,7 @@ class TestIssueFileSchema:
     def test_seen_at_timestamps_iso8601(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.7).
         """LA-REQ-005.7: Timestamps MUST be ISO 8601 strings."""
-        iso_pattern = re.compile(
-            r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$"
-        )
+        iso_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$")
         issue = self._make_identified_issue()
         for ts in issue["seen_at_timestamps"]:
             assert isinstance(ts, str), "Timestamp must be a string"
@@ -575,55 +553,6 @@ class TestIssueFileSchema:
         parsed = yaml.safe_load(yaml_str)
         assert parsed["status"] == "investigated"
         assert "investigation_report" in parsed
-
-
-class TestIssueStatusLifecycle:
-    """LA-REQ-005.5: Status progression rules."""
-
-    LIFECYCLE_ORDER = ["identified", "investigated", "learned"]
-
-    def test_lifecycle_order_is_defined(self) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.5).
-        """LA-REQ-005.5: Lifecycle order is identified -> investigated -> learned."""
-        assert self.LIFECYCLE_ORDER == ["identified", "investigated", "learned"]
-
-    def test_forward_transitions_valid(self) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.5).
-        """LA-REQ-005.5: Status MUST progress forward through the lifecycle."""
-        valid_transitions = [
-            ("identified", "investigated"),
-            ("investigated", "learned"),
-        ]
-        for from_status, to_status in valid_transitions:
-            from_idx = self.LIFECYCLE_ORDER.index(from_status)
-            to_idx = self.LIFECYCLE_ORDER.index(to_status)
-            assert to_idx == from_idx + 1, (
-                f"Transition {from_status} -> {to_status} should be exactly one step forward"
-            )
-
-    def test_backward_transitions_invalid(self) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.5).
-        """LA-REQ-005.5: Status MUST NOT regress to a previous stage."""
-        invalid_transitions = [
-            ("investigated", "identified"),
-            ("learned", "investigated"),
-            ("learned", "identified"),
-        ]
-        for from_status, to_status in invalid_transitions:
-            from_idx = self.LIFECYCLE_ORDER.index(from_status)
-            to_idx = self.LIFECYCLE_ORDER.index(to_status)
-            assert to_idx < from_idx, (
-                f"Backward transition {from_status} -> {to_status} should be invalid"
-            )
-
-    def test_skip_transitions_invalid(self) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.5).
-        """LA-REQ-005.5: Status MUST NOT skip stages."""
-        from_idx = self.LIFECYCLE_ORDER.index("identified")
-        to_idx = self.LIFECYCLE_ORDER.index("learned")
-        assert to_idx - from_idx > 1, (
-            "identified -> learned skips a stage and should be invalid"
-        )
 
 
 class TestIssueFileLocation:

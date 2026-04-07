@@ -304,17 +304,6 @@ class TestStateManager:
 class TestStateManagerStack:
     """Tests for stack-based workflow nesting."""
 
-    @pytest.fixture
-    def project_root(self, tmp_path: Path) -> Path:
-        deepwork_dir = tmp_path / ".deepwork"
-        deepwork_dir.mkdir()
-        (deepwork_dir / "tmp").mkdir()
-        return tmp_path
-
-    @pytest.fixture
-    def state_manager(self, project_root: Path) -> StateManager:
-        return StateManager(project_root=project_root, platform="test")
-
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.12.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_nested_workflows_stack(self, state_manager: StateManager) -> None:
@@ -458,17 +447,6 @@ class TestStateManagerStack:
 class TestAgentIsolation:
     """Tests for sub-agent workflow isolation."""
 
-    @pytest.fixture
-    def project_root(self, tmp_path: Path) -> Path:
-        deepwork_dir = tmp_path / ".deepwork"
-        deepwork_dir.mkdir()
-        (deepwork_dir / "tmp").mkdir()
-        return tmp_path
-
-    @pytest.fixture
-    def state_manager(self, project_root: Path) -> StateManager:
-        return StateManager(project_root=project_root, platform="test")
-
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.6.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_agent_workflow_isolated_from_main(self, state_manager: StateManager) -> None:
@@ -610,17 +588,6 @@ class TestAgentIsolation:
 class TestGoToStep:
     """Tests for go_to_step in StateManager."""
 
-    @pytest.fixture
-    def project_root(self, tmp_path: Path) -> Path:
-        deepwork_dir = tmp_path / ".deepwork"
-        deepwork_dir.mkdir()
-        (deepwork_dir / "tmp").mkdir()
-        return tmp_path
-
-    @pytest.fixture
-    def state_manager(self, project_root: Path) -> StateManager:
-        return StateManager(project_root=project_root, platform="test")
-
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.14.7, JOBS-REQ-003.14.8).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_go_to_step_clears_invalidated_progress(
@@ -742,17 +709,6 @@ class TestGoToStep:
 class TestCrashResilience:
     """Tests for crash resilience and atomic writes."""
 
-    @pytest.fixture
-    def project_root(self, tmp_path: Path) -> Path:
-        deepwork_dir = tmp_path / ".deepwork"
-        deepwork_dir.mkdir()
-        (deepwork_dir / "tmp").mkdir()
-        return tmp_path
-
-    @pytest.fixture
-    def state_manager(self, project_root: Path) -> StateManager:
-        return StateManager(project_root=project_root, platform="test")
-
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.17.1, JOBS-REQ-003.4.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_invalid_json_treated_as_empty_stack(self, state_manager: StateManager) -> None:
@@ -789,8 +745,6 @@ class TestCrashResilience:
         assert tmp_files == []
 
         # State file should contain valid JSON
-        import json
-
         data = json.loads(state_file.read_text(encoding="utf-8"))
         assert "workflow_stack" in data
         assert len(data["workflow_stack"]) == 1
@@ -851,17 +805,6 @@ class TestCrashResilience:
 class TestWorkflowInstanceId:
     """Tests for workflow_instance_id generation."""
 
-    @pytest.fixture
-    def project_root(self, tmp_path: Path) -> Path:
-        deepwork_dir = tmp_path / ".deepwork"
-        deepwork_dir.mkdir()
-        (deepwork_dir / "tmp").mkdir()
-        return tmp_path
-
-    @pytest.fixture
-    def state_manager(self, project_root: Path) -> StateManager:
-        return StateManager(project_root=project_root, platform="test")
-
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.7.1, JOBS-REQ-010.7.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_workflow_instance_id_generated(self, state_manager: StateManager) -> None:
@@ -915,17 +858,6 @@ class TestWorkflowInstanceId:
 
 class TestStepHistory:
     """Tests for step_history tracking."""
-
-    @pytest.fixture
-    def project_root(self, tmp_path: Path) -> Path:
-        deepwork_dir = tmp_path / ".deepwork"
-        deepwork_dir.mkdir()
-        (deepwork_dir / "tmp").mkdir()
-        return tmp_path
-
-    @pytest.fixture
-    def state_manager(self, project_root: Path) -> StateManager:
-        return StateManager(project_root=project_root, platform="test")
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.8.1, JOBS-REQ-010.8.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -1012,17 +944,6 @@ class TestStepHistory:
 
 class TestCompletedWorkflows:
     """Tests for completed_workflows persistence."""
-
-    @pytest.fixture
-    def project_root(self, tmp_path: Path) -> Path:
-        deepwork_dir = tmp_path / ".deepwork"
-        deepwork_dir.mkdir()
-        (deepwork_dir / "tmp").mkdir()
-        return tmp_path
-
-    @pytest.fixture
-    def state_manager(self, project_root: Path) -> StateManager:
-        return StateManager(project_root=project_root, platform="test")
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.10.1, JOBS-REQ-010.10.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -1130,17 +1051,6 @@ class TestCompletedWorkflows:
 class TestGetAllSessionData:
     """Tests for get_all_session_data."""
 
-    @pytest.fixture
-    def project_root(self, tmp_path: Path) -> Path:
-        deepwork_dir = tmp_path / ".deepwork"
-        deepwork_dir.mkdir()
-        (deepwork_dir / "tmp").mkdir()
-        return tmp_path
-
-    @pytest.fixture
-    def state_manager(self, project_root: Path) -> StateManager:
-        return StateManager(project_root=project_root, platform="test")
-
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.11.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_returns_empty_for_missing_session(self, state_manager: StateManager) -> None:
@@ -1211,17 +1121,6 @@ class TestGetAllSessionData:
 
 class TestSubWorkflowInstanceIds:
     """Tests for sub_workflow_instance_ids tracking on parent steps."""
-
-    @pytest.fixture
-    def project_root(self, tmp_path: Path) -> Path:
-        deepwork_dir = tmp_path / ".deepwork"
-        deepwork_dir.mkdir()
-        (deepwork_dir / "tmp").mkdir()
-        return tmp_path
-
-    @pytest.fixture
-    def state_manager(self, project_root: Path) -> StateManager:
-        return StateManager(project_root=project_root, platform="test")
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.9.1, JOBS-REQ-010.9.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES

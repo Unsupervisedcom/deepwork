@@ -4,6 +4,10 @@ Validates requirements: DW-REQ-006, DW-REQ-006.1, DW-REQ-006.2, DW-REQ-006.3,
 DW-REQ-006.4, DW-REQ-006.5, DW-REQ-006.6, DW-REQ-006.7, DW-REQ-006.8,
 DW-REQ-006.9, DW-REQ-006.10.
 
+These tests verify that the hook wrapper correctly normalizes input/output
+between different AI CLI platforms (Claude Code, Gemini CLI).
+"""
+
 # ******************************************************************************
 # ***                         CRITICAL CONTRACT TESTS                        ***
 # ******************************************************************************
@@ -20,10 +24,6 @@ DW-REQ-006.9, DW-REQ-006.10.
 # documentation at: https://docs.anthropic.com/en/docs/claude-code/hooks
 #
 # ******************************************************************************
-
-These tests verify that the hook wrapper correctly normalizes input/output
-between different AI CLI platforms (Claude Code, Gemini CLI).
-"""
 
 import json
 
