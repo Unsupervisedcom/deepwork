@@ -1,0 +1,115 @@
+requirements:
+  # LA-REQ-009, LA-REQ-009.1
+  not-user-invocable: >
+    The skill MUST set `user-invocable: false` in its frontmatter so it
+    cannot be directly invoked by the user.
+
+  # LA-REQ-009.2
+  session-folder-argument: >
+    The skill MUST accept a single argument: the path to the session log
+    folder (e.g., `.deepwork/tmp/agent_sessions/<session_id>/<agent_id>/`).
+
+  # LA-REQ-009.3
+  agent-context-loading: >
+    The skill MUST dynamically load the agent name from `$ARGUMENTS/agent_used`
+    and load additional incorporation guidelines from the agent's
+    `additional_learning_guidelines/learning_from_issues.md`.
+
+  # LA-REQ-009.4
+  unknown-agent-handling: >
+    The skill MUST stop and report an error if `agent_used` reads "unknown"
+    or is missing.
+
+  # LA-REQ-009.5
+  issue-discovery: >
+    The skill MUST find all issue files with `status: investigated` in the
+    session folder.
+
+  # LA-REQ-009.6
+  no-investigated-issues-skip: >
+    If no investigated issues are found, the skill MUST skip to session
+    tracking updates while still updating tracking files.
+
+  # LA-REQ-009.7
+  knowledge-base-reading: >
+    The skill MUST instruct the agent to read the current state of
+    `core-knowledge.md`, `topics/`, and `learnings/` before incorporating
+    any issue.
+
+  # LA-REQ-009.8
+  incorporation-strategy-priority: >
+    The skill MUST present incorporation options in priority order: amend
+    existing content, update core-knowledge.md, add a new topic, add a new
+    learning, do nothing.
+
+  # LA-REQ-009.9
+  amend-existing-content: >
+    The skill MUST instruct the agent to edit existing files rather than
+    creating new ones when closely related content already exists.
+
+  # LA-REQ-009.10
+  core-knowledge-conciseness: >
+    The skill MUST specify that core-knowledge.md updates are limited to
+    universal one-liners expressible in 1-2 sentences.
+
+  # LA-REQ-009.11
+  new-topic-format: >
+    The skill MUST show the required topic file format including YAML
+    frontmatter with `name`, optional `keywords`, and `last_updated` in
+    YYYY-MM-DD format.
+
+  # LA-REQ-009.12
+  new-learning-format: >
+    The skill MUST show the required learning file format including YAML
+    frontmatter with `name`, `last_updated`, and `summarized_result`, plus
+    Context, Investigation, Resolution, and Key Takeaway sections.
+
+  # LA-REQ-009.13
+  cross-reference-learnings: >
+    The skill SHOULD instruct the agent to add a brief note to a related
+    topic when creating a new learning.
+
+  # LA-REQ-009.14
+  no-duplicate-knowledge: >
+    The skill MUST instruct the agent to check existing knowledge base files
+    to avoid duplicating information.
+
+  # LA-REQ-009.15
+  no-content-removal: >
+    The skill MUST instruct the agent NOT to remove existing content unless
+    it is directly contradicted by new evidence.
+
+  # LA-REQ-009.16
+  status-update-to-learned: >
+    The skill MUST instruct the agent to change `status: investigated` to
+    `status: learned` for each incorporated issue.
+
+  # LA-REQ-009.17
+  delete-needs-learning-flag: >
+    The skill MUST delete the `needs_learning_as_of_timestamp` file from
+    the session folder.
+
+  # LA-REQ-009.18
+  update-learning-timestamp: >
+    The skill MUST write the current UTC timestamp in ISO 8601 format to
+    `learning_last_performed_timestamp` in the session folder.
+
+  # LA-REQ-009.19
+  tracking-update-always-runs: >
+    The session tracking updates MUST always execute, even if no investigated
+    issues were found or all issues resulted in "do nothing".
+
+  # LA-REQ-009.20
+  last-updated-date-format: >
+    The skill MUST specify that `last_updated` fields use today's date in
+    YYYY-MM-DD format when creating or updating files.
+
+  # LA-REQ-009.21
+  summary-output: >
+    The skill MUST output a summary containing total issues processed and
+    the action taken for each issue.
+
+  # LA-REQ-009.22
+  allowed-tools-only: >
+    The skill MUST only use the following tools: Read, Grep, Glob, Edit,
+    Write.

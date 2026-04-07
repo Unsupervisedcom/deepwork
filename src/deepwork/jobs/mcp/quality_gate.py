@@ -26,7 +26,7 @@ from deepwork.review.formatter import format_for_claude
 from deepwork.review.instructions import (
     write_instruction_files,
 )
-from deepwork.review.matcher import match_files_to_rules
+from deepwork.review.matcher import get_changed_files, match_files_to_rules
 from deepwork.utils.validation import ValidationError, validate_against_schema
 
 logger = logging.getLogger("deepwork.jobs.mcp.quality_gate")
@@ -328,17 +328,27 @@ def run_quality_gate(
     schema_rules, _schema_errors = gen_schema_rules(project_root)
     deepreview_rules.extend(schema_rules)
 
-    # 4. Get the "changed files" list = output file paths
+    # 4. Collect output file paths
     output_files = _collect_output_file_paths(outputs, job)
 
-    # 5. Match .deepreview rules against output files
+    # 5. Match .deepreview rules against output files that are actually changed.
+    # Output files may include unchanged reference files — .deepreview rules
+    # should only fire on files that were actually modified (git diff).
     deepreview_tasks: list[ReviewTask] = []
     if deepreview_rules and output_files:
-        deepreview_tasks = match_files_to_rules(
-            output_files, deepreview_rules, project_root, platform
-        )
+        try:
+            git_changed = get_changed_files(project_root)
+        except Exception:
+            git_changed = []
+        output_set = set(output_files)
+        changed_output_files = [f for f in git_changed if f in output_set]
+        if changed_output_files:
+            deepreview_tasks = match_files_to_rules(
+                changed_output_files, deepreview_rules, project_root, platform
+            )
 
-    # 6. Match dynamic rules against output files
+    # 6. Match dynamic rules (step-specific reviews) against all output files.
+    # These are explicitly defined for specific outputs and should always run.
     dynamic_tasks: list[ReviewTask] = []
     if dynamic_rules and output_files:
         dynamic_tasks = match_files_to_rules(output_files, dynamic_rules, project_root, platform)

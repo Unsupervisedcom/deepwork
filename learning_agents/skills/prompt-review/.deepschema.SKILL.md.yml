@@ -1,0 +1,63 @@
+requirements:
+  # LA-REQ-012, LA-REQ-012.1
+  skill-invocation: >
+    The skill MUST be invocable with a file path argument and MUST ask the user
+    which file to review when no path is provided.
+
+  # LA-REQ-012.2
+  best-practices-fetch: >
+    The skill MUST attempt to fetch current Anthropic prompt engineering guidance
+    from the documented URL using WebFetch, and MUST proceed using built-in
+    knowledge if the fetch fails.
+
+  # LA-REQ-012.3
+  file-reading: >
+    The skill MUST read the file at the specified path, resolve relative paths
+    from the current working directory, and inform the user and stop if the file
+    does not exist.
+
+  # LA-REQ-012.4
+  prompt-context-determination: >
+    The skill MUST identify the prompt context type before evaluating: standalone
+    system prompt, instruction chunk / skill file, or template with variables.
+
+  # LA-REQ-012.5
+  evaluation-criteria: >
+    The skill MUST evaluate against all 10 criteria: Clarity and Specificity,
+    Structure and Formatting, Role and Identity Prompting, Examples and
+    Demonstrations, Handling Ambiguity and Edge Cases, Output Format
+    Specification, Composability, Conciseness and Signal-to-Noise Ratio,
+    Variable and Placeholder Usage, and Task Decomposition.
+
+  # LA-REQ-012.6
+  per-criterion-assessment: >
+    For each of the 10 evaluation criteria, the skill MUST assess whether the
+    prompt follows it well, partially, or poorly.
+
+  # LA-REQ-012.7
+  output-format: >
+    The skill MUST produce a review containing: prompt type classification,
+    overall grade (A-F), one-sentence summary, strengths list, issues found
+    (with severity, criterion, location, problem, recommendation), and a
+    summary of recommendations table with priority, description, and effort.
+
+  # LA-REQ-012.8
+  grading-rubric: >
+    The skill MUST define and use a grading scale from A (production-ready,
+    minor improvements only) through F (fundamentally flawed, needs rewrite).
+
+  # LA-REQ-012.9
+  issue-severity-levels: >
+    Each issue found MUST be classified with a severity level of Critical,
+    High, Medium, or Low.
+
+  # LA-REQ-012.10
+  actionable-recommendations: >
+    Every recommendation MUST point to a concrete line or section in the file
+    and explain exactly what to change. Recommendations SHOULD include
+    before/after examples when helpful.
+
+  # LA-REQ-012.11
+  allowed-tools: >
+    The skill MUST restrict itself to only the following tools: Read, Glob,
+    Grep, WebFetch. The allowed-tools frontmatter must list exactly these.

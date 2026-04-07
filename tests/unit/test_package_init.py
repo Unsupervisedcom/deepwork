@@ -1,4 +1,7 @@
-"""Tests for deepwork package __init__.py lazy imports and jobs.mcp.__init__.py."""
+"""Tests for deepwork package __init__.py lazy imports and jobs.mcp.__init__.py.
+
+Validates requirements: DW-REQ-005.1.
+"""
 
 from unittest.mock import MagicMock, patch
 

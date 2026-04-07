@@ -1,0 +1,80 @@
+# DeepSchema for learn skill — validates judgment-based LA-REQ-006 requirements
+requirements:
+  # LA-REQ-006.1
+  ignores-arguments-after-learn: >
+    The SKILL.md MUST instruct the agent that any arguments after `learn`
+    are to be ignored — the skill takes no arguments and processes all
+    pending sessions automatically.
+
+  # LA-REQ-006.3
+  no-pending-sessions-handling: >
+    The SKILL.md MUST instruct the agent that, when no pending sessions
+    are found (or the .deepwork/tmp/agent_sessions directory does not
+    exist), it should inform the user that there are no pending sessions
+    and stop without doing further work.
+
+  # LA-REQ-006.6
+  task-tool-orchestration: >
+    The SKILL.md MUST instruct the agent to run the identify phase as a
+    separate Task tool invocation, and to combine the investigate-issues
+    and incorporate-learnings phases into a single Task tool invocation
+    (executed in that order). It MUST reference the
+    `learning-agents:identify`, `learning-agents:investigate-issues`,
+    and `learning-agents:incorporate-learnings` skills by name.
+
+  # LA-REQ-006.7
+  sonnet-model-for-subtasks: >
+    The SKILL.md MUST instruct the agent to use the Sonnet model for
+    Task spawns of learning cycle sub-skills, to balance cost and
+    quality.
+
+  # LA-REQ-006.8
+  sequential-session-processing: >
+    The SKILL.md MUST instruct the agent to process sessions one at a time
+    (sequentially, not in parallel) to avoid conflicts when multiple sessions
+    involve the same agent.
+
+  # LA-REQ-006.9
+  failure-handling: >
+    The SKILL.md MUST instruct the agent that, if a sub-skill Task fails
+    for a session, it must: log the failure, skip that session, continue
+    processing remaining sessions, and NOT mark
+    needs_learning_as_of_timestamp as resolved for the failed session.
+
+  # LA-REQ-006.10
+  missing-transcript-handling: >
+    The SKILL.md MUST instruct the agent that, if a session's transcript
+    cannot be found, it should skip that session and report the issue in the
+    final summary.
+
+  # LA-REQ-006.11
+  summary-output-fields: >
+    The SKILL.md MUST instruct the agent to output, upon completion, a
+    summary that contains: total sessions processed, total issues
+    identified, list of agents updated, key learnings per agent, and any
+    skipped sessions with reasons.
+
+  # LA-REQ-006.12
+  no-direct-agent-modification: >
+    The SKILL.md MUST instruct the agent that the `learn` skill itself
+    must NOT modify agent files directly — all agent knowledge base
+    changes must be delegated to the learning cycle sub-skills (identify,
+    investigate-issues, incorporate-learnings).
+
+  # LA-REQ-003.12
+  topics-vs-learnings-distinction: >
+    The skill MUST ensure topics document conceptual reference material
+    (how things work) and learnings document incident post-mortems of
+    specific mistakes (what went wrong).
+
+  # LA-REQ-003.14
+  dynamic-guideline-inclusion: >
+    Each additional learning guideline file MUST be dynamically included
+    via backtick syntax in the corresponding skill's Context section.
+    Empty files result in no additional guidance.
+
+  # LA-REQ-003.5
+  core-knowledge-content-structure: >
+    The skill MUST instruct that core-knowledge.md files follow the
+    expected structure: identity statement, domain concepts, key patterns,
+    and common pitfalls.

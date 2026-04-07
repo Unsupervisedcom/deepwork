@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `deepwork setup` CLI command that auto-configures Claude Code settings (marketplace, plugin, MCP permissions, auto-update) (#343)
+- Integration tests for quality gate review caching (JOBS-REQ-004.5.7)
+- Requirements traceability coverage now at 100% (#346)
+  - Added section-level REQ ID annotations to 32 existing test files for traceability
+  - Wrote 218 new tests across 5 files for learning-agents requirements (LA-REQ-001, 003, 004, 005, 006, 010, 011)
+  - Added 6 anonymous DeepSchemas for judgment-based learning-agents skill requirements (LA-REQ-002, 007, 008, 009, 012)
+  - Added new PLUG-REQ-001.12 tests for session/agent identity injection hooks
+  - New `req-ids-in-comments` requirement in the standard DeepSchema definition: requirement IDs must be placed in YAML comments, not requirement body text
+
+### Changed
+
+- JOBS-REQ-004.5.7 strengthened to explicit MUST requirement for skipping already-passed reviews
+
+### Fixed
+
+### Removed
+## [0.13.1] - 2026-04-06
+
+### Added
 
 ### Changed
 
@@ -408,7 +426,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.0...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.1...HEAD
+[0.13.1]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.1
 [0.13.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.0
 [0.12.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.12.0
 [0.11.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.11.0

@@ -1,0 +1,97 @@
+requirements:
+  # LA-REQ-008, LA-REQ-008.1
+  not-user-invocable: >
+    The skill frontmatter MUST set `user-invocable: false` so it cannot be
+    directly invoked by the user.
+
+  # LA-REQ-008.17
+  allowed-tools-only-investigate: >
+    The skill MUST only use the following tools: Read, Grep, Glob, Edit.
+
+  # LA-REQ-008.2
+  session-folder-argument: >
+    The skill MUST accept a single argument: the path to the session log folder
+    (e.g., `.deepwork/tmp/agent_sessions/<session_id>/<agent_id>/`).
+
+  # LA-REQ-008.3
+  loads-agent-name: >
+    The skill MUST dynamically load the agent name from `$ARGUMENTS/agent_used`.
+
+  # LA-REQ-008.3
+  loads-core-knowledge: >
+    The skill MUST load the agent's core knowledge from
+    `.deepwork/learning-agents/<agent-name>/core-knowledge.md`.
+
+  # LA-REQ-008.3
+  loads-investigation-guidelines: >
+    The skill MUST load additional investigation guidelines from
+    `.deepwork/learning-agents/<agent-name>/additional_learning_guidelines/issue_investigation.md`.
+
+  # LA-REQ-008.4
+  discovers-identified-issues: >
+    The skill MUST find all issue files with `status: identified` in the session
+    folder by searching for `*.issue.yml` files.
+
+  # LA-REQ-008.5
+  handles-no-issues: >
+    If no issue files with status `identified` are found, the skill MUST
+    instruct the agent to report that finding and stop.
+
+  # LA-REQ-008.6
+  locates-transcript: >
+    The skill MUST reference the session transcript file
+    (`conversation_transcript.jsonl`) for use during investigation.
+
+  # LA-REQ-008.7
+  handles-missing-transcript: >
+    The procedure MUST NOT proceed to investigate without transcript evidence.
+
+  # LA-REQ-008.8
+  reads-issue-then-searches-transcript: >
+    For each identified issue, the procedure MUST instruct the agent to read
+    the issue file and then search the transcript for relevant sections using
+    keywords from `issue_description` or timestamps from
+    `seen_at_timestamps`.
+
+  # LA-REQ-008.9
+  root-cause-taxonomy: >
+    The skill MUST define the root cause taxonomy with exactly four categories:
+    knowledge gap, missing documentation, incorrect instruction, and missing
+    runtime context.
+
+  # LA-REQ-008.10
+  investigation-report-evidence: >
+    The investigation report MUST include specific evidence from the transcript
+    with line number references and root cause analysis explaining why the
+    agent behaved incorrectly.
+
+  # LA-REQ-008.11
+  status-update-to-investigated: >
+    The procedure MUST instruct updating each issue file from
+    `status: identified` to `status: investigated`.
+
+  # LA-REQ-008.12
+  adds-investigation-report-field: >
+    The procedure MUST instruct adding an `investigation_report` field to each
+    issue file containing the root cause analysis.
+
+  # LA-REQ-008.13
+  preserves-issue-description: >
+    The skill MUST instruct the agent NOT to modify the `issue_description`
+    field — only add `investigation_report` and update `status`.
+
+  # LA-REQ-008.14
+  processes-all-issues: >
+    The skill MUST instruct the agent NOT to skip any identified issues — every
+    issue with `status: identified` MUST be investigated.
+
+  # LA-REQ-008.15
+  no-knowledge-base-modification: >
+    The skill MUST instruct the agent NOT to modify the agent's knowledge base.
+    Knowledge base updates are the responsibility of the incorporate-learnings
+    skill.
+
+  # LA-REQ-008.16
+  summary-output: >
+    The skill MUST instruct the agent to output a summary for each investigated
+    issue.
