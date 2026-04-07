@@ -29,7 +29,7 @@ DeepWork Reviews uses `.deepreview` YAML configuration files to define review ru
 3. The `review` section MUST contain an `instructions` key.
 4. The `review` section MAY contain an `agent` key.
 5. The `review` section MAY contain an `additional_context` key.
-6. The `review` section MUST NOT contain additional properties beyond `strategy`, `instructions`, `agent`, and `additional_context`.
+6. The `review` section MUST NOT contain additional properties beyond `strategy`, `instructions`, `agent`, `additional_context`, and `precomputed_info_for_reviewer_bash_command`.
 
 ### REVIEW-REQ-001.4: Instructions
 
@@ -75,3 +75,13 @@ DeepWork Reviews uses `.deepreview` YAML configuration files to define review ru
 6. When `exclude` is not specified in the YAML, `exclude_patterns` MUST default to an empty list.
 7. When `additional_context` is not specified, both `all_changed_filenames` and `unchanged_matching_files` MUST default to `False`.
 8. When `agent` is not specified, it MUST default to `None`.
+
+### REVIEW-REQ-001.9: Precomputed Info Command
+
+1. The `precomputed_info_for_reviewer_bash_command` field, when present, MUST be a string containing a shell command.
+2. The command path MUST be resolved relative to the `.deepreview` file's directory.
+3. The command MUST be executed from the project root working directory.
+4. The command MUST have a 60-second timeout.
+5. If the command fails (non-zero exit or timeout), the system MUST inject an error message into the instruction file rather than failing the pipeline.
+6. The command MUST be executed at most once per unique command string across all tasks in a review run.
+7. When multiple rules declare precompute commands, all unique commands MUST be executed in parallel.

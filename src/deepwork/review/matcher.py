@@ -223,6 +223,8 @@ def match_files_to_rules(
         all_filenames = changed_files if rule.all_changed_filenames else None
         source_location = format_source_location(rule, project_root)
 
+        precompute_cmd = rule.precomputed_info_bash_command
+
         if rule.strategy == "individual":
             for filepath in matched:
                 tasks.append(
@@ -233,6 +235,7 @@ def match_files_to_rules(
                         agent_name=agent_name,
                         source_location=source_location,
                         all_changed_filenames=all_filenames,
+                        precomputed_info_bash_command=precompute_cmd,
                     )
                 )
 
@@ -249,6 +252,7 @@ def match_files_to_rules(
                     source_location=source_location,
                     additional_files=additional,
                     all_changed_filenames=all_filenames,
+                    precomputed_info_bash_command=precompute_cmd,
                 )
             )
 
@@ -261,6 +265,7 @@ def match_files_to_rules(
                     agent_name=agent_name,
                     source_location=source_location,
                     all_changed_filenames=all_filenames,
+                    precomputed_info_bash_command=precompute_cmd,
                 )
             )
 

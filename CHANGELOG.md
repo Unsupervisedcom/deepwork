@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Integration tests for quality gate review caching (JOBS-REQ-004.5.7)
+
+### Changed
+
+- JOBS-REQ-004.5.7 strengthened to explicit MUST requirement for skipping already-passed reviews
+
+### Fixed
+
+### Removed
+## [0.13.1] - 2026-04-06
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+## [0.13.0] - 2026-04-03
+
+### Added
+
 - Add DeepPlan — structured planning workflow that produces executable DeepWork job definitions (#331)
   - New `deepplan` standard job with `create_deep_plan` workflow (5 steps: explore, design alternatives, synthesize, enrich, present)
   - New `register_session_job` and `get_session_job` MCP tools for transient session-scoped job definitions
@@ -16,6 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Startup context hook auto-triggers DeepPlan when entering plan mode
   - Session jobs are discoverable by `start_workflow` and take priority over standard discovery
 - `/review` skill now checks changelog accuracy and PR description during reviews (#331)
+- `.deepreview` rules can now declare a `precomputed_info_for_reviewer_bash_command` that runs before the review and injects stdout into the instruction file as precomputed context (#337)
+  - Commands run in parallel across rules with a 60-second timeout and graceful error handling
+  - Applied to `requirements_traceability` and `python_lint` rules to eliminate redundant agent tool calls
+- New `deepreview` standard DeepSchema with semantic quality requirements for `.deepreview` config files (#337)
+- `Makefile` with `lint` target that auto-fixes formatting/linting and runs type checking (#337)
 - Requirements traceability coverage now at 100% (#346)
   - Added section-level REQ ID annotations to 32 existing test files for traceability
   - Wrote 218 new tests across 5 files for learning-agents requirements (LA-REQ-001, 003, 004, 005, 006, 010, 011)
@@ -26,6 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Fixed
+
+- Quality gate `validate_json_schemas()` now uses `yaml.safe_load` (a JSON superset) instead of `json.loads`, so YAML output files are validated correctly
 
 ### Removed
 ## [0.12.0] - 2026-04-03
@@ -396,7 +425,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.12.0...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.1...HEAD
+[0.13.1]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.1
+[0.13.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.0
 [0.12.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.12.0
 [0.11.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.11.0
 [0.10.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.10.0

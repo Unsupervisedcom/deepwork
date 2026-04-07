@@ -47,3 +47,10 @@ For each `ReviewTask`, the system generates a self-contained markdown instructio
 2. The traceability line MUST be formatted as: `This review was requested by the policy at \`{source_location}\`.` where `source_location` is the relative file path and line number (e.g., `src/.deepreview:5`).
 3. The traceability line MUST be preceded by a markdown horizontal rule (`---`).
 4. When `source_location` is empty, the traceability section MUST be omitted.
+
+### REVIEW-REQ-005.7: Precomputed Context Section
+
+1. When a task has precomputed info, the instruction file MUST contain a "Precomputed Context" section.
+2. The "Precomputed Context" section MUST be the last content section in the instruction file, appearing after all file listing sections and before the "After Review" section.
+3. The section MUST contain the verbatim stdout of the precomputed command.
+4. When the command failed, the section MUST contain an error message with stderr and exit code.

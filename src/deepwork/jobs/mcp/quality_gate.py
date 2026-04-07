@@ -7,9 +7,10 @@ step output reviews and process requirements. These are merged with
 
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
+
+import yaml
 
 from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
 from deepwork.jobs.mcp.schemas import ArgumentValue
@@ -25,7 +26,7 @@ from deepwork.review.formatter import format_for_claude
 from deepwork.review.instructions import (
     write_instruction_files,
 )
-from deepwork.review.matcher import match_files_to_rules
+from deepwork.review.matcher import get_changed_files, match_files_to_rules
 from deepwork.utils.validation import ValidationError, validate_against_schema
 
 logger = logging.getLogger("deepwork.jobs.mcp.quality_gate")
@@ -60,9 +61,9 @@ def validate_json_schemas(
                 continue
             try:
                 content = full_path.read_text(encoding="utf-8")
-                parsed = json.loads(content)
-            except (json.JSONDecodeError, UnicodeDecodeError) as e:
-                errors.append(f"Output '{output_name}' file '{path}': failed to parse as JSON: {e}")
+                parsed = yaml.safe_load(content)
+            except (yaml.YAMLError, UnicodeDecodeError) as e:
+                errors.append(f"Output '{output_name}' file '{path}': failed to parse: {e}")
                 continue
 
             try:
@@ -214,6 +215,7 @@ def build_dynamic_review_rules(
                         review_block.additional_context
                         and review_block.additional_context.get("unchanged_matching_files")
                     ),
+                    precomputed_info_bash_command=None,
                     source_dir=project_root,
                     source_file=job.job_dir / "job.yml",
                     source_line=0,
@@ -277,6 +279,7 @@ Evaluate whether the work described in the `work_summary` meets each requirement
                 agent=None,
                 all_changed_filenames=False,
                 unchanged_matching_files=False,
+                precomputed_info_bash_command=None,
                 source_dir=project_root,
                 source_file=job.job_dir / "job.yml",
                 source_line=0,
@@ -325,17 +328,27 @@ def run_quality_gate(
     schema_rules, _schema_errors = gen_schema_rules(project_root)
     deepreview_rules.extend(schema_rules)
 
-    # 4. Get the "changed files" list = output file paths
+    # 4. Collect output file paths
     output_files = _collect_output_file_paths(outputs, job)
 
-    # 5. Match .deepreview rules against output files
+    # 5. Match .deepreview rules against output files that are actually changed.
+    # Output files may include unchanged reference files — .deepreview rules
+    # should only fire on files that were actually modified (git diff).
     deepreview_tasks: list[ReviewTask] = []
     if deepreview_rules and output_files:
-        deepreview_tasks = match_files_to_rules(
-            output_files, deepreview_rules, project_root, platform
-        )
+        try:
+            git_changed = get_changed_files(project_root)
+        except Exception:
+            git_changed = []
+        output_set = set(output_files)
+        changed_output_files = [f for f in git_changed if f in output_set]
+        if changed_output_files:
+            deepreview_tasks = match_files_to_rules(
+                changed_output_files, deepreview_rules, project_root, platform
+            )
 
-    # 6. Match dynamic rules against output files
+    # 6. Match dynamic rules (step-specific reviews) against all output files.
+    # These are explicitly defined for specific outputs and should always run.
     dynamic_tasks: list[ReviewTask] = []
     if dynamic_rules and output_files:
         dynamic_tasks = match_files_to_rules(output_files, dynamic_rules, project_root, platform)
