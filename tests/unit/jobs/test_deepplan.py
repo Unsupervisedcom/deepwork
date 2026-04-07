@@ -111,6 +111,7 @@ class TestDeepplanStartupHook:
     )
     def test_startup_hook_is_executable(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-014.5.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """startup_context.sh has execute permission."""
         import os
 

@@ -53,6 +53,7 @@ def _anonymous_schema(
 class TestSchemaToReviewRule:
     def test_named_schema_produces_rule(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1, DW-REQ-011.8.2, DW-REQ-011.8.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         schema = _named_schema(tmp_path)
         rule = _schema_to_review_rule(schema, tmp_path)
         assert rule is not None
@@ -62,6 +63,7 @@ class TestSchemaToReviewRule:
 
     def test_anonymous_schema_produces_rule(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1, DW-REQ-011.8.2, DW-REQ-011.8.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         schema = _anonymous_schema(tmp_path)
         rule = _schema_to_review_rule(schema, tmp_path)
         assert rule is not None
@@ -71,6 +73,7 @@ class TestSchemaToReviewRule:
 
     def test_named_without_matchers_returns_none(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         schema = _named_schema(tmp_path)
         schema.matchers = []
         rule = _schema_to_review_rule(schema, tmp_path)
@@ -78,6 +81,7 @@ class TestSchemaToReviewRule:
 
     def test_schema_without_requirements_returns_none(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         schema = _named_schema(tmp_path)
         schema.requirements = {}
         rule = _schema_to_review_rule(schema, tmp_path)
@@ -85,6 +89,7 @@ class TestSchemaToReviewRule:
 
     def test_rule_source_file_points_to_schema(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         schema = _named_schema(tmp_path)
         rule = _schema_to_review_rule(schema, tmp_path)
         assert rule is not None
@@ -92,6 +97,7 @@ class TestSchemaToReviewRule:
 
     def test_named_rule_source_dir_is_project_root(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Named schemas use project-root-relative matchers, so source_dir must be project_root."""
         schema = _named_schema(tmp_path, matchers=[".deepwork/jobs/*/job.yml"])
         rule = _schema_to_review_rule(schema, tmp_path)
@@ -100,6 +106,7 @@ class TestSchemaToReviewRule:
 
     def test_anonymous_rule_source_dir_is_schema_parent(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Anonymous schemas match by filename in the same directory as the schema file."""
         schema = _anonymous_schema(tmp_path)
         rule = _schema_to_review_rule(schema, tmp_path)
@@ -108,6 +115,7 @@ class TestSchemaToReviewRule:
 
     def test_named_rule_matchers_resolve_against_project_root(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.6.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Matchers like '.deepwork/jobs/*/job.yml' must match files relative to project root."""
         from deepwork.review.matcher import match_rule
 
@@ -127,6 +135,7 @@ class TestAnonymousSchemaRuleOutsideProject:
 
     def test_returns_none_when_target_outside_project(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Anonymous schema whose target resolves outside project_root returns None."""
         from deepwork.deepschema.review_bridge import _anonymous_schema_rule
 
@@ -143,6 +152,7 @@ class TestAnonymousSchemaRuleOutsideProject:
 class TestBuildInstructions:
     def test_named_includes_summary_and_instructions(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         schema = _named_schema(tmp_path, summary="YAML configs", instructions="Validate carefully")
         text = _build_named_instructions(schema)
         assert "test_schema" in text
@@ -152,6 +162,7 @@ class TestBuildInstructions:
 
     def test_anonymous_is_simpler(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         schema = _anonymous_schema(tmp_path)
         text = _build_anonymous_instructions(schema)
         assert "has requirements" in text
@@ -159,6 +170,7 @@ class TestBuildInstructions:
 
     def test_requirements_body_includes_rfc_guidance(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         body = _build_requirements_body({"r1": "MUST exist", "r2": "SHOULD be nice"})
         assert "fail reviews over anything that is MUST" in body
         assert "r1" in body
@@ -168,6 +180,7 @@ class TestBuildInstructions:
 class TestGenerateReviewRules:
     def test_generates_from_named_schema(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         schema_dir = tmp_path / ".deepwork" / "schemas" / "yml_files"
         schema_dir.mkdir(parents=True)
         (schema_dir / "deepschema.yml").write_text(
@@ -181,6 +194,7 @@ class TestGenerateReviewRules:
 
     def test_generates_from_anonymous_schema(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.8.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         (tmp_path / ".deepschema.config.json.yml").write_text(
             "requirements:\n  r1: 'MUST be valid JSON'\n",
             encoding="utf-8",

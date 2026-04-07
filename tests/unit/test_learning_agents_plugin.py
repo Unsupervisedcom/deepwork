@@ -34,17 +34,20 @@ class TestPluginManifest:
 
     def test_manifest_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.1: manifest exists at learning_agents/.claude-plugin/plugin.json."""
         assert self.manifest_path.exists()
 
     def test_manifest_name(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.1: name is 'learning-agents'."""
         data = json.loads(self.manifest_path.read_text())
         assert data["name"] == "learning-agents"
 
     def test_manifest_description_non_empty(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.1: description is a non-empty string."""
         data = json.loads(self.manifest_path.read_text())
         assert isinstance(data["description"], str)
@@ -52,6 +55,7 @@ class TestPluginManifest:
 
     def test_manifest_version_semver(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.1: version is in semver format."""
         data = json.loads(self.manifest_path.read_text())
         assert re.fullmatch(r"\d+\.\d+\.\d+", data["version"]), (
@@ -60,6 +64,7 @@ class TestPluginManifest:
 
     def test_manifest_author_name(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.1: author.name is a non-empty string."""
         data = json.loads(self.manifest_path.read_text())
         assert isinstance(data["author"]["name"], str)
@@ -67,6 +72,7 @@ class TestPluginManifest:
 
     def test_manifest_repository_url(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.1: repository is a valid URL string."""
         data = json.loads(self.manifest_path.read_text())
         assert isinstance(data["repository"], str)
@@ -90,23 +96,27 @@ class TestMarketplaceRegistration:
 
     def test_marketplace_file_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.2: marketplace.json exists."""
         assert MARKETPLACE_PATH.exists()
 
     def test_marketplace_name_matches_manifest(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.2: marketplace name matches plugin manifest name."""
         entry = self._get_learning_agents_entry()
         assert entry["name"] == "learning-agents"
 
     def test_marketplace_source(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.2: source points to plugin root directory."""
         entry = self._get_learning_agents_entry()
         assert entry["source"] == "./learning_agents"
 
     def test_marketplace_category(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.2: category is 'learning'."""
         entry = self._get_learning_agents_entry()
         assert entry["category"] == "learning"
@@ -131,6 +141,7 @@ class TestPluginDirectoryLayout:
 
     def test_required_subdirectories_exist(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.3: all required subdirectories exist."""
         for subdir in self.REQUIRED_SUBDIRS:
             path = PLUGIN_DIR / subdir
@@ -152,11 +163,13 @@ class TestHooksConfiguration:
 
     def test_hooks_json_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.4: hooks/hooks.json exists."""
         assert self.hooks_path.exists()
 
     def test_post_tool_use_hook(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.4: PostToolUse hook with matcher 'Task' executing post_task.sh."""
         data = self._load_hooks()
         post_tool_use = data["hooks"]["PostToolUse"]
@@ -168,6 +181,7 @@ class TestHooksConfiguration:
 
     def test_stop_hook(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.4: Stop hook with empty matcher executing session_stop.sh."""
         data = self._load_hooks()
         stop_hooks = data["hooks"]["Stop"]
@@ -190,6 +204,7 @@ class TestHookScriptReferences:
 
     def test_commands_use_plugin_root_prefix(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.5: all hook commands use ${CLAUDE_PLUGIN_ROOT} prefix."""
         data = json.loads(self.hooks_path.read_text())
         for event_name, entries in data["hooks"].items():
@@ -217,12 +232,14 @@ class TestHookScriptsExitCode:
 
     def test_hook_scripts_exist(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.6: all hook scripts exist."""
         for script in self.HOOK_SCRIPTS:
             assert script.exists(), f"Hook script missing: {script.name}"
 
     def test_hook_scripts_end_with_exit_zero(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.6: all hook scripts end with 'exit 0'."""
         for script in self.HOOK_SCRIPTS:
             content = script.read_text()
@@ -248,6 +265,7 @@ class TestHookScriptsOutputFormat:
 
     def test_hook_scripts_output_empty_json_on_noop(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.7: scripts output '{}' when there is nothing to communicate."""
         for script in self.HOOK_SCRIPTS:
             content = script.read_text()
@@ -257,6 +275,7 @@ class TestHookScriptsOutputFormat:
 
     def test_hook_scripts_output_system_message_json(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.7: when communicating, scripts output JSON with systemMessage or hookSpecificOutput."""
         for script in self.HOOK_SCRIPTS:
             content = script.read_text()
@@ -280,11 +299,13 @@ class TestMetaAgentDefinition:
 
     def test_meta_agent_file_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.8).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.8: agents/learning-agent-expert.md exists."""
         assert self.agent_path.exists()
 
     def test_meta_agent_has_dynamic_context_injection(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.8).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.8: agent uses !`...` syntax to load doc/ files."""
         content = self.agent_path.read_text()
         # Must have at least one !`cat ${CLAUDE_PLUGIN_ROOT}/doc/...` command
@@ -297,6 +318,7 @@ class TestMetaAgentDefinition:
 
     def test_meta_agent_loads_all_doc_files(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-001.8).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-001.8: agent loads all reference documentation from doc/."""
         content = self.agent_path.read_text()
         doc_dir = PLUGIN_DIR / "doc"

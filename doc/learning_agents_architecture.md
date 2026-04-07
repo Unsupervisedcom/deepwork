@@ -91,6 +91,7 @@ Example structure:
 ---
 name: <agent-name>
 description: "<discovery description>"
+model: sonnet
 ---
 
 # Core Knowledge
@@ -108,6 +109,8 @@ Located in `.deepwork/learning-agents/<agent-name>/topics/`
 Learnings are incident post-mortems from past agent sessions capturing mistakes, root causes, and generalizable insights. Review them before starting work to avoid repeating past mistakes. Located in `.deepwork/learning-agents/<agent-name>/learnings/`.
 ```
 
+The frontmatter `model:` field is required (LA-REQ-002.9) and defaults to `sonnet` to keep agent invocations cost-effective.
+
 ### Session Logs (transient, gitignored)
 
 ```
@@ -115,8 +118,14 @@ Learnings are incident post-mortems from past agent sessions capturing mistakes,
 ├── needs_learning_as_of_timestamp      # Flag file (body = ISO 8601 timestamp)
 ├── learning_last_performed_timestamp   # When learning was last run on this conversation
 ├── agent_used                          # Body = LearningAgent folder name
+├── conversation_transcript.jsonl       # Snapshot of the agent's conversation transcript
 └── <brief-name>.issue.yml              # Issues found during learning
 ```
+
+The `conversation_transcript.jsonl` file is the captured agent transcript used by the
+`investigate-issues` skill to research root causes (LA-REQ-008.6). If it cannot be
+found for a session, the learning cycle skips that session and reports the issue in
+the final summary.
 
 See `learning_log_folder_structure.md` for full details.
 
@@ -185,7 +194,7 @@ Entry point skill. Dynamically lists existing LearningAgents at load time, then 
 - `/learning-agents report_issue <agent_id> <details>` → invokes `report-issue`
 
 #### create-agent
-Creates a new LearningAgent. Accepts an optional `template-path` argument — when provided, the new agent is seeded with the template agent's `core-knowledge.md`, `topics/`, and `learnings/` as a starting point. The skill first invokes a setup script, then guides the user through filling in the content.
+Creates a new LearningAgent. Accepts an optional `template-path` argument — when provided, the new agent is seeded with the template agent's `core-knowledge.md`, `topics/`, and `learnings/` as a starting point. The skill first invokes a setup script, then guides the user through filling in the content. The skill enforces dash-separated lowercase agent names, refuses to overwrite existing agents, and ensures the generated `.claude/agents/<agent-name>.md` frontmatter includes a `model:` field (defaulting to `sonnet`).
 
 **Step 1 — Setup script (`scripts/create_agent.sh`)**
 
@@ -241,21 +250,23 @@ After the script runs, the skill prompts the user to describe what the agent is 
 Fills in key files in the LearningAgent directory — initial topics and/or learnings if the user provides seed knowledge about the domain.
 
 #### learn
-Runs the full learning cycle on all sessions needing it. Workflow:
+Runs the full learning cycle on all sessions needing it. The skill takes no arguments — any text after `learn` is ignored. Sessions are processed sequentially (not in parallel) to avoid conflicts when the same agent appears in multiple sessions. Workflow:
 1. Uses `!`find ...`` to inject a list of all paths containing a `needs_learning_as_of_timestamp` file into the prompt
 2. For each such folder, spawns a Task with the `LearningAgentExpert` agent using **Sonnet model** to run the `identify` skill
 3. After identification completes, spawns a Task with the `LearningAgentExpert` to run `investigate-issues` then `incorporate-learnings` in sequence
+
+If no pending sessions are found (or the `.deepwork/tmp/agent_sessions/` directory is missing), the skill informs the user and stops. If a sub-skill Task fails for a session, the skill logs the failure, skips that session, continues processing remaining sessions, and does NOT mark `needs_learning_as_of_timestamp` as resolved. On completion, the skill outputs a summary containing total sessions processed, total issues identified, list of agents updated, key learnings per agent, and any skipped sessions with reasons. The `learn` skill itself MUST NOT modify agent files directly — all knowledge base updates are delegated to the sub-skills.
 
 #### setup
 Configures project permissions for the LearningAgents plugin. Adds required Bash and file access rules to `.claude/settings.json` so hooks and scripts can run without manual approval.
 
 #### prompt-review
-Standalone skill (not routed through the `/learning-agents` dispatcher). Reviews prompt/instruction files against Anthropic prompt engineering best practices. Can be invoked directly as `/learning-agents:prompt-review`.
+Standalone skill (not routed through the `/learning-agents` dispatcher). Reviews prompt/instruction files against Anthropic prompt engineering best practices. Can be invoked directly as `/learning-agents:prompt-review`. Accepts a target file path argument and produces actionable feedback grouped by best-practice category — it does not modify the target file.
 
 ### Hidden Skills (used by LearningAgentExpert during learning)
 
 #### identify
-Reviews a session transcript to find issues. Takes the session/agent_id folder path as an argument.
+Reviews a session transcript to find issues. Takes the session/agent_id folder path as an argument. The skill reads the transcript and surfaces concrete mistakes, underperformance, or knowledge gaps — emitting one issue per finding via `report-issue`. Per-agent identification guidance is loaded dynamically from the agent's `additional_learning_guidelines/issue_identification.md` file (empty file = no extra guidance).
 - Uses `!`cat ...`` to inject `learning_last_performed_timestamp` value into the prompt
 - Reads the transcript and identifies mistakes, underperformance, or knowledge gaps
 - Calls `report-issue` for each issue found
@@ -265,14 +276,14 @@ Reviews a session transcript to find issues. Takes the session/agent_id folder p
 Creates an `<brief-name>.issue.yml` file in the session's agent log folder. Sets initial status to `identified` with the issue description and observed timestamps. See `issue_yml_format.md` for the schema.
 
 #### investigate-issues
-Processes all `identified` issues in a session folder:
+Processes all `identified` issues in a session folder, researching root causes from transcript evidence and the agent's existing knowledge. Per-agent investigation guidance is loaded dynamically from `additional_learning_guidelines/issue_investigation.md`.
 1. Finds issues with status `identified` (includes example bash command in skill prompt)
 2. Uses `!`cat $0/agent_used`` to inject the agent name, then `!`cat`` to load the agent's instructions — avoiding extra round trips
-3. Reads the agent's full expertise and knowledge
+3. Reads the agent's full expertise and knowledge, plus the captured `conversation_transcript.jsonl`
 4. For each issue: reads relevant transcript sections, determines root cause, updates status to `investigated` with `investigation_report`
 
 #### incorporate-learnings
-Integrates investigated issues into the LearningAgent:
+Integrates investigated issues into the LearningAgent. Topics document conceptual reference material (how things work — patterns, APIs, conventions); learnings document incident post-mortems of specific mistakes (what went wrong and why). Per-agent incorporation guidance is loaded dynamically from `additional_learning_guidelines/learning_from_issues.md`.
 1. Finds issues with status `investigated` (includes example bash command)
 2. For each issue, takes a learning action — one of:
    - **Update core knowledge**: Modify `core-knowledge.md` to address the knowledge gap

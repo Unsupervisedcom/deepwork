@@ -313,12 +313,14 @@ class TestLoadYAMLFromString:
 
     def test_returns_none_for_empty_string(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.7.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Empty string returns None."""
         result = load_yaml_from_string("")
         assert result is None
 
     def test_returns_dict_for_valid_content(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-010.7.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Valid YAML dict string is parsed correctly."""
         result = load_yaml_from_string("name: test\nversion: 1")
         assert result == {"name": "test", "version": 1}

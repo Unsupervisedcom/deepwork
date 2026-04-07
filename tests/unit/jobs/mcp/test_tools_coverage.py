@@ -319,7 +319,7 @@ class TestValidateOutputsEdgeCases:
         step = wf.steps[0]  # step1 has output1 (file_path)
 
         with pytest.raises(ToolError, match="all paths must be strings"):
-            tools._validate_outputs({"output1": [123, "valid.md"]}, step, job)  # type: ignore[list-item]
+            tools._validate_outputs({"output1": [123, "valid.md"]}, step, job)
 
     def test_file_path_wrong_type(self, tools: WorkflowTools) -> None:
         """file_path with non-string/non-list type raises ToolError."""
@@ -328,7 +328,7 @@ class TestValidateOutputsEdgeCases:
         step = wf.steps[0]
 
         with pytest.raises(ToolError, match="must be a string path or list"):
-            tools._validate_outputs({"output1": 42}, step, job)  # type: ignore[dict-item]
+            tools._validate_outputs({"output1": 42}, step, job)
 
 
 # =========================================================================

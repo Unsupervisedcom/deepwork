@@ -175,6 +175,7 @@ class TestWriteManifest:
 
     def test_empty_jobs_list(self, status_writer: StatusWriter) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.2.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         status_writer.write_manifest([])
         data = yaml.safe_load(status_writer.manifest_path.read_text())
         assert data["jobs"] == []
@@ -433,6 +434,7 @@ class TestWriteSessionStatus:
         state_manager: StateManager,
     ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.12.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """write_session_status with non-existent session is a no-op."""
         status_writer.write_session_status("nonexistent", state_manager, self._job_loader())
         assert not status_writer.sessions_dir.exists() or not list(

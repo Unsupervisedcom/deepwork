@@ -313,12 +313,14 @@ my_rule:
 
     def test_empty_file_returns_empty_list(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.1.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         filepath = _write_deepreview(tmp_path, "")
         rules = parse_deepreview_file(filepath)
         assert rules == []
 
     def test_nonexistent_file_raises_error(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.7.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         filepath = tmp_path / ".deepreview"
         with pytest.raises(ConfigError, match="File not found"):
             parse_deepreview_file(filepath)
@@ -344,6 +346,7 @@ python_review:
 
     def test_source_line_for_single_rule(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.8.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         filepath = _write_deepreview(
             tmp_path,
             """python_review:
@@ -361,6 +364,7 @@ python_review:
 
     def test_source_line_for_multiple_rules(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.8.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         filepath = _write_deepreview(
             tmp_path,
             """rule_a:
@@ -388,6 +392,7 @@ rule_b:
 
     def test_file_reference_read_error_raises_config_error(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.4.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """OSError reading an instructions file raises ConfigError."""
         from unittest.mock import patch
 
@@ -427,6 +432,7 @@ class TestGetSchemaPath:
 
     def test_returns_path_to_json_schema(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.7.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """get_schema_path returns a Path to the deepreview_schema.json file."""
         path = get_schema_path()
         assert path.name == "deepreview_schema.json"
@@ -438,6 +444,7 @@ class TestFindRuleLineNumbers:
 
     def test_returns_empty_on_os_error(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.8.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """OSError reading .deepreview file returns empty dict."""
         from unittest.mock import patch
 

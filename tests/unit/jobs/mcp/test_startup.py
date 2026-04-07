@@ -24,6 +24,7 @@ class TestBuildStartupInstructions:
 
     def test_includes_static_instructions_always(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.10.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Static server instructions are always included."""
         result = _build_startup_instructions(tmp_path, issues=[])
         assert "DeepWork Workflow Server" in result
@@ -31,6 +32,7 @@ class TestBuildStartupInstructions:
 
     def test_with_issues_shows_warning(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.10.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When issues exist, shows IMPORTANT warning and issue details."""
         issues = [
             Issue(
@@ -49,6 +51,7 @@ class TestBuildStartupInstructions:
 
     def test_without_issues_lists_workflows(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.10.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When no issues, lists available workflows."""
         jobs_dir = tmp_path / ".deepwork" / "jobs"
         jobs_dir.mkdir(parents=True)
@@ -85,6 +88,7 @@ class TestBuildStartupInstructions:
 
     def test_without_issues_always_includes_workflows(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.10.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When no issues, standard jobs are always discovered so workflows are listed."""
         result = _build_startup_instructions(tmp_path, issues=[])
         assert "Available Workflows" in result
@@ -92,6 +96,7 @@ class TestBuildStartupInstructions:
 
     def test_issues_take_priority_over_workflows(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.10.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When issues exist, workflows are NOT listed — issue warning only."""
         issues = [
             Issue(

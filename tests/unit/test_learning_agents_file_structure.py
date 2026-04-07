@@ -66,12 +66,14 @@ class TestAgentRootDirectory:
 
     def test_agent_dir_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.1: Agent directory exists at .deepwork/learning-agents/<agent-name>/."""
         agent_dir = DEEPWORK_AGENTS_DIR / REFERENCE_AGENT
         assert agent_dir.is_dir(), f"Expected agent dir: {agent_dir}"
 
     def test_agent_name_uses_dashes(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.1: Agent folder name uses dashes for word separation."""
         for agent_dir in DEEPWORK_AGENTS_DIR.iterdir():
             if not agent_dir.is_dir():
@@ -87,6 +89,7 @@ class TestCoreKnowledgeFile:
 
     def test_core_knowledge_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.3: Each agent MUST have a core-knowledge.md file."""
         for agent_dir in DEEPWORK_AGENTS_DIR.iterdir():
             if not agent_dir.is_dir():
@@ -96,6 +99,7 @@ class TestCoreKnowledgeFile:
 
     def test_core_knowledge_no_yaml_frontmatter(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.4: core-knowledge.md MUST be plain markdown with no YAML frontmatter."""
         for agent_dir in DEEPWORK_AGENTS_DIR.iterdir():
             if not agent_dir.is_dir():
@@ -108,6 +112,7 @@ class TestCoreKnowledgeFile:
 
     def test_core_knowledge_second_person(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.4: core-knowledge.md MUST be written in second person."""
         ck = DEEPWORK_AGENTS_DIR / REFERENCE_AGENT / "core-knowledge.md"
         text = ck.read_text()
@@ -122,6 +127,7 @@ class TestTopicsDirectory:
 
     def test_topics_dir_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.6: Each agent MUST have a topics/ subdirectory."""
         for agent_dir in DEEPWORK_AGENTS_DIR.iterdir():
             if not agent_dir.is_dir():
@@ -131,6 +137,7 @@ class TestTopicsDirectory:
 
     def test_topic_files_are_markdown(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.8).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.8: Topic filenames MUST have the .md extension."""
         topics_dir = DEEPWORK_AGENTS_DIR / REFERENCE_AGENT / "topics"
         for f in topics_dir.iterdir():
@@ -140,6 +147,7 @@ class TestTopicsDirectory:
 
     def test_topic_files_use_dashes(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.8).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.8: Topic filenames MUST use dashes."""
         topics_dir = DEEPWORK_AGENTS_DIR / REFERENCE_AGENT / "topics"
         for f in topics_dir.iterdir():
@@ -151,6 +159,7 @@ class TestTopicsDirectory:
 
     def test_topic_files_have_frontmatter_with_name(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.7: Each topic file MUST have YAML frontmatter with 'name' field."""
         topics_dir = DEEPWORK_AGENTS_DIR / REFERENCE_AGENT / "topics"
         md_files = [f for f in topics_dir.iterdir() if f.suffix == ".md"]
@@ -165,6 +174,7 @@ class TestTopicsDirectory:
 
     def test_topic_frontmatter_optional_fields_valid(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.7: Optional frontmatter fields have correct types if present."""
         topics_dir = DEEPWORK_AGENTS_DIR / REFERENCE_AGENT / "topics"
         for f in topics_dir.iterdir():
@@ -189,6 +199,7 @@ class TestLearningsDirectory:
 
     def test_learnings_dir_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.9).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.9: Each agent MUST have a learnings/ subdirectory."""
         for agent_dir in DEEPWORK_AGENTS_DIR.iterdir():
             if not agent_dir.is_dir():
@@ -198,6 +209,7 @@ class TestLearningsDirectory:
 
     def test_learning_files_are_markdown(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.11).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.11: Learning filenames MUST have the .md extension."""
         for agent_dir in DEEPWORK_AGENTS_DIR.iterdir():
             if not agent_dir.is_dir():
@@ -214,6 +226,7 @@ class TestLearningsDirectory:
 
     def test_learning_files_use_dashes(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.11).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.11: Learning filenames MUST use dashes."""
         for agent_dir in DEEPWORK_AGENTS_DIR.iterdir():
             if not agent_dir.is_dir():
@@ -244,6 +257,7 @@ class TestAdditionalLearningGuidelines:
 
     def test_additional_guidelines_dir_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.13).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.13: Each agent MUST have additional_learning_guidelines/ subdirectory."""
         for agent_dir in DEEPWORK_AGENTS_DIR.iterdir():
             if not agent_dir.is_dir():
@@ -253,6 +267,7 @@ class TestAdditionalLearningGuidelines:
 
     def test_additional_guidelines_required_files(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.13).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.13: Required files in additional_learning_guidelines/."""
         for agent_dir in DEEPWORK_AGENTS_DIR.iterdir():
             if not agent_dir.is_dir():
@@ -271,6 +286,7 @@ class TestClaudeCodeAgentFile:
 
     def test_claude_agent_file_exists_for_each_agent(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.15).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.15: Each LearningAgent MUST have a .claude/agents/<agent-name>.md file."""
         for agent_dir in DEEPWORK_AGENTS_DIR.iterdir():
             if not agent_dir.is_dir():
@@ -283,6 +299,7 @@ class TestClaudeCodeAgentFile:
 
     def test_claude_agent_file_has_yaml_frontmatter(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.15).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.15: Claude agent file MUST have YAML frontmatter."""
         claude_file = CLAUDE_AGENTS_DIR / f"{REFERENCE_AGENT}.md"
         fm = _parse_yaml_frontmatter(claude_file)
@@ -290,6 +307,7 @@ class TestClaudeCodeAgentFile:
 
     def test_claude_agent_file_has_name_field(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.15).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.15: Frontmatter MUST contain 'name' field."""
         claude_file = CLAUDE_AGENTS_DIR / f"{REFERENCE_AGENT}.md"
         fm = _parse_yaml_frontmatter(claude_file)
@@ -301,6 +319,7 @@ class TestClaudeCodeAgentFile:
 
     def test_claude_agent_file_has_description_field(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.15 / LA-REQ-003.17).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.15/017: Frontmatter MUST contain 'description' field (discovery description)."""
         claude_file = CLAUDE_AGENTS_DIR / f"{REFERENCE_AGENT}.md"
         fm = _parse_yaml_frontmatter(claude_file)
@@ -312,6 +331,7 @@ class TestClaudeCodeAgentFile:
 
     def test_claude_agent_filename_matches_folder_name(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.16).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.16: Claude agent filename MUST match the LearningAgent folder name."""
         for agent_dir in DEEPWORK_AGENTS_DIR.iterdir():
             if not agent_dir.is_dir():
@@ -326,6 +346,7 @@ class TestClaudeCodeAgentFile:
 
     def test_claude_agent_file_references_generate_script(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.18).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-003.18: Agent file injects knowledge at invocation time via generate script."""
         claude_file = CLAUDE_AGENTS_DIR / f"{REFERENCE_AGENT}.md"
         text = claude_file.read_text()
@@ -340,11 +361,13 @@ class TestCreateAgentScript:
 
     def test_script_exists_and_is_executable(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """create_agent.sh must exist."""
         assert CREATE_AGENT_SCRIPT.is_file()
 
     def test_script_creates_correct_structure(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.1/3/6/9/13).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """create_agent.sh creates all required directories and files."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
@@ -382,6 +405,7 @@ class TestCreateAgentScript:
 
     def test_script_creates_core_knowledge_without_frontmatter(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """create_agent.sh creates core-knowledge.md without YAML frontmatter."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
@@ -399,6 +423,7 @@ class TestCreateAgentScript:
 
     def test_script_creates_claude_agent_with_frontmatter(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.15).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """create_agent.sh creates Claude agent file with YAML frontmatter."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
@@ -416,6 +441,7 @@ class TestCreateAgentScript:
 
     def test_script_claude_agent_references_agent_name(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-003.16/18).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """create_agent.sh Claude agent file references the correct agent name."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
@@ -440,6 +466,7 @@ class TestIssueFileNaming:
 
     def test_valid_issue_filenames(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-005.2: Issue filenames use dashes and .issue.yml extension."""
         valid_names = [
             "wrong-retry-strategy.issue.yml",
@@ -453,6 +480,7 @@ class TestIssueFileNaming:
 
     def test_invalid_issue_filenames_rejected(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.2 / LA-REQ-005.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-005.2/3: Invalid names must not match the required pattern."""
         invalid_names = [
             "wrong_retry_strategy.issue.yml",  # underscores not dashes
@@ -490,12 +518,14 @@ class TestIssueFileSchema:
 
     def test_status_field_required(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-005.4: Every issue file MUST contain a status field."""
         issue = self._make_identified_issue()
         assert "status" in issue
 
     def test_seen_at_timestamps_required(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-005.7: Every issue file MUST contain seen_at_timestamps as an array."""
         issue = self._make_identified_issue()
         assert "seen_at_timestamps" in issue
@@ -504,6 +534,7 @@ class TestIssueFileSchema:
 
     def test_seen_at_timestamps_iso8601(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-005.7: Timestamps MUST be ISO 8601 strings."""
         iso_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$")
         issue = self._make_identified_issue()
@@ -513,6 +544,7 @@ class TestIssueFileSchema:
 
     def test_issue_description_required(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.9).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-005.9: Every issue file MUST contain issue_description."""
         issue = self._make_identified_issue()
         assert "issue_description" in issue
@@ -521,6 +553,7 @@ class TestIssueFileSchema:
 
     def test_investigation_report_absent_when_identified(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.10).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-005.10: investigation_report MUST NOT be present at status=identified."""
         issue = self._make_identified_issue()
         assert issue["status"] == "identified"
@@ -528,6 +561,7 @@ class TestIssueFileSchema:
 
     def test_investigation_report_present_when_investigated(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.10).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-005.10: investigation_report MUST be added at status=investigated."""
         issue = self._make_investigated_issue()
         assert issue["status"] == "investigated"
@@ -537,6 +571,7 @@ class TestIssueFileSchema:
 
     def test_issue_yaml_roundtrip(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.12).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-005.12: Issue files MUST be valid YAML that round-trips correctly."""
         issue = self._make_identified_issue()
         yaml_str = yaml.dump(issue, default_flow_style=False)
@@ -547,6 +582,7 @@ class TestIssueFileSchema:
 
     def test_investigated_issue_yaml_roundtrip(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.12).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-005.12: Investigated issue YAML round-trips with all fields."""
         issue = self._make_investigated_issue()
         yaml_str = yaml.dump(issue, default_flow_style=False)
@@ -560,6 +596,7 @@ class TestIssueFileLocation:
 
     def test_issue_location_pattern(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-005.1: Issue files MUST be stored in session log folder."""
         # Validate the expected path pattern
         expected_pattern = re.compile(
@@ -572,6 +609,7 @@ class TestIssueFileLocation:
 
     def test_issue_location_rejects_wrong_paths(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-005.1: Issue files MUST NOT live outside session log folders."""
         expected_pattern = re.compile(
             r"^\.deepwork/tmp/agent_sessions/[^/]+/[^/]+/[^/]+\.issue\.yml$"
@@ -593,11 +631,13 @@ class TestDocumentedIssueFormat:
 
     def test_doc_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.12).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """issue_yml_format.md reference doc must exist."""
         assert self.doc_path.is_file()
 
     def test_doc_mentions_all_statuses(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Doc must reference all three status values."""
         text = self.doc_path.read_text()
         for status in ("identified", "investigated", "learned"):
@@ -605,6 +645,7 @@ class TestDocumentedIssueFormat:
 
     def test_doc_mentions_required_fields(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.4/7/9).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Doc must reference all required fields."""
         text = self.doc_path.read_text()
         for field in ("status", "seen_at_timestamps", "issue_description"):
@@ -612,6 +653,7 @@ class TestDocumentedIssueFormat:
 
     def test_doc_example_yaml_is_valid(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-005.12).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """YAML examples in the doc must parse correctly."""
         text = self.doc_path.read_text()
         # Extract YAML blocks from the doc

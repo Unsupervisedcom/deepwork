@@ -47,6 +47,7 @@ class TestRunReview:
         self, mock_load: Any, mock_schema: Any, tmp_path: Path
     ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.4.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         mock_load.return_value = ([], [])
         result = run_review(tmp_path, "claude")
         assert "No .deepreview configuration files" in result
@@ -57,6 +58,7 @@ class TestRunReview:
         self, mock_load: Any, mock_diff: Any, tmp_path: Path
     ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.4.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_diff.return_value = []
         result = run_review(tmp_path, "claude")
@@ -65,6 +67,7 @@ class TestRunReview:
     @patch("deepwork.review.mcp.load_all_rules")
     def test_no_changed_files_explicit_empty_list(self, mock_load: Any, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.4.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         result = run_review(tmp_path, "claude", files=[])
         assert "No changed files detected" in result
@@ -76,6 +79,7 @@ class TestRunReview:
         self, mock_load: Any, mock_diff: Any, mock_match: Any, tmp_path: Path
     ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.4.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_diff.return_value = ["app.ts"]
         mock_match.return_value = []
@@ -88,6 +92,7 @@ class TestRunReview:
         self, mock_load: Any, mock_diff: Any, tmp_path: Path
     ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.5.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         from deepwork.review.matcher import GitDiffError
 
         mock_load.return_value = ([_make_rule(tmp_path)], [])
@@ -102,6 +107,7 @@ class TestRunReview:
         self, mock_load: Any, mock_diff: Any, mock_match: Any, tmp_path: Path
     ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.6.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_match.return_value = []
         run_review(tmp_path, "claude", files=["src/a.py", "src/b.py"])
@@ -118,6 +124,7 @@ class TestRunReview:
         self, mock_load: Any, mock_diff: Any, mock_match: Any, mock_write: Any, tmp_path: Path
     ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.2.1, REVIEW-REQ-006.3.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         rule = _make_rule(tmp_path)
         task = ReviewTask(
             rule_name="test_rule",
@@ -136,6 +143,7 @@ class TestRunReview:
 
     def test_unsupported_platform_raises_review_tool_error(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.1.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         with pytest.raises(ReviewToolError, match="Unsupported platform"):
             run_review(tmp_path, "unsupported_platform")
 
@@ -145,6 +153,7 @@ class TestRunReview:
         self, mock_load: Any, mock_match: Any, tmp_path: Path
     ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.6.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         mock_load.return_value = ([_make_rule(tmp_path)], [])
         mock_match.return_value = []
         run_review(tmp_path, "claude", files=["z.py", "a.py", "z.py"])
@@ -159,6 +168,7 @@ class TestRunReview:
         self, mock_load: Any, mock_diff: Any, mock_match: Any, mock_write: Any, tmp_path: Path
     ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.5.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         rule = _make_rule(tmp_path)
         task = ReviewTask(
             rule_name="test_rule",
@@ -192,6 +202,7 @@ class TestRunReviewDiscoveryWarnings:
         self, mock_load: Any, mock_schema: Any, tmp_path: Path
     ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When no valid rules exist but there are discovery errors, shows parse errors."""
         from deepwork.review.discovery import DiscoveryError
 
@@ -212,6 +223,7 @@ class TestRunReviewDiscoveryWarnings:
         self, mock_load: Any, mock_schema: Any, tmp_path: Path
     ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """DeepSchema errors are appended to discovery_errors."""
 
         mock_load.return_value = ([], [])
@@ -237,6 +249,7 @@ class TestRunReviewDiscoveryWarnings:
         tmp_path: Path,
     ) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When discovery errors exist alongside valid rules, warnings are prepended."""
         from deepwork.review.discovery import DiscoveryError
 
@@ -267,6 +280,7 @@ class TestReviewToolRegistration:
 
     def test_review_tool_is_registered(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-008.1.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Review tool is registered on the MCP server with or without explicit platform."""
         from deepwork.jobs.mcp.server import create_server
 

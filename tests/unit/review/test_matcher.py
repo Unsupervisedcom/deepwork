@@ -64,22 +64,27 @@ class TestRelativeToDir:
 
     def test_file_under_dir(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert _relative_to_dir("src/app.py", "src") == "app.py"
 
     def test_file_under_nested_dir(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert _relative_to_dir("src/lib/utils.py", "src") == "lib/utils.py"
 
     def test_file_not_under_dir(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert _relative_to_dir("tests/test.py", "src") is None
 
     def test_root_dir(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert _relative_to_dir("app.py", ".") == "app.py"
 
     def test_empty_dir(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert _relative_to_dir("app.py", "") == "app.py"
 
 
@@ -88,27 +93,33 @@ class TestGlobMatch:
 
     def test_recursive_star_star(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert _glob_match("lib/utils.py", "**/*.py") is True
 
     def test_recursive_star_star_no_match(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert _glob_match("lib/utils.ts", "**/*.py") is False
 
     def test_single_star(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert _glob_match("app.py", "*.py") is True
 
     def test_single_star_no_match_in_subdir(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         # * should NOT match across / boundaries
         assert _glob_match("lib/app.py", "*.py") is False
 
     def test_specific_path(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert _glob_match("config/settings.yaml", "config/*") is True
 
     def test_specific_path_no_match(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert _glob_match("other/settings.yaml", "config/*") is False
 
 
@@ -144,6 +155,7 @@ class TestMatchRule:
 
     def test_no_matches(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.7.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         rule = _make_rule(include=["**/*.py"], source_dir=tmp_path)
         matched = match_rule(["app.ts", "lib.js"], rule, tmp_path)
         assert matched == []
@@ -716,6 +728,7 @@ class TestGitUntrackedFiles:
     @patch("deepwork.review.matcher.subprocess.run")
     def test_returns_untracked_files(self, mock_run: Any, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.1.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         mock_run.return_value.stdout = "new_file.py\nplugins/claude/.deepreview\n"
         mock_run.return_value.returncode = 0
         result = _git_untracked_files(tmp_path)
@@ -728,6 +741,7 @@ class TestGitUntrackedFiles:
     @patch("deepwork.review.matcher.subprocess.run")
     def test_returns_empty_list_when_no_untracked(self, mock_run: Any, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.1.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         mock_run.return_value.stdout = ""
         mock_run.return_value.returncode = 0
         result = _git_untracked_files(tmp_path)
@@ -736,6 +750,7 @@ class TestGitUntrackedFiles:
     @patch("deepwork.review.matcher.subprocess.run")
     def test_raises_git_diff_error_on_failure(self, mock_run: Any, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-003.4.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         mock_run.side_effect = subprocess.CalledProcessError(
             128, "git", stderr="fatal: not a git repository"
         )
@@ -748,6 +763,7 @@ class TestMatchRuleSourceDirOutsideProject:
 
     def test_source_dir_not_under_project_root_returns_empty(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When source_dir is outside project_root, match_rule returns []."""
         rule = _make_rule(
             include=["**/*.py"],
@@ -762,17 +778,20 @@ class TestGlobMatchExtra:
 
     def test_question_mark_matches_single_char(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """? matches a single non-/ character."""
         assert _glob_match("a.py", "?.py") is True
         assert _glob_match("ab.py", "?.py") is False
 
     def test_question_mark_does_not_match_slash(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """? does not match /."""
         assert _glob_match("/", "?") is False
 
     def test_double_star_at_end_matches_everything(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.1.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """** at end of pattern matches all remaining path components."""
         assert _glob_match("src/lib/deep/file.py", "src/**") is True
         assert _glob_match("src", "src/**") is False
@@ -783,6 +802,7 @@ class TestFormatSourceLocationExtra:
 
     def test_source_file_outside_project_root(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.2.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When source_file is not under project_root, uses the absolute path."""
         from deepwork.review.matcher import format_source_location
 
@@ -800,6 +820,7 @@ class TestFindUnchangedMatchingFilesExtra:
 
     def test_source_dir_outside_project_returns_empty(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.4.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """source_dir outside project_root returns []."""
         from deepwork.review.matcher import _find_unchanged_matching_files
 
@@ -812,6 +833,7 @@ class TestFindUnchangedMatchingFilesExtra:
 
     def test_skips_directories_in_glob(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.4.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Directories matched by glob are skipped."""
         from deepwork.review.matcher import _find_unchanged_matching_files
 
@@ -830,6 +852,7 @@ class TestFindUnchangedMatchingFilesExtra:
 
     def test_skips_file_not_relative_to_project(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.4.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Files that can't be made relative to project_root are skipped."""
         from deepwork.review.matcher import _find_unchanged_matching_files
 
@@ -848,6 +871,7 @@ class TestFindUnchangedMatchingFilesExtra:
 
     def test_exclude_patterns_filter_unchanged_files(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.4.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Exclude patterns filter out unchanged files."""
         from deepwork.review.matcher import _find_unchanged_matching_files
 
@@ -869,6 +893,7 @@ class TestMatchFilesToRulesAllChangedFiles:
 
     def test_all_changed_files_strategy_with_agent(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.5.2, REVIEW-REQ-004.8.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """all_changed_files strategy passes all files and resolves agent."""
         rule = _make_rule(
             strategy="all_changed_files",

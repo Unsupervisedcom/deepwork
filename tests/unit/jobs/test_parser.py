@@ -30,6 +30,7 @@ class TestReviewBlock:
     def test_from_dict(self) -> None:
         """Test creating ReviewBlock from dictionary."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.4.1, JOBS-REQ-002.4.4, JOBS-REQ-002.4.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         data = {
             "strategy": "individual",
             "instructions": "Review each file individually.",
@@ -46,6 +47,7 @@ class TestReviewBlock:
     def test_from_dict_minimal(self) -> None:
         """Test creating ReviewBlock with only required fields."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.4.1, JOBS-REQ-002.4.2, JOBS-REQ-002.4.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         data = {
             "strategy": "matches_together",
             "instructions": "Review all matches together.",
@@ -64,6 +66,7 @@ class TestStepArgument:
     def test_from_dict_basic(self) -> None:
         """Test creating StepArgument from dictionary."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.3.1, JOBS-REQ-002.3.2, JOBS-REQ-002.3.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         data = {
             "name": "market_segment",
             "description": "The market segment to analyze",
@@ -80,6 +83,7 @@ class TestStepArgument:
     def test_from_dict_file_path_type(self) -> None:
         """Test creating StepArgument with file_path type."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.3.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         data = {
             "name": "report",
             "description": "The output report",
@@ -92,6 +96,7 @@ class TestStepArgument:
     def test_from_dict_with_review(self) -> None:
         """Test creating StepArgument with review block."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.3.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         data = {
             "name": "report",
             "description": "The output report",
@@ -110,6 +115,7 @@ class TestStepArgument:
     def test_from_dict_with_json_schema(self) -> None:
         """Test creating StepArgument with json_schema."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.3.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         schema = {"type": "object", "properties": {"name": {"type": "string"}}}
         data = {
             "name": "config",
@@ -128,6 +134,7 @@ class TestStepInputRef:
     def test_from_dict(self) -> None:
         """Test creating StepInputRef from name and config."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.6.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         ref = StepInputRef.from_dict("market_segment", {"required": True})
 
         assert ref.argument_name == "market_segment"
@@ -136,6 +143,7 @@ class TestStepInputRef:
     def test_from_dict_defaults_required_true(self) -> None:
         """Test that required defaults to True."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.6.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         ref = StepInputRef.from_dict("param", {})
 
         assert ref.required is True
@@ -143,6 +151,7 @@ class TestStepInputRef:
     def test_from_dict_optional(self) -> None:
         """Test creating optional StepInputRef."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.6.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         ref = StepInputRef.from_dict("optional_param", {"required": False})
 
         assert ref.required is False
@@ -154,6 +163,7 @@ class TestStepOutputRef:
     def test_from_dict(self) -> None:
         """Test creating StepOutputRef from name and config."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.6.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         ref = StepOutputRef.from_dict("report", {"required": True})
 
         assert ref.argument_name == "report"
@@ -163,6 +173,7 @@ class TestStepOutputRef:
     def test_from_dict_with_review(self) -> None:
         """Test creating StepOutputRef with inline review."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.6.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         data = {
             "required": True,
             "review": {
@@ -178,6 +189,7 @@ class TestStepOutputRef:
     def test_from_dict_defaults_required_true(self) -> None:
         """Test that required defaults to True."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.6.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         ref = StepOutputRef.from_dict("output", {})
 
         assert ref.required is True
@@ -190,6 +202,7 @@ class TestSubWorkflowRef:
     def test_from_dict_same_job(self) -> None:
         """Test creating SubWorkflowRef within same job."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.7.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         data = {"workflow_name": "secondary"}
         ref = SubWorkflowRef.from_dict(data)
 
@@ -199,6 +212,7 @@ class TestSubWorkflowRef:
     def test_from_dict_cross_job(self) -> None:
         """Test creating SubWorkflowRef referencing another job."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.7.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         data = {"workflow_name": "full", "workflow_job": "competitive_research"}
         ref = SubWorkflowRef.from_dict(data)
 
@@ -212,6 +226,7 @@ class TestWorkflowStep:
     def test_from_dict_with_instructions(self) -> None:
         """Test creating WorkflowStep with instructions."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.1, JOBS-REQ-002.5.3, JOBS-REQ-002.5.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         data = {
             "name": "research",
             "instructions": "Do the research.",
@@ -231,6 +246,7 @@ class TestWorkflowStep:
     def test_from_dict_with_sub_workflow(self) -> None:
         """Test creating WorkflowStep with sub_workflow."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         data = {
             "name": "delegate",
             "sub_workflow": {"workflow_name": "detailed_analysis"},
@@ -245,6 +261,7 @@ class TestWorkflowStep:
     def test_from_dict_minimal(self) -> None:
         """Test creating WorkflowStep with minimal fields."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.1, JOBS-REQ-002.5.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         data = {"name": "empty_step", "instructions": "Do nothing."}
         step = WorkflowStep.from_dict(data)
 
@@ -256,6 +273,7 @@ class TestWorkflowStep:
     def test_from_dict_with_process_requirements(self) -> None:
         """Test creating WorkflowStep with process requirements."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         data = {
             "name": "careful_step",
             "instructions": "Do carefully.",
@@ -289,11 +307,13 @@ class TestWorkflow:
     def test_step_names(self, sample_workflow: Workflow) -> None:
         """Test step_names property returns ordered names."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.13.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert sample_workflow.step_names == ["step_a", "step_b", "step_c"]
 
     def test_get_step_found(self, sample_workflow: Workflow) -> None:
         """Test getting an existing step by name."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.13.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         step = sample_workflow.get_step("step_b")
         assert step is not None
         assert step.name == "step_b"
@@ -301,11 +321,13 @@ class TestWorkflow:
     def test_get_step_not_found(self, sample_workflow: Workflow) -> None:
         """Test getting a non-existent step returns None."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.13.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert sample_workflow.get_step("nonexistent") is None
 
     def test_get_step_index(self, sample_workflow: Workflow) -> None:
         """Test getting step index by name."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.13.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert sample_workflow.get_step_index("step_a") == 0
         assert sample_workflow.get_step_index("step_b") == 1
         assert sample_workflow.get_step_index("step_c") == 2
@@ -313,11 +335,13 @@ class TestWorkflow:
     def test_get_step_index_not_found(self, sample_workflow: Workflow) -> None:
         """Test getting index of non-existent step returns None."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.13.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert sample_workflow.get_step_index("nonexistent") is None
 
     def test_from_dict_with_optional_fields(self) -> None:
         """Test creating Workflow with agent and post_workflow_instructions."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.8.1, JOBS-REQ-002.8.5, JOBS-REQ-002.8.6, JOBS-REQ-002.8.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         wf = Workflow.from_dict(
             "custom",
             {
@@ -337,6 +361,7 @@ class TestWorkflow:
     def test_from_dict_defaults(self) -> None:
         """Test that optional fields default to None."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.8.1, JOBS-REQ-002.8.3, JOBS-REQ-002.8.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         wf = Workflow.from_dict(
             "minimal",
             {
@@ -390,6 +415,7 @@ class TestJobDefinition:
     def test_get_argument_found(self) -> None:
         """Test getting an existing argument."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.12.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job()
         arg = job.get_argument("input")
         assert arg is not None
@@ -398,12 +424,14 @@ class TestJobDefinition:
     def test_get_argument_not_found(self) -> None:
         """Test getting a non-existent argument returns None."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.12.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job()
         assert job.get_argument("nonexistent") is None
 
     def test_get_workflow_found(self) -> None:
         """Test getting an existing workflow."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.12.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job()
         wf = job.get_workflow("main")
         assert wf is not None
@@ -412,12 +440,14 @@ class TestJobDefinition:
     def test_get_workflow_not_found(self) -> None:
         """Test getting a non-existent workflow returns None."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.12.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job()
         assert job.get_workflow("nonexistent") is None
 
     def test_validate_argument_refs_valid(self) -> None:
         """Test validation passes when all refs point to valid arguments."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.9.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job()
         # Should not raise
         job.validate_argument_refs()
@@ -425,6 +455,7 @@ class TestJobDefinition:
     def test_validate_argument_refs_invalid_input(self) -> None:
         """Test validation fails when input ref points to non-existent argument."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.9.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job(
             workflows={
                 "main": Workflow(
@@ -447,6 +478,7 @@ class TestJobDefinition:
     def test_validate_argument_refs_invalid_output(self) -> None:
         """Test validation fails when output ref points to non-existent argument."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.9.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job(
             workflows={
                 "main": Workflow(
@@ -469,6 +501,7 @@ class TestJobDefinition:
     def test_validate_sub_workflows_valid(self) -> None:
         """Test validation passes for valid same-job sub_workflow ref."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.10.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job(
             workflows={
                 "main": Workflow(
@@ -497,6 +530,7 @@ class TestJobDefinition:
     def test_validate_sub_workflows_invalid(self) -> None:
         """Test validation fails when sub_workflow points to non-existent workflow."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.10.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job(
             workflows={
                 "main": Workflow(
@@ -518,6 +552,7 @@ class TestJobDefinition:
     def test_validate_sub_workflows_cross_job_skipped(self) -> None:
         """Test that cross-job sub_workflow refs are not validated."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.10.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job(
             workflows={
                 "main": Workflow(
@@ -542,6 +577,7 @@ class TestJobDefinition:
     def test_validate_step_exclusivity_valid(self) -> None:
         """Test validation passes when steps have exactly one of instructions/sub_workflow."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job()
         # Default _make_job uses instructions
         job.validate_step_exclusivity()
@@ -549,6 +585,7 @@ class TestJobDefinition:
     def test_validate_step_exclusivity_both(self) -> None:
         """Test validation fails when step has both instructions and sub_workflow."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job(
             workflows={
                 "main": Workflow(
@@ -571,6 +608,7 @@ class TestJobDefinition:
     def test_validate_step_exclusivity_neither(self) -> None:
         """Test validation fails when step has neither instructions nor sub_workflow."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job(
             workflows={
                 "main": Workflow(
@@ -589,12 +627,14 @@ class TestJobDefinition:
     def test_validate_unique_step_names_valid(self) -> None:
         """Test validation passes when step names are unique."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.11.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job()
         job.validate_unique_step_names()
 
     def test_validate_unique_step_names_duplicate(self) -> None:
         """Test validation fails for duplicate step names within a workflow."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.11.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job = self._make_job(
             workflows={
                 "main": Workflow(
@@ -618,6 +658,7 @@ class TestParseJobDefinition:
     def test_parses_simple_job(self, fixtures_dir: Path) -> None:
         """Test parsing simple job definition."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.1.1, JOBS-REQ-002.2.3, JOBS-REQ-002.2.5, JOBS-REQ-002.2.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job_dir = fixtures_dir / "jobs" / "simple_job"
         job = parse_job_definition(job_dir)
 
@@ -634,6 +675,7 @@ class TestParseJobDefinition:
     def test_simple_job_workflow(self, fixtures_dir: Path) -> None:
         """Test simple job's workflow structure."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.8.2, JOBS-REQ-002.8.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job_dir = fixtures_dir / "jobs" / "simple_job"
         job = parse_job_definition(job_dir)
 
@@ -650,6 +692,7 @@ class TestParseJobDefinition:
     def test_parses_complex_job(self, fixtures_dir: Path) -> None:
         """Test parsing complex job with multiple steps."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.1.1, JOBS-REQ-002.8.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
@@ -669,6 +712,7 @@ class TestParseJobDefinition:
     def test_complex_job_inputs_outputs(self, fixtures_dir: Path) -> None:
         """Test complex job step inputs and outputs."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.5.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job_dir = fixtures_dir / "jobs" / "complex_job"
         job = parse_job_definition(job_dir)
 
@@ -703,6 +747,7 @@ class TestParseJobDefinition:
     def test_raises_for_missing_directory(self, temp_dir: Path) -> None:
         """Test parsing fails for missing directory."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.1.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         nonexistent = temp_dir / "nonexistent"
 
         with pytest.raises(ParseError, match="does not exist"):
@@ -711,6 +756,7 @@ class TestParseJobDefinition:
     def test_raises_for_file_instead_of_directory(self, temp_dir: Path) -> None:
         """Test parsing fails for file path."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.1.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         file_path = temp_dir / "file.txt"
         file_path.write_text("content")
 
@@ -720,6 +766,7 @@ class TestParseJobDefinition:
     def test_raises_for_missing_job_yml(self, temp_dir: Path) -> None:
         """Test parsing fails for directory without job.yml."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.1.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job_dir = temp_dir / "job"
         job_dir.mkdir()
 
@@ -729,6 +776,7 @@ class TestParseJobDefinition:
     def test_raises_for_empty_job_yml(self, temp_dir: Path) -> None:
         """Test parsing fails for empty job.yml."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.1.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job_dir = temp_dir / "job"
         job_dir.mkdir()
         (job_dir / "job.yml").write_text("")
@@ -739,6 +787,7 @@ class TestParseJobDefinition:
     def test_raises_for_invalid_yaml(self, temp_dir: Path) -> None:
         """Test parsing fails for invalid YAML."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.1.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job_dir = temp_dir / "job"
         job_dir.mkdir()
         (job_dir / "job.yml").write_text("invalid: [yaml: content")
@@ -749,6 +798,7 @@ class TestParseJobDefinition:
     def test_raises_for_invalid_schema(self, fixtures_dir: Path) -> None:
         """Test parsing fails for schema validation errors."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.2.1, JOBS-REQ-002.2.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         job_dir = fixtures_dir / "jobs" / "invalid_job"
 
         with pytest.raises(ParseError, match="validation failed"):
@@ -773,6 +823,7 @@ class TestRealJobDefinitions:
     def test_job_parses_successfully(self, job_dir: Path) -> None:
         """Every standard and library job.yml must parse and validate."""
         # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.14.1, JOBS-REQ-002.14.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         if not (job_dir / "job.yml").exists():
             pytest.skip(f"No job.yml in {job_dir.name}")
         job = parse_job_definition(job_dir)

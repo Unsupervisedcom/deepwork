@@ -50,17 +50,20 @@ class TestEntryPointSkill:
 
     def test_dispatch_skill_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.1: learning-agents skill directory and SKILL.md exist."""
         assert DISPATCH_SKILL.exists()
 
     def test_dispatch_skill_name(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.1: frontmatter name is 'learning-agents'."""
         fm = _parse_frontmatter(_read_skill("learning-agents"))
         assert fm["name"] == "learning-agents"
 
     def test_dispatch_skill_is_user_invocable(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.1: skill is user-invocable (no user-invocable: false)."""
         fm = _parse_frontmatter(_read_skill("learning-agents"))
         # If user-invocable is absent, it defaults to true.
@@ -77,6 +80,7 @@ class TestArgumentParsing:
 
     def test_arguments_splitting_documented(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.2: SKILL.md describes splitting $ARGUMENTS on first whitespace."""
         content = _read_skill("learning-agents")
         assert "$ARGUMENTS" in content
@@ -86,6 +90,7 @@ class TestArgumentParsing:
 
     def test_first_token_is_subcommand(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.2: first token is the sub-command (case-insensitive)."""
         content = _read_skill("learning-agents")
         assert re.search(r"first token.*sub-command.*case-insensitive", content, re.IGNORECASE), (
@@ -103,6 +108,7 @@ class TestUnderscoreDashEquivalence:
 
     def test_equivalence_documented(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.3: SKILL.md states underscore-dash equivalence."""
         content = _read_skill("learning-agents")
         assert re.search(r"underscores?\s+and\s+dashes?", content, re.IGNORECASE), (
@@ -111,6 +117,7 @@ class TestUnderscoreDashEquivalence:
 
     def test_report_issue_example_uses_underscore(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.3: report_issue (underscore form) appears as a sub-command."""
         content = _read_skill("learning-agents")
         assert "report_issue" in content
@@ -126,6 +133,7 @@ class TestCreateSubCommand:
 
     def test_create_routes_to_create_agent_skill(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.4: create routes to Skill learning-agents:create-agent."""
         content = _read_skill("learning-agents")
         assert re.search(r"Skill\s+learning-agents:create-agent", content), (
@@ -134,12 +142,14 @@ class TestCreateSubCommand:
 
     def test_create_accepts_name_argument(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.4: create sub-command takes a <name> argument."""
         content = _read_skill("learning-agents")
         assert re.search(r"###\s+`create\s+<name>", content), "Must show create <name> heading"
 
     def test_create_accepts_optional_template_path(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.4: create sub-command accepts optional [template-path]."""
         content = _read_skill("learning-agents")
         assert re.search(r"create\s+<name>\s+\[template-path\]", content), (
@@ -148,6 +158,7 @@ class TestCreateSubCommand:
 
     def test_create_example_with_template(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.4: example shows template-path being passed through."""
         content = _read_skill("learning-agents")
         assert re.search(r"create-agent\s+\S+\s+\.deepwork/learning-agents/", content), (
@@ -165,6 +176,7 @@ class TestLearnSubCommand:
 
     def test_learn_routes_to_learn_skill(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.5: learn routes to Skill learning-agents:learn."""
         content = _read_skill("learning-agents")
         assert re.search(r"Skill\s+learning-agents:learn\b", content), (
@@ -173,6 +185,7 @@ class TestLearnSubCommand:
 
     def test_learn_ignores_extra_arguments(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.5: arguments after learn are ignored."""
         content = _read_skill("learning-agents")
         assert re.search(
@@ -192,6 +205,7 @@ class TestReportIssueSubCommand:
 
     def test_report_issue_routes_to_report_issue_skill(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.6: report_issue routes to Skill learning-agents:report-issue."""
         content = _read_skill("learning-agents")
         assert re.search(r"Skill\s+learning-agents:report-issue", content), (
@@ -200,12 +214,14 @@ class TestReportIssueSubCommand:
 
     def test_report_issue_searches_agent_sessions(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.6: searches .deepwork/tmp/agent_sessions/ for agentId."""
         content = _read_skill("learning-agents")
         assert ".deepwork/tmp/agent_sessions/" in content
 
     def test_report_issue_handles_no_match(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.6: if no match found, inform the user."""
         content = _read_skill("learning-agents")
         assert re.search(r"no\s+match.*inform", content, re.IGNORECASE), (
@@ -214,6 +230,7 @@ class TestReportIssueSubCommand:
 
     def test_report_issue_uses_most_recent_on_multiple(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.6: if multiple matches, use most recently modified."""
         content = _read_skill("learning-agents")
         assert re.search(
@@ -233,6 +250,7 @@ class TestHelpText:
 
     def test_help_section_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.7: skill has a section for no arguments / ambiguous input."""
         content = _read_skill("learning-agents")
         assert re.search(r"no\s+arguments\s+or\s+ambiguous", content, re.IGNORECASE), (
@@ -241,6 +259,7 @@ class TestHelpText:
 
     def test_help_lists_all_subcommands(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.7: help text lists create, learn, report_issue."""
         content = _read_skill("learning-agents")
         # Check the help block contains all three sub-commands
@@ -250,6 +269,7 @@ class TestHelpText:
 
     def test_help_includes_examples(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.7: help text includes usage examples."""
         content = _read_skill("learning-agents")
         # The help block has an Examples section
@@ -266,6 +286,7 @@ class TestNoInlineImplementation:
 
     def test_guardrail_no_inline(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.8).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.8: guardrails state never implement sub-command logic inline."""
         content = _read_skill("learning-agents")
         assert re.search(
@@ -276,6 +297,7 @@ class TestNoInlineImplementation:
 
     def test_always_routes_to_skill(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.8).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.8: guardrails state always route to the appropriate skill."""
         content = _read_skill("learning-agents")
         assert re.search(
@@ -295,6 +317,7 @@ class TestArgumentPassThrough:
 
     def test_passthrough_documented(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.9).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.9: documents passing arguments through exactly as provided."""
         content = _read_skill("learning-agents")
         assert re.search(
@@ -314,6 +337,7 @@ class TestAvailableSubCommands:
 
     def test_exactly_three_routing_sections(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.10).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.10: exactly three sub-command routing sections (### headings under Routing)."""
         content = _read_skill("learning-agents")
         # Find routing section headings (### `command ...`)
@@ -325,18 +349,21 @@ class TestAvailableSubCommands:
 
     def test_create_subcommand_present(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.10).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.10: create sub-command is defined."""
         content = _read_skill("learning-agents")
         assert re.search(r"^###\s+`create\b", content, re.MULTILINE)
 
     def test_learn_subcommand_present(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.10).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.10: learn sub-command is defined."""
         content = _read_skill("learning-agents")
         assert re.search(r"^###\s+`learn\b", content, re.MULTILINE)
 
     def test_report_issue_subcommand_present(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.10).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.10: report_issue sub-command is defined."""
         content = _read_skill("learning-agents")
         assert re.search(r"^###\s+`report_issue\b", content, re.MULTILINE)
@@ -364,6 +391,7 @@ class TestSubSkillRegistry:
 
     def test_all_required_skill_directories_exist(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.11).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.11: every required skill has a directory under skills/."""
         for skill_name in REQUIRED_SKILLS:
             skill_dir = SKILLS_DIR / skill_name
@@ -371,6 +399,7 @@ class TestSubSkillRegistry:
 
     def test_all_required_skills_have_skill_md(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.11).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.11: every required skill has a SKILL.md file."""
         for skill_name in REQUIRED_SKILLS:
             skill_file = SKILLS_DIR / skill_name / "SKILL.md"
@@ -378,6 +407,7 @@ class TestSubSkillRegistry:
 
     def test_all_required_skills_have_valid_frontmatter(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.11).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.11: every required skill has YAML frontmatter with a name field."""
         for skill_name in REQUIRED_SKILLS:
             content = _read_skill(skill_name)
@@ -388,6 +418,7 @@ class TestSubSkillRegistry:
 
     def test_non_user_invocable_skills_marked(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.11).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.11: identify, investigate-issues, incorporate-learnings are non-user-invocable."""
         non_user_invocable = [
             "identify",
@@ -411,17 +442,20 @@ class TestPromptReviewIndependence:
 
     def test_prompt_review_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.12).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.12: prompt-review skill directory and SKILL.md exist."""
         assert (SKILLS_DIR / "prompt-review" / "SKILL.md").exists()
 
     def test_prompt_review_is_user_invocable(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.12).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.12: prompt-review is user-invocable (not marked false)."""
         fm = _parse_frontmatter(_read_skill("prompt-review"))
         assert fm.get("user-invocable", True) is not False
 
     def test_prompt_review_not_routed_through_dispatch(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.12).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.12: prompt-review is NOT listed as a routed sub-command in the dispatch skill."""
         content = _read_skill("learning-agents")
         # The dispatch skill routes to create-agent, learn, report-issue only.
@@ -442,12 +476,14 @@ class TestExistingAgentsListing:
 
     def test_lists_learning_agents_directory(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.13).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.13: skill references .deepwork/learning-agents/ for listing."""
         content = _read_skill("learning-agents")
         assert ".deepwork/learning-agents/" in content
 
     def test_dynamic_listing_command(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.13).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.13: uses a dynamic shell command (!) to list agents."""
         content = _read_skill("learning-agents")
         # The skill uses !`ls ...` syntax for dynamic execution
@@ -457,6 +493,7 @@ class TestExistingAgentsListing:
 
     def test_fallback_when_no_agents(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-011.13).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """LA-REQ-011.13: shows fallback (none) when no agents exist."""
         content = _read_skill("learning-agents")
         assert "(none)" in content, "Must include (none) fallback for empty agent listing"

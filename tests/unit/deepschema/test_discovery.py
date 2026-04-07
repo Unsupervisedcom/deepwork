@@ -36,6 +36,7 @@ def _make_anonymous_schema(directory: Path, target_filename: str, content: str =
 class TestFindNamedSchemas:
     def test_finds_schemas_in_deepwork_dir(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.3.1, DW-REQ-011.3.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         _make_named_schema(tmp_path, "job_def")
         _make_named_schema(tmp_path, "config")
         results = find_named_schemas(tmp_path)
@@ -46,6 +47,7 @@ class TestFindNamedSchemas:
 
     def test_returns_only_standard_when_no_project_schemas_dir(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.3.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         results = find_named_schemas(tmp_path)
         # Only built-in standard schemas, no project-local ones
         for r in results:
@@ -53,6 +55,7 @@ class TestFindNamedSchemas:
 
     def test_skips_directories_without_manifest(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.3.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         schema_dir = tmp_path / ".deepwork" / "schemas" / "incomplete"
         schema_dir.mkdir(parents=True)
         # No deepschema.yml inside — "incomplete" should not appear
@@ -64,6 +67,7 @@ class TestFindNamedSchemas:
 class TestFindAnonymousSchemas:
     def test_finds_anonymous_schemas(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.4.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         _make_anonymous_schema(tmp_path, "config.json")
         subdir = tmp_path / "src"
         subdir.mkdir()
@@ -73,6 +77,7 @@ class TestFindAnonymousSchemas:
 
     def test_skips_git_directories(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.4.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         git_dir = tmp_path / ".git"
         git_dir.mkdir()
         _make_anonymous_schema(git_dir, "config.json")
@@ -80,20 +85,24 @@ class TestFindAnonymousSchemas:
 
     def test_returns_empty_when_none(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.4.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert find_anonymous_schemas(tmp_path) == []
 
 
 class TestAnonymousTargetFilename:
     def test_simple_filename(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.1.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert anonymous_target_filename(".deepschema.foo.py.yml") == "foo.py"
 
     def test_dotted_filename(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.1.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert anonymous_target_filename(".deepschema.config.json.yml") == "config.json"
 
     def test_long_extension(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.1.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         assert anonymous_target_filename(".deepschema.data.tar.gz.yml") == "data.tar.gz"
 
 
@@ -109,6 +118,7 @@ def _make_named_schema_in(folder: Path, name: str, content: str = "") -> Path:
 class TestGetNamedSchemaFolders:
     def test_includes_project_local_and_standard(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.3.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         folders = get_named_schema_folders(tmp_path)
         assert folders[0] == tmp_path / ".deepwork" / "schemas"
         # Second entry is the standard_schemas package dir
@@ -118,6 +128,7 @@ class TestGetNamedSchemaFolders:
     @patch.dict("os.environ", {ENV_ADDITIONAL_SCHEMAS_FOLDERS: "/extra/one:/extra/two"})
     def test_includes_env_var_folders(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.3.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         folders = get_named_schema_folders(tmp_path)
         assert len(folders) == 4
         assert folders[2] == Path("/extra/one")
@@ -126,6 +137,7 @@ class TestGetNamedSchemaFolders:
     @patch.dict("os.environ", {ENV_ADDITIONAL_SCHEMAS_FOLDERS: ""})
     def test_empty_env_var_adds_nothing(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.3.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         folders = get_named_schema_folders(tmp_path)
         assert len(folders) == 2
 
@@ -133,6 +145,7 @@ class TestGetNamedSchemaFolders:
 class TestFindNamedSchemasMultiSource:
     def test_finds_standard_schemas(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.3.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         # Create a "standard" schema in a separate directory and patch it in
         standard_dir = tmp_path / "standard"
         _make_named_schema_in(standard_dir, "builtin_schema")
@@ -144,6 +157,7 @@ class TestFindNamedSchemasMultiSource:
 
     def test_project_local_overrides_standard(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.3.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         # Same name in both project-local and standard — project-local wins
         _make_named_schema(tmp_path, "shared_name", "summary: 'local'\n")
 
@@ -160,6 +174,7 @@ class TestFindNamedSchemasMultiSource:
     @patch.dict("os.environ", clear=True)
     def test_env_var_schemas_discovered(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.3.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         extra_dir = tmp_path / "extra_schemas"
         _make_named_schema_in(extra_dir, "env_schema")
 
@@ -175,6 +190,7 @@ class TestFindNamedSchemasMultiSource:
     @patch.dict("os.environ", clear=True)
     def test_project_local_overrides_env_var(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.3.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         _make_named_schema(tmp_path, "overlap", "summary: 'local'\n")
 
         extra_dir = tmp_path / "extra"
@@ -196,6 +212,7 @@ class TestFindNamedSchemasPermissionError:
 
     def test_skips_directory_on_permission_error(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.3.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """PermissionError during iterdir is caught and the folder is skipped."""
         from unittest.mock import patch as mock_patch
 
@@ -228,6 +245,7 @@ class TestWalkForAnonymousPermissionError:
 
     def test_skips_directory_on_permission_error(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.4.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """PermissionError during iterdir is caught and the directory is skipped."""
         from unittest.mock import patch as mock_patch
 
@@ -260,6 +278,7 @@ class TestDiscoverAllSchemasAnonymousErrors:
 
     def test_collects_anonymous_schema_parse_errors(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.4.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Invalid anonymous schema files produce errors, not crashes."""
         with patch("deepwork.deepschema.discovery._STANDARD_SCHEMAS_DIR", tmp_path / "empty"):
             # Create an invalid anonymous schema
@@ -274,6 +293,7 @@ class TestDiscoverAllSchemasAnonymousErrors:
 class TestDiscoverAllSchemas:
     def test_discovers_both_types(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.1.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         _make_named_schema(
             tmp_path,
             "yaml_config",
@@ -291,6 +311,7 @@ class TestDiscoverAllSchemas:
 
     def test_collects_parse_errors(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.3.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         schema_dir = tmp_path / ".deepwork" / "schemas" / "bad"
         schema_dir.mkdir(parents=True)
         (schema_dir / "deepschema.yml").write_text("[invalid]", encoding="utf-8")

@@ -19,6 +19,7 @@ def _write_schema(path: Path, filename: str, content: str) -> Path:
 class TestParseDeepschemaFile:
     def test_parses_named_schema(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.1.2, DW-REQ-011.2.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         filepath = _write_schema(
             tmp_path,
             "deepschema.yml",
@@ -43,6 +44,7 @@ matchers:
 
     def test_parses_anonymous_schema(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.1.3, DW-REQ-011.2.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         filepath = _write_schema(
             tmp_path,
             ".deepschema.config.json.yml",
@@ -60,6 +62,7 @@ json_schema_path: "config.schema.json"
 
     def test_parses_empty_file(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.2.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         filepath = _write_schema(tmp_path, "deepschema.yml", "")
         schema = parse_deepschema_file(filepath, "named", "empty")
         assert schema.name == "empty"
@@ -68,6 +71,7 @@ json_schema_path: "config.schema.json"
 
     def test_parses_verification_commands(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.2.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         filepath = _write_schema(
             tmp_path,
             "deepschema.yml",
@@ -82,6 +86,7 @@ verification_bash_command:
 
     def test_parses_parent_schemas(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.2.8).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         filepath = _write_schema(
             tmp_path,
             "deepschema.yml",
@@ -98,6 +103,7 @@ requirements:
 
     def test_parses_examples_and_references(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.2.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         filepath = _write_schema(
             tmp_path,
             "deepschema.yml",
@@ -118,12 +124,14 @@ references:
 
     def test_rejects_invalid_yaml(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.2.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         filepath = _write_schema(tmp_path, "deepschema.yml", "[not a dict]")
         with pytest.raises(DeepSchemaError):
             parse_deepschema_file(filepath, "named", "test")
 
     def test_rejects_unknown_keys(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.2.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         filepath = _write_schema(
             tmp_path,
             "deepschema.yml",
@@ -136,5 +144,6 @@ unknown_key: "value"
 
     def test_missing_file(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.2.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         with pytest.raises(DeepSchemaError, match="File not found"):
             parse_deepschema_file(tmp_path / "nonexistent.yml", "named", "test")

@@ -635,6 +635,7 @@ class TestReadStdin:
 
     def test_returns_empty_when_stdin_is_tty(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.8.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When stdin is a tty, read_stdin returns empty string."""
         from unittest.mock import patch
 
@@ -647,6 +648,7 @@ class TestReadStdin:
 
     def test_returns_empty_on_read_exception(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.8.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When stdin.read() raises, read_stdin returns empty string."""
         from unittest.mock import patch
 
@@ -664,6 +666,7 @@ class TestWriteStdout:
 
     def test_writes_to_stdout(self, capsys: object) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.8.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """write_stdout prints data to stdout."""
         from deepwork.hooks.wrapper import write_stdout
 
@@ -677,6 +680,7 @@ class TestRunHookSuccess:
 
     def test_successful_hook_returns_zero_and_outputs_json(self, capsys: object) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.10.1, DW-REQ-006.10.2, DW-REQ-006.10.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """A successful hook function returns 0 and outputs JSON."""
         from unittest.mock import patch
 

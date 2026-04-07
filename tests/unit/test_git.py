@@ -199,6 +199,7 @@ class TestGetRepoRootBareRepo:
 
     def test_raises_for_bare_repo(self, temp_dir: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-007.2.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """A bare repo has no working_tree_dir, so get_repo_root raises GitError."""
         from unittest.mock import MagicMock
         from unittest.mock import patch as mock_patch
@@ -218,6 +219,7 @@ class TestGetCurrentBranchDetached:
 
     def test_raises_for_detached_head(self, mock_git_repo: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-007.3.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When HEAD is detached, get_current_branch raises GitError."""
         repo = get_repo(mock_git_repo)
         # Detach HEAD by checking out the commit directly
@@ -233,6 +235,7 @@ class TestCreateBranchGitCommandError:
 
     def test_raises_git_error_on_command_failure(self, mock_git_repo: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-007.3.10, DW-REQ-007.5.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """GitCommandError during branch creation is wrapped in GitError."""
         from unittest.mock import patch as mock_patch
 

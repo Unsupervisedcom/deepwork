@@ -95,12 +95,14 @@ def _make_hook_input(
 class TestPostToolUseHookTrigger:
     def test_hooks_json_has_post_tool_use_section(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """hooks.json must contain a PostToolUse section."""
         config = json.loads(HOOKS_JSON.read_text())
         assert "PostToolUse" in config["hooks"]
 
     def test_hooks_json_post_tool_use_matcher_is_task(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """PostToolUse hook matcher MUST be 'Task'."""
         config = json.loads(HOOKS_JSON.read_text())
         matchers = [entry["matcher"] for entry in config["hooks"]["PostToolUse"]]
@@ -108,6 +110,7 @@ class TestPostToolUseHookTrigger:
 
     def test_hooks_json_post_tool_use_runs_post_task_sh(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.1).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """PostToolUse hook must invoke post_task.sh."""
         config = json.loads(HOOKS_JSON.read_text())
         for entry in config["hooks"]["PostToolUse"]:
@@ -124,12 +127,14 @@ class TestPostToolUseHookTrigger:
 class TestPostTaskInputParsing:
     def test_script_reads_stdin(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """post_task.sh reads JSON from stdin."""
         script = _read_script(POST_TASK_SCRIPT)
         assert "cat" in script or "read" in script, "Script must read from stdin"
 
     def test_empty_stdin_returns_empty_json(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Empty stdin must produce '{}' and exit 0."""
         with tempfile.TemporaryDirectory() as tmpdir:
             result = _run_post_task(stdin_data="", cwd=tmpdir)
@@ -138,6 +143,7 @@ class TestPostTaskInputParsing:
 
     def test_interactive_terminal_check(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Script checks if stdin is a terminal ([ ! -t 0 ])."""
         script = _read_script(POST_TASK_SCRIPT)
         assert "! -t 0" in script
@@ -151,12 +157,14 @@ class TestPostTaskInputParsing:
 class TestSessionIdExtraction:
     def test_script_extracts_session_id_via_jq(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Script must use jq to extract .session_id."""
         script = _read_script(POST_TASK_SCRIPT)
         assert ".session_id" in script
 
     def test_missing_session_id_returns_empty_json(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Missing session_id must produce '{}' and exit 0."""
         data = json.dumps({"tool_input": {"name": "foo"}, "tool_response": {"agentId": "a1"}})
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -173,12 +181,14 @@ class TestSessionIdExtraction:
 class TestAgentNameExtraction:
     def test_script_extracts_agent_name_from_tool_input(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Script must extract agent name from .tool_input.name."""
         script = _read_script(POST_TASK_SCRIPT)
         assert ".tool_input.name" in script
 
     def test_missing_agent_name_returns_empty_json(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Missing agent name must produce '{}' and exit 0."""
         data = json.dumps(
             {"session_id": "s1", "tool_input": {}, "tool_response": {"agentId": "a1"}}
@@ -197,6 +207,7 @@ class TestAgentNameExtraction:
 class TestAgentIdExtraction:
     def test_script_extracts_agent_id_with_fallback(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Script must extract from .tool_response.agentId with fallback to .tool_response.agent_id."""
         script = _read_script(POST_TASK_SCRIPT)
         assert ".tool_response.agentId" in script
@@ -204,6 +215,7 @@ class TestAgentIdExtraction:
 
     def test_missing_agent_id_returns_empty_json(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Missing agent ID must produce '{}' and exit 0."""
         data = json.dumps({"session_id": "s1", "tool_input": {"name": "foo"}, "tool_response": {}})
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -213,6 +225,7 @@ class TestAgentIdExtraction:
 
     def test_agent_id_fallback_to_snake_case(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """agent_id (snake_case) fallback must work when agentId is absent."""
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create the agent dir so detection passes
@@ -242,6 +255,7 @@ class TestAgentIdExtraction:
 class TestLearningAgentDetection:
     def test_script_checks_agent_directory_exists(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Script must check for .deepwork/learning-agents/<agent-name>/ directory."""
         script = _read_script(POST_TASK_SCRIPT)
         assert ".deepwork/learning-agents/" in script
@@ -249,6 +263,7 @@ class TestLearningAgentDetection:
 
     def test_non_learning_agent_returns_empty_json(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Non-LearningAgent (no directory) must produce '{}' and exit 0, no files created."""
         with tempfile.TemporaryDirectory() as tmpdir:
             # Do NOT create .deepwork/learning-agents/foo/
@@ -269,12 +284,14 @@ class TestLearningAgentDetection:
 class TestSessionDirectoryCreation:
     def test_script_creates_session_dir_with_mkdir_p(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Script must use mkdir -p for session directory."""
         script = _read_script(POST_TASK_SCRIPT)
         assert "mkdir -p" in script
 
     def test_session_dir_created_at_correct_path(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.7).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Session dir must be .deepwork/tmp/agent_sessions/<session_id>/<agent_id>/."""
         with tempfile.TemporaryDirectory() as tmpdir:
             agent_dir = Path(tmpdir) / ".deepwork" / "learning-agents" / "my-agent"
@@ -301,6 +318,7 @@ class TestSessionDirectoryCreation:
 class TestNeedsLearningTimestamp:
     def test_timestamp_file_created(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.8).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """needs_learning_as_of_timestamp file must be created in session dir."""
         with tempfile.TemporaryDirectory() as tmpdir:
             agent_dir = Path(tmpdir) / ".deepwork" / "learning-agents" / "my-agent"
@@ -322,6 +340,7 @@ class TestNeedsLearningTimestamp:
 
     def test_timestamp_file_contains_iso8601_utc(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.8).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Timestamp file must contain ISO 8601 UTC format (YYYY-MM-DDTHH:MM:SSZ)."""
         import re
 
@@ -347,6 +366,7 @@ class TestNeedsLearningTimestamp:
 
     def test_script_uses_date_u_for_utc(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.8).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Script must use 'date -u' for UTC timestamps."""
         script = _read_script(POST_TASK_SCRIPT)
         assert "date -u" in script
@@ -360,6 +380,7 @@ class TestNeedsLearningTimestamp:
 class TestAgentUsedFile:
     def test_agent_used_file_created(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.9).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """agent_used file must be created in session dir."""
         with tempfile.TemporaryDirectory() as tmpdir:
             agent_dir = Path(tmpdir) / ".deepwork" / "learning-agents" / "my-agent"
@@ -380,6 +401,7 @@ class TestAgentUsedFile:
 
     def test_agent_used_file_contains_agent_name(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.9).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """agent_used file must contain the agent name matching the directory name."""
         with tempfile.TemporaryDirectory() as tmpdir:
             agent_dir = Path(tmpdir) / ".deepwork" / "learning-agents" / "my-agent"
@@ -407,6 +429,7 @@ class TestAgentUsedFile:
 class TestPostTaskReminderMessage:
     def test_script_reads_reminder_file(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.10).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Script must read learning_agent_post_task_reminder.md from CLAUDE_PLUGIN_ROOT/doc/."""
         script = _read_script(POST_TASK_SCRIPT)
         assert "learning_agent_post_task_reminder.md" in script
@@ -414,6 +437,7 @@ class TestPostTaskReminderMessage:
 
     def test_reminder_present_outputs_system_message(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.10).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When reminder file exists, output must contain hookSpecificOutput with additionalContext."""
         with tempfile.TemporaryDirectory() as tmpdir:
             agent_dir = Path(tmpdir) / ".deepwork" / "learning-agents" / "my-agent"
@@ -434,6 +458,7 @@ class TestPostTaskReminderMessage:
 
     def test_missing_reminder_file_outputs_empty_json(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.10).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When reminder file does not exist, output must be '{}'."""
         with tempfile.TemporaryDirectory() as tmpdir:
             agent_dir = Path(tmpdir) / ".deepwork" / "learning-agents" / "my-agent"
@@ -454,6 +479,7 @@ class TestPostTaskReminderMessage:
 class TestPostTaskReminderContent:
     def test_reminder_file_exists_in_repo(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.11).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """The post-task reminder file must exist in the plugin."""
         reminder_path = (
             PROJECT_ROOT / "learning_agents" / "doc" / "learning_agent_post_task_reminder.md"
@@ -462,6 +488,7 @@ class TestPostTaskReminderContent:
 
     def test_reminder_mentions_resume_task(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.11).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Reminder must instruct users to resume the same task rather than starting a new one."""
         reminder_path = (
             PROJECT_ROOT / "learning_agents" / "doc" / "learning_agent_post_task_reminder.md"
@@ -482,6 +509,7 @@ class TestPostTaskReminderContent:
 
     def test_reminder_mentions_report_issue(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.11).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Reminder must mention /learning-agents report_issue or resuming for mistakes."""
         reminder_path = (
             PROJECT_ROOT / "learning_agents" / "doc" / "learning_agent_post_task_reminder.md"
@@ -506,12 +534,14 @@ class TestPostTaskReminderContent:
 class TestStopHookTrigger:
     def test_hooks_json_has_stop_section(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.12).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """hooks.json must contain a Stop section."""
         config = json.loads(HOOKS_JSON.read_text())
         assert "Stop" in config["hooks"]
 
     def test_stop_hook_matcher_is_empty_string(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.12).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Stop hook matcher MUST be empty string to trigger for all stop events."""
         config = json.loads(HOOKS_JSON.read_text())
         matchers = [entry["matcher"] for entry in config["hooks"]["Stop"]]
@@ -519,6 +549,7 @@ class TestStopHookTrigger:
 
     def test_stop_hook_runs_session_stop_sh(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.12).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Stop hook must invoke session_stop.sh."""
         config = json.loads(HOOKS_JSON.read_text())
         for entry in config["hooks"]["Stop"]:
@@ -535,6 +566,7 @@ class TestStopHookTrigger:
 class TestStopHookNoSessionsDir:
     def test_no_sessions_dir_returns_empty_json(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.13).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """If .deepwork/tmp/agent_sessions does not exist, output '{}' and exit 0."""
         with tempfile.TemporaryDirectory() as tmpdir:
             result = _run_session_stop(cwd=tmpdir)
@@ -543,6 +575,7 @@ class TestStopHookNoSessionsDir:
 
     def test_script_checks_sessions_dir_existence(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.13).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Script must check for .deepwork/tmp/agent_sessions directory."""
         script = _read_script(SESSION_STOP_SCRIPT)
         assert ".deepwork/tmp/agent_sessions" in script
@@ -557,6 +590,7 @@ class TestStopHookNoSessionsDir:
 class TestStopHookPendingDetection:
     def test_script_searches_for_needs_learning_files(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.14).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Script must search for needs_learning_as_of_timestamp files."""
         script = _read_script(SESSION_STOP_SCRIPT)
         assert "needs_learning_as_of_timestamp" in script
@@ -564,6 +598,7 @@ class TestStopHookPendingDetection:
 
     def test_no_pending_files_returns_empty_json(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.14).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """If no needs_learning_as_of_timestamp files, output '{}' and exit 0."""
         with tempfile.TemporaryDirectory() as tmpdir:
             sessions_dir = Path(tmpdir) / ".deepwork" / "tmp" / "agent_sessions"
@@ -582,12 +617,14 @@ class TestStopHookPendingDetection:
 class TestStopHookAgentNameResolution:
     def test_script_reads_agent_used_file(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.15).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Script must read agent_used file to determine agent name."""
         script = _read_script(SESSION_STOP_SCRIPT)
         assert "agent_used" in script
 
     def test_script_deduplicates_agent_names(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.15).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Script must deduplicate agent names (sort -u or equivalent)."""
         script = _read_script(SESSION_STOP_SCRIPT)
         assert "sort -u" in script or "uniq" in script
@@ -601,6 +638,7 @@ class TestStopHookAgentNameResolution:
 class TestStopHookLearningSuggestion:
     def test_pending_sessions_output_system_message(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.16).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When pending sessions exist, output must contain systemMessage."""
         with tempfile.TemporaryDirectory() as tmpdir:
             session_dir = Path(tmpdir) / ".deepwork" / "tmp" / "agent_sessions" / "s1" / "a1"
@@ -614,6 +652,7 @@ class TestStopHookLearningSuggestion:
 
     def test_suggestion_lists_agent_names(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.16).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Suggestion message must list the unique agent names used."""
         with tempfile.TemporaryDirectory() as tmpdir:
             for sid, aid, name in [("s1", "a1", "agent-a"), ("s1", "a2", "agent-b")]:
@@ -629,6 +668,7 @@ class TestStopHookLearningSuggestion:
 
     def test_suggestion_mentions_learn_command(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.16).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Suggestion must mention /learning-agents learn."""
         with tempfile.TemporaryDirectory() as tmpdir:
             session_dir = Path(tmpdir) / ".deepwork" / "tmp" / "agent_sessions" / "s1" / "a1"
@@ -644,6 +684,7 @@ class TestStopHookLearningSuggestion:
 
     def test_deduplication_in_message(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.16).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Duplicate agent names from multiple invocations must be deduplicated."""
         with tempfile.TemporaryDirectory() as tmpdir:
             for sid, aid in [("s1", "a1"), ("s2", "a2")]:
@@ -666,12 +707,14 @@ class TestStopHookLearningSuggestion:
 class TestSessionDirectoryLocation:
     def test_post_task_uses_correct_base_path(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.17).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Session tracking files must be under .deepwork/tmp/agent_sessions/."""
         script = _read_script(POST_TASK_SCRIPT)
         assert ".deepwork/tmp/agent_sessions/" in script
 
     def test_stop_hook_uses_correct_base_path(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.17).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Stop hook must look under .deepwork/tmp/agent_sessions/."""
         script = _read_script(SESSION_STOP_SCRIPT)
         assert ".deepwork/tmp/agent_sessions" in script
@@ -685,6 +728,7 @@ class TestSessionDirectoryLocation:
 class TestTimestampFileUpdateSemantics:
     def test_timestamp_overwritten_not_appended(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.18).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Running the hook twice for the same agent/session must overwrite the timestamp."""
         with tempfile.TemporaryDirectory() as tmpdir:
             agent_dir = Path(tmpdir) / ".deepwork" / "learning-agents" / "my-agent"
@@ -716,6 +760,7 @@ class TestTimestampFileUpdateSemantics:
 
     def test_script_uses_overwrite_redirect(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (LA-REQ-004.18).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """Script must use '>' (overwrite) not '>>' (append) for timestamp file."""
         script = _read_script(POST_TASK_SCRIPT)
         # Find the line that writes the timestamp
