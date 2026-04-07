@@ -21,6 +21,7 @@ from deepwork.jobs.parser import (
     WorkflowStep,
 )
 from deepwork.review.config import ReviewRule, ReviewTask
+from deepwork.review.instructions import INSTRUCTIONS_DIR, compute_review_id
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -518,7 +519,7 @@ class TestRunQualityGate:
         assert "JSON schema validation failed" in result
         assert "finished_step" in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.1.3, JOBS-REQ-004.5.8, JOBS-REQ-004.6.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.1.3, JOBS-REQ-004.5.9, JOBS-REQ-004.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_review_instructions_when_reviews_exist(self, tmp_path: Path) -> None:
         """When dynamic rules produce tasks, review instructions are returned."""
@@ -573,7 +574,7 @@ class TestRunQualityGate:
         assert "Quality reviews are required" in result
         assert "step_write_output_report" in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.7).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.8).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_returns_none_when_all_reviews_already_passed(self, tmp_path: Path) -> None:
         """If write_instruction_files returns empty (all .passed), result is None."""
@@ -1170,3 +1171,132 @@ class TestRunQualityGateExtra:
             )
 
         assert result is None
+
+
+class TestQualityGatePassCaching:
+    """Tests for JOBS-REQ-004.5.7: quality gate skips reviews with .passed markers."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_skips_review_when_passed_marker_exists_for_unchanged_file(
+        self, tmp_path: Path
+    ) -> None:
+        """Quality gate returns None when a .passed marker exists for the exact content.
+
+        This is an integration test that does NOT mock write_instruction_files —
+        it creates a real .passed marker file and verifies the caching mechanism
+        works end-to-end through the quality gate.
+        """
+        review = ReviewBlock(strategy="individual", instructions="Check it")
+        arg = StepArgument(name="report", description="Report", type="file_path")
+        output_ref = StepOutputRef(argument_name="report", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"report": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        # Create the output file with known content
+        report_path = tmp_path / "report.md"
+        report_path.write_text("Report content here")
+
+        # Build the ReviewTask that the quality gate would produce
+        task = ReviewTask(
+            rule_name="step_write_output_report",
+            files_to_review=[str(report_path)],
+            instructions="Check it",
+            agent_name=None,
+        )
+
+        # Compute the review_id for this task and create a .passed marker
+        review_id = compute_review_id(task, tmp_path)
+        instructions_dir = tmp_path / INSTRUCTIONS_DIR
+        instructions_dir.mkdir(parents=True, exist_ok=True)
+        (instructions_dir / f"{review_id}.passed").write_bytes(b"")
+
+        with (
+            patch(
+                "deepwork.jobs.mcp.quality_gate.load_all_rules",
+                return_value=([], []),
+            ),
+            patch(
+                "deepwork.jobs.mcp.quality_gate.match_files_to_rules",
+                return_value=[task],
+            ),
+        ):
+            result = run_quality_gate(
+                step=step,
+                job=job,
+                workflow=workflow,
+                outputs={"report": str(report_path)},
+                input_values={},
+                work_summary=None,
+                project_root=tmp_path,
+            )
+
+        assert result is None
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_reruns_review_when_file_content_changes_after_pass(self, tmp_path: Path) -> None:
+        """Quality gate runs review again when file content changes after a prior pass.
+
+        Verifies that changing file content produces a different review_id,
+        so the old .passed marker no longer applies.
+        """
+        review = ReviewBlock(strategy="individual", instructions="Check it")
+        arg = StepArgument(name="report", description="Report", type="file_path")
+        output_ref = StepOutputRef(argument_name="report", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"report": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        report_path = tmp_path / "report.md"
+
+        # First: create the file with original content and mark the review as passed
+        report_path.write_text("Original content")
+        task_v1 = ReviewTask(
+            rule_name="step_write_output_report",
+            files_to_review=[str(report_path)],
+            instructions="Check it",
+            agent_name=None,
+        )
+        review_id_v1 = compute_review_id(task_v1, tmp_path)
+        instructions_dir = tmp_path / INSTRUCTIONS_DIR
+        instructions_dir.mkdir(parents=True, exist_ok=True)
+        (instructions_dir / f"{review_id_v1}.passed").write_bytes(b"")
+
+        # Now: change the file content (simulating a new edit in the PR)
+        report_path.write_text("Updated content with new edits")
+
+        # The task from match_files_to_rules will have the same rule/files
+        task_v2 = ReviewTask(
+            rule_name="step_write_output_report",
+            files_to_review=[str(report_path)],
+            instructions="Check it",
+            agent_name=None,
+        )
+
+        with (
+            patch(
+                "deepwork.jobs.mcp.quality_gate.load_all_rules",
+                return_value=([], []),
+            ),
+            patch(
+                "deepwork.jobs.mcp.quality_gate.match_files_to_rules",
+                return_value=[task_v2],
+            ),
+            patch(
+                "deepwork.jobs.mcp.quality_gate.format_for_claude",
+                return_value="formatted review instructions",
+            ),
+        ):
+            result = run_quality_gate(
+                step=step,
+                job=job,
+                workflow=workflow,
+                outputs={"report": str(report_path)},
+                input_values={},
+                work_summary=None,
+                project_root=tmp_path,
+            )
+
+        # Review MUST run again because content changed
+        assert result is not None
+        assert "Quality reviews are required" in result
