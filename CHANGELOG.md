@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Integration tests for quality gate review caching (JOBS-REQ-004.5.7)
+- Requirements traceability coverage now at 100% (#346)
+  - Added section-level REQ ID annotations to 32 existing test files for traceability
+  - Wrote 218 new tests across 5 files for learning-agents requirements (LA-REQ-001, 003, 004, 005, 006, 010, 011)
+  - Added 6 anonymous DeepSchemas for judgment-based learning-agents skill requirements (LA-REQ-002, 007, 008, 009, 012)
+  - Added new PLUG-REQ-001.12 tests for session/agent identity injection hooks
+  - New `req-ids-in-comments` requirement in the standard DeepSchema definition: requirement IDs must be placed in YAML comments, not requirement body text
 
 ### Changed
 
@@ -43,12 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Applied to `requirements_traceability` and `python_lint` rules to eliminate redundant agent tool calls
 - New `deepreview` standard DeepSchema with semantic quality requirements for `.deepreview` config files (#337)
 - `Makefile` with `lint` target that auto-fixes formatting/linting and runs type checking (#337)
-- Requirements traceability coverage now at 100% (#346)
-  - Added section-level REQ ID annotations to 32 existing test files for traceability
-  - Wrote 218 new tests across 5 files for learning-agents requirements (LA-REQ-001, 003, 004, 005, 006, 010, 011)
-  - Added 6 anonymous DeepSchemas for judgment-based learning-agents skill requirements (LA-REQ-002, 007, 008, 009, 012)
-  - Added new PLUG-REQ-001.12 tests for session/agent identity injection hooks
-  - New `req-ids-in-comments` requirement in the standard DeepSchema definition: requirement IDs must be placed in YAML comments, not requirement body text
 
 ### Changed
 

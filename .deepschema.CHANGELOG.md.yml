@@ -1,0 +1,6 @@
+requirements:
+  new-entries-in-unreleased: |
+    New changelog entries added in a PR MUST be placed under the `## [Unreleased]`
+    section, not under any already-released version section (e.g., `## [0.13.0]`).
+    Released version sections are immutable historical records — only the release
+    workflow may modify them when cutting a new release.
