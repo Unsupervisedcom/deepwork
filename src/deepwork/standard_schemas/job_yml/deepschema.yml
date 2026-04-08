@@ -138,6 +138,20 @@ requirements:
     that are too large for inline strings. The existence of a `.deepwork/tmp/` path
     in a step_argument name is a strong signal the argument should be `type: string`.
 
+  no-sentinel-files: >
+    Steps SHOULD NOT use sentinel placeholder files (e.g., writing a `NONE.md` or
+    `EMPTY.md` file to satisfy a required `file_path` output when the real result is
+    "nothing to report") to work around the rule that `file_path` outputs cannot be
+    empty. If a step's output is a list that can legitimately be empty, the output
+    SHOULD be `type: string` (containing a narrative summary that naturally handles
+    the empty case) rather than `type: file_path` with a placeholder file. Sentinel
+    files leave stray artifacts on disk, confuse downstream steps that treat every
+    output path as a real file, and mislead reviewers. Exception: a sentinel file
+    MAY be used when the step genuinely needs a filesystem artifact a later step
+    will read and parse (e.g., a manifest with "no items" semantics baked into its
+    schema) — but the common "required output can't be empty" workaround is not a
+    sufficient reason.
+
   step-visibility-boundary: >
     A step's instructions MUST NOT reference information from steps that have not yet
     run in the same workflow, including steps from other workflows in the same job.
