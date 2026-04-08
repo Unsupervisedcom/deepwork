@@ -77,13 +77,17 @@ requirements:
     outside their scope.
 
   review-strategy-matches-criteria-scope: >
-    A review `strategy: individual` MUST only be used when every listed criterion can be
-    evaluated from a single file in isolation. Criteria that require cross-file comparison,
-    project-wide enumeration, set-level properties (coverage, minimality, deduplication),
-    or reasoning about the relationship between multiple output files MUST use
-    `strategy: matches_together` so the reviewer sees the full set at once. Using
-    `individual` with cross-cutting criteria forces each reviewer to redo the project-wide
-    scan N times and multiplies latency without improving review quality.
+    Choose the review `strategy` based on whether the criteria need to reason across the
+    other changed files in the same review set. Use `individual` when the focus is
+    heavily on each file itself and the reviewer is unlikely to need to look at the other
+    changed files in order to evaluate this one — the reviewer MAY still consult unchanged
+    project files for context (imports, references, related code, conventions), and that
+    does not disqualify `individual`. Use `matches_together` when the changed files are
+    likely to need to be looked at alongside each other during review — e.g., criteria
+    about coverage across the set, deduplication, consistency between the files, or any
+    property of the set as a whole. Picking `individual` for set-level criteria forces
+    each spawned reviewer to redo the full cross-file scan N times and multiplies latency
+    without improving review quality.
 
   review-no-redundant-context: >
     Review `instructions` MUST NOT repeat domain context already in `common_job_info` since
