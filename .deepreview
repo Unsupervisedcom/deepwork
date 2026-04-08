@@ -369,46 +369,6 @@ shell_code_review:
         section markers) still accurate after the changes? Flag any comments
         that describe behavior that no longer matches the code.
 
-job_schema_instruction_compatibility:
-  description: "Verify all standard and library job.yml definitions and templates are compatible with the job schema."
-  match:
-    include:
-      - "src/deepwork/jobs/job.schema.json"
-      - "src/deepwork/standard_jobs/*/job.yml"
-      - "src/deepwork/standard_jobs/deepwork_jobs/templates/job.yml.*"  # Templates users copy — must match schema
-      - "library/jobs/*/job.yml"
-  review:
-    strategy: matches_together
-    additional_context:
-      unchanged_matching_files: true
-    instructions: |
-      When the job schema, standard job definitions, or library job definitions
-      change, verify they are still compatible with each other.
-
-      Read src/deepwork/jobs/job.schema.json to understand the current schema.
-      Then read each job.yml (standard and library) and check:
-
-      1. **Field references**: Every field name referenced in inline step
-         instructions must exist in the schema at the correct level.
-         Pay special attention to step_arguments vs workflow vs step fields.
-
-      2. **Required vs optional**: If instructions say a field is required,
-         verify the schema agrees. If instructions say a field is optional,
-         verify the schema doesn't require it.
-
-      3. **Schema structure**: Any YAML examples shown in inline instructions
-         must match the schema's property names and nesting.
-
-      4. **Terminology consistency**: Instructions should use the same field
-         names as the schema (e.g., if the schema uses
-         "common_job_info_provided_to_all_steps_at_runtime", instructions
-         should not call it "description" or "job_description").
-
-      Output Format:
-      - PASS: All job definitions are compatible with the schema.
-      - FAIL: Incompatibilities found. List each with the file path, line
-        reference, the incompatible content, and what the schema actually says.
-
 agents_md_claude_md_symlink:
   description: "Ensure every AGENTS.md file has a sibling CLAUDE.md symlink pointing to it, because Claude Code reads CLAUDE.md but ignores AGENTS.md."
   match:

@@ -8,7 +8,7 @@ instructions: |
 
 
 matchers:
-  - ".deepwork/schemas/*/deepschema.yml"
+  - "**/deepschema.yml"
   - "**/.deepschema.*.yml"
 
 json_schema_path: "deepschema_schema.json"

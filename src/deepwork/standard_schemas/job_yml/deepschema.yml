@@ -76,6 +76,21 @@ requirements:
     auto-pass rather than fail. Avoid criteria that penalize steps for not doing things
     outside their scope.
 
+  review-strategy-matches-criteria-scope: >
+    The review `strategy` SHOULD match whether the criteria need to reason across the
+    other changed files in the same review set. `strategy: individual` SHOULD be used
+    when the focus is on each file itself and the reviewer is unlikely to need to see
+    the other changed files in order to evaluate this one. A reviewer operating under
+    `individual` MAY consult unchanged project files for context (imports, references,
+    related code, conventions); such consultation does NOT require switching to
+    `matches_together`. `strategy: matches_together` SHOULD be used when the changed
+    files are likely to need to be looked at alongside each other during review.
+    `strategy: individual` MUST NOT be used when any criterion is a property of the
+    set of changed files as a whole (e.g., coverage across the set, deduplication of
+    the set, cross-file consistency, set-level minimality), because it forces each
+    spawned reviewer to redo the cross-file scan N times and multiplies latency
+    without improving review quality.
+
   review-no-redundant-context: >
     Review `instructions` MUST NOT repeat domain context already in `common_job_info` since
     the framework automatically prepends it to review prompts.
@@ -128,6 +143,20 @@ requirements:
     `type: string` instead. `file_path` is for artifacts that will be committed or
     that are too large for inline strings. The existence of a `.deepwork/tmp/` path
     in a step_argument name is a strong signal the argument should be `type: string`.
+
+  no-sentinel-files: >
+    Steps SHOULD NOT use sentinel placeholder files (e.g., writing a `NONE.md` or
+    `EMPTY.md` file to satisfy a required `file_path` output when the real result is
+    "nothing to report") to work around the rule that `file_path` outputs cannot be
+    empty. If a step's output is a list that can legitimately be empty, the output
+    SHOULD be `type: string` (containing a narrative summary that naturally handles
+    the empty case) rather than `type: file_path` with a placeholder file. Sentinel
+    files leave stray artifacts on disk, confuse downstream steps that treat every
+    output path as a real file, and mislead reviewers. Exception: a sentinel file
+    MAY be used when the step genuinely needs a filesystem artifact a later step
+    will read and parse (e.g., a manifest with "no items" semantics baked into its
+    schema) — but the common "required output can't be empty" workaround is not a
+    sufficient reason.
 
   step-visibility-boundary: >
     A step's instructions MUST NOT reference information from steps that have not yet
