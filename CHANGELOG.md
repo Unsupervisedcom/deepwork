@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - DeepSchema PostToolUse hook (`deepschema_write`) no longer reports `File is not valid JSON` for YAML files whose name has no extension (e.g. `.deepreview`). The hook now parses target files and the referenced JSON Schema as YAML, which is a superset of JSON, so both formats are accepted regardless of file extension. DW-REQ-011.7.3 updated to match. (Mirrors the fix shipped in #338 for the workflow quality gate.)
+- `review:` blocks declared on `type: string` step outputs are now actually executed. Previously they were silently dropped because the review pipeline only matched against file paths, leaving authors with misconfigured-but-silent quality gates. String output reviews now produce synthetic `ReviewTask` objects with the string value carried on a new `ReviewTask.inline_content` field and rendered into the instruction file as a "Content to Review" section. New requirements: JOBS-REQ-004.8, REVIEW-REQ-005.1.8, REVIEW-REQ-009.1.7. (#350)
 
 ### Removed
 ## [0.13.1] - 2026-04-06

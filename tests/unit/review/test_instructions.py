@@ -420,6 +420,82 @@ class TestComputeReviewId:
         assert _sanitize_for_id("rule_name-1.0") == "rule_name-1.0"
 
 
+class TestInlineContent:
+    """Tests for inline-content review tasks — validates REVIEW-REQ-005.1.8 and REVIEW-REQ-009.1.7.
+
+    Inline-content tasks are used for type: string step outputs (see JOBS-REQ-004.8).
+    They have no files_to_review and carry the value to review on inline_content.
+    """
+
+    def _make_inline_task(self, content: str, rule_name: str = "string_rule") -> ReviewTask:
+        return ReviewTask(
+            rule_name=rule_name,
+            files_to_review=[],
+            instructions="Review the inline content.",
+            agent_name=None,
+            source_location=".deepreview:1",
+            inline_content=content,
+        )
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_includes_content_to_review_section(self) -> None:
+        task = self._make_inline_task("hello world")
+        content = build_instruction_file(task)
+        assert "## Content to Review" in content
+        assert "hello world" in content
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_omits_files_to_review_section_when_no_files(self) -> None:
+        task = self._make_inline_task("a value")
+        content = build_instruction_file(task)
+        assert "## Files to Review" not in content
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_scope_heading_is_inline_content(self) -> None:
+        task = self._make_inline_task("anything")
+        content = build_instruction_file(task)
+        assert "# Review: string_rule — inline content" in content.split("\n")[0]
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.1.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_review_id_uses_inline_marker(self, tmp_path: Path) -> None:
+        task = self._make_inline_task("value a")
+        review_id = compute_review_id(task, tmp_path)
+        parts = review_id.split("--")
+        assert len(parts) == 3
+        assert parts[0] == "string_rule"
+        assert parts[1] == "inline"
+        assert len(parts[2]) == 12
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.1.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_distinct_inline_values_produce_distinct_ids(self, tmp_path: Path) -> None:
+        task_a = self._make_inline_task("value a")
+        task_b = self._make_inline_task("value b")
+        assert compute_review_id(task_a, tmp_path) != compute_review_id(task_b, tmp_path)
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.1.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_same_inline_value_produces_same_id(self, tmp_path: Path) -> None:
+        task_a = self._make_inline_task("same value")
+        task_b = self._make_inline_task("same value")
+        assert compute_review_id(task_a, tmp_path) == compute_review_id(task_b, tmp_path)
+
+    def test_pass_caching_works_for_inline_content(self, tmp_path: Path) -> None:
+        """Writing a .passed marker for an inline task skips it next time."""
+        task = self._make_inline_task("cache me")
+        review_id = compute_review_id(task, tmp_path)
+        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
+        instructions_dir.mkdir(parents=True)
+        (instructions_dir / f"{review_id}.passed").write_bytes(b"")
+
+        results = write_instruction_files([task], tmp_path)
+        assert results == []
+
+
 class TestPrecomputedContext:
     """Tests for precomputed info command execution — validates REVIEW-REQ-001.9, REVIEW-REQ-005.7."""
 

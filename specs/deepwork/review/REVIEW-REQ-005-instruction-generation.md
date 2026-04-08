@@ -11,10 +11,11 @@ For each `ReviewTask`, the system generates a self-contained markdown instructio
 1. Each instruction file MUST be a valid markdown document.
 2. The file MUST begin with a heading identifying the review rule and scope (e.g., `# Review: python_file_best_practices — src/app.py`).
 3. The file MUST contain a "Review Instructions" section with the rule's resolved instruction text.
-4. The file MUST contain a "Files to Review" section listing the file paths to examine.
+4. The file MUST contain a "Files to Review" section listing the file paths to examine when the task has at least one file to review. Inline-content tasks (see REVIEW-REQ-005.1.8) MUST NOT include a "Files to Review" section.
 5. File paths in the "Files to Review" section MUST be relative to the repository root.
 6. When the task has `additional_files` (unchanged matching files), the file MUST contain an "Unchanged Matching Files" section listing those file paths.
 7. When the task has `all_changed_filenames`, the file MUST contain an "All Changed Files" section listing every changed filename for context.
+8. When the task has `inline_content` set (used for `type: string` step outputs — see JOBS-REQ-004.8), the file MUST contain a "Content to Review" section whose body is the inline content verbatim. The review heading scope MUST read `inline content` when the task has `inline_content` and no `files_to_review`.
 
 ### REVIEW-REQ-005.2: File Path Formatting
 

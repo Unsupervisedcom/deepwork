@@ -29,7 +29,7 @@ The quality review system evaluates step outputs against defined quality criteri
 4. Each rule's `instructions` MUST be prefixed with a preamble containing workflow `common_job_info` and input context (if available).
 5. Outputs with no review blocks MUST be skipped.
 6. Outputs with `None` values MUST be skipped.
-7. Only `file_path` type arguments with actual file paths MUST generate `ReviewRule` objects.
+7. Only `file_path` type arguments with actual file paths MUST generate `ReviewRule` objects. Reviews declared on `type: string` outputs are handled separately per JOBS-REQ-004.8.
 
 ### JOBS-REQ-004.4: Process Requirements
 
@@ -64,3 +64,12 @@ The quality review system evaluates step outputs against defined quality criteri
 3. For `string` inputs, values MUST be shown inline.
 4. Inputs with no value MUST be shown as "not available".
 5. If the step has no inputs, an empty string MUST be returned.
+
+### JOBS-REQ-004.8: String Output Review Tasks
+
+1. When a step output has `type: string` and a review block (either on the `StepOutputRef` or inherited from the `StepArgument`), `run_quality_gate()` MUST produce a synthetic `ReviewTask` whose content-to-review is the string value itself. Such reviews MUST NOT be silently ignored.
+2. The synthetic task MUST bypass file-pattern matching; the string value MUST be carried on `ReviewTask.inline_content` so the reviewer agent sees it inlined in its instruction file (per REVIEW-REQ-005.1.8).
+3. If a string output has reviews at both the `StepOutputRef` level and the `StepArgument` level, both MUST produce separate synthetic tasks, suffixed `_arg` for the argument-level task to match the file_path naming convention.
+4. The synthetic task's instructions MUST be prefixed with the same preamble used for file-based reviews (workflow `common_job_info` and input context).
+5. String outputs with `None` values MUST be skipped.
+6. The synthetic task's `review_id` MUST incorporate the string value into its content hash so that distinct string values produce distinct cache keys (per REVIEW-REQ-009.1.7).

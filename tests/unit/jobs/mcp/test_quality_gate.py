@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 from deepwork.jobs.mcp.quality_gate import (
     build_dynamic_review_rules,
+    build_string_output_review_tasks,
     run_quality_gate,
     validate_json_schemas,
 )
@@ -1076,8 +1077,14 @@ class TestBuildDynamicReviewRulesExtra:
         )
         assert rules == []
 
-    def test_string_output_with_review_produces_no_file_rule(self, tmp_path: Path) -> None:
-        """String-type output with a review block has empty file_paths."""
+    def test_string_output_with_review_produces_no_rule_in_build_dynamic(
+        self, tmp_path: Path
+    ) -> None:
+        """String-type outputs do not produce ReviewRule objects.
+
+        ReviewRule is for file-pattern matching; string outputs flow through
+        build_string_output_review_tasks() instead (see JOBS-REQ-004.8).
+        """
         review = ReviewBlock(strategy="individual", instructions="Check summary")
         arg = StepArgument(name="summary", description="Summary", type="string")
         output_ref = StepOutputRef(argument_name="summary", required=True, review=review)
@@ -1093,7 +1100,7 @@ class TestBuildDynamicReviewRulesExtra:
             work_summary=None,
             project_root=tmp_path,
         )
-        # String type has empty file_paths, so no rule is created
+        # String type has empty file_paths, so no ReviewRule is created
         assert rules == []
 
     def test_process_requirements_with_list_file_and_string_outputs(self, tmp_path: Path) -> None:
@@ -1177,6 +1184,372 @@ class TestRunQualityGateExtra:
             )
 
         assert result is None
+
+
+class TestBuildStringOutputReviewTasks:
+    """Tests for build_string_output_review_tasks — validates JOBS-REQ-004.8."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8.1, JOBS-REQ-004.8.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_output_level_review_produces_inline_task(self, tmp_path: Path) -> None:
+        """A review block on a string output-ref produces a synthetic ReviewTask."""
+        review = ReviewBlock(strategy="individual", instructions="Check the summary")
+        arg = StepArgument(name="summary", description="Summary", type="string")
+        output_ref = StepOutputRef(argument_name="summary", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"summary": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        tasks = build_string_output_review_tasks(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={"summary": "I did the research and found X."},
+            input_values={},
+            project_root=tmp_path,
+        )
+
+        assert len(tasks) == 1
+        task = tasks[0]
+        assert task.rule_name == "step_write_output_summary"
+        assert task.files_to_review == []
+        assert task.inline_content == "I did the research and found X."
+        assert "Check the summary" in task.instructions
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_argument_level_review_produces_inline_task(self, tmp_path: Path) -> None:
+        """A review block on the step_argument (not the output-ref) produces a task."""
+        arg_review = ReviewBlock(strategy="matches_together", instructions="Verify the note")
+        arg = StepArgument(
+            name="note", description="Note", type="string", review=arg_review
+        )
+        output_ref = StepOutputRef(argument_name="note", required=True)
+        step = WorkflowStep(name="write", outputs={"note": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        tasks = build_string_output_review_tasks(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={"note": "all good"},
+            input_values={},
+            project_root=tmp_path,
+        )
+
+        assert len(tasks) == 1
+        # When only arg-level review exists (index 0), no _arg suffix
+        assert tasks[0].rule_name == "step_write_output_note"
+        assert tasks[0].inline_content == "all good"
+        assert "Verify the note" in tasks[0].instructions
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_both_output_and_arg_level_reviews_produce_separate_tasks(
+        self, tmp_path: Path
+    ) -> None:
+        """Output-level and arg-level reviews on the same string output both execute."""
+        output_review = ReviewBlock(strategy="individual", instructions="Output check")
+        arg_review = ReviewBlock(strategy="individual", instructions="Arg check")
+        arg = StepArgument(
+            name="summary", description="Summary", type="string", review=arg_review
+        )
+        output_ref = StepOutputRef(
+            argument_name="summary", required=True, review=output_review
+        )
+        step = WorkflowStep(name="write", outputs={"summary": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        tasks = build_string_output_review_tasks(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={"summary": "the value"},
+            input_values={},
+            project_root=tmp_path,
+        )
+
+        assert len(tasks) == 2
+        assert tasks[0].rule_name == "step_write_output_summary"
+        assert tasks[1].rule_name == "step_write_output_summary_arg"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_preamble_includes_common_job_info_and_inputs(self, tmp_path: Path) -> None:
+        """The synthetic task's instructions include common_job_info and step inputs."""
+        review = ReviewBlock(strategy="individual", instructions="Check it")
+        input_arg = StepArgument(name="topic", description="Topic", type="string")
+        output_arg = StepArgument(name="summary", description="Summary", type="string")
+        input_ref = StepInputRef(argument_name="topic", required=True)
+        output_ref = StepOutputRef(argument_name="summary", required=True, review=review)
+        step = WorkflowStep(
+            name="write",
+            inputs={"topic": input_ref},
+            outputs={"summary": output_ref},
+        )
+        workflow = Workflow(
+            name="main",
+            summary="Test",
+            steps=[step],
+            common_job_info="This job analyses narrative summaries.",
+        )
+        job = JobDefinition(
+            name="test_job",
+            summary="Test",
+            step_arguments=[input_arg, output_arg],
+            workflows={"main": workflow},
+            job_dir=tmp_path / ".deepwork" / "jobs" / "test_job",
+        )
+        job.job_dir.mkdir(parents=True, exist_ok=True)
+
+        tasks = build_string_output_review_tasks(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={"summary": "done"},
+            input_values={"topic": "AI safety"},
+            project_root=tmp_path,
+        )
+
+        assert len(tasks) == 1
+        assert "narrative summaries" in tasks[0].instructions
+        assert "topic" in tasks[0].instructions
+        assert "AI safety" in tasks[0].instructions
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_none_value_skipped(self, tmp_path: Path) -> None:
+        """String outputs without a value do not produce synthetic tasks."""
+        review = ReviewBlock(strategy="individual", instructions="Check it")
+        arg = StepArgument(name="summary", description="Summary", type="string")
+        output_ref = StepOutputRef(argument_name="summary", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"summary": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        tasks = build_string_output_review_tasks(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={},  # no value for "summary"
+            input_values={},
+            project_root=tmp_path,
+        )
+        assert tasks == []
+
+    def test_file_path_outputs_are_ignored(self, tmp_path: Path) -> None:
+        """file_path outputs do not flow through this function."""
+        review = ReviewBlock(strategy="individual", instructions="Check it")
+        arg = StepArgument(name="report", description="Report", type="file_path")
+        output_ref = StepOutputRef(argument_name="report", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"report": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        tasks = build_string_output_review_tasks(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={"report": "report.md"},
+            input_values={},
+            project_root=tmp_path,
+        )
+        assert tasks == []
+
+    def test_no_review_block_skipped(self, tmp_path: Path) -> None:
+        """String outputs without any review block produce no tasks."""
+        arg = StepArgument(name="summary", description="Summary", type="string")
+        output_ref = StepOutputRef(argument_name="summary", required=True)  # no review
+        step = WorkflowStep(name="write", outputs={"summary": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        tasks = build_string_output_review_tasks(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={"summary": "value"},
+            input_values={},
+            project_root=tmp_path,
+        )
+        assert tasks == []
+
+    def test_agent_name_resolved_from_review_block(self, tmp_path: Path) -> None:
+        """When the review block specifies an agent for the target platform, it flows through."""
+        review = ReviewBlock(
+            strategy="individual",
+            instructions="Check it",
+            agent={"claude": "string-reviewer"},
+        )
+        arg = StepArgument(name="summary", description="Summary", type="string")
+        output_ref = StepOutputRef(argument_name="summary", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"summary": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        tasks = build_string_output_review_tasks(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={"summary": "value"},
+            input_values={},
+            project_root=tmp_path,
+            platform="claude",
+        )
+        assert len(tasks) == 1
+        assert tasks[0].agent_name == "string-reviewer"
+
+    def test_job_dir_outside_project_root_falls_back(self, tmp_path: Path) -> None:
+        """When job.job_dir is not under project_root, source_location falls back to the absolute path."""
+        review = ReviewBlock(strategy="individual", instructions="Check it")
+        arg = StepArgument(name="summary", description="Summary", type="string")
+        output_ref = StepOutputRef(argument_name="summary", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"summary": output_ref})
+        # job.job_dir lives in a sibling directory, NOT under tmp_path
+        outside = tmp_path.parent / f"outside_{tmp_path.name}"
+        outside.mkdir()
+        workflow = Workflow(name="main", summary="Test", steps=[step])
+        job = JobDefinition(
+            name="test_job",
+            summary="Test",
+            step_arguments=[arg],
+            workflows={"main": workflow},
+            job_dir=outside / ".deepwork" / "jobs" / "test_job",
+        )
+
+        tasks = build_string_output_review_tasks(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={"summary": "value"},
+            input_values={},
+            project_root=tmp_path,
+        )
+        assert len(tasks) == 1
+        # source_location falls back to the absolute job.yml path
+        assert str(outside) in tasks[0].source_location
+        assert tasks[0].source_location.endswith("job.yml:0")
+
+
+class TestRunQualityGateStringOutputs:
+    """End-to-end tests: run_quality_gate emits reviews for string outputs.
+
+    Validates JOBS-REQ-004.8.1 — string output reviews are not silently dropped.
+    """
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_string_output_review_produces_instructions(self, tmp_path: Path) -> None:
+        """run_quality_gate returns guidance when a string output has a review block."""
+        review = ReviewBlock(strategy="individual", instructions="Check the summary value")
+        arg = StepArgument(name="summary", description="Summary", type="string")
+        output_ref = StepOutputRef(argument_name="summary", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"summary": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        with patch("deepwork.jobs.mcp.quality_gate.load_all_rules", return_value=([], [])):
+            result = run_quality_gate(
+                step=step,
+                job=job,
+                workflow=workflow,
+                outputs={"summary": "processed 42 documents"},
+                input_values={},
+                work_summary=None,
+                project_root=tmp_path,
+            )
+
+        assert result is not None
+        assert "Quality reviews are required" in result
+
+        # The generated instruction file must include the string value
+        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
+        md_files = list(instructions_dir.glob("*.md"))
+        assert len(md_files) == 1
+        body = md_files[0].read_text()
+        assert "## Content to Review" in body
+        assert "processed 42 documents" in body
+        assert "Check the summary value" in body
+        # No Files to Review section for inline-content tasks
+        assert "## Files to Review" not in body
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_passed_marker_skips_string_review_on_same_value(self, tmp_path: Path) -> None:
+        """A .passed marker for an inline review is honored when the value is unchanged."""
+        review = ReviewBlock(strategy="individual", instructions="Check it")
+        arg = StepArgument(name="summary", description="Summary", type="string")
+        output_ref = StepOutputRef(argument_name="summary", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"summary": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        # First run: produces a task and writes the instruction file.
+        with patch("deepwork.jobs.mcp.quality_gate.load_all_rules", return_value=([], [])):
+            first = run_quality_gate(
+                step=step,
+                job=job,
+                workflow=workflow,
+                outputs={"summary": "cached value"},
+                input_values={},
+                work_summary=None,
+                project_root=tmp_path,
+            )
+        assert first is not None
+
+        # Drop a .passed marker next to the instruction file.
+        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
+        md_files = list(instructions_dir.glob("*.md"))
+        assert len(md_files) == 1
+        review_id = md_files[0].stem
+        (instructions_dir / f"{review_id}.passed").write_bytes(b"")
+
+        # Second run with the same value — should be skipped by the cache.
+        with patch("deepwork.jobs.mcp.quality_gate.load_all_rules", return_value=([], [])):
+            second = run_quality_gate(
+                step=step,
+                job=job,
+                workflow=workflow,
+                outputs={"summary": "cached value"},
+                input_values={},
+                work_summary=None,
+                project_root=tmp_path,
+            )
+        assert second is None
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_changed_string_value_invalidates_cache(self, tmp_path: Path) -> None:
+        """Changing the string value produces a new review_id so the cache is bypassed."""
+        review = ReviewBlock(strategy="individual", instructions="Check it")
+        arg = StepArgument(name="summary", description="Summary", type="string")
+        output_ref = StepOutputRef(argument_name="summary", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"summary": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        # Run with value A and mark as passed.
+        with patch("deepwork.jobs.mcp.quality_gate.load_all_rules", return_value=([], [])):
+            run_quality_gate(
+                step=step,
+                job=job,
+                workflow=workflow,
+                outputs={"summary": "value A"},
+                input_values={},
+                work_summary=None,
+                project_root=tmp_path,
+            )
+        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
+        md_files = list(instructions_dir.glob("*.md"))
+        assert len(md_files) == 1
+        review_id_a = md_files[0].stem
+        (instructions_dir / f"{review_id_a}.passed").write_bytes(b"")
+
+        # Run with value B — different review_id, so review runs again.
+        with patch("deepwork.jobs.mcp.quality_gate.load_all_rules", return_value=([], [])):
+            result = run_quality_gate(
+                step=step,
+                job=job,
+                workflow=workflow,
+                outputs={"summary": "value B"},
+                input_values={},
+                work_summary=None,
+                project_root=tmp_path,
+            )
+        assert result is not None
+        assert "Quality reviews are required" in result
 
 
 class TestQualityGatePassCaching:

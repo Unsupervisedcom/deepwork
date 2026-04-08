@@ -24,6 +24,10 @@ def compute_review_id(task: ReviewTask, project_root: Path) -> str:
 
     Format: ``{sanitized_rule}--{sanitized_paths}--{content_hash_12}``.
 
+    For tasks with ``inline_content`` (type: string outputs), the paths
+    component is the literal ``"inline"`` and the content hash is derived
+    from the inline string value.
+
     Args:
         task: The ReviewTask to compute an ID for.
         project_root: Absolute path to the project root.
@@ -33,7 +37,7 @@ def compute_review_id(task: ReviewTask, project_root: Path) -> str:
     """
     rule_part = _sanitize_for_id(task.rule_name)
     paths_part = _paths_component(task.files_to_review)
-    hash_part = _content_hash(task.files_to_review, project_root)
+    hash_part = _content_hash(task.files_to_review, project_root, task.inline_content)
     return f"{rule_part}--{paths_part}--{hash_part}"
 
 
@@ -47,8 +51,11 @@ def _paths_component(files: list[str]) -> str:
 
     Each path has ``/`` replaced with ``-``.  Multiple paths are sorted
     alphabetically, then joined with ``_AND_``.  If the result exceeds
-    100 characters, falls back to ``{N}_files``.
+    100 characters, falls back to ``{N}_files``.  When ``files`` is
+    empty (inline-content tasks), returns the literal ``"inline"``.
     """
+    if not files:
+        return "inline"
     sanitized = sorted(f.replace("/", "-") for f in files)
     joined = "_AND_".join(sanitized)
     if len(joined) > 100:
@@ -56,11 +63,16 @@ def _paths_component(files: list[str]) -> str:
     return joined
 
 
-def _content_hash(files: list[str], project_root: Path) -> str:
-    """SHA-256 content hash (first 12 hex chars) of the given files.
+def _content_hash(
+    files: list[str], project_root: Path, inline_content: str | None = None
+) -> str:
+    """SHA-256 content hash (first 12 hex chars) of the task content.
 
     Files are sorted alphabetically before concatenation.  Files that
-    cannot be read contribute the placeholder ``MISSING``.
+    cannot be read contribute the placeholder ``MISSING``.  When
+    ``inline_content`` is provided, it is mixed into the hash (via a
+    sentinel marker) so that each distinct string value produces a
+    distinct review ID.
     """
     h = hashlib.sha256()
     for filepath in sorted(files):
@@ -69,6 +81,9 @@ def _content_hash(files: list[str], project_root: Path) -> str:
         except (OSError, UnicodeDecodeError):
             content = "MISSING"
         h.update(content.encode("utf-8"))
+    if inline_content is not None:
+        h.update(b"\x00INLINE\x00")
+        h.update(inline_content.encode("utf-8"))
     return h.hexdigest()[:12]
 
 
@@ -219,11 +234,18 @@ def build_instruction_file(
     parts.append(task.instructions.strip())
     parts.append("")
 
-    # Files to review
-    parts.append("## Files to Review\n")
-    for filepath in task.files_to_review:
-        parts.append(f"- @{filepath}")
-    parts.append("")
+    # Files to review (omitted for inline-content tasks with no files)
+    if task.files_to_review:
+        parts.append("## Files to Review\n")
+        for filepath in task.files_to_review:
+            parts.append(f"- @{filepath}")
+        parts.append("")
+
+    # Inline content to review (for type: string outputs)
+    if task.inline_content is not None:
+        parts.append("## Content to Review\n")
+        parts.append(task.inline_content.rstrip())
+        parts.append("")
 
     # Additional context: unchanged matching files
     if task.additional_files:
@@ -280,6 +302,8 @@ def _describe_scope(task: ReviewTask) -> str:
     Returns:
         Scope description string.
     """
+    if not task.files_to_review and task.inline_content is not None:
+        return "inline content"
     if len(task.files_to_review) == 1:
         return task.files_to_review[0]
     return f"{len(task.files_to_review)} files"
