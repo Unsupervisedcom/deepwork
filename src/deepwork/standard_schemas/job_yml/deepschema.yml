@@ -76,6 +76,15 @@ requirements:
     auto-pass rather than fail. Avoid criteria that penalize steps for not doing things
     outside their scope.
 
+  review-strategy-matches-criteria-scope: >
+    A review `strategy: individual` MUST only be used when every listed criterion can be
+    evaluated from a single file in isolation. Criteria that require cross-file comparison,
+    project-wide enumeration, set-level properties (coverage, minimality, deduplication),
+    or reasoning about the relationship between multiple output files MUST use
+    `strategy: matches_together` so the reviewer sees the full set at once. Using
+    `individual` with cross-cutting criteria forces each reviewer to redo the project-wide
+    scan N times and multiplies latency without improving review quality.
+
   review-no-redundant-context: >
     Review `instructions` MUST NOT repeat domain context already in `common_job_info` since
     the framework automatically prepends it to review prompts.
