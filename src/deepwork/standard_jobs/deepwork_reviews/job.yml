@@ -225,7 +225,7 @@ workflows:
 
           ### migrated_skill_backups
 
-          All backup copies of deleted skills in `.deepwork/tmp/migrated_skills/`. If no skills were migrated, this output should contain a single file `.deepwork/tmp/migrated_skills/NONE.md` stating that no review-like skills were found.
+          All backup copies of deleted skills in `.deepwork/tmp/migrated_skills/`. If no skills were migrated, this output should be an empty list.
 
         inputs: {}
         outputs:
