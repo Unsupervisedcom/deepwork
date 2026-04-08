@@ -49,6 +49,14 @@ workflows:
 
           Ensure the project's top-level `.deepreview` file contains the two built-in DeepWork review rules: `suggest_new_reviews` and `prompt_best_practices`. These are general-purpose rules that benefit any project using DeepWork Reviews.
 
+          ## Reference material
+
+          The DeepWork plugin ships full, detailed versions of these two review prompts at:
+          - `plugins/claude/example_reviews/prompt_best_practices.md`
+          - `plugins/claude/example_reviews/suggest_new_reviews.md`
+
+          Read these for context on each review's intent, checklist, and tone. The inline YAML rules in steps 2 and 3 below are condensed versions suitable for emitting into the target project's `.deepreview` file — always emit the inline form (not `instructions: { file: ... }`), since target projects don't have the example files. Use the example files only as reference when deciding what the condensed inline text should say.
+
           ## Task
 
           ### 1. Check the existing `.deepreview` file
