@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- DeepSchema PostToolUse hook (`deepschema_write`) no longer reports `File is not valid JSON` for YAML files whose name has no extension (e.g. `.deepreview`). The hook now parses target files and the referenced JSON Schema as YAML, which is a superset of JSON, so both formats are accepted regardless of file extension. DW-REQ-011.7.3 updated to match. (Mirrors the fix shipped in #338 for the workflow quality gate.)
+
 ### Removed
 ## [0.13.1] - 2026-04-06
 

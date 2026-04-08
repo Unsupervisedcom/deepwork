@@ -7,11 +7,12 @@ json_schema_path validation. Reports errors via additionalContext.
 
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys
 from pathlib import Path
+
+import yaml
 
 from deepwork.hooks.wrapper import (
     HookInput,
@@ -114,29 +115,28 @@ def _relative_path(path: Path, project_root: Path) -> str:
 def _validate_json_schema(filepath: Path, schema_path: Path) -> str | None:
     """Validate a file against a JSON Schema.
 
-    Parses the file as YAML if it has a .yml/.yaml extension, otherwise as JSON.
-    Returns error message or None on success.
+    Parses the file as YAML, which is a superset of JSON, so both YAML and
+    JSON formats are accepted regardless of file extension. Returns error
+    message or None on success.
     """
     if not schema_path.exists():
         return f"JSON Schema file not found: {schema_path}"
 
     try:
-        content = filepath.read_text(encoding="utf-8")
-        if filepath.suffix in (".yml", ".yaml"):
-            import yaml
-
-            parsed = yaml.safe_load(content)
-        else:
-            parsed = json.loads(content)
-    except json.JSONDecodeError as e:
-        return f"File is not valid JSON: {e}"
-    except Exception as e:
+        parsed = yaml.safe_load(filepath.read_text(encoding="utf-8"))
+    except (yaml.YAMLError, UnicodeDecodeError) as e:
         return f"Cannot parse file: {e}"
 
     try:
-        schema_data = json.loads(schema_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as e:
+        schema_data = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    except (yaml.YAMLError, UnicodeDecodeError, OSError) as e:
         return f"Cannot read JSON Schema: {e}"
+
+    # JSON Schema must be an object or a boolean (per JSON Schema spec).
+    # Anything else (e.g., a bare string from yaml.safe_load on free-form
+    # text) would crash the validator with a SchemaError.
+    if not isinstance(schema_data, (dict, bool)):
+        return f"Cannot read JSON Schema: not a JSON Schema object (got {type(schema_data).__name__})"
 
     try:
         from deepwork.utils.validation import ValidationError, validate_against_schema

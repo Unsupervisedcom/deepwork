@@ -152,6 +152,48 @@ class TestDeepschemaWriteHook:
         assert "must conform to the DeepSchema" in result.context
         assert "CRITICAL" not in result.context
 
+    def test_json_schema_validation_of_yaml_file_with_no_extension(
+        self, tmp_path: Path
+    ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        """Files like `.deepreview` whose `Path.suffix` is empty (the leading
+        dot is treated as a hidden-file marker, not an extension separator)
+        MUST still be parsed as YAML — not as JSON. Regression for the bug
+        where `.deepreview` files reported `File is not valid JSON: Expecting
+        value: line 1 column 1 (char 0)`."""
+        json_schema = (
+            tmp_path / ".deepwork" / "schemas" / "dotfile_test" / "test.schema.json"
+        )
+        json_schema.parent.mkdir(parents=True)
+        json_schema.write_text(
+            json.dumps(
+                {
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {"name": {"type": "string"}},
+                }
+            ),
+            encoding="utf-8",
+        )
+        (json_schema.parent / "deepschema.yml").write_text(
+            "matchers:\n  - '**/.myappconfig'\njson_schema_path: 'test.schema.json'\nrequirements:\n  r1: 'MUST conform'\n",
+            encoding="utf-8",
+        )
+        target = tmp_path / ".myappconfig"
+        target.write_text("name: valid\n", encoding="utf-8")
+        # Sanity check: this is the case the old extension-based dispatch
+        # missed — Path.suffix is empty for any dot-prefixed filename, so
+        # the old code routed `.myappconfig`, `.deepreview`, etc. to
+        # json.loads() and produced false-positive parse errors.
+        assert target.suffix == ""
+
+        hook_input = _make_hook_input(str(target), str(tmp_path))
+        result = deepschema_write_hook(hook_input)
+        assert "must conform to the DeepSchema" in result.context
+        assert "CRITICAL" not in result.context
+        assert "File is not valid JSON" not in result.context
+
     def test_json_schema_validation_of_invalid_yaml_file(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.3, DW-REQ-011.7.5).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES

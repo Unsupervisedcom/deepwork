@@ -50,7 +50,7 @@ The DeepSchema system provides rich, file-level schemas with automatic validatio
 
 1. The write hook MUST fire on PostToolUse events for Write and Edit tools.
 2. For each applicable schema, the hook MUST inject a conformance note: "Note: this file must conform to the DeepSchema at `<path>`".
-3. If `json_schema_path` is set, the hook MUST validate the written file against the JSON Schema, parsing YAML files (`.yml`/`.yaml`) as YAML before validation.
+3. If `json_schema_path` is set, the hook MUST validate the written file against the JSON Schema. The file content MUST be parsed as YAML (which is a superset of JSON), so both YAML and JSON formats are accepted regardless of file extension.
 4. If `verification_bash_command` is set, the hook MUST execute each command with the file path as `$1`, with a 30-second timeout.
 5. Validation failures MUST be reported via `hookSpecificOutput.additionalContext` so the agent can act on them.
 6. The hook MUST NOT use `systemMessage` for validation output — that route is user-visible only.
