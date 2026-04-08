@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 import yaml
 
@@ -136,12 +137,17 @@ def _validate_json_schema(filepath: Path, schema_path: Path) -> str | None:
     # Anything else (e.g., a bare string from yaml.safe_load on free-form
     # text) would crash the validator with a SchemaError.
     if not isinstance(schema_data, (dict, bool)):
-        return f"Cannot read JSON Schema: not a JSON Schema object (got {type(schema_data).__name__})"
+        return (
+            f"Cannot read JSON Schema: not a JSON Schema object (got {type(schema_data).__name__})"
+        )
 
     try:
         from deepwork.utils.validation import ValidationError, validate_against_schema
 
-        validate_against_schema(parsed, schema_data)
+        # validate_against_schema's signature only types dict, but the
+        # underlying jsonschema.validate also accepts bool schemas per spec
+        # (true = accept all, false = reject all). Cast to satisfy mypy.
+        validate_against_schema(parsed, cast("dict[str, Any]", schema_data))
     except ValidationError as e:
         return f"JSON Schema validation failed: {e}"
 

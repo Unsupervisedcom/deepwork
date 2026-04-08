@@ -24,6 +24,32 @@ def _make_hook_input(
     )
 
 
+def _write_name_required_schema(tmp_path: Path, slug: str, matcher: str) -> None:
+    """Create a named DeepSchema under `.deepwork/schemas/<slug>/` whose
+    `json_schema_path` requires a top-level `name` string. Used by the
+    _validate_json_schema exercise tests below, which all share the same
+    schema shape and differ only in the matcher glob.
+    """
+    schema_dir = tmp_path / ".deepwork" / "schemas" / slug
+    schema_dir.mkdir(parents=True)
+    (schema_dir / "test.schema.json").write_text(
+        json.dumps(
+            {
+                "type": "object",
+                "required": ["name"],
+                "properties": {"name": {"type": "string"}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (schema_dir / "deepschema.yml").write_text(
+        f"matchers:\n  - '{matcher}'\n"
+        "json_schema_path: 'test.schema.json'\n"
+        "requirements:\n  r1: 'MUST conform'\n",
+        encoding="utf-8",
+    )
+
+
 class TestDeepschemaWriteHook:
     def test_no_schemas_returns_empty(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.1).
@@ -70,25 +96,7 @@ class TestDeepschemaWriteHook:
     def test_json_schema_validation_failure(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.3, DW-REQ-011.7.5).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-        # Create a JSON Schema
-        json_schema = tmp_path / ".deepwork" / "schemas" / "json_test" / "test.schema.json"
-        json_schema.parent.mkdir(parents=True)
-        json_schema.write_text(
-            json.dumps(
-                {
-                    "type": "object",
-                    "required": ["name"],
-                    "properties": {"name": {"type": "string"}},
-                }
-            ),
-            encoding="utf-8",
-        )
-        # Create schema referencing the JSON Schema
-        (json_schema.parent / "deepschema.yml").write_text(
-            "matchers:\n  - '**/*.json'\njson_schema_path: 'test.schema.json'\nrequirements:\n  r1: 'MUST conform'\n",
-            encoding="utf-8",
-        )
-        # Write invalid JSON
+        _write_name_required_schema(tmp_path, slug="json_test", matcher="**/*.json")
         target = tmp_path / "data.json"
         target.write_text('{"other": "field"}', encoding="utf-8")
 
@@ -100,22 +108,7 @@ class TestDeepschemaWriteHook:
     def test_json_schema_validation_success(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.3).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-        json_schema = tmp_path / ".deepwork" / "schemas" / "json_test" / "test.schema.json"
-        json_schema.parent.mkdir(parents=True)
-        json_schema.write_text(
-            json.dumps(
-                {
-                    "type": "object",
-                    "required": ["name"],
-                    "properties": {"name": {"type": "string"}},
-                }
-            ),
-            encoding="utf-8",
-        )
-        (json_schema.parent / "deepschema.yml").write_text(
-            "matchers:\n  - '**/*.json'\njson_schema_path: 'test.schema.json'\nrequirements:\n  r1: 'MUST conform'\n",
-            encoding="utf-8",
-        )
+        _write_name_required_schema(tmp_path, slug="json_test", matcher="**/*.json")
         target = tmp_path / "data.json"
         target.write_text('{"name": "valid"}', encoding="utf-8")
 
@@ -127,23 +120,8 @@ class TestDeepschemaWriteHook:
     def test_json_schema_validation_of_yaml_file(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.3).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-        """YAML files validated against a JSON Schema should be parsed as YAML, not JSON."""
-        json_schema = tmp_path / ".deepwork" / "schemas" / "yml_test" / "test.schema.json"
-        json_schema.parent.mkdir(parents=True)
-        json_schema.write_text(
-            json.dumps(
-                {
-                    "type": "object",
-                    "required": ["name"],
-                    "properties": {"name": {"type": "string"}},
-                }
-            ),
-            encoding="utf-8",
-        )
-        (json_schema.parent / "deepschema.yml").write_text(
-            "matchers:\n  - '**/*.yml'\njson_schema_path: 'test.schema.json'\nrequirements:\n  r1: 'MUST conform'\n",
-            encoding="utf-8",
-        )
+        # YAML files validated against a JSON Schema should be parsed as YAML, not JSON.
+        _write_name_required_schema(tmp_path, slug="yml_test", matcher="**/*.yml")
         target = tmp_path / "data.yml"
         target.write_text("name: valid\nother: field\n", encoding="utf-8")
 
@@ -152,34 +130,15 @@ class TestDeepschemaWriteHook:
         assert "must conform to the DeepSchema" in result.context
         assert "CRITICAL" not in result.context
 
-    def test_json_schema_validation_of_yaml_file_with_no_extension(
-        self, tmp_path: Path
-    ) -> None:
+    def test_json_schema_validation_of_yaml_file_with_no_extension(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.3).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-        """Files like `.deepreview` whose `Path.suffix` is empty (the leading
-        dot is treated as a hidden-file marker, not an extension separator)
-        MUST still be parsed as YAML — not as JSON. Regression for the bug
-        where `.deepreview` files reported `File is not valid JSON: Expecting
-        value: line 1 column 1 (char 0)`."""
-        json_schema = (
-            tmp_path / ".deepwork" / "schemas" / "dotfile_test" / "test.schema.json"
-        )
-        json_schema.parent.mkdir(parents=True)
-        json_schema.write_text(
-            json.dumps(
-                {
-                    "type": "object",
-                    "required": ["name"],
-                    "properties": {"name": {"type": "string"}},
-                }
-            ),
-            encoding="utf-8",
-        )
-        (json_schema.parent / "deepschema.yml").write_text(
-            "matchers:\n  - '**/.myappconfig'\njson_schema_path: 'test.schema.json'\nrequirements:\n  r1: 'MUST conform'\n",
-            encoding="utf-8",
-        )
+        # Files like `.deepreview` whose `Path.suffix` is empty (the leading
+        # dot is treated as a hidden-file marker, not an extension separator)
+        # MUST still be parsed as YAML — not as JSON. Regression for the bug
+        # where `.deepreview` files reported `File is not valid JSON:
+        # Expecting value: line 1 column 1 (char 0)`.
+        _write_name_required_schema(tmp_path, slug="dotfile_test", matcher="**/.myappconfig")
         target = tmp_path / ".myappconfig"
         target.write_text("name: valid\n", encoding="utf-8")
         # Sanity check: this is the case the old extension-based dispatch
@@ -197,23 +156,8 @@ class TestDeepschemaWriteHook:
     def test_json_schema_validation_of_invalid_yaml_file(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.7.3, DW-REQ-011.7.5).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-        """YAML files that fail JSON Schema validation should report errors."""
-        json_schema = tmp_path / ".deepwork" / "schemas" / "yml_test" / "test.schema.json"
-        json_schema.parent.mkdir(parents=True)
-        json_schema.write_text(
-            json.dumps(
-                {
-                    "type": "object",
-                    "required": ["name"],
-                    "properties": {"name": {"type": "string"}},
-                }
-            ),
-            encoding="utf-8",
-        )
-        (json_schema.parent / "deepschema.yml").write_text(
-            "matchers:\n  - '**/*.yml'\njson_schema_path: 'test.schema.json'\nrequirements:\n  r1: 'MUST conform'\n",
-            encoding="utf-8",
-        )
+        # YAML files that fail JSON Schema validation should report errors.
+        _write_name_required_schema(tmp_path, slug="yml_test", matcher="**/*.yml")
         target = tmp_path / "data.yml"
         target.write_text("other: field\n", encoding="utf-8")
 
