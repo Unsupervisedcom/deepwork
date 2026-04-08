@@ -246,15 +246,20 @@ class TestValidateJsonSchema:
         assert result is not None
         assert "not found" in result
 
-    def test_invalid_json_file(self, tmp_path: Path) -> None:
-        """Returns an error string when the data file is not valid JSON."""
-        data_file = tmp_path / "data.json"
-        data_file.write_text("not json")
+    def test_invalid_yaml_file(self, tmp_path: Path) -> None:
+        """Returns an error string when the data file cannot be parsed as YAML.
+
+        Files are now parsed via yaml.safe_load (a JSON superset), so the
+        previous "not json" content is actually valid YAML (a string scalar).
+        Use a syntactically broken construct that YAML cannot parse.
+        """
+        data_file = tmp_path / "data.yml"
+        data_file.write_text("key: [unclosed\n")
         schema_file = tmp_path / "schema.json"
         schema_file.write_text("{}")
         result = _validate_json_schema(data_file, schema_file)
         assert result is not None
-        assert "not valid JSON" in result
+        assert "Cannot parse file" in result
 
     def test_generic_parse_error(self, tmp_path: Path) -> None:
         """Returns a 'Cannot parse file' error when reading the data file raises a decode error."""
@@ -269,12 +274,31 @@ class TestValidateJsonSchema:
         assert result is not None
         assert "Cannot parse file" in result
 
-    def test_invalid_schema_file_json(self, tmp_path: Path) -> None:
-        """Returns a 'Cannot read JSON Schema' error when the schema file is not valid JSON."""
+    def test_invalid_schema_file_not_an_object(self, tmp_path: Path) -> None:
+        """Returns a 'Cannot read JSON Schema' error when the schema file
+        parses but is not a JSON Schema (i.e., not an object or boolean).
+
+        Schema files are now parsed via yaml.safe_load, which turns
+        "not json schema" into the bare string "not json schema". That is
+        not a valid JSON Schema, so we reject it before invoking the
+        validator (which would otherwise raise SchemaError).
+        """
         data_file = tmp_path / "data.json"
         data_file.write_text('{"key": "value"}')
         schema_file = tmp_path / "schema.json"
         schema_file.write_text("not json schema")
+        result = _validate_json_schema(data_file, schema_file)
+        assert result is not None
+        assert "Cannot read JSON Schema" in result
+        assert "not a JSON Schema object" in result
+
+    def test_invalid_schema_file_unparseable(self, tmp_path: Path) -> None:
+        """Returns a 'Cannot read JSON Schema' error when the schema file
+        cannot be parsed at all (broken YAML/JSON)."""
+        data_file = tmp_path / "data.json"
+        data_file.write_text('{"key": "value"}')
+        schema_file = tmp_path / "schema.json"
+        schema_file.write_text("key: [unclosed\n")
         result = _validate_json_schema(data_file, schema_file)
         assert result is not None
         assert "Cannot read JSON Schema" in result
