@@ -77,16 +77,18 @@ requirements:
     outside their scope.
 
   review-strategy-matches-criteria-scope: >
-    Choose the review `strategy` based on whether the criteria need to reason across the
-    other changed files in the same review set. Use `individual` when the focus is
-    heavily on each file itself and the reviewer is unlikely to need to look at the other
-    changed files in order to evaluate this one — the reviewer MAY still consult unchanged
-    project files for context (imports, references, related code, conventions), and that
-    does not disqualify `individual`. Use `matches_together` when the changed files are
-    likely to need to be looked at alongside each other during review — e.g., criteria
-    about coverage across the set, deduplication, consistency between the files, or any
-    property of the set as a whole. Picking `individual` for set-level criteria forces
-    each spawned reviewer to redo the full cross-file scan N times and multiplies latency
+    The review `strategy` SHOULD match whether the criteria need to reason across the
+    other changed files in the same review set. `strategy: individual` SHOULD be used
+    when the focus is on each file itself and the reviewer is unlikely to need to see
+    the other changed files in order to evaluate this one. A reviewer operating under
+    `individual` MAY consult unchanged project files for context (imports, references,
+    related code, conventions); such consultation does NOT require switching to
+    `matches_together`. `strategy: matches_together` SHOULD be used when the changed
+    files are likely to need to be looked at alongside each other during review.
+    `strategy: individual` MUST NOT be used when any criterion is a property of the
+    set of changed files as a whole (e.g., coverage across the set, deduplication of
+    the set, cross-file consistency, set-level minimality), because it forces each
+    spawned reviewer to redo the cross-file scan N times and multiplies latency
     without improving review quality.
 
   review-no-redundant-context: >
