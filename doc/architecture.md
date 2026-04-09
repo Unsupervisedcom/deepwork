@@ -191,7 +191,7 @@ deepwork setup
 
 The setup command:
 - Detects Claude Code by checking for `~/.claude` directory
-- Configures `~/.claude/settings.json` with marketplace, plugin, MCP permissions, and auto-update
+- Configures `~/.claude/settings.json` with marketplace, plugin, MCP permissions, auto-update, and project-root-relative `Read`/`Write`/`Edit` permissions for `/.deepwork/**/*` (applies to every project)
 - Idempotent — safe to run multiple times
 - Preserves existing settings
 

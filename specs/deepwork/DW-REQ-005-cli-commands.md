@@ -82,6 +82,7 @@ The DeepWork CLI provides five active commands: `serve` (starts the MCP server),
    2. `autoUpdate: true` on the marketplace entry.
    3. The `deepwork@deepwork-plugins` plugin set to `true` in `enabledPlugins`.
    4. The `mcp__plugin_deepwork_deepwork__*` permission in `permissions.allow`.
+   5. The project-root-relative filesystem permissions `Read(/.deepwork/**/*)`, `Write(/.deepwork/**/*)`, and `Edit(/.deepwork/**/*)` in `permissions.allow`, so the plugin can operate on `.deepwork/` in every project without per-prompt approval. The leading slash makes each path project-root-relative rather than home-directory-relative.
 4. The command MUST be idempotent — running it when settings are already configured MUST produce no changes and no file write.
 5. The command MUST preserve existing settings (other plugins, permissions, etc.) when adding DeepWork entries.
 6. The command MUST create `~/.claude` and `settings.json` if they do not exist.
