@@ -21,6 +21,15 @@ class ConfigError(Exception):
 
 
 @dataclass
+class ReferenceFile:
+    """A file whose contents should be inlined into a review's instructions."""
+
+    path: Path  # Absolute path on disk
+    relative_label: str  # Display label (e.g. the original relative path from source)
+    description: str | None = None
+
+
+@dataclass
 class ReviewRule:
     """A single named review rule from a .deepreview file."""
 
@@ -37,6 +46,7 @@ class ReviewRule:
     source_dir: Path  # Directory containing the .deepreview file
     source_file: Path  # Path to the .deepreview file
     source_line: int  # Line number of the rule name in the .deepreview file
+    reference_files: list[ReferenceFile] = field(default_factory=list)
 
 
 @dataclass
@@ -52,6 +62,7 @@ class ReviewTask:
     all_changed_filenames: list[str] | None = None
     precomputed_info_bash_command: str | None = None  # Resolved command to run
     inline_content: str | None = None  # Inline string value for type: string outputs
+    reference_files: list[ReferenceFile] = field(default_factory=list)
 
 
 def parse_deepreview_file(filepath: Path) -> list[ReviewRule]:
@@ -135,6 +146,8 @@ def _parse_rule(
         review_data.get("precomputed_info_for_reviewer_bash_command"), source_dir
     )
 
+    reference_files = _parse_reference_files(review_data.get("reference_files", []), source_dir)
+
     return ReviewRule(
         name=name,
         description=description,
@@ -149,7 +162,30 @@ def _parse_rule(
         source_dir=source_dir,
         source_file=source_file,
         source_line=source_line,
+        reference_files=reference_files,
     )
+
+
+def _parse_reference_files(
+    entries: list[dict[str, Any]], source_dir: Path
+) -> list[ReferenceFile]:
+    """Parse optional `reference_files` entries from a .deepreview rule.
+
+    Paths are resolved relative to ``source_dir``. Existence is not checked
+    here — missing files are handled at inlining time so authors see the
+    error surfaced in the generated review instructions.
+    """
+    result: list[ReferenceFile] = []
+    for entry in entries:
+        raw_path = entry["path"]
+        result.append(
+            ReferenceFile(
+                path=(source_dir / raw_path).resolve(),
+                relative_label=raw_path,
+                description=entry.get("description"),
+            )
+        )
+    return result
 
 
 def _resolve_instructions(instructions: str | dict[str, Any], source_dir: Path) -> str:

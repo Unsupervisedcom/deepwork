@@ -202,3 +202,67 @@ class TestGenerateReviewRules:
         rules, errors = generate_review_rules(tmp_path)
         rule_names = [r.name for r in rules]
         assert "config.json DeepSchema Compliance" in rule_names
+
+
+class TestCollectReferenceFiles:
+    """Tests for _collect_reference_files populating reference_files."""
+
+    def _write_schema_yaml(self, schema_dir: Path, body: str) -> Path:
+        schema_dir.mkdir(parents=True, exist_ok=True)
+        path = schema_dir / "deepschema.yml"
+        path.write_text(body, encoding="utf-8")
+        return path
+
+    def test_examples_references_json_schema_populate_refs(self, tmp_path: Path) -> None:
+        schema_dir = tmp_path / ".deepwork" / "schemas" / "thing"
+        self._write_schema_yaml(
+            schema_dir,
+            """
+summary: "x"
+matchers: ["**/*.yml"]
+json_schema_path: "thing.schema.json"
+examples:
+  - path: "example.yml"
+    description: "an example"
+references:
+  - path: "../guide.md"
+    description: "guide"
+requirements:
+  r1: "MUST be valid"
+""",
+        )
+        (schema_dir / "example.yml").write_text("k: v")
+        (schema_dir / "thing.schema.json").write_text("{}")
+        (schema_dir.parent / "guide.md").write_text("# guide")
+
+        rules, errors = generate_review_rules(tmp_path)
+        rule = next(r for r in rules if r.name == "thing DeepSchema Compliance")
+        labels = {r.relative_label for r in rule.reference_files}
+        assert labels == {"example.yml", "../guide.md", "thing.schema.json"}
+        # Paths resolve relative to schema dir.
+        by_label = {r.relative_label: r for r in rule.reference_files}
+        assert by_label["example.yml"].path == (schema_dir / "example.yml").resolve()
+        assert by_label["../guide.md"].path == (schema_dir.parent / "guide.md").resolve()
+        assert by_label["thing.schema.json"].path == (
+            schema_dir / "thing.schema.json"
+        ).resolve()
+        assert errors == []
+
+    def test_missing_reference_file_surfaces_error(self, tmp_path: Path) -> None:
+        schema_dir = tmp_path / ".deepwork" / "schemas" / "thing"
+        self._write_schema_yaml(
+            schema_dir,
+            """
+summary: "x"
+matchers: ["**/*.yml"]
+examples:
+  - path: "missing.yml"
+    description: "nope"
+requirements:
+  r1: "MUST be valid"
+""",
+        )
+        rules, errors = generate_review_rules(tmp_path)
+        rule = next(r for r in rules if r.name == "thing DeepSchema Compliance")
+        assert rule.reference_files == []
+        assert any("missing.yml" in e for e in errors)

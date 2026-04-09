@@ -12,7 +12,7 @@ from pathlib import Path
 from deepwork.deepschema.config import DeepSchema
 from deepwork.deepschema.discovery import anonymous_target_filename, discover_all_schemas
 from deepwork.deepschema.resolver import resolve_all
-from deepwork.review.config import ReviewRule
+from deepwork.review.config import ReferenceFile, ReviewRule
 
 
 def generate_review_rules(
@@ -36,6 +36,9 @@ def generate_review_rules(
     for schema in resolved:
         rule = _schema_to_review_rule(schema, project_root)
         if rule is not None:
+            refs, ref_errors = _collect_reference_files(schema)
+            rule.reference_files = refs
+            errors.extend(ref_errors)
             rules.append(rule)
 
     return rules, errors
@@ -144,6 +147,63 @@ def _build_anonymous_instructions(schema: DeepSchema) -> str:
     parts.append("\n\n")
     parts.append(_build_requirements_body(schema.requirements))
     return "".join(parts)
+
+
+def _collect_reference_files(
+    schema: DeepSchema,
+) -> tuple[list[ReferenceFile], list[str]]:
+    """Collect ReferenceFile entries from a schema's examples, references, and JSON schema.
+
+    Paths are resolved relative to the schema's source directory
+    (``schema.source_path.parent``), matching the convention used by
+    existing schema YAML files (e.g. ``json_schema_path: "job.schema.json"``
+    in a sibling directory).
+
+    Missing files are skipped and an error string is appended to the
+    returned error list so callers can surface it to the user.
+    """
+    schema_dir = schema.source_path.parent
+    refs: list[ReferenceFile] = []
+    errors: list[str] = []
+
+    def _add(raw_path: str, description: str | None, source_field: str) -> None:
+        # Skip URL-style references — these are informational pointers, not
+        # local files to inline.
+        if raw_path.startswith(("http://", "https://")):
+            return
+        resolved = (schema_dir / raw_path).resolve()
+        if not resolved.exists():
+            errors.append(
+                f"{schema.source_path}: {source_field} entry '{raw_path}' not found "
+                f"(resolved to {resolved})"
+            )
+            return
+        refs.append(
+            ReferenceFile(
+                path=resolved,
+                relative_label=raw_path,
+                description=description,
+            )
+        )
+
+    for example in schema.examples:
+        path = example.get("path")
+        if path:
+            _add(path, example.get("description"), "examples")
+
+    for reference in schema.references:
+        path = reference.get("path")
+        if path:
+            _add(path, reference.get("description"), "references")
+
+    if schema.json_schema_path:
+        _add(
+            schema.json_schema_path,
+            f"JSON Schema for {schema.name}",
+            "json_schema_path",
+        )
+
+    return refs, errors
 
 
 def _build_requirements_body(requirements: dict[str, str]) -> str:

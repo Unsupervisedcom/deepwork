@@ -176,7 +176,7 @@ examples:
     description: "Canonical template showing all supported fields with placeholder comments."
 
 references:
-  - path: "../../../doc/job_yml_guidance.md"
+  - path: "../../../../doc/job_yml_guidance.md"
     description: "Behavioral impact of every job.yml field — what each field does at runtime."
   - path: "../../standard_jobs/deepwork_jobs/templates/step_instruction.md.template"
     description: "Expected structure for step instruction files (Objective, Task, Output Format, Quality Criteria)."
