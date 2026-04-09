@@ -56,6 +56,20 @@ class TestFormatForClaude:
         result = format_for_claude([(task, file_path)], tmp_path)
         assert 'name: "py_review review of 3 files"' in result
 
+    def test_inline_content_task_name_says_inline_content(self, tmp_path: Path) -> None:
+        """Inline-content tasks render as "review of inline content", not "0 files"."""
+        task = ReviewTask(
+            rule_name="string_rule",
+            files_to_review=[],
+            instructions="Review the value.",
+            agent_name=None,
+            inline_content="the value",
+        )
+        file_path = tmp_path / "instructions.md"
+        result = format_for_claude([(task, file_path)], tmp_path)
+        assert 'name: "string_rule review of inline content"' in result
+        assert "0 files" not in result
+
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3b).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_default_subagent_type_when_no_agent(self, tmp_path: Path) -> None:

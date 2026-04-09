@@ -137,6 +137,9 @@ def _task_name(task: ReviewTask) -> str:
     rule comes from a subdirectory .deepreview file.  This disambiguates
     same-named rules from different directories (REVIEW-REQ-004.10).
 
+    For inline-content tasks (type: string step outputs per JOBS-REQ-004.8)
+    the scope reads ``inline content`` instead of a file count.
+
     Args:
         task: The ReviewTask to name.
 
@@ -144,6 +147,8 @@ def _task_name(task: ReviewTask) -> str:
         Task name string.
     """
     prefix = _scope_prefix(task)
+    if not task.files_to_review and task.inline_content is not None:
+        return f"{prefix}{task.rule_name} review of inline content"
     if len(task.files_to_review) == 1:
         return f"{prefix}{task.rule_name} review of {task.files_to_review[0]}"
     return f"{prefix}{task.rule_name} review of {len(task.files_to_review)} files"

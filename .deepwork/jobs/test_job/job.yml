@@ -1,0 +1,74 @@
+name: test_job
+summary: "Exercise the DeepWork quality-gate review system with string and file_path outputs to verify string-output reviews run"
+
+step_arguments:
+  - name: report_file
+    description: "A short markdown report file produced by the step — exercises the file_path review path."
+    type: file_path
+
+  - name: summary_text
+    description: "A 1-2 sentence narrative summary of the step's work — exercises a string output review defined at the step output-ref level."
+    type: string
+
+  - name: metrics_text
+    description: "A concise metrics blurb containing at least one numeric value — exercises a string output review defined at the step_argument level (inherited by any step that outputs it)."
+    type: string
+    review:
+      strategy: individual
+      instructions: |
+        Verify the value is a concise metrics summary of 1-3 sentences that contains at
+        least one numeric value. Flag it if the value is empty, a placeholder, or does
+        not mention any numbers.
+
+  - name: notes_text
+    description: "A freeform notes string with no review attached — control case that should produce no review task."
+    type: string
+
+workflows:
+  test_review_system:
+    summary: "Produce four outputs of mixed types and review levels to verify the quality gate reviews them correctly."
+    common_job_info_provided_to_all_steps_at_runtime: |
+      This bespoke test job verifies that the DeepWork quality-gate review system
+      executes reviews on string outputs as well as file_path outputs. Four outputs are
+      produced in a single step, each hitting a distinct review code path. The control
+      case (notes_text) must NOT produce a review task.
+    steps:
+      - name: produce_outputs
+        instructions: |
+          # Produce test outputs for the quality gate
+
+          Create each of the four outputs below, then call `finished_step` with all four
+          values. Keep the content short.
+
+          1. **report_file**: write a small markdown file at
+             `.deepwork/jobs/test_job/fixtures/report.md` (create the parent directory
+             first if needed). Two or three lines — a heading plus a sentence is fine.
+
+          2. **summary_text**: a 1-2 sentence narrative summary describing the work
+             performed in this step.
+
+          3. **metrics_text**: a 1-3 sentence metrics blurb that includes at least one
+             number (e.g., "Produced 4 outputs, 3 reviewed, in under 1 second.").
+
+          4. **notes_text**: any freeform string — this one has no review attached.
+
+          Expected quality-gate result: three review tasks (one per output that has a
+          review configured). `notes_text` should not produce a review task.
+        outputs:
+          report_file:
+            review:
+              strategy: individual
+              instructions: |
+                Verify the file is a valid markdown document with a recognisable heading
+                or non-empty first line. Flag it if the file is empty or contains no
+                markdown structure.
+          summary_text:
+            review:
+              strategy: individual
+              instructions: |
+                Verify the value is a non-empty narrative summary of 1-2 sentences
+                written in plain English that describes some concrete outcome of the
+                step. Flag it if the value is empty, a placeholder, or does not describe
+                anything.
+          metrics_text: {}
+          notes_text: {}
