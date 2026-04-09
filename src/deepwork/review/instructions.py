@@ -63,9 +63,7 @@ def _paths_component(files: list[str]) -> str:
     return joined
 
 
-def _content_hash(
-    files: list[str], project_root: Path, inline_content: str | None = None
-) -> str:
+def _content_hash(files: list[str], project_root: Path, inline_content: str | None = None) -> str:
     """SHA-256 content hash (first 12 hex chars) of the task content.
 
     Files are sorted alphabetically before concatenation.  Files that

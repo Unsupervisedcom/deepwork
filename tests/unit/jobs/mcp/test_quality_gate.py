@@ -1220,9 +1220,7 @@ class TestBuildStringOutputReviewTasks:
     def test_argument_level_review_produces_inline_task(self, tmp_path: Path) -> None:
         """A review block on the step_argument (not the output-ref) produces a task."""
         arg_review = ReviewBlock(strategy="matches_together", instructions="Verify the note")
-        arg = StepArgument(
-            name="note", description="Note", type="string", review=arg_review
-        )
+        arg = StepArgument(name="note", description="Note", type="string", review=arg_review)
         output_ref = StepOutputRef(argument_name="note", required=True)
         step = WorkflowStep(name="write", outputs={"note": output_ref})
         job, workflow = _make_job(tmp_path, [arg], step)
@@ -1244,18 +1242,12 @@ class TestBuildStringOutputReviewTasks:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_both_output_and_arg_level_reviews_produce_separate_tasks(
-        self, tmp_path: Path
-    ) -> None:
+    def test_both_output_and_arg_level_reviews_produce_separate_tasks(self, tmp_path: Path) -> None:
         """Output-level and arg-level reviews on the same string output both execute."""
         output_review = ReviewBlock(strategy="individual", instructions="Output check")
         arg_review = ReviewBlock(strategy="individual", instructions="Arg check")
-        arg = StepArgument(
-            name="summary", description="Summary", type="string", review=arg_review
-        )
-        output_ref = StepOutputRef(
-            argument_name="summary", required=True, review=output_review
-        )
+        arg = StepArgument(name="summary", description="Summary", type="string", review=arg_review)
+        output_ref = StepOutputRef(argument_name="summary", required=True, review=output_review)
         step = WorkflowStep(name="write", outputs={"summary": output_ref})
         job, workflow = _make_job(tmp_path, [arg], step)
 
