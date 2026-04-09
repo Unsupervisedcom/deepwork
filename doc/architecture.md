@@ -937,7 +937,7 @@ Runs the `.deepreview`-based code review pipeline. Registered directly in `jobs/
 The `--platform` CLI option on `serve` controls which formatter is used (defaults to `"claude"`).
 
 #### 7. `get_configured_reviews`
-Lists configured review rules from `.deepreview` files without running the pipeline.
+Lists configured review rules from `.deepreview` files and DeepSchema-generated synthetic rules without running the pipeline. When `only_rules_matching_files` is provided, catch-all rules (include patterns composed solely of `*`/`/`, e.g. `**/*`) are excluded.
 
 **Parameters**:
 - `only_rules_matching_files: list[str] | None` - Filter to rules matching these files.
