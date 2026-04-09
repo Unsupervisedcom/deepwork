@@ -12,6 +12,14 @@ MARKETPLACE_SOURCE = {
 }
 PLUGIN_KEY = "deepwork@deepwork-plugins"
 MCP_PERMISSION = "mcp__plugin_deepwork_deepwork__*"
+# Permissions granting full access to .deepwork/ in every project.
+# Leading slash makes the path project-root-relative (per Claude Code docs),
+# so these rules apply to `.deepwork/**/*` in each project, not `~/.deepwork/`.
+DEEPWORK_DIR_PERMISSIONS = [
+    "Read(/.deepwork/**/*)",
+    "Write(/.deepwork/**/*)",
+    "Edit(/.deepwork/**/*)",
+]
 
 
 def claude_setup() -> list[str]:
@@ -63,6 +71,12 @@ def claude_setup() -> list[str]:
     if MCP_PERMISSION not in allow:
         allow.append(MCP_PERMISSION)
         changes.append(f"Added '{MCP_PERMISSION}' to permissions.allow")
+
+    # 4. Ensure full access to .deepwork/ in every project
+    for perm in DEEPWORK_DIR_PERMISSIONS:
+        if perm not in allow:
+            allow.append(perm)
+            changes.append(f"Added '{perm}' to permissions.allow")
 
     if changes:
         settings_path.write_text(json.dumps(settings, indent=2) + "\n")

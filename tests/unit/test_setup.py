@@ -10,6 +10,7 @@ import pytest
 
 from deepwork.cli.main import cli
 from deepwork.setup.claude import (
+    DEEPWORK_DIR_PERMISSIONS,
     MARKETPLACE_KEY,
     MCP_PERMISSION,
     PLUGIN_KEY,
@@ -38,7 +39,7 @@ class TestClaudeSetupFreshFile:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_settings(self, claude_home: Path) -> None:
         changes = claude_setup()
-        assert len(changes) == 3
+        assert len(changes) == 6
         settings = _read_settings(claude_home)
 
         # marketplace registered
@@ -53,6 +54,10 @@ class TestClaudeSetupFreshFile:
 
         # MCP permission
         assert MCP_PERMISSION in settings["permissions"]["allow"]
+
+        # .deepwork directory permissions (project-relative via leading slash)
+        for perm in DEEPWORK_DIR_PERMISSIONS:
+            assert perm in settings["permissions"]["allow"]
 
 
 class TestClaudeSetupIdempotent:
@@ -97,7 +102,7 @@ class TestClaudeSetupNoClaudeDir:
         monkeypatch.setattr(Path, "home", staticmethod(lambda: fake_home))
 
         changes = claude_setup()
-        assert len(changes) == 3
+        assert len(changes) == 6
         assert (fake_home / ".claude" / "settings.json").exists()
 
 
