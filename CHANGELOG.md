@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+## [0.13.2] - 2026-04-09
+
+### Added
+
 - `deepwork setup` CLI command that auto-configures Claude Code settings (marketplace, plugin, MCP permissions, auto-update) (#343)
 - `deepwork setup` also grants project-root-relative `Read`/`Write`/`Edit` permissions for `/.deepwork/**/*` so the plugin can operate on `.deepwork/` in every project without per-prompt approval
 - Integration tests for quality gate review caching (JOBS-REQ-004.5.7)
@@ -430,7 +439,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.1...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.2...HEAD
+[0.13.2]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.2
 [0.13.1]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.1
 [0.13.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.0
 [0.12.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.12.0
