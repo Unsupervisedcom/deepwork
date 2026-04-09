@@ -10,7 +10,7 @@ This document describes the Model Context Protocol (MCP) tools exposed by the De
 
 ## Tools
 
-DeepWork exposes eleven MCP tools:
+DeepWork exposes thirteen MCP tools:
 
 ### 1. `get_workflows`
 
@@ -54,7 +54,64 @@ interface WorkflowInfo {
 
 ---
 
-### 2. `start_workflow`
+### 2. `get_active_workflow`
+
+Return the currently active workflow for a session, if one exists. This is useful after compaction, reset, or any host-specific session restore flow.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `session_id` | `string` | Yes | The persistent DeepWork session ID for the current host session. In Claude Code this is `CLAUDE_CODE_SESSION_ID`. |
+| `agent_id` | `string \| null` | No | Optional host-specific agent identifier for agent-scoped workflow state. In Claude Code this is `CLAUDE_CODE_AGENT_ID`. |
+
+#### Returns
+
+```typescript
+{
+  has_active_workflow: boolean;
+  stack: StackEntry[];
+  active_workflow?: {
+    job_name: string;
+    workflow_name: string;
+    goal: string;
+    started_at: string;
+    step_number: number;
+    total_steps: number;
+    completed_steps: string[];
+    current_step: ActiveStepInfo;
+  } | null;
+}
+```
+
+---
+
+### 3. `validate_step_outputs`
+
+Validate a planned `finished_step` payload against the active step without advancing the workflow or running quality reviews. Use this as a dry run when you want to catch wrong output names, missing required outputs, bad types, or missing files before calling `finished_step`.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `outputs` | `Record<string, string \| string[]>` | Yes | Map of planned step output names to values. Validation uses the active step's declared output contract without advancing the workflow. |
+| `session_id` | `string` | Yes | The persistent DeepWork session ID for the current host session. In Claude Code this is `CLAUDE_CODE_SESSION_ID`. |
+| `agent_id` | `string \| null` | No | Optional host-specific agent identifier for agent-scoped workflow state. In Claude Code this is `CLAUDE_CODE_AGENT_ID`. |
+
+#### Returns
+
+```typescript
+{
+  valid: boolean;
+  errors: string[];
+  current_step: ActiveStepInfo;
+  stack: StackEntry[];
+}
+```
+
+---
+
+### 4. `start_workflow`
 
 Start a new workflow session. Initializes state tracking and returns the first step's instructions. Supports nested workflows — starting a workflow while one is active pushes onto a stack.
 
@@ -82,7 +139,7 @@ Start a new workflow session. Initializes state tracking and returns the first s
 
 ---
 
-### 3. `finished_step`
+### 5. `finished_step`
 
 Report that you've finished a workflow step. Validates outputs and runs quality reviews (from step definitions and .deepreview rules), then returns the next action.
 
@@ -121,7 +178,7 @@ Report that you've finished a workflow step. Validates outputs and runs quality 
 
 ---
 
-### 4. `abort_workflow`
+### 6. `abort_workflow`
 
 Abort the current workflow and return to the parent workflow (if nested). Use this when a workflow cannot be completed.
 
@@ -149,7 +206,7 @@ Abort the current workflow and return to the parent workflow (if nested). Use th
 
 ---
 
-### 5. `go_to_step`
+### 7. `go_to_step`
 
 Navigate back to a prior step in the current workflow. Clears all progress from the target step onward, forcing re-execution of subsequent steps to ensure consistency. Use this when earlier outputs need revision or quality issues are discovered in later steps.
 
@@ -181,7 +238,7 @@ Navigate back to a prior step in the current workflow. Clears all progress from 
 
 ---
 
-### 6. `get_review_instructions`
+### 8. `get_review_instructions`
 
 Run a review of changed files based on `.deepreview` configuration files and DeepSchema-generated synthetic review rules. Returns a list of review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields for the Task tool.
 
@@ -201,7 +258,7 @@ A plain string with one of:
 
 ---
 
-### 7. `get_configured_reviews`
+### 9. `get_configured_reviews`
 
 List all configured review rules from `.deepreview` files and DeepSchema-generated synthetic rules. Returns each rule's name, description, and defining file location. Optionally filters to rules matching specific files.
 
@@ -225,7 +282,7 @@ Array<{
 
 ---
 
-### 8. `mark_review_as_passed`
+### 10. `mark_review_as_passed`
 
 Mark a review as passed so it won't be re-run while reviewed files remain unchanged. The `review_id` is provided in the instruction file's "After Review" section.
 
@@ -245,7 +302,7 @@ A plain string with either:
 
 ---
 
-### 9. `get_named_schemas`
+### 11. `get_named_schemas`
 
 List all named DeepSchemas discovered across all schema sources (project-local, standard, and env var). Returns each schema's name, summary, and matcher patterns.
 
@@ -263,7 +320,7 @@ Array<{
 }>
 ```
 
-### 10. `register_session_job`
+### 12. `register_session_job`
 
 Register a transient job definition scoped to the current session. The job is validated against the job schema and stored so that `start_workflow` can discover it. Can be called multiple times to overwrite.
 
@@ -288,7 +345,7 @@ Register a transient job definition scoped to the current session. The job is va
 
 On validation failure, returns `{ error: string }` with details about what failed.
 
-### 11. `get_session_job`
+### 13. `get_session_job`
 
 Retrieve the YAML content of a session-scoped job definition previously registered with `register_session_job`.
 
@@ -375,7 +432,9 @@ The `finished_step` tool returns one of three statuses:
    |
 3. Execute step instructions, create outputs
    |
-4. finished_step(outputs, session_id)
+4. validate_step_outputs(outputs, session_id)   // optional dry run
+   |
+5. finished_step(outputs, session_id)
    |
    +-- status = "needs_work" -> Fix issues, goto 4
    +-- status = "next_step"  -> Execute new instructions, goto 4

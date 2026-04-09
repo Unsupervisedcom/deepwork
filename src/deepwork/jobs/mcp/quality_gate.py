@@ -22,7 +22,7 @@ from deepwork.jobs.parser import (
 )
 from deepwork.review.config import ReviewRule, ReviewTask
 from deepwork.review.discovery import load_all_rules
-from deepwork.review.formatter import format_for_claude
+from deepwork.review.formatter import FORMATTERS, format_for_claude
 from deepwork.review.instructions import (
     write_instruction_files,
 )
@@ -469,16 +469,35 @@ def run_quality_gate(
         return None
 
     # 9. Format as review instructions
-    review_output = format_for_claude(task_files, project_root)
+    formatter = FORMATTERS.get(platform, format_for_claude)
+    review_output = formatter(task_files, project_root)
 
     # 10. Build complete response with guidance
-    guidance = _build_review_guidance(review_output)
+    guidance = _build_review_guidance(review_output, platform)
 
     return guidance
 
 
-def _build_review_guidance(review_output: str) -> str:
+def _build_review_guidance(review_output: str, platform: str = "claude") -> str:
     """Build the complete review guidance including /review skill instructions."""
+    if platform == "openclaw":
+        return f"""Quality reviews are required before this step can advance.
+
+{review_output}
+
+## How to Run Reviews
+
+For each review task listed above, launch it as a parallel OpenClaw sub-agent with `sessions_spawn`.
+
+- Spawn every listed review before waiting for any completion event.
+- Use each instruction path exactly as written, relative to the workspace root. Do not rewrite it as an absolute host path.
+- Do not set `timeoutSeconds` on these review spawns; let the runtime default apply. If the tool requires a timeout value, use `0`.
+- After all spawns are accepted, use `sessions_yield` to wait for completion events before continuing.
+
+## After Reviews
+
+For any failing reviews, if you believe the issue is invalid, then you can call `mark_review_as_passed` on it. Otherwise, you should act on any feedback from the review to fix the issues. Once done, call `finished_step` again to see if you will pass now."""
+
     return f"""Quality reviews are required before this step can advance.
 
 {review_output}

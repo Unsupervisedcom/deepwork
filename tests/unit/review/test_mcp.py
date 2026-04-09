@@ -142,6 +142,30 @@ class TestRunReview:
         assert "Invoke the following" in result
         mock_write.assert_called_once()
 
+    @patch("deepwork.review.mcp.write_instruction_files")
+    @patch("deepwork.review.mcp.match_files_to_rules")
+    @patch("deepwork.review.mcp.get_changed_files")
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_openclaw_pipeline_returns_openclaw_output(
+        self, mock_load: Any, mock_diff: Any, mock_match: Any, mock_write: Any, tmp_path: Path
+    ) -> None:
+        rule = _make_rule(tmp_path)
+        task = ReviewTask(
+            rule_name="test_rule",
+            files_to_review=["app.py"],
+            instructions="Review it.",
+            agent_name=None,
+        )
+        mock_load.return_value = ([rule], [])
+        mock_diff.return_value = ["app.py"]
+        mock_match.return_value = [task]
+        mock_write.return_value = [(task, tmp_path / "instr.md")]
+
+        result = run_review(tmp_path, "openclaw")
+
+        assert "sessions_spawn" in result
+        assert "label: test_rule review of app.py" in result
+
     def test_unsupported_platform_raises_review_tool_error(self, tmp_path: Path) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.1.3).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -311,6 +335,16 @@ class TestReviewToolRegistration:
             enable_quality_gate=False,
         )
         assert "get_configured_reviews" in _get_tool_names(server)
+
+    def test_get_active_workflow_tool_is_registered(self, tmp_path: Path) -> None:
+        """get_active_workflow is registered on the MCP server."""
+        from deepwork.jobs.mcp.server import create_server
+
+        server = create_server(
+            project_root=tmp_path,
+            enable_quality_gate=False,
+        )
+        assert "get_active_workflow" in _get_tool_names(server)
 
 
 @pytest.mark.usefixtures("without_standard_schemas")
