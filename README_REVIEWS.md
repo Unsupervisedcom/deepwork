@@ -106,7 +106,18 @@ rule_name:
     additional_context:             # Optional. Extra context for the reviewer.
       all_changed_filenames: true
       unchanged_matching_files: true
+    reference_files:                # Optional. Files whose contents are inlined
+      - path: "docs/style_guide.md" # into a "## Reference Materials" section of
+        description: "Style guide"  # every generated review instruction file.
 ```
+
+### Reference Files
+
+`reference_files` inline small support documents (style guides, JSON schemas, templates) directly into the reviewer's prompt so the agent does not need to fetch them at review time. Paths are resolved relative to the `.deepreview` file's directory.
+
+Inlining is capped: at most 20 files and 256 KB of total content per review. Files beyond either cap are listed in an omitted summary line; oversized files are truncated with a marker. Missing or unreadable files produce a graceful marker but do not abort the review.
+
+DeepSchema-generated reviews automatically populate `reference_files` from the schema's `references` entries and `json_schema_path`. A schema's `examples` are listed (by path and description) in the review instructions but are **not** inlined — reviewers can fetch them on demand.
 
 ## Review Strategies
 

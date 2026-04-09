@@ -85,3 +85,9 @@ DeepWork Reviews uses `.deepreview` YAML configuration files to define review ru
 5. If the command fails (non-zero exit or timeout), the system MUST inject an error message into the instruction file rather than failing the pipeline.
 6. The command MUST be executed at most once per unique command string across all tasks in a review run.
 7. When multiple rules declare precompute commands, all unique commands MUST be executed in parallel.
+
+### REVIEW-REQ-001.10: Reference Files
+
+1. A rule's `review` block MAY declare an optional `reference_files` array. Each entry MUST be an object with a required `path` field and an optional `description` field.
+2. Each `reference_files.path` MUST be resolved relative to the `.deepreview` file's directory and surfaced on the parsed rule as an absolute path with its original relative string preserved as a display label.
+3. When `reference_files` is not specified, the parsed rule's `reference_files` MUST default to an empty list.

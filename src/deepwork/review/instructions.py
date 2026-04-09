@@ -11,10 +11,24 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from deepwork.review.config import ReviewTask
+from deepwork.review.config import ReferenceFile, ReviewTask
 from deepwork.utils.fs import safe_write
 
 INSTRUCTIONS_DIR = ".deepwork/tmp/review_instructions"
+
+# Caps on inlined reference file content to keep review prompts tractable.
+MAX_INLINE_FILES = 20
+MAX_INLINE_TOTAL_BYTES = 256 * 1024
+
+_FENCE_LANG_BY_EXT = {
+    ".yml": "yaml",
+    ".yaml": "yaml",
+    ".json": "json",
+    ".md": "markdown",
+    ".py": "python",
+    ".sh": "bash",
+    ".toml": "toml",
+}
 
 _SANITIZE_RE = re.compile(r"[^a-zA-Z0-9\-_.]")
 
@@ -232,6 +246,12 @@ def build_instruction_file(
     parts.append(task.instructions.strip())
     parts.append("")
 
+    # Reference materials — inlined file contents (subject to caps)
+    if task.reference_files:
+        parts.append("## Reference Materials\n")
+        parts.append(_build_reference_files_section(task.reference_files))
+        parts.append("")
+
     # Files to review (omitted for inline-content tasks with no files)
     if task.files_to_review:
         parts.append("## Files to Review\n")
@@ -289,6 +309,65 @@ def build_instruction_file(
         parts.append("")
 
     return "\n".join(parts)
+
+
+def _build_reference_files_section(reference_files: list[ReferenceFile]) -> str:
+    """Build a markdown section inlining reference file contents.
+
+    Reads each file in order and emits a `### {label}` subsection with an
+    optional description and a fenced code block. Honors ``MAX_INLINE_FILES``
+    and ``MAX_INLINE_TOTAL_BYTES`` — once either cap is hit, remaining
+    entries are summarized in an "omitted" line rather than inlined.
+
+    Files that cannot be read produce a graceful marker but do not abort the
+    section (and their would-be bytes do not count toward the budget).
+    """
+    parts: list[str] = []
+    total_bytes = 0
+    inlined_count = 0
+    omitted: list[str] = []
+
+    for ref in reference_files:
+        if inlined_count >= MAX_INLINE_FILES or total_bytes >= MAX_INLINE_TOTAL_BYTES:
+            omitted.append(ref.relative_label)
+            continue
+
+        header = f"### {ref.relative_label}"
+        if ref.description:
+            header += f"\n\n{ref.description.strip()}"
+
+        try:
+            content = ref.path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as e:
+            parts.append(header)
+            parts.append(f"\n\n(could not inline {ref.relative_label}: {e})\n")
+            continue
+
+        lang = _FENCE_LANG_BY_EXT.get(ref.path.suffix.lower(), "text")
+        remaining = MAX_INLINE_TOTAL_BYTES - total_bytes
+        truncated_marker = ""
+        content_bytes = content.encode("utf-8")
+        if len(content_bytes) > remaining:
+            # Truncate at a character boundary near the byte budget.
+            content = content_bytes[:remaining].decode("utf-8", errors="ignore")
+            truncated_marker = (
+                f"\n... (truncated: file is {len(content_bytes)} bytes, "
+                f"budget left was {remaining})"
+            )
+
+        parts.append(header)
+        parts.append(f"\n\n```{lang}\n{content}{truncated_marker}\n```\n")
+        total_bytes += len(content.encode("utf-8"))
+        inlined_count += 1
+
+    if omitted:
+        omitted_list = ", ".join(omitted)
+        parts.append(
+            f"\n_({len(omitted)} more reference file(s) omitted due to size/count caps: "
+            f"{omitted_list})_\n"
+        )
+
+    return "".join(parts)
 
 
 def _describe_scope(task: ReviewTask) -> str:

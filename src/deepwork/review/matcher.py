@@ -236,6 +236,7 @@ def match_files_to_rules(
                         source_location=source_location,
                         all_changed_filenames=all_filenames,
                         precomputed_info_bash_command=precompute_cmd,
+                        reference_files=rule.reference_files,
                     )
                 )
 
@@ -253,6 +254,7 @@ def match_files_to_rules(
                     additional_files=additional,
                     all_changed_filenames=all_filenames,
                     precomputed_info_bash_command=precompute_cmd,
+                    reference_files=rule.reference_files,
                 )
             )
 
@@ -266,6 +268,7 @@ def match_files_to_rules(
                     source_location=source_location,
                     all_changed_filenames=all_filenames,
                     precomputed_info_bash_command=precompute_cmd,
+                    reference_files=rule.reference_files,
                 )
             )
 

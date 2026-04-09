@@ -55,3 +55,12 @@ For each `ReviewTask`, the system generates a self-contained markdown instructio
 2. The "Precomputed Context" section MUST be the last content section in the instruction file, appearing after all file listing sections and before the "After Review" section.
 3. The section MUST contain the verbatim stdout of the precomputed command.
 4. When the command failed, the section MUST contain an error message with stderr and exit code.
+
+### REVIEW-REQ-005.8: Reference Materials Section
+
+1. When a task's `reference_files` is empty, the instruction file MUST NOT contain a "Reference Materials" section.
+2. When a task has `reference_files`, the instruction file MUST contain a "## Reference Materials" section placed between "Review Instructions" and "Files to Review".
+3. Each inlined file MUST be rendered with a `### {relative_label}` subheading, the optional description, and the file contents inside a fenced code block whose language is inferred from the file extension.
+4. The number of inlined reference files MUST NOT exceed `MAX_INLINE_FILES` (20). Entries beyond that cap MUST be listed in an "omitted due to size/count caps" summary line rather than inlined.
+5. The total inlined byte size of reference file contents MUST NOT exceed `MAX_INLINE_TOTAL_BYTES` (256 * 1024). Files whose contents would exceed the remaining byte budget MUST be truncated with a visible truncation marker, and any subsequent entries MUST be reported in the omitted summary line.
+6. When a referenced file cannot be read (missing, permission denied, or invalid UTF-8), the system MUST emit a graceful marker line referencing the file and the error, MUST NOT abort the section, and MUST NOT count the file's would-be bytes against the budget.

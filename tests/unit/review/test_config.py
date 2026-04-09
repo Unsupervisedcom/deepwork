@@ -519,3 +519,51 @@ my_rule:
         )
         rules = parse_deepreview_file(filepath)
         assert rules[0].precomputed_info_bash_command is None
+
+
+class TestReferenceFiles:
+    """Tests for parsing the optional `reference_files` review field."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.10.1, REVIEW-REQ-001.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_reference_files_parsed_with_resolved_paths(self, tmp_path: Path) -> None:
+        (tmp_path / "guide.md").write_text("# guide")
+        filepath = _write_deepreview(
+            tmp_path,
+            """
+my_rule:
+  description: "Test rule."
+  match:
+    include: ["**/*.py"]
+  review:
+    strategy: individual
+    instructions: "Review."
+    reference_files:
+      - path: "guide.md"
+        description: "Reviewer guide"
+""",
+        )
+        rules = parse_deepreview_file(filepath)
+        assert len(rules[0].reference_files) == 1
+        ref = rules[0].reference_files[0]
+        assert ref.path == (tmp_path / "guide.md").resolve()
+        assert ref.relative_label == "guide.md"
+        assert ref.description == "Reviewer guide"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.10.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_reference_files_default_empty(self, tmp_path: Path) -> None:
+        filepath = _write_deepreview(
+            tmp_path,
+            """
+my_rule:
+  description: "Test rule."
+  match:
+    include: ["**/*.py"]
+  review:
+    strategy: individual
+    instructions: "Review."
+""",
+        )
+        rules = parse_deepreview_file(filepath)
+        assert rules[0].reference_files == []

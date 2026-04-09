@@ -8,8 +8,10 @@ REVIEW-REQ-009, REVIEW-REQ-009.4, REVIEW-REQ-009.5.
 from pathlib import Path
 from unittest.mock import patch
 
-from deepwork.review.config import ReviewTask
+from deepwork.review.config import ReferenceFile, ReviewTask
 from deepwork.review.instructions import (
+    MAX_INLINE_FILES,
+    MAX_INLINE_TOTAL_BYTES,
     _run_precompute_command,
     _run_precompute_commands,
     build_instruction_file,
@@ -591,3 +593,80 @@ class TestPrecomputedContext:
         content = results[0][1].read_text()
         assert "## Precomputed Context" in content
         assert "precomputed data" in content
+
+
+class TestReferenceFileInlining:
+    """Tests for reference_files inlining in build_instruction_file."""
+
+    def _task_with_refs(self, refs: list[ReferenceFile]) -> ReviewTask:
+        return ReviewTask(
+            rule_name="r",
+            files_to_review=["src/app.py"],
+            instructions="Review.",
+            agent_name=None,
+            source_location="",
+            reference_files=refs,
+        )
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.8.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_empty_reference_files_no_section(self) -> None:
+        task = _make_task()
+        content = build_instruction_file(task)
+        assert "## Reference Materials" not in content
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.8.2, REVIEW-REQ-005.8.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_inlines_content_with_description(self, tmp_path: Path) -> None:
+        f = tmp_path / "example.yml"
+        f.write_text("key: value\n")
+        task = self._task_with_refs(
+            [ReferenceFile(path=f, relative_label="example.yml", description="Sample YAML")]
+        )
+        content = build_instruction_file(task)
+        assert "## Reference Materials" in content
+        assert "### example.yml" in content
+        assert "Sample YAML" in content
+        assert "```yaml" in content
+        assert "key: value" in content
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.8.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_count_cap_triggers_omission(self, tmp_path: Path) -> None:
+        refs: list[ReferenceFile] = []
+        for i in range(MAX_INLINE_FILES + 3):
+            f = tmp_path / f"f{i}.txt"
+            f.write_text(f"content {i}")
+            refs.append(ReferenceFile(path=f, relative_label=f"f{i}.txt"))
+        task = self._task_with_refs(refs)
+        content = build_instruction_file(task)
+        assert "omitted due to size/count caps" in content
+        assert "f20.txt" in content  # one of the omitted
+        assert content.count("```") >= 2 * MAX_INLINE_FILES
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.8.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_byte_cap_triggers_omission(self, tmp_path: Path) -> None:
+        big = tmp_path / "big.txt"
+        big.write_text("a" * (MAX_INLINE_TOTAL_BYTES + 100))
+        other = tmp_path / "other.txt"
+        other.write_text("should be omitted")
+        task = self._task_with_refs(
+            [
+                ReferenceFile(path=big, relative_label="big.txt"),
+                ReferenceFile(path=other, relative_label="other.txt"),
+            ]
+        )
+        content = build_instruction_file(task)
+        assert "truncated" in content or "omitted due to size/count caps" in content
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.8.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_missing_file_graceful(self, tmp_path: Path) -> None:
+        task = self._task_with_refs(
+            [ReferenceFile(path=tmp_path / "nope.txt", relative_label="nope.txt")]
+        )
+        content = build_instruction_file(task)
+        assert "could not inline nope.txt" in content
+        # Section still rendered; other content not aborted.
+        assert "## Reference Materials" in content

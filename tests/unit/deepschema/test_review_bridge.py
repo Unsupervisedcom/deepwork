@@ -202,3 +202,94 @@ class TestGenerateReviewRules:
         rules, errors = generate_review_rules(tmp_path)
         rule_names = [r.name for r in rules]
         assert "config.json DeepSchema Compliance" in rule_names
+
+
+class TestCollectReferenceFiles:
+    """Tests for _collect_reference_files populating reference_files."""
+
+    def _write_schema_yaml(self, schema_dir: Path, body: str) -> Path:
+        schema_dir.mkdir(parents=True, exist_ok=True)
+        path = schema_dir / "deepschema.yml"
+        path.write_text(body, encoding="utf-8")
+        return path
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.11.1, DW-REQ-011.11.2,
+    # DW-REQ-011.11.3, DW-REQ-011.11.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_references_and_json_schema_populate_refs_examples_listed(self, tmp_path: Path) -> None:
+        schema_dir = tmp_path / ".deepwork" / "schemas" / "thing"
+        self._write_schema_yaml(
+            schema_dir,
+            """
+summary: "x"
+matchers: ["**/*.yml"]
+json_schema_path: "thing.schema.json"
+examples:
+  - path: "example.yml"
+    description: "an example"
+references:
+  - path: "../guide.md"
+    description: "guide"
+requirements:
+  r1: "MUST be valid"
+""",
+        )
+        (schema_dir / "example.yml").write_text("k: v")
+        (schema_dir / "thing.schema.json").write_text("{}")
+        (schema_dir.parent / "guide.md").write_text("# guide")
+
+        rules, errors = generate_review_rules(tmp_path)
+        rule = next(r for r in rules if r.name == "thing DeepSchema Compliance")
+        # Examples are NOT in reference_files (they are listed in instructions only).
+        labels = {r.relative_label for r in rule.reference_files}
+        assert labels == {"../guide.md", "thing.schema.json"}
+        by_label = {r.relative_label: r for r in rule.reference_files}
+        assert by_label["../guide.md"].path == (schema_dir.parent / "guide.md").resolve()
+        assert by_label["thing.schema.json"].path == (schema_dir / "thing.schema.json").resolve()
+        # Examples listed in the rule's instructions text.
+        assert "Example files available for reference" in rule.instructions
+        assert "`example.yml`" in rule.instructions
+        assert "an example" in rule.instructions
+        assert errors == []
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.11.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_missing_reference_file_surfaces_error(self, tmp_path: Path) -> None:
+        schema_dir = tmp_path / ".deepwork" / "schemas" / "thing"
+        self._write_schema_yaml(
+            schema_dir,
+            """
+summary: "x"
+matchers: ["**/*.yml"]
+references:
+  - path: "missing.md"
+    description: "nope"
+requirements:
+  r1: "MUST be valid"
+""",
+        )
+        rules, errors = generate_review_rules(tmp_path)
+        rule = next(r for r in rules if r.name == "thing DeepSchema Compliance")
+        assert rule.reference_files == []
+        assert any("missing.md" in e for e in errors)
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.11.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_url_references_are_skipped(self, tmp_path: Path) -> None:
+        schema_dir = tmp_path / ".deepwork" / "schemas" / "thing"
+        self._write_schema_yaml(
+            schema_dir,
+            """
+summary: "x"
+matchers: ["**/*.yml"]
+references:
+  - path: "https://www.ietf.org/rfc/rfc2119.txt"
+    description: "RFC 2119"
+requirements:
+  r1: "MUST be valid"
+""",
+        )
+        rules, errors = generate_review_rules(tmp_path)
+        rule = next(r for r in rules if r.name == "thing DeepSchema Compliance")
+        assert rule.reference_files == []
+        assert not any("rfc2119" in e for e in errors)

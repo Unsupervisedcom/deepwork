@@ -103,6 +103,25 @@
                             "type": "string",
                             "description": "A shell command whose stdout is captured and injected into the review instruction file as precomputed context. The command path is resolved relative to the .deepreview file's directory and executed from the project root."
                         },
+                        "reference_files": {
+                            "type": "array",
+                            "description": "Files whose contents should be inlined into the review instructions (subject to size/count caps). Paths are resolved relative to the .deepreview file's directory.",
+                            "items": {
+                                "type": "object",
+                                "required": ["path"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "path": {
+                                        "type": "string",
+                                        "description": "Path to a reference file, relative to the .deepreview file's directory."
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Optional short description shown alongside the inlined contents."
+                                    }
+                                }
+                            }
+                        },
                         "additional_context": {
                             "type": "object",
                             "description": "Optional flags to include additional context in the AI's prompt.",

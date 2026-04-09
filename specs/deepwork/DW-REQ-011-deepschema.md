@@ -77,3 +77,12 @@ The DeepSchema system provides rich, file-level schemas with automatic validatio
 2. Requirements about processes, user behavior, or context not present in files SHOULD be placed in the `instructions` section instead.
 3. Requirements MUST NOT restate constraints that are already enforced by the schema's `json_schema_path` or `verification_bash_command`, including syntactic validity (e.g., "must be valid JSON"), field types, allowed enum values, required fields, and structural shape.
 4. Requirements SHOULD focus on semantic rules, behavioral gotchas, and cross-field concerns that JSON Schema cannot express.
+
+## DW-REQ-011.11: Review Bridge Reference Files
+
+1. The DeepSchema review bridge MUST populate the generated `ReviewRule.reference_files` with the schema's `references` entries and the `json_schema_path` file (when set), so reviewers receive their contents inlined in the review instructions.
+2. Each referenced path MUST be resolved relative to the schema file's directory.
+3. The schema's `examples` entries MUST NOT be inlined as reference files. Instead, the bridge MUST list them in the rule's review instruction text with their `path` and `description` so reviewers know the example material exists and can fetch it on demand.
+4. The order of inlined reference files MUST be deterministic across runs for a given schema.
+5. When a referenced file cannot be located on disk, the bridge MUST skip it and surface an error through the `errors` return of `generate_review_rules`. A missing reference file MUST NOT prevent the rule from being generated.
+6. Reference entries whose `path` begins with `http://` or `https://` MUST be skipped without producing an error, since they are informational pointers rather than local files.
