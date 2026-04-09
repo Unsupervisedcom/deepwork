@@ -1,0 +1,1297 @@
+name: marketing
+summary: "Analyze competitors' content strategies, define brand content plans, and create tracked marketing campaigns"
+
+step_arguments:
+  - name: project_name
+    description: "Name of the project or brand to analyze"
+    type: string
+
+  - name: competitors
+    description: "Comma-separated competitor names or URLs to analyze"
+    type: string
+
+  - name: content_focus
+    description: "Content area to focus on: blog, social, docs, video, or all"
+    type: string
+
+  - name: user_materials
+    description: "Optional user-provided competitor content (file paths, URLs, or pasted content)"
+    type: string
+
+  - name: context_brief.md
+    description: "Project context, brand positioning, resolved output paths, and competitor list"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Evaluate the context brief for completeness and correctness:
+        - Brand summary MUST be present and specific to the project, not generic.
+        - Output location MUST be resolved and documented.
+        - Each competitor MUST have a name and at least one verified URL.
+        - Content focus areas MUST be explicitly listed with specific channels mapped.
+        - Target audience for the final report MUST be identified.
+
+  - name: competitor_reports_manifest.md
+    description: "Index of all per-competitor report files with paths and summaries"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Read context_brief.md to get the full competitor list.
+        - Every competitor from context_brief.md MUST have an entry in the manifest.
+        - Each entry MUST include a valid file path to the competitor's report.
+        - Each entry MUST include a one-line summary of key findings.
+        - Any failures or skipped competitors MUST be explicitly documented with reasons.
+
+  - name: content_patterns.md
+    description: "Cross-competitor thematic analysis of content strategies"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Read all competitor_report files referenced in competitor_reports_manifest.md.
+        - Patterns MUST be derived from actual competitor data, not generic marketing advice.
+        - Analysis MUST compare across competitors, not summarize each individually.
+        - Quantitative comparisons (frequency, format mix) MUST be present where data supports them.
+
+  - name: own_content_audit.md
+    description: "Inventory of the brand's existing content across all channels with metadata"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Read context_brief.md for the brand's URL and known channels.
+        - Audit MUST cover the brand's website, blog, and all active social media channels.
+        - Each channel MUST include content count, publishing frequency, and date range.
+        - Content themes and formats MUST be cataloged, not just listed.
+        - Channels that were searched but have no presence MUST be documented as absent.
+        - The audit MUST be based on actual crawling/searching, not assumptions from context_brief.md.
+
+  - name: gap_analysis.md
+    description: "Content gaps and opportunities scored by impact and effort"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Read own_content_audit.md, context_brief.md, and content_patterns.md.
+        - Gaps MUST be grounded in the delta between own_content_audit.md and content_patterns.md.
+        - Each opportunity MUST have an impact/effort score or ranking.
+        - Opportunities MUST be actionable with clear next steps.
+        - Existing content strengths MUST be acknowledged, not just gaps.
+
+  - name: competitive_content_report.md
+    description: "Final competitive content analysis with executive summary and recommendations"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Read all prior outputs (context_brief.md, content_patterns.md, gap_analysis.md).
+        - Executive summary MUST be concise (under 500 words) and highlight the top 3-5 findings.
+        - Recommendations MUST be prioritized and tied to specific competitive gaps.
+        - All claims MUST trace back to data in the supporting analysis files.
+        - Report MUST be structured for the intended audience identified in context_brief.md.
+
+  - name: campaign_issue_url
+    description: "URL of the parent campaign issue created on the project tracker"
+    type: string
+
+  - name: content_ideas_comment
+    description: "Brainstormed content ideas distilled into a comment on the campaign issue"
+    type: string
+
+  - name: brainstorm_summary.md
+    description: "Summary of the interactive brainstorm: questions asked, user responses, and how input shaped the content plan"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Evaluate the brainstorm summary for evidence of genuine interactive brainstorming:
+        - Summary MUST document which structured questions were asked.
+        - Summary MUST capture key user responses (priorities, capacity, ideas).
+        - Summary MUST explain how user input shaped the final content ideas.
+        - The content ideas comment MUST reflect the user's priorities, not generic AI suggestions.
+
+  - name: content_strategy.md
+    description: "Content strategy document: pillars, posting cadence, brand voice, and platform-specific guidelines"
+    type: file_path
+    review:
+      strategy: individual
+      instructions: |
+        Read context_brief.md and own_content_audit.md for brand context and existing content.
+        - Strategy MUST cover all platforms the brand is active on or plans to be active on.
+        - Posting schedule MUST be specific (frequency per platform) and realistic.
+        - Brand voice guidelines MUST be concrete with do/don't examples, not generic platitudes.
+        - Content pillars MUST be distinct and cover a balanced mix of content types.
+        - Platform-specific adaptations MUST reflect actual platform culture differences.
+
+workflows:
+  competitive_content_analysis:
+    summary: "Analyze competitors' content strategies, identify gaps, and produce actionable recommendations"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Competitive content analysis workflow for evaluating how competitors create,
+      distribute, and position their content relative to your brand.
+
+      ## Outputs
+
+      The final report and supporting research are durable notes. If the user has
+      a notes directory (NOTES_DIR or ZK_NOTEBOOK_DIR), follow its AGENTS.md
+      conventions for note creation and placement. Supporting research goes as
+      literature notes linked from the report. Fall back to .deepwork/tmp/ only
+      if no notes directory exists.
+
+      ## Research approach
+
+      Use WebSearch and WebFetch for active competitor research. When the user
+      provides supplemental materials, ingest those alongside web research.
+      Prefer primary sources (the competitor's own content) over third-party
+      commentary.
+
+      ## Campaign tracking
+
+      After the report, the workflow creates a milestone and parent issue on the
+      user's project tracker, then facilitates an interactive brainstorm to
+      generate content ideas. The brainstorm results are posted as a comment on
+      the campaign issue so everything is tracked in one place.
+
+    steps:
+      - name: discover_context
+        instructions: |
+          # Discover project context
+
+          ## Objective
+
+          Establish the project context, validate the competitor list, resolve output
+          paths, and produce a context brief that all subsequent steps depend on.
+
+          ## Task
+
+          This step has string-type inputs. Ask structured questions using the
+          AskUserQuestion tool if any inputs are ambiguous or missing.
+
+          ### Process
+
+          1. **Read project context**
+             - Read the project's AGENTS.md (or equivalent) to understand brand name,
+               positioning, market segment, existing content, and target audience.
+             - If the project has a hub note in a notes directory (e.g., an index
+               note), read that for additional context.
+             - If project context is unclear, ask structured questions to clarify.
+
+          2. **Resolve output location**
+             - Check `NOTES_DIR` or `ZK_NOTEBOOK_DIR` for a notes directory.
+             - If found, read its AGENTS.md for note creation conventions.
+             - Fall back to `.deepwork/tmp/` if no notes directory exists.
+             - Record the resolved output path in the context brief.
+
+          3. **Validate competitors**
+             - If the user provided specific competitor names, use WebSearch to find
+               their primary URLs and verify they are real companies.
+             - If competitors are vague or incomplete, use WebSearch to identify 3-7
+               direct competitors in the market segment. Ask the user to confirm the
+               list using AskUserQuestion.
+
+          4. **Map content focus**
+             - Parse the content_focus input into specific channels: blog posts, social
+               media, documentation, video, newsletters, podcasts, whitepapers, case studies.
+             - If "all", select the top channels relevant to this market segment.
+
+          5. **Ingest user materials** (if provided)
+             - Note any user-provided URLs, files, or content for use in later steps.
+             - Map materials to specific competitors where possible.
+
+          ## Output format
+
+          ### context_brief.md
+
+          ```markdown
+          # Marketing context: [Brand Name]
+
+          ## Brand context
+          - **Brand**: [Brand name]
+          - **Market segment**: [Segment]
+          - **Positioning**: [How the brand positions itself]
+          - **Target audience**: [Primary audience]
+          - **Existing content**: [Brief summary of current content presence]
+
+          ## Configuration
+          - **Output location**: [Resolved notes directory path, or ".deepwork/tmp/"]
+          - **Report audience**: [Who will read the final report]
+
+          ## Competitors
+
+          | # | Competitor | URL | Notes |
+          |---|-----------|-----|-------|
+          | 1 | [Name]    | [URL] | [Why included] |
+          | 2 | [Name]    | [URL] | [Why included] |
+
+          ## Content focus areas
+          - [Channel 1]: [What to analyze]
+          - [Channel 2]: [What to analyze]
+
+          ## User-provided materials
+          - [Material 1]: [Mapped to competitor X]
+          - None provided
+          ```
+        inputs:
+          project_name:
+            required: true
+          competitors:
+            required: true
+          content_focus:
+            required: true
+          user_materials:
+            required: false
+        outputs:
+          context_brief.md:
+            required: true
+        process_requirements:
+          "Output Location Resolved": "The output location MUST be resolved before proceeding."
+          "Competitors Validated": "Each competitor MUST have a verified name and at least one primary URL."
+
+      - name: cca_research_all_competitors
+        instructions: |
+          # Research all competitors
+
+          ## Objective
+
+          Orchestrate parallel research across all competitors by launching the
+          shared `research` job for each competitor independently.
+
+          ## Task
+
+          ### Process
+
+          1. **Read context_brief.md** to get:
+             - The validated competitor list (names and URLs)
+             - The content focus areas
+             - The resolved output directory path
+
+          2. **Launch parallel research for each competitor**
+
+             For each competitor, launch a nested workflow using the shared
+             research job. Call `start_workflow` with:
+             - `job_name: "research"`
+             - `workflow_name: "quick"` (or `"research"` for deeper analysis)
+             - `inputs`: `topic` = "[Competitor Name] content strategy: [content focus areas]",
+               `type` = "competitive", `depth` = "quick"
+
+             Launch all competitors in parallel by spawning sub-agents — one
+             per competitor, each calling `start_workflow` independently.
+
+             The research job produces `sources.md`, `analysis.md`, and
+             `README.md` per competitor — the README serves as the competitor
+             report.
+
+             **Fallback**: If the research job is not available, launch a
+             market-researcher or general-purpose agent per competitor with a
+             prompt covering both gather and analyze phases via WebSearch and
+             WebFetch directly.
+
+          3. **Collect results**
+             - Wait for all research workflows to complete.
+             - Gather the file paths of each competitor's README.md (the report).
+
+          4. **Write manifest**
+             - Create competitor_reports_manifest.md listing all results.
+             - If any research workflow failed, document the failure and proceed
+               with available results.
+
+          ## Output format
+
+          ### competitor_reports_manifest.md
+
+          ```markdown
+          # Competitor reports manifest
+
+          **Analysis date**: [Date]
+          **Total competitors**: [N]
+          **Successful**: [N] | **Failed**: [N]
+
+          ## Reports
+
+          | Competitor | Report path | Key finding |
+          |-----------|-------------|-------------|
+          | [Name 1]  | [path/to/research/README.md] | [One-line summary] |
+          | [Name 2]  | [path/to/research/README.md] | [One-line summary] |
+
+          ## Failures (if any)
+
+          | Competitor | Reason |
+          |-----------|--------|
+          | [Name]    | [What went wrong] |
+          ```
+
+        inputs:
+          context_brief.md:
+            required: true
+        outputs:
+          competitor_reports_manifest.md:
+            required: true
+        process_requirements:
+          "Parallel Execution": "Competitor research SHOULD be launched in parallel using sub-agents."
+          "All Competitors Covered": "Every competitor in context_brief.md MUST have an entry in the manifest."
+
+      - name: cca_analyze_patterns
+        instructions: |
+          # Analyze content patterns
+
+          ## Objective
+
+          Synthesize findings from all per-competitor reports into a cross-competitor
+          analysis that identifies shared patterns, divergent strategies, and market
+          content density.
+
+          ## Task
+
+          ### Process
+
+          1. **Read inputs**
+             - Read competitor_reports_manifest.md to find all report paths.
+             - Read each report file (README.md) referenced in the manifest.
+
+          2. **Cross-competitor analysis**
+
+             Analyze across all competitors along these dimensions:
+
+             - **Content themes**: Topics competitors consistently cover vs. topics
+               unique to specific competitors. Identify the "table stakes" themes
+               every competitor addresses.
+             - **Publishing cadence**: Frequency by channel. Which competitors publish
+               most actively? Which channels get the most investment?
+             - **Format mix**: Distribution of content formats (long-form articles,
+               short posts, video, infographics, interactive tools, case studies,
+               whitepapers). Which formats dominate this market?
+             - **Channel strategy**: Where competitors concentrate effort. Which
+               channels correlate with apparent success?
+             - **Engagement signals**: Any visible metrics — social shares, comments,
+               backlinks, follower counts — that indicate what resonates.
+             - **Content quality**: Production value, depth, originality across
+               competitors. Who sets the quality bar?
+
+          3. **Identify patterns**
+             - Common strategies shared by 3+ competitors
+             - Divergent approaches that stand out from the pack
+             - Content areas with high competitor density (saturated)
+             - Content areas with sparse coverage (potential opportunities)
+
+          4. **Build comparison tables**
+             - Use data tables for quantitative comparisons where the data supports it.
+             - Avoid subjective rankings without evidence.
+
+          ## Output format
+
+          ### content_patterns.md
+
+          ```markdown
+          # Cross-competitor content patterns
+
+          ## Theme analysis
+
+          ### Table-stakes themes (covered by most competitors)
+          | Theme | Competitors covering it | Typical format |
+          |-------|----------------------|----------------|
+          | [Theme] | [Names] | [Format] |
+
+          ### Unique themes
+          | Theme | Competitor | Differentiation |
+          |-------|-----------|-----------------|
+          | [Theme] | [Name] | [How it differs] |
+
+          ## Publishing cadence comparison
+
+          | Competitor | Blog | Social | Video | Newsletter |
+          |-----------|------|--------|-------|------------|
+          | [Name]    | [Freq] | [Freq] | [Freq] | [Freq] |
+
+          ## Format distribution
+
+          | Competitor | Long-form | Short-form | Video | Case studies | Other |
+          |-----------|-----------|------------|-------|-------------|-------|
+          | [Name]    | [%/count] | [%/count]  | [%/count] | [%/count] | [Details] |
+
+          ## Channel strategy
+
+          [Analysis of where competitors invest and what appears to work]
+
+          ## Engagement signals
+
+          [Observable engagement data across competitors]
+
+          ## Quality benchmark
+
+          [Who sets the quality bar and how]
+
+          ## Key patterns
+
+          1. [Pattern 1 — supported by data above]
+          2. [Pattern 2]
+          3. [Pattern 3]
+
+          ## Saturation vs. opportunity signals
+
+          - **Saturated areas**: [Topics/formats with heavy competitor presence]
+          - **Sparse areas**: [Topics/formats with little competition]
+          ```
+
+        inputs:
+          competitor_reports_manifest.md:
+            required: true
+        outputs:
+          content_patterns.md:
+            required: true
+
+      - name: audit_own_content
+        instructions: |
+          # Audit existing content
+
+          ## Objective
+
+          Crawl and catalog the brand's existing content across all channels so
+          the gap analysis compares against what actually exists, not a brief
+          summary.
+
+          ## Task
+
+          ### Process
+
+          1. **Read context_brief.md** for the brand's website URL, known social
+             profiles, and content focus areas.
+
+          2. **Crawl the brand's website and blog**
+             - Use WebSearch and WebFetch to find all content sections (blog,
+               resources, docs, guides, case studies).
+             - Catalog recent posts: title, URL, date, format, topic.
+             - Estimate total content volume and publishing frequency.
+             - Note content themes and recurring topics.
+
+          3. **Audit social media channels**
+             - Search for the brand on each platform in the content focus areas.
+             - For each active channel: follower count, posting frequency, recent
+               content samples, engagement signals.
+             - Document channels where the brand has no presence.
+
+          4. **Catalog other content assets**
+             - Newsletter archives, podcast episodes, video channels, community
+               forums, documentation, interactive tools.
+             - Note any content in the project's repository or notes directory
+               that has not been published.
+
+          5. **Assess content maturity**
+             - Overall publishing cadence across channels.
+             - Content quality and consistency.
+             - Strongest and weakest channels.
+             - Content that could be repurposed or updated.
+
+          ## Output format
+
+          ### own_content_audit.md
+
+          ```markdown
+          # Content audit: [Brand Name]
+
+          **Audit date**: [Date]
+          **Website**: [URL]
+
+          ## Blog / Website content
+          **URL**: [Blog URL or "not found"]
+          **Total posts**: [Count or estimate]
+          **Frequency**: [Posts per month]
+          **Date range**: [Oldest to newest post observed]
+
+          | Date | Title | URL | Format | Topic |
+          |------|-------|-----|--------|-------|
+          | [Date] | [Title] | [URL] | [Type] | [Topic] |
+
+          **Themes**: [Recurring topics]
+
+          ## Social media: [Platform]
+          **Profile URL**: [URL or "not found"]
+          **Followers**: [Count]
+          **Frequency**: [Posts per period]
+
+          | Date | Content | URL | Engagement |
+          |------|---------|-----|------------|
+          | [Date] | [Summary] | [URL] | [Metrics] |
+
+          [Repeat for each channel]
+
+          ## Other content assets
+          - [Newsletters, podcasts, videos, docs, tools, etc.]
+
+          ## Channels not found
+          - [Channel]: searched, no presence found
+
+          ## Content maturity assessment
+          - **Strongest channel**: [Channel] — [Why]
+          - **Weakest channel**: [Channel] — [Why]
+          - **Overall cadence**: [Assessment]
+          - **Repurposing opportunities**: [Content that could be updated or reused]
+          ```
+        inputs:
+          context_brief.md:
+            required: true
+        outputs:
+          own_content_audit.md:
+            required: true
+        process_requirements:
+          "Actual Crawling": "The audit MUST be based on web research, not assumptions from context_brief.md."
+          "All Channels Covered": "Every channel in the content focus areas MUST be checked."
+
+      - name: cca_gap_analysis
+        instructions: |
+          # Gap analysis
+
+          ## Objective
+
+          Map the brand's current content against the competitive landscape to
+          identify gaps and score opportunities by impact, effort, and urgency.
+
+          ## Task
+
+          ### Process
+
+          1. **Read inputs**
+             - Read own_content_audit.md for what the brand already has.
+             - Read content_patterns.md for the competitive landscape.
+             - Read context_brief.md for brand positioning.
+
+          2. **Map content gaps**
+             - **Coverage gaps**: Topics competitors cover that the brand does not.
+             - **White space**: Topics no competitor covers well — first-mover opportunities.
+             - **Format gaps**: Content formats competitors use that the brand has not explored.
+             - **Channel gaps**: Channels where competitors are active but the brand is absent.
+             - **Audience gaps**: Segments competitors target that the brand underserves.
+
+          3. **Score each opportunity**
+             - **Impact** (high/medium/low): How much would this gap improve the
+               brand's competitive position?
+             - **Effort** (high/medium/low): How much work to create this content?
+               Consider production complexity, expertise needed, and ongoing commitment.
+             - **Urgency** (high/medium/low): Are competitors actively expanding here?
+               Is there a window closing?
+
+          4. **Prioritize**
+             - Quick wins: high impact, low effort
+             - Strategic investments: high impact, high effort
+             - Low-priority: low impact regardless of effort
+             - Each opportunity must link to specific competitive evidence.
+
+          ## Output format
+
+          ### gap_analysis.md
+
+          ```markdown
+          # Content gap analysis: [Brand Name]
+
+          ## Quick wins (high impact, low effort)
+
+          | # | Opportunity | Impact | Effort | Urgency | Evidence |
+          |---|-----------|--------|--------|---------|----------|
+          | 1 | [Gap description] | High | Low | [H/M/L] | [Which competitors, what data] |
+
+          ## Strategic investments (high impact, high effort)
+
+          | # | Opportunity | Impact | Effort | Urgency | Evidence |
+          |---|-----------|--------|--------|---------|----------|
+          | 1 | [Gap description] | High | High | [H/M/L] | [Evidence] |
+
+          ## Additional opportunities
+
+          | # | Opportunity | Impact | Effort | Urgency | Evidence |
+          |---|-----------|--------|--------|---------|----------|
+          | 1 | [Gap description] | [Level] | [Level] | [Level] | [Evidence] |
+
+          ## White space opportunities
+
+          [Topics or formats where no competitor has strong presence]
+
+          ## Summary
+
+          - **Total opportunities identified**: [N]
+          - **Quick wins**: [N]
+          - **Strategic investments**: [N]
+          - **Top recommendation**: [One-sentence summary of highest-priority action]
+          ```
+
+        inputs:
+          own_content_audit.md:
+            required: true
+          content_patterns.md:
+            required: true
+          context_brief.md:
+            required: true
+        outputs:
+          gap_analysis.md:
+            required: true
+
+      - name: cca_final_report
+        instructions: |
+          # Final competitive content report
+
+          ## Objective
+
+          Synthesize all prior analysis into a single executive-ready report with
+          prioritized recommendations.
+
+          ## Task
+
+          ### Process
+
+          1. **Read all prior outputs**
+             - context_brief.md — brand context and audience
+             - competitor_reports_manifest.md — per-competitor summaries
+             - own_content_audit.md — the brand's existing content inventory
+             - content_patterns.md — cross-competitor patterns
+             - gap_analysis.md — scored opportunities
+
+          2. **Write the report** following the structure below. The report should
+             be self-contained — a reader should not need to reference the supporting
+             files to understand the findings and act on the recommendations.
+
+          3. **Save to the output location** resolved in context_brief.md.
+             Follow the notes directory conventions if one was found.
+
+          ## Output format
+
+          ### competitive_content_report.md
+
+          ```markdown
+          # Marketing context: [Brand Name]
+
+          **Date**: [Date]
+          **Prepared for**: [Audience from context_brief.md]
+
+          ## Executive summary
+
+          [Under 500 words. Key findings, top 3-5 opportunities, and overall
+          competitive positioning assessment. A reader who only reads this section
+          should walk away with the critical insights.]
+
+          ## Competitive landscape
+
+          ### Market content maturity
+          [Is this market content-mature or still emerging? How sophisticated
+          are competitors' content operations?]
+
+          ### Competitor profiles
+          | Competitor | Content strength | Primary channels | Notable approach |
+          |-----------|-----------------|-----------------|-----------------|
+          | [Name]    | [Brief]         | [Channels]      | [What stands out] |
+
+          ## Content patterns
+
+          ### What competitors do well
+          [Key patterns from content_patterns.md — themes, formats, cadence]
+
+          ### Where competitors fall short
+          [Weaknesses and gaps observed across the landscape]
+
+          ## Opportunities
+
+          ### Quick wins
+          [Top opportunities from gap_analysis.md — high impact, low effort]
+
+          ### Strategic investments
+          [Longer-term opportunities — high impact, high effort]
+
+          ## Recommendations
+
+          ### Priority 1: [Most important action]
+          - **What**: [Specific content initiative]
+          - **Why**: [Competitive gap it addresses]
+          - **How**: [Channel, format, cadence]
+
+          ### Priority 2: [Second action]
+          [Same structure]
+
+          ### Priority 3: [Third action]
+          [Same structure]
+
+          ### Suggested content cadence
+          | Channel | Recommended frequency | Rationale |
+          |---------|---------------------|-----------|
+          | [Channel] | [Frequency] | [Why this cadence] |
+
+          ## Methodology
+
+          [Brief note on how many competitors were analyzed, what channels were
+          covered, and what data sources were used.]
+          ```
+
+        inputs:
+          context_brief.md:
+            required: true
+          competitor_reports_manifest.md:
+            required: true
+          own_content_audit.md:
+            required: true
+          content_patterns.md:
+            required: true
+          gap_analysis.md:
+            required: true
+        outputs:
+          competitive_content_report.md:
+            required: true
+
+      - name: create_campaign
+        instructions: |
+          # Create campaign tracking
+
+          ## Objective
+
+          Create a milestone and parent issue on the user's project tracker so the
+          analysis leads to tracked, actionable work.
+
+          ## Task
+
+          ### Process
+
+          1. **Determine the project tracker**
+             - Ask the user where they track work for this project using
+               AskUserQuestion. Common options:
+               - GitHub Issues (provide owner/repo)
+               - Forgejo Issues (provide instance URL and owner/repo)
+               - Linear, Jira, or other (capture details)
+             - If context_brief.md or the project's AGENTS.md already specifies
+               a tracker, confirm with the user rather than asking from scratch.
+
+          2. **Create a milestone**
+             - Name: "[Year] Marketing Campaign" (e.g., "2026 Marketing Campaign")
+             - Description: One-line summary referencing the competitive analysis.
+
+          3. **Create the parent issue**
+             - Title: "[Year] marketing campaign"
+             - Body should distill the competitive_content_report.md into an
+               actionable issue format:
+               - Context paragraph summarizing the competitive landscape
+               - Key findings as a numbered list (top 5)
+               - Competitive landscape comparison table
+               - Priority recommendations (top 3) with what/why/how
+               - Suggested content cadence table
+               - Strategic investments as a checklist
+               - Link back to the full report and supporting notes
+             - Assign the issue to the milestone.
+
+          4. **Record the issue URL** for use in the next step.
+
+        inputs:
+          competitive_content_report.md:
+            required: true
+          context_brief.md:
+            required: true
+        outputs:
+          campaign_issue_url:
+            required: true
+        process_requirements:
+          "User Confirmed Tracker": "The project tracker MUST be confirmed with the user before creating issues."
+          "Issue Links to Report": "The campaign issue MUST link back to the full analysis report."
+          "Issue Self-Contained": "The issue body MUST be readable without opening the full report."
+          "Issue URL Captured": "The issue URL MUST be recorded as output for the brainstorm step."
+
+      - name: brainstorm_content
+        instructions: |
+          # Brainstorm content ideas
+
+          ## Objective
+
+          Facilitate an interactive brainstorm with the user to generate specific
+          content ideas informed by the competitive analysis, then distill the
+          results into a comment on the campaign issue.
+
+          ## Task
+
+          ### Process
+
+          1. **Seed the conversation**
+             - Read competitive_content_report.md for the recommendations and gaps.
+             - Present the top 3-5 opportunities as conversation starters.
+
+          2. **Ask structured questions using AskUserQuestion**
+
+             Run through these prompts one at a time, building on each answer:
+
+             - "Which of these content gaps excite you most? Are there any you'd
+               skip or deprioritize?"
+             - "What unique angles or expertise do you bring that competitors
+               can't replicate? (e.g., proprietary data, unique methodology,
+               team expertise, customer relationships)"
+             - "Are there specific content pieces you've been wanting to create?
+               (blog posts, videos, guides, tools, etc.)"
+             - "Who is your ideal audience for content? Is it the same as your
+               product audience or broader?"
+             - "What content formats are you most comfortable producing or most
+               excited about? (writing, video, podcasts, social, interactive)"
+             - "Are there any partnerships, collaborations, or community angles
+               you'd want to explore?"
+             - "What's your realistic capacity for content production? (hours
+               per week, team size, tools available)"
+
+             Adapt follow-up questions based on the user's answers. If they
+             mention specific ideas, dig deeper — ask about format, audience,
+             cadence, and how it connects to the competitive gaps.
+
+             If the user provides sparse answers, propose additional ideas based
+             on the competitive analysis and ask the user to confirm or modify
+             them. The minimum ideas requirement can be met with a mix of user
+             ideas and agent-proposed ideas that the user approves.
+
+          3. **Synthesize into a content plan comment**
+             - Group ideas by channel/format
+             - Note which competitive gaps each idea addresses
+             - Flag quick wins vs. longer-term investments
+             - Include the user's own priorities and capacity constraints
+
+          4. **Post as a comment on the campaign issue**
+             - Use the campaign_issue_url from the previous step.
+             - Format as a structured markdown comment with clear sections.
+
+          5. **Write brainstorm summary**
+             - Document which questions were asked and key user responses.
+             - Explain how user input shaped the final content ideas.
+             - Note which competitive gaps the user chose to prioritize vs. skip.
+
+          ## Output format
+
+          The comment should follow this structure:
+
+          ```markdown
+          ## Content brainstorm: [Date]
+
+          ### Ideas by channel
+
+          **YouTube**
+          - [Idea 1] — addresses [gap]; [format/cadence]
+          - [Idea 2]
+
+          **Blog**
+          - [Idea 1]
+
+          [Repeat for each channel with ideas]
+
+          ### Quick wins (can start this week)
+          - [Idea with low effort, high impact]
+
+          ### Needs planning
+          - [Idea requiring setup, tools, or partnerships]
+
+          ### User priorities
+          - [What the user is most excited about]
+          - [Capacity constraints noted]
+
+          ### Next steps
+          - [ ] [Specific actionable next step]
+          - [ ] [Another next step]
+          ```
+
+        inputs:
+          competitive_content_report.md:
+            required: true
+          campaign_issue_url:
+            required: true
+        outputs:
+          content_ideas_comment:
+            required: true
+          brainstorm_summary.md:
+            required: true
+        process_requirements:
+          "Interactive Brainstorm": "The agent MUST ask the user structured questions, not generate ideas in isolation."
+          "Ideas Grounded in Analysis": "Content ideas MUST connect to competitive gaps identified in the report."
+          "Comment Posted": "The brainstorm results MUST be posted as a comment on the campaign issue."
+          "Minimum Ideas": "At least 5 concrete content ideas MUST be captured."
+          "User Priorities Featured": "The user's own ideas and priorities MUST be prominently included."
+          "Capacity Acknowledged": "The user's capacity constraints MUST be acknowledged in the plan."
+
+  social_media_setup:
+    summary: "Define content strategy and plan social media presence for a project"
+    common_job_info_provided_to_all_steps_at_runtime: |
+      Social media setup workflow for defining a project's content strategy and
+      planning its social media presence across platforms.
+
+      Supported platforms: X (Twitter), LinkedIn, Instagram, Bluesky, YouTube,
+      and others depending on the project's audience and goals.
+
+      ## Outputs
+
+      Workflow outputs are saved to the project's notes directory if one exists
+      (NOTES_DIR or ZK_NOTEBOOK_DIR — follow its AGENTS.md conventions). Fall
+      back to .deepwork/tmp/ if no notes directory exists.
+
+      ## Research approach
+
+      Use WebSearch and WebFetch to research the project's existing online
+      presence and competitor social media strategies. Prefer primary sources
+      (the brand's own profiles and content) over third-party commentary.
+
+    steps:
+      - name: discover_context
+        instructions: |
+          # Discover project context
+
+          ## Objective
+
+          Establish the project context, validate the competitor list, resolve output
+          paths, and produce a context brief that all subsequent steps depend on.
+
+          ## Task
+
+          This step has string-type inputs. Ask structured questions using the
+          AskUserQuestion tool if any inputs are ambiguous or missing.
+
+          ### Process
+
+          1. **Read project context**
+             - Read the project's AGENTS.md (or equivalent) to understand brand name,
+               positioning, market segment, existing content, and target audience.
+             - If the project has a hub note in a notes directory (e.g., an index
+               note), read that for additional context.
+             - If project context is unclear, ask structured questions to clarify.
+
+          2. **Resolve output location**
+             - Check `NOTES_DIR` or `ZK_NOTEBOOK_DIR` for a notes directory.
+             - If found, read its AGENTS.md for note creation conventions.
+             - Fall back to `.deepwork/tmp/` if no notes directory exists.
+             - Record the resolved output path in the context brief.
+
+          3. **Validate competitors**
+             - If the user provided specific competitor names, use WebSearch to find
+               their primary URLs and verify they are real companies.
+             - If competitors are vague or incomplete, use WebSearch to identify 3-7
+               direct competitors in the market segment. Ask the user to confirm the
+               list using AskUserQuestion.
+
+          4. **Map content focus**
+             - Parse the content_focus input into specific channels: blog posts, social
+               media, documentation, video, newsletters, podcasts, whitepapers, case studies.
+             - If "all", select the top channels relevant to this market segment.
+
+          5. **Ingest user materials** (if provided)
+             - Note any user-provided URLs, files, or content for use in later steps.
+             - Map materials to specific competitors where possible.
+
+          ## Output format
+
+          ### context_brief.md
+
+          ```markdown
+          # Marketing context: [Brand Name]
+
+          ## Brand context
+          - **Brand**: [Brand name]
+          - **Market segment**: [Segment]
+          - **Positioning**: [How the brand positions itself]
+          - **Target audience**: [Primary audience]
+          - **Existing content**: [Brief summary of current content presence]
+
+          ## Configuration
+          - **Output location**: [Resolved notes directory path, or ".deepwork/tmp/"]
+          - **Report audience**: [Who will read the final report]
+
+          ## Competitors
+
+          | # | Competitor | URL | Notes |
+          |---|-----------|-----|-------|
+          | 1 | [Name]    | [URL] | [Why included] |
+          | 2 | [Name]    | [URL] | [Why included] |
+
+          ## Content focus areas
+          - [Channel 1]: [What to analyze]
+          - [Channel 2]: [What to analyze]
+
+          ## User-provided materials
+          - [Material 1]: [Mapped to competitor X]
+          - None provided
+          ```
+        inputs:
+          project_name:
+            required: true
+          competitors:
+            required: true
+          content_focus:
+            required: true
+          user_materials:
+            required: false
+        outputs:
+          context_brief.md:
+            required: true
+        process_requirements:
+          "Output Location Resolved": "The output location MUST be resolved before proceeding."
+          "Competitors Validated": "Each competitor MUST have a verified name and at least one primary URL."
+
+      - name: audit_own_content
+        instructions: |
+          # Audit existing content
+
+          ## Objective
+
+          Crawl and catalog the brand's existing content across all channels so
+          the gap analysis compares against what actually exists, not a brief
+          summary.
+
+          ## Task
+
+          ### Process
+
+          1. **Read context_brief.md** for the brand's website URL, known social
+             profiles, and content focus areas.
+
+          2. **Crawl the brand's website and blog**
+             - Use WebSearch and WebFetch to find all content sections (blog,
+               resources, docs, guides, case studies).
+             - Catalog recent posts: title, URL, date, format, topic.
+             - Estimate total content volume and publishing frequency.
+             - Note content themes and recurring topics.
+
+          3. **Audit social media channels**
+             - Search for the brand on each platform in the content focus areas.
+             - For each active channel: follower count, posting frequency, recent
+               content samples, engagement signals.
+             - Document channels where the brand has no presence.
+
+          4. **Catalog other content assets**
+             - Newsletter archives, podcast episodes, video channels, community
+               forums, documentation, interactive tools.
+             - Note any content in the project's repository or notes directory
+               that has not been published.
+
+          5. **Assess content maturity**
+             - Overall publishing cadence across channels.
+             - Content quality and consistency.
+             - Strongest and weakest channels.
+             - Content that could be repurposed or updated.
+
+          ## Output format
+
+          ### own_content_audit.md
+
+          ```markdown
+          # Content audit: [Brand Name]
+
+          **Audit date**: [Date]
+          **Website**: [URL]
+
+          ## Blog / Website content
+          **URL**: [Blog URL or "not found"]
+          **Total posts**: [Count or estimate]
+          **Frequency**: [Posts per month]
+          **Date range**: [Oldest to newest post observed]
+
+          | Date | Title | URL | Format | Topic |
+          |------|-------|-----|--------|-------|
+          | [Date] | [Title] | [URL] | [Type] | [Topic] |
+
+          **Themes**: [Recurring topics]
+
+          ## Social media: [Platform]
+          **Profile URL**: [URL or "not found"]
+          **Followers**: [Count]
+          **Frequency**: [Posts per period]
+
+          | Date | Content | URL | Engagement |
+          |------|---------|-----|------------|
+          | [Date] | [Summary] | [URL] | [Metrics] |
+
+          [Repeat for each channel]
+
+          ## Other content assets
+          - [Newsletters, podcasts, videos, docs, tools, etc.]
+
+          ## Channels not found
+          - [Channel]: searched, no presence found
+
+          ## Content maturity assessment
+          - **Strongest channel**: [Channel] — [Why]
+          - **Weakest channel**: [Channel] — [Why]
+          - **Overall cadence**: [Assessment]
+          - **Repurposing opportunities**: [Content that could be updated or reused]
+          ```
+        inputs:
+          context_brief.md:
+            required: true
+        outputs:
+          own_content_audit.md:
+            required: true
+        process_requirements:
+          "Actual Crawling": "The audit MUST be based on web research, not assumptions from context_brief.md."
+          "All Channels Covered": "Every channel in the content focus areas MUST be checked."
+
+      - name: sm_define_strategy
+        instructions: |
+          # Define content strategy
+
+          ## Objective
+
+          Define the project's social media content strategy — posting schedule,
+          content pillars, and brand voice — informed by the content audit and
+          project context.
+
+          ## Task
+
+          Using the context brief and content audit, create a content strategy
+          tailored to the platforms the brand is active on or plans to be active
+          on. Collaborate with the user to define their brand identity and goals.
+
+          ### Process
+
+          1. **Review existing content**
+             - Read context_brief.md for brand positioning and target audience.
+             - Read own_content_audit.md for current content presence and maturity.
+             - Identify which platforms the brand is already active on and which
+               are opportunities.
+
+          2. **Ask structured questions** to understand the brand:
+             - What is the project's core value proposition?
+             - Who is the target audience? (demographics, interests, pain points)
+             - What tone fits the brand? (professional, casual, technical, playful, authoritative)
+             - What are 3-5 topic areas the content should cover?
+             - How often can they realistically post? (daily, 3x/week, weekly)
+             - Are there any topics or tones to avoid?
+
+          3. **Define content pillars**
+             - Create 3-5 themed content categories based on user input.
+             - Each pillar should have a clear purpose and example topics.
+             - Pillars should be balanced across educational, promotional, and
+               engagement content.
+
+          4. **Create posting schedule**
+             - Define a realistic cadence per platform.
+             - Account for platform-specific best practices:
+               - X: higher frequency OK (1-3x/day)
+               - LinkedIn: lower frequency (2-4x/week)
+               - Instagram: visual content focus (3-5x/week)
+               - Bluesky: conversational tone (1-2x/day)
+               - YouTube: weekly or bi-weekly depending on production capacity
+             - Suggest optimal posting times based on audience.
+
+          5. **Define brand voice guidelines**
+             - Document tone, vocabulary, and style rules.
+             - Provide do/don't examples for each platform.
+             - Note platform-specific adaptations (more formal on LinkedIn,
+               more casual on Bluesky, visual-first on Instagram).
+
+          ## Output format
+
+          ### content_strategy.md
+
+          ```markdown
+          # Content strategy: [Project Name]
+
+          ## Brand overview
+
+          - **Value proposition**: [one sentence]
+          - **Target audience**: [description]
+          - **Brand personality**: [3-4 adjectives]
+
+          ## Content pillars
+
+          ### 1. [Pillar Name]
+
+          - **Purpose**: [what this content achieves]
+          - **Topics**: [example topics]
+          - **Content ratio**: [% of total content]
+
+          ### 2. [Pillar Name]
+
+          ...
+
+          [3-5 pillars total]
+
+          ## Posting schedule
+
+          | Platform | Frequency | Best times | Content focus |
+          |----------|-----------|------------|---------------|
+          | [platform] | [cadence] | [times] | [focus] |
+
+          [one row per active platform]
+
+          ## Brand voice
+
+          ### Tone
+
+          [Description of overall tone]
+
+          ### Do's
+
+          - [example of good voice]
+          - [example of good voice]
+
+          ### Don'ts
+
+          - [example of what to avoid]
+          - [example of what to avoid]
+
+          ### Platform adaptations
+
+          - **X**: [how voice adapts]
+          - **LinkedIn**: [how voice adapts]
+          - **Instagram**: [how voice adapts]
+          - **Bluesky**: [how voice adapts]
+
+          ## Topics to avoid
+
+          - [list any sensitive or off-brand topics]
+          ```
+
+        inputs:
+          context_brief.md:
+            required: true
+          own_content_audit.md:
+            required: true
+        outputs:
+          content_strategy.md:
+            required: true
+        process_requirements:
+          "All Platforms Covered": "Strategy MUST cover all platforms the brand is active on or plans to be active on."
+          "Specific Cadence": "Posting schedule MUST include specific frequency per platform, not vague estimates."
+          "Concrete Voice": "Brand voice guidelines MUST include do/don't examples, not generic platitudes."
+
+      - name: create_campaign
+        instructions: |
+          # Create campaign tracking
+
+          ## Objective
+
+          Create a milestone and parent issue on the user's project tracker so the
+          strategy work leads to tracked, actionable work.
+
+          ## Task
+
+          ### Process
+
+          1. **Determine the project tracker**
+             - Ask the user where they track work for this project using
+               AskUserQuestion. Common options:
+               - GitHub Issues (provide owner/repo)
+               - Forgejo Issues (provide instance URL and owner/repo)
+               - Linear, Jira, or other (capture details)
+             - If context_brief.md or the project's AGENTS.md already specifies
+               a tracker, confirm with the user rather than asking from scratch.
+
+          2. **Create a milestone**
+             - Name: "[Year] Social Media Strategy" (e.g., "2026 Social Media Strategy")
+             - Description: One-line summary referencing the content strategy.
+
+          3. **Create the parent issue**
+             - Title: "[Year] social media strategy"
+             - Body should distill content_strategy.md into an actionable issue:
+               - Brand overview and target audience
+               - Content pillars summary
+               - Posting schedule table by platform
+               - Brand voice do's and don'ts
+               - Link back to the full strategy document
+             - Assign the issue to the milestone.
+
+          4. **Record the issue URL** for use in future steps.
+
+        inputs:
+          content_strategy.md:
+            required: true
+          context_brief.md:
+            required: true
+        outputs:
+          campaign_issue_url:
+            required: true
+        process_requirements:
+          "User Confirmed Tracker": "The project tracker MUST be confirmed with the user before creating issues."
+          "Issue Links to Strategy": "The campaign issue MUST link back to the full content strategy document."
+          "Issue Self-Contained": "The issue body MUST be readable without opening the full strategy."
+          "Issue URL Captured": "The issue URL MUST be recorded as output."

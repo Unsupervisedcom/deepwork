@@ -17,6 +17,7 @@ This walks you through configuring `DEEPWORK_ADDITIONAL_JOBS_FOLDERS` so the Dee
 | Job | Description |
 |-----|-------------|
 | [Engineer](./engineer) | Domain-agnostic engineering execution from product issue through PR merge and product sync, with TDD discipline |
+| [Marketing](./marketing) | Competitive analysis, content strategy, and social media planning with shared steps across workflows |
 | [Research](./research) | Multi-workflow research suite — deep investigation, quick summaries, material ingestion, and reproduction planning |
 | [Platform Engineer](./platform_engineer) | Incident response, observability, CI/CD, releases, security, cost management, and infrastructure |
 | [Repo](./repo) | Audit and configure repositories — labels, branch protection, milestones, and boards |
@@ -61,6 +62,25 @@ The job library provides:
 - **Templates**: Copy and adapt jobs for your own use cases
 - **Learning**: Understand the job definition format through real examples
 
+## Output conventions for library jobs
+
+Library jobs that produce durable outputs (reports, research, decisions) should defer to the user's environment for note creation mechanics rather than embedding specific tools or paths.
+
+**Pattern**: Signal the intent, not the mechanism.
+
+- **Do**: "The final report and supporting research are durable notes. If the user has a notes directory, follow its AGENTS.md conventions."
+- **Don't**: Embed `zk new reports/ --title ...` commands, specific frontmatter schemas, or directory paths in the job's `common_job_info`.
+
+**Why**: Users have different note-taking setups (zk, Obsidian, plain markdown, no notes repo). The user's notes directory AGENTS.md and their platform conventions (if any) are the source of truth for how to create notes. Library jobs that embed one system's mechanics become non-portable.
+
+**How it works in practice**:
+
+1. The job's `discover_context` step checks for a user-configured notes directory (e.g., via `NOTES_DIR`) and reads the AGENTS.md there when available.
+2. The user's environment-specific conventions provide the mechanics for note creation.
+3. If no notes directory exists, the job falls back to `.deepwork/tmp/` with plain markdown.
+
+This separation means the same library job works for users with different note-taking setups, as well as someone with no notes system at all.
+
 ## Structure
 
 Each job in this library follows the same structure as the `.deepwork/jobs` subfolders in your local project:
@@ -76,6 +96,10 @@ library/jobs/
 │   ├── CLAUDE.md -> AGENTS.md
 │   ├── requirements.md      # RFC 2119 requirements specification
 │   └── steps/               # Step instruction files (also inlined in job.yml)
+├── marketing/               # Competitive content analysis workflows
+│   ├── job.yml
+│   ├── AGENTS.md            # Agent context and learnings
+│   └── CLAUDE.md -> AGENTS.md
 ├── platform_engineer/       # Platform engineering workflows
 │   ├── job.yml
 │   ├── AGENTS.md            # Agent context and learnings
