@@ -2,7 +2,7 @@
 
 ## Objective
 
-Configure a complete release pipeline based on the gaps identified in `release_audit.md`. For each missing or incomplete piece of release infrastructure, create the appropriate configuration files, CI workflows, and documentation. All decisions that require user judgment (e.g., which registry to publish to, which branching model to follow) MUST be surfaced via `AskUserQuestion` before proceeding.
+Configure a complete release pipeline based on the gaps identified in `release_audit.md`. For each missing or incomplete piece of release infrastructure, create the appropriate configuration files, CI workflows, and documentation. All decisions that require user judgment MUST be surfaced via `AskUserQuestion` before proceeding. Release automation implements project policy, so this workflow MUST ask the user to define the release policy before it writes automation when that policy is not already explicit.
 
 ## Task
 
@@ -17,6 +17,24 @@ Read both input files:
 - `context.md` — the platform context. Use this to determine which CI provider to target, which package ecosystem the project uses, and what tools are available.
 
 Identify the project's primary stack from context.md (e.g., Node/npm, Python/uv, Rust/cargo, Go, Nix) because this determines which versioning tools, changelog generators, and publishing targets are appropriate.
+
+#### 1a. Confirm the release policy with the user
+
+Release automation encodes product policy. Do not silently invent that policy.
+
+Use `AskUserQuestion` to gather the missing decisions, grouping related questions when possible. At minimum, confirm:
+- Release cadence: scheduled, milestone-driven, ad hoc, or another model
+- Version semantics: what constitutes major, minor, and patch changes for this project
+- Stabilization policy: whether releases stabilize on `main`, `release/*`, or another branch model, and how long stabilization stays open
+- Backport policy: what kinds of changes may land on a release branch after the cut
+- Hotfix policy: whether `hotfix/*` exists now or is deferred
+- Merge-back policy: whether release or hotfix branches must merge back to the main development line
+- Publish targets: GitHub Releases, Forgejo releases, registries, container images, Nix flake consumption, or other artifacts
+- Consumer guidance: what users should treat as unstable versus stable (for example, `main` versus tags)
+
+If the user has already answered some of these in the conversation or the repo docs make them explicit, do not ask again. Ask only for the unresolved items.
+
+Do not proceed to workflow or branch-rule implementation until the unresolved policy questions are answered. If the environment does not provide `AskUserQuestion`, stop and tell the user which policy decisions are still required.
 
 #### 2. Set Up Versioning (Convention 24)
 
@@ -103,7 +121,12 @@ For **GitFlow**:
 
 **In all cases:**
 - Write the branching strategy documentation to a discoverable location (e.g., `docs/releasing.md` or a section in `CONTRIBUTING.md`)
+- Follow the repository's standard documentation convention for canonical operational docs when one exists
+- If the repository does not already define a standard location for release/process docs, prefer a canonical release document at `docs/releases.md` or `docs/platform/releases.md`
+- Update the root `AGENTS.md` to reference the canonical release document and point agents to provider-specific guidance in `.github/AGENTS.md` and/or `.forgejo/AGENTS.md` when those directories exist or are created
 - Document the strategy in `release_docs.md`
+
+The documented branch strategy MUST match the release policy confirmed with the user in step 1a. If the user chose a milestone-driven or human-gated cadence, the workflow and branch docs must reflect that instead of implying continuous delivery defaults.
 
 #### 5. Create CI Release Workflow (Convention 27)
 
@@ -168,6 +191,7 @@ Use `AskUserQuestion` to determine publish targets:
 - Include all four stages (build, test, tag, publish)
 - Use CI provider secret management for registry credentials — NEVER hardcode tokens
 - Add comments in the workflow explaining each stage
+- Create or update `.github/AGENTS.md` and/or `.forgejo/AGENTS.md` with CI-provider-specific release behavior, workflow entrypoints, required secrets, and links back to the canonical release doc
 - Document which secrets need to be configured in CI settings (e.g., `NPM_TOKEN`, `PYPI_TOKEN`)
 
 #### 6. Configure Automated Artifact Publishing (Convention 28)
@@ -225,9 +249,11 @@ Create `release_docs.md` as a comprehensive record of all setup decisions. This 
 
 The specific files created depend on the stack and CI provider. Common examples:
 - `.github/workflows/release.yml` — CI release workflow
+- `.github/AGENTS.md` or `.forgejo/AGENTS.md` — CI-provider-specific agent guidance for release automation
 - `cliff.toml` or `.changeset/config.json` — Changelog tool config
 - `release-please-config.json` — Release automation config
-- `docs/releasing.md` — Release branch strategy documentation
+- `<repo-standard docs path>` or `docs/releases.md` / `docs/platform/releases.md` — Canonical release process and branch strategy documentation
+- `AGENTS.md` — Root agent guidance linking to the canonical release doc and CI-provider AGENTS files
 
 ### release_docs.md
 
@@ -240,6 +266,16 @@ Write to `.deepwork/artifacts/platform_engineer/release_builder/release_docs.md`
 **Repository**: <repo name>
 
 ## Decisions Made
+
+### Release policy
+- **Cadence**: <scheduled / milestone-driven / ad hoc / other>
+- **Version semantics**: <how major, minor, and patch are defined for this project>
+- **Stabilization model**: <main / release branches / gitflow / other>
+- **Backport policy**: <what can land after branch cut>
+- **Hotfix policy**: <enabled now / deferred / not used>
+- **Merge-back policy**: <required / not required / conditional>
+- **Publish targets**: <GitHub Releases / Forgejo releases / registries / container images / Nix flake / other>
+- **Stable vs unstable guidance**: <how consumers should track stable vs unstable releases>
 
 ### Versioning
 - **Tool**: <chosen tool>
@@ -257,6 +293,11 @@ Write to `.deepwork/artifacts/platform_engineer/release_builder/release_docs.md`
 - **Model**: <trunk-based / release branches / gitflow>
 - **Branch naming**: <pattern>
 - **Documentation**: <path to strategy docs>
+
+### Documentation Surfacing
+- **Canonical release doc**: <repo-standard docs path, or `docs/releases.md`, or `docs/platform/releases.md`>
+- **Root agent entrypoint**: <path to `AGENTS.md` section that links to the canonical release doc>
+- **CI provider agent docs**: <paths to `.github/AGENTS.md` and/or `.forgejo/AGENTS.md`>
 
 ### CI Release Pipeline
 - **Workflow file**: <path>
@@ -307,6 +348,8 @@ Write to `.deepwork/artifacts/platform_engineer/release_builder/release_docs.md`
 - **Versioning Configured**: Semantic versioning is set up with a concrete version bumping mechanism appropriate to the project's stack. The user knows exactly how to bump a version.
 - **Release Notes Configured**: Changelog or release notes generation is configured and integrated into the release workflow per convention 29. The tool parses commits or PRs automatically.
 - **Branch Strategy Documented**: The release branching strategy is documented in a discoverable location within the repository, not just in the artifact.
+- **Policy Before Automation**: The release policy was confirmed with the user before automation was configured, and the resulting pipeline matches that policy rather than implicit defaults.
+- **Agent Guidance Wired**: The root `AGENTS.md` references the canonical release doc, and CI-provider-specific release behavior is documented in `.github/AGENTS.md` and/or `.forgejo/AGENTS.md` when those directories are relevant.
 - **Decisions Documented**: All setup decisions (tool choices, publish targets, branching model) are recorded in `release_docs.md` with rationale. A new team member could understand the release process by reading this document.
 - **Secrets Not Exposed**: No secret values, tokens, or credentials appear in any created files. CI secrets are referenced by name only, with instructions for how to set them up.
 - **User Consulted**: Decisions requiring user judgment (registry targets, branching model, changelog approach) were surfaced via `AskUserQuestion` rather than assumed.
