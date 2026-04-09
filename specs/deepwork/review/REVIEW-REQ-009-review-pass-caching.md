@@ -20,6 +20,7 @@ The mechanism relies on a deterministic `review_id` that encodes the rule name, 
 4. The content hash MUST be the first 12 hex characters of the SHA-256 digest of the concatenated contents of all files to review, with files sorted alphabetically before concatenation.
 5. Files that cannot be read MUST contribute the placeholder string `MISSING` instead of their contents.
 6. The same inputs (rule name, file paths, file contents) MUST always produce the same `review_id`.
+7. For inline-content tasks (where `files_to_review` is empty and `inline_content` is set — used for `type: string` step outputs per JOBS-REQ-004.8), the file paths component MUST be the literal `inline` and the content hash MUST be derived from the inline string value so that distinct string values produce distinct `review_id`s.
 
 ### REVIEW-REQ-009.2: `mark_review_as_passed` MCP Tool
 

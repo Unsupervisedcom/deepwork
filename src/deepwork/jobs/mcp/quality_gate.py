@@ -92,6 +92,27 @@ def _collect_output_file_paths(
     return paths
 
 
+def _build_preamble(
+    step: WorkflowStep,
+    job: JobDefinition,
+    workflow: Workflow,
+    input_values: dict[str, ArgumentValue],
+) -> str:
+    """Build the preamble prefixed to every dynamic review's instructions.
+
+    Combines workflow ``common_job_info`` and the rendered step inputs.
+    Returns an empty string when neither is available.
+    """
+    input_context = _build_input_context(step, job, input_values)
+    common_info = workflow.common_job_info or ""
+    preamble_parts: list[str] = []
+    if common_info:
+        preamble_parts.append(f"## Job Context\n\n{common_info}")
+    if input_context:
+        preamble_parts.append(input_context)
+    return "\n\n".join(preamble_parts)
+
+
 def _build_input_context(
     step: WorkflowStep,
     job: JobDefinition,
@@ -145,16 +166,7 @@ def build_dynamic_review_rules(
     targets.
     """
     rules: list[ReviewRule] = []
-    input_context = _build_input_context(step, job, input_values)
-    common_info = workflow.common_job_info or ""
-
-    # Build preamble with common info and inputs
-    preamble_parts: list[str] = []
-    if common_info:
-        preamble_parts.append(f"## Job Context\n\n{common_info}")
-    if input_context:
-        preamble_parts.append(input_context)
-    preamble = "\n\n".join(preamble_parts)
+    preamble = _build_preamble(step, job, workflow, input_values)
 
     # Process each output
     for output_name, output_ref in step.outputs.items():
@@ -289,6 +301,83 @@ Evaluate whether the work described in the `work_summary` meets each requirement
     return rules
 
 
+def build_string_output_review_tasks(
+    step: WorkflowStep,
+    job: JobDefinition,
+    workflow: Workflow,
+    outputs: dict[str, ArgumentValue],
+    input_values: dict[str, ArgumentValue],
+    project_root: Path,
+    platform: str = "claude",
+) -> list[ReviewTask]:
+    """Build synthetic ReviewTasks for ``type: string`` outputs with review blocks.
+
+    String outputs have no file to match against, so they cannot flow
+    through the normal ReviewRule/match_files_to_rules pipeline.  Instead,
+    this function creates ``ReviewTask`` objects directly, with the string
+    value carried on ``inline_content`` so the reviewer agent sees it
+    inlined in its instruction file.
+
+    Both output-ref-level and step_argument-level review blocks are
+    honored; when both are present, the argument-level task is suffixed
+    ``_arg`` to distinguish it (matching the file_path rule naming).
+    """
+    tasks: list[ReviewTask] = []
+    preamble = _build_preamble(step, job, workflow, input_values)
+
+    try:
+        source_rel = (job.job_dir / "job.yml").relative_to(project_root)
+    except ValueError:
+        source_rel = job.job_dir / "job.yml"
+    source_location = f"{source_rel}:0"
+
+    for output_name, output_ref in step.outputs.items():
+        arg = job.get_argument(output_name)
+        if not arg or arg.type != "string":
+            continue
+
+        review_blocks: list[ReviewBlock] = []
+        if output_ref.review:
+            review_blocks.append(output_ref.review)
+        if arg.review:
+            review_blocks.append(arg.review)
+
+        if not review_blocks:
+            continue
+
+        value = outputs.get(output_name)
+        if value is None:
+            continue
+        # Defensive: string outputs should always be str, but the runtime
+        # value may technically be any ArgumentValue.
+        inline_value = value if isinstance(value, str) else str(value)
+
+        for i, review_block in enumerate(review_blocks):
+            full_instructions = (
+                f"{preamble}\n\n{review_block.instructions}"
+                if preamble
+                else review_block.instructions
+            )
+            suffix = "_arg" if i > 0 else ""
+            rule_name = f"step_{step.name}_output_{output_name}{suffix}"
+            agent_name: str | None = None
+            if review_block.agent is not None:
+                agent_name = review_block.agent.get(platform)
+
+            tasks.append(
+                ReviewTask(
+                    rule_name=rule_name,
+                    files_to_review=[],
+                    instructions=full_instructions,
+                    agent_name=agent_name,
+                    source_location=source_location,
+                    inline_content=inline_value,
+                )
+            )
+
+    return tasks
+
+
 def run_quality_gate(
     step: WorkflowStep,
     job: JobDefinition,
@@ -319,6 +408,19 @@ def run_quality_gate(
         input_values=input_values,
         work_summary=work_summary,
         project_root=project_root,
+    )
+
+    # 2b. Build synthetic ReviewTasks for type: string outputs with review blocks.
+    # These bypass file-pattern matching entirely — the string value is
+    # carried on the task via inline_content so the reviewer sees it inline.
+    string_output_tasks = build_string_output_review_tasks(
+        step=step,
+        job=job,
+        workflow=workflow,
+        outputs=outputs,
+        input_values=input_values,
+        project_root=project_root,
+        platform=platform,
     )
 
     # 3. Load .deepreview rules
@@ -354,7 +456,7 @@ def run_quality_gate(
         dynamic_tasks = match_files_to_rules(output_files, dynamic_rules, project_root, platform)
 
     # 7. Combine all tasks
-    all_tasks = dynamic_tasks + deepreview_tasks
+    all_tasks = dynamic_tasks + string_output_tasks + deepreview_tasks
 
     if not all_tasks:
         return None

@@ -51,6 +51,7 @@ class ReviewTask:
     additional_files: list[str] = field(default_factory=list)  # Unchanged matching files
     all_changed_filenames: list[str] | None = None
     precomputed_info_bash_command: str | None = None  # Resolved command to run
+    inline_content: str | None = None  # Inline string value for type: string outputs
 
 
 def parse_deepreview_file(filepath: Path) -> list[ReviewRule]:
