@@ -524,6 +524,8 @@ my_rule:
 class TestReferenceFiles:
     """Tests for parsing the optional `reference_files` review field."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.10.1, REVIEW-REQ-001.10.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_reference_files_parsed_with_resolved_paths(self, tmp_path: Path) -> None:
         (tmp_path / "guide.md").write_text("# guide")
         filepath = _write_deepreview(
@@ -548,6 +550,8 @@ my_rule:
         assert ref.relative_label == "guide.md"
         assert ref.description == "Reviewer guide"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-001.10.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_reference_files_default_empty(self, tmp_path: Path) -> None:
         filepath = _write_deepreview(
             tmp_path,

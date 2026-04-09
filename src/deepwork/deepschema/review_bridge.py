@@ -38,6 +38,9 @@ def generate_review_rules(
         if rule is not None:
             refs, ref_errors = _collect_reference_files(schema)
             rule.reference_files = refs
+            example_section = _build_examples_section(schema)
+            if example_section:
+                rule.instructions = rule.instructions.rstrip() + "\n\n" + example_section
             errors.extend(ref_errors)
             rules.append(rule)
 
@@ -186,11 +189,9 @@ def _collect_reference_files(
             )
         )
 
-    for example in schema.examples:
-        path = example.get("path")
-        if path:
-            _add(path, example.get("description"), "examples")
-
+    # Note: schema.examples are intentionally NOT inlined — they are listed
+    # in the instructions via _build_examples_section so reviewers know they
+    # exist without bloating the prompt.
     for reference in schema.references:
         path = reference.get("path")
         if path:
@@ -204,6 +205,28 @@ def _collect_reference_files(
         )
 
     return refs, errors
+
+
+def _build_examples_section(schema: DeepSchema) -> str:
+    """Build a text section listing the schema's example files by path + description.
+
+    Examples are listed (not inlined) so the reviewer knows what reference
+    material exists without bloating the prompt.
+    """
+    if not schema.examples:
+        return ""
+
+    lines = ["Example files available for reference (read on demand):"]
+    for example in schema.examples:
+        path = example.get("path")
+        if not path:
+            continue
+        description = example.get("description") or ""
+        if description:
+            lines.append(f"- `{path}` — {description}")
+        else:
+            lines.append(f"- `{path}`")
+    return "\n".join(lines)
 
 
 def _build_requirements_body(requirements: dict[str, str]) -> str:

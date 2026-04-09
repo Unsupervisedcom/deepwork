@@ -52,7 +52,14 @@ rule_name:
     additional_context:                   # Optional
       all_changed_filenames: true         # Include all changed files list
       unchanged_matching_files: true      # Include unchanged files matching the pattern
+    reference_files:                      # Optional: inlined into review prompt
+      - path: "docs/style_guide.md"
+        description: "Coding style guide"
 ```
+
+### Reference Files
+
+`reference_files` inline small support files (style guides, schemas, templates) into a `## Reference Materials` section of every generated review instruction file. Paths are resolved relative to the `.deepreview` file's directory. Inlining is capped at 20 files and 256 KB of total content per review — entries beyond the caps are listed in an omitted-summary line; oversized files are truncated. Missing files produce a graceful marker rather than aborting the review. Use this instead of asking the reviewer to Read each file at runtime.
 
 ## Review Strategies
 
@@ -90,6 +97,8 @@ Deleted files are excluded — there's nothing to review.
 ## DeepSchema-Generated Reviews
 
 DeepSchemas automatically generate synthetic review rules. When a file matches a DeepSchema with requirements, the review pipeline creates a rule that checks those requirements during `/review` and workflow quality gates. No `.deepreview` file is needed — the DeepSchema's `requirements` field drives the review.
+
+Generated reviews automatically populate `reference_files` from the schema's `references` entries and `json_schema_path`, so reviewers receive that supporting context inlined. A schema's `examples` are listed (by path + description) in the review instructions but are **not** inlined; reviewers can open them on demand if needed. URL-valued references are skipped.
 
 This means requirements defined in a DeepSchema are enforced in two places:
 - **Write-time**: validation runs when the file is written or edited
