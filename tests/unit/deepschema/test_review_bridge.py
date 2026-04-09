@@ -216,9 +216,7 @@ class TestCollectReferenceFiles:
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-011.11.1, DW-REQ-011.11.2,
     # DW-REQ-011.11.3, DW-REQ-011.11.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_references_and_json_schema_populate_refs_examples_listed(
-        self, tmp_path: Path
-    ) -> None:
+    def test_references_and_json_schema_populate_refs_examples_listed(self, tmp_path: Path) -> None:
         schema_dir = tmp_path / ".deepwork" / "schemas" / "thing"
         self._write_schema_yaml(
             schema_dir,
@@ -247,9 +245,7 @@ requirements:
         assert labels == {"../guide.md", "thing.schema.json"}
         by_label = {r.relative_label: r for r in rule.reference_files}
         assert by_label["../guide.md"].path == (schema_dir.parent / "guide.md").resolve()
-        assert by_label["thing.schema.json"].path == (
-            schema_dir / "thing.schema.json"
-        ).resolve()
+        assert by_label["thing.schema.json"].path == (schema_dir / "thing.schema.json").resolve()
         # Examples listed in the rule's instructions text.
         assert "Example files available for reference" in rule.instructions
         assert "`example.yml`" in rule.instructions

@@ -166,9 +166,7 @@ def _parse_rule(
     )
 
 
-def _parse_reference_files(
-    entries: list[dict[str, Any]], source_dir: Path
-) -> list[ReferenceFile]:
+def _parse_reference_files(entries: list[dict[str, Any]], source_dir: Path) -> list[ReferenceFile]:
     """Parse optional `reference_files` entries from a .deepreview rule.
 
     Paths are resolved relative to ``source_dir``. Existence is not checked
