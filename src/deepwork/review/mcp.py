@@ -25,6 +25,22 @@ FORMATTERS = {
 SUPPORTED_PLATFORMS = set(FORMATTERS.keys())
 
 
+def _is_catch_all_pattern(pattern: str) -> bool:
+    """Return True if a glob pattern has no literal characters (only ``*``/``/``).
+
+    Examples: ``*``, ``**``, ``**/*``, ``*/**``, ``**/**`` — patterns that
+    match effectively every file under the rule's source directory.
+    """
+    return pattern != "" and all(c in "*/" for c in pattern)
+
+
+def _rule_is_catch_all(rule) -> bool:  # type: ignore[no-untyped-def]
+    """Return True if every include pattern on the rule is a catch-all."""
+    return bool(rule.include_patterns) and all(
+        _is_catch_all_pattern(p) for p in rule.include_patterns
+    )
+
+
 class ReviewToolError(Exception):
     """Exception raised for review tool errors (git failures, write failures)."""
 
@@ -85,6 +101,11 @@ def run_review(
     # Step 2: Determine changed files
     if files is not None:
         changed_files = sorted(set(files))
+        # When the caller specifies files explicitly, drop rules whose
+        # include patterns are pure catch-alls (e.g. ``**/*``). Those rules
+        # would match every file and are rarely what the caller wants when
+        # they have narrowed the scope to a specific file set.
+        rules = [r for r in rules if not _rule_is_catch_all(r)]
     else:
         try:
             changed_files = get_changed_files(project_root)
@@ -138,8 +159,14 @@ def get_configured_reviews(
     rules.extend(schema_rules)
 
     if only_rules_matching_files is not None:
+        # Exclude catch-all rules (e.g. ``**/*``) — when the caller has
+        # narrowed scope to specific files, rules that match everything are
+        # rarely what they want.
         rules = [
-            rule for rule in rules if match_rule(only_rules_matching_files, rule, project_root)
+            rule
+            for rule in rules
+            if not _rule_is_catch_all(rule)
+            and match_rule(only_rules_matching_files, rule, project_root)
         ]
 
     result = [

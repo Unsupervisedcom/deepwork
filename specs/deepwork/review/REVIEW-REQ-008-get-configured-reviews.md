@@ -23,6 +23,8 @@ The `get_configured_reviews` MCP tool allows agents to query which review rules 
 
 1. When `only_rules_matching_files` is provided, the tool MUST return only rules whose include/exclude patterns match at least one of the provided files.
 2. When `only_rules_matching_files` is omitted (None), the tool MUST return all configured rules.
+3. When `only_rules_matching_files` is provided, the tool MUST exclude rules whose include patterns are all catch-alls (patterns composed solely of `*` and `/` characters, e.g. `*`, `**`, `**/*`, `*/**`). Rationale: when the caller has narrowed scope to specific files, rules that match every file in the repo are rarely what is wanted and produce noisy results.
+4. When `only_rules_matching_files` is omitted (None), catch-all rules MUST be retained in the result.
 
 ### REVIEW-REQ-008.4: Error Handling
 

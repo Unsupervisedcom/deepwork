@@ -469,6 +469,111 @@ class TestGetConfiguredReviews:
         assert len(error_entries) == 1
 
 
+def _make_catch_all_rule(
+    tmp_path: Path, name: str = "catch_all", pattern: str = "**/*"
+) -> ReviewRule:
+    return ReviewRule(
+        name=name,
+        description="Catch-all rule.",
+        include_patterns=[pattern],
+        exclude_patterns=[],
+        strategy="individual",
+        instructions="Review all.",
+        agent=None,
+        all_changed_filenames=False,
+        unchanged_matching_files=False,
+        precomputed_info_bash_command=None,
+        source_dir=tmp_path,
+        source_file=tmp_path / ".deepreview",
+        source_line=1,
+    )
+
+
+class TestCatchAllFiltering:
+    """When files are specified, rules with pure-wildcard include patterns are dropped."""
+
+    @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_get_configured_reviews_drops_catch_all_when_files_specified(
+        self, mock_load: Any, mock_schema: Any, tmp_path: Path
+    ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-008.3.3).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        specific_rule = _make_rule(tmp_path)  # **/*.py
+        mock_load.return_value = (
+            [
+                specific_rule,
+                _make_catch_all_rule(tmp_path, "all_star", "*"),
+                _make_catch_all_rule(tmp_path, "all_double", "**"),
+                _make_catch_all_rule(tmp_path, "all_nested", "**/*"),
+                _make_catch_all_rule(tmp_path, "all_trailing", "*/**"),
+            ],
+            [],
+        )
+
+        result = get_configured_reviews(tmp_path, only_rules_matching_files=["src/app.py"])
+        names = [r["name"] for r in result]
+        assert names == ["test_rule"]
+
+    @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_get_configured_reviews_keeps_catch_all_when_no_files_specified(
+        self, mock_load: Any, mock_schema: Any, tmp_path: Path
+    ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-008.3.4).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        mock_load.return_value = ([_make_catch_all_rule(tmp_path)], [])
+        result = get_configured_reviews(tmp_path, only_rules_matching_files=None)
+        assert len(result) == 1
+        assert result[0]["name"] == "catch_all"
+
+    @patch("deepwork.review.mcp.write_instruction_files", return_value={})
+    @patch("deepwork.review.mcp.format_for_claude", return_value="ok")
+    @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_run_review_drops_catch_all_when_files_specified(
+        self,
+        mock_load: Any,
+        mock_schema: Any,
+        mock_fmt: Any,
+        mock_write: Any,
+        tmp_path: Path,
+    ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.6.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        specific_rule = _make_rule(tmp_path)
+        catch_all = _make_catch_all_rule(tmp_path)
+        mock_load.return_value = ([specific_rule, catch_all], [])
+
+        with patch("deepwork.review.mcp.match_files_to_rules") as mock_match:
+            mock_match.return_value = []
+            run_review(tmp_path, "claude", files=["src/app.py"])
+            passed_rules = mock_match.call_args[0][1]
+            names = [r.name for r in passed_rules]
+            assert names == ["test_rule"]
+
+    @patch("deepwork.review.mcp.get_changed_files", return_value=["src/app.py"])
+    @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_run_review_keeps_catch_all_when_using_git_diff(
+        self,
+        mock_load: Any,
+        mock_schema: Any,
+        mock_diff: Any,
+        tmp_path: Path,
+    ) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.6.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        catch_all = _make_catch_all_rule(tmp_path)
+        mock_load.return_value = ([catch_all], [])
+
+        with patch("deepwork.review.mcp.match_files_to_rules") as mock_match:
+            mock_match.return_value = []
+            run_review(tmp_path, "claude", files=None)
+            passed_rules = mock_match.call_args[0][1]
+            assert [r.name for r in passed_rules] == ["catch_all"]
+
+
 class TestMarkPassed:
     """Tests for the mark_passed adapter function — validates REVIEW-REQ-009.2."""
 

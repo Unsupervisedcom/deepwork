@@ -60,3 +60,4 @@ The command supports three sources for the list of files to review, with the fol
 In all cases:
 4. The resulting file list MUST be sorted and deduplicated.
 5. The `--base-ref` option only applies to the git diff source; it MUST be ignored when `--files` or stdin provides the file list.
+6. When the file list is supplied explicitly (via `--files` or stdin), rules whose include patterns are all catch-alls (composed solely of `*` and `/` characters, e.g. `*`, `**`, `**/*`, `*/**`) MUST be excluded from matching. When the file list comes from git diff, catch-all rules MUST be retained. Rationale: when a caller narrows scope to a specific file set, catch-all rules are rarely the intent and produce noisy results.
