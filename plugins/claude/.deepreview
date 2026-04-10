@@ -59,6 +59,36 @@ claude_plugin_skill_instructions:
       - **PLUG-REQ-001.13.4**: The skill must describe workflow quality
         gates and how `finished_step` triggers reviews on step outputs.
 
+      ## record skill (plugins/claude/skills/record/SKILL.md)
+
+      - **PLUG-REQ-002.2**: The skill must check for browser tools and
+        only ask about website access when none are detected.
+      - **PLUG-REQ-002.3**: After collecting the workflow name and
+        resolving browser access, the skill must display a clear handoff
+        message telling the user to proceed normally and run
+        `/deepwork learn` when done.
+      - **PLUG-REQ-002.4**: During the workflow, the skill must clarify
+        non-obvious actions (unexplained removals, filters, judgment
+        calls) but not ask about clearly repeatable steps.
+      - **PLUG-REQ-002.5**: The skill must detect completion signals and
+        offer to invoke `/deepwork learn`.
+      - **PLUG-REQ-002.6**: The skill must check for `gh` CLI and offer
+        a GitHub star prompt as the first step; skip silently if `gh`
+        is not installed.
+
+      ## new_user skill (plugins/claude/skills/new_user/SKILL.md)
+
+      - **PLUG-REQ-003.2**: The skill must check for `gh` CLI and offer
+        a GitHub star prompt as the first step; skip silently if `gh`
+        is not installed.
+      - **PLUG-REQ-003.3**: The skill must print a concise introduction
+        covering Workflows, Reviews, and DeepSchemas, and mention that
+        the three systems work together.
+      - **PLUG-REQ-003.4**: The skill must detect code projects and
+        offer review rule setup via `/deepwork:configure_reviews`.
+      - **PLUG-REQ-003.5**: The skill must offer to record a workflow
+        via `/deepwork:record` and provide guidance if declined.
+
       Output Format:
       - PASS: All behavioral requirements are adequately conveyed.
       - FAIL: List each requirement ID that is not adequately covered,

@@ -36,10 +36,11 @@ requirements:
     If the project is not a code project, the skill MUST skip the review
     setup step entirely.
 
-  # PLUG-REQ-003.5.1
+  # PLUG-REQ-003.5.1, PLUG-REQ-003.5.2
   workflow-recording-offer: >
     After review setup completes or is skipped, the skill MUST use
     `AskUserQuestion` to explain workflows and offer to start
+    `/deepwork:record`. If the user agrees, the skill MUST invoke
     `/deepwork:record`.
 
   # PLUG-REQ-003.5.3

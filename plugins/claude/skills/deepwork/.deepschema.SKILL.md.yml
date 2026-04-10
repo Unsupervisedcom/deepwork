@@ -1,0 +1,6 @@
+requirements:
+  # PLUG-REQ-002.7.1
+  learn-record-redirect: >
+    The skill MUST include a special case for `/deepwork learn` after
+    `/deepwork:record`: when `/deepwork:record` was used in the conversation,
+    the skill MUST start the `new_job` workflow instead of the `learn` workflow.

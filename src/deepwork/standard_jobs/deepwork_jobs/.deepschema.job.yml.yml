@@ -21,3 +21,10 @@ requirements:
     The learn workflow's quality review MUST enforce "Generalizable Learnings
     Applied", "Bespoke Learnings Captured", and "Prevention Opportunities
     Evaluated" as process requirements.
+
+  # PLUG-REQ-002.7.2
+  learn-record-redirect: >
+    The learn step instructions MUST include a pre-check for whether
+    `/deepwork:record` was used in the conversation, and if so, MUST
+    redirect to the `new_job` workflow instead of continuing with the
+    normal learn flow.
