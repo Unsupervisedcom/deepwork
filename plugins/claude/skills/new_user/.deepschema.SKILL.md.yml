@@ -1,0 +1,49 @@
+requirements:
+  # PLUG-REQ-003.1.2
+  disable-model-invocation: >
+    The skill MUST set `disable-model-invocation: true` in its frontmatter so
+    that it is only triggered by explicit user invocation (`/new_user`), not by
+    the agent autonomously.
+
+  # PLUG-REQ-003.2.1
+  gh-star-check: >
+    The skill MUST check if the `gh` CLI is installed and, if present, use
+    `AskUserQuestion` to offer to star the DeepWork repo. If `gh` is not
+    installed, the skill MUST skip this step without mentioning it.
+
+  # PLUG-REQ-003.2.3
+  gh-star-command: >
+    If the user agrees to star the repo, the skill MUST run
+    `gh api -X PUT /user/starred/Unsupervisedcom/deepwork`.
+
+  # PLUG-REQ-003.3.1
+  introduction-content: >
+    The skill MUST print a concise introduction covering Workflows, Reviews,
+    and DeepSchemas, and MUST mention that the three systems work together.
+
+  # PLUG-REQ-003.4.1
+  code-project-detection: >
+    The skill MUST check whether the project appears to be a code project
+    before offering review rule setup.
+
+  # PLUG-REQ-003.4.2
+  review-setup-offer: >
+    For code projects, the skill MUST use `AskUserQuestion` to offer review
+    rule setup and invoke `/deepwork:configure_reviews` if accepted.
+
+  # PLUG-REQ-003.4.4
+  skip-non-code: >
+    If the project is not a code project, the skill MUST skip the review
+    setup step entirely.
+
+  # PLUG-REQ-003.5.1
+  workflow-recording-offer: >
+    After review setup completes or is skipped, the skill MUST use
+    `AskUserQuestion` to explain workflows and offer to start
+    `/deepwork:record`.
+
+  # PLUG-REQ-003.5.3
+  decline-guidance: >
+    If the user declines workflow recording, the skill MUST inform them they
+    can run `/deepwork:record` anytime and that `/deepwork` is the main entry
+    point.

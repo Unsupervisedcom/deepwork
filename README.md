@@ -8,13 +8,10 @@ DeepWork fixes this with two systems: **Workflows** that force agents to follow 
 
 ### Claude Code (Terminal)
 ```
-claude plugin marketplace add Unsupervisedcom/deepwork
-claude plugin install deepwork@deepwork-plugins
-
-claude
+claude plugin marketplace add Unsupervisedcom/deepwork && claude plugin install deepwork@deepwork-plugins && claude "/deepwork:new_user"
 ```
 
-Then start a new session. First, do the task you want to automate — just ask Claude to do it, and work with Claude to refine it as you go:
+The onboarding flow will introduce you to DeepWork and help you get started. Or, do the task you want to automate — just ask Claude to do it, and work with Claude to refine it as you go:
 ```
 Research our top 3 competitors and write a SWOT analysis for each one.
 ```
@@ -137,11 +134,10 @@ Workflows ensure the agent follows the right process. DeepSchemas ensure individ
 
 In Claude Code:
 ```
-claude plugin marketplace add Unsupervisedcom/deepwork
-claude plugin install deepwork@deepwork-plugins
+claude plugin marketplace add Unsupervisedcom/deepwork && claude plugin install deepwork@deepwork-plugins && claude "/deepwork:new_user"
 ```
 
-Start a new Claude Code session after installing.
+The onboarding flow walks you through setup. If you prefer to skip it, just start a new Claude Code session.
 
 > **Note:** If your folder isn't a Git repo yet, run `git init` first.
 

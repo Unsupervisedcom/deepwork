@@ -1,0 +1,64 @@
+requirements:
+  # PLUG-REQ-002.6.1
+  gh-star-check: >
+    The skill MUST check if the `gh` CLI is installed and, if present, use
+    `AskUserQuestion` to offer to star the DeepWork repo. If `gh` is not
+    installed, the skill MUST skip this step without mentioning it.
+
+  # PLUG-REQ-002.6.2
+  gh-star-command: >
+    If the user agrees to star the repo, the skill MUST run
+    `gh api -X PUT /user/starred/Unsupervisedcom/deepwork`.
+
+  # PLUG-REQ-002.1.1
+  workflow-name-prompt: >
+    The skill MUST ask the user for a workflow name before proceeding.
+
+  # PLUG-REQ-002.2.1
+  browser-tool-detection: >
+    The skill MUST check whether `mcp__claude-in-chrome__*` or
+    `mcp__plugin_playwright_playwright__*` tools are available before asking
+    about browser needs.
+
+  # PLUG-REQ-002.2.2
+  browser-question-conditional: >
+    The skill MUST only ask about website access when no browser tools are
+    detected. If browser tools are already available, the question MUST be
+    skipped entirely.
+
+  # PLUG-REQ-002.2.3
+  chrome-setup-guidance: >
+    When the user confirms they need website access and no browser tools are
+    available, the skill MUST tell them to run `/chrome` to set up Claude for
+    Chrome.
+
+  # PLUG-REQ-002.3.1
+  clear-handoff-message: >
+    The skill MUST display a clear, bold-formatted message telling the user to
+    proceed with their workflow normally and to run `/deepwork learn` when
+    done.
+
+  # PLUG-REQ-002.4.1
+  clarify-non-obvious-actions: >
+    During the workflow, the agent MUST ask for reasoning when the user makes
+    requests that would not be understandable as a repeatable workflow step —
+    e.g., removing a specific item without explanation, applying an unexplained
+    filter, or making a domain-specific judgment call.
+
+  # PLUG-REQ-002.4.2
+  no-unnecessary-clarification: >
+    The agent MUST NOT ask for reasoning when the instruction clearly maps to
+    a repeatable step, the reasoning is obvious from context, or the user has
+    already explained their reasoning.
+
+  # PLUG-REQ-002.5.1
+  catch-done-signal: >
+    If the user signals completion without running `/deepwork learn`, the agent
+    MUST use `AskUserQuestion` to confirm whether they want to create a
+    repeatable DeepWork job, and if so, invoke `/deepwork learn`.
+
+  # PLUG-REQ-002.1.2
+  disable-model-invocation: >
+    The skill MUST set `disable-model-invocation: true` in its frontmatter so
+    that it is only triggered by explicit user invocation (`/record`), not by
+    the agent autonomously.
