@@ -71,3 +71,12 @@ When the user invokes `/deepwork`, parse their intent:
     - **Explicit workflow**: `/deepwork <a workflow name>` → start the `<a workflow name>` workflow
     - **General request**: `/deepwork <a request>` → infer best match from available workflows
     - **No context**: `/deepwork` alone → ask user to choose from available workflows
+
+### Special case: `/deepwork learn` after `/deepwork:record`
+
+If the user invokes `/deepwork learn` and `/deepwork:record` was used earlier in this
+conversation, the session captured a new workflow from scratch — there is no existing job
+to learn from. Instead of starting the `learn` workflow, start the `new_job` workflow
+(`job_name: "deepwork_jobs"`, `workflow_name: "new_job"`) with a goal summarizing the
+workflow the user recorded. Use the conversation history as the primary input for defining
+the job's steps, inputs, and outputs.

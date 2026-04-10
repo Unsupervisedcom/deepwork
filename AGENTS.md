@@ -138,12 +138,13 @@ uv run pytest           # Run tests
 ### 1. Plugin Installation
 Users install the DeepWork plugin for their AI agent CLI:
 ```
-claude plugin marketplace add Unsupervisedcom/deepwork
-claude plugin install deepwork@deepwork-plugins
+claude plugin marketplace add Unsupervisedcom/deepwork && claude plugin install deepwork@deepwork-plugins && claude "/deepwork:new_user"
 ```
 The plugin provides:
 - `/deepwork` skill for invoking workflows
 - `/review` and `/configure_reviews` skills for automated reviews
+- `/new_user` skill for guided onboarding
+- `/record` skill for "watch and learn" workflow creation
 - MCP server configuration (`uvx deepwork serve`)
 - Hooks for workflow enforcement
 
@@ -222,6 +223,8 @@ deepwork/
 │   │   │   ├── deepreviews/SKILL.md
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── deepschema/SKILL.md
+│   │   │   ├── new_user/SKILL.md
+│   │   │   ├── record/SKILL.md
 │   │   │   └── review/SKILL.md
 │   │   ├── hooks/        # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
 │   │   └── .mcp.json     # MCP server config

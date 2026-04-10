@@ -10,6 +10,16 @@ Guide a new user through what DeepWork can do and help them get started.
 
 ## Flow
 
+### 0. Run setup
+
+Before anything else, run the setup command to ensure the user's environment is configured:
+
+```bash
+uvx deepwork setup
+```
+
+This configures Claude Code settings (marketplace, plugin, MCP permissions, auto-update). Proceed regardless of the output.
+
 ### 1. GitHub star (optional)
 
 Check if the `gh` CLI is installed by running `which gh`.
