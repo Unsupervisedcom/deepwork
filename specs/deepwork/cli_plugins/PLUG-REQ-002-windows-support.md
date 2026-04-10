@@ -14,8 +14,8 @@ The Claude Code plugin must work on Windows, where PowerShell is the default she
 
 ### PLUG-REQ-002.2: hooks.json Platform Dispatch
 
-1. `plugins/claude/hooks/hooks.json` MUST be updated to reference both `.sh` and `.ps1` scripts, using platform-conditional dispatch so the correct script runs on each OS.
-2. If Claude Code's hook system does not yet support platform-conditional dispatch in `hooks.json`, the `.ps1` files MUST still exist and be documented as the Windows alternative, ready to wire in when platform dispatch is available.
+1. Every hook entry in `plugins/claude/hooks/hooks.json` MUST list both the `.sh` command (default shell) and the `.ps1` command with `"shell": "powershell"` so that Claude Code runs the correct script per OS.
+2. Both hooks run in parallel; on each OS one succeeds and the other fails gracefully (non-blocking). The `.sh` and `.ps1` hooks for the same event MUST produce identical output when they succeed.
 
 ### PLUG-REQ-002.3: PowerShell Script Conventions
 

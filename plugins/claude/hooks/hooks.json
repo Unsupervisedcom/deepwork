@@ -6,7 +6,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run_hook.sh startup_context"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/startup_context.sh"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/startup_context.ps1",
+            "shell": "powershell"
           }
         ]
       },
@@ -15,7 +20,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run_hook.sh post_compact"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post_compact.sh"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post_compact.ps1",
+            "shell": "powershell"
           }
         ]
       }
@@ -26,7 +36,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run_hook.sh startup_context"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/startup_context.sh"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/startup_context.ps1",
+            "shell": "powershell"
           }
         ]
       }
@@ -37,7 +52,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run_hook.sh post_commit_reminder"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post_commit_reminder.sh"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post_commit_reminder.ps1",
+            "shell": "powershell"
           }
         ]
       },
@@ -46,7 +66,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run_hook.sh deepschema_write"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/deepschema_write.sh"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/deepschema_write.ps1",
+            "shell": "powershell"
           }
         ]
       },
@@ -55,7 +80,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run_hook.sh deepschema_write"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/deepschema_write.sh"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/deepschema_write.ps1",
+            "shell": "powershell"
           }
         ]
       }
