@@ -179,6 +179,23 @@ class TestMatchFilesToRules:
         assert tasks[0].files_to_review == ["app.py"]
         assert tasks[1].files_to_review == ["lib.py"]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.3.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_individual_strategy_inlines_file_as_reference(self, tmp_path: Path) -> None:
+        """REVIEW-REQ-004.3.5: matched file is included as a ReferenceFile."""
+        (tmp_path / "app.py").write_text("pass\n")
+        rule = _make_rule(strategy="individual", source_dir=tmp_path)
+        tasks = match_files_to_rules(
+            ["app.py"],
+            [rule],
+            tmp_path,
+        )
+        assert len(tasks) == 1
+        ref_labels = [r.relative_label for r in tasks[0].reference_files]
+        assert "app.py" in ref_labels, (
+            "Individual strategy must include the matched file as a ReferenceFile"
+        )
+
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.4.1, REVIEW-REQ-004.4.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_matches_together_strategy_creates_single_task(self, tmp_path: Path) -> None:

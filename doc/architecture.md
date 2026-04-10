@@ -113,6 +113,8 @@ deepwork/                       # DeepWork tool repository
 │   │   │   ├── deepreviews/SKILL.md
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── deepschema/SKILL.md
+│   │   │   ├── new_user/SKILL.md
+│   │   │   ├── record/SKILL.md
 │   │   │   └── review/SKILL.md
 │   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
 │   │   └── .mcp.json           # MCP server config
@@ -382,9 +384,7 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
 
 1. **Install Plugin** (one-time):
    ```
-   # In Claude Code
-   claude plugin marketplace add Unsupervisedcom/deepwork
-   claude plugin install deepwork@deepwork-plugins
+   claude plugin marketplace add Unsupervisedcom/deepwork && claude plugin install deepwork@deepwork-plugins && claude "/deepwork:new_user"
    ```
 
 2. **Define a Job** (once per job type):

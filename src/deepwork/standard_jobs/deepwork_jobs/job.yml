@@ -1704,6 +1704,21 @@ workflows:
 
           Think deeply about this task. Reflect on the current conversation to identify learnings from DeepWork job executions, improve job instructions with generalizable insights, and capture bespoke (run-specific) learnings in AGENTS.md files in the deepest common folder that would contain all work on the topic in the future.
 
+          ## Pre-check: Recording Session
+
+          Before proceeding, check whether `/deepwork:record` was invoked earlier in this conversation.
+          If it was, this session captured a new workflow from scratch — there is no existing job
+          to learn from. Instead, start the `new_job` workflow to turn the recorded session into
+          a repeatable DeepWork job:
+
+          1. Call `start_workflow` with `job_name: "deepwork_jobs"`, `workflow_name: "new_job"`,
+             and a `goal` summarizing the workflow the user recorded.
+          2. Follow the `new_job` workflow steps — use the conversation history as the primary
+             input for defining the job's steps, inputs, and outputs.
+          3. **Do not continue** with the learn steps below.
+
+          If `/deepwork:record` was NOT used, continue with the normal learn flow.
+
           ## Task
 
           Analyze the conversation history to extract learnings and improvements, then apply them appropriately:

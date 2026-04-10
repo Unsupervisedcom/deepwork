@@ -613,7 +613,7 @@ class TestReferenceFileInlining:
     def test_empty_reference_files_no_section(self) -> None:
         task = _make_task()
         content = build_instruction_file(task)
-        assert "## Reference Materials" not in content
+        assert "## Relevant File Contents" not in content
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.8.2, REVIEW-REQ-005.8.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -624,7 +624,7 @@ class TestReferenceFileInlining:
             [ReferenceFile(path=f, relative_label="example.yml", description="Sample YAML")]
         )
         content = build_instruction_file(task)
-        assert "## Reference Materials" in content
+        assert "## Relevant File Contents" in content
         assert "### example.yml" in content
         assert "Sample YAML" in content
         assert "```yaml" in content
@@ -669,4 +669,4 @@ class TestReferenceFileInlining:
         content = build_instruction_file(task)
         assert "could not inline nope.txt" in content
         # Section still rendered; other content not aborted.
-        assert "## Reference Materials" in content
+        assert "## Relevant File Contents" in content

@@ -189,6 +189,11 @@ def _collect_reference_files(
             )
         )
 
+    # Note: The governed target file for anonymous schemas is NOT added
+    # here — the matcher inlines the file under review as a ReferenceFile
+    # for all individual-strategy reviews (REVIEW-REQ-004.3.5), which
+    # covers the same case without duplication.
+
     # Note: schema.examples are intentionally NOT inlined — they are listed
     # in the instructions via _build_examples_section so reviewers know they
     # exist without bloating the prompt.
