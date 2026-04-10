@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+## [0.13.3] - 2026-04-10
+
+### Added
+
 - `/record` skill: "watch and learn" approach to creating DeepWork workflows — users do their work normally, then `/deepwork learn` turns it into a repeatable job
 - `/new_user` skill: guided onboarding that introduces DeepWork, offers review rule setup for code projects, and offers to record a first workflow
 - `/deepwork learn` now routes to the `new_job` workflow when invoked after `/deepwork:record`
@@ -448,7 +457,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.2...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.3...HEAD
+[0.13.3]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.3
 [0.13.2]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.2
 [0.13.1]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.1
 [0.13.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.0
