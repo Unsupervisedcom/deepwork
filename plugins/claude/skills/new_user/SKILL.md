@@ -21,7 +21,7 @@ If `gh` is available, use `AskUserQuestion` to say something like:
 If they agree, run:
 
 ```bash
-gh repo edit Unsupervisedcom/deepwork --visibility public 2>/dev/null; gh api -X PUT /user/starred/Unsupervisedcom/deepwork
+gh api -X PUT /user/starred/Unsupervisedcom/deepwork
 ```
 
 If `gh` is not installed, skip this entirely — do not mention it.

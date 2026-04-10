@@ -113,6 +113,8 @@ deepwork/                       # DeepWork tool repository
 │   │   │   ├── deepreviews/SKILL.md
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── deepschema/SKILL.md
+│   │   │   ├── new_user/SKILL.md
+│   │   │   ├── record/SKILL.md
 │   │   │   └── review/SKILL.md
 │   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
 │   │   └── .mcp.json           # MCP server config

@@ -44,3 +44,9 @@ This skill targets new users who know *what* they want to automate but haven't y
 2. If `gh` is available, the skill MUST use `AskUserQuestion` to offer to star the DeepWork repo on GitHub so the user gets update notifications.
 3. If the user agrees, the skill MUST run `gh api -X PUT /user/starred/Unsupervisedcom/deepwork`.
 4. If `gh` is not installed, the skill MUST skip this step entirely without mentioning it.
+
+### PLUG-REQ-002.7: Learn After Record Redirect
+
+1. When `/deepwork learn` is invoked in a conversation where `/deepwork:record` was used, the `/deepwork` skill MUST start the `new_job` workflow (`job_name: "deepwork_jobs"`, `workflow_name: "new_job"`) instead of the `learn` workflow.
+2. The `learn` step in the `deepwork_jobs` standard job MUST check for a prior `/deepwork:record` invocation and redirect to `new_job` if found.
+3. The conversation history from the recording session MUST be used as the primary input for defining the new job's steps, inputs, and outputs.

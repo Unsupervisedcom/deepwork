@@ -10,7 +10,7 @@ requirements:
     If the user agrees to star the repo, the skill MUST run
     `gh api -X PUT /user/starred/Unsupervisedcom/deepwork`.
 
-  # PLUG-REQ-002.1.1
+  # PLUG-REQ-002.3.1 (workflow name collection is part of the handoff flow)
   workflow-name-prompt: >
     The skill MUST ask the user for a workflow name before proceeding.
 

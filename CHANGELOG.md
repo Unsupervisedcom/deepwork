@@ -9,7 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `/record` skill: "watch and learn" approach to creating DeepWork workflows — users do their work normally, then `/deepwork learn` turns it into a repeatable job
+- `/new_user` skill: guided onboarding that introduces DeepWork, offers review rule setup for code projects, and offers to record a first workflow
+- `/deepwork learn` now routes to the `new_job` workflow when invoked after `/deepwork:record`
+- Requirements specs PLUG-REQ-002 (record skill) and PLUG-REQ-003 (new user skill)
+- Anonymous DeepSchemas for both new skills
+
 ### Changed
+
+- README install commands consolidated into a single `&&`-joined command ending with `/deepwork:new_user`
 
 ### Fixed
 
