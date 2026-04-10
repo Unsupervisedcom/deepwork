@@ -28,7 +28,7 @@ If `gh` is not installed, skip this entirely — do not mention it.
 
 ### 2. Introduce DeepWork
 
-Print a brief welcome message explaining what DeepWork does. Keep it concise — a few sentences, not a wall of text. Cover the three main capabilities:
+Print a brief welcome message explaining what DeepWork does. Lead with the core value proposition: DeepWork makes AI agents **reliable**. It gives you mechanisms to be assured that Claude will do the right things in the process of achieving your requests. Keep it concise — a few sentences, not a wall of text. Then cover the three main capabilities:
 
 - **Workflows** — structured, multi-step processes with quality gates. Do a task once with Claude, then turn it into a repeatable workflow. Examples: competitive research, tutorial writing, API audits, monthly reporting.
 - **Reviews** — automated code review rules that run against every change. Define what to check for in `.deepreview` configs, then run `/review`. Catches regressions, style issues, doc drift, security problems.
