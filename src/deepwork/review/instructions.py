@@ -252,7 +252,12 @@ def build_instruction_file(
         parts.append(_build_reference_files_section(task.reference_files))
         parts.append("")
 
-    # Files to review (omitted for inline-content tasks with no files)
+    # Files to review (omitted for inline-content tasks with no files).
+    # NOTE: The @filepath references below are NOT auto-expanded when the
+    # instruction file is consumed by the reviewing agent.  They are path
+    # pointers — the agent must Read each file itself.  Any content that
+    # the reviewer needs without a round-trip should go in reference_files
+    # (rendered in "Relevant File Contents" above).
     if task.files_to_review:
         parts.append("## Files to Review\n")
         for filepath in task.files_to_review:
