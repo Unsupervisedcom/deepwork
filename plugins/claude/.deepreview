@@ -1,3 +1,34 @@
+windows_powershell_parity:
+  description: "PLUG-REQ-002.1: Every .sh hook script must have a functionally equivalent .ps1 PowerShell script."
+  match:
+    include:
+      - "plugins/claude/hooks/*.sh"
+      - "plugins/claude/hooks/*.ps1"
+  review:
+    strategy: matches_together
+    instructions: |
+      Review shell and PowerShell hook scripts for functional parity per
+      PLUG-REQ-002 (specs/deepwork/cli_plugins/PLUG-REQ-002-windows-support.md).
+
+      For every `.sh` file under `plugins/claude/hooks/`, verify:
+
+      1. A corresponding `.ps1` file exists with the same base name.
+      2. The `.ps1` script is functionally equivalent: same stdin JSON contract,
+         same stdout JSON structure, same exit code semantics.
+      3. The `.ps1` script uses PowerShell-native JSON parsing (`ConvertFrom-Json`,
+         `ConvertTo-Json`) — NOT `jq`, `grep`, `sed`, or other Unix tools.
+      4. The `.ps1` script uses `$ErrorActionPreference = 'Stop'` and try/catch
+         error handling that outputs `{}` on failure (matching the bash pattern).
+      5. The `.ps1` script has a header comment block: description, input/output,
+         exit codes.
+
+      When either a `.sh` or `.ps1` file changes, verify the pair is still in
+      sync — same logic, same JSON keys, same conditional behavior.
+
+      Output Format:
+      - PASS: All .sh files have equivalent .ps1 files and they are in sync.
+      - FAIL: List each issue with the file pair and what is missing or divergent.
+
 claude_plugin_skill_instructions:
   description: "PLUG-REQ-001 & REVIEW-REQ-007: Verify skill instructions adequately convey behavioral requirements."
   match:

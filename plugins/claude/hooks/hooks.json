@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/startup_context.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run_hook.sh startup_context"
           }
         ]
       },
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post_compact.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run_hook.sh post_compact"
           }
         ]
       }
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/startup_context.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run_hook.sh startup_context"
           }
         ]
       }
@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post_commit_reminder.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run_hook.sh post_commit_reminder"
           }
         ]
       },
@@ -46,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/deepschema_write.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run_hook.sh deepschema_write"
           }
         ]
       },
@@ -55,7 +55,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/deepschema_write.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run_hook.sh deepschema_write"
           }
         ]
       }
