@@ -29,6 +29,7 @@ After discovering review rules (REVIEW-REQ-002) and changed files (REVIEW-REQ-00
 2. Each task's `files_to_review` MUST contain exactly one file path.
 3. The task's `rule_name` MUST be the rule name.
 4. The task's `instructions` MUST be the rule's resolved instruction text.
+5. The matched file MUST be included as a `ReferenceFile` in the task's `reference_files` so its content is inlined in the "Relevant File Contents" section. This is necessary because `@filepath` references in "Files to Review" are not auto-expanded by the reviewing agent.
 
 ### REVIEW-REQ-004.4: Strategy — matches_together
 
