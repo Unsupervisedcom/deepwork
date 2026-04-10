@@ -88,8 +88,7 @@ When a finding is dismissed (user chooses "Skip" or you determine it's not actio
 
 After making any changes:
 
-1. Call `mcp__deepwork__get_review_instructions` again (with the same `files` argument if the original review was file-scoped, otherwise no arguments).
+1. Call `mcp__deepwork__get_review_instructions` with `files` set to **only the files you edited** during this iteration. This scopes the re-review to your changes rather than re-reviewing the entire branch.
 2. Repeat the cycle (run → act on results → run again) until a clean run — one where all review agents return no findings, or all remaining findings have been explicitly skipped by the user.
 3. On subsequent runs, you only need to re-run tasks that had findings last time — skip tasks that were clean.
-4. If you made very large changes, consider re-running the full review set.
-5. Reviews that already passed are automatically skipped as long as reviewed files remain unchanged.
+4. Reviews that already passed are automatically skipped as long as reviewed files remain unchanged.
