@@ -113,5 +113,7 @@
       "mcp__plugin_deepwork_deepwork__*"
     ]
   },
-  "enabledPlugins": {}
+  "enabledPlugins": {
+    "plugin-dev@claude-plugins-official": true
+  }
 }
