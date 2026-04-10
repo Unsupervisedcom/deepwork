@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import click.testing
 import pytest
@@ -132,3 +133,11 @@ class TestSetupCLI:
         result = runner.invoke(cli, ["setup"])
         assert result.exit_code == 0
         assert "No supported" in result.output
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.6.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_opens_success_page(self, claude_home: Path) -> None:
+        with patch("deepwork.cli.setup.webbrowser.open") as mock_open:
+            runner = click.testing.CliRunner()
+            runner.invoke(cli, ["setup"])
+            mock_open.assert_called_once_with("https://www.deepwork.md/success")

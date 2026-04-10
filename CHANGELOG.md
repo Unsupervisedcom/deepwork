@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - README install commands consolidated into a single `&&`-joined command ending with `/deepwork:new_user`
+- `deepwork setup` now opens `https://www.deepwork.md/success` in the default browser after completing configuration
 
 ### Fixed
 
