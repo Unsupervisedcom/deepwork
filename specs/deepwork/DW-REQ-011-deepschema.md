@@ -86,3 +86,4 @@ The DeepSchema system provides rich, file-level schemas with automatic validatio
 4. The order of inlined reference files MUST be deterministic across runs for a given schema.
 5. When a referenced file cannot be located on disk, the bridge MUST skip it and surface an error through the `errors` return of `generate_review_rules`. A missing reference file MUST NOT prevent the rule from being generated.
 6. Reference entries whose `path` begins with `http://` or `https://` MUST be skipped without producing an error, since they are informational pointers rather than local files.
+7. For anonymous schemas, the bridge MUST include the governed target file (the sibling file derived from the schema filename) as a reference file so the reviewer has its contents available without a separate lookup.

@@ -107,7 +107,7 @@ rule_name:
       all_changed_filenames: true
       unchanged_matching_files: true
     reference_files:                # Optional. Files whose contents are inlined
-      - path: "docs/style_guide.md" # into a "## Reference Materials" section of
+      - path: "docs/style_guide.md" # into a "## Relevant File Contents" section of
         description: "Style guide"  # every generated review instruction file.
 ```
 

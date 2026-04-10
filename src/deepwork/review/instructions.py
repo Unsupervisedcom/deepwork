@@ -246,9 +246,9 @@ def build_instruction_file(
     parts.append(task.instructions.strip())
     parts.append("")
 
-    # Reference materials — inlined file contents (subject to caps)
+    # Relevant file contents — inlined for reviewer context (subject to caps)
     if task.reference_files:
-        parts.append("## Reference Materials\n")
+        parts.append("## Relevant File Contents\n")
         parts.append(_build_reference_files_section(task.reference_files))
         parts.append("")
 
