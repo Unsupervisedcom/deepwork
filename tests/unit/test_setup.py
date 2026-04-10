@@ -110,6 +110,11 @@ class TestClaudeSetupNoClaudeDir:
 class TestSetupCLI:
     """Tests for the setup CLI command itself."""
 
+    @pytest.fixture(autouse=True)
+    def _mock_browser(self) -> None:  # noqa: PT004
+        with patch("deepwork.cli.setup.webbrowser.open"):
+            yield
+
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_setup_is_click_command(self) -> None:
