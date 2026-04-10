@@ -17,7 +17,6 @@ DeepWork Reviews is delivered to users via the Claude Code plugin. The plugin sh
 7. The skill MUST instruct the agent to use AskUserQuestion for findings that involve trade-offs or subjective judgment.
 8. The skill MUST instruct the agent to re-run the review after making changes, repeating until no further actionable findings remain.
 9. The skill MUST route configuration requests (creating or modifying `.deepreview` files) to the `configure_reviews` skill.
-10. The skill MUST launch three code-quality agents (code reuse, code quality, efficiency) in parallel alongside the `.deepreview` review tasks, and MUST handle their findings identically to `.deepreview` findings.
 
 ### REVIEW-REQ-007.2: Configure Reviews Skill
 
