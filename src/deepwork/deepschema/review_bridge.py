@@ -189,20 +189,10 @@ def _collect_reference_files(
             )
         )
 
-    # For anonymous schemas, include the governed target file so the
-    # reviewer can validate requirements against the actual file content
-    # without needing a separate lookup.  (DW-REQ-011.11.7)
-    if schema.schema_type == "anonymous":
-        target_name = anonymous_target_filename(schema.source_path.name)
-        target_path = (schema_dir / target_name).resolve()
-        if target_path.exists():
-            refs.append(
-                ReferenceFile(
-                    path=target_path,
-                    relative_label=target_name,
-                    description=f"Target file governed by this schema",
-                )
-            )
+    # Note: The governed target file for anonymous schemas is NOT added
+    # here — the matcher inlines the file under review as a ReferenceFile
+    # for all individual-strategy reviews (REVIEW-REQ-004.3.5), which
+    # covers the same case without duplication.
 
     # Note: schema.examples are intentionally NOT inlined — they are listed
     # in the instructions via _build_examples_section so reviewers know they
