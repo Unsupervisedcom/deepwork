@@ -87,3 +87,4 @@ The DeepWork CLI provides five active commands: `serve` (starts the MCP server),
 5. The command MUST preserve existing settings (other plugins, permissions, etc.) when adding DeepWork entries.
 6. The command MUST create `~/.claude` and `settings.json` if they do not exist.
 7. When no supported platform is detected, the command MUST print a message indicating no platforms were found.
+8. After all platform configuration is complete, the command MUST open `https://www.deepwork.md/success` in the user's default browser.
