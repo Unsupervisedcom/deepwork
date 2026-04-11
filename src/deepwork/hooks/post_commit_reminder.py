@@ -58,7 +58,7 @@ def _committed_files(project_root: Path) -> list[str] | None:
     """Return files in HEAD's commit, or ``None`` if the git command fails."""
     try:
         result = subprocess.run(
-            ["git", "show", "--no-patch", "--name-only", "--format=", "HEAD"],
+            ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"],
             cwd=project_root,
             capture_output=True,
             text=True,
