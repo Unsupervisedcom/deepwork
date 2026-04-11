@@ -7,6 +7,7 @@ suitable for registration as an MCP tool.
 from pathlib import Path
 
 from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
+from deepwork.review.config import ReviewRule
 from deepwork.review.discovery import DiscoveryError, load_all_rules
 from deepwork.review.formatter import format_for_claude
 from deepwork.review.instructions import (
@@ -38,7 +39,7 @@ def _is_catch_all_pattern(pattern: str) -> bool:
     return pattern != "" and all(c in "*/" for c in pattern)
 
 
-def _rule_is_catch_all(rule) -> bool:  # type: ignore[no-untyped-def]
+def _rule_is_catch_all(rule: ReviewRule) -> bool:
     """Return True if every include pattern on the rule is a catch-all."""
     return bool(rule.include_patterns) and all(
         _is_catch_all_pattern(p) for p in rule.include_patterns

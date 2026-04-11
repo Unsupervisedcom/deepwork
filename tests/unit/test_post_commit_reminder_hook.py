@@ -69,6 +69,8 @@ class TestPostCommitReminderEarlyReturns:
 
 
 class TestPostCommitReminderReviewPaths:
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.7.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch(
         "deepwork.review.mcp.all_reviews_passed_for_files",
         return_value=True,
@@ -83,6 +85,8 @@ class TestPostCommitReminderReviewPaths:
         result = post_commit_reminder_hook(_make_hook_input())
         assert result == HookOutput(context=ALL_PASSED_CONTEXT)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.7.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch(
         "deepwork.review.mcp.all_reviews_passed_for_files",
         return_value=True,
@@ -98,6 +102,8 @@ class TestPostCommitReminderReviewPaths:
         result = post_commit_reminder_hook(_make_hook_input())
         assert result == HookOutput(context=ALL_PASSED_CONTEXT)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.7.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch(
         "deepwork.review.mcp.all_reviews_passed_for_files",
         return_value=False,
@@ -112,6 +118,8 @@ class TestPostCommitReminderReviewPaths:
         result = post_commit_reminder_hook(_make_hook_input())
         assert result == HookOutput(context=REMINDER_CONTEXT)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.7.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch(
         "deepwork.hooks.post_commit_reminder._committed_files",
         return_value=None,
@@ -120,6 +128,8 @@ class TestPostCommitReminderReviewPaths:
         result = post_commit_reminder_hook(_make_hook_input())
         assert result == HookOutput(context=REMINDER_CONTEXT)
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.7.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch(
         "deepwork.review.mcp.all_reviews_passed_for_files",
         side_effect=RuntimeError("boom"),

@@ -198,13 +198,13 @@ def _get_tool_names(server: Any) -> set[str]:
 class TestRunReviewDiscoveryWarnings:
     """Tests for discovery warning handling in run_review."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.mcp.gen_schema_rules")
     @patch("deepwork.review.mcp.load_all_rules")
     def test_no_valid_rules_with_parse_errors_shows_warnings(
         self, mock_load: Any, mock_schema: Any, tmp_path: Path
     ) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When no valid rules exist but there are discovery errors, shows parse errors."""
         from deepwork.review.discovery import DiscoveryError
 
@@ -219,13 +219,13 @@ class TestRunReviewDiscoveryWarnings:
         assert "bad/.deepreview" in result
         assert "bad yaml" in result
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.mcp.gen_schema_rules")
     @patch("deepwork.review.mcp.load_all_rules")
     def test_schema_errors_appended_to_discovery_errors(
         self, mock_load: Any, mock_schema: Any, tmp_path: Path
     ) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """DeepSchema errors are appended to discovery_errors."""
 
         mock_load.return_value = ([], [])
@@ -236,6 +236,8 @@ class TestRunReviewDiscoveryWarnings:
         assert "No valid review rules found" in result
         assert "schema parse failed" in result
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.mcp.write_instruction_files")
     @patch("deepwork.review.mcp.match_files_to_rules")
     @patch("deepwork.review.mcp.get_changed_files")
@@ -250,8 +252,6 @@ class TestRunReviewDiscoveryWarnings:
         mock_write: Any,
         tmp_path: Path,
     ) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When discovery errors exist alongside valid rules, warnings are prepended."""
         from deepwork.review.discovery import DiscoveryError
 
@@ -774,6 +774,8 @@ class TestAllReviewsPassedForFiles:
     def test_no_rules(self, mock_load: Any, mock_schema: Any, tmp_path: Path) -> None:
         assert all_reviews_passed_for_files(tmp_path, ["src/app.py"]) is True
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.7.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
     @patch("deepwork.review.mcp.load_all_rules")
     def test_only_catch_all_rule(self, mock_load: Any, mock_schema: Any, tmp_path: Path) -> None:
@@ -789,6 +791,8 @@ class TestAllReviewsPassedForFiles:
         mock_load.return_value = ([py_rule], [])
         assert all_reviews_passed_for_files(tmp_path, ["src/app.ts"]) is True
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.7.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
     @patch("deepwork.review.mcp.load_all_rules")
     def test_matching_rule_with_passed_marker(
@@ -817,6 +821,8 @@ class TestAllReviewsPassedForFiles:
 
         assert all_reviews_passed_for_files(tmp_path, ["src/app.py"]) is True
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.7.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
     @patch("deepwork.review.mcp.load_all_rules")
     def test_matching_rule_without_passed_marker(
