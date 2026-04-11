@@ -85,6 +85,11 @@ def _content_hash(files: list[str], project_root: Path, inline_content: str | No
     ``inline_content`` is provided, it is mixed into the hash (via a
     sentinel marker) so that each distinct string value produces a
     distinct review ID.
+
+    ``files`` entries are expected to be repo-root-relative paths sourced
+    from trusted ``.deepreview`` config files.  Absolute paths or ``..``
+    segments are not validated here; callers MUST ensure paths stay
+    inside ``project_root``.
     """
     h = hashlib.sha256()
     for filepath in sorted(files):
@@ -214,9 +219,12 @@ def write_instruction_files(
         if passed_marker.exists():
             continue
 
+        # Direct key access (not .get()): the invariant below enforces that
+        # every non-None command produced unique_commands above MUST have a
+        # result in precompute_results — a missing key indicates drift.
         precomputed_info = (
-            precompute_results.get(task.precomputed_info_bash_command)
-            if task.precomputed_info_bash_command
+            precompute_results[task.precomputed_info_bash_command]
+            if task.precomputed_info_bash_command is not None
             else None
         )
         content = build_instruction_file(task, review_id, precomputed_info, project_root)
