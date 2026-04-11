@@ -175,6 +175,20 @@ class TestCommittedFiles:
         ):
             assert _committed_files(tmp_path) is None
 
+    def test_uses_diff_tree_not_show(self, tmp_path: Path) -> None:
+        """git show --no-patch --name-only are incompatible flags; verify we use diff-tree."""
+        with patch(
+            "deepwork.hooks.post_commit_reminder.subprocess.run"
+        ) as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="a.py\n"
+            )
+            _committed_files(tmp_path)
+        cmd = mock_run.call_args[0][0]
+        assert cmd[0] == "git"
+        assert cmd[1] == "diff-tree"
+        assert "--no-patch" not in cmd, "--no-patch conflicts with --name-only"
+
     def test_strips_blank_lines(self, tmp_path: Path) -> None:
         with patch(
             "deepwork.hooks.post_commit_reminder.subprocess.run"
