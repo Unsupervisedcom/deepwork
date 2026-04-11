@@ -112,9 +112,7 @@ class TestPostCommitReminderReviewPaths:
         "deepwork.hooks.post_commit_reminder._committed_files",
         return_value=["src/app.py"],
     )
-    def test_not_all_passed_returns_reminder(
-        self, mock_files: object, mock_passed: object
-    ) -> None:
+    def test_not_all_passed_returns_reminder(self, mock_files: object, mock_passed: object) -> None:
         result = post_commit_reminder_hook(_make_hook_input())
         assert result == HookOutput(context=REMINDER_CONTEXT)
 
@@ -152,9 +150,7 @@ class TestPostCommitReminderReviewPaths:
 
 class TestCommittedFiles:
     def test_returns_file_list_on_success(self, tmp_path: Path) -> None:
-        with patch(
-            "deepwork.hooks.post_commit_reminder.subprocess.run"
-        ) as mock_run:
+        with patch("deepwork.hooks.post_commit_reminder.subprocess.run") as mock_run:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="src/a.py\nsrc/b.py\n"
             )
@@ -177,9 +173,7 @@ class TestCommittedFiles:
 
     def test_uses_diff_tree_not_show(self, tmp_path: Path) -> None:
         """git show --no-patch --name-only are incompatible flags; verify we use diff-tree."""
-        with patch(
-            "deepwork.hooks.post_commit_reminder.subprocess.run"
-        ) as mock_run:
+        with patch("deepwork.hooks.post_commit_reminder.subprocess.run") as mock_run:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="a.py\n"
             )
@@ -190,9 +184,7 @@ class TestCommittedFiles:
         assert "--no-patch" not in cmd, "--no-patch conflicts with --name-only"
 
     def test_strips_blank_lines(self, tmp_path: Path) -> None:
-        with patch(
-            "deepwork.hooks.post_commit_reminder.subprocess.run"
-        ) as mock_run:
+        with patch("deepwork.hooks.post_commit_reminder.subprocess.run") as mock_run:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="a.py\n\n  \nb.py\n"
             )
@@ -207,9 +199,7 @@ class TestCommittedFiles:
 
 class TestMain:
     def test_main_delegates_to_run_hook(self) -> None:
-        with patch(
-            "deepwork.hooks.post_commit_reminder.run_hook", return_value=0
-        ) as mock_run:
+        with patch("deepwork.hooks.post_commit_reminder.run_hook", return_value=0) as mock_run:
             with patch.dict("os.environ", {"DEEPWORK_HOOK_PLATFORM": "gemini"}):
                 ret = main()
         assert ret == 0
@@ -217,9 +207,7 @@ class TestMain:
         assert mock_run.call_args[0][1] == Platform("gemini")
 
     def test_main_defaults_to_claude(self) -> None:
-        with patch(
-            "deepwork.hooks.post_commit_reminder.run_hook", return_value=0
-        ) as mock_run:
+        with patch("deepwork.hooks.post_commit_reminder.run_hook", return_value=0) as mock_run:
             with patch.dict("os.environ", {}, clear=True):
                 main()
         assert mock_run.call_args[0][1] == Platform.CLAUDE
