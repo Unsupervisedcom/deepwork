@@ -529,3 +529,9 @@ Patterns follow standard glob syntax, evaluated relative to the `.deepreview` fi
 | `config/*` | `config/settings.yaml` | `config/deep/nested.yaml` |
 | `**/Dockerfile` | `Dockerfile`, `services/api/Dockerfile` | `Dockerfile.dev` |
 | `CHANGELOG.md` | `CHANGELOG.md` | `docs/CHANGELOG.md` |
+
+## Contributor setup
+
+By default, `/review` dispatches each review task to the `reviewer` subagent shipped with the DeepWork Claude plugin (`plugins/claude/agents/reviewer.md`). If you are developing against this repo with only the dev MCP server (`uv run deepwork serve`) and no plugin installed, Claude Code cannot resolve `subagent_type: reviewer` and review dispatch will fail.
+
+To run reviews as a contributor, install the plugin alongside the dev server: `claude plugin marketplace add Unsupervisedcom/deepwork && claude plugin install deepwork@deepwork-plugins`. The plugin ships the reviewer agent file, and either MCP server prefix (`mcp__deepwork-dev__*` or `mcp__plugin_deepwork_deepwork__*`) will resolve the reviewer's tools.

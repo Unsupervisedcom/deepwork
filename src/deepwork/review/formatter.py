@@ -106,7 +106,7 @@ def format_for_claude(
 
         name = _task_name(task)
         description = _task_description(task)
-        subagent_type = task.agent_name or "general-purpose"
+        subagent_type = task.agent_name or "reviewer"
 
         lines.append(f'name: "{name}"')
         lines.append(f"\tdescription: {description}")
