@@ -42,7 +42,9 @@ class ReviewRule:
     agent: dict[str, str] | None
     all_changed_filenames: bool
     unchanged_matching_files: bool
-    precomputed_info_bash_command: str | None  # Resolved absolute command path
+    precomputed_info_bash_command: (
+        str | None
+    )  # Shell command string (first path component resolved to absolute)
     source_dir: Path  # Directory containing the .deepreview file
     source_file: Path  # Path to the .deepreview file
     source_line: int  # Line number of the rule name in the .deepreview file

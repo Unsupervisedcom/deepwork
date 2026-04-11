@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Review instruction files now include a `## Project Root` directive stating the absolute project root so reviewer subagents read files from the correct working tree — fixes spurious findings in git-worktree setups where the subagent's cwd differed from the worktree the commits actually lived in (REVIEW-REQ-005.1.9)
+
 ### Removed
 ## [0.13.3] - 2026-04-10
 

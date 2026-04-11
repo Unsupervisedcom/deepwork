@@ -8,16 +8,27 @@ REVIEW-REQ-009, REVIEW-REQ-009.4, REVIEW-REQ-009.5.
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from deepwork.review.config import ReferenceFile, ReviewTask
 from deepwork.review.instructions import (
     MAX_INLINE_FILES,
     MAX_INLINE_TOTAL_BYTES,
     _run_precompute_command,
     _run_precompute_commands,
+    _sanitize_for_id,
     build_instruction_file,
     compute_review_id,
     write_instruction_files,
 )
+
+
+@pytest.fixture
+def instructions_dir(tmp_path: Path) -> Path:
+    """Create and return the `.deepwork/tmp/review_instructions/` directory under tmp_path."""
+    d = tmp_path / ".deepwork" / "tmp" / "review_instructions"
+    d.mkdir(parents=True)
+    return d
 
 
 def _make_task(
@@ -99,30 +110,30 @@ class TestBuildInstructionFile:
                     f"Context-only files should not have @ prefix: {line}"
                 )
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_omits_unchanged_section_when_empty(self) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.6).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         task = _make_task(additional_files=[])
         content = build_instruction_file(task)
         assert "## Unchanged Matching Files" not in content
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_omits_all_changed_section_when_none(self) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.7).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         task = _make_task(all_changed_filenames=None)
         content = build_instruction_file(task)
         assert "## All Changed Files" not in content
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_single_file_scope_description(self) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.2).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         task = _make_task(files=["src/app.py"])
         content = build_instruction_file(task)
         assert "src/app.py" in content.split("\n")[0]
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_multi_file_scope_description(self) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.2).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         task = _make_task(files=["a.py", "b.py", "c.py"])
         content = build_instruction_file(task)
         assert "3 files" in content.split("\n")[0]
@@ -152,9 +163,9 @@ class TestBuildInstructionFile:
         content = build_instruction_file(task)
         assert "This review was requested" not in content
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.6.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_traceability_is_at_end(self) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.6.1).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         task = _make_task(source_location=".deepreview:1")
         content = build_instruction_file(task)
         last_nonblank = [line for line in content.strip().split("\n") if line.strip()][-1]
@@ -179,6 +190,44 @@ class TestBuildInstructionFile:
         after_idx = content.index("## After Review")
         trace_idx = content.index("This review was requested")
         assert after_idx < trace_idx
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_project_root_section_present_when_project_root_passed(self, tmp_path: Path) -> None:
+        """When project_root is provided, a Project Root directive is emitted."""
+        task = _make_task(files=["src/app.py"])
+        content = build_instruction_file(task, project_root=tmp_path)
+        assert "## Project Root" in content
+        # The absolute path is rendered verbatim for the reviewer to prepend.
+        assert str(tmp_path.resolve()) in content
+        # The directive must tell the reviewer to prepend the root.
+        assert "prepend" in content.lower()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_project_root_section_before_review_instructions(self, tmp_path: Path) -> None:
+        """The Project Root section is placed before Review Instructions."""
+        task = _make_task()
+        content = build_instruction_file(task, project_root=tmp_path)
+        root_idx = content.index("## Project Root")
+        instr_idx = content.index("## Review Instructions")
+        assert root_idx < instr_idx
+
+    def test_project_root_omitted_when_not_passed(self) -> None:
+        """Backward compat: omitting project_root omits the directive section."""
+        task = _make_task()
+        content = build_instruction_file(task)
+        assert "## Project Root" not in content
+
+    def test_write_instruction_files_passes_project_root(self, tmp_path: Path) -> None:
+        """write_instruction_files threads project_root through to build_instruction_file."""
+        task = _make_task()
+        results = write_instruction_files([task], tmp_path)
+        assert len(results) == 1
+        _t, file_path = results[0]
+        content = file_path.read_text()
+        assert "## Project Root" in content
+        assert str(tmp_path.resolve()) in content
 
 
 class TestWriteInstructionFiles:
@@ -206,9 +255,7 @@ class TestWriteInstructionFiles:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.5.1, REVIEW-REQ-009.5.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_clears_previous_files(self, tmp_path: Path) -> None:
-        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
-        instructions_dir.mkdir(parents=True)
+    def test_clears_previous_files(self, tmp_path: Path, instructions_dir: Path) -> None:
         (instructions_dir / "old_file.md").write_text("stale")
 
         tasks = [_make_task()]
@@ -243,13 +290,11 @@ class TestWriteInstructionFiles:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.3.1, REVIEW-REQ-009.3.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_skips_tasks_with_passed_marker(self, tmp_path: Path) -> None:
+    def test_skips_tasks_with_passed_marker(self, tmp_path: Path, instructions_dir: Path) -> None:
         task = _make_task(rule_name="my_rule")
         review_id = compute_review_id(task, tmp_path)
 
         # Create .passed marker
-        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
-        instructions_dir.mkdir(parents=True)
         (instructions_dir / f"{review_id}.passed").write_bytes(b"")
 
         results = write_instruction_files([task], tmp_path)
@@ -257,9 +302,9 @@ class TestWriteInstructionFiles:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.5.1, REVIEW-REQ-009.5.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_preserves_passed_files_on_cleanup(self, tmp_path: Path) -> None:
-        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
-        instructions_dir.mkdir(parents=True)
+    def test_preserves_passed_files_on_cleanup(
+        self, tmp_path: Path, instructions_dir: Path
+    ) -> None:
         passed_file = instructions_dir / "some_review.passed"
         passed_file.write_bytes(b"")
 
@@ -269,9 +314,9 @@ class TestWriteInstructionFiles:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.5.1, REVIEW-REQ-009.5.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_preserves_md_files_with_passed_marker(self, tmp_path: Path) -> None:
-        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
-        instructions_dir.mkdir(parents=True)
+    def test_preserves_md_files_with_passed_marker(
+        self, tmp_path: Path, instructions_dir: Path
+    ) -> None:
         (instructions_dir / "old_review.md").write_text("passed content")
         (instructions_dir / "old_review.passed").write_bytes(b"")
 
@@ -282,10 +327,8 @@ class TestWriteInstructionFiles:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.3.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_all_tasks_passed_returns_empty(self, tmp_path: Path) -> None:
+    def test_all_tasks_passed_returns_empty(self, tmp_path: Path, instructions_dir: Path) -> None:
         tasks = [_make_task(rule_name="rule_a"), _make_task(rule_name="rule_b")]
-        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
-        instructions_dir.mkdir(parents=True)
 
         for task in tasks:
             review_id = compute_review_id(task, tmp_path)
@@ -296,12 +339,11 @@ class TestWriteInstructionFiles:
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.3.1, REVIEW-REQ-009.3.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_some_tasks_passed_returns_remaining(self, tmp_path: Path) -> None:
+    def test_some_tasks_passed_returns_remaining(
+        self, tmp_path: Path, instructions_dir: Path
+    ) -> None:
         task_a = _make_task(rule_name="rule_a")
         task_b = _make_task(rule_name="rule_b")
-
-        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
-        instructions_dir.mkdir(parents=True)
 
         # Only mark task_a as passed
         review_id_a = compute_review_id(task_a, tmp_path)
@@ -318,7 +360,7 @@ class TestComputeReviewId:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.1.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_single_file_produces_expected_format(self, tmp_path: Path) -> None:
-        (tmp_path / "src" / "app.py").parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / "src").mkdir(parents=True, exist_ok=True)
         (tmp_path / "src" / "app.py").write_text("print('hello')")
 
         task = _make_task(rule_name="python_review", files=["src/app.py"])
@@ -415,8 +457,6 @@ class TestComputeReviewId:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-009.1.2).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_special_chars_in_rule_name_sanitized(self, tmp_path: Path) -> None:
-        from deepwork.review.instructions import _sanitize_for_id
-
         assert _sanitize_for_id("my rule@v2!") == "my-rule-v2-"
         # Also verify it preserves allowed chars: alphanumeric, dash, underscore, dot
         assert _sanitize_for_id("rule_name-1.0") == "rule_name-1.0"
@@ -486,12 +526,12 @@ class TestInlineContent:
         task_b = self._make_inline_task("same value")
         assert compute_review_id(task_a, tmp_path) == compute_review_id(task_b, tmp_path)
 
-    def test_pass_caching_works_for_inline_content(self, tmp_path: Path) -> None:
+    def test_pass_caching_works_for_inline_content(
+        self, tmp_path: Path, instructions_dir: Path
+    ) -> None:
         """Writing a .passed marker for an inline task skips it next time."""
         task = self._make_inline_task("cache me")
         review_id = compute_review_id(task, tmp_path)
-        instructions_dir = tmp_path / ".deepwork" / "tmp" / "review_instructions"
-        instructions_dir.mkdir(parents=True)
         (instructions_dir / f"{review_id}.passed").write_bytes(b"")
 
         results = write_instruction_files([task], tmp_path)
@@ -633,15 +673,18 @@ class TestReferenceFileInlining:
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.8.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_count_cap_triggers_omission(self, tmp_path: Path) -> None:
+        total = MAX_INLINE_FILES + 3
         refs: list[ReferenceFile] = []
-        for i in range(MAX_INLINE_FILES + 3):
+        for i in range(total):
             f = tmp_path / f"f{i}.txt"
             f.write_text(f"content {i}")
             refs.append(ReferenceFile(path=f, relative_label=f"f{i}.txt"))
         task = self._task_with_refs(refs)
         content = build_instruction_file(task)
         assert "omitted due to size/count caps" in content
-        assert "f20.txt" in content  # one of the omitted
+        # The last-created file is guaranteed to be in the omitted set regardless of MAX_INLINE_FILES.
+        assert f"f{total - 1}.txt" in content
+        # Each inlined file contributes one opening and one closing fence.
         assert content.count("```") >= 2 * MAX_INLINE_FILES
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.8.5).
