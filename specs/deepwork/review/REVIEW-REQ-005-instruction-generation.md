@@ -11,12 +11,14 @@ For each `ReviewTask`, the system generates a self-contained markdown instructio
 1. Each instruction file MUST be a valid markdown document.
 2. The file MUST begin with a heading identifying the review rule and scope (e.g., `# Review: python_file_best_practices — src/app.py`).
 3. The file MUST contain a "Review Instructions" section with the rule's resolved instruction text.
-4. The file MUST contain a "Files to Review" section listing the file paths to examine when the task has at least one file to review. Inline-content tasks (see REVIEW-REQ-005.1.8) MUST NOT include a "Files to Review" section.
+4. The file MUST contain a "Files to Review" section listing the file paths to examine when the task has at least one file to review.
 5. File paths in the "Files to Review" section MUST be relative to the repository root.
 6. When the task has `additional_files` (unchanged matching files), the file MUST contain an "Unchanged Matching Files" section listing those file paths.
 7. When the task has `all_changed_filenames`, the file MUST contain an "All Changed Files" section listing every changed filename for context.
-8. When the task has `inline_content` set (used for `type: string` step outputs — see JOBS-REQ-004.8), the file MUST contain a "Content to Review" section whose body is the inline content verbatim. The review heading scope MUST read `inline content` when the task has `inline_content` and no `files_to_review`.
+8. When the task has `inline_content` set (used for `type: string` step outputs — see JOBS-REQ-004.8), the file MUST contain a "Content to Review" section whose body is the inline content verbatim.
 9. The file MUST contain a "Project Root" section near the top (between the header and "Review Instructions") that states the absolute path of the project root against which all relative file paths in the document are resolved, and that instructs the reviewer to prepend this root when calling the Read tool. This is required so reviewer subagents read files from the correct working tree when their current working directory differs from the project root — e.g., when the review runs against a git worktree dispatched from the main checkout.
+10. Inline-content tasks (see REVIEW-REQ-005.1.8) MUST NOT include a "Files to Review" section.
+11. The review heading scope MUST read `inline content` when the task has `inline_content` and no `files_to_review`.
 
 ### REVIEW-REQ-005.2: File Path Formatting
 
@@ -62,6 +64,11 @@ For each `ReviewTask`, the system generates a self-contained markdown instructio
 1. When a task's `reference_files` is empty, the instruction file MUST NOT contain a "Relevant File Contents" section.
 2. When a task has `reference_files`, the instruction file MUST contain a "## Relevant File Contents" section placed between "Review Instructions" and "Files to Review".
 3. Each inlined file MUST be rendered with a `### {relative_label}` subheading, the optional description, and the file contents inside a fenced code block whose language is inferred from the file extension.
-4. The number of inlined reference files MUST NOT exceed `MAX_INLINE_FILES` (20). Entries beyond that cap MUST be listed in an "omitted due to size/count caps" summary line rather than inlined.
-5. The total inlined byte size of reference file contents MUST NOT exceed `MAX_INLINE_TOTAL_BYTES` (256 * 1024). Files whose contents would exceed the remaining byte budget MUST be truncated with a visible truncation marker, and any subsequent entries MUST be reported in the omitted summary line.
-6. When a referenced file cannot be read (missing, permission denied, or invalid UTF-8), the system MUST emit a graceful marker line referencing the file and the error, MUST NOT abort the section, and MUST NOT count the file's would-be bytes against the budget.
+4. The number of inlined reference files MUST NOT exceed `MAX_INLINE_FILES` (20).
+5. The total inlined byte size of reference file contents MUST NOT exceed `MAX_INLINE_TOTAL_BYTES` (256 * 1024).
+6. When a referenced file cannot be read (missing, permission denied, or invalid UTF-8), the system MUST emit a graceful marker line referencing the file and the error.
+7. Reference file entries beyond the `MAX_INLINE_FILES` cap MUST be listed in an "omitted due to size/count caps" summary line rather than inlined.
+8. When a reference file's content would exceed the remaining byte budget, the file MUST be truncated with a visible truncation marker.
+9. Reference file entries that cannot be inlined because the byte budget was exhausted by a preceding truncation MUST be reported in the omitted summary line.
+10. When a referenced file cannot be read, the system MUST NOT abort the "Relevant File Contents" section.
+11. When a referenced file cannot be read, the system MUST NOT count the file's would-be bytes against the total byte budget.

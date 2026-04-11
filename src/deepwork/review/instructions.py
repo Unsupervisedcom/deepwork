@@ -105,8 +105,15 @@ PRECOMPUTE_TIMEOUT_SECONDS = 60
 def _run_precompute_command(command: str, project_root: Path) -> str:
     """Run a single precompute bash command and return its stdout.
 
+    Precompute commands are fully trusted input sourced from the repo's own
+    ``.deepreview`` files; they run via ``shell=True`` and MUST NOT be fed
+    any untrusted external data (e.g., user-supplied strings interpolated
+    into the command).
+
     Args:
-        command: Resolved absolute path to the command to execute.
+        command: Shell command string to execute. The first path component
+            has been resolved to an absolute path by the caller; the rest
+            of the command is passed through to the shell verbatim.
         project_root: Working directory for command execution.
 
     Returns:
@@ -146,8 +153,10 @@ def _run_precompute_commands(commands: set[str], project_root: Path) -> dict[str
     if not commands:
         return {}
 
+    # Cap concurrent precompute shells so a repo with many rules does not
+    # briefly fork dozens of subprocesses at once on CI runners.
     results: dict[str, str] = {}
-    with ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor(max_workers=8) as executor:
         futures = {
             executor.submit(_run_precompute_command, cmd, project_root): cmd for cmd in commands
         }
@@ -375,17 +384,20 @@ def _build_reference_files_section(reference_files: list[ReferenceFile]) -> str:
         remaining = MAX_INLINE_TOTAL_BYTES - total_bytes
         truncated_marker = ""
         content_bytes = content.encode("utf-8")
-        if len(content_bytes) > remaining:
+        original_byte_len = len(content_bytes)
+        if original_byte_len > remaining:
             # Truncate at a character boundary near the byte budget.
             content = content_bytes[:remaining].decode("utf-8", errors="ignore")
             truncated_marker = (
-                f"\n... (truncated: file is {len(content_bytes)} bytes, "
-                f"budget left was {remaining})"
+                f"\n... (truncated: file is {original_byte_len} bytes, budget left was {remaining})"
             )
+            consumed = remaining
+        else:
+            consumed = original_byte_len
 
         parts.append(header)
         parts.append(f"\n\n```{lang}\n{content}{truncated_marker}\n```\n")
-        total_bytes += len(content.encode("utf-8"))
+        total_bytes += consumed
         inlined_count += 1
 
     if omitted:
