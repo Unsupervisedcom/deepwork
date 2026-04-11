@@ -139,6 +139,7 @@ pytest tests/shell_script_tests/test_hook_wrappers.py -v
 |------|---------|
 | `wrapper.py` | Cross-platform input/output normalization |
 | `deepschema_write.py` | DeepSchema write-time validation hook |
+| `post_commit_reminder.py` | Post-commit hook that nudges the agent to run `/review` (skips if all reviews already passed) |
 | `claude_hook.sh` | Shell wrapper for Claude Code |
 | `gemini_hook.sh` | Shell wrapper for Gemini CLI |
 | `.deepreview` | Review rule ensuring hooks use correct output routing (DW-REQ-006.6) |

@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Post-commit review reminder hook now short-circuits when all applicable (non-catch-all) review rules for the committed files are already marked as passed, emitting "No re-review needed" instead of nagging
+
 ### Fixed
 
 ### Removed

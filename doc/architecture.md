@@ -67,6 +67,7 @@ deepwork/                       # DeepWork tool repository
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── wrapper.py      # Cross-platform input/output normalization
 │       │   ├── deepschema_write.py # DeepSchema write-time validation hook
+│       │   ├── post_commit_reminder.py # Post-commit review reminder hook
 │       │   ├── claude_hook.sh  # Shell wrapper for Claude Code
 │       │   └── gemini_hook.sh  # Shell wrapper for Gemini CLI
 │       ├── deepschema/         # DeepSchema subsystem

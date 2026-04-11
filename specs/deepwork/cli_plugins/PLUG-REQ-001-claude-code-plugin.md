@@ -55,7 +55,9 @@ The Claude Code plugin is the primary distribution mechanism for DeepWork on the
 ### PLUG-REQ-001.7: Post-Commit Review Reminder
 
 1. The plugin MUST register a `PostToolUse` hook on the `Bash` tool via `plugins/claude/hooks/hooks.json`.
-2. When the agent runs a `git commit` command, the hook MUST prompt the agent to offer the user a review of the committed changes.
+2. When the agent runs a `git commit` command and at least one review rule that matches the committed files has not been marked as passed, the hook MUST prompt the agent to offer the user a review of the committed changes.
+3. Catch-all review rules (include patterns that are pure `*`/`**` globs) MUST be excluded from this determination.
+4. When every applicable review rule for the committed files is already marked as passed (or no non-catch-all rule matches), the hook MUST return a context notice stating that no re-review is needed instead of prompting.
 
 ### PLUG-REQ-001.8: Skill Directory Conventions
 

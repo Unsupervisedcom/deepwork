@@ -1,13 +1,6 @@
 #!/usr/bin/env bash
-# Post-commit reminder hook
-# Triggers after Bash tool uses that contain "git commit" to remind
-# the agent to run the review skill.
-
+# Post-commit reminder hook — delegates to deepwork Python hook.
 INPUT=$(cat)
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
-
-if echo "$COMMAND" | grep -q 'git commit'; then
-  cat << 'EOF'
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"You **MUST** use AskUserQuestion tool to offer to the user to run the `review` skill to review the changes you just committed if you have not run a review recently."}}
-EOF
-fi
+export DEEPWORK_HOOK_PLATFORM="claude"
+echo "${INPUT}" | deepwork hook post_commit_reminder
+exit $?

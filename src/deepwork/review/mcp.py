@@ -7,9 +7,14 @@ suitable for registration as an MCP tool.
 from pathlib import Path
 
 from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
+from deepwork.review.config import ReviewRule
 from deepwork.review.discovery import DiscoveryError, load_all_rules
 from deepwork.review.formatter import format_for_claude
-from deepwork.review.instructions import INSTRUCTIONS_DIR, write_instruction_files
+from deepwork.review.instructions import (
+    INSTRUCTIONS_DIR,
+    compute_review_id,
+    write_instruction_files,
+)
 from deepwork.review.matcher import (
     GitDiffError,
     format_source_location,
@@ -34,7 +39,7 @@ def _is_catch_all_pattern(pattern: str) -> bool:
     return pattern != "" and all(c in "*/" for c in pattern)
 
 
-def _rule_is_catch_all(rule) -> bool:  # type: ignore[no-untyped-def]
+def _rule_is_catch_all(rule: ReviewRule) -> bool:
     """Return True if every include pattern on the rule is a catch-all."""
     return bool(rule.include_patterns) and all(
         _is_catch_all_pattern(p) for p in rule.include_patterns
@@ -216,3 +221,32 @@ def mark_passed(project_root: Path, review_id: str) -> str:
     passed_file.write_bytes(b"")
 
     return f"Review '{review_id}' marked as passed."
+
+
+def all_reviews_passed_for_files(
+    project_root: Path,
+    files: list[str],
+) -> bool:
+    """Return True iff every non-catch-all review rule that matches ``files``
+    has a ``.passed`` marker for its computed review_id.
+
+    Vacuously True when no rules match (or ``files`` is empty).
+
+    Catch-all rules (include patterns that are pure ``*``/``**`` globs) are
+    excluded — matches the scoping used by ``get_configured_reviews`` and
+    ``run_review`` when files are specified explicitly.
+    """
+    rules, _ = load_all_rules(project_root)
+    schema_rules, _ = gen_schema_rules(project_root)
+    rules.extend(schema_rules)
+
+    rules = [r for r in rules if not _rule_is_catch_all(r)]
+
+    tasks = match_files_to_rules(files, rules, project_root)
+
+    instructions_dir = project_root / INSTRUCTIONS_DIR
+    for task in tasks:
+        review_id = compute_review_id(task, project_root)
+        if not (instructions_dir / f"{review_id}.passed").exists():
+            return False
+    return True

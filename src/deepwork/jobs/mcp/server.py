@@ -490,8 +490,10 @@ def create_server(
     @mcp.tool(
         description=(
             "Mark a review as passed so it won't be re-run while reviewed files "
-            "remain unchanged. The review_id is provided in the instruction file's "
-            '"After Review" section.'
+            "remain unchanged. Call this when a review has no findings, when all "
+            "findings have been fixed, or when remaining findings have been "
+            "explicitly dismissed by the user. The review_id is provided in the "
+            'instruction file\'s "After Review" section.'
         )
     )
     async def mark_review_as_passed(review_id: str, ctx: Context) -> str:
