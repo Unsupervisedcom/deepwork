@@ -16,6 +16,7 @@ For each `ReviewTask`, the system generates a self-contained markdown instructio
 6. When the task has `additional_files` (unchanged matching files), the file MUST contain an "Unchanged Matching Files" section listing those file paths.
 7. When the task has `all_changed_filenames`, the file MUST contain an "All Changed Files" section listing every changed filename for context.
 8. When the task has `inline_content` set (used for `type: string` step outputs — see JOBS-REQ-004.8), the file MUST contain a "Content to Review" section whose body is the inline content verbatim. The review heading scope MUST read `inline content` when the task has `inline_content` and no `files_to_review`.
+9. The file MUST contain a "Project Root" section near the top (between the header and "Review Instructions") that states the absolute path of the project root against which all relative file paths in the document are resolved, and that instructs the reviewer to prepend this root when calling the Read tool. This is required so reviewer subagents read files from the correct working tree when their current working directory differs from the project root — e.g., when the review runs against a git worktree dispatched from the main checkout.
 
 ### REVIEW-REQ-005.2: File Path Formatting
 

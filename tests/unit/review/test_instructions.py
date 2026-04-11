@@ -180,6 +180,48 @@ class TestBuildInstructionFile:
         trace_idx = content.index("This review was requested")
         assert after_idx < trace_idx
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_project_root_section_present_when_project_root_passed(
+        self, tmp_path: Path
+    ) -> None:
+        """When project_root is provided, a Project Root directive is emitted."""
+        task = _make_task(files=["src/app.py"])
+        content = build_instruction_file(task, project_root=tmp_path)
+        assert "## Project Root" in content
+        # The absolute path is rendered verbatim for the reviewer to prepend.
+        assert str(tmp_path.resolve()) in content
+        # The directive must tell the reviewer to prepend the root.
+        assert "prepend" in content.lower()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-005.1.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_project_root_section_before_review_instructions(
+        self, tmp_path: Path
+    ) -> None:
+        """The Project Root section is placed before Review Instructions."""
+        task = _make_task()
+        content = build_instruction_file(task, project_root=tmp_path)
+        root_idx = content.index("## Project Root")
+        instr_idx = content.index("## Review Instructions")
+        assert root_idx < instr_idx
+
+    def test_project_root_omitted_when_not_passed(self) -> None:
+        """Backward compat: omitting project_root omits the directive section."""
+        task = _make_task()
+        content = build_instruction_file(task)
+        assert "## Project Root" not in content
+
+    def test_write_instruction_files_passes_project_root(self, tmp_path: Path) -> None:
+        """write_instruction_files threads project_root through to build_instruction_file."""
+        task = _make_task()
+        results = write_instruction_files([task], tmp_path)
+        assert len(results) == 1
+        _t, file_path = results[0]
+        content = file_path.read_text()
+        assert "## Project Root" in content
+        assert str(tmp_path.resolve()) in content
+
 
 class TestWriteInstructionFiles:
     """Tests for write_instruction_files."""

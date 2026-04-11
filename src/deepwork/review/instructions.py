@@ -210,7 +210,7 @@ def write_instruction_files(
             if task.precomputed_info_bash_command
             else None
         )
-        content = build_instruction_file(task, review_id, precomputed_info)
+        content = build_instruction_file(task, review_id, precomputed_info, project_root)
         file_path = instructions_dir / f"{review_id}.md"
 
         safe_write(file_path, content)
@@ -223,6 +223,7 @@ def build_instruction_file(
     task: ReviewTask,
     review_id: str = "",
     precomputed_info: str | None = None,
+    project_root: Path | None = None,
 ) -> str:
     """Build the markdown content for a single review instruction file.
 
@@ -231,6 +232,12 @@ def build_instruction_file(
         review_id: The deterministic review ID for this task (used in the
             "After Review" section).
         precomputed_info: Pre-executed command output to include as context.
+        project_root: Absolute path to the project root that all relative
+            file paths in this instruction file resolve against. When
+            provided, the file includes an explicit "Project Root"
+            directive so the reviewer agent reads files from the correct
+            working tree even when its cwd differs (e.g., in a git
+            worktree dispatched from the main checkout).
 
     Returns:
         Markdown string containing the complete review instructions.
@@ -240,6 +247,21 @@ def build_instruction_file(
     # Header
     scope = _describe_scope(task)
     parts.append(f"# Review: {task.rule_name} — {scope}\n")
+
+    # Project root directive — tells the reviewer where to read files from.
+    # Critical in git-worktree setups where the agent's cwd may differ from
+    # the worktree the commits actually live in.
+    if project_root is not None:
+        abs_root = project_root.resolve()
+        parts.append("## Project Root\n")
+        parts.append(
+            f"**All file paths in this document are relative to `{abs_root}`.** "
+            "When reading any file below with the Read tool, you MUST construct "
+            "the absolute path by prepending this project root. Do NOT read files "
+            "relative to your current working directory — it may differ from the "
+            "project root (e.g., when this review runs against a git worktree)."
+        )
+        parts.append("")
 
     # Review instructions
     parts.append("## Review Instructions\n")
