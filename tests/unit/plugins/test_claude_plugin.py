@@ -323,25 +323,13 @@ class TestPostCommitReviewReminder:
     def test_hook_script_detects_git_commit(self) -> None:
         # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.7.2).
         # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-        """PLUG-REQ-001.7.2: hook script detects git commit and prompts review."""
-        data = json.loads(self.hooks_json_path.read_text())
-        hooks = data["hooks"]["PostToolUse"]
-        bash_hook = next(h for h in hooks if h.get("matcher") == "Bash")
+        """PLUG-REQ-001.7.2: Python hook detects git commit and prompts review."""
+        from deepwork.hooks.post_commit_reminder import post_commit_reminder_hook
 
-        # Get the hook command path
-        hook_commands = bash_hook.get("hooks", [])
-        assert len(hook_commands) >= 1
-
-        # Read the actual hook script
-        command = hook_commands[0]["command"]
-        # The command uses ${CLAUDE_PLUGIN_ROOT} — resolve relative to plugin dir
-        script_name = command.split("/")[-1]
-        script_path = PLUGIN_DIR / "hooks" / script_name
-        assert script_path.exists(), f"Hook script not found: {script_path}"
-
-        content = script_path.read_text(encoding="utf-8")
-        assert "git commit" in content, "Hook script must detect git commit commands"
-        assert "review" in content.lower(), "Hook script must prompt for review"
+        hook_py = Path(post_commit_reminder_hook.__code__.co_filename)
+        content = hook_py.read_text(encoding="utf-8")
+        assert "git commit" in content, "Python hook must detect git commit commands"
+        assert "review" in content.lower(), "Python hook must reference review"
 
 
 # ---------------------------------------------------------------------------
