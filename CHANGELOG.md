@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+### Fixed
+
+### Removed
+## [0.13.4] - 2026-04-11
+
+### Added
+
+### Changed
+
 - Post-commit review reminder hook now short-circuits when all applicable (non-catch-all) review rules for the committed files are already marked as passed, emitting "No re-review needed" instead of nagging
 - Renamed all "Task tool" references to "Agent tool" across codebase to match Claude Code's current tool naming
 - Review formatter now emits `description`, `subagent_type`, and `prompt` fields (dropped `name` field) to match Agent tool signature
@@ -467,7 +476,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.3...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.4...HEAD
+[0.13.4]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.4
 [0.13.3]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.3
 [0.13.2]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.2
 [0.13.1]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.1
