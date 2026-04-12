@@ -485,7 +485,7 @@ def _build_review_guidance(review_output: str) -> str:
 
 ## How to Run Reviews
 
-For each review task listed above, launch it as a parallel Task agent. The task's prompt field points to an instruction file — read it and follow the review instructions.
+For each review task listed above, launch it as a parallel Agent. The task's prompt field points to an instruction file — read it and follow the review instructions.
 
 ## After Reviews
 

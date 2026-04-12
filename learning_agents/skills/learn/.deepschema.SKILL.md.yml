@@ -16,8 +16,8 @@ requirements:
   # LA-REQ-006.6
   task-tool-orchestration: >
     The SKILL.md MUST instruct the agent to run the identify phase as a
-    separate Task tool invocation, and to combine the investigate-issues
-    and incorporate-learnings phases into a single Task tool invocation
+    separate Agent tool invocation, and to combine the investigate-issues
+    and incorporate-learnings phases into a single Agent tool invocation
     (executed in that order). It MUST reference the
     `learning-agents:identify`, `learning-agents:investigate-issues`,
     and `learning-agents:incorporate-learnings` skills by name.
@@ -25,7 +25,7 @@ requirements:
   # LA-REQ-006.7
   sonnet-model-for-subtasks: >
     The SKILL.md MUST instruct the agent to use the Sonnet model for
-    Task spawns of learning cycle sub-skills, to balance cost and
+    Agent spawns of learning cycle sub-skills, to balance cost and
     quality.
 
   # LA-REQ-006.8
@@ -36,7 +36,7 @@ requirements:
 
   # LA-REQ-006.9
   failure-handling: >
-    The SKILL.md MUST instruct the agent that, if a sub-skill Task fails
+    The SKILL.md MUST instruct the agent that, if a sub-skill Agent fails
     for a session, it must: log the failure, skip that session, continue
     processing remaining sessions, and NOT mark
     needs_learning_as_of_timestamp as resolved for the failed session.

@@ -38,37 +38,7 @@ class TestFormatForClaude:
         file_path.parent.mkdir(parents=True)
         file_path.write_text("content")
         result = format_for_claude([(task, file_path)], tmp_path)
-        assert result.startswith("Invoke the following list of Tasks in parallel.")
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3a).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_individual_task_name_includes_filename(self, tmp_path: Path) -> None:
-        task = _make_task(rule_name="py_review", files=["src/app.py"])
-        file_path = tmp_path / "instructions.md"
-        result = format_for_claude([(task, file_path)], tmp_path)
-        assert 'name: "py_review review of src/app.py"' in result
-
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3a).
-    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
-    def test_grouped_task_name_includes_file_count(self, tmp_path: Path) -> None:
-        task = _make_task(rule_name="py_review", files=["a.py", "b.py", "c.py"])
-        file_path = tmp_path / "instructions.md"
-        result = format_for_claude([(task, file_path)], tmp_path)
-        assert 'name: "py_review review of 3 files"' in result
-
-    def test_inline_content_task_name_says_inline_content(self, tmp_path: Path) -> None:
-        """Inline-content tasks render as "review of inline content", not "0 files"."""
-        task = ReviewTask(
-            rule_name="string_rule",
-            files_to_review=[],
-            instructions="Review the value.",
-            agent_name=None,
-            inline_content="the value",
-        )
-        file_path = tmp_path / "instructions.md"
-        result = format_for_claude([(task, file_path)], tmp_path)
-        assert 'name: "string_rule review of inline content"' in result
-        assert "0 files" not in result
+        assert result.startswith("Invoke the following list of Agents in parallel.")
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3c).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -110,18 +80,17 @@ class TestFormatForClaude:
         file_a = tmp_path / "a.md"
         file_b = tmp_path / "b.md"
         result = format_for_claude([(task_a, file_a), (task_b, file_b)], tmp_path)
-        assert 'name: "rule_a review of a.py"' in result
-        assert 'name: "rule_b review of b.py"' in result
+        assert "description: Review rule_a" in result
+        assert "description: Review rule_b" in result
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3a, REVIEW-REQ-004.10).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_scope_prefix_from_subdirectory_source(self, tmp_path: Path) -> None:
-        """Rules from subdirectory .deepreview files include scope prefix in name."""
+        """Rules from subdirectory .deepreview files include scope prefix in description."""
         task = _make_task(rule_name="job_definition_review", files=["job.yml"])
         task.source_location = "jobs/my_job/.deepreview:1"
         file_path = tmp_path / "instructions.md"
         result = format_for_claude([(task, file_path)], tmp_path)
-        assert 'name: "my_job/job_definition_review review of job.yml"' in result
         assert "description: Review my_job/job_definition_review" in result
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3a, REVIEW-REQ-004.10).
@@ -132,13 +101,12 @@ class TestFormatForClaude:
         task.source_location = ".deepreview:5"
         file_path = tmp_path / "instructions.md"
         result = format_for_claude([(task, file_path)], tmp_path)
-        assert 'name: "py_review review of app.py"' in result
         assert "description: Review py_review" in result
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3a, REVIEW-REQ-004.10).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_same_name_rules_disambiguated_by_scope(self, tmp_path: Path) -> None:
-        """Same-named rules from different directories produce distinct names."""
+        """Same-named rules from different directories produce distinct descriptions."""
         task_a = _make_task(rule_name="job_definition_review", files=["a/job.yml"])
         task_a.source_location = "jobs/job_a/.deepreview:1"
         task_b = _make_task(rule_name="job_definition_review", files=["b/job.yml"])
@@ -146,8 +114,8 @@ class TestFormatForClaude:
         file_a = tmp_path / "a.md"
         file_b = tmp_path / "b.md"
         result = format_for_claude([(task_a, file_a), (task_b, file_b)], tmp_path)
-        assert 'name: "job_a/job_definition_review review of a/job.yml"' in result
-        assert 'name: "job_b/job_definition_review review of b/job.yml"' in result
+        assert "description: Review job_a/job_definition_review" in result
+        assert "description: Review job_b/job_definition_review" in result
 
 
 class TestGitCommonDir:

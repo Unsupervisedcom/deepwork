@@ -133,7 +133,7 @@ class TestPostToolUseHookTrigger:
 
 
 # ===========================================================================
-# LA-REQ-004.2: Post-Task Input Parsing
+# LA-REQ-004.2: Post-Agent Input Parsing
 # ===========================================================================
 
 
@@ -433,7 +433,7 @@ class TestAgentUsedFile:
 
 
 # ===========================================================================
-# LA-REQ-004.10: Post-Task Reminder Message
+# LA-REQ-004.10: Post-Agent Reminder Message
 # ===========================================================================
 
 
@@ -483,7 +483,7 @@ class TestPostTaskReminderMessage:
 
 
 # ===========================================================================
-# LA-REQ-004.11: Post-Task Reminder Content
+# LA-REQ-004.11: Post-Agent Reminder Content
 # ===========================================================================
 
 

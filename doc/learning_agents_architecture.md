@@ -13,8 +13,8 @@ A sub-agent with a persistent knowledge base that improves over time. Defined in
 
 ### Learning Cycle
 The feedback loop that makes agents improve:
-1. **Use** — Agent is invoked via Task tool during normal work
-2. **Track** — Post-Task hook records the session for later review
+1. **Use** — Agent is invoked via Agent tool during normal work
+2. **Track** — Post-Agent hook records the session for later review
 3. **Identify** — Transcript is reviewed for issues/mistakes
 4. **Investigate** — Root causes are determined from transcript evidence
 5. **Incorporate** — Learnings are folded back into the agent's knowledge base
@@ -324,4 +324,4 @@ Issues are tied to specific transcripts for evidence. Storing them alongside ses
 The `learn` skill spawns identification tasks using the Sonnet model. Transcript review is high-volume, pattern-matching work that doesn't require the most capable model. This keeps learning cycles fast and cost-effective.
 
 ### Why Hidden Skills
-Skills like `identify`, `report-issue`, `investigate-issues`, and `incorporate-learnings` are implementation details of the learning cycle. They're invoked by the `learn` skill via Task delegation, not directly by users. Hiding them keeps the user-facing skill surface clean.
+Skills like `identify`, `report-issue`, `investigate-issues`, and `incorporate-learnings` are implementation details of the learning cycle. They're invoked by the `learn` skill via Agent delegation, not directly by users. Hiding them keeps the user-facing skill surface clean.

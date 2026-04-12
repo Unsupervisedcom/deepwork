@@ -29,8 +29,8 @@ The `deepwork review` CLI command orchestrates the full DeepWork Reviews pipelin
 
 1. When `--instructions-for claude` is specified, the command MUST output to stdout a structured text block that Claude Code can use to dispatch parallel review agents.
 2. The output MUST begin with a line instructing the agent to invoke tasks in parallel.
-3. For each review task, the output MUST include fields matching the Claude Code `Task` tool parameters:
-   a. A `name` field formatted as `"{scope_prefix}{rule_name} review of {file_or_scope}"` — for `individual` strategy, `{file_or_scope}` is the single filename; for grouped strategies, it is a summary (e.g., `"3 files"`). When the rule comes from a `.deepreview` in a subdirectory, `{scope_prefix}` MUST be `"{parent_dir_name}/"` (e.g., `"my_job/"`); for root-level `.deepreview` files, `{scope_prefix}` MUST be empty.
+3. For each review task, the output MUST include fields matching the Claude Code `Agent` tool parameters:
+   a. ~~DEPRECATED~~ ~~A `name` field formatted as `"{scope_prefix}{rule_name} review of {file_or_scope}"`.~~
    b. A `description` field with a short (3-5 word) summary for the task (e.g., `"Review {rule_name}"`). When the rule comes from a `.deepreview` in a subdirectory, the description MUST include the scope (e.g., `"Review my_job/{rule_name}"`).
    c. A `subagent_type` field set to the agent persona name (from the rule's `agent.claude` value) or `"reviewer"` if no persona is specified. `"reviewer"` refers to the default reviewer subagent shipped by the DeepWork Claude plugin (`plugins/claude/agents/reviewer.md`).
    d. A `prompt` field referencing the instruction file path relative to the project root, prefixed with `@` (e.g., `@.deepwork/tmp/review_instructions/7142141.md`).

@@ -22,7 +22,7 @@ Only proceed past this section if the user wants to **run** reviews.
    - **No arguments** to review the current branch's changes (auto-detects via git diff against the main branch).
    - **With `files`** to review only specific files: `mcp__deepwork__get_review_instructions(files=["src/app.py", "src/lib.py"])`. When provided, only reviews whose include/exclude patterns match the given files will be returned. Use this when the user asks to review a particular file or set of files rather than the whole branch.
    - **If the result says no rules are configured**: Ask the user if they'd like to auto-discover and set up rules. If yes, invoke the `/deepwork` skill with the `deepwork_reviews` job's `discover_rules` workflow. Stop here — do not proceed with running reviews if there are no rules.
-2. The output will list review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields — these map directly to the Task tool parameters. Launch all of them as parallel Task agents.
+2. The output will list review tasks to invoke in parallel. Each task has `description`, `subagent_type`, and `prompt` fields — these map directly to the Agent tool parameters. Launch all of them as parallel agents.
 3. **While review agents run**, check for a changelog and open PR (see below).
 4. Collect the results from all review agents.
 

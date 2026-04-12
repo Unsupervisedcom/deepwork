@@ -453,7 +453,7 @@ def create_server(
         description=(
             "Run a review of changed files based on .deepreview configuration files. "
             "Returns a list of review tasks to invoke in parallel. Each task has "
-            "name, description, subagent_type, and prompt fields for the Task tool. "
+            "description, subagent_type, and prompt fields for the Agent tool. "
             "Optional: files (list of file paths to review). When omitted, detects "
             "changes via git diff against the main branch."
         )
