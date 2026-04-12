@@ -13,9 +13,7 @@ This folder and its subfolders are managed using `deepwork_jobs` workflows.
 ```
 .
 ├── AGENTS.md          # This file - project context and guidance
-├── job.yml            # Job specification (created by define step)
-├── steps/             # Step instruction files (created by implement step)
-│   └── *.md           # One file per step
+├── job.yml            # Job specification with inline step instructions
 ├── hooks/             # Custom validation scripts and prompts
 │   └── *.md|*.sh      # Hook files referenced in job.yml
 ├── scripts/           # Reusable scripts and utilities created during job execution

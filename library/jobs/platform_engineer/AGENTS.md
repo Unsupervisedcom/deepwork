@@ -19,7 +19,6 @@ platform_engineer/
 ├── conventions.md       # RFC 2119 platform engineering standards
 ├── readme.md            # User-facing documentation
 ├── AGENTS.md            # This file — agent context and learnings
-├── steps/               # Step instruction files
 └── templates/           # Output templates
 ```
 

@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Deprecated the `steps/` folder pattern for job definitions — step instructions are now inlined in `job.yml`; moved supplemental reference files from `steps/` to job root directories
+- Repair workflow now instructs agents to `git rm` step instruction files after inlining
+
 ### Fixed
 
 ### Removed

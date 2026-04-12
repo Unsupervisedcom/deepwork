@@ -92,7 +92,7 @@ workflows:
 
       ## Job Schema Reference
 
-      See `steps/supplemental_file_references.md` for available job.yml fields and structure.
+      See `supplemental_file_references.md` (relative to this job's directory) for available job.yml fields and structure.
       The JSON schema at `.deepwork/job.schema.json` documents the format — DeepSchema quality
       gates validate job.yml files automatically, so manual validation is not needed.
     steps:
@@ -617,9 +617,9 @@ workflows:
              - List of all steps with their details
              - Understand the workflow structure
 
-          ### Step 2: Generate Step Instruction Files
+          ### Step 2: Write Inline Step Instructions
 
-          For each step in the job.yml, create a comprehensive instruction file at `[project_root]/.deepwork/jobs/[job_name]/steps/[step_name].md`.
+          For each step in the job.yml, write comprehensive inline instructions using the `instructions: |` YAML block scalar directly in the step definition.
 
           **Template reference**: See `<job_dir>/templates/step_instruction.md.template` for the standard structure.
 
@@ -690,13 +690,11 @@ workflows:
 
           #### Using Supplementary Reference Files
 
-          Step instructions can include additional `.md` files in the `steps/` directory for detailed examples, templates, or reference material. Reference them using the full path from the project root.
+          Jobs can include additional `.md` files in the job directory for detailed examples, templates, or reference material. Reference them using the full path from the project root.
 
           ### Step 3: Verify Files
 
-          Verify that all files are in their correct locations:
-          - `job.yml` at `[project_root]/.deepwork/jobs/[job_name]/job.yml` (created by define step)
-          - Step instruction files at `[project_root]/.deepwork/jobs/[job_name]/steps/[step_name].md`
+          Verify that the job.yml is at `[project_root]/.deepwork/jobs/[job_name]/job.yml` and all steps have inline `instructions:` blocks.
 
           ## Example Implementation
 
@@ -959,7 +957,7 @@ workflows:
 
           For each step that needs improvement:
 
-          1. **Read the current instruction file** at `[project_root]/.deepwork/jobs/[job_name]/steps/[step_name].md`
+          1. **Read the current inline instructions** for the step in `[project_root]/.deepwork/jobs/[job_name]/job.yml`
 
           2. **Make targeted improvements**:
              - Add missing context or clarification
@@ -1070,15 +1068,15 @@ workflows:
 
           ### Changes Made
 
-          **`.deepwork/jobs/monthly_report/steps/gather_data.md`:**
+          **`gather_data` step in `.deepwork/jobs/monthly_report/job.yml`:**
           - Added: "Use distinct, high-contrast colors for chart data series. Avoid similar shades for different categories."
           - Added to Quality Criteria: "Charts use visually distinct colors that are accessible to colorblind readers"
 
-          **`.deepwork/jobs/monthly_report/steps/analyze_trends.md`:**
+          **`analyze_trends` step in `.deepwork/jobs/monthly_report/job.yml`:**
           - Added: "Always include comparison to the same period in the previous month/quarter"
           - Added input: "previous_period_data" to formalize this requirement
 
-          **`.deepwork/jobs/monthly_report/steps/generate_report.md`:**
+          **`generate_report` step in `.deepwork/jobs/monthly_report/job.yml`:**
           - Added example of good executive summary targeting non-technical readers
           - Added: "Format tables with sufficient padding (at least 8px) and readable font size (minimum 11pt)"
           - Updated Quality Criteria:
@@ -1133,7 +1131,7 @@ workflows:
 
       ## Job Schema Reference
 
-      See `steps/supplemental_file_references.md` for available job.yml fields and structure.
+      See `supplemental_file_references.md` (relative to this job's directory) for available job.yml fields and structure.
       The JSON schema at `.deepwork/job.schema.json` documents the format — DeepSchema quality
       gates validate job.yml files automatically, so manual validation is not needed.
     steps:
@@ -1476,7 +1474,7 @@ workflows:
           1. **Preserve custom logic** - When migrating, preserve the intent of instructions and reviews
           2. **Test after changes** - Validate YAML syntax after each job fix to catch errors early
           3. **Read step files** - When inlining instructions, read the full content of the referenced .md file
-          4. **Delete orphaned step files** - After inlining all instructions into job.yml, delete the step .md files that were referenced by `instructions_file`. These are now dead weight since the content lives in job.yml. Do NOT delete step files that are still referenced by inline instructions as supplemental references.
+          4. **Remove step instruction files** - After inlining all step instructions into job.yml, run `git rm` on the step instruction `.md` files that were referenced by `instructions_file` and remove the `steps/` directory entirely if it is now empty. These are dead weight since the content lives in job.yml. Do NOT delete files that are still referenced by inline instructions as supplemental references — move those to the job root directory instead.
         inputs:
           settings.json:
             required: true
@@ -1490,7 +1488,7 @@ workflows:
           "No Legacy Fields": "No job.yml MAY contain version, root-level steps[], instructions_file, hooks, dependencies, or exposed/hidden fields."
           "Reviews Migrated": "Old review formats MUST be converted to output-level review blocks or process_requirements."
           "Instructions Inlined": "All step instructions MUST be inlined in the job.yml — no instructions_file references MAY remain."
-          "Orphaned Step Files Removed": "Step .md files that were referenced by `instructions_file` and have been inlined MUST be deleted from the steps/ directory."
+          "Orphaned Step Files Removed": "Step .md files that were referenced by `instructions_file` and have been inlined MUST be removed via `git rm`. The `steps/` directory MUST be removed if empty."
           "Jobs Parse Successfully": "Calling `get_workflows` MUST show all expected jobs without errors."
 
       - name: errata
@@ -1698,7 +1696,7 @@ workflows:
 
       ## Job Schema Reference
 
-      See `steps/supplemental_file_references.md` for available job.yml fields and structure.
+      See `supplemental_file_references.md` (relative to this job's directory) for available job.yml fields and structure.
       The JSON schema at `.deepwork/job.schema.json` documents the format — DeepSchema quality
       gates validate job.yml files automatically, so manual validation is not needed.
     steps:
@@ -1819,8 +1817,7 @@ workflows:
 
           For each generalizable learning:
 
-          1. **Locate the instruction file**
-             - Path: `[project_root]/.deepwork/jobs/[job_name]/steps/[step_name].md`
+          1. **Locate the step's inline instructions** in `[project_root]/.deepwork/jobs/[job_name]/job.yml`
 
           2. **Make targeted improvements**
              - Add missing context or clarification
@@ -1839,16 +1836,16 @@ workflows:
              - Add to appropriate sections rather than restructuring
              - Maintain consistency with other steps
 
-          ### Step 4b: Extract Shared Content into Referenced Files
+          ### Step 4b: Extract Shared Content
 
-          Review all instruction files for the job and identify content that:
+          Review all inline step instructions for the job and identify content that:
           - Appears in multiple step instructions (duplicated)
           - Is lengthy and could be extracted for clarity
           - Would benefit from being maintained in one place
 
-          **Extract to shared files:**
+          **Extract to shared files or `common_job_info_provided_to_all_steps_at_runtime`:**
 
-          1. **Create shared files** in `[project_root]/.deepwork/jobs/[job_name]/steps/shared/`
+          1. **Move duplicated content** to `common_job_info_provided_to_all_steps_at_runtime` in `job.yml` if it applies to all steps, or create shared `.md` files in the job directory root:
              - `conventions.md` - Coding/formatting conventions used across steps
              - `examples.md` - Common examples referenced by multiple steps
              - `schemas.md` - Data structures or formats used throughout
@@ -1985,7 +1982,7 @@ workflows:
 
           **Actions Taken**
 
-          1. Updated `.deepwork/jobs/competitive_research/steps/research_competitors.md`:
+          1. Updated `research_competitors` step inline instructions in `.deepwork/jobs/competitive_research/job.yml`:
              - Added "Include pricing information (tiers, models, approximate ranges)" to research requirements
              - Added note about carrying forward industry context from previous step
 

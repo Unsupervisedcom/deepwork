@@ -19,28 +19,15 @@ into their project's `.deepwork/jobs/` directory.
 research/
 ├── AGENTS.md              # This file
 ├── CLAUDE.md              # Symlink to AGENTS.md
-├── job.yml                # Job definition with 4 workflows
-├── readme.md              # User-facing documentation
-└── steps/
-    ├── scope.md           # Define research scope (shared: deep + quick)
-    ├── choose_platforms.md # Select AI platforms (deep only)
-    ├── gather.md          # Gather sources, 8+ (deep)
-    ├── gather_quick.md    # Gather sources, 3+ (quick)
-    ├── synthesize.md      # Synthesize findings (deep)
-    ├── summarize.md       # Synthesize + report in one step (quick)
-    ├── report.md          # Write final report (deep)
-    ├── parse.md           # Parse external material (ingest)
-    ├── file.md            # File to notes directory (ingest)
-    ├── ingest_material.md # Nested ingest workflow entry (reproduce)
-    ├── analyze.md         # Analyze reproducibility (reproduce)
-    └── plan.md            # Create reproduction plan (reproduce)
+├── job.yml                # Job definition with 4 workflows (all step instructions inlined)
+└── readme.md              # User-facing documentation
 ```
 
 ## Editing Guidelines
 
 - Source of truth is `library/jobs/research/`
 - Edit files here directly — changes benefit all adopters
-- Step instruction files live in `steps/` and are referenced by `instructions_file` in job.yml
+- Step instructions are inlined in job.yml
 
 ## Workflows
 

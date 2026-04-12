@@ -34,7 +34,7 @@ There are exactly three types of jobs. Confusing them is one of the most common 
 ### Key File Patterns
 
 - `job.yml` — Job definitions with steps, workflows, outputs, reviews, quality criteria
-- `steps/*.md` — Step instruction files (markdown with structured guidance)
+- Step instructions are inlined in `job.yml` (the `steps/` folder pattern is deprecated)
 - `hooks/` — Lifecycle hooks (after_agent, before_tool, etc.)
 - `.claude/agents/*.md` — Agent definitions with YAML frontmatter (name, description)
 - `AGENTS.md` — Bespoke learnings and context for a working directory
