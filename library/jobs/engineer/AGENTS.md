@@ -11,18 +11,8 @@ It is a library job — available for users to adopt but not auto-installed by t
 engineer/
 ├── AGENTS.md              # This file
 ├── CLAUDE.md -> AGENTS.md # Symlink for Claude Code
-├── job.yml                # Job definition
-├── requirements.md        # RFC 2119 requirements specification
-└── steps/
-    ├── translate_issue.md
-    ├── initialize_branch.md
-    ├── red_tests.md
-    ├── green_implementation.md
-    ├── finalize_pr.md
-    ├── product_sync.md
-    ├── check_agent_md.md
-    ├── check_context.md
-    └── doctor_report.md
+├── job.yml                # Job definition (all step instructions inlined)
+└── requirements.md        # RFC 2119 requirements specification
 ```
 
 ## Workflows

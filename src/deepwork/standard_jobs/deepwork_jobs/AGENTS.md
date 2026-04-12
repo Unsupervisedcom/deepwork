@@ -22,13 +22,7 @@ deepwork_jobs/
 ├── AGENTS.md              # This file
 ├── job.yml                # Job definition
 ├── make_new_job.sh        # Script to create new job structure
-├── steps/
-│   ├── define.md          # Define step instructions
-│   ├── implement.md       # Implement step instructions
-│   ├── test.md            # Test step instructions
-│   ├── iterate.md         # Iterate step instructions
-│   ├── learn.md           # Learn step instructions
-│   └── supplemental_file_references.md  # Reference documentation
+├── supplemental_file_references.md  # Reference documentation for job.yml fields
 └── templates/
     ├── job.yml.template              # Job spec structure
     ├── step_instruction.md.template  # Step instruction structure

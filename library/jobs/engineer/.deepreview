@@ -3,14 +3,13 @@ job_definition_review:
   match:
     include:
       - "job.yml"
-      - "steps/*.md"
       - "requirements.md"
   review:
     strategy: matches_together
     instructions: |
-      Review this DeepWork job definition (job.yml), its requirements (requirements.md),
-      and its step instruction files (steps/*.md) holistically. Check that they form a
-      coherent, well-structured workflow that an AI agent can execute reliably.
+      Review this DeepWork job definition (job.yml) and its requirements (requirements.md)
+      holistically. Check that they form a coherent, well-structured workflow that an AI
+      agent can execute reliably.
 
       ## Reference Material
 
