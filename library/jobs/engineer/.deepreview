@@ -1,5 +1,5 @@
 job_definition_review:
-  description: "Review job.yml, requirements.md, and step instructions for correctness, completeness, and coherence as a holistic workflow."
+  description: "Review job.yml (with inline step instructions) and requirements.md for correctness, completeness, and coherence as a holistic workflow."
   match:
     include:
       - "job.yml"
