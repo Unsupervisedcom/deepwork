@@ -93,7 +93,8 @@ steps:
   - id: generate_report
     name: "Generate Monthly Report"
     description: "Create the monthly AWS spending report"
-    instructions_file: steps/generate_report.md
+    instructions: |
+      Generate the monthly AWS spending report...
     outputs:
       - file: reports/aws_spending.md
         doc_spec: .deepwork/doc_specs/monthly_aws_report.md

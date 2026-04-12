@@ -3,13 +3,11 @@ job_definition_review:
   match:
     include:
       - "job.yml"
-      - "steps/*.md"
   review:
     strategy: matches_together
     instructions: |
-      Review this DeepWork job definition (job.yml) and its step instruction files
-      (steps/*.md) holistically. Check that they form a coherent, well-structured
-      workflow that an AI agent can execute reliably.
+      Review this DeepWork job definition (job.yml) holistically. Check that it forms
+      a coherent, well-structured workflow that an AI agent can execute reliably.
 
       ## Reference Material
 
@@ -41,13 +39,13 @@ job_definition_review:
       - Intermediate outputs that are not meant to be persisted should be in .deepwork/tmp (and the name should indicate that)
       - Final outputs follow project conventions (not hidden in dot-directories, descriptive names, appropriate use of subdirectories)
 
-      ### 4. Step Instructions Match job.yml
-      - Every step defined in job.yml has a corresponding instruction file
+      ### 4. Inline Step Instructions
+      - Every step defined in job.yml has inline `instructions:` content
       - Step instruction content aligns with the step's described purpose
       - Instructions reference the correct input and output filenames from job.yml
       - Instructions do not duplicate content already in `common_job_info_provided_to_all_steps_at_runtime`
-      - If there is duplicated content amongst the instruction files, it should be moved to `common_job_info_provided_to_all_steps_at_runtime` and removed from the instruction files
-      - If there is content that is needed in multiple steps but not all, it should be moved to its own file and referenced in the steps
+      - If there is duplicated content amongst step instructions, it should be moved to `common_job_info_provided_to_all_steps_at_runtime`
+      - If there is content that is needed in multiple steps but not all, it should be moved to a shared file in the job directory and referenced in the steps
 
       ### 5. Quality Reviews
       - Steps with complex or final outputs have reviews defined
@@ -57,7 +55,7 @@ job_definition_review:
       - Steps with no meaningful quality checks use `reviews: []`
 
       ### 6. Step Instruction Quality
-      - Each instruction file has clear sections: Objective, Task/Process,
+      - Each step's inline instructions have clear sections: Objective, Task/Process,
         Output Format, and Quality Criteria
       - Instructions are specific and actionable, not generic placeholders
       - Output format sections show what good output looks like (examples or

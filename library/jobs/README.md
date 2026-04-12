@@ -74,49 +74,22 @@ library/jobs/
 │   ├── job.yml
 │   ├── AGENTS.md            # Agent context and learnings
 │   ├── CLAUDE.md -> AGENTS.md
-│   ├── requirements.md      # RFC 2119 requirements specification
-│   └── steps/               # Step instruction files (also inlined in job.yml)
+│   └── requirements.md      # RFC 2119 requirements specification
 ├── platform_engineer/       # Platform engineering workflows
 │   ├── job.yml
 │   ├── AGENTS.md            # Agent context and learnings
 │   ├── CLAUDE.md -> AGENTS.md
 │   ├── conventions.md       # RFC 2119 platform engineering standards
 │   ├── readme.md
-│   ├── steps/               # Step instruction files (also inlined in job.yml)
 │   └── templates/           # Output templates
 ├── repo/
-│   ├── job.yml              # Job definition (name, steps, workflows)
-│   ├── readme.md            # Job-specific documentation
-│   └── steps/
-│       ├── detect_platform.md
-│       ├── ensure_labels.md
-│       ├── check_branch_protection.md
-│       ├── check_milestones.md
-│       ├── check_boards.md
-│       ├── setup_report.md
-│       ├── audit_labels.md
-│       ├── audit_branch_protection.md
-│       ├── audit_milestones.md
-│       ├── audit_boards.md
-│       └── doctor_report.md
+│   ├── job.yml              # Job definition (self-contained with inline instructions)
+│   └── readme.md            # Job-specific documentation
 ├── research/
-│   ├── job.yml              # Job definition (name, steps, workflows)
+│   ├── job.yml              # Job definition (self-contained with inline instructions)
 │   ├── readme.md            # Job-specific documentation
 │   ├── AGENTS.md            # Agent context and learnings
-│   ├── CLAUDE.md -> AGENTS.md
-│   └── steps/
-│       ├── scope.md
-│       ├── choose_platforms.md
-│       ├── gather.md
-│       ├── gather_quick.md
-│       ├── synthesize.md
-│       ├── summarize.md
-│       ├── report.md
-│       ├── parse.md
-│       ├── file.md
-│       ├── ingest_material.md
-│       ├── analyze.md
-│       └── plan.md
+│   └── CLAUDE.md -> AGENTS.md
 └── spec_driven_development/
     ├── job.yml              # Job definition (self-contained with inline instructions)
     └── readme.md            # Job-specific documentation
@@ -147,7 +120,7 @@ The job definition file contains:
     - `process_requirements`: Optional quality criteria for the work process
   - `post_workflow_instructions`: Optional instructions shown after workflow completes
 
-Step instructions are inlined in `job.yml`. Some jobs also retain separate `steps/*.md` files from earlier versions; the inline `instructions` in `job.yml` are the canonical source.
+Step instructions are inlined in `job.yml` using YAML block scalars (`instructions: |`).
 
 ## Using a Job from the Library
 

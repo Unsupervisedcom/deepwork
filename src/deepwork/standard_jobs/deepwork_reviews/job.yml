@@ -39,7 +39,7 @@ workflows:
       patterns change in a PR or commit.
 
       For the .deepreview file format, key concepts, and rule naming conventions, read
-      `steps/deepreview_reference.md` (relative to this job's directory).
+      `deepreview_reference.md` (relative to this job's directory).
     steps:
       - name: add_deepwork_native_reviews
         instructions: |
@@ -490,7 +490,7 @@ workflows:
       patterns change in a PR or commit.
 
       For the .deepreview file format, key concepts, and rule naming conventions, read
-      `steps/deepreview_reference.md` (relative to this job's directory).
+      `deepreview_reference.md` (relative to this job's directory).
     steps:
       - name: analyze_dependencies
         instructions: |

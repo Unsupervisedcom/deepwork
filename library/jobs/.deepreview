@@ -30,9 +30,8 @@ library_job_portability:
   match:
     include:
       - "**/job.yml"
-      - "**/steps/*.md"
-      - "**/readme.md"
       - "**/conventions.md"
+      - "**/readme.md"
       - "**/templates/*.template"
     exclude:
       - ".deepreview"
@@ -51,7 +50,7 @@ library_job_portability:
       - Workspace-relative paths that assume a specific repo layout
         (e.g., `.repos/acme/api/` or `/code/myproject/`)
 
-      Acceptable: relative paths within the job directory (e.g., `steps/foo.md`,
+      Acceptable: relative paths within the job directory (e.g., `templates/bar.yml`,
       `templates/bar.yml`) and generic placeholders like `<project_root>`.
 
       ## Personal and Private Information
