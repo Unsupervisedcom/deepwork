@@ -68,7 +68,7 @@ steps:
 When the server encounters a concurrent entry, it:
 1. Uses the first step ID as the "current" step
 2. Appends a `**CONCURRENT STEPS**` message to the instructions
-3. Expects the agent to use the Task tool to execute them in parallel
+3. Expects the agent to use the Agent tool to execute them in parallel
 
 **Consistency check**: The `current_entry_index` tracks position in the `step_entries` list (which may contain concurrent groups), not the flat step list.
 

@@ -13,7 +13,8 @@ Normalized Format:
         - session_id: str
         - transcript_path: str
         - cwd: str
-        - event: str (normalized: 'after_agent', 'before_tool', 'before_prompt')
+        - event: str (normalized: 'after_agent', 'before_tool', 'before_prompt',
+          'session_start', 'session_end', 'after_tool', 'before_model', 'after_model')
         - tool_name: str (normalized: 'write_file', 'shell', etc.)
         - tool_input: dict
         - prompt: str (for agent events)
@@ -121,7 +122,7 @@ TOOL_TO_NORMALIZED: dict[Platform, dict[str, str]] = {
         "Grep": "grep",
         "WebFetch": "web_fetch",
         "WebSearch": "web_search",
-        "Task": "task",
+        "Agent": "agent",
     },
     Platform.GEMINI: {
         # Gemini already uses snake_case
@@ -147,7 +148,7 @@ NORMALIZED_TO_TOOL: dict[Platform, dict[str, str]] = {
         "grep": "Grep",
         "web_fetch": "WebFetch",
         "web_search": "WebSearch",
-        "task": "Task",
+        "agent": "Agent",
     },
     Platform.GEMINI: {
         # Gemini already uses snake_case

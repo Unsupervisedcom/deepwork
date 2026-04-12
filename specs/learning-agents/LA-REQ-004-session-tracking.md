@@ -2,15 +2,15 @@
 
 ## Overview
 
-The learning-agents plugin uses hooks to automatically track when LearningAgents are invoked during Claude Code sessions. The PostToolUse hook on the Task tool creates session tracking files. The Stop hook checks for unprocessed sessions and suggests running the learning cycle.
+The learning-agents plugin uses hooks to automatically track when LearningAgents are invoked during Claude Code sessions. The PostToolUse hook on the Agent tool creates session tracking files. The Stop hook checks for unprocessed sessions and suggests running the learning cycle.
 
 ## Requirements
 
 ### LA-REQ-004.1: PostToolUse Hook Trigger
 
-The PostToolUse hook MUST fire after every use of the `Task` tool. The hook matcher in `hooks.json` MUST be set to `"Task"`.
+The PostToolUse hook MUST fire after every use of the `Agent` tool. The hook matcher in `hooks.json` MUST be set to `"Agent"`.
 
-### LA-REQ-004.2: Post-Task Input Parsing
+### LA-REQ-004.2: Post-Agent Input Parsing
 
 The `post_task.sh` hook MUST read JSON from stdin containing `session_id`, `tool_input`, and `tool_response` fields. If stdin is empty or not provided (terminal is interactive), the hook MUST output `{}` and exit 0.
 
@@ -42,11 +42,11 @@ The hook MUST create a `needs_learning_as_of_timestamp` file in the session dire
 
 The hook MUST create an `agent_used` file in the session directory containing the agent name (matching the folder name under `.deepwork/learning-agents/`). This links the session's agent ID back to the LearningAgent definition.
 
-### LA-REQ-004.10: Post-Task Reminder Message
+### LA-REQ-004.10: Post-Agent Reminder Message
 
 After creating session tracking files, the hook MUST output a JSON `systemMessage` containing the content of `${CLAUDE_PLUGIN_ROOT}/doc/learning_agent_post_task_reminder.md`. If the reminder file does not exist, the hook MUST output `{}`.
 
-### LA-REQ-004.11: Post-Task Reminder Content
+### LA-REQ-004.11: Post-Agent Reminder Content
 
 The post-task reminder MUST instruct the user to:
 - Resume the same task rather than starting a new one if they need more from the same agent

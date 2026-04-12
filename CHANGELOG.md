@@ -21,10 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Post-commit review reminder hook now short-circuits when all applicable (non-catch-all) review rules for the committed files are already marked as passed, emitting "No re-review needed" instead of nagging
+- Renamed all "Task tool" references to "Agent tool" across codebase to match Claude Code's current tool naming
+- Review formatter now emits `description`, `subagent_type`, and `prompt` fields (dropped `name` field) to match Agent tool signature
+- Hook wrapper tool mappings updated: `Task`/`task` → `Agent`/`agent`
 
 ### Fixed
 
+- Review instruction files now include a `## Project Root` directive stating the absolute project root so reviewer subagents read files from the correct working tree — fixes spurious findings in git-worktree setups where the subagent's cwd differed from the worktree the commits actually lived in (REVIEW-REQ-005.1.9)
+
 ### Removed
+
+- Removed automatic DeepPlan workflow injection from startup_context.sh hook (no longer forces plan mode into DeepPlan)
+- Deprecated JOBS-REQ-014.5.1 (startup hook DeepPlan trigger) and REVIEW-REQ-006.3.3a (name field in review output)
 ## [0.13.3] - 2026-04-10
 
 ### Added

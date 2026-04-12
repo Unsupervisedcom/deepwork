@@ -112,14 +112,18 @@ class WorkflowTools:
             except Exception:
                 logger.warning("Failed to write session status", exc_info=True)
 
-    def _write_manifest(self) -> None:
+    def _write_manifest(self, jobs: list[JobDefinition] | None = None) -> None:
         """Write job manifest file if status_writer is configured.
+
+        Args:
+            jobs: Pre-loaded job list. When None, loads jobs from disk.
 
         Fire-and-forget: exceptions are logged as warnings and never propagated.
         """
         if self.status_writer:
             try:
-                jobs, _ = self._load_all_jobs()
+                if jobs is None:
+                    jobs, _ = self._load_all_jobs()
                 self.status_writer.write_manifest(jobs)
             except Exception:
                 logger.warning("Failed to write job manifest", exc_info=True)
@@ -134,11 +138,11 @@ class WorkflowTools:
         for wf_name, wf in job.workflows.items():
             if wf.agent:
                 how_to_invoke = (
-                    f'Invoke as a Task using subagent_type="{wf.agent}" with a prompt '
+                    f'Invoke as an Agent using subagent_type="{wf.agent}" with a prompt '
                     f"giving full context needed and instructions to call "
                     f"`mcp__plugin_deepwork_deepwork__start_workflow` "
                     f'(job_name="{job.name}", workflow_name="{wf_name}"). '
-                    f"If you do not have Task as an available tool, invoke the workflow directly."
+                    f"If you do not have Agent as an available tool, invoke the workflow directly."
                 )
             else:
                 how_to_invoke = (
@@ -265,6 +269,9 @@ class WorkflowTools:
                 continue
 
             if arg.type == "file_path":
+                # Deliberate: no path-traversal check here. Outputs come from
+                # the agent (not untrusted external input) and may legitimately
+                # reference paths outside the project root (e.g. worktrees).
                 if isinstance(value, str):
                     full_path = self.project_root / value
                     if not full_path.exists():
@@ -437,11 +444,7 @@ class WorkflowTools:
         ]
 
         # Write manifest for external consumers
-        if self.status_writer:
-            try:
-                self.status_writer.write_manifest(jobs)
-            except Exception:
-                logger.warning("Failed to write job manifest", exc_info=True)
+        self._write_manifest(jobs)
 
         return GetWorkflowsResponse(jobs=job_infos, errors=error_infos)
 

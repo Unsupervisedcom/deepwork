@@ -53,7 +53,7 @@ The quality review system evaluates step outputs against defined quality criteri
 ### JOBS-REQ-004.6: Review Guidance Output
 
 1. The review guidance MUST include the formatted review output from `format_for_claude()`.
-2. The guidance MUST instruct the agent to launch review tasks as parallel Task agents.
+2. The guidance MUST instruct the agent to launch review tasks as parallel agents.
 3. The guidance MUST explain how to handle failing reviews (fix issues or call `mark_review_as_passed`).
 4. The guidance MUST instruct the agent to call `finished_step` again after reviews complete.
 

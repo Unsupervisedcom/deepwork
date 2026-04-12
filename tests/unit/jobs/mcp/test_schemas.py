@@ -46,11 +46,11 @@ class TestWorkflowInfo:
         workflow = WorkflowInfo(
             name="test_workflow",
             summary="A test workflow",
-            how_to_invoke='Invoke as a Task using subagent_type="general-purpose"',
+            how_to_invoke='Invoke as an Agent using subagent_type="general-purpose"',
         )
 
         assert "general-purpose" in workflow.how_to_invoke
-        assert "Task" in workflow.how_to_invoke
+        assert "Agent" in workflow.how_to_invoke
 
 
 class TestJobInfo:

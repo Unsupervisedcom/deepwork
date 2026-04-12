@@ -305,18 +305,21 @@ This:
 ### What the output looks like
 
 ```
-Invoke the following list of Tasks in parallel:
+Invoke the following list of Tasks in parallel.
 
-Name: "python_review review of src/app.py"
-	Agent: Default
+name: "python_review review of src/app.py"
+	description: Review python_review
+	subagent_type: reviewer
 	prompt: "@.deepwork/tmp/review_instructions/7142141.md"
 
-Name: "python_review review of src/lib.py"
-	Agent: Default
+name: "python_review review of src/lib.py"
+	description: Review python_review
+	subagent_type: reviewer
 	prompt: "@.deepwork/tmp/review_instructions/6316224.md"
 
-Name: "db_migration_safety review of 2 files"
-	Agent: db-expert
+name: "db_migration_safety review of 2 files"
+	description: Review db_migration_safety
+	subagent_type: db-expert
 	prompt: "@.deepwork/tmp/review_instructions/3847291.md"
 ```
 
@@ -529,3 +532,9 @@ Patterns follow standard glob syntax, evaluated relative to the `.deepreview` fi
 | `config/*` | `config/settings.yaml` | `config/deep/nested.yaml` |
 | `**/Dockerfile` | `Dockerfile`, `services/api/Dockerfile` | `Dockerfile.dev` |
 | `CHANGELOG.md` | `CHANGELOG.md` | `docs/CHANGELOG.md` |
+
+## Contributor setup
+
+By default, `/review` dispatches each review task to the `reviewer` subagent shipped with the DeepWork Claude plugin (`plugins/claude/agents/reviewer.md`). If you are developing against this repo with only the dev MCP server (`uv run deepwork serve`) and no plugin installed, Claude Code cannot resolve `subagent_type: reviewer` and review dispatch will fail.
+
+To run reviews as a contributor, install the plugin alongside the dev server: `claude plugin marketplace add Unsupervisedcom/deepwork && claude plugin install deepwork@deepwork-plugins`. The plugin ships the reviewer agent file, and either MCP server prefix (`mcp__deepwork-dev__*` or `mcp__plugin_deepwork_deepwork__*`) will resolve the reviewer's tools.

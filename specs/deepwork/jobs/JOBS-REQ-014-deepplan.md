@@ -39,7 +39,7 @@ DeepPlan is a standard job that provides a structured planning workflow. When an
 
 ### JOBS-REQ-014.5: Planning Mode Integration
 
-1. The startup context hook MUST inject an instruction telling agents to start the `create_deep_plan` workflow when entering plan mode.
+1. REQUIREMENT REMOVED
 2. The `present_plan` step MUST instruct the agent to call `ExitPlanMode` instead of `finished_step`.
 3. The plan file MUST include execution instructions telling the post-approval agent to call `finished_step` on `present_plan` and then `start_workflow` on the session job.
 

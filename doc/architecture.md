@@ -105,6 +105,8 @@ deepwork/                       # DeepWork tool repository
 │   ├── claude/                 # Claude Code plugin
 │   │   ├── .claude-plugin/plugin.json
 │   │   ├── README_REVIEWS.md   # Review system documentation
+│   │   ├── agents/              # Subagent definitions (e.g., reviewer.md)
+│   │   │   └── reviewer.md     # Default review subagent (Sonnet, minimal instructions)
 │   │   ├── example_reviews/    # Example review instruction files
 │   │   │   ├── prompt_best_practices.md
 │   │   │   └── suggest_new_reviews.md
@@ -870,7 +872,7 @@ Lists all available workflows from `.deepwork/jobs/`.
 
 **Parameters**: None
 
-**Returns**: List of jobs with their workflows, steps, and summaries. Each `WorkflowInfo` includes a `how_to_invoke` field with invocation instructions: when the workflow's `agent` field is set in job.yml, it directs callers to delegate via the Task tool; otherwise, it directs callers to use the `start_workflow` MCP tool directly.
+**Returns**: List of jobs with their workflows, steps, and summaries. Each `WorkflowInfo` includes a `how_to_invoke` field with invocation instructions: when the workflow's `agent` field is set in job.yml, it directs callers to delegate via the Agent tool; otherwise, it directs callers to use the `start_workflow` MCP tool directly.
 
 #### 2. `start_workflow`
 Begins a new workflow session.
