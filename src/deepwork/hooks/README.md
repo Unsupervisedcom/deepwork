@@ -105,7 +105,7 @@ if __name__ == "__main__":
 | `grep` | Grep | grep |
 | `web_fetch` | WebFetch | web_fetch |
 | `web_search` | WebSearch | web_search |
-| `task` | Task | — |
+| `agent` | Agent | — |
 
 ## Decision Values
 

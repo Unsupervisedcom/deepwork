@@ -183,7 +183,7 @@ Navigate back to a prior step in the current workflow. Clears all progress from 
 
 ### 6. `get_review_instructions`
 
-Run a review of changed files based on `.deepreview` configuration files and DeepSchema-generated synthetic review rules. Returns a list of review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields for the Task tool.
+Run a review of changed files based on `.deepreview` configuration files and DeepSchema-generated synthetic review rules. Returns a list of review tasks to invoke in parallel. Each task has `description`, `subagent_type`, and `prompt` fields for the Agent tool.
 
 This tool operates outside the workflow lifecycle — it can be called independently at any time.
 
@@ -402,7 +402,7 @@ The quality gate builds dynamic `ReviewRule` objects from step output review blo
 - **Job context**: The workflow's `common_job_info` (if any)
 - **Step inputs**: Input values from prior steps, with file_path inputs shown as `@path` references
 
-These rules are then processed through the standard DeepWork Reviews pipeline (matched against output files, instruction files written, formatted for the agent platform). The review output directs the agent to launch parallel Task agents for each review.
+These rules are then processed through the standard DeepWork Reviews pipeline (matched against output files, instruction files written, formatted for the agent platform). The review output directs the agent to launch parallel review agents for each review.
 
 ### Review Types
 
@@ -496,7 +496,7 @@ Add to your `.mcp.json`:
 | 2.1.0 | Added `important_note` field to `StartWorkflowResponse` — instructs agents to clarify ambiguous user requests via `AskUserQuestion` when available. |
 | 2.0.0 | **Breaking**: `session_id` is now a required `string` parameter on all mutation tools (`start_workflow`, `finished_step`, `abort_workflow`, `go_to_step`). Added `agent_id` optional parameter for sub-agent scoping — sub-agents get their own isolated workflow stacks. State persistence path changed to `.deepwork/tmp/sessions/<platform>/session-<id>/state.json` (with sub-agent state in `agent_<agent_id>.json`). |
 | 1.9.0 | Added `go_to_step` tool for navigating back to prior steps. Clears all step progress from the target step onward, forcing re-execution of subsequent steps. Supports `session_id` for concurrent workflow safety. |
-| 1.8.0 | Added `how_to_invoke` field to `WorkflowInfo` in `get_workflows` response. Always populated with invocation instructions: when a workflow's `agent` field is set, directs callers to delegate via the Task tool; otherwise, directs callers to use the `start_workflow` MCP tool directly. Also added optional `agent` field to workflow definitions in job.yml. |
+| 1.8.0 | Added `how_to_invoke` field to `WorkflowInfo` in `get_workflows` response. Always populated with invocation instructions: when a workflow's `agent` field is set, directs callers to delegate via the Agent tool; otherwise, directs callers to use the `start_workflow` MCP tool directly. Also added optional `agent` field to workflow definitions in job.yml. |
 | 1.7.0 | Added `mark_review_as_passed` tool for review pass caching. Instruction files now include an "After Review" section with the review ID. Reviews with a `.passed` marker are automatically skipped by `get_review_instructions`. |
 | 1.6.0 | Added `get_configured_reviews` tool for listing configured review rules without running the full pipeline. Supports optional file-based filtering. |
 | 1.5.0 | Added `get_review_instructions` tool (originally named `review`) for running `.deepreview`-based code reviews via MCP. Added `--platform` CLI option to `serve` command. |

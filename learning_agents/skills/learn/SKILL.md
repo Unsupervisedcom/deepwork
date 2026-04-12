@@ -25,11 +25,11 @@ For each session log folder, run the learning cycle in sequence.
 
 #### 1a: Identify Issues
 
-Spawn a Task to run the identify skill:
+Spawn an Agent to run the identify skill:
 
 ```
-Task tool call:
-  name: "identify-issues"
+Agent tool call:
+  description: "Identify issues"
   subagent_type: learning-agents:learning-agent-expert
   model: sonnet
   prompt: "Run: Skill learning-agents:identify <session_log_folder>"
@@ -41,11 +41,11 @@ Task tool call:
 
 After identification completes, **skip** any session where the identify step reported zero issues. Only proceed with sessions that had issues identified.
 
-For remaining sessions, start a new Task to run investigation and incorporation in sequence for each session_log_folder:
+For remaining sessions, start a new Agent to run investigation and incorporation in sequence for each session_log_folder:
 
 ```
-Task tool call:
-  name: "investigate-and-incorporate"
+Agent tool call:
+  description: "Investigate and incorporate"
   subagent_type: learning-agents:learning-agent-expert
   model: sonnet
   prompt: "Run these two skills in sequence:
@@ -53,11 +53,11 @@ Task tool call:
            2. Skill learning-agents:incorporate-learnings <session_log_folder>"
 ```
 
-**Run session log folders from the same agent serially, but different agents in parallel.** I.e. if Agent A has 7 sessions and Agent B has 3 sessions, you should have 3 "batches" of Tasks where you do one session for Agent A and one for Agent B, then you would have 4 more Tasks run serially for the remaining Agent A sessions.
+**Run session log folders from the same agent serially, but different agents in parallel.** I.e. if Agent A has 7 sessions and Agent B has 3 sessions, you should have 3 "batches" of Agents where you do one session for Agent A and one for Agent B, then you would have 4 more Agents run serially for the remaining Agent A sessions.
 
 #### Handling failures
 
-If a sub-skill Task fails for a session, log the failure, skip that session, and continue processing remaining sessions. Do not mark `needs_learning_as_of_timestamp` as resolved for failed sessions.
+If a sub-skill Agent fails for a session, log the failure, skip that session, and continue processing remaining sessions. Do not mark `needs_learning_as_of_timestamp` as resolved for failed sessions.
 
 ### Step 2: Summary
 
@@ -77,5 +77,5 @@ Output in this format:
 ## Guardrails
 
 - Do NOT modify agent files directly — always delegate to the learning cycle skills in Tasks
-- Use Sonnet model for Task spawns to balance cost and quality
-- Use the `learning-agents:learning-agent-expert` agent for Task spawns
+- Use Sonnet model for Agent spawns to balance cost and quality
+- Use the `learning-agents:learning-agent-expert` agent for Agent spawns

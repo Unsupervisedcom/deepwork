@@ -70,7 +70,7 @@ The skill MUST offer the user the option to seed initial topics or learnings. If
 
 ### LA-REQ-002.14: Creation Summary
 
-Upon completion, the skill MUST output a summary listing all files created or modified, usage instructions for invoking the agent via the Task tool, and a note about the learning cycle.
+Upon completion, the skill MUST output a summary listing all files created or modified, usage instructions for invoking the agent via the Agent tool, and a note about the learning cycle.
 
 ### LA-REQ-002.15: No Overwrites Without Confirmation
 

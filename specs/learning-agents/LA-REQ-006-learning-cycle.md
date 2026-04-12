@@ -2,7 +2,7 @@
 
 ## Overview
 
-The learning cycle (`/learning-agents learn`) is the top-level orchestrator that discovers all pending sessions and runs the three-phase learning process (identify, investigate, incorporate) on each. It delegates actual work to sub-skills via Task tool spawns.
+The learning cycle (`/learning-agents learn`) is the top-level orchestrator that discovers all pending sessions and runs the three-phase learning process (identify, investigate, incorporate) on each. It delegates actual work to sub-skills via Agent tool spawns.
 
 ## Requirements
 
@@ -27,19 +27,19 @@ For each pending session, the skill MUST extract:
 ### LA-REQ-006.5: Three-Phase Processing
 
 For each pending session, the skill MUST run the learning cycle in three sequential phases:
-1. **Identify**: Spawn a Task to run the `identify` skill on the session folder
-2. **Investigate**: Spawn a Task to run the `investigate-issues` skill on the session folder
-3. **Incorporate**: Spawn a Task to run the `incorporate-learnings` skill on the session folder
+1. **Identify**: MUST spawn an Agent to run the `identify` skill on the session folder
+2. **Investigate**: MUST spawn an Agent to run the `investigate-issues` skill on the session folder
+3. **Incorporate**: MUST spawn an Agent to run the `incorporate-learnings` skill on the session folder
 
-The investigate and incorporate phases MAY be combined into a single Task invocation, but they MUST execute in that order.
+The investigate and incorporate phases MUST be combined into a single Agent invocation, and they MUST execute in that order.
 
-### LA-REQ-006.6: Task Tool Usage for Sub-Skills
+### LA-REQ-006.6: Agent Tool Usage for Sub-Skills
 
-The identify phase MUST be run as a separate Task invocation. The investigate and incorporate phases MUST be run as a combined Task invocation (investigate first, then incorporate). All Task spawns MUST use the `learning-agents:identify`, `learning-agents:investigate-issues`, and `learning-agents:incorporate-learnings` skills respectively.
+The identify phase MUST be run as a separate Agent invocation. The investigate and incorporate phases MUST be run as a combined Agent invocation (investigate first, then incorporate). All Agent spawns MUST use the `learning-agents:identify`, `learning-agents:investigate-issues`, and `learning-agents:incorporate-learnings` skills respectively.
 
-### LA-REQ-006.7: Sub-Task Model Selection
+### LA-REQ-006.7: Sub-Agent Model Selection
 
-Task spawns for learning cycle sub-skills MUST use the Sonnet model to balance cost and quality.
+Agent spawns for learning cycle sub-skills MUST use the Sonnet model to balance cost and quality.
 
 ### LA-REQ-006.8: Sequential Session Processing
 

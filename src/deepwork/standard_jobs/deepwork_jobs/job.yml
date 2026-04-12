@@ -69,6 +69,10 @@ step_arguments:
     description: "List of job.yml file paths available via the configured library path"
     type: file_path
 
+  - name: errata_summary
+    description: "Summary of obsolete artifacts removed during cleanup."
+    type: string
+
 workflows:
   new_job:
     summary: "Create a new DeepWork job from scratch through definition, implementation, testing, and iteration"
@@ -195,7 +199,7 @@ workflows:
 
           1. **Define a separate workflow** for the process that will be repeated. This workflow handles one item at a time (e.g., `research_one_competitor` with steps like `gather_data` → `analyze` → `write_summary`).
 
-          2. **In the main workflow**, add a step whose instructions tell the agent to launch the sub-workflow once per item using sub-agents (via the Task tool). Since each item is independent, these sub-workflow runs execute in parallel.
+          2. **In the main workflow**, add a step whose instructions tell the agent to launch the sub-workflow once per item using sub-agents (via the Agent tool). Since each item is independent, these sub-workflow runs execute in parallel.
 
           **Why this matters:**
           - **Parallelism**: Independent items are processed concurrently instead of sequentially, dramatically reducing wall-clock time
@@ -229,7 +233,7 @@ workflows:
 
           The `research_all` step's instructions should tell the agent to:
           - Read the list of items from the prior step's output
-          - Launch `research_one` as a sub-workflow for each item using parallel sub-agents (Task tool)
+          - Launch `research_one` as a sub-workflow for each item using parallel sub-agents (Agent tool)
           - Collect the results and confirm all runs completed
 
           **When to recognize this pattern:** Look for language like "for each X, do Y" where Y involves more than one logical phase. If Y is a single simple action, a regular step with a loop is fine. If Y is itself a multi-step process with intermediate outputs worth reviewing, split it into a sub-workflow.
@@ -915,7 +919,7 @@ workflows:
 
           1. **Process Inefficiencies**
              - Steps that took multiple attempts to complete
-             - Questions the agent had to ask that should have been necessary
+             - Questions the agent had to ask that shouldn't have been necessary
              - Unnecessary back-and-forth with the user
              - Information that had to be repeated
 
@@ -1483,9 +1487,9 @@ workflows:
             required: true
         process_requirements:
           "New Format Used": "All job.yml files MUST use the new format with step_arguments, workflows{} object, and inline step instructions."
-          "No Legacy Fields": "No job.yml MUST contain version, root-level steps[], instructions_file, hooks, dependencies, or exposed/hidden fields."
+          "No Legacy Fields": "No job.yml MAY contain version, root-level steps[], instructions_file, hooks, dependencies, or exposed/hidden fields."
           "Reviews Migrated": "Old review formats MUST be converted to output-level review blocks or process_requirements."
-          "Instructions Inlined": "All step instructions MUST be inlined in the job.yml — no instructions_file references MUST remain."
+          "Instructions Inlined": "All step instructions MUST be inlined in the job.yml — no instructions_file references MAY remain."
           "Orphaned Step Files Removed": "Step .md files that were referenced by `instructions_file` and have been inlined MUST be deleted from the steps/ directory."
           "Jobs Parse Successfully": "Calling `get_workflows` MUST show all expected jobs without errors."
 
@@ -1670,7 +1674,9 @@ workflows:
         inputs:
           job_definitions:
             required: true
-        outputs: {}
+        outputs:
+          errata_summary:
+            required: true
         process_requirements:
           "Legacy Job Skills Removed": "Legacy skill folders for each job MUST be removed from `.claude/skills/` and `.gemini/skills/`."
           "Deepwork Skill Removed": "The `deepwork` skill folder MUST be removed from `.claude/skills/deepwork/` and `.gemini/skills/deepwork/` (now provided by the plugin system)."

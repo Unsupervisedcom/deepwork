@@ -127,7 +127,7 @@ is **invisible** to Claude until you restart.
 
 1. Exit this Claude Code session (type `/exit` or Ctrl+C)
 2. Restart with: `claude -c` (this continues your conversation)
-3. The new agent will then be available via the Task tool
+3. The new agent will then be available via the Agent tool
 
 If you skip this step, Claude will not find the agent when you try to use it.
 
@@ -138,10 +138,10 @@ After the restart warning, output:
 
 ```
 **Usage (after restart):**
-  Use the Task tool with `name: "<agent-name>"` to invoke this agent.
+  Use the Agent tool with `subagent_type: "<agent-name>"` to invoke this agent.
 
 **Learning cycle:**
-  The post-Task hook will automatically track sessions. Run `/learning-agents learn`
+  The post-Agent hook will automatically track sessions. Run `/learning-agents learn`
   after sessions to identify and incorporate learnings.
 ```
 

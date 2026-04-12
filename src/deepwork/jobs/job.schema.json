@@ -141,7 +141,7 @@
         "agent": {
           "type": "string",
           "minLength": 1,
-          "description": "Agent type to delegate the entire workflow to (e.g., 'general-purpose'). When set, the workflow is designed to run in a sub-agent via the Task tool — the caller agent spawns a sub-agent that runs all steps. Use this for workflows that should execute autonomously without blocking the main agent. If not set, the main agent executes steps directly."
+          "description": "Agent type to delegate the entire workflow to (e.g., 'general-purpose'). When set, the workflow is designed to run in a sub-agent via the Agent tool — the caller agent spawns a sub-agent that runs all steps. Use this for workflows that should execute autonomously without blocking the main agent. If not set, the main agent executes steps directly."
         },
         "common_job_info_provided_to_all_steps_at_runtime": {
           "type": "string",

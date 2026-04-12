@@ -26,7 +26,7 @@ The DeepWork MCP server exposes workflow tools to AI agents via the Model Contex
 3. The tool MUST return a dictionary with a `jobs` key containing a list of job info objects.
 4. Each job info object MUST contain `name`, `summary`, and `workflows` fields.
 5. Each workflow info object MUST contain `name`, `summary`, and `how_to_invoke` fields.
-6. When a workflow's `agent` field is set, `how_to_invoke` MUST contain instructions for delegating to a sub-agent of the specified type via the Task tool.
+6. When a workflow's `agent` field is set, `how_to_invoke` MUST contain instructions for delegating to a sub-agent of the specified type via the Agent tool.
 7. When a workflow's `agent` field is not set, `how_to_invoke` MUST contain instructions to call `start_workflow` directly.
 8. The tool MUST also return an `errors` key containing a list of job load error objects for jobs that failed to parse.
 9. Each job load error object MUST contain `job_name`, `job_dir`, and `error` fields.

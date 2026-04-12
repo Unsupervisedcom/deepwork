@@ -216,6 +216,7 @@ deepwork/
 │   ├── claude/           # Claude Code plugin
 │   │   ├── .claude-plugin/plugin.json
 │   │   ├── README_REVIEWS.md
+│   │   ├── agents/         # Subagent definitions (e.g., reviewer.md)
 │   │   ├── example_reviews/
 │   │   ├── skills/
 │   │   │   ├── configure_reviews/SKILL.md
