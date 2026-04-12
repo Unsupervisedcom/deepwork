@@ -305,18 +305,21 @@ This:
 ### What the output looks like
 
 ```
-Invoke the following list of Tasks in parallel:
+Invoke the following list of Tasks in parallel.
 
-Name: "python_review review of src/app.py"
-	Agent: Default
+name: "python_review review of src/app.py"
+	description: Review python_review
+	subagent_type: reviewer
 	prompt: "@.deepwork/tmp/review_instructions/7142141.md"
 
-Name: "python_review review of src/lib.py"
-	Agent: Default
+name: "python_review review of src/lib.py"
+	description: Review python_review
+	subagent_type: reviewer
 	prompt: "@.deepwork/tmp/review_instructions/6316224.md"
 
-Name: "db_migration_safety review of 2 files"
-	Agent: db-expert
+name: "db_migration_safety review of 2 files"
+	description: Review db_migration_safety
+	subagent_type: db-expert
 	prompt: "@.deepwork/tmp/review_instructions/3847291.md"
 ```
 

@@ -98,3 +98,12 @@ The Claude Code plugin is the primary distribution mechanism for DeepWork on the
 2. The skill MUST document how DeepWork Reviews work, including `.deepreview` config format, review strategies (`individual`, `matches_together`, `all_changed_files`), and how changed files are detected.
 3. The skill MUST explain how DeepSchemas automatically generate synthetic review rules.
 4. The skill MUST describe workflow quality gates and how `finished_step` triggers reviews on step outputs.
+
+### PLUG-REQ-001.14: Default Reviewer Subagent
+
+1. The plugin MUST ship a default reviewer subagent at `plugins/claude/agents/reviewer.md`.
+2. The agent's `model` frontmatter field MUST be set to `sonnet` to reduce per-review cost relative to the parent session's model.
+3. The agent's `tools` frontmatter field MUST include at minimum `Read`, `Grep`, `Glob`, and `Bash`, plus DeepWork MCP tools needed for review completion (`mark_review_as_passed`) in both the production (`mcp__plugin_deepwork_deepwork__*`) and development (`mcp__deepwork-dev__*`) MCP server prefixes.
+4. The agent body MUST instruct the subagent to read the instruction file from the user prompt, perform the review against the criteria in that file, and call `mark_review_as_passed` to report results.
+5. The agent body MUST instruct the subagent not to edit files and not to explore beyond what the review instructions direct.
+6. When the review formatter renders tasks with no per-rule agent persona specified (`agent_name` is `None`), it MUST default to `"reviewer"` as the `subagent_type` (see REVIEW-REQ-006.3.3c).
