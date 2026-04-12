@@ -13,7 +13,8 @@ Normalized Format:
         - session_id: str
         - transcript_path: str
         - cwd: str
-        - event: str (normalized: 'after_agent', 'before_tool', 'before_prompt')
+        - event: str (normalized: 'after_agent', 'before_tool', 'before_prompt',
+          'session_start', 'session_end', 'after_tool', 'before_model', 'after_model')
         - tool_name: str (normalized: 'write_file', 'shell', etc.)
         - tool_input: dict
         - prompt: str (for agent events)

@@ -250,12 +250,12 @@ After the script runs, the skill prompts the user to describe what the agent is 
 Fills in key files in the LearningAgent directory — initial topics and/or learnings if the user provides seed knowledge about the domain.
 
 #### learn
-Runs the full learning cycle on all sessions needing it. The skill takes no arguments — any text after `learn` is ignored. Sessions are processed sequentially (not in parallel) to avoid conflicts when the same agent appears in multiple sessions. Workflow:
-1. Uses `!`find ...`` to inject a list of all paths containing a `needs_learning_as_of_timestamp` file into the prompt
-2. For each such folder, spawns a Task with the `LearningAgentExpert` agent using **Sonnet model** to run the `identify` skill
-3. After identification completes, spawns a Task with the `LearningAgentExpert` to run `investigate-issues` then `incorporate-learnings` in sequence
+Runs the full learning cycle on all sessions needing it. The skill takes no arguments. Workflow:
+1. Uses a script to inject a list of all paths containing a `needs_learning_as_of_timestamp` file into the prompt
+2. Spawns an Agent per session with the `LearningAgentExpert` agent using **Sonnet model** to run the `identify` skill — **all run in parallel**
+3. After identification completes, skips sessions where zero issues were found; for remaining sessions, spawns an Agent per session to run `investigate-issues` then `incorporate-learnings` in sequence — **sessions for different agents run in parallel; sessions for the same agent run serially**
 
-If no pending sessions are found (or the `.deepwork/tmp/agent_sessions/` directory is missing), the skill informs the user and stops. If a sub-skill Task fails for a session, the skill logs the failure, skips that session, continues processing remaining sessions, and does NOT mark `needs_learning_as_of_timestamp` as resolved. On completion, the skill outputs a summary containing total sessions processed, total issues identified, list of agents updated, key learnings per agent, and any skipped sessions with reasons. The `learn` skill itself MUST NOT modify agent files directly — all knowledge base updates are delegated to the sub-skills.
+If no pending sessions are found (or the `.deepwork/tmp/agent_sessions/` directory is missing), the skill informs the user and stops. If a sub-skill Agent fails for a session, the skill logs the failure, skips that session, continues processing remaining sessions, and does NOT mark `needs_learning_as_of_timestamp` as resolved. On completion, the skill outputs a summary containing total sessions processed, total issues identified, list of agents updated, key learnings per agent, and any skipped sessions with reasons. The `learn` skill itself MUST NOT modify agent files directly — all knowledge base updates are delegated to the sub-skills.
 
 #### setup
 Configures project permissions for the LearningAgents plugin. Adds required Bash and file access rules to `.claude/settings.json` so hooks and scripts can run without manual approval.

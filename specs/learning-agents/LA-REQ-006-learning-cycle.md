@@ -31,7 +31,7 @@ For each pending session, the skill MUST run the learning cycle in three sequent
 2. **Investigate**: MUST spawn an Agent to run the `investigate-issues` skill on the session folder
 3. **Incorporate**: MUST spawn an Agent to run the `incorporate-learnings` skill on the session folder
 
-The investigate and incorporate phases MAY be combined into a single Agent invocation, but they MUST execute in that order.
+The investigate and incorporate phases MUST be combined into a single Agent invocation, and they MUST execute in that order.
 
 ### LA-REQ-006.6: Agent Tool Usage for Sub-Skills
 

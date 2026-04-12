@@ -128,7 +128,6 @@ def _task_description(task: ReviewTask) -> str:
     return f"Review {prefix}{task.rule_name}"
 
 
-
 def _scope_prefix(task: ReviewTask) -> str:
     """Derive a short scope prefix from the task's source_location.
 
