@@ -70,15 +70,15 @@ class TestFormatForClaude:
         assert 'name: "string_rule review of inline content"' in result
         assert "0 files" not in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3b).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3c).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_default_subagent_type_when_no_agent(self, tmp_path: Path) -> None:
         task = _make_task(agent_name=None)
         file_path = tmp_path / "instructions.md"
         result = format_for_claude([(task, file_path)], tmp_path)
-        assert "subagent_type: general-purpose" in result
+        assert "subagent_type: reviewer" in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3b).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3c).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_custom_subagent_type(self, tmp_path: Path) -> None:
         task = _make_task(agent_name="security-expert")
@@ -86,7 +86,7 @@ class TestFormatForClaude:
         result = format_for_claude([(task, file_path)], tmp_path)
         assert "subagent_type: security-expert" in result
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3c).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3b).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_description_field_present(self, tmp_path: Path) -> None:
         task = _make_task(rule_name="py_review")

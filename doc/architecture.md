@@ -105,6 +105,8 @@ deepwork/                       # DeepWork tool repository
 │   ├── claude/                 # Claude Code plugin
 │   │   ├── .claude-plugin/plugin.json
 │   │   ├── README_REVIEWS.md   # Review system documentation
+│   │   ├── agents/              # Subagent definitions (e.g., reviewer.md)
+│   │   │   └── reviewer.md     # Default review subagent (Sonnet, minimal instructions)
 │   │   ├── example_reviews/    # Example review instruction files
 │   │   │   ├── prompt_best_practices.md
 │   │   │   └── suggest_new_reviews.md
