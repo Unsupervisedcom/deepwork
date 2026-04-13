@@ -4,7 +4,7 @@ Validates requirements: LA-REQ-001, LA-REQ-001.1, LA-REQ-001.2, LA-REQ-001.3,
 LA-REQ-001.4, LA-REQ-001.5, LA-REQ-001.6, LA-REQ-001.7, LA-REQ-001.8.
 
 Each test class maps to a numbered requirement section in
-specs/learning-agents/LA-REQ-001-plugin-structure.md.
+doc/specs/learning-agents/LA-REQ-001-plugin-structure.md.
 
 Only deterministic, boolean-verifiable requirements have tests here.
 """

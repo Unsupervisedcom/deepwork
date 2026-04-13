@@ -1,7 +1,7 @@
 """Tests for the Claude Code plugin — validates PLUG-REQ-001.
 
 Each test class maps to a numbered requirement section in
-specs/deepwork/cli_plugins/PLUG-REQ-001-claude-code-plugin.md.
+doc/specs/deepwork/cli_plugins/PLUG-REQ-001-claude-code-plugin.md.
 
 Requirements that need judgment to evaluate (e.g., "skill MUST instruct the
 agent to do X") are validated by review rules in .deepreview, not by tests.

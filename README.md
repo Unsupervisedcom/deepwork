@@ -297,7 +297,7 @@ requirements_traceability:
   review:
     strategy: all_changed_files
     instructions: |
-      This project keeps formal requirements in specs/.
+      This project keeps formal requirements in doc/specs/.
       Verify that every requirement has a corresponding
       automated test or review rule that enforces it.
       Flag any requirement missing traceability.
