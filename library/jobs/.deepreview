@@ -51,7 +51,7 @@ library_job_portability:
         (e.g., `.repos/acme/api/` or `/code/myproject/`)
 
       Acceptable: relative paths within the job directory (e.g., `templates/bar.yml`,
-      `templates/bar.yml`) and generic placeholders like `<project_root>`.
+      `conventions.md`) and generic placeholders like `<project_root>`.
 
       ## Personal and Private Information
 
