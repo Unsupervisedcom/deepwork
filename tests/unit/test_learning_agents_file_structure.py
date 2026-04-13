@@ -9,7 +9,7 @@ LA-REQ-005.6, LA-REQ-005.7, LA-REQ-005.8, LA-REQ-005.9, LA-REQ-005.10, LA-REQ-00
 LA-REQ-005.12, LA-REQ-005.13.
 
 Each test class maps to a numbered requirement section in the corresponding
-spec under specs/learning-agents/.
+spec under doc/specs/learning-agents/.
 
 Only deterministic, boolean-verifiable requirements have tests here.
 Judgment-based requirements are covered by DeepSchemas on the relevant skill files.

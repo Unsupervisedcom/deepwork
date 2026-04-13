@@ -13,7 +13,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
 # Configurable directories
-SPEC_DIR="specs"
+SPEC_DIR="doc/specs"
 TEST_DIR="tests"
 
 TMPDIR_TRACE=$(mktemp -d)

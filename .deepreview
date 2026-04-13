@@ -118,7 +118,7 @@ requirements_traceability:
     instructions: |
       Review the changed files for requirements traceability.
 
-      This project keeps formal requirements in `specs/` organized by domain.
+      This project keeps formal requirements in `doc/specs/` organized by domain.
       Each file follows the naming pattern `{PREFIX}-REQ-NNN-<topic>.md` where
       PREFIX is one of: DW-REQ, JOBS-REQ, REVIEW-REQ, LA-REQ, PLUG-REQ.
       Requirements are individually numbered (e.g. JOBS-REQ-004.1). Requirements
@@ -192,12 +192,12 @@ requirements_traceability:
       `assert "--platform" in args` can verify exactly. If the requirement
       specifies a concrete value, path, or structure, use a test.
 
-      See specs/validating_requirements_with_rules.md for more information.
+      See doc/specs/validating_requirements_with_rules.md for more information.
 
       ## Review checklist
 
       1. Check that any new or changed end-user functionality has a
-         corresponding requirement in `specs/`.
+         corresponding requirement in `doc/specs/`.
       2. Check that every requirement touched by this change has at least
          one automated test OR at least one `.deepreview` rule validating
          it. **Verify the mechanism matches the requirement type** — flag
