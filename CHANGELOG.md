@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Deprecated the `steps/` folder pattern for job definitions — step instructions are now inlined in `job.yml`; moved supplemental reference files from `steps/` to job root directories
 - Repair workflow now instructs agents to `git rm` step instruction files after inlining
+- Moved `specs/` to `doc/specs/` and consolidated `docs/` into `doc/` to reduce root directory clutter
+
+### Removed
+
+- `coverage_report.md` (stale snapshot)
+- `job_refactor.md` (superseded planning notes)
+- `CLAUDE_PLUGINS_README.md` (redundant with README.md)
 
 ### Fixed
 
