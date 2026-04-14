@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+### Fixed
+
+### Removed
+## [0.13.8] - 2026-04-14
+
+### Added
+
+### Changed
+
 - Renamed default reviewer agent from `reviewer` to `deepwork:reviewer` (plugin-namespaced) in review instructions output
 - `/review` skill now checks for `deepwork:reviewer` agent availability before proceeding and directs users to `/reload-plugins` if missing
 
@@ -516,7 +525,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.7...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.8...HEAD
+[0.13.8]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.8
 [0.13.7]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.7
 [0.13.6]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.6
 [0.13.5]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.5
