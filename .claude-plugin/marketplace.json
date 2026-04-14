@@ -11,7 +11,7 @@
     {
       "name": "deepwork",
       "description": "Framework for AI-powered multi-step workflows with quality gates",
-      "version": "0.13.5",
+      "version": "0.13.6",
       "source": "./plugins/claude",
       "author": {
         "name": "DeepWork"
