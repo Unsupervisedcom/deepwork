@@ -16,6 +16,14 @@ Run automated code reviews on the current branch based on `.deepreview` config f
 
 Only proceed past this section if the user wants to **run** reviews.
 
+## Pre-flight — Verify Agent Availability
+
+Before running reviews, check that the `deepwork:reviewer` agent is available. If it does not appear in the agents list (i.e., the Agent tool does not list `deepwork:reviewer` as a valid `subagent_type`), **STOP** and tell the user:
+
+> The `deepwork:reviewer` agent is not available. Please run `/reload-plugins` to pick up the latest plugin updates, then try again.
+
+Do not proceed with reviews until the agent is available.
+
 ## How to Run
 
 1. Call the `mcp__deepwork__get_review_instructions` tool directly:

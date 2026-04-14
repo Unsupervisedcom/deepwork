@@ -105,7 +105,7 @@ def format_for_claude(
             rel_path = file_path
 
         description = _task_description(task)
-        subagent_type = task.agent_name or "reviewer"
+        subagent_type = task.agent_name or "deepwork:reviewer"
 
         lines.append(f"description: {description}")
         lines.append(f"\tsubagent_type: {subagent_type}")
