@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+### Fixed
+
+### Removed
+## [0.13.6] - 2026-04-14
+
+### Added
+
+### Changed
+
 - Deprecated the `steps/` folder pattern for job definitions — step instructions are now inlined in `job.yml`; moved supplemental reference files from `steps/` to job root directories
 - Repair workflow now instructs agents to `git rm` step instruction files after inlining
 - Moved `specs/` to `doc/specs/` and consolidated `docs/` into `doc/` to reduce root directory clutter
@@ -495,7 +504,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.5...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.6...HEAD
+[0.13.6]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.6
 [0.13.5]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.5
 [0.13.4]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.4
 [0.13.3]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.3
