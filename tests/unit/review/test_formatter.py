@@ -46,7 +46,7 @@ class TestFormatForClaude:
         task = _make_task(agent_name=None)
         file_path = tmp_path / "instructions.md"
         result = format_for_claude([(task, file_path)], tmp_path)
-        assert "subagent_type: reviewer" in result
+        assert "subagent_type: deepwork:reviewer" in result
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.3.3c).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
