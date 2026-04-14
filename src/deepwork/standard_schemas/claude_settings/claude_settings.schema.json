@@ -61,6 +61,26 @@
             "statusMessage": {
               "type": "string",
               "description": "Custom spinner message displayed while the hook runs"
+            },
+            "if": {
+              "$ref": "#/$defs/permissionRule",
+              "description": "Only run this hook when the tool call matches this permission rule pattern. Only evaluated for tool events (PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, PermissionDenied); silently ignored on all other events. See https://code.claude.com/docs/en/hooks"
+            },
+            "asyncRewake": {
+              "type": "boolean",
+              "description": "Run this hook in the background and wake Claude when the process exits with code 2 (implies async: true)"
+            },
+            "once": {
+              "type": "boolean",
+              "description": "If true, runs once per session then removed"
+            },
+            "shell": {
+              "type": "string",
+              "enum": [
+                "bash",
+                "powershell"
+              ],
+              "description": "Shell interpreter to use (default: bash)"
             }
           }
         },
@@ -95,6 +115,14 @@
             "statusMessage": {
               "type": "string",
               "description": "Custom spinner message displayed while the hook runs"
+            },
+            "if": {
+              "$ref": "#/$defs/permissionRule",
+              "description": "Only run this hook when the tool call matches this permission rule pattern. Only evaluated for tool events (PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, PermissionDenied); silently ignored on all other events. See https://code.claude.com/docs/en/hooks"
+            },
+            "once": {
+              "type": "boolean",
+              "description": "If true, runs once per session then removed"
             }
           }
         },
@@ -129,6 +157,14 @@
             "statusMessage": {
               "type": "string",
               "description": "Custom spinner message displayed while the hook runs"
+            },
+            "if": {
+              "$ref": "#/$defs/permissionRule",
+              "description": "Only run this hook when the tool call matches this permission rule pattern. Only evaluated for tool events (PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, PermissionDenied); silently ignored on all other events. See https://code.claude.com/docs/en/hooks"
+            },
+            "once": {
+              "type": "boolean",
+              "description": "If true, runs once per session then removed"
             }
           }
         },
@@ -174,6 +210,14 @@
             "statusMessage": {
               "type": "string",
               "description": "Custom spinner message displayed while the hook runs"
+            },
+            "if": {
+              "$ref": "#/$defs/permissionRule",
+              "description": "Only run this hook when the tool call matches this permission rule pattern. Only evaluated for tool events (PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, PermissionDenied); silently ignored on all other events. See https://code.claude.com/docs/en/hooks"
+            },
+            "once": {
+              "type": "boolean",
+              "description": "If true, runs once per session then removed"
             }
           }
         }
@@ -677,6 +721,13 @@
             "$ref": "#/$defs/hookMatcher"
           }
         },
+        "PermissionDenied": {
+          "type": "array",
+          "description": "Hooks that run when auto mode denies a tool call. See https://code.claude.com/docs/en/hooks",
+          "items": {
+            "$ref": "#/$defs/hookMatcher"
+          }
+        },
         "Notification": {
           "type": "array",
           "description": "Hooks that trigger on notifications",
@@ -694,6 +745,13 @@
         "Stop": {
           "type": "array",
           "description": "Hooks that run when agents finish responding. Does not run on user interrupt",
+          "items": {
+            "$ref": "#/$defs/hookMatcher"
+          }
+        },
+        "StopFailure": {
+          "type": "array",
+          "description": "Hooks that run when a turn ends due to an API error. See https://code.claude.com/docs/en/hooks",
           "items": {
             "$ref": "#/$defs/hookMatcher"
           }
@@ -747,6 +805,13 @@
             "$ref": "#/$defs/hookMatcher"
           }
         },
+        "TaskCreated": {
+          "type": "array",
+          "description": "Hooks that run when a task is created via TaskCreate. See https://code.claude.com/docs/en/hooks",
+          "items": {
+            "$ref": "#/$defs/hookMatcher"
+          }
+        },
         "TaskCompleted": {
           "type": "array",
           "description": "Hooks that run when a task is being marked as completed. Exit code 2 prevents completion and sends feedback. Does not support matchers. See https://code.claude.com/docs/en/hooks#taskcompleted",
@@ -771,6 +836,20 @@
         "ConfigChange": {
           "type": "array",
           "description": "Hooks that run when settings, managed settings, or skill files change during a session. Supports matchers: user_settings, project_settings, local_settings, policy_settings, skills. Command handlers only. Exit code 2 blocks the change (except policy_settings which is audit-only). See https://code.claude.com/docs/en/hooks#configchange",
+          "items": {
+            "$ref": "#/$defs/hookMatcher"
+          }
+        },
+        "FileChanged": {
+          "type": "array",
+          "description": "Hooks that run when a watched file changes on disk. See https://code.claude.com/docs/en/hooks",
+          "items": {
+            "$ref": "#/$defs/hookMatcher"
+          }
+        },
+        "CwdChanged": {
+          "type": "array",
+          "description": "Hooks that run when the working directory changes. See https://code.claude.com/docs/en/hooks",
           "items": {
             "$ref": "#/$defs/hookMatcher"
           }
