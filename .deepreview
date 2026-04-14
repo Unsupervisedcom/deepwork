@@ -11,6 +11,7 @@ prompt_best_practices:
       - "plugins/**/skills/**/*.md"
       - "learning_agents/skills/**/*.md"   # learning_agents plugin skills are prompt-heavy
       - "learning_agents/agents/**/*.md"   # agent persona definitions
+      - "plugins/**/agents/**/*.md"          # plugin agent definitions are prompt-heavy
       - "platform/**/*.md"
       - "src/deepwork/standard_jobs/**/*.md"
       - "library/jobs/**/*.md"  # library job step instructions are prompt-heavy files
