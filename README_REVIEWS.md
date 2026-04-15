@@ -123,6 +123,12 @@ DeepSchema-generated reviews automatically populate `reference_files` from the s
 
 The `strategy` field controls how matched files are grouped into review tasks.
 
+| Strategy | Reviewer sees | Best for |
+|----------|--------------|----------|
+| `individual` | One file at a time | Per-file linting, style checks |
+| `matches_together` | All matched files together | Cross-file consistency, migration safety |
+| `all_changed_files` | _Every_ changed file in the changeset (tripwire) | Security audits, broad impact analysis |
+
 ### `individual` — One review per file
 
 Each changed file that matches the rule gets its own review task. The reviewing agent sees only that one file.

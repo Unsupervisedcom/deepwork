@@ -256,9 +256,12 @@ Reviews are `.deepreview` config files placed anywhere in your project, scoped t
 **Teams own their own rules.** The security team puts a `.deepreview` in `src/auth/`, the platform team in `infrastructure/`, the docs team in `docs/`. Each file is independent and scoped to its directory.
 
 **Smart file grouping.** Three review strategies control what each reviewer sees:
-- **`individual`** — one review per file (best for per-file linting and style checks)
-- **`matches_together`** — all matched files reviewed as a group (best for cross-file consistency)
-- **`all_changed_files`** — a tripwire: if any sensitive file changes, the reviewer sees _every_ changed file in the branch (best for security audits)
+
+| Strategy | Reviewer sees | Best for |
+|----------|--------------|----------|
+| `individual` | One file at a time | Per-file linting, style checks |
+| `matches_together` | All matched files together | Cross-file consistency, migration safety |
+| `all_changed_files` | _Every_ changed file in the branch (tripwire) | Security audits, broad impact analysis |
 
 **Pass caching.** When a review passes, it's marked as clean. It won't re-run until one of its reviewed files actually changes — so reviews stay fast even as your rule set grows.
 
