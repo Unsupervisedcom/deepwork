@@ -6,8 +6,6 @@ import pytest
 import yaml
 
 from deepwork.tool_requirements.config import (
-    Requirement,
-    ToolPolicy,
     ToolRequirementsError,
     parse_policy_file,
 )

@@ -56,12 +56,16 @@ def tool_requirements_hook(hook_input: HookInput) -> HookOutput:
 
     # Send check request to sidecar
     try:
-        response = _http_post(sidecar["port"], "/check", {
-            "tool_name": hook_input.tool_name,
-            "tool_input": hook_input.tool_input,
-            "raw_tool_name": raw_tool,
-            "session_id": session_id,
-        })
+        response = _http_post(
+            sidecar["port"],
+            "/check",
+            {
+                "tool_name": hook_input.tool_name,
+                "tool_input": hook_input.tool_input,
+                "raw_tool_name": raw_tool,
+                "session_id": session_id,
+            },
+        )
     except Exception as e:
         return _deny(
             f"DeepWork Tool Requirements: Failed to reach MCP server sidecar: {e}. "

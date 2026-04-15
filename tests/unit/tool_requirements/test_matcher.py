@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import pytest
-
 from deepwork.tool_requirements.config import Requirement, ToolPolicy
 from deepwork.tool_requirements.matcher import match_policies, merge_requirements
 

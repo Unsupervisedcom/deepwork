@@ -124,24 +124,28 @@ def _build_prompt(
 
     if justifications:
         parts.append("")
-        parts.append("The agent has provided justifications for why certain requirements should pass:")
+        parts.append(
+            "The agent has provided justifications for why certain requirements should pass:"
+        )
         for req_id, justification in justifications.items():
             parts.append(f"- {req_id}: {justification}")
 
-    parts.extend([
-        "",
-        "For each requirement, determine if the tool call PASSES or FAILS.",
-        "Consider RFC 2119 keywords:",
-        "- MUST/MUST NOT: strict pass/fail — any violation is a failure",
-        "- SHOULD/SHOULD NOT: fail only if the violation is clear and easily avoidable",
-        "- MAY: always pass (informational only)",
-        "",
-        "If justifications are provided, consider them when making your determination.",
-        "A good justification can override a SHOULD violation but not a MUST violation.",
-        "",
-        "Return ONLY a JSON array with no other text:",
-        '[{"requirement_id": "...", "passed": true/false, "explanation": "..."}]',
-    ])
+    parts.extend(
+        [
+            "",
+            "For each requirement, determine if the tool call PASSES or FAILS.",
+            "Consider RFC 2119 keywords:",
+            "- MUST/MUST NOT: strict pass/fail — any violation is a failure",
+            "- SHOULD/SHOULD NOT: fail only if the violation is clear and easily avoidable",
+            "- MAY: always pass (informational only)",
+            "",
+            "If justifications are provided, consider them when making your determination.",
+            "A good justification can override a SHOULD violation but not a MUST violation.",
+            "",
+            "Return ONLY a JSON array with no other text:",
+            '[{"requirement_id": "...", "passed": true/false, "explanation": "..."}]',
+        ]
+    )
 
     return "\n".join(parts)
 
@@ -163,7 +167,7 @@ def _parse_result(
             if not isinstance(obj, dict):
                 # Raw JSON array — use as-is
                 result_text = line
-                continue
+                break
             # stream-json emits objects with "type" field
             if obj.get("type") == "result":
                 result_text = obj.get("result", "")
@@ -224,12 +228,12 @@ def _parse_result(
 
 
 def _extract_json_array(text: str) -> list[dict[str, Any]] | None:
-    """Extract a JSON array from text that may contain surrounding prose."""
+    """Extract a JSON array of dicts from text that may contain surrounding prose."""
     # Try direct parse first
     try:
         parsed = json.loads(text.strip())
         if isinstance(parsed, list):
-            return parsed
+            return [item for item in parsed if isinstance(item, dict)]
     except json.JSONDecodeError:
         pass
 
@@ -249,7 +253,7 @@ def _extract_json_array(text: str) -> list[dict[str, Any]] | None:
                 try:
                     parsed = json.loads(text[start : i + 1])
                     if isinstance(parsed, list):
-                        return parsed
+                        return [item for item in parsed if isinstance(item, dict)]
                 except json.JSONDecodeError:
                     return None
 

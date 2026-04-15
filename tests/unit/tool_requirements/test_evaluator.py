@@ -2,11 +2,8 @@
 
 import json
 
-import pytest
-
 from deepwork.tool_requirements.config import Requirement
 from deepwork.tool_requirements.evaluator import (
-    RequirementVerdict,
     _build_prompt,
     _extract_json_array,
     _parse_result,
@@ -25,7 +22,9 @@ class TestBuildPrompt:
     def test_includes_justifications_when_present(self) -> None:
         reqs = {"r1": Requirement(rule="MUST check")}
         prompt = _build_prompt(
-            reqs, "shell", {"command": "ls"},
+            reqs,
+            "shell",
+            {"command": "ls"},
             justifications={"r1": "This is safe because..."},
         )
         assert "This is safe because..." in prompt

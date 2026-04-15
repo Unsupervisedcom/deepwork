@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from fastmcp import Context, FastMCP
 
@@ -573,15 +573,15 @@ def create_server(
             import http.client
             import json as json_mod
 
-            conn = http.client.HTTPConnection(
-                "127.0.0.1", sidecar["port"], timeout=60
-            )
+            conn = http.client.HTTPConnection("127.0.0.1", sidecar["port"], timeout=60)
             try:
-                payload = json_mod.dumps({
-                    "tool_name": tool_name,
-                    "tool_input": tool_input,
-                    "policy_justification": policy_justification,
-                }).encode("utf-8")
+                payload = json_mod.dumps(
+                    {
+                        "tool_name": tool_name,
+                        "tool_input": tool_input,
+                        "policy_justification": policy_justification,
+                    }
+                ).encode("utf-8")
                 conn.request(
                     "POST",
                     "/appeal",
@@ -589,7 +589,7 @@ def create_server(
                     headers={"Content-Type": "application/json"},
                 )
                 response = conn.getresponse()
-                return json_mod.loads(response.read())
+                return cast(dict[str, Any], json_mod.loads(response.read()))
             finally:
                 conn.close()
         except Exception as e:

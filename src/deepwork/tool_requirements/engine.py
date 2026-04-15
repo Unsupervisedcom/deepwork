@@ -91,12 +91,12 @@ class ToolRequirementsEngine:
 
         # Build error message with ALL failures
         error_lines = ["Tool call blocked by the following policy violations:\n"]
-        for f in failures:
-            req = all_requirements.get(f.requirement_id)
+        for failure in failures:
+            req = all_requirements.get(failure.requirement_id)
             no_exc = ""
             if req and req.no_exception:
                 no_exc = " [NO EXCEPTION - cannot be appealed]"
-            error_lines.append(f"- **{f.requirement_id}**{no_exc}: {f.explanation}")
+            error_lines.append(f"- **{failure.requirement_id}**{no_exc}: {failure.explanation}")
 
         error_lines.append(
             "\nTo appeal, call the `appeal_tool_requirement` MCP tool with:\n"
@@ -155,8 +155,7 @@ class ToolRequirementsEngine:
             return AppealResult(
                 passed=False,
                 reason=(
-                    "Cannot appeal no_exception requirements: "
-                    + ", ".join(no_exception_blocked)
+                    "Cannot appeal no_exception requirements: " + ", ".join(no_exception_blocked)
                 ),
                 no_exception_blocked=no_exception_blocked,
             )
@@ -177,10 +176,12 @@ class ToolRequirementsEngine:
             # Cache the approval so the retried tool call passes
             cache_key = self.cache.make_key(tool_name, tool_input)
             self.cache.approve(cache_key)
-            return AppealResult(passed=True, reason="Appeal accepted — you may retry the tool call.")
+            return AppealResult(
+                passed=True, reason="Appeal accepted — you may retry the tool call."
+            )
 
         error_lines = ["Appeal denied. The following checks still fail:\n"]
-        for f in failures:
-            error_lines.append(f"- **{f.requirement_id}**: {f.explanation}")
+        for failure in failures:
+            error_lines.append(f"- **{failure.requirement_id}**: {failure.explanation}")
 
         return AppealResult(passed=False, reason="\n".join(error_lines))

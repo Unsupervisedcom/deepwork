@@ -8,10 +8,12 @@ Uses stdlib http.server — no external dependencies.
 
 from __future__ import annotations
 
+import asyncio
 import atexit
 import json
 import logging
 import os
+import re
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -27,7 +29,7 @@ logger = logging.getLogger("deepwork.tool_requirements")
 class _SidecarHandler(BaseHTTPRequestHandler):
     """HTTP request handler for sidecar endpoints."""
 
-    engine: ToolRequirementsEngine  # Set via partial/class attr
+    engine: ToolRequirementsEngine  # Injected by start_sidecar via type()
 
     def do_POST(self) -> None:
         try:
@@ -45,6 +47,14 @@ class _SidecarHandler(BaseHTTPRequestHandler):
         else:
             self._respond(404, {"error": f"Unknown endpoint: {self.path}"})
 
+    def _run_async(self, coro: Any) -> Any:
+        """Run an async coroutine in a new event loop, ensuring cleanup."""
+        loop = asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+
     def _handle_check(self, data: dict[str, Any]) -> None:
         tool_name = data.get("tool_name", "")
         tool_input = data.get("tool_input", {})
@@ -53,27 +63,27 @@ class _SidecarHandler(BaseHTTPRequestHandler):
             self._respond(400, {"error": "Missing tool_name"})
             return
 
-        import asyncio
-
         try:
-            loop = asyncio.new_event_loop()
-            result = loop.run_until_complete(
-                self.engine.check(tool_name, tool_input)
-            )
-            loop.close()
+            result = self._run_async(self.engine.check(tool_name, tool_input))
         except Exception as e:
             logger.exception("Error checking tool requirements")
-            self._respond(500, {
-                "decision": "deny",
-                "reason": f"Tool requirements evaluation error: {e}",
-            })
+            self._respond(
+                500,
+                {
+                    "decision": "deny",
+                    "reason": f"Tool requirements evaluation error: {e}",
+                },
+            )
             return
 
-        self._respond(200, {
-            "decision": "allow" if result.allowed else "deny",
-            "reason": result.reason,
-            "failed_checks": result.failed_checks,
-        })
+        self._respond(
+            200,
+            {
+                "decision": "allow" if result.allowed else "deny",
+                "reason": result.reason,
+                "failed_checks": result.failed_checks,
+            },
+        )
 
     def _handle_appeal(self, data: dict[str, Any]) -> None:
         tool_name = data.get("tool_name", "")
@@ -87,27 +97,29 @@ class _SidecarHandler(BaseHTTPRequestHandler):
             self._respond(400, {"error": "Missing policy_justification"})
             return
 
-        import asyncio
-
         try:
-            loop = asyncio.new_event_loop()
-            result = loop.run_until_complete(
+            result = self._run_async(
                 self.engine.appeal(tool_name, tool_input, justifications)
             )
-            loop.close()
         except Exception as e:
             logger.exception("Error processing appeal")
-            self._respond(500, {
-                "passed": False,
-                "reason": f"Appeal evaluation error: {e}",
-            })
+            self._respond(
+                500,
+                {
+                    "passed": False,
+                    "reason": f"Appeal evaluation error: {e}",
+                },
+            )
             return
 
-        self._respond(200, {
-            "passed": result.passed,
-            "reason": result.reason,
-            "no_exception_blocked": result.no_exception_blocked,
-        })
+        self._respond(
+            200,
+            {
+                "passed": result.passed,
+                "reason": result.reason,
+                "no_exception_blocked": result.no_exception_blocked,
+            },
+        )
 
     def _respond(self, status: int, body: dict[str, Any]) -> None:
         self.send_response(status)
@@ -192,6 +204,11 @@ def start_sidecar(project_root: Path) -> SidecarInfo:
     return SidecarInfo(pid=pid, port=port, port_file=port_file)
 
 
+def _is_safe_session_id(session_id: str) -> bool:
+    """Validate that session_id is safe for use in filenames."""
+    return bool(re.match(r"^[a-zA-Z0-9_-]+$", session_id))
+
+
 def register_session(project_root: Path, session_id: str) -> None:
     """Register a session-to-sidecar mapping.
 
@@ -202,6 +219,9 @@ def register_session(project_root: Path, session_id: str) -> None:
         project_root: Project root directory.
         session_id: The Claude Code session ID.
     """
+    if not _is_safe_session_id(session_id):
+        return
+
     pid = os.getpid()
     sidecar_dir = project_root / ".deepwork" / "tmp" / "tool_req_sidecar"
 
@@ -238,7 +258,7 @@ def discover_sidecar(project_root: Path, session_id: str) -> dict[str, Any] | No
         return None
 
     # Try session-specific mapping first
-    if session_id:
+    if session_id and _is_safe_session_id(session_id):
         session_file = sidecar_dir / f"session_{session_id}.json"
         info = _read_and_validate_port_file(session_file)
         if info is not None:

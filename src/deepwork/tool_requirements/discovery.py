@@ -69,8 +69,8 @@ def _resolve_inheritance(policies: list[ToolPolicy]) -> list[ToolPolicy]:
             return resolved[name]
 
         if name not in by_name:
-            logger.warning("Policy '%s' extends unknown policy '%s'", name, name)
-            return by_name.get(name, ToolPolicy(name=name, source_path=Path()))
+            logger.warning("Policy '%s' not found", name)
+            return ToolPolicy(name=name, source_path=Path())
 
         policy = by_name[name]
 
@@ -84,9 +84,7 @@ def _resolve_inheritance(policies: list[ToolPolicy]) -> list[ToolPolicy]:
         merged_requirements: dict[str, Requirement] = {}
         for parent_name in policy.extends:
             if parent_name not in by_name:
-                logger.warning(
-                    "Policy '%s' extends unknown policy '%s'", policy.name, parent_name
-                )
+                logger.warning("Policy '%s' extends unknown policy '%s'", policy.name, parent_name)
                 continue
             parent = resolve(parent_name, visited)
             merged_requirements.update(parent.requirements)

@@ -1,11 +1,8 @@
 """Tests for the tool requirements PreToolUse hook."""
 
-import json
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-from deepwork.hooks.wrapper import HookInput, HookOutput, NormalizedEvent, Platform
+from deepwork.hooks.wrapper import HookInput, NormalizedEvent, Platform
 
 
 class TestToolRequirementsHook:
@@ -42,15 +39,6 @@ class TestToolRequirementsHook:
         result = tool_requirements_hook(hook_input)
         assert result.decision == ""
 
-    def test_loop_prevention_skips_appeal_tool(self) -> None:
-        from deepwork.hooks.tool_requirements import tool_requirements_hook
-
-        hook_input = self._make_input(
-            raw_tool_name="mcp__plugin_deepwork_deepwork__appeal_tool_requirement"
-        )
-        result = tool_requirements_hook(hook_input)
-        assert result.decision == ""
-
     def test_loop_prevention_skips_all_appeal_prefixes(self) -> None:
         from deepwork.hooks.tool_requirements import tool_requirements_hook
 
@@ -77,9 +65,7 @@ class TestToolRequirementsHook:
 
     @patch("deepwork.hooks.tool_requirements._http_post")
     @patch("deepwork.hooks.tool_requirements.discover_sidecar")
-    def test_allow_on_sidecar_allow(
-        self, mock_discover: MagicMock, mock_post: MagicMock
-    ) -> None:
+    def test_allow_on_sidecar_allow(self, mock_discover: MagicMock, mock_post: MagicMock) -> None:
         from deepwork.hooks.tool_requirements import tool_requirements_hook
 
         mock_discover.return_value = {"pid": 123, "port": 9999}
@@ -92,9 +78,7 @@ class TestToolRequirementsHook:
 
     @patch("deepwork.hooks.tool_requirements._http_post")
     @patch("deepwork.hooks.tool_requirements.discover_sidecar")
-    def test_deny_on_sidecar_deny(
-        self, mock_discover: MagicMock, mock_post: MagicMock
-    ) -> None:
+    def test_deny_on_sidecar_deny(self, mock_discover: MagicMock, mock_post: MagicMock) -> None:
         from deepwork.hooks.tool_requirements import tool_requirements_hook
 
         mock_discover.return_value = {"pid": 123, "port": 9999}
@@ -107,7 +91,10 @@ class TestToolRequirementsHook:
         result = tool_requirements_hook(hook_input)
 
         assert result.raw_output["hookSpecificOutput"]["permissionDecision"] == "deny"
-        assert "Policy violation" in result.raw_output["hookSpecificOutput"]["permissionDecisionReason"]
+        assert (
+            "Policy violation"
+            in result.raw_output["hookSpecificOutput"]["permissionDecisionReason"]
+        )
 
     @patch("deepwork.hooks.tool_requirements._http_post")
     @patch("deepwork.hooks.tool_requirements.discover_sidecar")
@@ -123,4 +110,6 @@ class TestToolRequirementsHook:
         result = tool_requirements_hook(hook_input)
 
         assert result.raw_output["hookSpecificOutput"]["permissionDecision"] == "deny"
-        assert "Failed to reach" in result.raw_output["hookSpecificOutput"]["permissionDecisionReason"]
+        assert (
+            "Failed to reach" in result.raw_output["hookSpecificOutput"]["permissionDecisionReason"]
+        )
