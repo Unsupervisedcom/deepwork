@@ -1,4 +1,4 @@
-"""Tests for the tool requirements PreToolUse hook."""
+"""Tests for the tool requirements PreToolUse hook (DW-REQ-012.9, PLUG-REQ-001.15)."""
 
 from unittest.mock import MagicMock, patch
 
@@ -39,6 +39,8 @@ class TestToolRequirementsHook:
         result = tool_requirements_hook(hook_input)
         assert result.decision == ""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-012.9.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_loop_prevention_skips_all_appeal_prefixes(self) -> None:
         from deepwork.hooks.tool_requirements import tool_requirements_hook
 
@@ -51,6 +53,8 @@ class TestToolRequirementsHook:
             result = tool_requirements_hook(hook_input)
             assert result.decision == "", f"Failed for {prefix}"
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-012.9.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.hooks.tool_requirements.discover_sidecar")
     def test_fail_closed_when_no_sidecar(self, mock_discover: MagicMock) -> None:
         from deepwork.hooks.tool_requirements import tool_requirements_hook

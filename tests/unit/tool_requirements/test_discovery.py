@@ -1,4 +1,4 @@
-"""Tests for tool requirements discovery and inheritance."""
+"""Tests for tool requirements discovery (DW-REQ-012.2) and inheritance (DW-REQ-012.3)."""
 
 from pathlib import Path
 

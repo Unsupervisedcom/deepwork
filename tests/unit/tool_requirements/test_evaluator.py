@@ -1,4 +1,4 @@
-"""Tests for tool requirements LLM evaluator."""
+"""Tests for tool requirements LLM evaluator (DW-REQ-012.5)."""
 
 import json
 from unittest.mock import AsyncMock, patch

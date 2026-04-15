@@ -1,4 +1,4 @@
-"""Tests for tool requirements TTL cache."""
+"""Tests for tool requirements TTL cache (DW-REQ-012.8)."""
 
 import time
 from unittest.mock import patch

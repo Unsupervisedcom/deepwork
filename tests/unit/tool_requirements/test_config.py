@@ -1,4 +1,4 @@
-"""Tests for tool requirements config parsing."""
+"""Tests for tool requirements config parsing (DW-REQ-012.1)."""
 
 from pathlib import Path
 
