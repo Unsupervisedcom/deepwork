@@ -11,14 +11,20 @@ MARKETPLACE_SOURCE = {
     "repo": "Unsupervisedcom/deepwork",
 }
 PLUGIN_KEY = "deepwork@deepwork-plugins"
-MCP_PERMISSION = "mcp__plugin_deepwork_deepwork__*"
-# Permissions granting full access to .deepwork/ in every project.
-# Leading slash makes the path project-root-relative (per Claude Code docs),
-# so these rules apply to `.deepwork/**/*` in each project, not `~/.deepwork/`.
-DEEPWORK_DIR_PERMISSIONS = [
+# All permissions to add to settings.permissions.allow.
+ALLOW_PERMISSIONS = [
+    # MCP tools
+    "mcp__plugin_deepwork_deepwork__*",
+    # .deepwork/ directory access (leading slash = project-root-relative)
     "Read(/.deepwork/**/*)",
     "Write(/.deepwork/**/*)",
     "Edit(/.deepwork/**/*)",
+    # Bash commands the plugin routinely runs (uv cache glob covers hash-varying paths)
+    "Bash(deepwork:*)",
+    "Bash(uvx deepwork:*)",
+    "Bash(~/.cache/uv/archive-v0/*/bin/deepwork:*)",
+    "Bash(command -v uv)",
+    "Bash(uv --version)",
 ]
 
 
@@ -65,15 +71,10 @@ def claude_setup() -> list[str]:
         enabled_plugins[PLUGIN_KEY] = True
         changes.append(f"Enabled plugin '{PLUGIN_KEY}'")
 
-    # 3. Ensure MCP tool permission is in allow list
+    # 3. Ensure all required permissions are in allow list
     permissions = settings.setdefault("permissions", {})
     allow = permissions.setdefault("allow", [])
-    if MCP_PERMISSION not in allow:
-        allow.append(MCP_PERMISSION)
-        changes.append(f"Added '{MCP_PERMISSION}' to permissions.allow")
-
-    # 4. Ensure full access to .deepwork/ in every project
-    for perm in DEEPWORK_DIR_PERMISSIONS:
+    for perm in ALLOW_PERMISSIONS:
         if perm not in allow:
             allow.append(perm)
             changes.append(f"Added '{perm}' to permissions.allow")

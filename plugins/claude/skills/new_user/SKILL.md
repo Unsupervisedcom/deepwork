@@ -10,15 +10,65 @@ Guide a new user through what DeepWork can do and help them get started.
 
 ## Flow
 
-### 0. Run setup
+### 0. Check dependencies and run setup
 
-Before anything else, run the setup command to ensure the user's environment is configured:
+#### 0a. Check for `uv`
+
+The DeepWork MCP server requires `uv` (specifically `uvx`). Check if it is installed:
+
+```bash
+command -v uv
+```
+
+**If `uv` is NOT found**, install it:
+
+- On macOS/Linux:
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  ```
+- On Windows (PowerShell):
+  ```powershell
+  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+  ```
+
+After installing, verify it works:
+```bash
+uv --version
+```
+
+If `uv` was just installed, set `UV_WAS_INSTALLED=true` (you will need this later).
+
+#### 0b. Reload if `uv` was just installed
+
+If `UV_WAS_INSTALLED=true` (from step 0a), the MCP server could not have started when this session began because `uvx` was missing. Use `AskUserQuestion` to tell the user:
+
+> I just installed `uv`, which DeepWork's MCP server needs to run. For everything to work, please type `/reload-plugins` now, then come back and tell me it's done.
+
+Wait for the user to confirm they have reloaded. Do not proceed until they confirm.
+
+#### 0c. Run setup
+
+Run the setup command to configure Claude Code settings (marketplace, plugin, MCP permissions, auto-update):
 
 ```bash
 uvx deepwork setup
 ```
 
-This configures Claude Code settings (marketplace, plugin, MCP permissions, auto-update). Proceed regardless of the output.
+Proceed regardless of the output.
+
+#### 0d. Verify the MCP server is running
+
+Call `get_workflows` (using the `mcp__plugin_deepwork_deepwork__get_workflows` tool). If it succeeds, the server is healthy — continue. If it errors, tell the user:
+
+> The DeepWork MCP server isn't responding. This usually means `uv` isn't on your PATH or the plugin needs a restart. Try quitting Claude Code completely and reopening it, then run `/deepwork:new_user` again.
+
+Stop the onboarding if the server is not reachable — continuing without it will just produce more confusing errors.
+
+#### 0e. macOS note (macOS only)
+
+If the platform is macOS, briefly mention:
+
+> **Heads up**: during reviews or workflows that scan files, macOS may pop up permission dialogs for Photos, Dropbox, or other locations outside this project. These are safe to **deny** — DeepWork only needs access to your project directory and the review will still complete fine.
 
 ### 1. GitHub star (optional)
 
