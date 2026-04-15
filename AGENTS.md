@@ -208,7 +208,8 @@ deepwork/
 │   │   └── deepplan/
 │   ├── standard_schemas/ # Built-in DeepSchema definitions
 │   ├── review/           # DeepWork Reviews system (.deepreview pipeline)
-│   ├── schemas/          # Definition schemas (deepreview, deepschema, doc_spec)
+│   ├── schemas/          # Definition schemas (deepreview, deepschema, doc_spec, tool_requirements)
+│   ├── tool_requirements/ # Tool requirements policy enforcement (config, discovery, matcher, evaluator, engine, cache, sidecar)
 │   └── utils/            # Utilities (fs, git, yaml, validation)
 ├── platform/             # Shared platform-agnostic content
 │   └── skill-body.md     # Canonical skill body (source of truth)
@@ -227,7 +228,7 @@ deepwork/
 │   │   │   ├── new_user/SKILL.md
 │   │   │   ├── record/SKILL.md
 │   │   │   └── review/SKILL.md
-│   │   ├── hooks/        # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
+│   │   ├── hooks/        # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh, tool_requirements.sh
 │   │   └── .mcp.json     # MCP server config
 │   └── gemini/           # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md

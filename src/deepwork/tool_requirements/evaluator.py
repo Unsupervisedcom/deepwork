@@ -165,7 +165,7 @@ def _parse_result(
         try:
             obj = json.loads(line)
             if not isinstance(obj, dict):
-                # Raw JSON array — use as-is
+                # Non-object JSON value — try using as result text
                 result_text = line
                 break
             # stream-json emits objects with "type" field
@@ -229,11 +229,15 @@ def _parse_result(
 
 def _extract_json_array(text: str) -> list[dict[str, Any]] | None:
     """Extract a JSON array of dicts from text that may contain surrounding prose."""
+
+    def _filter_dicts(items: list[Any]) -> list[dict[str, Any]]:
+        return [item for item in items if isinstance(item, dict)]
+
     # Try direct parse first
     try:
         parsed = json.loads(text.strip())
         if isinstance(parsed, list):
-            return [item for item in parsed if isinstance(item, dict)]
+            return _filter_dicts(parsed)
     except json.JSONDecodeError:
         pass
 
@@ -253,7 +257,7 @@ def _extract_json_array(text: str) -> list[dict[str, Any]] | None:
                 try:
                     parsed = json.loads(text[start : i + 1])
                     if isinstance(parsed, list):
-                        return [item for item in parsed if isinstance(item, dict)]
+                        return _filter_dicts(parsed)
                 except json.JSONDecodeError:
                     return None
 

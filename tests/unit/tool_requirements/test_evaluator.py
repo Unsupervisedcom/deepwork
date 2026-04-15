@@ -1,9 +1,13 @@
 """Tests for tool requirements LLM evaluator."""
 
 import json
+from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from deepwork.tool_requirements.config import Requirement
 from deepwork.tool_requirements.evaluator import (
+    HaikuSubprocessEvaluator,
     _build_prompt,
     _extract_json_array,
     _parse_result,
@@ -99,3 +103,60 @@ class TestParseResult:
         reqs = {"r1": Requirement(rule="Rule 1")}
         result = _parse_result(raw, reqs)
         assert result[0].passed is True
+
+    def test_duplicate_requirement_ids_deduplicated(self) -> None:
+        verdicts = [
+            {"requirement_id": "r1", "passed": True, "explanation": "First"},
+            {"requirement_id": "r1", "passed": False, "explanation": "Duplicate"},
+        ]
+        raw = json.dumps(verdicts)
+        reqs = {"r1": Requirement(rule="Rule 1")}
+        result = _parse_result(raw, reqs)
+        assert len(result) == 1
+        assert result[0].passed is True  # First occurrence wins
+
+    def test_non_dict_items_filtered(self) -> None:
+        result = _extract_json_array('[1, {"a": 1}, "str"]')
+        assert result == [{"a": 1}]
+
+    def test_bracket_search_invalid_json(self) -> None:
+        result = _extract_json_array("prefix [not valid json] suffix")
+        assert result is None
+
+
+class TestHaikuSubprocessEvaluator:
+    @pytest.mark.asyncio()
+    @patch("asyncio.create_subprocess_exec")
+    async def test_call_haiku_success(self, mock_exec: AsyncMock) -> None:
+        verdicts = [{"requirement_id": "r1", "passed": True, "explanation": "OK"}]
+        stdout = json.dumps(verdicts).encode()
+
+        mock_proc = AsyncMock()
+        mock_proc.communicate.return_value = (stdout, b"")
+        mock_proc.returncode = 0
+        mock_exec.return_value = mock_proc
+
+        evaluator = HaikuSubprocessEvaluator()
+        reqs = {"r1": Requirement(rule="MUST check")}
+        result = await evaluator.evaluate(reqs, "shell", {"command": "ls"})
+        assert len(result) == 1
+        assert result[0].passed is True
+
+    @pytest.mark.asyncio()
+    @patch("asyncio.create_subprocess_exec")
+    async def test_call_haiku_failure_raises(self, mock_exec: AsyncMock) -> None:
+        mock_proc = AsyncMock()
+        mock_proc.communicate.return_value = (b"", b"error")
+        mock_proc.returncode = 1
+        mock_exec.return_value = mock_proc
+
+        evaluator = HaikuSubprocessEvaluator()
+        reqs = {"r1": Requirement(rule="MUST check")}
+        with pytest.raises(RuntimeError, match="Haiku subprocess failed"):
+            await evaluator.evaluate(reqs, "shell", {"command": "ls"})
+
+    @pytest.mark.asyncio()
+    async def test_empty_requirements_returns_empty(self) -> None:
+        evaluator = HaikuSubprocessEvaluator()
+        result = await evaluator.evaluate({}, "shell", {"command": "ls"})
+        assert result == []

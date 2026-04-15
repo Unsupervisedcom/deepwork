@@ -86,7 +86,7 @@ def _resolve_inheritance(policies: list[ToolPolicy]) -> list[ToolPolicy]:
             if parent_name not in by_name:
                 logger.warning("Policy '%s' extends unknown policy '%s'", policy.name, parent_name)
                 continue
-            parent = resolve(parent_name, visited)
+            parent = resolve(parent_name, set(visited))
             merged_requirements.update(parent.requirements)
 
         # Child requirements override parent

@@ -98,9 +98,7 @@ class _SidecarHandler(BaseHTTPRequestHandler):
             return
 
         try:
-            result = self._run_async(
-                self.engine.appeal(tool_name, tool_input, justifications)
-            )
+            result = self._run_async(self.engine.appeal(tool_name, tool_input, justifications))
         except Exception as e:
             logger.exception("Error processing appeal")
             self._respond(
