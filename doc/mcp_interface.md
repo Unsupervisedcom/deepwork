@@ -10,7 +10,7 @@ This document describes the Model Context Protocol (MCP) tools exposed by the De
 
 ## Tools
 
-DeepWork exposes eleven MCP tools:
+DeepWork exposes twelve MCP tools:
 
 ### 1. `get_workflows`
 
@@ -308,6 +308,29 @@ Retrieve the YAML content of a session-scoped job definition previously register
 }
 ```
 
+### 12. `appeal_tool_requirement`
+
+Appeal a tool requirement policy denial. When a tool call is blocked by a tool requirement policy, call this to appeal specific failed checks by providing justifications. Some checks are marked `no_exception` and cannot be appealed. If the appeal succeeds, the tool call is cached as approved and you can retry the original tool call.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tool_name` | `string` | Yes | The normalized tool name that was blocked |
+| `tool_input` | `dict` | Yes | The exact tool_input that was blocked |
+| `policy_justification` | `dict[string, string]` | Yes | Map of failed check names to justification strings |
+| `session_id` | `string` | No | Session identifier (CLAUDE_CODE_SESSION_ID on Claude Code) |
+
+#### Returns
+
+```typescript
+{
+  passed: boolean;         // Whether the appeal succeeded
+  reason: string;          // Explanation of result
+  no_exception_blocked?: string[];  // Checks that cannot be appealed
+}
+```
+
 ---
 
 ## Shared Types
@@ -491,6 +514,7 @@ Add to your `.mcp.json`:
 
 | Version | Changes |
 |---------|---------|
+| 2.4.0 | Added `appeal_tool_requirement` tool for appealing tool requirement policy denials with justifications. |
 | 2.3.0 | Added `project_root` field to `ActiveStepInfo` — the absolute path to the MCP server's project root. Added `register_session_job` and `get_session_job` tools for transient session-scoped job definitions. Session jobs are discoverable by `start_workflow` via `session_id` lookup — they take priority over standard discovery. Added `deepplan` standard job with `create_deep_plan` workflow. |
 | 2.2.0 | `session_id` is now optional (`str | None`) on `start_workflow` only. On Claude Code (platform `"claude"`), the server raises `ToolError` if omitted. On other platforms, omitting it auto-generates a stable UUID; callers use the returned `begin_step.session_id` for all subsequent calls. `finished_step`, `abort_workflow`, and `go_to_step` continue to require `session_id`. Added `inputs` optional parameter to `start_workflow` for passing step argument values directly at workflow start. Added `issue_detected` optional field to all tool responses — present when the server detects configuration issues at startup; instructs agent to suggest repair to the user. |
 | 2.1.0 | Added `important_note` field to `StartWorkflowResponse` — instructs agents to clarify ambiguous user requests via `AskUserQuestion` when available. |

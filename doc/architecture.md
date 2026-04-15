@@ -93,7 +93,16 @@ deepwork/                       # DeepWork tool repository
 │       ├── schemas/            # Definition schemas
 │       │   ├── deepreview_schema.json
 │       │   ├── deepschema_schema.json
-│       │   └── doc_spec_schema.py
+│       │   ├── doc_spec_schema.py
+│       │   └── tool_requirements_schema.json
+│       ├── tool_requirements/  # Tool requirements policy enforcement
+│       │   ├── cache.py        # In-memory TTL cache for approved calls
+│       │   ├── config.py       # ToolPolicy/Requirement dataclasses, parser
+│       │   ├── discovery.py    # Load policies from .deepwork/tool_requirements/
+│       │   ├── engine.py       # Check + appeal orchestration
+│       │   ├── evaluator.py    # LLM evaluator (Haiku) for requirement checking
+│       │   ├── matcher.py      # Match policies to tool calls
+│       │   └── sidecar.py      # HTTP sidecar server for hook communication
 │       └── utils/
 │           ├── fs.py
 │           ├── git.py
@@ -119,7 +128,7 @@ deepwork/                       # DeepWork tool repository
 │   │   │   ├── new_user/SKILL.md
 │   │   │   ├── record/SKILL.md
 │   │   │   └── review/SKILL.md
-│   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
+│   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh, tool_requirements.sh
 │   │   └── .mcp.json           # MCP server config
 │   └── gemini/                 # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md
