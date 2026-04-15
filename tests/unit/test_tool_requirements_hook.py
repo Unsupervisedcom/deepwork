@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+from deepwork.hooks.tool_requirements import tool_requirements_hook
 from deepwork.hooks.wrapper import HookInput, NormalizedEvent, Platform
 
 
@@ -29,8 +30,6 @@ class TestToolRequirementsHook:
         )
 
     def test_skips_non_before_tool_events(self) -> None:
-        from deepwork.hooks.tool_requirements import tool_requirements_hook
-
         hook_input = HookInput(
             platform=Platform.CLAUDE,
             event=NormalizedEvent.AFTER_TOOL,
@@ -42,8 +41,6 @@ class TestToolRequirementsHook:
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-012.9).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_loop_prevention_skips_all_appeal_prefixes(self) -> None:
-        from deepwork.hooks.tool_requirements import tool_requirements_hook
-
         for prefix in [
             "mcp__deepwork__appeal_tool_requirement",
             "mcp__deepwork-dev__appeal_tool_requirement",
@@ -53,12 +50,10 @@ class TestToolRequirementsHook:
             result = tool_requirements_hook(hook_input)
             assert result.decision == "", f"Failed for {prefix}"
 
-    @patch("deepwork.hooks.tool_requirements.discover_sidecar")
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-012.9).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @patch("deepwork.hooks.tool_requirements.discover_sidecar")
     def test_fail_closed_when_no_sidecar(self, mock_discover: MagicMock) -> None:
-        from deepwork.hooks.tool_requirements import tool_requirements_hook
-
         mock_discover.return_value = None
         hook_input = self._make_input()
         result = tool_requirements_hook(hook_input)
@@ -70,8 +65,6 @@ class TestToolRequirementsHook:
     @patch("deepwork.hooks.tool_requirements._http_post")
     @patch("deepwork.hooks.tool_requirements.discover_sidecar")
     def test_allow_on_sidecar_allow(self, mock_discover: MagicMock, mock_post: MagicMock) -> None:
-        from deepwork.hooks.tool_requirements import tool_requirements_hook
-
         mock_discover.return_value = {"pid": 123, "port": 9999}
         mock_post.return_value = {"decision": "allow", "reason": "OK"}
 
@@ -83,8 +76,6 @@ class TestToolRequirementsHook:
     @patch("deepwork.hooks.tool_requirements._http_post")
     @patch("deepwork.hooks.tool_requirements.discover_sidecar")
     def test_deny_on_sidecar_deny(self, mock_discover: MagicMock, mock_post: MagicMock) -> None:
-        from deepwork.hooks.tool_requirements import tool_requirements_hook
-
         mock_discover.return_value = {"pid": 123, "port": 9999}
         mock_post.return_value = {
             "decision": "deny",
@@ -105,8 +96,6 @@ class TestToolRequirementsHook:
     def test_fail_closed_on_connection_error(
         self, mock_discover: MagicMock, mock_post: MagicMock
     ) -> None:
-        from deepwork.hooks.tool_requirements import tool_requirements_hook
-
         mock_discover.return_value = {"pid": 123, "port": 9999}
         mock_post.side_effect = ConnectionRefusedError("Connection refused")
 

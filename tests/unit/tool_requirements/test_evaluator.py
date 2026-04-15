@@ -123,6 +123,7 @@ class TestParseResult:
         assert len(result) == 1
         assert result[0].passed is True  # First occurrence wins
 
+
 class TestHaikuSubprocessEvaluator:
     @patch("asyncio.create_subprocess_exec")
     async def test_call_haiku_success(self, mock_exec: AsyncMock) -> None:
