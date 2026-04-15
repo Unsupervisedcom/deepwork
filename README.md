@@ -31,6 +31,8 @@ For bonus points, try `/deepwork learn` after running your workflow as well, and
 <summary><strong>Claude Desktop</strong></summary>
 
 1. In the top of the left sidebar, click on the button to enter Cowork mode, then select `Customize` below the toggle.
+<img width="315" height="253" alt="Screenshot 2026-04-14 at 5 58 30 PM" src="https://github.com/user-attachments/assets/546bdce1-58a9-455c-9f16-61674708061d" />
+
 2. You should now a `Personal plugins` section in the sidebar, with a `+` button in its top right. Click the `+` and then hover over `Create plugin` option and select `Add marketplace`.
 4. Set the URL to ```Unsupervisedcom/deepwork``` and press Sync. *(NOTE: Adding a marketplace currently fails on Windows.)*
 5. Once installed, click on the `Browse Plugins` button under the Personal plugins section. Select the Deepwork plugin and click Install.
