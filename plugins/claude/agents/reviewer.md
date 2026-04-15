@@ -1,5 +1,5 @@
 ---
-name: deepwork:reviewer
+name: reviewer
 description: Minimal review subagent for DeepWork review tasks. Reads a supplied instruction file, performs the review against the criteria in that file, and reports results via the DeepWork MCP mark_review_as_passed tool. Use when dispatching parallel review tasks from .deepreview rules or workflow quality gates.
 model: sonnet
 color: cyan
