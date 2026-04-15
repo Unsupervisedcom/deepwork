@@ -29,9 +29,12 @@ rule_name:
   rules (e.g. `__pycache__/`, `node_modules/`, `.env`) are excluded automatically,
   so they don't need to be listed here.
 - **strategy**: How to batch reviews:
-  - `individual`: One review per matched file
-  - `matches_together`: All matched files reviewed together
-  - `all_changed_files`: All changed files (not just matched ones) reviewed together
+
+  | Strategy | Reviewer sees | Best for |
+  |----------|--------------|----------|
+  | `individual` | One file at a time | Per-file linting, style checks |
+  | `matches_together` | All matched files together | Cross-file consistency, migration safety |
+  | `all_changed_files` | _Every_ changed file (tripwire) | Security audits, broad impact analysis |
 - **additional_context.unchanged_matching_files**: When true, the reviewer gets files
   matching include patterns even if they didn't change in this PR. Critical for
   document freshness checks — lets the reviewer see the doc even when only source
