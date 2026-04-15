@@ -11,10 +11,8 @@ import pytest
 
 from deepwork.cli.main import cli
 from deepwork.setup.claude import (
-    BASH_PERMISSIONS,
-    DEEPWORK_DIR_PERMISSIONS,
+    ALLOW_PERMISSIONS,
     MARKETPLACE_KEY,
-    MCP_PERMISSION,
     PLUGIN_KEY,
     claude_setup,
 )
@@ -41,8 +39,8 @@ class TestClaudeSetupFreshFile:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_settings(self, claude_home: Path) -> None:
         changes = claude_setup()
-        # 1 marketplace + 1 plugin + 1 MCP + 3 dir perms + 5 Bash perms = 11
-        assert len(changes) == 11
+        # 1 marketplace + 1 plugin + len(ALLOW_PERMISSIONS) permissions
+        assert len(changes) == 2 + len(ALLOW_PERMISSIONS)
         settings = _read_settings(claude_home)
 
         # marketplace registered
@@ -55,15 +53,8 @@ class TestClaudeSetupFreshFile:
         # plugin enabled
         assert settings["enabledPlugins"][PLUGIN_KEY] is True
 
-        # MCP permission
-        assert MCP_PERMISSION in settings["permissions"]["allow"]
-
-        # .deepwork directory permissions (project-relative via leading slash)
-        for perm in DEEPWORK_DIR_PERMISSIONS:
-            assert perm in settings["permissions"]["allow"]
-
-        # Bash permissions for common plugin operations
-        for perm in BASH_PERMISSIONS:
+        # all permissions present
+        for perm in ALLOW_PERMISSIONS:
             assert perm in settings["permissions"]["allow"]
 
 
@@ -109,7 +100,7 @@ class TestClaudeSetupNoClaudeDir:
         monkeypatch.setattr(Path, "home", staticmethod(lambda: fake_home))
 
         changes = claude_setup()
-        assert len(changes) == 11
+        assert len(changes) == 2 + len(ALLOW_PERMISSIONS)
         assert (fake_home / ".claude" / "settings.json").exists()
 
 
