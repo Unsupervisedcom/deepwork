@@ -20,6 +20,16 @@ DEEPWORK_DIR_PERMISSIONS = [
     "Write(/.deepwork/**/*)",
     "Edit(/.deepwork/**/*)",
 ]
+# Bash permissions for commands the plugin routinely runs.
+# Without these, each invocation triggers a permission prompt.
+# The uv cache glob covers hash-varying archive paths that change on reinstall.
+BASH_PERMISSIONS = [
+    "Bash(deepwork:*)",
+    "Bash(uvx deepwork:*)",
+    "Bash(~/.cache/uv/archive-v0/*/bin/deepwork:*)",
+    "Bash(command -v uv)",
+    "Bash(uv --version)",
+]
 
 
 def claude_setup() -> list[str]:
@@ -74,6 +84,12 @@ def claude_setup() -> list[str]:
 
     # 4. Ensure full access to .deepwork/ in every project
     for perm in DEEPWORK_DIR_PERMISSIONS:
+        if perm not in allow:
+            allow.append(perm)
+            changes.append(f"Added '{perm}' to permissions.allow")
+
+    # 5. Pre-grant Bash permissions for common plugin operations
+    for perm in BASH_PERMISSIONS:
         if perm not in allow:
             allow.append(perm)
             changes.append(f"Added '{perm}' to permissions.allow")

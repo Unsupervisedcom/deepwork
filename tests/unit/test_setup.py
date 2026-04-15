@@ -11,6 +11,7 @@ import pytest
 
 from deepwork.cli.main import cli
 from deepwork.setup.claude import (
+    BASH_PERMISSIONS,
     DEEPWORK_DIR_PERMISSIONS,
     MARKETPLACE_KEY,
     MCP_PERMISSION,
@@ -40,7 +41,8 @@ class TestClaudeSetupFreshFile:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_settings(self, claude_home: Path) -> None:
         changes = claude_setup()
-        assert len(changes) == 6
+        # 1 marketplace + 1 plugin + 1 MCP + 3 dir perms + 5 Bash perms = 11
+        assert len(changes) == 11
         settings = _read_settings(claude_home)
 
         # marketplace registered
@@ -58,6 +60,10 @@ class TestClaudeSetupFreshFile:
 
         # .deepwork directory permissions (project-relative via leading slash)
         for perm in DEEPWORK_DIR_PERMISSIONS:
+            assert perm in settings["permissions"]["allow"]
+
+        # Bash permissions for common plugin operations
+        for perm in BASH_PERMISSIONS:
             assert perm in settings["permissions"]["allow"]
 
 
@@ -103,7 +109,7 @@ class TestClaudeSetupNoClaudeDir:
         monkeypatch.setattr(Path, "home", staticmethod(lambda: fake_home))
 
         changes = claude_setup()
-        assert len(changes) == 6
+        assert len(changes) == 11
         assert (fake_home / ".claude" / "settings.json").exists()
 
 
