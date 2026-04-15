@@ -61,7 +61,7 @@ class TestEngineCheck:
         result = await engine.check("shell", {"command": "ls"})
         assert result.allowed is True
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-012.6.3, DW-REQ-012.8.1).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-012.6, DW-REQ-012.8).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_all_pass_allows_and_caches(self, tmp_path: Path) -> None:
         project = _setup_project(
@@ -85,7 +85,7 @@ class TestEngineCheck:
         assert result2.allowed is True
         assert evaluator.call_count == 1  # Not called again
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-012.6.4).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-012.6).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_failure_denies_with_all_errors(self, tmp_path: Path) -> None:
         project = _setup_project(
@@ -167,7 +167,7 @@ class TestEngineAppeal:
         check = await engine.check("shell", {"command": "rm file"})
         assert check.allowed is True
 
-    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-012.7.3).
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-012.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_no_exception_blocks_appeal(self, tmp_path: Path) -> None:
         project = _setup_project(

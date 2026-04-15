@@ -41,7 +41,7 @@ The tool requirements system enforces RFC 2119-style policies on AI agent tool c
 
 1. Requirements MUST be evaluated by an LLM evaluator (Haiku by default) that considers RFC 2119 keywords.
 2. `MUST`/`MUST NOT` violations MUST always result in failure.
-3. `SHOULD`/`SHOULD NOT` violations MUST result in failure only when the violation is clear and easily avoidable.
+3. `SHOULD`/`SHOULD NOT` violations MUST result in failure only when the tool call could be trivially modified to comply (e.g., adding a flag, choosing a different command) — the evaluator prompt MUST instruct the LLM to apply this criterion.
 4. `MAY` requirements MUST always pass.
 5. The evaluator MUST return a verdict for every requirement — requirements not evaluated MUST fail closed.
 6. The evaluator MUST be encapsulated behind an abstract interface to allow implementation swapping.

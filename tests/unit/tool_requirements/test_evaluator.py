@@ -56,6 +56,14 @@ class TestExtractJsonArray:
     def test_empty_array(self) -> None:
         assert _extract_json_array("[]") == []
 
+    def test_non_dict_items_filtered(self) -> None:
+        result = _extract_json_array('[1, {"a": 1}, "str"]')
+        assert result == [{"a": 1}]
+
+    def test_bracket_search_invalid_json(self) -> None:
+        result = _extract_json_array("prefix [not valid json] suffix")
+        assert result is None
+
 
 class TestParseResult:
     def test_parses_stream_json_result(self) -> None:
@@ -115,17 +123,7 @@ class TestParseResult:
         assert len(result) == 1
         assert result[0].passed is True  # First occurrence wins
 
-    def test_non_dict_items_filtered(self) -> None:
-        result = _extract_json_array('[1, {"a": 1}, "str"]')
-        assert result == [{"a": 1}]
-
-    def test_bracket_search_invalid_json(self) -> None:
-        result = _extract_json_array("prefix [not valid json] suffix")
-        assert result is None
-
-
 class TestHaikuSubprocessEvaluator:
-    @pytest.mark.asyncio()
     @patch("asyncio.create_subprocess_exec")
     async def test_call_haiku_success(self, mock_exec: AsyncMock) -> None:
         verdicts = [{"requirement_id": "r1", "passed": True, "explanation": "OK"}]
@@ -142,7 +140,6 @@ class TestHaikuSubprocessEvaluator:
         assert len(result) == 1
         assert result[0].passed is True
 
-    @pytest.mark.asyncio()
     @patch("asyncio.create_subprocess_exec")
     async def test_call_haiku_failure_raises(self, mock_exec: AsyncMock) -> None:
         mock_proc = AsyncMock()
@@ -155,7 +152,6 @@ class TestHaikuSubprocessEvaluator:
         with pytest.raises(RuntimeError, match="Haiku subprocess failed"):
             await evaluator.evaluate(reqs, "shell", {"command": "ls"})
 
-    @pytest.mark.asyncio()
     async def test_empty_requirements_returns_empty(self) -> None:
         evaluator = HaikuSubprocessEvaluator()
         result = await evaluator.evaluate({}, "shell", {"command": "ls"})
