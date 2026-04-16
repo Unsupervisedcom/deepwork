@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+## [0.13.9] - 2026-04-16
+
+### Added
+
 - New `claude_plugin_hook_deepwork_invocation` review rule in `plugins/claude/.deepreview` that flags plugin hook scripts which call bare `deepwork` without a `uvx deepwork` fallback
 
 ### Changed
@@ -529,7 +538,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.8...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.9...HEAD
+[0.13.9]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.9
 [0.13.8]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.8
 [0.13.7]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.7
 [0.13.6]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.6
