@@ -9,9 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New `claude_plugin_hook_deepwork_invocation` review rule in `plugins/claude/.deepreview` that flags plugin hook scripts which call bare `deepwork` without a `uvx deepwork` fallback
+
 ### Changed
 
 ### Fixed
+
+- Plugin hook scripts (`post_commit_reminder.sh`, `deepschema_write.sh`, `post_compact.sh`) now fall back to `uvx deepwork` when the bare `deepwork` binary is not on PATH. End-user installs launch the MCP server via `uvx deepwork serve`, so `deepwork` is not available as a command — previously these hooks failed with exit 127 on every Bash tool use, and Claude Code reported them as failed PostToolUse hooks (regression introduced in PR #361)
 
 ### Removed
 ## [0.13.8] - 2026-04-14
