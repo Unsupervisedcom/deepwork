@@ -22,10 +22,19 @@ if [ -z "$CWD" ]; then
 fi
 
 # ==== Fetch active sessions ====
-STACK_JSON=$(deepwork jobs get-stack --path "$CWD" 2>/dev/null) || {
-  echo '{}'
-  exit 0
-}
+# Fall back to `uvx deepwork` so end-user installs (where the plugin's
+# MCP server is launched via uvx and `deepwork` is not on PATH) still work.
+if command -v deepwork >/dev/null 2>&1; then
+  STACK_JSON=$(deepwork jobs get-stack --path "$CWD" 2>/dev/null) || {
+    echo '{}'
+    exit 0
+  }
+else
+  STACK_JSON=$(uvx deepwork jobs get-stack --path "$CWD" 2>/dev/null) || {
+    echo '{}'
+    exit 0
+  }
+fi
 
 # ==== Check for active sessions ====
 SESSION_COUNT=$(echo "$STACK_JSON" | jq '(.active_sessions // []) | length')

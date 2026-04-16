@@ -1,3 +1,38 @@
+claude_plugin_hook_deepwork_invocation:
+  description: "Plugin hook scripts must fall back to `uvx deepwork` when the bare binary is not on PATH."
+  match:
+    include:
+      - "hooks/*.sh"
+  review:
+    strategy: individual
+    instructions: |
+      Plugin hook scripts run in end-user installs where the MCP server is
+      launched via `uvx deepwork serve` (see plugins/claude/.mcp.json). In
+      that environment the bare `deepwork` binary is NOT on PATH. Any hook
+      that calls `deepwork ...` (or `uv run deepwork ...`) directly will
+      exit 127, and Claude Code reports it as a failed hook on every Bash
+      tool use. Regression history: PR #361 reintroduced this exact bug.
+
+      For each `deepwork` (or `uv run deepwork`) invocation in this script,
+      verify it uses a fallback pattern equivalent to:
+
+      ```bash
+      if command -v deepwork >/dev/null 2>&1; then
+        echo "${INPUT}" | deepwork hook some_hook
+      else
+        echo "${INPUT}" | uvx deepwork hook some_hook
+      fi
+      ```
+
+      A bare `deepwork ...` call without a `command -v deepwork` guard (or
+      equivalent fallback to `uvx deepwork ...`) is a FAIL.
+
+      Output Format:
+      - PASS: Every `deepwork` invocation has a `uvx` fallback, or the
+        script makes no `deepwork` calls.
+      - FAIL: List each unguarded `deepwork` invocation with its line
+        number and the suggested fallback edit.
+
 claude_plugin_skill_instructions:
   description: "PLUG-REQ-001 & REVIEW-REQ-007: Verify skill instructions adequately convey behavioral requirements."
   match:
