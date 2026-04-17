@@ -1,0 +1,9 @@
+{
+  "name": "full-convo-memory",
+  "description": "Search the current Claude Code session's jsonl transcript using jq filters",
+  "version": "0.1.0",
+  "author": {
+    "name": "DeepWork"
+  },
+  "repository": "https://github.com/Unsupervisedcom/deepwork"
+}
