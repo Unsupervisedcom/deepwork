@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from fastmcp import Context, FastMCP
 
@@ -149,6 +149,21 @@ def create_server(
             log_data["params"] = params
         logger.info("MCP tool call: %s", log_data)
 
+    # Track whether session has been registered for tool requirements sidecar
+    _registered_sessions: set[str] = set()
+
+    def _maybe_register_session(session_id: str | None) -> None:
+        """Register session with the tool requirements sidecar on first tool call."""
+        if not session_id or session_id in _registered_sessions:
+            return
+        _registered_sessions.add(session_id)
+        try:
+            from deepwork.tool_requirements.sidecar import register_session
+
+            register_session(project_path, session_id)
+        except Exception:
+            pass  # Best-effort — sidecar may not be running
+
     @mcp.tool(
         description=(
             "List all available DeepWork workflows. "
@@ -186,6 +201,7 @@ def create_server(
         agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Start a workflow and get first step instructions."""
+        _maybe_register_session(session_id)
         _log_tool_call(
             "start_workflow",
             {
@@ -504,6 +520,84 @@ def create_server(
             return mark_passed_fn(root, review_id)
         except ValueError as e:
             return f"Validation error: {e}"
+
+    # ---- Tool Requirements: appeal tool ----
+
+    @mcp.tool(
+        description=(
+            "Appeal a tool requirement policy denial. When a tool call is blocked "
+            "by a tool requirement policy, call this to appeal specific failed "
+            "checks by providing justifications. "
+            "Required: tool_name (the normalized tool name that was blocked), "
+            "tool_input (the exact tool_input that was blocked), "
+            "policy_justification (dict mapping each failed check name to a "
+            "justification string explaining why the check should pass). "
+            "Optional: session_id (CLAUDE_CODE_SESSION_ID). "
+            "Some checks are marked no_exception and cannot be appealed. "
+            "If the appeal succeeds, the tool call is cached as approved and "
+            "you can retry the original tool call."
+        )
+    )
+    async def appeal_tool_requirement(
+        tool_name: str,
+        tool_input: dict[str, Any],
+        policy_justification: dict[str, str],
+        ctx: Context,
+        session_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Appeal a tool requirement denial with justifications."""
+        _log_tool_call(
+            "appeal_tool_requirement",
+            {
+                "tool_name": tool_name,
+                "justification_keys": list(policy_justification.keys()),
+            },
+            session_id=session_id,
+        )
+        _maybe_register_session(session_id)
+
+        root = await root_resolver.get_root(ctx)
+
+        # Delegate to sidecar (same process) or engine directly
+        try:
+            from deepwork.tool_requirements.sidecar import discover_sidecar
+
+            sidecar = discover_sidecar(root, session_id or "")
+            if sidecar is None:
+                return {
+                    "passed": False,
+                    "reason": "Tool requirements sidecar is not running. "
+                    "Please restart the MCP server.",
+                }
+
+            import http.client
+            import json as json_mod
+
+            conn = http.client.HTTPConnection("127.0.0.1", sidecar["port"], timeout=60)
+            try:
+                payload = json_mod.dumps(
+                    {
+                        "tool_name": tool_name,
+                        "tool_input": tool_input,
+                        "policy_justification": policy_justification,
+                    }
+                ).encode("utf-8")
+                conn.request(
+                    "POST",
+                    "/appeal",
+                    body=payload,
+                    headers={"Content-Type": "application/json"},
+                )
+                response = conn.getresponse()
+                return cast(dict[str, Any], json_mod.loads(response.read()))
+            finally:
+                conn.close()
+        except Exception as e:
+            logger.exception("Error in appeal_tool_requirement")
+            return {
+                "passed": False,
+                "reason": f"Appeal failed: {e}",
+            }
 
     return mcp
 

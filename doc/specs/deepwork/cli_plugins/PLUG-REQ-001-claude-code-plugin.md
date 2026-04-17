@@ -107,3 +107,9 @@ The Claude Code plugin is the primary distribution mechanism for DeepWork on the
 4. The agent body MUST instruct the subagent to read the instruction file from the user prompt, perform the review against the criteria in that file, and call `mark_review_as_passed` to report results.
 5. The agent body MUST instruct the subagent not to edit files and not to explore beyond what the review instructions direct.
 6. When the review formatter renders tasks with no per-rule agent persona specified (`agent_name` is `None`), it MUST default to `"reviewer"` as the `subagent_type` (see REVIEW-REQ-006.3.3c).
+
+### PLUG-REQ-001.15: Tool Requirements PreToolUse Hook
+
+1. The plugin MUST register a PreToolUse hook in `plugins/claude/hooks/hooks.json` with an empty matcher (matches all tool calls).
+2. The hook MUST delegate to `deepwork hook tool_requirements` via a shell wrapper at `plugins/claude/hooks/tool_requirements.sh`.
+3. The hook MUST skip the `appeal_tool_requirement` MCP tool to prevent infinite loops (see DW-REQ-012.9).

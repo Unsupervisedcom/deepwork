@@ -1,0 +1,62 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Tool Requirements Policy",
+    "description": "Schema for .deepwork/tool_requirements/*.yml policy files that define RFC 2119-style rules for AI agent tool calls.",
+    "type": "object",
+    "required": ["tools", "requirements"],
+    "additionalProperties": false,
+    "properties": {
+        "summary": {
+            "type": "string",
+            "description": "Human-readable summary of what this policy enforces."
+        },
+        "tools": {
+            "type": "array",
+            "description": "Normalized tool names (shell, write_file, edit_file, etc.) or MCP tool names (mcp__server__tool) this policy applies to.",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1
+        },
+        "match": {
+            "type": "object",
+            "description": "Optional parameter-level filtering. Keys are tool_input parameter names, values are regex patterns. Policy only applies when at least one pattern matches.",
+            "patternProperties": {
+                "^[a-zA-Z0-9_-]+$": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "extends": {
+            "type": "array",
+            "description": "List of policy file stems to inherit requirements from.",
+            "items": {
+                "type": "string"
+            }
+        },
+        "requirements": {
+            "type": "object",
+            "description": "RFC 2119 keyed requirements. Keys are requirement identifiers, values define the rule and exception policy.",
+            "patternProperties": {
+                "^[a-zA-Z0-9_-]+$": {
+                    "type": "object",
+                    "required": ["rule"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "rule": {
+                            "type": "string",
+                            "description": "RFC 2119 statement (using MUST, SHOULD, MAY, etc.)."
+                        },
+                        "no_exception": {
+                            "type": "boolean",
+                            "description": "If true, this requirement cannot be appealed. Defaults to false.",
+                            "default": false
+                        }
+                    }
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+}

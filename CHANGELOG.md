@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Tool requirements policy enforcement system: define RFC 2119-style rules in `.deepwork/tool_requirements/*.yml` to govern AI agent tool calls, with LLM-based semantic evaluation, appeal mechanism, and 1-hour TTL caching
+
 ### Changed
 
 ### Fixed
@@ -37,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `/review` skill now checks for `deepwork:reviewer` agent availability before proceeding and directs users to `/reload-plugins` if missing
 
 ### Fixed
+
+- Settings schema missing `if`, `asyncRewake`, `once`, `shell` fields on hook definitions and missing `StopFailure`, `PermissionDenied`, `TaskCreated`, `FileChanged`, `CwdChanged` hook event types
 
 ### Removed
 ## [0.13.7] - 2026-04-14

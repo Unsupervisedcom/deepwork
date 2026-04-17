@@ -122,6 +122,9 @@ def _serve_mcp(
             "# Ignore everything in this directory\n*\n# But keep this .gitignore\n!.gitignore\n"
         )
 
+    # Start tool requirements sidecar (if policies exist)
+    _start_tool_requirements_sidecar(project_path)
+
     # Create and run server
     from deepwork.jobs.mcp.server import create_server
 
@@ -135,3 +138,23 @@ def _serve_mcp(
         server.run(transport="stdio")
     else:
         server.run(transport="sse", port=port)
+
+
+def _start_tool_requirements_sidecar(project_path: Path) -> None:
+    """Start the tool requirements sidecar if policy files exist."""
+    policy_dir = project_path / ".deepwork" / "tool_requirements"
+    if not policy_dir.is_dir():
+        return
+    if not any(policy_dir.glob("*.yml")):
+        return
+
+    try:
+        from deepwork.tool_requirements.sidecar import start_sidecar
+
+        start_sidecar(project_path)
+    except Exception:
+        import logging
+
+        logging.getLogger("deepwork.tool_requirements").warning(
+            "Failed to start tool requirements sidecar", exc_info=True
+        )
