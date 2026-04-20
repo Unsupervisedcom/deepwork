@@ -107,3 +107,8 @@ The Claude Code plugin is the primary distribution mechanism for DeepWork on the
 4. The agent body MUST instruct the subagent to read the instruction file from the user prompt, perform the review against the criteria in that file, and call `mark_review_as_passed` to report results.
 5. The agent body MUST instruct the subagent not to edit files and not to explore beyond what the review instructions direct.
 6. When the review formatter renders tasks with no per-rule agent persona specified (`agent_name` is `None`), it MUST default to `"reviewer"` as the `subagent_type` (see REVIEW-REQ-006.3.3c).
+
+### PLUG-REQ-001.15: Hook Script CLI Invocation
+
+1. Plugin hook scripts under `plugins/claude/hooks/` MUST invoke the `deepwork` CLI via `uvx deepwork ...`, never via a bare `deepwork` lookup on `PATH` (including `uv run deepwork` or absolute paths to `PATH`-installed binaries). This matches the MCP server launch command in `plugins/claude/.mcp.json` (`uvx deepwork serve`) so that hooks and the MCP server resolve to the same `deepwork` version from the same `uvx` cache.
+2. Plugin hook scripts MUST NOT rely on a `deepwork` binary resolved through `PATH`, because (a) the binary is absent from `PATH` in end-user installs that run the plugin via `uvx`, which produces exit 127, and (b) when present via a user-level install such as `uv tool install deepwork`, it can be older than the Python module the hook is asking for, which produces "Hook '...' not found" or similar errors. Both failure modes surface to Claude Code as a failed hook.

@@ -22,19 +22,13 @@ if [ -z "$CWD" ]; then
 fi
 
 # ==== Fetch active sessions ====
-# Fall back to `uvx deepwork` so end-user installs (where the plugin's
-# MCP server is launched via uvx and `deepwork` is not on PATH) still work.
-if command -v deepwork >/dev/null 2>&1; then
-  STACK_JSON=$(deepwork jobs get-stack --path "$CWD" 2>/dev/null) || {
-    echo '{}'
-    exit 0
-  }
-else
-  STACK_JSON=$(uvx deepwork jobs get-stack --path "$CWD" 2>/dev/null) || {
-    echo '{}'
-    exit 0
-  }
-fi
+# Always invoke via `uvx deepwork` to match the MCP server invocation in
+# plugins/claude/.mcp.json — avoids PATH-staleness where a user-level
+# `deepwork` binary is older than the subcommand it is being asked to run.
+STACK_JSON=$(uvx deepwork jobs get-stack --path "$CWD" 2>/dev/null) || {
+  echo '{}'
+  exit 0
+}
 
 # ==== Check for active sessions ====
 SESSION_COUNT=$(echo "$STACK_JSON" | jq '(.active_sessions // []) | length')

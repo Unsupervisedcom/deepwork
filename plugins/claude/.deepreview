@@ -1,5 +1,5 @@
 claude_plugin_hook_deepwork_invocation:
-  description: "Plugin hook scripts must fall back to `uvx deepwork` when the bare binary is not on PATH."
+  description: "PLUG-REQ-001.15: Plugin hook scripts must invoke the `deepwork` CLI via `uvx deepwork`, never via a bare binary on PATH."
   match:
     include:
       - "hooks/*.sh"
@@ -7,31 +7,34 @@ claude_plugin_hook_deepwork_invocation:
     strategy: individual
     instructions: |
       Plugin hook scripts run in end-user installs where the MCP server is
-      launched via `uvx deepwork serve` (see plugins/claude/.mcp.json). In
-      that environment the bare `deepwork` binary is NOT on PATH. Any hook
-      that calls `deepwork ...` (or `uv run deepwork ...`) directly will
-      exit 127, and Claude Code reports it as a failed hook on every Bash
-      tool use. Regression history: PR #361 reintroduced this exact bug.
+      launched via `uvx deepwork serve` (see plugins/claude/.mcp.json) and
+      the bare `deepwork` binary may be missing from PATH, or present but
+      stale — e.g., a user-level `uv tool install deepwork` pinned to an
+      older release. A stale bare binary produces errors like "Hook
+      '...' not found" (when the hook module did not exist in that
+      version) on every Bash tool use, which Claude Code surfaces as a
+      failed hook.
 
-      For each `deepwork` (or `uv run deepwork`) invocation in this script,
-      verify it uses a fallback pattern equivalent to:
+      To avoid both failure modes, plugin hook scripts MUST invoke the
+      CLI the same way the MCP server is launched: via `uvx deepwork`.
+      A bare `deepwork ...` (or `uv run deepwork ...`, or any invocation
+      that uses PATH lookup) is a FAIL.
+
+      Expected pattern:
 
       ```bash
-      if command -v deepwork >/dev/null 2>&1; then
-        echo "${INPUT}" | deepwork hook some_hook
-      else
-        echo "${INPUT}" | uvx deepwork hook some_hook
-      fi
+      echo "${INPUT}" | uvx deepwork hook some_hook
       ```
 
-      A bare `deepwork ...` call without a `command -v deepwork` guard (or
-      equivalent fallback to `uvx deepwork ...`) is a FAIL.
+      For each `deepwork` invocation in this script, verify the command
+      prefix is `uvx deepwork`. Shell word-splitting counts — the word
+      immediately before `deepwork` on the command line must be `uvx`.
 
       Output Format:
-      - PASS: Every `deepwork` invocation has a `uvx` fallback, or the
+      - PASS: Every `deepwork` invocation is prefixed with `uvx`, or the
         script makes no `deepwork` calls.
-      - FAIL: List each unguarded `deepwork` invocation with its line
-        number and the suggested fallback edit.
+      - FAIL: List each non-`uvx` `deepwork` invocation with its line
+        number and the required edit.
 
 claude_plugin_skill_instructions:
   description: "PLUG-REQ-001 & REVIEW-REQ-007: Verify skill instructions adequately convey behavioral requirements."

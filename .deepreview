@@ -287,6 +287,52 @@ update_learning_agents_architecture:
     additional_context:
       unchanged_matching_files: true
 
+agent_tools_fully_qualified:
+  description: "Claude Code agent definition files must list every tool by fully-qualified name, never by wildcard."
+  match:
+    include:
+      - "**/agents/*.md"
+  review:
+    strategy: individual
+    instructions: |
+      This file defines a Claude Code subagent (the YAML frontmatter at the
+      top of the file configures the agent's name, description, model, and
+      tool grants). Check the `tools:` frontmatter field.
+
+      Rule: every tool entry MUST be a fully-qualified tool name. Wildcard
+      or glob patterns (any entry containing `*`, `?`, `[`, or ending in
+      `__*`) are non-conforming.
+
+      Rationale: wildcard patterns in subagent `tools:` frontmatter do not
+      reliably match deferred MCP tools at runtime. Observed failure mode:
+      a frontmatter entry like `mcp__deepwork-dev__*` is accepted at parse
+      time, but when the subagent tries to invoke
+      `mcp__deepwork-dev__mark_review_as_passed` the runtime responds with
+      `Error: No such tool available`. Enumerating each MCP tool by its
+      full name (e.g., `mcp__deepwork-dev__mark_review_as_passed`) avoids
+      this failure mode and also documents the exact tool surface the
+      agent relies on. This caught us in the e2e merge-queue run that
+      failed PR #390.
+
+      This rule does NOT apply to files that are not Claude Code agent
+      definitions — if the file has no YAML frontmatter with name/tools
+      fields (e.g., it is a context-injection document or a skill body
+      that happens to live under an `agents/` path), this review passes
+      vacuously.
+
+      Check for:
+      - Any entry in `tools:` containing `*`, `?`, or `[...]` glob syntax.
+      - Any entry ending in `__*` (the common MCP-wildcard form).
+      - Any quoted glob pattern such as `"mcp__<server>__*"`.
+
+      Output Format:
+      - PASS: `tools:` field is missing, empty, or every entry is a
+        fully-qualified name.
+      - FAIL: list each wildcard entry with its line number and the
+        fully-qualified tool names it should be replaced with (if
+        determinable from the agent's body; otherwise flag the need for
+        enumeration).
+
 shell_code_review:
   description: "Review shell scripts for correctness, safety, and project conventions."
   match:
