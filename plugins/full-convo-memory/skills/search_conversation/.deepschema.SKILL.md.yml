@@ -1,0 +1,36 @@
+requirements:
+  # PLUG-REQ-004.17.1
+  plugin-root-variable: >
+    The skill body MUST document the script path using the
+    `${CLAUDE_PLUGIN_ROOT}` variable so it resolves correctly regardless of
+    where the plugin is installed.
+
+  # PLUG-REQ-004.17.2
+  jq-passthrough-doc: >
+    The skill body MUST state that any `jq` arguments (flags and filters)
+    are passed through to jq verbatim.
+
+  # PLUG-REQ-004.17.3
+  log-file-resolution-doc: >
+    The skill body MUST describe the log-file auto-detection order and MUST
+    explicitly cover the sub-agent case (via `CLAUDE_CODE_SESSION_ID` plus
+    `CLAUDE_CODE_AGENT_ID`), so that an agent calling the skill from a
+    sub-agent context understands it will search its own transcript rather
+    than the parent's.
+
+  # PLUG-REQ-004.17.4
+  compaction-filter-doc: >
+    The skill body MUST state that compaction-summary messages
+    (`isCompactSummary: true`) are excluded from search results
+    automatically.
+
+  # PLUG-REQ-004.17.5
+  worked-example: >
+    The skill body MUST include at least one worked `jq` example showing how
+    to call the script with a concrete filter.
+
+  # PLUG-REQ-004.17.6
+  explore-fallback-guidance: >
+    The skill body MUST direct the agent to use the printed log-file path
+    with an Explore sub-agent when `jq` matching is insufficient for a
+    fuzzy/semantic question.

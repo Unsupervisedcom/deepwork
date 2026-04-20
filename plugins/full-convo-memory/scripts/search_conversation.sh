@@ -14,7 +14,7 @@
 #
 # <encoded-cwd> is $PWD with every '/' replaced by '-' (leading '-' preserved).
 
-set -u -o pipefail
+set -euo pipefail
 
 usage() {
     cat >&2 <<'EOF'
@@ -32,7 +32,14 @@ Any flags and filters accepted by jq are passed through verbatim.
 EOF
 }
 
-# --- parse optional --log-file override ------------------------------------
+encode_cwd() {
+    printf '%s' "$1" | sed 's|/|-|g'
+}
+
+# ============================================================================
+# PARSE OPTIONAL --log-file OVERRIDE
+# ============================================================================
+
 LOG_FILE=""
 if [ "${1:-}" = "--log-file" ]; then
     if [ $# -lt 2 ]; then
@@ -43,43 +50,57 @@ if [ "${1:-}" = "--log-file" ]; then
     shift 2
 fi
 
-# --- require at least one jq arg (guard against dumping the whole file) ----
+# ============================================================================
+# GUARD: AT LEAST ONE JQ ARG REQUIRED
+# ============================================================================
+
 if [ $# -eq 0 ]; then
     usage
     exit 2
 fi
 
-# --- require jq ------------------------------------------------------------
+# ============================================================================
+# GUARD: jq MUST BE ON PATH
+# ============================================================================
+
 if ! command -v jq >/dev/null 2>&1; then
     echo "error: jq is required but not found on PATH" >&2
     exit 127
 fi
 
-# --- resolve the log file --------------------------------------------------
-encode_cwd() {
-    printf '%s' "$1" | sed 's|/|-|g'
-}
+# ============================================================================
+# RESOLVE THE LOG FILE
+# ============================================================================
+
+ENCODED_CWD=$(encode_cwd "$PWD")
+PROJECT_DIR="$HOME/.claude/projects/$ENCODED_CWD"
 
 if [ -z "$LOG_FILE" ]; then
-    ENCODED_CWD=$(encode_cwd "$PWD")
-    PROJECT_DIR="$HOME/.claude/projects/$ENCODED_CWD"
-
     if [ -n "${CLAUDE_CODE_AGENT_ID:-}" ] && [ -n "${CLAUDE_CODE_SESSION_ID:-}" ]; then
         CANDIDATE="$PROJECT_DIR/$CLAUDE_CODE_SESSION_ID/subagents/agent-$CLAUDE_CODE_AGENT_ID.jsonl"
-        [ -f "$CANDIDATE" ] && LOG_FILE="$CANDIDATE"
+        if [ -f "$CANDIDATE" ]; then
+            LOG_FILE="$CANDIDATE"
+        fi
     fi
+fi
 
-    if [ -z "$LOG_FILE" ] && [ -n "${CLAUDE_CODE_SESSION_ID:-}" ]; then
-        CANDIDATE="$PROJECT_DIR/$CLAUDE_CODE_SESSION_ID.jsonl"
-        [ -f "$CANDIDATE" ] && LOG_FILE="$CANDIDATE"
+if [ -z "$LOG_FILE" ] && [ -n "${CLAUDE_CODE_SESSION_ID:-}" ]; then
+    CANDIDATE="$PROJECT_DIR/$CLAUDE_CODE_SESSION_ID.jsonl"
+    if [ -f "$CANDIDATE" ]; then
+        LOG_FILE="$CANDIDATE"
     fi
+fi
 
-    if [ -z "$LOG_FILE" ] && [ -d "$PROJECT_DIR" ]; then
-        # Most-recently-modified top-level *.jsonl in the project dir (no recursion).
-        CANDIDATE=$(find "$PROJECT_DIR" -maxdepth 1 -type f -name '*.jsonl' -print0 2>/dev/null \
-            | xargs -0 ls -t 2>/dev/null \
-            | head -n 1)
-        [ -n "$CANDIDATE" ] && [ -f "$CANDIDATE" ] && LOG_FILE="$CANDIDATE"
+if [ -z "$LOG_FILE" ] && [ -d "$PROJECT_DIR" ]; then
+    # Most-recently-modified top-level *.jsonl in the project dir (no recursion).
+    # `|| true` swallows SIGPIPE (141) from `ls` when `head` closes early, and
+    # also handles the "no matching files" case cleanly under `set -e`.
+    CANDIDATE=$(find "$PROJECT_DIR" -maxdepth 1 -type f -name '*.jsonl' -print0 2>/dev/null \
+        | { xargs -0 ls -t 2>/dev/null || true; } \
+        | head -n 1 \
+        || true)
+    if [ -n "$CANDIDATE" ] && [ -f "$CANDIDATE" ]; then
+        LOG_FILE="$CANDIDATE"
     fi
 fi
 
@@ -89,21 +110,30 @@ error: could not resolve session transcript file.
   checked --log-file       : ${LOG_FILE:-<none>}
   CLAUDE_CODE_SESSION_ID   : ${CLAUDE_CODE_SESSION_ID:-<unset>}
   CLAUDE_CODE_AGENT_ID     : ${CLAUDE_CODE_AGENT_ID:-<unset>}
-  project dir              : $HOME/.claude/projects/$(encode_cwd "$PWD")
+  project dir              : $PROJECT_DIR
 
 Pass --log-file <path> to override.
 EOF
     exit 1
 fi
 
-# --- run the pipeline ------------------------------------------------------
+# ============================================================================
+# RUN THE PIPELINE
+# ============================================================================
 # Drop compaction-summary messages first, then apply the caller's jq args.
-# We ignore the exit code of the pre-filter's jq so a single malformed line
-# doesn't suppress all output; the user's jq exit code is what matters.
-jq -c 'select(.isCompactSummary != true)' "$LOG_FILE" | jq "$@"
-USER_JQ_EXIT=$?
+# The `|| true` on the pre-filter stops a single malformed line from flipping
+# the pipeline's exit code under `pipefail`; we only care about the user's jq
+# exit code, captured via $? after the pipeline.
 
-# Trailing pointer line — always printed so the caller sees the exact path.
+set +e
+{ jq -c 'select(.isCompactSummary != true)' "$LOG_FILE" || true; } | jq "$@"
+USER_JQ_EXIT=$?
+set -e
+
+# ============================================================================
+# TRAILING POINTER LINE (always printed so the caller sees the log path)
+# ============================================================================
+
 printf '\nIf you want a more semantic search of the history, start an Explore agent and tell it what to look for in %s\n' "$LOG_FILE"
 
 exit "$USER_JQ_EXIT"
