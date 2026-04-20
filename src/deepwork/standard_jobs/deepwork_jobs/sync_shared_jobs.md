@@ -82,10 +82,11 @@ If the user selects "Custom local path", ask for the filesystem path to the Deep
 
 1. If `.deepwork/upstream/` doesn't exist, create it:
    ```bash
-   git clone --sparse --filter=blob:none \
+   git clone --no-checkout --filter=blob:none \
      https://github.com/Unsupervisedcom/deepwork.git \
      .deepwork/upstream
-   git -C .deepwork/upstream sparse-checkout set --cone library/jobs/
+   git -C .deepwork/upstream sparse-checkout set --no-cone 'library/jobs/**'
+   git -C .deepwork/upstream checkout
    ```
 2. If it already exists, update it:
    ```bash
@@ -124,10 +125,11 @@ The env var must be set so the DeepWork plugin discovers library jobs at runtime
      ```bash
      REPO_ROOT="$(git rev-parse --show-toplevel)"
      if [ ! -d "$REPO_ROOT/.deepwork/upstream" ]; then
-       git clone --sparse --filter=blob:none \
+       git clone --no-checkout --filter=blob:none \
          https://github.com/Unsupervisedcom/deepwork.git \
          "$REPO_ROOT/.deepwork/upstream"
-       git -C "$REPO_ROOT/.deepwork/upstream" sparse-checkout set --cone library/jobs/
+       git -C "$REPO_ROOT/.deepwork/upstream" sparse-checkout set --no-cone 'library/jobs/**'
+       git -C "$REPO_ROOT/.deepwork/upstream" checkout
      else
        git -C "$REPO_ROOT/.deepwork/upstream" pull --ff-only
      fi
