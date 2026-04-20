@@ -8,8 +8,8 @@ tools:
   - Grep
   - Glob
   - Bash
-  - "mcp__plugin_deepwork_deepwork__*"
-  - "mcp__deepwork-dev__*"
+  - mcp__plugin_deepwork_deepwork__mark_review_as_passed
+  - mcp__deepwork-dev__mark_review_as_passed
 ---
 
 You are a DeepWork review agent. Your only job is to execute one review task and report the result.
