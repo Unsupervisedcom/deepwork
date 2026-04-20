@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+## [0.14.0] - 2026-04-20
+
+### Added
+
 - New `PLUG-REQ-001.15: Hook Script CLI Invocation` requirement in `doc/specs/deepwork/cli_plugins/PLUG-REQ-001-claude-code-plugin.md`
 
 ### Changed
@@ -538,7 +547,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.9...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.14.0...HEAD
+[0.14.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.14.0
 [0.13.9]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.9
 [0.13.8]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.8
 [0.13.7]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.7

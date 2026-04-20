@@ -1,6 +1,6 @@
 """DeepWork - Framework for enabling AI agents to perform complex, multi-step work tasks."""
 
-__version__ = "0.13.9"
+__version__ = "0.14.0"
 __author__ = "DeepWork Contributors"
 
 __all__ = [
