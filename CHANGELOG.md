@@ -9,9 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New `PLUG-REQ-001.15: Hook Script CLI Invocation` requirement in `doc/specs/deepwork/cli_plugins/PLUG-REQ-001-claude-code-plugin.md`
+
 ### Changed
 
+- `claude_plugin_hook_deepwork_invocation` review rule now requires plugin hook scripts to invoke the CLI via `uvx deepwork` instead of merely providing a `uvx deepwork` fallback (PLUG-REQ-001.15)
+- Plugin hook scripts (`post_commit_reminder.sh`, `deepschema_write.sh`, `post_compact.sh`) now invoke the `deepwork` CLI exclusively via `uvx deepwork ...`, matching the MCP server launch in `plugins/claude/.mcp.json`
+- Flake `shellHook` no longer runs `uv tool install -e` — the editable user-level `deepwork` install is redundant now that plugin hooks go through `uvx`
+
 ### Fixed
+
+- Plugin hooks no longer fail when the end user has a stale user-level `deepwork` install (e.g., `uv tool install deepwork` pinned to an older release) that wins PATH lookup but lacks the hook module being requested. The 0.13.9 fallback still used PATH first; this release bypasses PATH entirely so hooks resolve to the same `uvx` cache that the MCP server populated
 
 ### Removed
 ## [0.13.9] - 2026-04-16
@@ -19,14 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New `claude_plugin_hook_deepwork_invocation` review rule in `plugins/claude/.deepreview` that flags plugin hook scripts which call bare `deepwork` without a `uvx deepwork` fallback
-
-### Changed
-
-### Fixed
-
-- Plugin hook scripts (`post_commit_reminder.sh`, `deepschema_write.sh`, `post_compact.sh`) now fall back to `uvx deepwork` when the bare `deepwork` binary is not on PATH. End-user installs launch the MCP server via `uvx deepwork serve`, so `deepwork` is not available as a command — previously these hooks failed with exit 127 on every Bash tool use, and Claude Code reported them as failed PostToolUse hooks (regression introduced in PR #361)
-
-### Removed
 ## [0.13.8] - 2026-04-14
 
 ### Added
