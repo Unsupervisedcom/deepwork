@@ -1,0 +1,7 @@
+{
+  "name": "deepwork",
+  "description": "Framework for AI-powered multi-step workflows with quality gates in OpenClaw",
+  "version": "0.11.0",
+  "skills": ["skills"],
+  "hooks": ["hooks"]
+}
