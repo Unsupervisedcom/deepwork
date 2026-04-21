@@ -199,6 +199,8 @@ def write_instruction_files(
                 passed_marker = child.with_suffix(".passed")
                 if not passed_marker.exists():
                     child.unlink()
+            elif child.suffix == ".txt":
+                child.unlink()
     instructions_dir.mkdir(parents=True, exist_ok=True)
 
     # Run all precompute commands in parallel before building files
@@ -229,11 +231,19 @@ def write_instruction_files(
         )
         content = build_instruction_file(task, review_id, precomputed_info, project_root)
         file_path = instructions_dir / f"{review_id}.md"
+        alias_path = instructions_dir / short_instruction_filename(review_id)
 
         safe_write(file_path, content)
+        safe_write(alias_path, content)
         results.append((task, file_path))
 
     return results
+
+
+def short_instruction_filename(review_id: str) -> str:
+    """Build a short deterministic filename for OpenClaw review prompts."""
+    digest = hashlib.sha256(review_id.encode("utf-8")).hexdigest()[:10]
+    return f"r-{digest}.txt"
 
 
 def build_instruction_file(

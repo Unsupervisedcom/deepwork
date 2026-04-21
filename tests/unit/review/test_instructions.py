@@ -19,6 +19,7 @@ from deepwork.review.instructions import (
     _sanitize_for_id,
     build_instruction_file,
     compute_review_id,
+    short_instruction_filename,
     write_instruction_files,
 )
 
@@ -536,6 +537,12 @@ class TestInlineContent:
 
         results = write_instruction_files([task], tmp_path)
         assert results == []
+
+    def test_short_instruction_filename_is_stable(self, tmp_path: Path) -> None:
+        review_id = "rule--src-app.py--abc123def456"
+        assert short_instruction_filename(review_id) == short_instruction_filename(review_id)
+        assert short_instruction_filename(review_id).startswith("r-")
+        assert short_instruction_filename(review_id).endswith(".txt")
 
 
 class TestPrecomputedContext:

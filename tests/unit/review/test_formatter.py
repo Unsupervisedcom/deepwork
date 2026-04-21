@@ -4,7 +4,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from deepwork.review.config import ReviewTask
-from deepwork.review.formatter import _resolve_file_ref_root, format_for_claude
+from deepwork.review.formatter import _resolve_file_ref_root, format_for_claude, format_for_openclaw
+from deepwork.review.instructions import short_instruction_filename
 
 
 def _make_task(
@@ -240,3 +241,42 @@ class TestFormatForClaudeWorktree:
             result = format_for_claude([(task, file_path)], tmp_path)
 
         assert 'prompt: "@.deepwork/tmp/review_instructions/review_123.md"' in result
+
+
+class TestFormatForOpenClaw:
+    """Tests for format_for_openclaw."""
+
+    def test_empty_tasks_returns_no_tasks_message(self, tmp_path: Path) -> None:
+        result = format_for_openclaw([], tmp_path)
+        assert "No review tasks" in result
+
+    def test_output_mentions_sessions_spawn(self, tmp_path: Path) -> None:
+        task = _make_task(rule_name="py_review", files=["src/app.py"])
+        file_path = (
+            tmp_path
+            / ".deepwork"
+            / "tmp"
+            / "review_instructions"
+            / "py_review--src-app.py--123456789abc.md"
+        )
+        file_path.parent.mkdir(parents=True)
+        file_path.write_text("content")
+
+        result = format_for_openclaw([(task, file_path)], tmp_path)
+
+        assert "sessions_spawn" in result
+        assert "label: py_review review of src/app.py" in result
+        assert "` .deepwork" not in result
+        alias_name = short_instruction_filename(file_path.stem)
+        assert f"`.deepwork/tmp/review_instructions/{alias_name}`" in result
+        assert "workspace" in result
+        assert "absolute host path" in result
+        assert "timeoutSeconds" in result
+
+    def test_agent_name_becomes_agent_type(self, tmp_path: Path) -> None:
+        task = _make_task(agent_name="security-expert")
+        file_path = tmp_path / "instructions.md"
+
+        result = format_for_openclaw([(task, file_path)], tmp_path)
+
+        assert "agent_type: security-expert" in result
