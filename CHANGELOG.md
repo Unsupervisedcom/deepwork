@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New `full-convo-memory` Claude Code plugin (registered in `.claude-plugin/marketplace.json`) providing a `search_conversation` skill and `scripts/search_conversation.sh`. The script runs `jq` against the current session's jsonl transcript, auto-detecting the log file for both top-level sessions (via `CLAUDE_CODE_SESSION_ID`) and sub-agents (via `CLAUDE_CODE_SESSION_ID` + `CLAUDE_CODE_AGENT_ID`), filtering out compaction-summary messages, and appending a pointer line naming the log file for fallback semantic search via an Explore agent
+
 ### Changed
 
 ### Fixed
