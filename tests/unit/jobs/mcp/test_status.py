@@ -107,6 +107,16 @@ class TestStatusDirectoryStructure:
         assert status_writer.manifest_path == status_writer.status_dir / "job_manifest.yml"
         assert status_writer.sessions_dir == status_writer.status_dir / "sessions"
 
+    def test_set_project_root_updates_paths(self, status_writer: StatusWriter) -> None:
+        new_root = Path("/tmp/other-root")
+        resolved = new_root.resolve()
+
+        status_writer.set_project_root(new_root)
+
+        assert status_writer.status_dir == resolved / ".deepwork" / "tmp" / "status" / "v1"
+        assert status_writer.manifest_path == status_writer.status_dir / "job_manifest.yml"
+        assert status_writer.sessions_dir == status_writer.status_dir / "sessions"
+
 
 class TestWriteManifest:
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-010.1.2).

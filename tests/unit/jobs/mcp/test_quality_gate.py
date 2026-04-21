@@ -816,6 +816,67 @@ class TestRunQualityGate:
         mock_match.assert_called_once()
         assert result is not None
 
+    def test_uses_openclaw_formatter_when_requested(self, tmp_path: Path) -> None:
+        """OpenClaw quality-gate output uses the OpenClaw formatter, not Claude's."""
+        review = ReviewBlock(strategy="individual", instructions="Check quality")
+        arg = StepArgument(name="report", description="Report", type="file_path")
+        output_ref = StepOutputRef(argument_name="report", required=True, review=review)
+        step = WorkflowStep(name="write", outputs={"report": output_ref})
+        job, workflow = _make_job(tmp_path, [arg], step)
+
+        report_file = tmp_path / "report.md"
+        report_file.write_text("Report content")
+
+        mock_task = ReviewTask(
+            rule_name="step_write_output_report",
+            files_to_review=["report.md"],
+            instructions="Check quality",
+            agent_name=None,
+        )
+        instruction_path = tmp_path / ".deepwork" / "tmp" / "review_instruction.md"
+        instruction_path.parent.mkdir(parents=True, exist_ok=True)
+        instruction_path.write_text("Review instruction content")
+
+        def openclaw_formatter(*_args: object, **_kwargs: object) -> str:
+            return "openclaw formatted output"
+
+        def claude_formatter(*_args: object, **_kwargs: object) -> str:
+            return "claude formatted output"
+
+        with (
+            patch("deepwork.jobs.mcp.quality_gate.load_all_rules", return_value=([], [])),
+            patch(
+                "deepwork.jobs.mcp.quality_gate.match_files_to_rules",
+                return_value=[mock_task],
+            ),
+            patch(
+                "deepwork.jobs.mcp.quality_gate.write_instruction_files",
+                return_value=[(mock_task, instruction_path)],
+            ),
+            patch.dict(
+                "deepwork.jobs.mcp.quality_gate.FORMATTERS",
+                {"claude": claude_formatter, "openclaw": openclaw_formatter},
+                clear=False,
+            ),
+        ):
+            result = run_quality_gate(
+                step=step,
+                job=job,
+                workflow=workflow,
+                outputs={"report": "report.md"},
+                input_values={},
+                work_summary=None,
+                project_root=tmp_path,
+                platform="openclaw",
+            )
+
+        assert result is not None
+        assert "openclaw formatted output" in result
+        assert "claude formatted output" not in result
+        assert "sessions_spawn" in result
+        assert "sessions_yield" in result
+        assert "Do not set `timeoutSeconds`" in result
+
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.5.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_deepreview_skipped_when_get_changed_files_fails(self, tmp_path: Path) -> None:

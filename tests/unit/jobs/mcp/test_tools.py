@@ -14,6 +14,7 @@ from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     FinishedStepInput,
     FinishedStepResponse,
+    GetActiveWorkflowInput,
     GoToStepInput,
     StartWorkflowInput,
     StartWorkflowResponse,
@@ -329,6 +330,61 @@ class TestStartWorkflow:
             await tools.start_workflow(inp)
 
     @pytest.mark.asyncio
+    async def test_openclaw_runtime_session_hint_overrides_stale_session_id(
+        self, project_root: Path
+    ) -> None:
+        runtime_session_id = "openclaw-live-session"
+        runtime_note = (
+            project_root
+            / ".deepwork"
+            / "tmp"
+            / "openclaw"
+            / "DEEPWORK_OPENCLAW_BOOTSTRAP.md"
+        )
+        runtime_note.parent.mkdir(parents=True, exist_ok=True)
+        runtime_note.write_text(
+            "# DeepWork OpenClaw Runtime\n\n- session_id: `openclaw-live-session`\n",
+            encoding="utf-8",
+        )
+
+        state_manager = StateManager(project_root, platform="openclaw")
+        tools = WorkflowTools(project_root, state_manager, platform="openclaw")
+
+        response = await tools.start_workflow(
+            StartWorkflowInput(
+                goal="Test",
+                job_name="test_job",
+                workflow_name="main",
+                session_id="stale-session-id",
+            )
+        )
+
+        assert response.begin_step.session_id == runtime_session_id
+        assert (
+            project_root
+            / ".deepwork"
+            / "tmp"
+            / "sessions"
+            / "openclaw"
+            / f"session-{runtime_session_id}"
+            / "state.json"
+        ).exists()
+        assert not (
+            project_root
+            / ".deepwork"
+            / "tmp"
+            / "sessions"
+            / "openclaw"
+            / "session-stale-session-id"
+            / "state.json"
+        ).exists()
+
+        active = tools.get_active_workflow(GetActiveWorkflowInput(session_id="stale-session-id"))
+        assert active.has_active_workflow is True
+        assert active.active_workflow is not None
+        assert active.active_workflow.current_step.session_id == runtime_session_id
+
+    @pytest.mark.asyncio
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-001.3.3, JOBS-REQ-001.3.8).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_inputs_passed_to_first_step(
@@ -404,6 +460,17 @@ class TestFinishedStep:
             await _finish_step(
                 tools,
                 outputs={"output1": "nonexistent.md"},
+                override="skip",
+            )
+
+    @pytest.mark.asyncio
+    async def test_empty_file_path_rejected(self, tools: WorkflowTools) -> None:
+        await _start_main_workflow(tools)
+
+        with pytest.raises(ToolError, match="file path cannot be empty or whitespace"):
+            await _finish_step(
+                tools,
+                outputs={"output1": ""},
                 override="skip",
             )
 
