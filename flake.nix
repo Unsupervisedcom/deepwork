@@ -82,9 +82,6 @@
               uv sync --extra dev --quiet 2>/dev/null || true
               export PATH="$REPO_ROOT/.venv/bin:$PATH"
 
-              # Also register as a uv tool so `uvx deepwork serve` uses local source
-              uv tool install -e "$REPO_ROOT" --quiet 2>/dev/null || true
-
               # Create claude wrapper script so direnv (which can't export functions) works
               _claude_real=$(PATH="$(echo "$PATH" | sed "s|$REPO_ROOT/.venv/bin:||g")" command -v claude)
               if [ -n "$_claude_real" ]; then

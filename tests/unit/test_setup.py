@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import click.testing
 import pytest
 
 from deepwork.cli.main import cli
 from deepwork.setup.claude import (
-    DEEPWORK_DIR_PERMISSIONS,
+    ALLOW_PERMISSIONS,
     MARKETPLACE_KEY,
-    MCP_PERMISSION,
     PLUGIN_KEY,
     claude_setup,
 )
@@ -39,7 +39,8 @@ class TestClaudeSetupFreshFile:
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_creates_settings(self, claude_home: Path) -> None:
         changes = claude_setup()
-        assert len(changes) == 6
+        # 1 marketplace + 1 plugin + len(ALLOW_PERMISSIONS) permissions
+        assert len(changes) == 2 + len(ALLOW_PERMISSIONS)
         settings = _read_settings(claude_home)
 
         # marketplace registered
@@ -52,11 +53,8 @@ class TestClaudeSetupFreshFile:
         # plugin enabled
         assert settings["enabledPlugins"][PLUGIN_KEY] is True
 
-        # MCP permission
-        assert MCP_PERMISSION in settings["permissions"]["allow"]
-
-        # .deepwork directory permissions (project-relative via leading slash)
-        for perm in DEEPWORK_DIR_PERMISSIONS:
+        # all permissions present
+        for perm in ALLOW_PERMISSIONS:
             assert perm in settings["permissions"]["allow"]
 
 
@@ -102,12 +100,17 @@ class TestClaudeSetupNoClaudeDir:
         monkeypatch.setattr(Path, "home", staticmethod(lambda: fake_home))
 
         changes = claude_setup()
-        assert len(changes) == 6
+        assert len(changes) == 2 + len(ALLOW_PERMISSIONS)
         assert (fake_home / ".claude" / "settings.json").exists()
 
 
 class TestSetupCLI:
     """Tests for the setup CLI command itself."""
+
+    @pytest.fixture(autouse=True)
+    def _mock_browser(self) -> None:  # noqa: PT004
+        with patch("deepwork.cli.setup.webbrowser.open"):
+            yield
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.6.1).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -132,3 +135,11 @@ class TestSetupCLI:
         result = runner.invoke(cli, ["setup"])
         assert result.exit_code == 0
         assert "No supported" in result.output
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.6.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_opens_success_page(self, claude_home: Path) -> None:
+        with patch("deepwork.cli.setup.webbrowser.open") as mock_open:
+            runner = click.testing.CliRunner()
+            runner.invoke(cli, ["setup"])
+            mock_open.assert_called_once_with("https://www.deepwork.md/success")

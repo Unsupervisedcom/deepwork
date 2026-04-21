@@ -32,12 +32,6 @@ from deepwork.utils.validation import ValidationError, validate_against_schema
 logger = logging.getLogger("deepwork.jobs.mcp.quality_gate")
 
 
-class QualityGateError(Exception):
-    """Exception raised for quality gate errors."""
-
-    pass
-
-
 def validate_json_schemas(
     outputs: dict[str, ArgumentValue],
     step: WorkflowStep,
@@ -275,10 +269,8 @@ Please review for compliance with the following requirements. You MUST fail the 
 
 Evaluate whether the work described in the `work_summary` meets each requirement. If an output file helps verify a requirement, read it."""
 
-        # Create a synthetic ReviewTask directly (not a ReviewRule since there are
-        # no file patterns to match — this is about the process, not files)
-        # We'll create a rule that matches all output files so it goes through
-        # the pipeline
+        # Create a ReviewRule that matches all output files so it goes through
+        # the standard review pipeline
         output_paths = _collect_output_file_paths(outputs, job)
         if output_paths:
             pqa_rule = ReviewRule(
@@ -504,7 +496,7 @@ For any failing reviews, if you believe the issue is invalid, then you can call 
 
 ## How to Run Reviews
 
-For each review task listed above, launch it as a parallel Task agent. The task's prompt field points to an instruction file — read it and follow the review instructions.
+For each review task listed above, launch it as a parallel Agent. The task's prompt field points to an instruction file — read it and follow the review instructions.
 
 ## After Reviews
 

@@ -14,6 +14,114 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Removed
+## [0.14.0] - 2026-04-20
+
+### Added
+
+- New `PLUG-REQ-001.15: Hook Script CLI Invocation` requirement in `doc/specs/deepwork/cli_plugins/PLUG-REQ-001-claude-code-plugin.md`
+
+### Changed
+
+- `claude_plugin_hook_deepwork_invocation` review rule now requires plugin hook scripts to invoke the CLI via `uvx deepwork` instead of merely providing a `uvx deepwork` fallback (PLUG-REQ-001.15)
+- Plugin hook scripts (`post_commit_reminder.sh`, `deepschema_write.sh`, `post_compact.sh`) now invoke the `deepwork` CLI exclusively via `uvx deepwork ...`, matching the MCP server launch in `plugins/claude/.mcp.json`
+- Flake `shellHook` no longer runs `uv tool install -e` — the editable user-level `deepwork` install is redundant now that plugin hooks go through `uvx`
+
+### Fixed
+
+- Plugin hooks no longer fail when the end user has a stale user-level `deepwork` install (e.g., `uv tool install deepwork` pinned to an older release) that wins PATH lookup but lacks the hook module being requested. The 0.13.9 fallback still used PATH first; this release bypasses PATH entirely so hooks resolve to the same `uvx` cache that the MCP server populated
+
+### Removed
+## [0.13.9] - 2026-04-16
+
+### Added
+
+- New `claude_plugin_hook_deepwork_invocation` review rule in `plugins/claude/.deepreview` that flags plugin hook scripts which call bare `deepwork` without a `uvx deepwork` fallback
+## [0.13.8] - 2026-04-14
+
+### Added
+
+### Changed
+
+- Renamed default reviewer agent from `reviewer` to `deepwork:reviewer` (plugin-namespaced) in review instructions output
+- `/review` skill now checks for `deepwork:reviewer` agent availability before proceeding and directs users to `/reload-plugins` if missing
+
+### Fixed
+
+### Removed
+## [0.13.7] - 2026-04-14
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+## [0.13.6] - 2026-04-14
+
+### Added
+
+### Changed
+
+- Deprecated the `steps/` folder pattern for job definitions — step instructions are now inlined in `job.yml`; moved supplemental reference files from `steps/` to job root directories
+- Repair workflow now instructs agents to `git rm` step instruction files after inlining
+- Moved `specs/` to `doc/specs/` and consolidated `docs/` into `doc/` to reduce root directory clutter
+
+### Removed
+
+- `coverage_report.md` (stale snapshot)
+- `job_refactor.md` (superseded planning notes)
+- `CLAUDE_PLUGINS_README.md` (redundant with README.md)
+
+### Fixed
+
+### Removed
+## [0.13.5] - 2026-04-12
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+## [0.13.4] - 2026-04-11
+
+### Added
+
+### Changed
+
+- Post-commit review reminder hook now short-circuits when all applicable (non-catch-all) review rules for the committed files are already marked as passed, emitting "No re-review needed" instead of nagging
+- Renamed all "Task tool" references to "Agent tool" across codebase to match Claude Code's current tool naming
+- Review formatter now emits `description`, `subagent_type`, and `prompt` fields (dropped `name` field) to match Agent tool signature
+- Hook wrapper tool mappings updated: `Task`/`task` → `Agent`/`agent`
+
+### Fixed
+
+- Review instruction files now include a `## Project Root` directive stating the absolute project root so reviewer subagents read files from the correct working tree — fixes spurious findings in git-worktree setups where the subagent's cwd differed from the worktree the commits actually lived in (REVIEW-REQ-005.1.9)
+
+### Removed
+
+- Removed automatic DeepPlan workflow injection from startup_context.sh hook (no longer forces plan mode into DeepPlan)
+- Deprecated JOBS-REQ-014.5.1 (startup hook DeepPlan trigger) and REVIEW-REQ-006.3.3a (name field in review output)
+## [0.13.3] - 2026-04-10
+
+### Added
+
+- `/record` skill: "watch and learn" approach to creating DeepWork workflows — users do their work normally, then `/deepwork learn` turns it into a repeatable job
+- `/new_user` skill: guided onboarding that introduces DeepWork, offers review rule setup for code projects, and offers to record a first workflow
+- `/deepwork learn` now routes to the `new_job` workflow when invoked after `/deepwork:record`
+- Requirements specs PLUG-REQ-002 (record skill) and PLUG-REQ-003 (new user skill)
+- Anonymous DeepSchemas for both new skills
+
+### Changed
+
+- README install commands consolidated into a single `&&`-joined command ending with `/deepwork:new_user`
+- `deepwork setup` now opens `https://www.deepwork.md/success` in the default browser after completing configuration
+
+### Fixed
+
+### Removed
 ## [0.13.2] - 2026-04-09
 
 ### Added
@@ -439,7 +547,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.13.2...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.14.0...HEAD
+[0.14.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.14.0
+[0.13.9]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.9
+[0.13.8]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.8
+[0.13.7]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.7
+[0.13.6]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.6
+[0.13.5]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.5
+[0.13.4]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.4
+[0.13.3]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.3
 [0.13.2]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.2
 [0.13.1]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.1
 [0.13.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.0

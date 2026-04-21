@@ -16,13 +16,21 @@ Run automated code reviews on the current branch based on `.deepreview` config f
 
 Only proceed past this section if the user wants to **run** reviews.
 
+## Pre-flight — Verify Agent Availability
+
+Before running reviews, check that the `deepwork:reviewer` agent is available. If it does not appear in the agents list (i.e., the Agent tool does not list `deepwork:reviewer` as a valid `subagent_type`), **STOP** and tell the user:
+
+> The `deepwork:reviewer` agent is not available. Please run `/reload-plugins` to pick up the latest plugin updates, then try again.
+
+Do not proceed with reviews until the agent is available.
+
 ## How to Run
 
 1. Call the `mcp__deepwork__get_review_instructions` tool directly:
    - **No arguments** to review the current branch's changes (auto-detects via git diff against the main branch).
    - **With `files`** to review only specific files: `mcp__deepwork__get_review_instructions(files=["src/app.py", "src/lib.py"])`. When provided, only reviews whose include/exclude patterns match the given files will be returned. Use this when the user asks to review a particular file or set of files rather than the whole branch.
    - **If the result says no rules are configured**: Ask the user if they'd like to auto-discover and set up rules. If yes, invoke the `/deepwork` skill with the `deepwork_reviews` job's `discover_rules` workflow. Stop here — do not proceed with running reviews if there are no rules.
-2. The output will list review tasks to invoke in parallel. Each task has `name`, `description`, `subagent_type`, and `prompt` fields — these map directly to the Task tool parameters. Launch all of them as parallel Task agents.
+2. The output will list review tasks to invoke in parallel. Each task has `description`, `subagent_type`, and `prompt` fields — these map directly to the Agent tool parameters. Launch all of them as parallel agents.
 3. **While review agents run**, check for a changelog and open PR (see below).
 4. Collect the results from all review agents.
 
@@ -55,8 +63,7 @@ When a finding is dismissed (user chooses "Skip" or you determine it's not actio
 
 After making any changes:
 
-1. Call `mcp__deepwork__get_review_instructions` again (with the same `files` argument if the original review was file-scoped, otherwise no arguments).
+1. Call `mcp__deepwork__get_review_instructions` with `files` set to **only the files you edited** during this iteration. This scopes the re-review to your changes rather than re-reviewing the entire branch.
 2. Repeat the cycle (run → act on results → run again) until a clean run — one where all review agents return no findings, or all remaining findings have been explicitly skipped by the user.
 3. On subsequent runs, you only need to re-run tasks that had findings last time — skip tasks that were clean.
-4. If you made very large changes, consider re-running the full review set.
-5. Reviews that already passed are automatically skipped as long as reviewed files remain unchanged.
+4. Reviews that already passed are automatically skipped as long as reviewed files remain unchanged.

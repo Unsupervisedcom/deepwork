@@ -11,6 +11,7 @@ prompt_best_practices:
       - "plugins/**/skills/**/*.md"
       - "learning_agents/skills/**/*.md"   # learning_agents plugin skills are prompt-heavy
       - "learning_agents/agents/**/*.md"   # agent persona definitions
+      - "plugins/**/agents/**/*.md"          # plugin agent definitions are prompt-heavy
       - "platform/**/*.md"
       - "src/deepwork/standard_jobs/**/*.md"
       - "library/jobs/**/*.md"  # library job step instructions are prompt-heavy files
@@ -118,96 +119,47 @@ requirements_traceability:
     instructions: |
       Review the changed files for requirements traceability.
 
-      This project keeps formal requirements in `specs/` organized by domain.
-      Each file follows the naming pattern `{PREFIX}-REQ-NNN-<topic>.md` where
-      PREFIX is one of: DW-REQ, JOBS-REQ, REVIEW-REQ, LA-REQ, PLUG-REQ.
-      Requirements are individually numbered (e.g. JOBS-REQ-004.1). Requirements
-      must be validated by either automated tests OR DeepWork review rules.
+      Requirements live in `doc/specs/` as `{PREFIX}-REQ-NNN-<topic>.md`
+      (prefixes: DW-REQ, JOBS-REQ, REVIEW-REQ, LA-REQ, PLUG-REQ), with
+      individually numbered items (e.g. JOBS-REQ-004.1). Each requirement
+      must be validated by automated tests, DeepSchemas, or `.deepreview` rules.
 
       ## Choosing the right validation mechanism
 
-      Choosing the right mechanism is critical. The wrong choice creates
-      false confidence (a passing test that doesn't actually verify anything)
-      or wastes reviewer judgment on something a machine can check exactly.
+      Pick the mechanism that matches the requirement type. The wrong choice
+      creates false confidence or wastes reviewer judgment.
 
-      **Use anonymous DeepSchemas** (`.deepschema.<filename>.yml`) when
-      requirements target a specific file — whether structural or semantic:
-      - "This config file MUST include a timeout field" — structural check
-        for one file (use `json_schema_path` or `verification_bash_command`
-        for exact verification)
-      - "The learn workflow MUST accept X and Y step arguments" — the
-        requirement governs a specific YAML file's content
-      - "Skill MUST instruct the agent to do X" — judgment-based check
-        of prose in one specific file
-      - "The error message MUST include a suggestion for how to fix the
-        problem" — governs a specific source file's behavior
+      **Anonymous DeepSchemas** (`.deepschema.<filename>.yml`): when the
+      requirement targets a specific file (structural or semantic). Use
+      `json_schema_path` / `verification_bash_command` for exact checks,
+      or judgment-based criteria for prose. Prefer DeepSchemas over tests
+      and `.deepreview` rules for single-file requirements.
 
-      Anonymous DeepSchemas provide both write-time validation and review-time
-      checks, and they keep the requirement co-located with the file it governs.
-      **Prefer them over both tests and `.deepreview` rules whenever the
-      requirement targets a specific file** rather than a class of files.
-      DeepSchemas can enforce structural requirements via `json_schema_path`
-      or `verification_bash_command` just as precisely as a test, while also
-      supporting judgment-based requirements in the same schema.
+      **Automated tests** (`tests/`): for concrete, machine-verifiable facts
+      spanning multiple files (function return values, CLI output, cross-file
+      structure). Tests reference requirement IDs via docstrings/comments.
 
-      **Use automated tests** (`tests/`) when the requirement specifies a
-      concrete, machine-verifiable fact that spans multiple files or is not
-      tied to a single file's content:
-      - File A is byte-identical to file B
-      - A Python function returns the correct value for given inputs
-      - A CLI command produces expected output
-      - A data structure assembled from multiple sources has a required shape
-
-      Tests reference requirement IDs via docstrings and traceability comments.
-
-      **Use `.deepreview` rules** when evaluating the requirement requires
-      judgment AND applies broadly across many files of a type:
-      - "All prompts MUST use the terms X, Y, and Z" — a general standard
-        that applies to every file matching a glob pattern
-      - "Code MUST follow pattern Y" — does the implementation match the
-        spirit of the pattern across multiple files?
-      - "Documentation MUST stay in sync with code" — are the descriptions
-        still accurate after changes?
-
-      Both `.deepreview` rules and DeepSchemas reference requirement IDs in
-      their `description`, `instructions`, or `requirements` fields.
+      **`.deepreview` rules**: when evaluation requires judgment AND applies
+      broadly across many files of a type (coding standards, documentation
+      accuracy, prompt conventions). Rules and DeepSchemas reference
+      requirement IDs in `description`, `instructions`, or `requirements`.
 
       ## Anti-patterns to flag
 
-      **Fragile keyword tests for judgment-based requirements.** A test that
-      checks `"reuse" in content.lower()` to validate "MUST instruct the
-      agent to reuse existing rules" is not deterministic verification — it
-      is a keyword search pretending to be one. The word "reuse" could appear
-      in an unrelated sentence, be negated ("do NOT reuse"), or be absent
-      while the instruction clearly conveys reuse through other wording.
-      These requirements need a review rule that can read and evaluate the
-      instruction's meaning. Other examples of this anti-pattern:
-      - `"parallel" in content` for "MUST launch tasks in parallel"
-      - `"again" in content or "repeat" in content` for "MUST re-run after changes"
-      - `"without asking" in content` for "MUST automatically apply obvious fixes"
-
-      **Review rules for machine-verifiable requirements.** A review rule
-      that asks a reviewer "check whether the config file contains
-      `--platform claude`" is wasting reviewer judgment on something
-      `assert "--platform" in args` can verify exactly. If the requirement
-      specifies a concrete value, path, or structure, use a test.
-
-      See specs/validating_requirements_with_rules.md for more information.
+      - **Fragile keyword tests for judgment requirements**: e.g.
+        `"parallel" in content` for "MUST launch tasks in parallel" — use
+        a review rule instead. See doc/specs/validating_requirements_with_rules.md.
+      - **Review rules for machine-verifiable requirements**: e.g. asking a
+        reviewer to check for a specific flag — use a test instead.
 
       ## Review checklist
 
-      1. Check that any new or changed end-user functionality has a
-         corresponding requirement in `specs/`.
-      2. Check that every requirement touched by this change has at least
-         one automated test OR at least one `.deepreview` rule validating
-         it. **Verify the mechanism matches the requirement type** — flag
-         keyword-search tests used for judgment requirements, and flag
-         review rules used for machine-verifiable requirements.
-      3. Flag any test modifications where the underlying requirement did
-         not also change.
-      4. For rule-validated requirements, verify the `.deepreview` rule's
-         description or instructions reference the requirement ID and that
-         the rule's scope covers the requirement's intent.
+      1. New/changed end-user functionality has a requirement in `doc/specs/`.
+      2. Every touched requirement has a test, DeepSchema, or `.deepreview`
+         rule. Verify the mechanism matches the requirement type.
+      3. Flag test modifications where the underlying requirement didn't change.
+      4. For rule-validated requirements, verify the rule references the
+         requirement ID and its scope covers the requirement's intent.
 
       Produce a structured review with Coverage Gaps, Test Stability
       Violations, and a Summary with PASS/FAIL verdicts.
@@ -335,6 +287,52 @@ update_learning_agents_architecture:
     additional_context:
       unchanged_matching_files: true
 
+agent_tools_fully_qualified:
+  description: "Claude Code agent definition files must list every tool by fully-qualified name, never by wildcard."
+  match:
+    include:
+      - "**/agents/*.md"
+  review:
+    strategy: individual
+    instructions: |
+      This file defines a Claude Code subagent (the YAML frontmatter at the
+      top of the file configures the agent's name, description, model, and
+      tool grants). Check the `tools:` frontmatter field.
+
+      Rule: every tool entry MUST be a fully-qualified tool name. Wildcard
+      or glob patterns (any entry containing `*`, `?`, `[`, or ending in
+      `__*`) are non-conforming.
+
+      Rationale: wildcard patterns in subagent `tools:` frontmatter do not
+      reliably match deferred MCP tools at runtime. Observed failure mode:
+      a frontmatter entry like `mcp__deepwork-dev__*` is accepted at parse
+      time, but when the subagent tries to invoke
+      `mcp__deepwork-dev__mark_review_as_passed` the runtime responds with
+      `Error: No such tool available`. Enumerating each MCP tool by its
+      full name (e.g., `mcp__deepwork-dev__mark_review_as_passed`) avoids
+      this failure mode and also documents the exact tool surface the
+      agent relies on. This caught us in the e2e merge-queue run that
+      failed PR #390.
+
+      This rule does NOT apply to files that are not Claude Code agent
+      definitions — if the file has no YAML frontmatter with name/tools
+      fields (e.g., it is a context-injection document or a skill body
+      that happens to live under an `agents/` path), this review passes
+      vacuously.
+
+      Check for:
+      - Any entry in `tools:` containing `*`, `?`, or `[...]` glob syntax.
+      - Any entry ending in `__*` (the common MCP-wildcard form).
+      - Any quoted glob pattern such as `"mcp__<server>__*"`.
+
+      Output Format:
+      - PASS: `tools:` field is missing, empty, or every entry is a
+        fully-qualified name.
+      - FAIL: list each wildcard entry with its line number and the
+        fully-qualified tool names it should be replaced with (if
+        determinable from the agent's body; otherwise flag the need for
+        enumeration).
+
 shell_code_review:
   description: "Review shell scripts for correctness, safety, and project conventions."
   match:
@@ -368,6 +366,10 @@ shell_code_review:
       - **Comment accuracy**: Are all comments (especially header blocks and
         section markers) still accurate after the changes? Flag any comments
         that describe behavior that no longer matches the code.
+
+      Output Format:
+      - PASS: No issues found.
+      - FAIL: List each issue with file, line, severity (high/medium/low), and a concise description.
 
 agents_md_claude_md_symlink:
   description: "Ensure every AGENTS.md file has a sibling CLAUDE.md symlink pointing to it, because Claude Code reads CLAUDE.md but ignores AGENTS.md."

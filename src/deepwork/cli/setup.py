@@ -1,5 +1,6 @@
 """CLI command: deepwork setup."""
 
+import webbrowser
 from pathlib import Path
 
 import click
@@ -25,3 +26,5 @@ def setup() -> None:
             click.echo("Claude Code — already configured, no changes needed.")
     else:
         click.echo("No supported AI agent platforms detected (~/.claude not found).")
+
+    webbrowser.open("https://www.deepwork.md/success")

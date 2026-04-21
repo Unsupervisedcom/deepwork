@@ -10,7 +10,7 @@ DeepWork Reviews lets you define automated code review policies using `.deeprevi
 - **"Gotcha" regression checkers** — Watch a specific file or module for a known class of mistake that has regressed before, with instructions describing exactly what to look for
 - **Cross-file consistency reviews** — Group a logical set of interrelated files (e.g., API schema + client code + tests) so the reviewer can verify that any individual change makes sense in the wider context
 - **Tone and style reviews for human-facing content** — Review copy, docs, blog posts, or marketing pages for consistent voice, reading level, and style guidelines
-- **Requirements validation** — Verify that code, config, and instruction files satisfy formal requirements that need judgment to evaluate (see [Validating Requirements with Review Rules](specs/validating_requirements_with_rules.md))
+- **Requirements validation** — Verify that code, config, and instruction files satisfy formal requirements that need judgment to evaluate (see [Validating Requirements with Review Rules](doc/specs/validating_requirements_with_rules.md))
 
 ## How It Works
 
@@ -107,7 +107,7 @@ rule_name:
       all_changed_filenames: true
       unchanged_matching_files: true
     reference_files:                # Optional. Files whose contents are inlined
-      - path: "docs/style_guide.md" # into a "## Reference Materials" section of
+      - path: "docs/style_guide.md" # into a "## Relevant File Contents" section of
         description: "Style guide"  # every generated review instruction file.
 ```
 
@@ -122,6 +122,12 @@ DeepSchema-generated reviews automatically populate `reference_files` from the s
 ## Review Strategies
 
 The `strategy` field controls how matched files are grouped into review tasks.
+
+| Strategy | Reviewer sees | Best for |
+|----------|--------------|----------|
+| `individual` | One file at a time | Per-file linting, style checks |
+| `matches_together` | All matched files together | Cross-file consistency, migration safety |
+| `all_changed_files` | _Every_ changed file in the changeset (tripwire) | Security audits, broad impact analysis |
 
 ### `individual` — One review per file
 
@@ -305,18 +311,19 @@ This:
 ### What the output looks like
 
 ```
-Invoke the following list of Tasks in parallel:
+Invoke the following list of Agents in parallel.
+IMPORTANT: Do NOT read the prompt files yourself. Pass the prompt field directly to each agent — the @file references are expanded automatically.
 
-Name: "python_review review of src/app.py"
-	Agent: Default
+description: Review python_review
+	subagent_type: deepwork:reviewer
 	prompt: "@.deepwork/tmp/review_instructions/7142141.md"
 
-Name: "python_review review of src/lib.py"
-	Agent: Default
+description: Review python_review
+	subagent_type: deepwork:reviewer
 	prompt: "@.deepwork/tmp/review_instructions/6316224.md"
 
-Name: "db_migration_safety review of 2 files"
-	Agent: db-expert
+description: Review db_migration_safety
+	subagent_type: db-expert
 	prompt: "@.deepwork/tmp/review_instructions/3847291.md"
 ```
 
@@ -529,3 +536,9 @@ Patterns follow standard glob syntax, evaluated relative to the `.deepreview` fi
 | `config/*` | `config/settings.yaml` | `config/deep/nested.yaml` |
 | `**/Dockerfile` | `Dockerfile`, `services/api/Dockerfile` | `Dockerfile.dev` |
 | `CHANGELOG.md` | `CHANGELOG.md` | `docs/CHANGELOG.md` |
+
+## Contributor setup
+
+By default, `/review` dispatches each review task to the `deepwork:reviewer` subagent shipped with the DeepWork Claude plugin (`plugins/claude/agents/reviewer.md`). If you are developing against this repo with only the dev MCP server (`uv run deepwork serve`) and no plugin installed, Claude Code cannot resolve `subagent_type: deepwork:reviewer` and review dispatch will fail.
+
+To run reviews as a contributor, install the plugin alongside the dev server: `claude plugin marketplace add Unsupervisedcom/deepwork && claude plugin install deepwork@deepwork-plugins`. The plugin ships the reviewer agent file, and either MCP server prefix (`mcp__deepwork-dev__*` or `mcp__plugin_deepwork_deepwork__*`) will resolve the reviewer's tools.

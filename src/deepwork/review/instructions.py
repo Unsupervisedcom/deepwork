@@ -85,6 +85,11 @@ def _content_hash(files: list[str], project_root: Path, inline_content: str | No
     ``inline_content`` is provided, it is mixed into the hash (via a
     sentinel marker) so that each distinct string value produces a
     distinct review ID.
+
+    ``files`` entries are expected to be repo-root-relative paths sourced
+    from trusted ``.deepreview`` config files.  Absolute paths or ``..``
+    segments are not validated here; callers MUST ensure paths stay
+    inside ``project_root``.
     """
     h = hashlib.sha256()
     for filepath in sorted(files):
@@ -105,8 +110,15 @@ PRECOMPUTE_TIMEOUT_SECONDS = 60
 def _run_precompute_command(command: str, project_root: Path) -> str:
     """Run a single precompute bash command and return its stdout.
 
+    Precompute commands are fully trusted input sourced from the repo's own
+    ``.deepreview`` files; they run via ``shell=True`` and MUST NOT be fed
+    any untrusted external data (e.g., user-supplied strings interpolated
+    into the command).
+
     Args:
-        command: Resolved absolute path to the command to execute.
+        command: Shell command string to execute. The first path component
+            has been resolved to an absolute path by the caller; the rest
+            of the command is passed through to the shell verbatim.
         project_root: Working directory for command execution.
 
     Returns:
@@ -146,8 +158,10 @@ def _run_precompute_commands(commands: set[str], project_root: Path) -> dict[str
     if not commands:
         return {}
 
+    # Cap concurrent precompute shells so a repo with many rules does not
+    # briefly fork dozens of subprocesses at once on CI runners.
     results: dict[str, str] = {}
-    with ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor(max_workers=8) as executor:
         futures = {
             executor.submit(_run_precompute_command, cmd, project_root): cmd for cmd in commands
         }
@@ -207,12 +221,15 @@ def write_instruction_files(
         if passed_marker.exists():
             continue
 
+        # Direct key access (not .get()): the invariant below enforces that
+        # every non-None command produced unique_commands above MUST have a
+        # result in precompute_results — a missing key indicates drift.
         precomputed_info = (
-            precompute_results.get(task.precomputed_info_bash_command)
-            if task.precomputed_info_bash_command
+            precompute_results[task.precomputed_info_bash_command]
+            if task.precomputed_info_bash_command is not None
             else None
         )
-        content = build_instruction_file(task, review_id, precomputed_info)
+        content = build_instruction_file(task, review_id, precomputed_info, project_root)
         file_path = instructions_dir / f"{review_id}.md"
         alias_path = instructions_dir / short_instruction_filename(review_id)
 
@@ -233,6 +250,7 @@ def build_instruction_file(
     task: ReviewTask,
     review_id: str = "",
     precomputed_info: str | None = None,
+    project_root: Path | None = None,
 ) -> str:
     """Build the markdown content for a single review instruction file.
 
@@ -241,6 +259,12 @@ def build_instruction_file(
         review_id: The deterministic review ID for this task (used in the
             "After Review" section).
         precomputed_info: Pre-executed command output to include as context.
+        project_root: Absolute path to the project root that all relative
+            file paths in this instruction file resolve against. When
+            provided, the file includes an explicit "Project Root"
+            directive so the reviewer agent reads files from the correct
+            working tree even when its cwd differs (e.g., in a git
+            worktree dispatched from the main checkout).
 
     Returns:
         Markdown string containing the complete review instructions.
@@ -251,18 +275,38 @@ def build_instruction_file(
     scope = _describe_scope(task)
     parts.append(f"# Review: {task.rule_name} — {scope}\n")
 
+    # Project root directive — tells the reviewer where to read files from.
+    # Critical in git-worktree setups where the agent's cwd may differ from
+    # the worktree the commits actually live in.
+    if project_root is not None:
+        abs_root = project_root.resolve()
+        parts.append("## Project Root\n")
+        parts.append(
+            f"**All file paths in this document are relative to `{abs_root}`.** "
+            "When reading any file below with the Read tool, you MUST construct "
+            "the absolute path by prepending this project root. Do NOT read files "
+            "relative to your current working directory — it may differ from the "
+            "project root (e.g., when this review runs against a git worktree)."
+        )
+        parts.append("")
+
     # Review instructions
     parts.append("## Review Instructions\n")
     parts.append(task.instructions.strip())
     parts.append("")
 
-    # Reference materials — inlined file contents (subject to caps)
+    # Relevant file contents — inlined for reviewer context (subject to caps)
     if task.reference_files:
-        parts.append("## Reference Materials\n")
+        parts.append("## Relevant File Contents\n")
         parts.append(_build_reference_files_section(task.reference_files))
         parts.append("")
 
-    # Files to review (omitted for inline-content tasks with no files)
+    # Files to review (omitted for inline-content tasks with no files).
+    # NOTE: The @filepath references below are NOT auto-expanded when the
+    # instruction file is consumed by the reviewing agent.  They are path
+    # pointers — the agent must Read each file itself.  Any content that
+    # the reviewer needs without a round-trip should go in reference_files
+    # (rendered in "Relevant File Contents" above).
     if task.files_to_review:
         parts.append("## Files to Review\n")
         for filepath in task.files_to_review:
@@ -307,7 +351,8 @@ def build_instruction_file(
     if review_id:
         parts.append("## After Review\n")
         parts.append(
-            "If this review passes with no findings, call the `mark_review_as_passed` tool with:\n"
+            "If this review passes with no findings, or if all findings have been "
+            "addressed or explicitly dismissed, call the `mark_review_as_passed` tool with:\n"
         )
         parts.append(f'- `review_id`: `"{review_id}"`')
         parts.append("")
@@ -357,17 +402,20 @@ def _build_reference_files_section(reference_files: list[ReferenceFile]) -> str:
         remaining = MAX_INLINE_TOTAL_BYTES - total_bytes
         truncated_marker = ""
         content_bytes = content.encode("utf-8")
-        if len(content_bytes) > remaining:
+        original_byte_len = len(content_bytes)
+        if original_byte_len > remaining:
             # Truncate at a character boundary near the byte budget.
             content = content_bytes[:remaining].decode("utf-8", errors="ignore")
             truncated_marker = (
-                f"\n... (truncated: file is {len(content_bytes)} bytes, "
-                f"budget left was {remaining})"
+                f"\n... (truncated: file is {original_byte_len} bytes, budget left was {remaining})"
             )
+            consumed = remaining
+        else:
+            consumed = original_byte_len
 
         parts.append(header)
         parts.append(f"\n\n```{lang}\n{content}{truncated_marker}\n```\n")
-        total_bytes += len(content.encode("utf-8"))
+        total_bytes += consumed
         inlined_count += 1
 
     if omitted:

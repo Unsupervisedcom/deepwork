@@ -219,9 +219,11 @@ jobs:
           # The plugin (--plugin-dir) provides skills, hooks, and MCP server config.
           # Override the plugin's MCP config to use the bare `deepwork` command
           # (the plugin uses `uvx` which may not resolve the local venv install).
+          # Server is named "deepwork-dev" to match the reviewer agent's tool
+          # patterns (mcp__deepwork-dev__*) — see CLAUDE.md MCP tool naming.
           python3 -c "
           import json
-          mcp = {'mcpServers': {'deepwork': {
+          mcp = {'mcpServers': {'deepwork-dev': {
               'command': 'deepwork',
               'args': ['serve', '--path', '.', '--platform', 'claude']
           }}}
@@ -236,10 +238,10 @@ jobs:
               'permissions': {
                   'allow': [
                       'Bash(*)', 'Read(./**)', 'Edit(./**)', 'Write(./**)', 'Skill(*)',
-                      'mcp__deepwork__get_workflows', 'mcp__deepwork__start_workflow',
-                      'mcp__deepwork__finished_step', 'mcp__deepwork__abort_workflow',
-                      'mcp__deepwork__go_to_step',
-                      'mcp__deepwork__mark_review_as_passed'
+                      'mcp__deepwork-dev__get_workflows', 'mcp__deepwork-dev__start_workflow',
+                      'mcp__deepwork-dev__finished_step', 'mcp__deepwork-dev__abort_workflow',
+                      'mcp__deepwork-dev__go_to_step',
+                      'mcp__deepwork-dev__mark_review_as_passed'
                   ]
               }
           }
@@ -308,18 +310,12 @@ jobs:
             exit 1
           fi
 
-          # Verify step files were created
-          echo "=== Checking step files were created ==="
-          if [ -f ".deepwork/jobs/fruits/steps/identify.md" ] && [ -f ".deepwork/jobs/fruits/steps/classify.md" ]; then
-            echo "SUCCESS: Step instruction files created"
-            echo "--- identify.md ---"
-            cat .deepwork/jobs/fruits/steps/identify.md
-            echo ""
-            echo "--- classify.md ---"
-            cat .deepwork/jobs/fruits/steps/classify.md
+          # Verify step instructions are inlined in job.yml
+          echo "=== Checking step instructions are inlined ==="
+          if grep -q 'instructions:' .deepwork/jobs/fruits/job.yml; then
+            echo "SUCCESS: Step instructions are inlined in job.yml"
           else
-            echo "ERROR: Step files were not created"
-            ls -la .deepwork/jobs/fruits/steps/ || echo "No steps directory"
+            echo "ERROR: No inline step instructions found in job.yml"
             exit 1
           fi
 

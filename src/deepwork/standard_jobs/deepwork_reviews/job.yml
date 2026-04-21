@@ -39,7 +39,7 @@ workflows:
       patterns change in a PR or commit.
 
       For the .deepreview file format, key concepts, and rule naming conventions, read
-      `steps/deepreview_reference.md` (relative to this job's directory).
+      `deepreview_reference.md` (relative to this job's directory).
     steps:
       - name: add_deepwork_native_reviews
         instructions: |
@@ -284,7 +284,7 @@ workflows:
 
           For each unprotected documentation file, call `start_workflow` directly with `job_name: "deepwork_reviews"`, `workflow_name: "add_document_update_rule"`, and the doc path (relative to the repository root, e.g., `doc/architecture.md`) as the goal. Complete each nested workflow's steps (analyze_dependencies, apply_rule) before starting the next.
 
-          **Note**: Nested workflows are session-scoped MCP calls — do not attempt to run them inside separate Task agents, as MCP session context would not be shared. Run them sequentially from this agent.
+          **Note**: Nested workflows are session-scoped MCP calls — do not attempt to run them inside separate sub-agents, as MCP session context would not be shared. Run them sequentially from this agent.
 
           ### 4. Review the resulting rules for scope efficiency
 
@@ -372,7 +372,7 @@ workflows:
 
           #### c. Extract conventions from existing code
 
-          If the above sources don't provide enough conventions, launch an Explore agent (via a separate Task, one per language) to examine existing code files and extract observable patterns. The agent prompt should ask it to examine 10-20 representative files and return a bulleted list of observed patterns covering:
+          If the above sources don't provide enough conventions, launch an Explore agent (via a separate Agent, one per language) to examine existing code files and extract observable patterns. The agent prompt should ask it to examine 10-20 representative files and return a bulleted list of observed patterns covering:
 
           - Naming conventions (camelCase vs snake_case, prefixes, suffixes)
           - Import ordering and grouping
@@ -490,7 +490,7 @@ workflows:
       patterns change in a PR or commit.
 
       For the .deepreview file format, key concepts, and rule naming conventions, read
-      `steps/deepreview_reference.md` (relative to this job's directory).
+      `deepreview_reference.md` (relative to this job's directory).
     steps:
       - name: analyze_dependencies
         instructions: |

@@ -21,7 +21,7 @@ You are the meta-expert that operates on LearningAgent files. You understand the
 
 !`cat ${CLAUDE_PLUGIN_ROOT}/doc/learning_log_folder_structure.md`
 
-### Post-Task Reminder
+### Post-Agent Reminder
 
 !`cat ${CLAUDE_PLUGIN_ROOT}/doc/learning_agent_post_task_reminder.md`
 

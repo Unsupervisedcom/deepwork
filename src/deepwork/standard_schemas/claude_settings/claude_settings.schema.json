@@ -1,12 +1,12 @@
 {
-  "_source": "Vendored from https://json.schemastore.org/claude-code-settings.json (SchemaStore community project). To update: fetch the latest version from that URL and replace this file. Last synced: 2026-04-01.",
+  "_source": "Vendored from https://json.schemastore.org/claude-code-settings.json (SchemaStore community project). To update: fetch the latest version from that URL and replace this file. Last synced: 2026-04-13.",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://json.schemastore.org/claude-code-settings.json",
   "$defs": {
     "permissionRule": {
       "type": "string",
       "description": "Tool permission rule.\nSee https://code.claude.com/docs/en/settings#permission-rule-syntax\nSee https://code.claude.com/docs/en/settings#tools-available-to-claude for full list of tools available to Claude.",
-      "pattern": "^((Agent|Bash|Edit|ExitPlanMode|Glob|Grep|KillShell|LSP|NotebookEdit|Read|Skill|TaskCreate|TaskGet|TaskList|TaskOutput|TaskStop|TaskUpdate|TodoWrite|ToolSearch|WebFetch|WebSearch|Write)(\\((?=.*[^)*?])[^)]+\\))?|mcp__.*)$",
+      "pattern": "^((Agent|Bash|Edit|ExitPlanMode|Glob|Grep|KillShell|LSP|Monitor|NotebookEdit|Read|Skill|TaskCreate|TaskGet|TaskList|TaskOutput|TaskStop|TaskUpdate|TodoWrite|ToolSearch|WebFetch|WebSearch|Write)(\\((?=.*[^)*?])[^)]+\\))?|mcp__.*)$",
       "examples": [
         "Bash",
         "Bash(npm run build)",
@@ -61,6 +61,26 @@
             "statusMessage": {
               "type": "string",
               "description": "Custom spinner message displayed while the hook runs"
+            },
+            "if": {
+              "$ref": "#/$defs/permissionRule",
+              "description": "Only run this hook when the tool call matches this permission rule pattern. Only evaluated for tool events (PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, PermissionDenied); silently ignored on all other events. See https://code.claude.com/docs/en/hooks"
+            },
+            "asyncRewake": {
+              "type": "boolean",
+              "description": "Run this hook in the background and wake Claude when the process exits with code 2 (implies async: true)"
+            },
+            "once": {
+              "type": "boolean",
+              "description": "If true, runs once per session then removed"
+            },
+            "shell": {
+              "type": "string",
+              "enum": [
+                "bash",
+                "powershell"
+              ],
+              "description": "Shell interpreter to use (default: bash)"
             }
           }
         },
@@ -95,6 +115,14 @@
             "statusMessage": {
               "type": "string",
               "description": "Custom spinner message displayed while the hook runs"
+            },
+            "if": {
+              "$ref": "#/$defs/permissionRule",
+              "description": "Only run this hook when the tool call matches this permission rule pattern. Only evaluated for tool events (PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, PermissionDenied); silently ignored on all other events. See https://code.claude.com/docs/en/hooks"
+            },
+            "once": {
+              "type": "boolean",
+              "description": "If true, runs once per session then removed"
             }
           }
         },
@@ -129,6 +157,14 @@
             "statusMessage": {
               "type": "string",
               "description": "Custom spinner message displayed while the hook runs"
+            },
+            "if": {
+              "$ref": "#/$defs/permissionRule",
+              "description": "Only run this hook when the tool call matches this permission rule pattern. Only evaluated for tool events (PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, PermissionDenied); silently ignored on all other events. See https://code.claude.com/docs/en/hooks"
+            },
+            "once": {
+              "type": "boolean",
+              "description": "If true, runs once per session then removed"
             }
           }
         },
@@ -174,6 +210,14 @@
             "statusMessage": {
               "type": "string",
               "description": "Custom spinner message displayed while the hook runs"
+            },
+            "if": {
+              "$ref": "#/$defs/permissionRule",
+              "description": "Only run this hook when the tool call matches this permission rule pattern. Only evaluated for tool events (PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, PermissionDenied); silently ignored on all other events. See https://code.claude.com/docs/en/hooks"
+            },
+            "once": {
+              "type": "boolean",
+              "description": "If true, runs once per session then removed"
             }
           }
         }
@@ -360,13 +404,14 @@
           "type": "string",
           "enum": [
             "acceptEdits",
+            "auto",
             "bypassPermissions",
             "default",
             "delegate",
             "dontAsk",
             "plan"
           ],
-          "description": "Default permission mode.\n\"default\": prompts on first use.\n\"acceptEdits\": auto-accepts file edits.\n\"plan\": read-only, no modifications.\nUNDOCUMENTED. \"delegate\": coordination-only for agent team leads (agent teams are experimental; enable via CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS).\n\"dontAsk\": auto-denies unless pre-approved via permissions.\n\"bypassPermissions\": skips all prompts (use only in isolated environments).\nSee https://code.claude.com/docs/en/permissions"
+          "description": "Default permission mode.\n\"default\": prompts on first use.\n\"acceptEdits\": auto-accepts file edits.\n\"plan\": read-only, no modifications.\nUNDOCUMENTED. \"delegate\": coordination-only for agent team leads (agent teams are experimental; enable via CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS).\n\"dontAsk\": auto-denies unless pre-approved via permissions.\n\"bypassPermissions\": skips all prompts (use only in isolated environments).\n\"auto\": auto-approves tool calls with background safety checks that verify actions align with your request.\nSee https://code.claude.com/docs/en/permissions"
         },
         "disableBypassPermissionsMode": {
           "type": "string",
@@ -676,6 +721,13 @@
             "$ref": "#/$defs/hookMatcher"
           }
         },
+        "PermissionDenied": {
+          "type": "array",
+          "description": "Hooks that run when auto mode denies a tool call. See https://code.claude.com/docs/en/hooks",
+          "items": {
+            "$ref": "#/$defs/hookMatcher"
+          }
+        },
         "Notification": {
           "type": "array",
           "description": "Hooks that trigger on notifications",
@@ -693,6 +745,13 @@
         "Stop": {
           "type": "array",
           "description": "Hooks that run when agents finish responding. Does not run on user interrupt",
+          "items": {
+            "$ref": "#/$defs/hookMatcher"
+          }
+        },
+        "StopFailure": {
+          "type": "array",
+          "description": "Hooks that run when a turn ends due to an API error. See https://code.claude.com/docs/en/hooks",
           "items": {
             "$ref": "#/$defs/hookMatcher"
           }
@@ -746,6 +805,13 @@
             "$ref": "#/$defs/hookMatcher"
           }
         },
+        "TaskCreated": {
+          "type": "array",
+          "description": "Hooks that run when a task is created via TaskCreate. See https://code.claude.com/docs/en/hooks",
+          "items": {
+            "$ref": "#/$defs/hookMatcher"
+          }
+        },
         "TaskCompleted": {
           "type": "array",
           "description": "Hooks that run when a task is being marked as completed. Exit code 2 prevents completion and sends feedback. Does not support matchers. See https://code.claude.com/docs/en/hooks#taskcompleted",
@@ -770,6 +836,20 @@
         "ConfigChange": {
           "type": "array",
           "description": "Hooks that run when settings, managed settings, or skill files change during a session. Supports matchers: user_settings, project_settings, local_settings, policy_settings, skills. Command handlers only. Exit code 2 blocks the change (except policy_settings which is audit-only). See https://code.claude.com/docs/en/hooks#configchange",
+          "items": {
+            "$ref": "#/$defs/hookMatcher"
+          }
+        },
+        "FileChanged": {
+          "type": "array",
+          "description": "Hooks that run when a watched file changes on disk. See https://code.claude.com/docs/en/hooks",
+          "items": {
+            "$ref": "#/$defs/hookMatcher"
+          }
+        },
+        "CwdChanged": {
+          "type": "array",
+          "description": "Hooks that run when the working directory changes. See https://code.claude.com/docs/en/hooks",
           "items": {
             "$ref": "#/$defs/hookMatcher"
           }

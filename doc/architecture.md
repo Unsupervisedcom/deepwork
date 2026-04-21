@@ -67,6 +67,7 @@ deepwork/                       # DeepWork tool repository
 │       ├── hooks/              # Hook system and cross-platform wrappers
 │       │   ├── wrapper.py      # Cross-platform input/output normalization
 │       │   ├── deepschema_write.py # DeepSchema write-time validation hook
+│       │   ├── post_commit_reminder.py # Post-commit review reminder hook
 │       │   ├── claude_hook.sh  # Shell wrapper for Claude Code
 │       │   └── gemini_hook.sh  # Shell wrapper for Gemini CLI
 │       ├── deepschema/         # DeepSchema subsystem
@@ -104,6 +105,8 @@ deepwork/                       # DeepWork tool repository
 │   ├── claude/                 # Claude Code plugin
 │   │   ├── .claude-plugin/plugin.json
 │   │   ├── README_REVIEWS.md   # Review system documentation
+│   │   ├── agents/              # Subagent definitions (e.g., reviewer.md)
+│   │   │   └── reviewer.md     # Default review subagent (Sonnet, minimal instructions)
 │   │   ├── example_reviews/    # Example review instruction files
 │   │   │   ├── prompt_best_practices.md
 │   │   │   └── suggest_new_reviews.md
@@ -113,6 +116,8 @@ deepwork/                       # DeepWork tool repository
 │   │   │   ├── deepreviews/SKILL.md
 │   │   │   ├── deepwork/SKILL.md
 │   │   │   ├── deepschema/SKILL.md
+│   │   │   ├── new_user/SKILL.md
+│   │   │   ├── record/SKILL.md
 │   │   │   └── review/SKILL.md
 │   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
 │   │   └── .mcp.json           # MCP server config
@@ -382,9 +387,7 @@ This section describes how AI agents (like Claude Code) actually execute jobs us
 
 1. **Install Plugin** (one-time):
    ```
-   # In Claude Code
-   claude plugin marketplace add Unsupervisedcom/deepwork
-   claude plugin install deepwork@deepwork-plugins
+   claude plugin marketplace add Unsupervisedcom/deepwork && claude plugin install deepwork@deepwork-plugins && claude "/deepwork:new_user"
    ```
 
 2. **Define a Job** (once per job type):
@@ -869,7 +872,7 @@ Lists all available workflows from `.deepwork/jobs/`.
 
 **Parameters**: None
 
-**Returns**: List of jobs with their workflows, steps, and summaries. Each `WorkflowInfo` includes a `how_to_invoke` field with invocation instructions: when the workflow's `agent` field is set in job.yml, it directs callers to delegate via the Task tool; otherwise, it directs callers to use the `start_workflow` MCP tool directly.
+**Returns**: List of jobs with their workflows, steps, and summaries. Each `WorkflowInfo` includes a `how_to_invoke` field with invocation instructions: when the workflow's `agent` field is set in job.yml, it directs callers to delegate via the Agent tool; otherwise, it directs callers to use the `start_workflow` MCP tool directly.
 
 #### 2. `start_workflow`
 Begins a new workflow session.

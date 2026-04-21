@@ -31,10 +31,6 @@ if [ -n "$AGENT_ID" ]; then
   CTX="${CTX}"$'\n'"CLAUDE_CODE_AGENT_ID=$AGENT_ID"
 fi
 
-# Inject DeepPlan trigger for planning mode
-DEEPPLAN_MSG="When you enter plan mode and begin working on a plan, start the DeepWork workflow create_deep_plan (job: deepplan) via start_workflow before doing anything else. The workflow will guide you through structured planning. Its instructions supersede the default planning phases."
-CTX="${CTX}"$'\n'"${DEEPPLAN_MSG}"
-
 # ==== Output hook response ====
 jq -n --arg ctx "$CTX" --arg event "$EVENT_NAME" \
   '{ hookSpecificOutput: { hookEventName: $event, additionalContext: $ctx } }'

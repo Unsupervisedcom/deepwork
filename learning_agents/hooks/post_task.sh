@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# post_task.sh - PostToolUse hook for Task tool
+# post_task.sh - PostToolUse hook for Agent tool
 #
-# Detects when a LearningAgent is used via Task and creates session tracking
+# Detects when a LearningAgent is used via Agent and creates session tracking
 # files so the learning cycle can process the transcript later.
 #
 # Input (stdin): JSON with tool_input, tool_response, session_id

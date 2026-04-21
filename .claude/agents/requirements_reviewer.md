@@ -16,13 +16,13 @@ You are a requirements traceability reviewer. Your job is to verify the three-wa
 
 ## Project Conventions
 
-This project uses formal requirements documents with RFC 2119 keywords (MUST, SHALL, SHOULD, MAY, etc.) located in the `specs/` directory. Specs are organized into domain subdirectories:
+This project uses formal requirements documents with RFC 2119 keywords (MUST, SHALL, SHOULD, MAY, etc.) located in the `doc/specs/` directory. Specs are organized into domain subdirectories:
 
-- `specs/deepwork/` — root DeepWork specs (DW-REQ-prefixed)
-- `specs/deepwork/jobs/` — job-related specs (JOBS-REQ-prefixed)
-- `specs/deepwork/review/` — review-related specs (REVIEW-REQ-prefixed)
-- `specs/deepwork/cli_plugins/` — CLI plugin specs (PLUG-REQ-prefixed)
-- `specs/learning-agents/` — learning agent specs (LA-REQ-prefixed)
+- `doc/specs/deepwork/` — root DeepWork specs (DW-REQ-prefixed)
+- `doc/specs/deepwork/jobs/` — job-related specs (JOBS-REQ-prefixed)
+- `doc/specs/deepwork/review/` — review-related specs (REVIEW-REQ-prefixed)
+- `doc/specs/deepwork/cli_plugins/` — CLI plugin specs (PLUG-REQ-prefixed)
+- `doc/specs/learning-agents/` — learning agent specs (LA-REQ-prefixed)
 
 Each file follows the naming pattern `{PREFIX}-REQ-NNN-<topic>.md`, where the prefix identifies the domain:
 
@@ -75,7 +75,7 @@ When asked to review, perform these checks:
 ### 1. Requirements Coverage
 
 For every piece of new or changed end-user functionality in the diff (end-user functionality means behavior observable through public APIs, CLI commands, MCP tools, or documented outputs — internal refactoring that doesn't change observable behavior does not require new requirements):
-- Verify there is a corresponding requirement in `specs/**/*-REQ-*.md`
+- Verify there is a corresponding requirement in `doc/specs/**/*-REQ-*.md`
 - If functionality is new, check that a new requirement was added
 - If functionality changed, check that the relevant requirement was updated
 - Flag any functional code changes that lack a matching requirement

@@ -59,7 +59,7 @@ rule_name:
 
 ### Reference Files
 
-`reference_files` inline small support files (style guides, schemas, templates) into a `## Reference Materials` section of every generated review instruction file. Paths are resolved relative to the `.deepreview` file's directory. Inlining is capped at 20 files and 256 KB of total content per review — entries beyond the caps are listed in an omitted-summary line; oversized files are truncated. Missing files produce a graceful marker rather than aborting the review. Use this instead of asking the reviewer to Read each file at runtime.
+`reference_files` inline small support files (style guides, schemas, templates) into a `## Relevant File Contents` section of every generated review instruction file. Paths are resolved relative to the `.deepreview` file's directory. Inlining is capped at 20 files and 256 KB of total content per review — entries beyond the caps are listed in an omitted-summary line; oversized files are truncated. Missing files produce a graceful marker rather than aborting the review. Use this instead of asking the reviewer to Read each file at runtime.
 
 ## Review Strategies
 

@@ -542,7 +542,7 @@ def create_server(
         description=(
             "Run a review of changed files based on .deepreview configuration files. "
             "Returns a list of review tasks to invoke in parallel. Each task has "
-            "name, description, subagent_type, and prompt fields for the Task tool. "
+            "description, subagent_type, and prompt fields for the Agent tool. "
             "Optional: files (list of file paths to review). When omitted, detects "
             "changes via git diff against the main branch."
         )
@@ -579,8 +579,10 @@ def create_server(
     @mcp.tool(
         description=(
             "Mark a review as passed so it won't be re-run while reviewed files "
-            "remain unchanged. The review_id is provided in the instruction file's "
-            '"After Review" section.'
+            "remain unchanged. Call this when a review has no findings, when all "
+            "findings have been fixed, or when remaining findings have been "
+            "explicitly dismissed by the user. The review_id is provided in the "
+            'instruction file\'s "After Review" section.'
         )
     )
     async def mark_review_as_passed(review_id: str, ctx: Context) -> str:

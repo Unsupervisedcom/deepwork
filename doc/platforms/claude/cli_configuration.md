@@ -250,7 +250,10 @@ plugins/claude/
 │   └── configure_reviews/SKILL.md  # Set up review rules
 ├── hooks/                       # Hook configuration
 │   ├── hooks.json
-│   └── post_commit_reminder.sh
+│   ├── deepschema_write.sh      # PostToolUse: validate writes against DeepSchemas
+│   ├── post_commit_reminder.sh  # PostToolUse: nudge /review after git commit
+│   ├── post_compact.sh          # SessionStart(compact): restore workflow context
+│   └── startup_context.sh       # SessionStart/SubagentStart: inject session/agent IDs
 └── .mcp.json                    # MCP server config (uvx deepwork serve)
 ```
 

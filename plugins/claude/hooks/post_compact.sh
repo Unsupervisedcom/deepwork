@@ -22,7 +22,10 @@ if [ -z "$CWD" ]; then
 fi
 
 # ==== Fetch active sessions ====
-STACK_JSON=$(deepwork jobs get-stack --path "$CWD" 2>/dev/null) || {
+# Always invoke via `uvx deepwork` to match the MCP server invocation in
+# plugins/claude/.mcp.json — avoids PATH-staleness where a user-level
+# `deepwork` binary is older than the subcommand it is being asked to run.
+STACK_JSON=$(uvx deepwork jobs get-stack --path "$CWD" 2>/dev/null) || {
   echo '{}'
   exit 0
 }

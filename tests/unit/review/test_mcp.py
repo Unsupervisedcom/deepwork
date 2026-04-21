@@ -14,6 +14,7 @@ import pytest
 from deepwork.review.config import ReviewRule, ReviewTask
 from deepwork.review.mcp import (
     ReviewToolError,
+    all_reviews_passed_for_files,
     get_configured_reviews,
     mark_passed,
     run_review,
@@ -221,13 +222,13 @@ def _get_tool_names(server: Any) -> set[str]:
 class TestRunReviewDiscoveryWarnings:
     """Tests for discovery warning handling in run_review."""
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.mcp.gen_schema_rules")
     @patch("deepwork.review.mcp.load_all_rules")
     def test_no_valid_rules_with_parse_errors_shows_warnings(
         self, mock_load: Any, mock_schema: Any, tmp_path: Path
     ) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When no valid rules exist but there are discovery errors, shows parse errors."""
         from deepwork.review.discovery import DiscoveryError
 
@@ -242,13 +243,13 @@ class TestRunReviewDiscoveryWarnings:
         assert "bad/.deepreview" in result
         assert "bad yaml" in result
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.mcp.gen_schema_rules")
     @patch("deepwork.review.mcp.load_all_rules")
     def test_schema_errors_appended_to_discovery_errors(
         self, mock_load: Any, mock_schema: Any, tmp_path: Path
     ) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """DeepSchema errors are appended to discovery_errors."""
 
         mock_load.return_value = ([], [])
@@ -259,6 +260,8 @@ class TestRunReviewDiscoveryWarnings:
         assert "No valid review rules found" in result
         assert "schema parse failed" in result
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     @patch("deepwork.review.mcp.write_instruction_files")
     @patch("deepwork.review.mcp.match_files_to_rules")
     @patch("deepwork.review.mcp.get_changed_files")
@@ -273,8 +276,6 @@ class TestRunReviewDiscoveryWarnings:
         mock_write: Any,
         tmp_path: Path,
     ) -> None:
-        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-002.3.4).
-        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
         """When discovery errors exist alongside valid rules, warnings are prepended."""
         from deepwork.review.discovery import DiscoveryError
 
@@ -791,3 +792,120 @@ class TestGetConfiguredReviewsUnaffectedByCache:
         result = get_configured_reviews(tmp_path)
         assert len(result) == 1
         assert result[0]["name"] == "test_rule"
+
+
+@pytest.mark.usefixtures("without_standard_schemas")
+class TestAllReviewsPassedForFiles:
+    """Tests for all_reviews_passed_for_files — validates PLUG-REQ-001.7."""
+
+    @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
+    @patch("deepwork.review.mcp.load_all_rules", return_value=([], []))
+    def test_empty_file_list(self, mock_load: Any, mock_schema: Any, tmp_path: Path) -> None:
+        assert all_reviews_passed_for_files(tmp_path, []) is True
+
+    @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
+    @patch("deepwork.review.mcp.load_all_rules", return_value=([], []))
+    def test_no_rules(self, mock_load: Any, mock_schema: Any, tmp_path: Path) -> None:
+        assert all_reviews_passed_for_files(tmp_path, ["src/app.py"]) is True
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.7.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_only_catch_all_rule(self, mock_load: Any, mock_schema: Any, tmp_path: Path) -> None:
+        """Catch-all rules are excluded, so only having one means True."""
+        mock_load.return_value = ([_make_catch_all_rule(tmp_path)], [])
+        assert all_reviews_passed_for_files(tmp_path, ["src/app.py"]) is True
+
+    @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_non_matching_rule(self, mock_load: Any, mock_schema: Any, tmp_path: Path) -> None:
+        """A non-catch-all rule that doesn't match the files returns True."""
+        py_rule = _make_rule(tmp_path)  # **/*.py
+        mock_load.return_value = ([py_rule], [])
+        assert all_reviews_passed_for_files(tmp_path, ["src/app.ts"]) is True
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.7.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_matching_rule_with_passed_marker(
+        self, mock_load: Any, mock_schema: Any, tmp_path: Path
+    ) -> None:
+        from deepwork.review.instructions import INSTRUCTIONS_DIR, compute_review_id
+
+        rule = _make_rule(tmp_path)
+        mock_load.return_value = ([rule], [])
+
+        # Create the file so compute_review_id produces a stable hash
+        (tmp_path / "src").mkdir(parents=True, exist_ok=True)
+        (tmp_path / "src" / "app.py").write_text("print('hello')")
+
+        # First call to get the tasks and compute their IDs
+        from deepwork.review.matcher import match_files_to_rules
+
+        tasks = match_files_to_rules(["src/app.py"], [rule], tmp_path)
+        assert len(tasks) >= 1
+        review_id = compute_review_id(tasks[0], tmp_path)
+
+        # Create the .passed marker
+        instructions_dir = tmp_path / INSTRUCTIONS_DIR
+        instructions_dir.mkdir(parents=True, exist_ok=True)
+        (instructions_dir / f"{review_id}.passed").write_bytes(b"")
+
+        assert all_reviews_passed_for_files(tmp_path, ["src/app.py"]) is True
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (PLUG-REQ-001.7.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_matching_rule_without_passed_marker(
+        self, mock_load: Any, mock_schema: Any, tmp_path: Path
+    ) -> None:
+        rule = _make_rule(tmp_path)
+        mock_load.return_value = ([rule], [])
+
+        (tmp_path / "src").mkdir(parents=True, exist_ok=True)
+        (tmp_path / "src" / "app.py").write_text("print('hello')")
+
+        assert all_reviews_passed_for_files(tmp_path, ["src/app.py"]) is False
+
+    @patch("deepwork.review.mcp.gen_schema_rules", return_value=([], []))
+    @patch("deepwork.review.mcp.load_all_rules")
+    def test_mixed_passed_and_not_passed(
+        self, mock_load: Any, mock_schema: Any, tmp_path: Path
+    ) -> None:
+        from deepwork.review.instructions import INSTRUCTIONS_DIR, compute_review_id
+        from deepwork.review.matcher import match_files_to_rules
+
+        rule_py = _make_rule(tmp_path)  # **/*.py
+        rule_ts = ReviewRule(
+            name="ts_rule",
+            description="TS rule.",
+            include_patterns=["**/*.ts"],
+            exclude_patterns=[],
+            strategy="individual",
+            instructions="Review TS.",
+            agent=None,
+            all_changed_filenames=False,
+            unchanged_matching_files=False,
+            precomputed_info_bash_command=None,
+            source_dir=tmp_path,
+            source_file=tmp_path / ".deepreview",
+            source_line=5,
+        )
+        mock_load.return_value = ([rule_py, rule_ts], [])
+
+        (tmp_path / "src").mkdir(parents=True, exist_ok=True)
+        (tmp_path / "src" / "app.py").write_text("py")
+        (tmp_path / "src" / "app.ts").write_text("ts")
+
+        # Mark only the py task as passed
+        py_tasks = match_files_to_rules(["src/app.py"], [rule_py], tmp_path)
+        review_id = compute_review_id(py_tasks[0], tmp_path)
+        instructions_dir = tmp_path / INSTRUCTIONS_DIR
+        instructions_dir.mkdir(parents=True, exist_ok=True)
+        (instructions_dir / f"{review_id}.passed").write_bytes(b"")
+
+        # ts task is not passed → overall False
+        assert all_reviews_passed_for_files(tmp_path, ["src/app.py", "src/app.ts"]) is False

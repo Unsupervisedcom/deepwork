@@ -90,8 +90,8 @@ workflows:
              completed on first try or required retries.
 
           2. **Verify completion**: Confirm `.deepwork/jobs/detailed_test_review/job.yml`
-             exists with expected structure (2 steps, correct outputs, reviews). Check
-             step instruction files exist in `steps/`.
+             exists with expected structure (2 steps, correct outputs, reviews, and
+             inline step instructions).
 
           3. **Identify friction points**: Look for errors, workarounds, retries, confusion,
              unnecessary steps, slow paths, and missing guidance in the transcript.

@@ -6,7 +6,7 @@ LA-REQ-004.10, LA-REQ-004.11, LA-REQ-004.12, LA-REQ-004.13, LA-REQ-004.14,
 LA-REQ-004.15, LA-REQ-004.16, LA-REQ-004.17, LA-REQ-004.18.
 
 Each test maps to a numbered requirement in
-specs/learning-agents/LA-REQ-004-session-tracking.md.
+doc/specs/learning-agents/LA-REQ-004-session-tracking.md.
 
 Tests validate hook script content (jq commands, file paths, variable handling)
 and behavioral logic (script execution with controlled inputs).
@@ -133,7 +133,7 @@ class TestPostToolUseHookTrigger:
 
 
 # ===========================================================================
-# LA-REQ-004.2: Post-Task Input Parsing
+# LA-REQ-004.2: Post-Agent Input Parsing
 # ===========================================================================
 
 
@@ -433,7 +433,7 @@ class TestAgentUsedFile:
 
 
 # ===========================================================================
-# LA-REQ-004.10: Post-Task Reminder Message
+# LA-REQ-004.10: Post-Agent Reminder Message
 # ===========================================================================
 
 
@@ -483,7 +483,7 @@ class TestPostTaskReminderMessage:
 
 
 # ===========================================================================
-# LA-REQ-004.11: Post-Task Reminder Content
+# LA-REQ-004.11: Post-Agent Reminder Content
 # ===========================================================================
 
 

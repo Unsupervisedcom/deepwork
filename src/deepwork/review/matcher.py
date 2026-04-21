@@ -9,7 +9,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from deepwork.review.config import ReviewRule, ReviewTask
+from deepwork.review.config import ReferenceFile, ReviewRule, ReviewTask
 
 
 class GitDiffError(Exception):
@@ -227,6 +227,15 @@ def match_files_to_rules(
 
         if rule.strategy == "individual":
             for filepath in matched:
+                # Include the file under review as a reference so its
+                # content is inlined in "Relevant File Contents" — the
+                # @filepath in "Files to Review" is NOT auto-expanded.
+                file_ref = ReferenceFile(
+                    path=(project_root / filepath).resolve(),
+                    relative_label=filepath,
+                    description="File under review",
+                )
+                task_refs = [file_ref] + list(rule.reference_files)
                 tasks.append(
                     ReviewTask(
                         rule_name=rule.name,
@@ -236,7 +245,7 @@ def match_files_to_rules(
                         source_location=source_location,
                         all_changed_filenames=all_filenames,
                         precomputed_info_bash_command=precompute_cmd,
-                        reference_files=rule.reference_files,
+                        reference_files=task_refs,
                     )
                 )
 

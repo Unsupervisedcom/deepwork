@@ -82,11 +82,11 @@ Changes how the workflow appears in `get_workflows`. Without `agent`, the respon
 
 > Call `start_workflow` with job_name="X" and workflow_name="Y", then follow the step instructions it returns.
 
-With `agent` set (e.g., `"general-purpose"`), the response tells the caller to spawn a **Task sub-agent** of that type:
+With `agent` set (e.g., `"general-purpose"`), the response tells the caller to spawn a sub-agent of that type:
 
-> Invoke as a Task using subagent_type="general-purpose" with a prompt giving full context and instructions to call `start_workflow`...
+> Invoke as an Agent using subagent_type="general-purpose" with a prompt giving full context and instructions to call `start_workflow`...
 
-If the agent does not have the Task tool available, the instructions fall back to direct invocation.
+If the agent does not have the Agent tool available, the instructions fall back to direct invocation.
 
 Use `agent` for workflows that should execute autonomously without blocking the main conversation.
 

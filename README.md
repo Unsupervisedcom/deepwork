@@ -8,13 +8,10 @@ DeepWork fixes this with two systems: **Workflows** that force agents to follow 
 
 ### Claude Code (Terminal)
 ```
-claude plugin marketplace add Unsupervisedcom/deepwork
-claude plugin install deepwork@deepwork-plugins
-
-claude
+claude plugin marketplace add Unsupervisedcom/deepwork && claude plugin install deepwork@deepwork-plugins && claude "/deepwork:new_user"
 ```
 
-Then start a new session. First, do the task you want to automate — just ask Claude to do it, and work with Claude to refine it as you go:
+The onboarding flow will introduce you to DeepWork and help you get started. Or, do the task you want to automate — just ask Claude to do it, and work with Claude to refine it as you go:
 ```
 Research our top 3 competitors and write a SWOT analysis for each one.
 ```
@@ -33,12 +30,13 @@ For bonus points, try `/deepwork learn` after running your workflow as well, and
 <details>
 <summary><strong>Claude Desktop</strong></summary>
 
-1. Enter Cowork mode (toggle at top of screen)
-2. Select `Customize with plugins` at the bottom of the page.
-3. Select `Personal`, click the `+`, and select `Add marketplace from GitHub'`
-4. Set the URL to ```Unsupervisedcom/deepwork``` and press Sync. (adding a marketplace currently fails on Windows)
-5. Select the deepwork plugin and click Install.
-6. In Cowork mode, select 'Start a deepwork workflow'
+1. In the top of the left sidebar, click on the button to enter Cowork mode, then select `Customize` below the toggle.
+<img width="315" height="253" alt="Screenshot 2026-04-14 at 5 58 30 PM" src="https://github.com/user-attachments/assets/546bdce1-58a9-455c-9f16-61674708061d" />
+
+2. You should now a `Personal plugins` section in the sidebar, with a `+` button in its top right. Click the `+` and then hover over `Create plugin` option and select `Add marketplace`.
+4. Set the URL to ```Unsupervisedcom/deepwork``` and press Sync. *(NOTE: Adding a marketplace currently fails on Windows.)*
+5. Once installed, click on the `Browse Plugins` button under the Personal plugins section. Select the Deepwork plugin and click Install.
+6. In Cowork mode, you can now access and start all the deepwork flows by typing `/` and scrolling to its flows, or hitting the `+` button and navigating to `Plugins` -> `deepwork`. Each flow has its own command, such as `/review`.
 
 </details>
 
@@ -150,11 +148,10 @@ Workflows ensure the agent follows the right process. DeepSchemas ensure individ
 
 In Claude Code:
 ```
-claude plugin marketplace add Unsupervisedcom/deepwork
-claude plugin install deepwork@deepwork-plugins
+claude plugin marketplace add Unsupervisedcom/deepwork && claude plugin install deepwork@deepwork-plugins && claude "/deepwork:new_user"
 ```
 
-Start a new Claude Code session after installing.
+The onboarding flow walks you through setup. If you prefer to skip it, just start a new Claude Code session.
 
 > **Note:** If your folder isn't a Git repo yet, run `git init` first.
 
@@ -272,9 +269,12 @@ Reviews are `.deepreview` config files placed anywhere in your project, scoped t
 **Teams own their own rules.** The security team puts a `.deepreview` in `src/auth/`, the platform team in `infrastructure/`, the docs team in `docs/`. Each file is independent and scoped to its directory.
 
 **Smart file grouping.** Three review strategies control what each reviewer sees:
-- **`individual`** — one review per file (best for per-file linting and style checks)
-- **`matches_together`** — all matched files reviewed as a group (best for cross-file consistency)
-- **`all_changed_files`** — a tripwire: if any sensitive file changes, the reviewer sees _every_ changed file in the branch (best for security audits)
+
+| Strategy | Reviewer sees | Best for |
+|----------|--------------|----------|
+| `individual` | One file at a time | Per-file linting, style checks |
+| `matches_together` | All matched files together | Cross-file consistency, migration safety |
+| `all_changed_files` | _Every_ changed file in the branch (tripwire) | Security audits, broad impact analysis |
 
 **Pass caching.** When a review passes, it's marked as clean. It won't re-run until one of its reviewed files actually changes — so reviews stay fast even as your rule set grows.
 
@@ -314,7 +314,7 @@ requirements_traceability:
   review:
     strategy: all_changed_files
     instructions: |
-      This project keeps formal requirements in specs/.
+      This project keeps formal requirements in doc/specs/.
       Verify that every requirement has a corresponding
       automated test or review rule that enforces it.
       Flag any requirement missing traceability.

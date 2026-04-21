@@ -5,7 +5,7 @@ LA-REQ-011.4, LA-REQ-011.5, LA-REQ-011.6, LA-REQ-011.7, LA-REQ-011.8, LA-REQ-011
 LA-REQ-011.10, LA-REQ-011.11, LA-REQ-011.12, LA-REQ-011.13.
 
 Each test class maps to a numbered requirement section in
-specs/learning-agents/LA-REQ-011-skill-routing.md.
+doc/specs/learning-agents/LA-REQ-011-skill-routing.md.
 
 Only deterministic, boolean-verifiable requirements have tests here.
 These tests inspect the SKILL.md files directly for correct routing

@@ -1,3 +1,41 @@
+claude_plugin_hook_deepwork_invocation:
+  description: "PLUG-REQ-001.15: Plugin hook scripts must invoke the `deepwork` CLI via `uvx deepwork`, never via a bare binary on PATH."
+  match:
+    include:
+      - "hooks/*.sh"
+  review:
+    strategy: individual
+    instructions: |
+      Plugin hook scripts run in end-user installs where the MCP server is
+      launched via `uvx deepwork serve` (see plugins/claude/.mcp.json) and
+      the bare `deepwork` binary may be missing from PATH, or present but
+      stale — e.g., a user-level `uv tool install deepwork` pinned to an
+      older release. A stale bare binary produces errors like "Hook
+      '...' not found" (when the hook module did not exist in that
+      version) on every Bash tool use, which Claude Code surfaces as a
+      failed hook.
+
+      To avoid both failure modes, plugin hook scripts MUST invoke the
+      CLI the same way the MCP server is launched: via `uvx deepwork`.
+      A bare `deepwork ...` (or `uv run deepwork ...`, or any invocation
+      that uses PATH lookup) is a FAIL.
+
+      Expected pattern:
+
+      ```bash
+      echo "${INPUT}" | uvx deepwork hook some_hook
+      ```
+
+      For each `deepwork` invocation in this script, verify the command
+      prefix is `uvx deepwork`. Shell word-splitting counts — the word
+      immediately before `deepwork` on the command line must be `uvx`.
+
+      Output Format:
+      - PASS: Every `deepwork` invocation is prefixed with `uvx`, or the
+        script makes no `deepwork` calls.
+      - FAIL: List each non-`uvx` `deepwork` invocation with its line
+        number and the required edit.
+
 claude_plugin_skill_instructions:
   description: "PLUG-REQ-001 & REVIEW-REQ-007: Verify skill instructions adequately convey behavioral requirements."
   match:
@@ -58,6 +96,36 @@ claude_plugin_skill_instructions:
         automatically generate synthetic review rules.
       - **PLUG-REQ-001.13.4**: The skill must describe workflow quality
         gates and how `finished_step` triggers reviews on step outputs.
+
+      ## record skill (plugins/claude/skills/record/SKILL.md)
+
+      - **PLUG-REQ-002.2**: The skill must check for browser tools and
+        only ask about website access when none are detected.
+      - **PLUG-REQ-002.3**: After collecting the workflow name and
+        resolving browser access, the skill must display a clear handoff
+        message telling the user to proceed normally and run
+        `/deepwork learn` when done.
+      - **PLUG-REQ-002.4**: During the workflow, the skill must clarify
+        non-obvious actions (unexplained removals, filters, judgment
+        calls) but not ask about clearly repeatable steps.
+      - **PLUG-REQ-002.5**: The skill must detect completion signals and
+        offer to invoke `/deepwork learn`.
+      - **PLUG-REQ-002.6**: The skill must check for `gh` CLI and offer
+        a GitHub star prompt as the first step; skip silently if `gh`
+        is not installed.
+
+      ## new_user skill (plugins/claude/skills/new_user/SKILL.md)
+
+      - **PLUG-REQ-003.2**: The skill must check for `gh` CLI and offer
+        a GitHub star prompt as the first step; skip silently if `gh`
+        is not installed.
+      - **PLUG-REQ-003.3**: The skill must print a concise introduction
+        covering Workflows, Reviews, and DeepSchemas, and mention that
+        the three systems work together.
+      - **PLUG-REQ-003.4**: The skill must detect code projects and
+        offer review rule setup via `/deepwork:configure_reviews`.
+      - **PLUG-REQ-003.5**: The skill must offer to record a workflow
+        via `/deepwork:record` and provide guidance if declined.
 
       Output Format:
       - PASS: All behavioral requirements are adequately conveyed.
