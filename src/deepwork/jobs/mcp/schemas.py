@@ -144,31 +144,6 @@ class FinishedStepInput(BaseModel):
     )
 
 
-class ValidateStepOutputsInput(BaseModel):
-    """Input for validate_step_outputs tool."""
-
-    outputs: dict[str, ArgumentValue] = Field(
-        description=(
-            "Map of planned step output names to values. "
-            "Validation uses the active step's declared output contract without "
-            "advancing the workflow or running quality reviews."
-        )
-    )
-    session_id: str = Field(
-        description=(
-            "The persistent DeepWork session ID for the current host session. "
-            "In Claude Code this is CLAUDE_CODE_SESSION_ID."
-        ),
-    )
-    agent_id: str | None = Field(
-        default=None,
-        description=(
-            "Optional host-specific agent identifier for agent-scoped workflow state. "
-            "In Claude Code this is CLAUDE_CODE_AGENT_ID."
-        ),
-    )
-
-
 class AbortWorkflowInput(BaseModel):
     """Input for abort_workflow tool."""
 
@@ -203,24 +178,6 @@ class GoToStepInput(BaseModel):
         description=(
             "Agent identifier for sub-agent scoping (CLAUDE_CODE_AGENT_ID from startup context "
             "on Claude Code). When set, operates on this agent's scoped workflow stack."
-        ),
-    )
-
-
-class GetActiveWorkflowInput(BaseModel):
-    """Input for get_active_workflow tool."""
-
-    session_id: str = Field(
-        description=(
-            "The persistent DeepWork session ID for the current host session. "
-            "In Claude Code this is CLAUDE_CODE_SESSION_ID."
-        ),
-    )
-    agent_id: str | None = Field(
-        default=None,
-        description=(
-            "Optional host-specific agent identifier for agent-scoped workflow state. "
-            "In Claude Code this is CLAUDE_CODE_AGENT_ID."
         ),
     )
 
@@ -363,23 +320,6 @@ class FinishedStepResponse(BaseModel):
     )
 
 
-class ValidateStepOutputsResponse(BaseModel):
-    """Response from validate_step_outputs tool."""
-
-    valid: bool = Field(description="Whether the submitted outputs satisfy the active step contract")
-    errors: list[str] = Field(
-        default_factory=list,
-        description="Validation errors that must be fixed before calling finished_step",
-    )
-    current_step: ActiveStepInfo = Field(
-        description="The current step, including the declared expected outputs",
-    )
-    stack: list[StackEntry] = Field(
-        default_factory=list,
-        description="Current workflow stack after validation",
-    )
-
-
 class AbortWorkflowResponse(BaseModel):
     """Response from abort_workflow tool."""
 
@@ -406,40 +346,6 @@ class GoToStepResponse(BaseModel):
     )
     stack: list[StackEntry] = Field(
         default_factory=list, description="Current workflow stack after navigation"
-    )
-
-
-class ActiveWorkflowState(BaseModel):
-    """Current active workflow session details."""
-
-    job_name: str = Field(description="Name of the active job")
-    workflow_name: str = Field(description="Name of the active workflow")
-    goal: str = Field(description="Goal originally supplied when the workflow started")
-    started_at: str = Field(description="ISO timestamp when the workflow started")
-    step_number: int = Field(description="1-based index of the current step")
-    total_steps: int = Field(description="Total number of steps in the workflow")
-    completed_steps: list[str] = Field(
-        default_factory=list,
-        description="Step IDs already completed in this workflow session",
-    )
-    current_step: ActiveStepInfo = Field(
-        description="The active step and its current resolved instructions",
-    )
-
-
-class GetActiveWorkflowResponse(BaseModel):
-    """Response from get_active_workflow tool."""
-
-    has_active_workflow: bool = Field(
-        description="Whether the given session currently has an active workflow"
-    )
-    stack: list[StackEntry] = Field(
-        default_factory=list,
-        description="Current workflow stack visible to this session/agent",
-    )
-    active_workflow: ActiveWorkflowState | None = Field(
-        default=None,
-        description="Details of the active workflow when one exists",
     )
 
 

@@ -67,12 +67,6 @@ class StateManager:
         self.sessions_dir = project_root / ".deepwork" / "tmp" / "sessions" / platform
         self._lock = asyncio.Lock()
 
-    def set_project_root(self, project_root: Path) -> None:
-        """Rebind persisted state paths to a new project root."""
-        resolved = project_root.resolve()
-        self.project_root = resolved
-        self.sessions_dir = resolved / ".deepwork" / "tmp" / "sessions" / self.platform
-
     def _state_file(self, session_id: str, agent_id: str | None = None) -> Path:
         """Get the path to a state file."""
         session_dir = self.sessions_dir / f"session-{session_id}"

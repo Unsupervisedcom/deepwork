@@ -13,7 +13,6 @@ This module provides the core tools for guiding agents through workflows:
 from __future__ import annotations
 
 import logging
-import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import uuid4
@@ -26,13 +25,10 @@ from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     AbortWorkflowResponse,
     ActiveStepInfo,
-    ActiveWorkflowState,
     ArgumentValue,
     ExpectedOutput,
     FinishedStepInput,
     FinishedStepResponse,
-    GetActiveWorkflowInput,
-    GetActiveWorkflowResponse,
     GetSessionJobInput,
     GetWorkflowsResponse,
     GoToStepInput,
@@ -44,8 +40,6 @@ from deepwork.jobs.mcp.schemas import (
     StartWorkflowResponse,
     StepInputInfo,
     StepStatus,
-    ValidateStepOutputsInput,
-    ValidateStepOutputsResponse,
     WorkflowInfo,
 )
 from deepwork.jobs.mcp.state import StateError, StateManager
@@ -58,8 +52,6 @@ from deepwork.jobs.parser import (
 )
 
 logger = logging.getLogger("deepwork.jobs.mcp")
-OPENCLAW_RUNTIME_NOTE = Path(".deepwork/tmp/openclaw/DEEPWORK_OPENCLAW_BOOTSTRAP.md")
-OPENCLAW_SESSION_ID_RE = re.compile(r"session_id:\s*(?:`([^`]+)`|([^\s`]+))")
 
 if TYPE_CHECKING:
     from deepwork.jobs.mcp.status import StatusWriter
@@ -79,7 +71,6 @@ class WorkflowTools:
         project_root: Path,
         state_manager: StateManager,
         status_writer: StatusWriter | None = None,
-        platform: str = "claude",
     ):
         """Initialize workflow tools.
 
@@ -92,70 +83,6 @@ class WorkflowTools:
         self.state_manager = state_manager
         self.status_writer = status_writer
 
-    def _resolve_openclaw_runtime_session_id(self, session_id: str) -> str:
-        """Prefer the current OpenClaw runtime session hint over stale caller values."""
-        if self.platform != "openclaw":
-            return session_id
-
-        runtime_note = self.project_root / OPENCLAW_RUNTIME_NOTE
-        try:
-            content = runtime_note.read_text(encoding="utf-8")
-        except OSError:
-            return session_id
-
-        match = OPENCLAW_SESSION_ID_RE.search(content)
-        if not match:
-            return session_id
-
-        runtime_session_id = next((group for group in match.groups() if group), "").strip()
-        if not runtime_session_id or runtime_session_id == session_id:
-            return session_id
-
-        logger.warning(
-            "Overriding stale OpenClaw session_id %s with runtime session_id %s from %s",
-            session_id,
-            runtime_session_id,
-            runtime_note,
-        )
-        return runtime_session_id
-
-    def _start_workflow_tool_name(self) -> str:
-        """Return the host-specific visible start_workflow tool name."""
-        if self.platform == "openclaw":
-            return "deepwork__start_workflow"
-        return "mcp__plugin_deepwork_deepwork__start_workflow"
-
-    def _workflow_invocation_text(self, job_name: str, workflow_name: str, agent: str | None) -> str:
-        """Build host-specific workflow invocation help text."""
-        start_tool = self._start_workflow_tool_name()
-        if self.platform == "openclaw":
-            if agent:
-                return (
-                    "Prefer launching this as a parallel OpenClaw sub-agent with "
-                    "`sessions_spawn`, giving it full context and instructions to call "
-                    f"`{start_tool}` with job_name=\"{job_name}\" and "
-                    f'workflow_name="{workflow_name}". If sub-agents are unavailable, '
-                    "invoke the workflow directly in the current session."
-                )
-            return (
-                f"Call `{start_tool}` with job_name=\"{job_name}\" and "
-                f'workflow_name="{workflow_name}", then follow the step instructions it returns.'
-            )
-
-        if agent:
-            return (
-                f'Invoke as a Task using subagent_type="{agent}" with a prompt '
-                f"giving full context needed and instructions to call "
-                f"`{start_tool}` "
-                f'(job_name="{job_name}", workflow_name="{workflow_name}"). '
-                f"If you do not have Task as an available tool, invoke the workflow directly."
-            )
-        return (
-            f"Call `{start_tool}` with "
-            f'job_name="{job_name}" and workflow_name="{workflow_name}", '
-            f"then follow the step instructions it returns."
-        )
-
     @property
     def platform(self) -> str:
         """Return the platform from the state manager."""
@@ -164,7 +91,7 @@ class WorkflowTools:
     def _resolve_session_id(self, session_id: str | None) -> str:
         """Resolve session_id: require it on Claude Code, auto-generate otherwise."""
         if session_id:
-            return self._resolve_openclaw_runtime_session_id(session_id)
+            return session_id
         if self.platform == "claude":
             raise ToolError(
                 "session_id is required on Claude Code. "
@@ -201,14 +128,6 @@ class WorkflowTools:
             except Exception:
                 logger.warning("Failed to write job manifest", exc_info=True)
 
-    def set_project_root(self, project_root: Path) -> None:
-        """Update project-scoped helpers when the effective root changes."""
-        resolved = project_root.resolve()
-        self.project_root = resolved
-        self.state_manager.set_project_root(resolved)
-        if self.status_writer is not None:
-            self.status_writer.set_project_root(resolved)
-
     def _load_all_jobs(self) -> tuple[list[JobDefinition], list[JobLoadError]]:
         """Load all job definitions from all configured job folders."""
         return load_all_jobs(self.project_root)
@@ -217,7 +136,20 @@ class WorkflowTools:
         """Convert a JobDefinition to JobInfo for response."""
         workflows = []
         for wf_name, wf in job.workflows.items():
-            how_to_invoke = self._workflow_invocation_text(job.name, wf_name, wf.agent)
+            if wf.agent:
+                how_to_invoke = (
+                    f'Invoke as an Agent using subagent_type="{wf.agent}" with a prompt '
+                    f"giving full context needed and instructions to call "
+                    f"`mcp__plugin_deepwork_deepwork__start_workflow` "
+                    f'(job_name="{job.name}", workflow_name="{wf_name}"). '
+                    f"If you do not have Agent as an available tool, invoke the workflow directly."
+                )
+            else:
+                how_to_invoke = (
+                    f"Call `mcp__plugin_deepwork_deepwork__start_workflow` with "
+                    f'job_name="{job.name}" and workflow_name="{wf_name}", '
+                    f"then follow the step instructions it returns."
+                )
             workflows.append(
                 WorkflowInfo(
                     name=wf_name,
@@ -317,8 +249,8 @@ class WorkflowTools:
         extra = submitted_names - declared_names
         if extra:
             raise ToolError(
-                f"Unknown output names for step '{step.name}': {', '.join(sorted(extra))}. "
-                f"{self._output_contract_summary(step, job)}"
+                f"Unknown output names: {', '.join(sorted(extra))}. "
+                f"Declared outputs: {', '.join(sorted(declared_names))}"
             )
 
         # Check for missing required output keys
@@ -326,8 +258,8 @@ class WorkflowTools:
         missing = required_names - submitted_names
         if missing:
             raise ToolError(
-                f"Missing required outputs for step '{step.name}': {', '.join(sorted(missing))}. "
-                f"{self._output_contract_summary(step, job)}"
+                f"Missing required outputs: {', '.join(sorted(missing))}. "
+                f"All required outputs must be provided."
             )
 
         # Validate types and file existence
@@ -341,23 +273,15 @@ class WorkflowTools:
                 # the agent (not untrusted external input) and may legitimately
                 # reference paths outside the project root (e.g. worktrees).
                 if isinstance(value, str):
-                    if not value.strip():
-                        raise ToolError(f"Output '{name}': file path cannot be empty or whitespace")
                     full_path = self.project_root / value
                     if not full_path.exists():
                         raise ToolError(f"Output '{name}': file not found at '{value}'")
                 elif isinstance(value, list):
-                    if not value:
-                        raise ToolError(f"Output '{name}': file path list cannot be empty")
                     for path in value:
                         if not isinstance(path, str):
                             raise ToolError(
                                 f"Output '{name}': all paths must be strings, "
                                 f"got {type(path).__name__}"
-                            )
-                        if not path.strip():
-                            raise ToolError(
-                                f"Output '{name}': file paths cannot be empty or whitespace"
                             )
                         full_path = self.project_root / path
                         if not full_path.exists():
@@ -399,48 +323,6 @@ class WorkflowTools:
                 )
             )
         return results
-
-    def _output_contract_summary(self, step: WorkflowStep, job: JobDefinition) -> str:
-        """Summarize the declared output contract for a step."""
-        expected = self._build_expected_outputs(step, job)
-        if not expected:
-            return f"Step '{step.name}' does not declare any outputs."
-
-        parts = []
-        for output in expected:
-            required = "required" if output.required else "optional"
-            parts.append(f"{output.name} ({output.type}, {required})")
-        return f"Declared outputs for step '{step.name}': {', '.join(parts)}"
-
-    def _load_active_step_context(
-        self,
-        session_id: str,
-        agent_id: str | None,
-    ) -> tuple[object, JobDefinition, Workflow, WorkflowStep, dict[str, ArgumentValue]]:
-        """Resolve the current active session, job, workflow, step, and input values."""
-        try:
-            session = self.state_manager.resolve_session(session_id, agent_id)
-        except StateError as err:
-            raise ToolError(
-                "No active workflow session. Call `get_active_workflow` to inspect the current "
-                "session or `start_workflow` to begin one."
-            ) from err
-
-        job = self._get_job(session.job_name, session_id=session_id)
-        workflow = self._get_workflow(job, session.workflow_name)
-        current_step = workflow.get_step(session.current_step_id)
-        if current_step is None:
-            raise ToolError(f"Current step not found: {session.current_step_id}")
-
-        input_values = self.state_manager.get_step_input_values(
-            session_id, session.current_step_id, agent_id
-        )
-        if not input_values:
-            input_values = self._resolve_input_values(
-                current_step, job, workflow, session_id, agent_id
-            )
-
-        return session, job, workflow, current_step, input_values
 
     def _build_step_inputs_info(
         self,
@@ -568,10 +450,8 @@ class WorkflowTools:
 
     async def start_workflow(self, input_data: StartWorkflowInput) -> StartWorkflowResponse:
         """Start a new workflow session."""
-        sid = self._resolve_session_id(input_data.session_id)
-
         # Load job and workflow (check session jobs first)
-        job = self._get_job(input_data.job_name, session_id=sid)
+        job = self._get_job(input_data.job_name, session_id=input_data.session_id)
         workflow = self._get_workflow(job, input_data.workflow_name)
 
         if not workflow.steps:
@@ -579,6 +459,7 @@ class WorkflowTools:
 
         first_step = workflow.steps[0]
 
+        sid = self._resolve_session_id(input_data.session_id)
         aid = input_data.agent_id
 
         # Create session (use resolved workflow name in case it was auto-selected)
@@ -617,20 +498,32 @@ class WorkflowTools:
 
     async def finished_step(self, input_data: FinishedStepInput) -> FinishedStepResponse:
         """Report step completion and get next instructions."""
-        sid = self._resolve_openclaw_runtime_session_id(input_data.session_id)
+        sid = input_data.session_id
         aid = input_data.agent_id
-        session, job, workflow, current_step, input_values = self._load_active_step_context(
-            sid, aid
-        )
-        current_step_name = current_step.name
-
         try:
-            self._validate_outputs(input_data.outputs, current_step, job)
-        except ToolError as err:
+            session = self.state_manager.resolve_session(sid, aid)
+        except StateError as err:
             raise ToolError(
-                f"{err} Run `validate_step_outputs` before `finished_step` if you want a "
-                "dry run against the active step without advancing the workflow."
+                "No active workflow session. "
+                "Provide the session_id from the start_workflow response (begin_step.session_id). "
+                "If you want to resume a workflow, just start it again and call finished_step "
+                "with quality_review_override_reason until you get back to your prior step."
             ) from err
+        current_step_name = session.current_step_id
+
+        # Load job and workflow (check session jobs first)
+        job = self._get_job(session.job_name, session_id=sid)
+        workflow = self._get_workflow(job, session.workflow_name)
+        current_step = workflow.get_step(current_step_name)
+
+        if current_step is None:
+            raise ToolError(f"Current step not found: {current_step_name}")
+
+        # Validate outputs against step's declared output refs
+        self._validate_outputs(input_data.outputs, current_step, job)
+
+        # Get input values from state
+        input_values = self.state_manager.get_step_input_values(sid, current_step_name, aid)
 
         # Run quality gate if not overridden
         if not input_data.quality_review_override_reason:
@@ -642,7 +535,6 @@ class WorkflowTools:
                 input_values=input_values,
                 work_summary=input_data.work_summary,
                 project_root=self.project_root,
-                platform=self.platform,
             )
 
             if review_feedback:
@@ -709,79 +601,9 @@ class WorkflowTools:
         self._write_session_status(sid)
         return response
 
-    def validate_step_outputs(
-        self, input_data: ValidateStepOutputsInput
-    ) -> ValidateStepOutputsResponse:
-        """Validate outputs for the active step without advancing the workflow."""
-        sid = self._resolve_openclaw_runtime_session_id(input_data.session_id)
-        aid = input_data.agent_id
-        _session, job, workflow, current_step, input_values = self._load_active_step_context(
-            sid, aid
-        )
-
-        errors: list[str] = []
-        try:
-            self._validate_outputs(input_data.outputs, current_step, job)
-        except ToolError as err:
-            errors.append(str(err))
-
-        return ValidateStepOutputsResponse(
-            valid=not errors,
-            errors=errors,
-            current_step=self._build_active_step_info(
-                sid, current_step, job, workflow, input_values
-            ),
-            stack=self.state_manager.get_stack(sid, aid),
-        )
-
-    def get_active_workflow(
-        self, input_data: GetActiveWorkflowInput
-    ) -> GetActiveWorkflowResponse:
-        """Return the current active workflow state for this session, if any."""
-        sid = self._resolve_openclaw_runtime_session_id(input_data.session_id)
-        aid = input_data.agent_id
-
-        try:
-            session, job, workflow, current_step, input_values = self._load_active_step_context(
-                sid, aid
-            )
-        except ToolError as err:
-            if "No active workflow session." not in str(err):
-                raise
-            return GetActiveWorkflowResponse(
-                has_active_workflow=False,
-                stack=self.state_manager.get_stack(sid, aid),
-            )
-
-        completed_steps = [
-            step.name
-            for step in workflow.steps
-            if step.name in session.step_progress
-            and session.step_progress[step.name].completed_at is not None
-        ]
-
-        active_workflow = ActiveWorkflowState(
-            job_name=session.job_name,
-            workflow_name=session.workflow_name,
-            goal=session.goal,
-            started_at=session.started_at,
-            step_number=session.current_step_index + 1,
-            total_steps=len(workflow.steps),
-            completed_steps=completed_steps,
-            current_step=self._build_active_step_info(
-                sid, current_step, job, workflow, input_values
-            ),
-        )
-
-        return GetActiveWorkflowResponse(
-            has_active_workflow=True,
-            stack=self.state_manager.get_stack(sid, aid),
-            active_workflow=active_workflow,
-        )
-
     async def abort_workflow(self, input_data: AbortWorkflowInput) -> AbortWorkflowResponse:
         """Abort the current workflow and return to the previous one."""
-        sid = self._resolve_openclaw_runtime_session_id(input_data.session_id)
+        sid = input_data.session_id
         aid = input_data.agent_id
         aborted_session, new_active = await self.state_manager.abort_workflow(
             sid, input_data.explanation, agent_id=aid
@@ -802,7 +624,7 @@ class WorkflowTools:
 
     async def go_to_step(self, input_data: GoToStepInput) -> GoToStepResponse:
         """Navigate back to a prior step, clearing progress from that step onward."""
-        sid = self._resolve_openclaw_runtime_session_id(input_data.session_id)
+        sid = input_data.session_id
         aid = input_data.agent_id
         session = self.state_manager.resolve_session(sid, aid)
 

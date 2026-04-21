@@ -1,16 +1,10 @@
 """MCP root resolution via listRoots client capability.
 
 Resolves the project root dynamically by asking the MCP client for its
-filesystem roots. When ``--path`` is explicitly passed on the CLI the
-resolver always returns that path. Otherwise it calls ``ctx.list_roots()``
+filesystem roots.  When ``--path`` is explicitly passed on the CLI the
+resolver always returns that path.  Otherwise it calls ``ctx.list_roots()``
 on every tool invocation so it tracks workspace changes (e.g. git worktree
 switches) without caching stale values.
-
-For OpenClaw bundle installs, the MCP server can be launched from the plugin
-bundle directory itself (for example ``plugins/openclaw``) when the host does
-not expose a usable ``listRoots`` capability. In that case we normalize the
-bundle directory back to the enclosing workspace root when we can detect
-OpenClaw workspace markers.
 """
 
 from __future__ import annotations
@@ -24,9 +18,6 @@ if TYPE_CHECKING:
     from fastmcp import Context
 
 logger = logging.getLogger("deepwork.jobs.mcp")
-
-_OPENCLAW_PLUGIN_MARKER = Path(".codex-plugin") / "plugin.json"
-_OPENCLAW_WORKSPACE_MARKER = Path(".openclaw") / "workspace-state.json"
 
 
 async def resolve_project_root(ctx: Context, fallback: Path) -> Path:
@@ -87,24 +78,4 @@ class RootResolver:
         """
         if self._explicit:
             return self._fallback
-        candidate = await resolve_project_root(ctx, self._fallback)
-        return _normalize_openclaw_bundle_root(candidate)
-
-
-def _normalize_openclaw_bundle_root(candidate: Path) -> Path:
-    """Map an OpenClaw plugin bundle path back to the workspace root."""
-
-    resolved = candidate.resolve()
-    if not (resolved / _OPENCLAW_PLUGIN_MARKER).exists():
-        return resolved
-
-    for ancestor in (resolved, *resolved.parents):
-        if (ancestor / _OPENCLAW_WORKSPACE_MARKER).exists():
-            logger.debug(
-                "Normalized OpenClaw plugin bundle root %s to workspace root %s",
-                resolved,
-                ancestor,
-            )
-            return ancestor
-
-    return resolved
+        return await resolve_project_root(ctx, self._fallback)

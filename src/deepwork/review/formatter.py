@@ -10,15 +10,6 @@ import subprocess
 from pathlib import Path
 
 from deepwork.review.config import ReviewTask
-from deepwork.review.instructions import short_instruction_filename
-
-
-def _relative_instruction_path(file_path: Path, project_root: Path) -> Path:
-    """Resolve instruction file path relative to the project when possible."""
-    try:
-        return file_path.relative_to(project_root)
-    except ValueError:
-        return file_path
 
 
 def _git_common_dir(project_root: Path) -> Path | None:
@@ -122,49 +113,6 @@ def format_for_claude(
         lines.append("")
 
     return "\n".join(lines)
-
-
-def format_for_openclaw(
-    task_files: list[tuple[ReviewTask, Path]],
-    project_root: Path,
-) -> str:
-    """Format review tasks as OpenClaw `sessions_spawn` work items."""
-    if not task_files:
-        return "No review tasks to execute."
-
-    lines: list[str] = []
-    lines.append("Spawn the following review sub-agents in parallel with `sessions_spawn`.")
-    lines.append(
-        "IMPORTANT: Do not complete these reviews in the main session unless you cannot "
-        "spawn sub-agents. Spawn all of them before you wait for completions. Use each "
-        "instruction path exactly as written, relative to the workspace, and do not "
-        "rewrite it as an absolute host path. Omit `timeoutSeconds` on review spawns so "
-        "the runtime default applies; if a timeout value is required, use `0`.\n"
-    )
-
-    for idx, (task, file_path) in enumerate(task_files, start=1):
-        alias_path = file_path.with_name(short_instruction_filename(file_path.stem))
-        rel_path = _relative_instruction_path(alias_path, project_root)
-        name = _task_name(task)
-        description = _task_description(task)
-
-        lines.append(f"{idx}. label: {name}")
-        lines.append(f"   description: {description}")
-        lines.append(
-            "   task: Read the review instructions at "
-            f"`{rel_path}` and execute that review. Return only findings and concrete fixes."
-        )
-        if task.agent_name:
-            lines.append(f"   agent_type: {task.agent_name}")
-        lines.append("")
-
-    return "\n".join(lines)
-
-
-FORMATTERS = {
-    "claude": format_for_claude,
-    "openclaw": format_for_openclaw,
-}
 
 
 def _task_description(task: ReviewTask) -> str:

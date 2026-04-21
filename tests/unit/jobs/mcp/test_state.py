@@ -48,15 +48,6 @@ class TestStateManager:
         )
         assert state_manager.get_stack_depth(SESSION_ID) == 0
 
-    def test_set_project_root_updates_session_paths(self, state_manager: StateManager) -> None:
-        new_root = Path("/tmp/other-root")
-        resolved = new_root.resolve()
-
-        state_manager.set_project_root(new_root)
-
-        assert state_manager.project_root == resolved
-        assert state_manager.sessions_dir == resolved / ".deepwork" / "tmp" / "sessions" / "test"
-
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-003.3.5, JOBS-REQ-003.3.8, JOBS-REQ-003.3.9).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     async def test_create_session(self, state_manager: StateManager) -> None:
