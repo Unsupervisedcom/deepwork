@@ -94,6 +94,19 @@ Examine each category of release infrastructure. For each item, record whether i
   - `cargo-release` config in `Cargo.toml` or `.cargo/config.toml`
   - `.goreleaser.yml`, `.goreleaser.yaml` (goreleaser)
 
+**Release policy clarity:**
+- Check whether the repository already makes the release policy explicit in docs or automation.
+- At minimum, look for explicit decisions about:
+  - release cadence
+  - version semantics
+  - stabilization model
+  - backport policy
+  - hotfix policy
+  - merge-back policy
+  - publish targets
+  - stable-vs-unstable consumption guidance
+- If any of those remain unclear after auditing the repo, record them as policy gaps that the setup step MUST ask the user to resolve.
+
 #### 3. Assess Against Release Management Conventions
 
 Evaluate each convention with a clear pass/fail/partial/not-applicable status:
@@ -186,6 +199,16 @@ Write the audit to `.deepwork/artifacts/platform_engineer/release_builder/releas
 - **Branch protection**: <configured / not configured / not checked>
 - **Strategy documented**: yes / no — <location if yes>
 
+### Release policy
+- **Cadence documented**: yes / no — <where, or "not explicit">
+- **Version semantics documented**: yes / no — <where, or "not explicit">
+- **Stabilization model documented**: yes / no — <where, or "not explicit">
+- **Backport policy documented**: yes / no — <where, or "not explicit">
+- **Hotfix policy documented**: yes / no — <where, or "not explicit">
+- **Merge-back policy documented**: yes / no — <where, or "not explicit">
+- **Stable vs unstable guidance documented**: yes / no — <where, or "not explicit">
+- **Open policy questions for user**: <list or "none">
+
 ### Release Scripts
 - **Scripts found**: <list of paths or "none">
 - **Makefile/Justfile targets**: <list or "none">
@@ -232,6 +255,7 @@ strategy to adopt in setup_release_pipeline.>
 - **Current State Documented**: The existing release process (or lack thereof) is fully documented with specific file paths, tool names, and configuration details. No area is left as "did not check."
 - **Gaps Identified**: Missing components are identified by systematically checking against each of the six release management conventions (24-29). Each gap includes a concrete recommendation, not just "add this."
 - **Versioning Assessed**: The current versioning scheme is documented with the actual version value, tag history, and a clear assessment of SemVer compliance. The assessment includes a recommendation for the version bumping approach.
+- **Policy Gaps Identified**: Missing release-policy decisions that require explicit user judgment are called out before automation work begins.
 - **Actionable for Next Step**: The audit contains enough detail that `setup_release_pipeline` can act on every gap without re-scanning the repository. File paths, tool names, and specific missing pieces are all documented.
 - **No Changes Made**: This step is read-only. No files in the repository are created or modified. Only the output artifact is written.
 

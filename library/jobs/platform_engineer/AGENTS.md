@@ -31,4 +31,6 @@ platform_engineer/
 
 ## Learnings
 
-(To be populated after workflow executions)
+- `release_builder` should follow the repository's standard docs convention for the canonical release doc when one exists; otherwise use `docs/releases.md` or `docs/platform/releases.md`. Keep the root `AGENTS.md` concise by linking to that doc instead of duplicating release details.
+- CI-provider-specific release behavior belongs in `.github/AGENTS.md` and/or `.forgejo/AGENTS.md`. Those files should explain workflow entrypoints, required secrets, and release-specific CI expectations, while the root `AGENTS.md` only points to them.
+- `release_builder` must ask the user to define the release policy before wiring automation when cadence, version semantics, stabilization, backports, hotfixes, merge-back, publish targets, or stable-versus-unstable consumption are not already explicit in the repo. The job should implement the chosen policy, not infer one from tooling defaults.
