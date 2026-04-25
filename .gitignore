@@ -93,3 +93,6 @@ result
 *.tmp
 .temp/
 /tmp/
+
+# Git worktrees
+.worktrees/
