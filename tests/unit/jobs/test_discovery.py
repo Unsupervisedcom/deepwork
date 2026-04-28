@@ -4,6 +4,7 @@ Validates requirements: JOBS-REQ-008, JOBS-REQ-008.1, JOBS-REQ-008.2, JOBS-REQ-0
 JOBS-REQ-008.4, JOBS-REQ-008.5.
 """
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -232,3 +233,84 @@ class TestFindJobDir:
         )
         result = find_job_dir(tmp_path, "dup")
         assert result == folder_a / "dup"
+
+
+class TestLoadAllJobsLogging:
+    """Tests for logging behavior when DEEPWORK_ADDITIONAL_JOBS_FOLDERS is set."""
+
+    def test_logs_jobs_loaded_from_extra_folder(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Jobs loaded from extra folders are logged at INFO level."""
+        extra_folder = tmp_path / "shared_jobs"
+        _create_minimal_job(extra_folder, "shared_job")
+
+        monkeypatch.setenv(ENV_ADDITIONAL_JOBS_FOLDERS, str(extra_folder))
+
+        with caplog.at_level(logging.INFO, logger="deepwork.jobs.discovery"):
+            load_all_jobs(tmp_path)
+
+        matching = [
+            r for r in caplog.records
+            if str(extra_folder) in r.message and "shared_job" in r.message
+        ]
+        assert matching, (
+            "Expected a single log message containing both the extra folder path "
+            "and the loaded job name"
+        )
+
+    def test_no_extra_logging_without_env_var(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """No extra-folder log messages when DEEPWORK_ADDITIONAL_JOBS_FOLDERS is not set."""
+        monkeypatch.delenv(ENV_ADDITIONAL_JOBS_FOLDERS, raising=False)
+
+        with caplog.at_level(logging.INFO, logger="deepwork.jobs.discovery"):
+            load_all_jobs(tmp_path)
+
+        shared_folder_logs = [
+            r for r in caplog.records if "shared folder" in r.message.lower()
+        ]
+        assert len(shared_folder_logs) == 0, (
+            "No shared-folder log messages should appear when env var is not set"
+        )
+
+
+class TestServerJobSourceLogging:
+    """Tests for _log_job_source_folders in server.py."""
+
+    def test_logs_all_folders_when_env_var_set(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """When DEEPWORK_ADDITIONAL_JOBS_FOLDERS is set, all job folders are logged."""
+        from deepwork.jobs.discovery import ENV_ADDITIONAL_JOBS_FOLDERS
+        from deepwork.jobs.mcp.server import _log_job_source_folders
+
+        extra = tmp_path / "extra_jobs"
+        monkeypatch.setenv(ENV_ADDITIONAL_JOBS_FOLDERS, str(extra))
+
+        with caplog.at_level(logging.INFO, logger="deepwork.jobs.mcp"):
+            _log_job_source_folders(tmp_path)
+
+        assert any(ENV_ADDITIONAL_JOBS_FOLDERS in record.message for record in caplog.records), (
+            "Log message should mention the environment variable name"
+        )
+        assert any(str(extra) in record.message for record in caplog.records), (
+            "Log message should include the extra folder path"
+        )
+
+    def test_no_log_when_env_var_not_set(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """When DEEPWORK_ADDITIONAL_JOBS_FOLDERS is not set, nothing is logged."""
+        from deepwork.jobs.discovery import ENV_ADDITIONAL_JOBS_FOLDERS
+        from deepwork.jobs.mcp.server import _log_job_source_folders
+
+        monkeypatch.delenv(ENV_ADDITIONAL_JOBS_FOLDERS, raising=False)
+
+        with caplog.at_level(logging.INFO, logger="deepwork.jobs.mcp"):
+            _log_job_source_folders(tmp_path)
+
+        assert len(caplog.records) == 0, (
+            "No log messages should appear when env var is not set"
+        )

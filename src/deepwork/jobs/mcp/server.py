@@ -14,6 +14,7 @@ in sync with the implementation.
 from __future__ import annotations
 
 import logging
+import os
 import shutil
 from pathlib import Path
 from typing import Any
@@ -55,6 +56,26 @@ def _ensure_schema_available(project_root: Path) -> None:
         logger.warning("Could not copy schema to %s", target)
 
 
+def _log_job_source_folders(project_root: Path) -> None:
+    """Log the job source folders at startup.
+
+    When DEEPWORK_ADDITIONAL_JOBS_FOLDERS is set, logs a notice showing all
+    job source folders so users can see where jobs are installed from.
+    """
+    from deepwork.jobs.discovery import ENV_ADDITIONAL_JOBS_FOLDERS, get_job_folders
+
+    extra_raw = os.environ.get(ENV_ADDITIONAL_JOBS_FOLDERS, "")
+    if not extra_raw:
+        return
+
+    folders = get_job_folders(project_root)
+    logger.info(
+        "Job source folders (%s is set): %s",
+        ENV_ADDITIONAL_JOBS_FOLDERS,
+        ", ".join(str(f) for f in folders),
+    )
+
+
 def create_server(
     project_root: Path | str,
     platform: str | None = None,
@@ -84,6 +105,9 @@ def create_server(
 
     # Copy the job schema to a stable location so agents can always reference it
     _ensure_schema_available(project_path)
+
+    # Log job source folders, highlighting any shared/extra folders
+    _log_job_source_folders(project_path)
 
     # Initialize components
     state_manager = StateManager(project_root=project_path, platform=platform or "claude")
