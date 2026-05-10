@@ -43,16 +43,15 @@ For bonus points, try `/deepwork learn` after running your workflow as well, and
 
 ### OpenClaw
 
-OpenClaw support is installed from the bundle in [`plugins/openclaw/`](./plugins/openclaw/), while the DeepWork runtime comes from an installed `deepwork` CLI.
+OpenClaw support ships as a [Codex bundle](https://docs.openclaw.ai/plugins/bundles) in [`plugins/openclaw/`](./plugins/openclaw/). The bundle launches the DeepWork runtime via `uvx`, so you do not need to install `deepwork` separately — just have `uv` on your PATH.
 
-See [plugins/openclaw/README.md](./plugins/openclaw/README.md) for the full instructions. The short version is:
+```bash
+git clone https://github.com/Unsupervisedcom/deepwork.git
+openclaw plugins install ./deepwork/plugins/openclaw
+openclaw gateway restart
+```
 
-1. Clone this repo.
-2. Install a DeepWork runtime that supports `deepwork serve --platform openclaw`.
-3. Install the OpenClaw bundle from `plugins/openclaw/`.
-4. Restart the OpenClaw gateway.
-
-Most users should stop there. If you are testing unreleased DeepWork changes or OpenClaw is launching the wrong DeepWork binary, the OpenClaw guide also covers the exact `mcp.servers.deepwork` override to use.
+Start a new OpenClaw session after the restart. See [plugins/openclaw/README.md](./plugins/openclaw/README.md) for the short install guide and [doc/openclaw_design.md](./doc/openclaw_design.md) for how the integration works, limitations, and troubleshooting.
 
 ---
 
