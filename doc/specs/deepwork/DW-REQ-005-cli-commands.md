@@ -88,3 +88,5 @@ The DeepWork CLI provides five active commands: `serve` (starts the MCP server),
 6. The command MUST create `~/.claude` and `settings.json` if they do not exist.
 7. When no supported platform is detected, the command MUST print a message indicating no platforms were found.
 8. After all platform configuration is complete, the command MUST open `https://www.deepwork.md/success` in the user's default browser.
+9. When Claude Code is detected, the command MUST also configure the project-level `.claude/settings.json` with the DeepWork marketplace in `extraKnownMarketplaces` (source `{"source": "github", "repo": "Unsupervisedcom/deepwork"}`), so team members who clone the repo get the marketplace automatically.
+10. The project-level marketplace configuration MUST be idempotent and MUST preserve existing project settings.

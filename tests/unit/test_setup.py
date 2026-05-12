@@ -13,7 +13,9 @@ from deepwork.cli.main import cli
 from deepwork.setup.claude import (
     ALLOW_PERMISSIONS,
     MARKETPLACE_KEY,
+    MARKETPLACE_SOURCE,
     PLUGIN_KEY,
+    claude_project_setup,
     claude_setup,
 )
 
@@ -102,6 +104,55 @@ class TestClaudeSetupNoClaudeDir:
         changes = claude_setup()
         assert len(changes) == 2 + len(ALLOW_PERMISSIONS)
         assert (fake_home / ".claude" / "settings.json").exists()
+
+
+class TestClaudeProjectSetupFresh:
+    """When project .claude/settings.json does not exist yet."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.6.9).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_creates_project_settings(self, tmp_path: Path) -> None:
+        changes = claude_project_setup(project_dir=tmp_path)
+        assert len(changes) == 1
+        settings = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+
+        assert MARKETPLACE_KEY in settings["extraKnownMarketplaces"]
+        src = settings["extraKnownMarketplaces"][MARKETPLACE_KEY]["source"]
+        assert src["source"] == "github"
+        assert src["repo"] == "Unsupervisedcom/deepwork"
+
+
+class TestClaudeProjectSetupIdempotent:
+    """Running project setup twice should be a no-op the second time."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.6.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_no_changes_on_rerun(self, tmp_path: Path) -> None:
+        claude_project_setup(project_dir=tmp_path)
+        changes = claude_project_setup(project_dir=tmp_path)
+        assert changes == []
+
+
+class TestClaudeProjectSetupPreservesExisting:
+    """Existing project settings are preserved when adding DeepWork entries."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.6.10).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_existing_settings_kept(self, tmp_path: Path) -> None:
+        settings_path = tmp_path / ".claude" / "settings.json"
+        settings_path.parent.mkdir(parents=True, exist_ok=True)
+        existing = {
+            "permissions": {"allow": ["Bash(git:*)"]},
+            "enabledPlugins": {"other@marketplace": True},
+        }
+        settings_path.write_text(json.dumps(existing))
+
+        claude_project_setup(project_dir=tmp_path)
+        settings = json.loads(settings_path.read_text())
+
+        assert "Bash(git:*)" in settings["permissions"]["allow"]
+        assert settings["enabledPlugins"]["other@marketplace"] is True
+        assert MARKETPLACE_KEY in settings["extraKnownMarketplaces"]
 
 
 class TestSetupCLI:
