@@ -27,10 +27,12 @@ from deepwork.jobs.mcp.schemas import (
     AbortWorkflowInput,
     ArgumentValue,
     FinishedStepInput,
+    GetActiveWorkflowInput,
     GetSessionJobInput,
     GoToStepInput,
     RegisterSessionJobInput,
     StartWorkflowInput,
+    ValidateStepOutputsInput,
 )
 from deepwork.jobs.mcp.state import StateManager
 from deepwork.jobs.mcp.status import StatusWriter
@@ -38,6 +40,26 @@ from deepwork.jobs.mcp.tools import WorkflowTools
 
 # Configure logging
 logger = logging.getLogger("deepwork.jobs.mcp")
+
+
+def _session_id_hint(platform: str) -> str:
+    """Describe how the host provides the DeepWork session identifier."""
+    if platform == "openclaw":
+        return (
+            "the DeepWork session ID from the OpenClaw bootstrap note "
+            "(use the current OpenClaw sessionId)"
+        )
+    return "CLAUDE_CODE_SESSION_ID from startup context"
+
+
+def _agent_id_hint(platform: str) -> str:
+    """Describe how the host provides the optional agent identifier."""
+    if platform == "openclaw":
+        return (
+            "an optional host-specific agent scope from the OpenClaw bootstrap note "
+            "(usually leave unset unless you intentionally want isolated workflow state)"
+        )
+    return "CLAUDE_CODE_AGENT_ID from startup context"
 
 
 def _ensure_schema_available(project_root: Path) -> None:
@@ -93,6 +115,7 @@ def create_server(
         project_root=project_path,
         state_manager=state_manager,
         status_writer=status_writer,
+        platform=platform or "claude",
     )
 
     # Write initial manifest at startup
@@ -103,13 +126,21 @@ def create_server(
 
     # Detect issues at startup (used for instructions and tool response warnings)
     startup_issues = detect_issues(project_path)
-    instructions = _build_startup_instructions(project_path, startup_issues)
+    instructions = _build_startup_instructions(project_path, startup_issues, tools.platform)
 
     # Create MCP server
     mcp = FastMCP(
         name="deepwork",
         instructions=instructions,
     )
+
+    async def _refresh_project_root(ctx: Context) -> Path:
+        """Resolve and propagate the effective project root for this tool call."""
+        root = await root_resolver.get_root(ctx)
+        if root != tools.project_root:
+            tools.set_project_root(root)
+            _ensure_schema_available(root)
+        return root
 
     # =========================================================================
     # Issue detection — append to tool responses when issues exist
@@ -159,8 +190,66 @@ def create_server(
     async def get_workflows(ctx: Context) -> dict[str, Any]:
         """Get all available workflows."""
         _log_tool_call("get_workflows")
-        tools.project_root = await root_resolver.get_root(ctx)
+        await _refresh_project_root(ctx)
         response = tools.get_workflows()
+        return _append_issues(response.model_dump())
+
+    @mcp.tool(
+        description=(
+            "Return the currently active workflow for this session, if one exists. "
+            "Useful after compaction, reset, or session restore. "
+            f"Required: session_id ({_session_id_hint(tools.platform)}). "
+            f"Optional: agent_id ({_agent_id_hint(tools.platform)})."
+        )
+    )
+    async def get_active_workflow(
+        session_id: str,
+        ctx: Context,
+        agent_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Get the current active workflow state for this session."""
+        _log_tool_call(
+            "get_active_workflow",
+            {"agent_id": agent_id},
+            session_id=session_id,
+            agent_id=agent_id,
+        )
+        await _refresh_project_root(ctx)
+        input_data = GetActiveWorkflowInput(session_id=session_id, agent_id=agent_id)
+        response = tools.get_active_workflow(input_data)
+        return _append_issues(response.model_dump())
+
+    @mcp.tool(
+        description=(
+            "Validate a planned `finished_step` output payload against the active step without "
+            "advancing the workflow or running quality reviews. "
+            "Use this as a dry run when you want to catch wrong output names, missing required "
+            "outputs, bad types, or missing files before calling `finished_step`. "
+            "Required: outputs (map of step_argument names to values), "
+            f"session_id ({_session_id_hint(tools.platform)}). "
+            f"Optional: agent_id ({_agent_id_hint(tools.platform)})."
+        )
+    )
+    async def validate_step_outputs(
+        outputs: dict[str, ArgumentValue],
+        session_id: str,
+        ctx: Context,
+        agent_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Validate outputs for the active step without advancing the workflow."""
+        _log_tool_call(
+            "validate_step_outputs",
+            {"outputs": outputs, "agent_id": agent_id},
+            session_id=session_id,
+            agent_id=agent_id,
+        )
+        await _refresh_project_root(ctx)
+        input_data = ValidateStepOutputsInput(
+            outputs=outputs,
+            session_id=session_id,
+            agent_id=agent_id,
+        )
+        response = tools.validate_step_outputs(input_data)
         return _append_issues(response.model_dump())
 
     @mcp.tool(
@@ -198,7 +287,7 @@ def create_server(
             session_id=session_id,
             agent_id=agent_id,
         )
-        tools.project_root = await root_resolver.get_root(ctx)
+        await _refresh_project_root(ctx)
         input_data = StartWorkflowInput(
             goal=goal,
             job_name=job_name,
@@ -253,7 +342,7 @@ def create_server(
             session_id=session_id,
             agent_id=agent_id,
         )
-        tools.project_root = await root_resolver.get_root(ctx)
+        await _refresh_project_root(ctx)
         input_data = FinishedStepInput(
             outputs=outputs,
             work_summary=work_summary,
@@ -291,7 +380,7 @@ def create_server(
             session_id=session_id,
             agent_id=agent_id,
         )
-        tools.project_root = await root_resolver.get_root(ctx)
+        await _refresh_project_root(ctx)
         input_data = AbortWorkflowInput(
             explanation=explanation, session_id=session_id, agent_id=agent_id
         )
@@ -327,7 +416,7 @@ def create_server(
             session_id=session_id,
             agent_id=agent_id,
         )
-        tools.project_root = await root_resolver.get_root(ctx)
+        await _refresh_project_root(ctx)
         input_data = GoToStepInput(step_id=step_id, session_id=session_id, agent_id=agent_id)
         response = await tools.go_to_step(input_data)
         return _append_issues(response.model_dump())
@@ -359,7 +448,7 @@ def create_server(
             {"job_name": job_name},
             session_id=session_id,
         )
-        tools.project_root = await root_resolver.get_root(ctx)
+        await _refresh_project_root(ctx)
         input_data = RegisterSessionJobInput(
             job_name=job_name,
             job_definition_yaml=job_definition_yaml,
@@ -391,7 +480,7 @@ def create_server(
             {"job_name": job_name},
             session_id=session_id,
         )
-        tools.project_root = await root_resolver.get_root(ctx)
+        await _refresh_project_root(ctx)
         input_data = GetSessionJobInput(
             job_name=job_name,
             session_id=session_id,
@@ -508,7 +597,10 @@ def create_server(
     return mcp
 
 
-_STATIC_INSTRUCTIONS = """\
+def _static_instructions(platform: str) -> str:
+    session_hint = _session_id_hint(platform)
+    agent_hint = _agent_id_hint(platform)
+    return f"""\
 # DeepWork Workflow Server
 
 Multi-step workflows with quality gates.
@@ -516,18 +608,23 @@ Multi-step workflows with quality gates.
 **Session identity**: On Claude Code pass `CLAUDE_CODE_SESSION_ID` as `session_id`. \
 On other platforms omit `session_id` in `start_workflow`; the server auto-generates one \
 and returns it in `begin_step.session_id` — use that value for all subsequent calls. \
-Sub-agents on Claude Code also pass `agent_id` (CLAUDE_CODE_AGENT_ID).
+Sub-agents may also pass `agent_id` ({agent_hint}). Host session hints come from \
+{session_hint}.
 
 ## Workflow Lifecycle
 
 1. `get_workflows` — discover available workflows
-2. `start_workflow` — begin with goal, job_name, workflow_name (session_id optional — see above)
-3. Follow step instructions; use `begin_step.session_id` for all subsequent calls, then call `finished_step` with outputs
-4. If `needs_work`: fix issues and retry. If `next_step`: continue. If `workflow_complete`: done.
+2. `get_active_workflow` — resume current workflow context after compaction/reset when needed
+3. `start_workflow` — begin with goal, job_name, workflow_name (session_id optional — see above)
+4. Follow step instructions, then call `validate_step_outputs` or compare against `step_expected_outputs`
+5. Call `finished_step` with outputs once the output contract is satisfied
+6. If `needs_work`: fix issues and retry. If `next_step`: continue. If `workflow_complete`: done.
 
 Workflows nest via stack. Use `abort_workflow` to cancel, `go_to_step` to revisit earlier steps.
 """
 
+
+_STATIC_INSTRUCTIONS = _static_instructions("claude")
 
 _WORKFLOW_HEADER = (
     "## Available Workflows\n\n"
@@ -544,6 +641,7 @@ _MAX_INSTRUCTIONS_SIZE = 2048
 def _build_startup_instructions(
     project_root: Path,
     issues: list[Issue],
+    platform: str = "claude",
 ) -> str:
     """Build MCP server instructions with dynamic content first (survives truncation).
 
@@ -555,20 +653,21 @@ def _build_startup_instructions(
             "Suggest repairing this immediately to the user.\n\n"
             + format_issues_for_agent(issues)
             + "\n\n"
-            + _STATIC_INSTRUCTIONS
+            + _static_instructions(platform)
         )
 
     # No issues — list available workflows
     jobs, _ = load_all_jobs(project_root)
     if not jobs:
-        return _STATIC_INSTRUCTIONS
+        return _static_instructions(platform)
 
     lines: list[str] = []
     for job in jobs:
         wf_names = ", ".join(job.workflows.keys())
         lines.append(f"- **{job.name}** ({wf_names}): {job.summary}")
 
-    result = _WORKFLOW_HEADER + "\n".join(lines) + "\n\n" + _STATIC_INSTRUCTIONS
+    static_instructions = _static_instructions(platform)
+    result = _WORKFLOW_HEADER + "\n".join(lines) + "\n\n" + static_instructions
     if len(result) <= _MAX_INSTRUCTIONS_SIZE:
         return result
 
@@ -577,5 +676,5 @@ def _build_startup_instructions(
         "## Available Workflows\n\n"
         "This project has DeepWork workflows installed. "
         "Call `get_workflows` to see all available workflows and use them for "
-        "anything the user requests that seem related.\n\n" + _STATIC_INSTRUCTIONS
+        "anything the user requests that seem related.\n\n" + static_instructions
     )

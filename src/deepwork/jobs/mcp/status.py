@@ -51,7 +51,12 @@ class StatusWriter:
     """
 
     def __init__(self, project_root: Path):
-        self.status_dir = project_root / ".deepwork" / "tmp" / "status" / "v1"
+        self.set_project_root(project_root)
+
+    def set_project_root(self, project_root: Path) -> None:
+        """Rebind status file paths to a new project root."""
+        resolved = project_root.resolve()
+        self.status_dir = resolved / ".deepwork" / "tmp" / "status" / "v1"
         self.manifest_path = self.status_dir / "job_manifest.yml"
         self.sessions_dir = self.status_dir / "sessions"
 

@@ -157,3 +157,22 @@ async def test_dynamic_falls_back_on_error() -> None:
     ctx = _make_ctx(RuntimeError("disconnected"))
     result = await resolver.get_root(ctx)
     assert result == FALLBACK
+
+
+@pytest.mark.asyncio
+async def test_dynamic_normalizes_openclaw_plugin_bundle_to_workspace_root(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    plugin_dir = workspace / "plugins" / "openclaw"
+    (workspace / ".openclaw").mkdir(parents=True)
+    (workspace / ".openclaw" / "workspace-state.json").write_text("{}")
+    (plugin_dir / ".codex-plugin").mkdir(parents=True)
+    (plugin_dir / ".codex-plugin" / "plugin.json").write_text("{}")
+
+    resolver = RootResolver(fallback_root=plugin_dir, explicit=False)
+    ctx = _make_ctx(RuntimeError("listRoots unavailable"))
+
+    result = await resolver.get_root(ctx)
+
+    assert result == workspace.resolve()
