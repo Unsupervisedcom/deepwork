@@ -121,6 +121,12 @@ deepwork/                       # DeepWork tool repository
 │   │   │   └── review/SKILL.md
 │   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
 │   │   └── .mcp.json           # MCP server config
+│   ├── full-convo-memory/      # Transcript-search plugin
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── scripts/search_conversation.sh
+│   │   └── skills/search_conversation/
+│   │       ├── SKILL.md
+│   │       └── .deepschema.SKILL.md.yml
 │   └── gemini/                 # Gemini CLI extension
 │       └── skills/deepwork/SKILL.md
 ├── library/jobs/               # Reusable example jobs

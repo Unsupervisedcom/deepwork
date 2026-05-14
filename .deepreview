@@ -195,8 +195,11 @@ test_file_quality:
          blank lines or other comments).
 
       3. **Valid REQ ID**: The requirement ID in parentheses must follow the
-         pattern `{PREFIX}-REQ-NNN.M` where PREFIX is one of: DW-REQ,
-         JOBS-REQ, REVIEW-REQ, LA-REQ, PLUG-REQ.
+         pattern `{PREFIX}-REQ-NNN.M` or `{PREFIX}-REQ-NNN.M.L` where PREFIX
+         is one of: DW-REQ, JOBS-REQ, REVIEW-REQ, LA-REQ, PLUG-REQ. The
+         optional third `.L` level is used when a test maps to a specific
+         sub-clause of a requirement section (e.g. `PLUG-REQ-004.1.2`
+         referring to clause 2 of section PLUG-REQ-004.1).
 
       4. **Consistency**: If a test references a REQ ID only in a docstring
          but is missing the formal two-line comment block, flag it.

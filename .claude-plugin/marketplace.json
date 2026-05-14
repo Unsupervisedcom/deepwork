@@ -44,6 +44,25 @@
       ],
       "repository": "https://github.com/Unsupervisedcom/deepwork",
       "license": "MIT"
+    },
+    {
+      "name": "full-convo-memory",
+      "description": "Search the current Claude Code session's jsonl transcript using jq filters",
+      "version": "0.1.0",
+      "source": "./plugins/full-convo-memory",
+      "author": {
+        "name": "DeepWork"
+      },
+      "category": "productivity",
+      "keywords": [
+        "memory",
+        "search",
+        "transcript",
+        "conversation",
+        "jq"
+      ],
+      "repository": "https://github.com/Unsupervisedcom/deepwork",
+      "license": "BSL-1.1"
     }
   ]
 }
