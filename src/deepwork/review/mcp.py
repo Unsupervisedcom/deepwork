@@ -9,7 +9,7 @@ from pathlib import Path
 from deepwork.deepschema.review_bridge import generate_review_rules as gen_schema_rules
 from deepwork.review.config import ReviewRule
 from deepwork.review.discovery import DiscoveryError, load_all_rules
-from deepwork.review.formatter import format_for_claude
+from deepwork.review.formatter import format_for_claude, format_for_pi
 from deepwork.review.instructions import (
     INSTRUCTIONS_DIR,
     compute_review_id,
@@ -25,6 +25,7 @@ from deepwork.review.matcher import (
 
 FORMATTERS = {
     "claude": format_for_claude,
+    "pi": format_for_pi,
 }
 
 SUPPORTED_PLATFORMS = set(FORMATTERS.keys())

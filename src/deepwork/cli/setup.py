@@ -11,7 +11,7 @@ def setup() -> None:
     """Configure the current environment for DeepWork.
 
     Detects installed AI agent platforms and ensures their settings
-    include the DeepWork marketplace, plugin, and MCP permissions.
+    include the DeepWork package/plugin and platform permissions.
     """
     claude_dir = Path.home() / ".claude"
     if claude_dir.is_dir():
@@ -24,7 +24,19 @@ def setup() -> None:
                 click.echo(f"  • {change}")
         else:
             click.echo("Claude Code — already configured, no changes needed.")
-    else:
-        click.echo("No supported AI agent platforms detected (~/.claude not found).")
+    pi_dir = Path.home() / ".pi" / "agent"
+    if pi_dir.is_dir():
+        from deepwork.setup.pi import pi_setup
+
+        changes = pi_setup()
+        if changes:
+            click.echo("Pi CLI — updated ~/.pi/agent/settings.json:")
+            for change in changes:
+                click.echo(f"  • {change}")
+        else:
+            click.echo("Pi CLI — already configured, no changes needed.")
+
+    if not claude_dir.is_dir() and not pi_dir.is_dir():
+        click.echo("No supported AI agent platforms detected (~/.claude or ~/.pi/agent not found).")
 
     webbrowser.open("https://www.deepwork.md/success")

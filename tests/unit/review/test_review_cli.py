@@ -158,6 +158,42 @@ class TestReviewCommand:
         assert "Invoke the following" in result.output
         mock_format.assert_called_once()
 
+    @patch("deepwork.cli.review.format_for_pi")
+    @patch("deepwork.cli.review.write_instruction_files")
+    @patch("deepwork.cli.review.match_files_to_rules")
+    @patch("deepwork.cli.review.get_changed_files")
+    @patch("deepwork.cli.review.load_all_rules")
+    def test_full_pipeline_produces_pi_output(
+        self,
+        mock_load: Any,
+        mock_diff: Any,
+        mock_match: Any,
+        mock_write: Any,
+        mock_format: Any,
+        tmp_path: Path,
+    ) -> None:
+        rule = _make_rule(tmp_path)
+        task = ReviewTask(
+            rule_name="test_rule",
+            files_to_review=["app.py"],
+            instructions="Review it.",
+            agent_name=None,
+        )
+        mock_load.return_value = ([rule], [])
+        mock_diff.return_value = ["app.py"]
+        mock_match.return_value = [task]
+        mock_write.return_value = [(task, tmp_path / "instr.md")]
+        mock_format.return_value = "Run the following DeepWork review tasks."
+
+        runner = CliRunner()
+        result = runner.invoke(
+            review,
+            ["--instructions-for", "pi", "--path", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+        assert "Run the following DeepWork review tasks" in result.output
+        mock_format.assert_called_once()
+
     # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-006.1.3).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_instructions_for_is_required(self) -> None:

@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "deepwork": {
+      "command": "uvx",
+      "args": ["deepwork", "serve", "--platform", "pi"],
+      "lifecycle": "lazy",
+      "directTools": [
+        "get_workflows",
+        "start_workflow",
+        "finished_step",
+        "go_to_step",
+        "abort_workflow",
+        "get_review_instructions",
+        "get_configured_reviews",
+        "mark_review_as_passed",
+        "get_named_schemas"
+      ]
+    }
+  }
+}

@@ -87,7 +87,7 @@ deepwork/                       # DeepWork tool repository
 │       │   ├── discovery.py    # Find .deepreview files in project tree
 │       │   ├── matcher.py      # Git diff + glob matching + strategy grouping
 │       │   ├── instructions.py # Generate review instruction files
-│       │   ├── formatter.py    # Format output for Claude Code
+│       │   ├── formatter.py    # Format review output for agent platforms
 │       │   ├── mcp.py          # MCP adapter for review pipeline
 │       │   └── schema.py       # JSON schema loader
 │       ├── schemas/            # Definition schemas
@@ -121,8 +121,13 @@ deepwork/                       # DeepWork tool repository
 │   │   │   └── review/SKILL.md
 │   │   ├── hooks/              # hooks.json, post_commit_reminder.sh, post_compact.sh, startup_context.sh, deepschema_write.sh
 │   │   └── .mcp.json           # MCP server config
-│   └── gemini/                 # Gemini CLI extension
-│       └── skills/deepwork/SKILL.md
+│   ├── gemini/                 # Gemini CLI extension
+│   │   └── skills/deepwork/SKILL.md
+│   └── pi/                     # Pi CLI package
+│       ├── package.json
+│       ├── extensions/index.ts
+│       ├── mcp.json.example
+│       └── skills/
 ├── library/jobs/               # Reusable example jobs
 ├── tests/                      # Test suite
 ├── doc/                        # Documentation
@@ -170,7 +175,7 @@ The review command:
 - Matches changed files against rules using include/exclude glob patterns
 - Groups files by review strategy (`individual`, `matches_together`, `all_changed_files`)
 - Generates per-task instruction files in `.deepwork/tmp/review_instructions/`
-- Outputs structured text for Claude Code to dispatch parallel review agents
+- Outputs platform-formatted review instructions for Claude Code and Pi
 
 ### 4. Jobs Command (`jobs.py`)
 
@@ -197,6 +202,7 @@ deepwork setup
 The setup command:
 - Detects Claude Code by checking for `~/.claude` directory
 - Configures `~/.claude/settings.json` with marketplace, plugin, MCP permissions, auto-update, and project-root-relative `Read`/`Write`/`Edit` permissions for `/.deepwork/**/*` (applies to every project)
+- Detects Pi CLI by checking for `~/.pi/agent` and adds the DeepWork Pi package source to `~/.pi/agent/settings.json`
 - Idempotent — safe to run multiple times
 - Preserves existing settings
 
@@ -206,8 +212,16 @@ Platform-specific delivery is now handled by plugins in `plugins/`:
 
 - **Claude Code**: `plugins/claude/` — installed as a Claude Code plugin via marketplace
 - **Gemini CLI**: `plugins/gemini/` — skill files copied to `.gemini/skills/`
+- **Pi CLI**: `plugins/pi/` — installed as a Pi package with skills, extension hooks, and MCP adapter integration
 
-Each plugin contains static files (skill, hooks, MCP config) rather than generated content. The shared skill body lives in `platform/skill-body.md` as the single source of truth.
+Each plugin contains checked-in skills and platform integration files rather than generated content. The shared core skill body lives in `platform/skill-body.md`.
+
+Pi reviews can optionally use `tintinweb/pi-subagents`. The Pi extension does
+not ping the subagent bus during startup; the first `/review` invocation sends a
+`subagents:rpc:ping` event and caches the result for the session. If the ping
+succeeds, each generated review task is spawned through `subagents:rpc:spawn`.
+If it fails or times out, the extension injects a sequential review prompt into
+the current session.
 
 ---
 
@@ -1162,4 +1176,3 @@ deepwork serve --transport sse --port 8000
 - [JSON Schema](https://json-schema.org/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 - [FastMCP Documentation](https://github.com/jlowin/fastmcp)
-

@@ -1,0 +1,30 @@
+{
+  "name": "deepwork-pi-package",
+  "version": "0.14.0",
+  "private": true,
+  "description": "Pi package resources for DeepWork",
+  "keywords": [
+    "pi-package",
+    "deepwork",
+    "workflow",
+    "automation",
+    "quality-gates"
+  ],
+  "license": "BSL-1.1",
+  "repository": "https://github.com/Unsupervisedcom/deepwork",
+  "dependencies": {
+    "pi-mcp-adapter": "^2.5.3"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "pi": {
+    "extensions": [
+      "plugins/pi/extensions/index.ts",
+      "node_modules/pi-mcp-adapter/index.ts"
+    ],
+    "skills": [
+      "plugins/pi/skills"
+    ]
+  }
+}

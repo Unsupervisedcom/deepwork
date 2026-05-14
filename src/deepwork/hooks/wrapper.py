@@ -51,6 +51,7 @@ class Platform(StrEnum):
 
     CLAUDE = "claude"
     GEMINI = "gemini"
+    PI = "pi"
 
 
 class NormalizedEvent(StrEnum):
@@ -87,6 +88,14 @@ EVENT_TO_NORMALIZED: dict[Platform, dict[str, NormalizedEvent]] = {
         "BeforeModel": NormalizedEvent.BEFORE_MODEL,
         "AfterModel": NormalizedEvent.AFTER_MODEL,
     },
+    Platform.PI: {
+        "agent_end": NormalizedEvent.AFTER_AGENT,
+        "tool_call": NormalizedEvent.BEFORE_TOOL,
+        "tool_result": NormalizedEvent.AFTER_TOOL,
+        "input": NormalizedEvent.BEFORE_PROMPT,
+        "session_start": NormalizedEvent.SESSION_START,
+        "session_shutdown": NormalizedEvent.SESSION_END,
+    },
 }
 
 # Normalized event to platform-specific event name
@@ -108,6 +117,14 @@ NORMALIZED_TO_EVENT: dict[Platform, dict[NormalizedEvent, str]] = {
         NormalizedEvent.SESSION_END: "SessionEnd",
         NormalizedEvent.BEFORE_MODEL: "BeforeModel",
         NormalizedEvent.AFTER_MODEL: "AfterModel",
+    },
+    Platform.PI: {
+        NormalizedEvent.AFTER_AGENT: "agent_end",
+        NormalizedEvent.BEFORE_TOOL: "tool_call",
+        NormalizedEvent.AFTER_TOOL: "tool_result",
+        NormalizedEvent.BEFORE_PROMPT: "input",
+        NormalizedEvent.SESSION_START: "session_start",
+        NormalizedEvent.SESSION_END: "session_shutdown",
     },
 }
 
@@ -135,6 +152,17 @@ TOOL_TO_NORMALIZED: dict[Platform, dict[str, str]] = {
         "web_fetch": "web_fetch",
         "web_search": "web_search",
     },
+    Platform.PI: {
+        "write": "write_file",
+        "edit": "edit_file",
+        "read": "read_file",
+        "bash": "shell",
+        "grep": "grep",
+        "find": "glob",
+        "ls": "list",
+        "web_fetch": "web_fetch",
+        "web_search": "web_search",
+    },
 }
 
 # Normalized tool names to platform-specific
@@ -158,6 +186,17 @@ NORMALIZED_TO_TOOL: dict[Platform, dict[str, str]] = {
         "shell": "shell",
         "glob": "glob",
         "grep": "grep",
+        "web_fetch": "web_fetch",
+        "web_search": "web_search",
+    },
+    Platform.PI: {
+        "write_file": "write",
+        "edit_file": "edit",
+        "read_file": "read",
+        "shell": "bash",
+        "grep": "grep",
+        "glob": "find",
+        "list": "ls",
         "web_fetch": "web_fetch",
         "web_search": "web_search",
     },

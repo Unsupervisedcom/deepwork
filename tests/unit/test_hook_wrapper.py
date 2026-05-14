@@ -185,6 +185,41 @@ class TestHookInput:
             hook_input = HookInput.from_dict(raw_data, Platform.GEMINI)
             assert hook_input.event == expected, f"Expected {expected} for {gemini_event}"
 
+    def test_event_normalization_pi(self) -> None:
+        """Test all Pi events are normalized correctly."""
+        test_cases = [
+            ("agent_end", NormalizedEvent.AFTER_AGENT),
+            ("tool_call", NormalizedEvent.BEFORE_TOOL),
+            ("tool_result", NormalizedEvent.AFTER_TOOL),
+            ("input", NormalizedEvent.BEFORE_PROMPT),
+            ("session_start", NormalizedEvent.SESSION_START),
+            ("session_shutdown", NormalizedEvent.SESSION_END),
+        ]
+
+        for pi_event, expected in test_cases:
+            raw_data = {"hook_event_name": pi_event}
+            hook_input = HookInput.from_dict(raw_data, Platform.PI)
+            assert hook_input.event == expected, f"Expected {expected} for {pi_event}"
+
+    def test_tool_name_normalization_pi(self) -> None:
+        """Test Pi tool names are normalized to shared hook names."""
+        test_cases = [
+            ("write", "write_file"),
+            ("edit", "edit_file"),
+            ("read", "read_file"),
+            ("bash", "shell"),
+            ("find", "glob"),
+            ("grep", "grep"),
+        ]
+
+        for pi_name, expected in test_cases:
+            raw_data = {
+                "hook_event_name": "tool_result",
+                "tool_name": pi_name,
+            }
+            hook_input = HookInput.from_dict(raw_data, Platform.PI)
+            assert hook_input.tool_name == expected, f"Expected {expected} for {pi_name}"
+
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.4.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
     def test_empty_input(self) -> None:
@@ -315,6 +350,15 @@ class TestHookOutput:
         result = output.to_dict(Platform.GEMINI, NormalizedEvent.AFTER_AGENT)
 
         assert "hookSpecificOutput" in result
+        assert result["hookSpecificOutput"]["additionalContext"] == "Additional context"
+
+    def test_context_for_pi(self) -> None:
+        """Test context handling for Pi."""
+        output = HookOutput(context="Additional context")
+        result = output.to_dict(Platform.PI, NormalizedEvent.AFTER_TOOL)
+
+        assert "hookSpecificOutput" in result
+        assert result["hookSpecificOutput"]["hookEventName"] == "tool_result"
         assert result["hookSpecificOutput"]["additionalContext"] == "Additional context"
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-006.7.3).
