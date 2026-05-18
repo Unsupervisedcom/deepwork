@@ -59,6 +59,31 @@ class TestReviewBlock:
         assert review.agent is None
         assert review.additional_context is None
 
+    def test_from_dict_with_review_depth_lightweight(self) -> None:
+        """review_depth: lightweight is parsed and stored on the ReviewBlock."""
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.4.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        data = {
+            "strategy": "individual",
+            "instructions": "Check structural validity only.",
+            "review_depth": "lightweight",
+        }
+        review = ReviewBlock.from_dict(data)
+
+        assert review.review_depth == "lightweight"
+
+    def test_from_dict_review_depth_defaults_to_none(self) -> None:
+        """review_depth is None when not specified (standard depth, backward-compatible)."""
+        # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-002.4.6).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        data = {
+            "strategy": "individual",
+            "instructions": "Review this carefully.",
+        }
+        review = ReviewBlock.from_dict(data)
+
+        assert review.review_depth is None
+
 
 class TestStepArgument:
     """Tests for StepArgument dataclass."""

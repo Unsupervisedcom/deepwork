@@ -136,6 +136,11 @@
                                     "description": "If true, pulls the full contents of files that match the include patterns even if they weren't modified in this diff."
                                 }
                             }
+                        },
+                        "review_depth": {
+                            "type": "string",
+                            "enum": ["lightweight"],
+                            "description": "Optional review depth hint. When set to 'lightweight', the workflow's common_job_info preamble is omitted from the review instruction file, reducing token usage for low-risk or reversible intermediate steps. Omit for standard depth (default)."
                         }
                     }
                 }

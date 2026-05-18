@@ -1029,6 +1029,20 @@ class TestBuildInputContext:
         result = _build_input_context(step, job, {"ref": "report.md"})
         assert "@report.md" in result
 
+    def test_renders_not_available_when_input_value_missing(self, tmp_path: Path) -> None:
+        """When a known input has no value in input_values, shows '— *not available*'."""
+        from deepwork.jobs.mcp.quality_gate import _build_input_context
+
+        arg = StepArgument(name="report", description="The report file", type="file_path")
+        input_ref = StepInputRef(argument_name="report", required=False)
+        step = WorkflowStep(name="s", inputs={"report": input_ref}, outputs={})
+        job, _ = _make_job(tmp_path, [arg], step)
+
+        # input_values is empty — "report" is declared but not available
+        result = _build_input_context(step, job, {})
+        assert "report" in result
+        assert "not available" in result
+
 
 # ---------------------------------------------------------------------------
 # TestBuildDynamicReviewRules — additional coverage
@@ -1133,6 +1147,34 @@ class TestBuildDynamicReviewRulesExtra:
         assert "@b.md" in rule.instructions
         assert "all good" in rule.instructions
 
+    def test_process_requirements_string_output_before_file_output(self, tmp_path: Path) -> None:
+        """String output rendered before file_path output in process requirements context."""
+        str_arg = StepArgument(name="note", description="Note", type="string")
+        file_arg = StepArgument(name="report", description="Report", type="file_path")
+        str_ref = StepOutputRef(argument_name="note", required=True)
+        file_ref = StepOutputRef(argument_name="report", required=True)
+        step = WorkflowStep(
+            name="analyze",
+            outputs={"note": str_ref, "report": file_ref},
+            process_requirements={"done": "Work MUST be complete."},
+        )
+        job, workflow = _make_job(tmp_path, [str_arg, file_arg], step)
+
+        rules = build_dynamic_review_rules(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={"note": "summary text", "report": "report.md"},
+            input_values={},
+            work_summary="Done",
+            project_root=tmp_path,
+        )
+
+        assert len(rules) == 1
+        rule = rules[0]
+        assert "summary text" in rule.instructions
+        assert "@report.md" in rule.instructions
+
     def test_process_requirements_skipped_when_no_output_paths(self, tmp_path: Path) -> None:
         """When there are no file_path outputs, PQA rule is not created."""
         str_arg = StepArgument(name="note", description="Note", type="string")
@@ -1154,6 +1196,146 @@ class TestBuildDynamicReviewRulesExtra:
             project_root=tmp_path,
         )
         assert rules == []
+
+
+# ---------------------------------------------------------------------------
+# TestReviewDepthLightweight
+# ---------------------------------------------------------------------------
+
+
+class TestReviewDepthLightweight:
+    """Tests for review_depth: lightweight — preamble suppression."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_lightweight_review_omits_common_job_info(self, tmp_path: Path) -> None:
+        """review_depth: lightweight suppresses the ## Job Context preamble block."""
+        review = ReviewBlock(
+            strategy="individual",
+            instructions="Check structural validity.",
+            review_depth="lightweight",
+        )
+        arg = StepArgument(name="config", description="Config file", type="file_path", review=review)
+        output_ref = StepOutputRef(argument_name="config", required=True)
+        step = WorkflowStep(name="prepare", outputs={"config": output_ref})
+        workflow = Workflow(
+            name="main",
+            summary="Test",
+            steps=[step],
+            common_job_info="This is expensive common job info that should be suppressed.",
+        )
+        job = JobDefinition(
+            name="test_job",
+            summary="Test job",
+            step_arguments=[arg],
+            workflows={"main": workflow},
+            job_dir=tmp_path / ".deepwork" / "jobs" / "test_job",
+        )
+        job.job_dir.mkdir(parents=True, exist_ok=True)
+
+        rules = build_dynamic_review_rules(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={"config": "config.yml"},
+            input_values={},
+            work_summary=None,
+            project_root=tmp_path,
+        )
+
+        assert len(rules) == 1
+        assert "expensive common job info" not in rules[0].instructions
+        assert "Check structural validity." in rules[0].instructions
+        assert rules[0].review_depth == "lightweight"
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_standard_review_includes_common_job_info(self, tmp_path: Path) -> None:
+        """Without review_depth, common_job_info is included in the review preamble."""
+        review = ReviewBlock(
+            strategy="individual",
+            instructions="Check carefully.",
+        )
+        arg = StepArgument(name="report", description="Report", type="file_path", review=review)
+        output_ref = StepOutputRef(argument_name="report", required=True)
+        step = WorkflowStep(name="analyze", outputs={"report": output_ref})
+        workflow = Workflow(
+            name="main",
+            summary="Test",
+            steps=[step],
+            common_job_info="This is important job context.",
+        )
+        job = JobDefinition(
+            name="test_job",
+            summary="Test job",
+            step_arguments=[arg],
+            workflows={"main": workflow},
+            job_dir=tmp_path / ".deepwork" / "jobs" / "test_job",
+        )
+        job.job_dir.mkdir(parents=True, exist_ok=True)
+
+        rules = build_dynamic_review_rules(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={"report": "report.md"},
+            input_values={},
+            work_summary=None,
+            project_root=tmp_path,
+        )
+
+        assert len(rules) == 1
+        assert "This is important job context." in rules[0].instructions
+        assert rules[0].review_depth is None
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_lightweight_still_includes_step_inputs(self, tmp_path: Path) -> None:
+        """Lightweight reviews still include step input context — only Job Context is suppressed."""
+        review = ReviewBlock(
+            strategy="individual",
+            instructions="Check it.",
+            review_depth="lightweight",
+        )
+        scope_arg = StepArgument(name="scope", description="Scope doc", type="file_path")
+        config_arg = StepArgument(
+            name="config", description="Config file", type="file_path", review=review
+        )
+        scope_ref = StepOutputRef(argument_name="scope", required=True)
+        config_ref = StepOutputRef(argument_name="config", required=True)
+        step = WorkflowStep(
+            name="prepare",
+            inputs={"scope": StepInputRef(argument_name="scope", required=True)},
+            outputs={"config": config_ref, "scope": scope_ref},
+        )
+        workflow = Workflow(
+            name="main",
+            summary="Test",
+            steps=[step],
+            common_job_info="Suppressed common info.",
+        )
+        job = JobDefinition(
+            name="test_job",
+            summary="Test job",
+            step_arguments=[scope_arg, config_arg],
+            workflows={"main": workflow},
+            job_dir=tmp_path / ".deepwork" / "jobs" / "test_job",
+        )
+        job.job_dir.mkdir(parents=True, exist_ok=True)
+
+        rules = build_dynamic_review_rules(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={"config": "config.yml", "scope": "scope.md"},
+            input_values={"scope": "scope.md"},
+            work_summary=None,
+            project_root=tmp_path,
+        )
+
+        config_rule = next(r for r in rules if "config" in r.name)
+        assert "Suppressed common info." not in config_rule.instructions
+        assert "Step Inputs" in config_rule.instructions
 
 
 # ---------------------------------------------------------------------------

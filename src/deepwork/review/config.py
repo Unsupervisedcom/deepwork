@@ -49,6 +49,7 @@ class ReviewRule:
     source_file: Path  # Path to the .deepreview file
     source_line: int  # Line number of the rule name in the .deepreview file
     reference_files: list[ReferenceFile] = field(default_factory=list)
+    review_depth: str | None = None  # "lightweight" | None (standard)
 
 
 @dataclass
@@ -65,6 +66,7 @@ class ReviewTask:
     precomputed_info_bash_command: str | None = None  # Resolved command to run
     inline_content: str | None = None  # Inline string value for type: string outputs
     reference_files: list[ReferenceFile] = field(default_factory=list)
+    review_depth: str | None = None  # "lightweight" | None (standard)
 
 
 def parse_deepreview_file(filepath: Path) -> list[ReviewRule]:
@@ -150,6 +152,8 @@ def _parse_rule(
 
     reference_files = _parse_reference_files(review_data.get("reference_files", []), source_dir)
 
+    review_depth = review_data.get("review_depth")
+
     return ReviewRule(
         name=name,
         description=description,
@@ -165,6 +169,7 @@ def _parse_rule(
         source_file=source_file,
         source_line=source_line,
         reference_files=reference_files,
+        review_depth=review_depth,
     )
 
 
