@@ -1215,7 +1215,9 @@ class TestReviewDepthLightweight:
             instructions="Check structural validity.",
             review_depth="lightweight",
         )
-        arg = StepArgument(name="config", description="Config file", type="file_path", review=review)
+        arg = StepArgument(
+            name="config", description="Config file", type="file_path", review=review
+        )
         output_ref = StepOutputRef(argument_name="config", required=True)
         step = WorkflowStep(name="prepare", outputs={"config": output_ref})
         workflow = Workflow(

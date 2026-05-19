@@ -197,9 +197,7 @@ def build_dynamic_review_rules(
 
         for i, review_block in enumerate(review_blocks):
             # Build preamble, respecting review_depth on this block
-            preamble = _build_preamble(
-                step, job, workflow, input_values, review_block.review_depth
-            )
+            preamble = _build_preamble(step, job, workflow, input_values, review_block.review_depth)
 
             # Build full instructions with preamble
             full_instructions = (
@@ -356,9 +354,7 @@ def build_string_output_review_tasks(
         inline_value = value if isinstance(value, str) else str(value)
 
         for i, review_block in enumerate(review_blocks):
-            preamble = _build_preamble(
-                step, job, workflow, input_values, review_block.review_depth
-            )
+            preamble = _build_preamble(step, job, workflow, input_values, review_block.review_depth)
             full_instructions = (
                 f"{preamble}\n\n{review_block.instructions}"
                 if preamble
