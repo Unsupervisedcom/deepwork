@@ -1599,6 +1599,48 @@ class TestBuildStringOutputReviewTasks:
         assert str(outside) in tasks[0].source_location
         assert tasks[0].source_location.endswith("job.yml:0")
 
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.8).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_lightweight_review_depth_omits_common_job_info(self, tmp_path: Path) -> None:
+        """review_depth: lightweight suppresses common_job_info in string-output review tasks."""
+        review = ReviewBlock(
+            strategy="individual",
+            instructions="Verify the summary is accurate.",
+            review_depth="lightweight",
+        )
+        arg = StepArgument(name="summary", description="Summary", type="string")
+        output_ref = StepOutputRef(argument_name="summary", required=True, review=review)
+        step = WorkflowStep(name="analyze", outputs={"summary": output_ref})
+        workflow = Workflow(
+            name="main",
+            summary="Test",
+            steps=[step],
+            common_job_info="Expensive job context that should be suppressed.",
+        )
+        job = JobDefinition(
+            name="test_job",
+            summary="Test job",
+            step_arguments=[arg],
+            workflows={"main": workflow},
+            job_dir=tmp_path / ".deepwork" / "jobs" / "test_job",
+        )
+        job.job_dir.mkdir(parents=True, exist_ok=True)
+
+        tasks = build_string_output_review_tasks(
+            step=step,
+            job=job,
+            workflow=workflow,
+            outputs={"summary": "The result was X."},
+            input_values={},
+            project_root=tmp_path,
+        )
+
+        assert len(tasks) == 1
+        task = tasks[0]
+        assert "Expensive job context" not in task.instructions
+        assert "Verify the summary is accurate." in task.instructions
+        assert task.review_depth == "lightweight"
+
 
 class TestRunQualityGateStringOutputs:
     """End-to-end tests: run_quality_gate emits reviews for string outputs.

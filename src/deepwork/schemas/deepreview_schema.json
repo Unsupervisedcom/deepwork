@@ -140,7 +140,7 @@
                         "review_depth": {
                             "type": "string",
                             "enum": ["lightweight"],
-                            "description": "Optional review depth hint. When set to 'lightweight', the workflow's common_job_info preamble is omitted from the review instruction file, reducing token usage for low-risk or reversible intermediate steps. Omit for standard depth (default)."
+                            "description": "Optional review depth hint. When set to 'lightweight' on a job.yml review block, the workflow's common_job_info preamble is omitted from the review instruction file, reducing token usage for low-risk or reversible intermediate steps. Note: this field has no effect in .deepreview rules — those rules are not associated with a workflow and do not receive common_job_info. Omit for standard depth (default)."
                         }
                     }
                 }
