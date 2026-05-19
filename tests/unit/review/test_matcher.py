@@ -906,6 +906,84 @@ class TestFindUnchangedMatchingFilesExtra:
         assert "app.py" in result
         assert "test_app.py" not in result
 
+    def test_skips_glob_match_not_relative_to_project(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.4.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        """Glob matches whose path cannot be made relative to project_root are skipped."""
+        from unittest.mock import MagicMock
+
+        from deepwork.review.config import ReviewRule
+        from deepwork.review.matcher import _find_unchanged_matching_files
+
+        # Use a mock source_dir so we can control glob() output.
+        # relative_to(project_root) must succeed (source_dir IS under project_root).
+        mock_source = MagicMock(spec=Path)
+        mock_source.relative_to.return_value = Path("src")
+
+        # Glob returns a path whose relative_to(project_root) raises ValueError.
+        outside_path = MagicMock(spec=Path)
+        outside_path.is_file.return_value = True
+        outside_path.relative_to.side_effect = ValueError("not under project root")
+        mock_source.glob.return_value = [outside_path]
+
+        rule = ReviewRule(
+            name="test",
+            description="test",
+            include_patterns=["*.py"],
+            exclude_patterns=[],
+            strategy="individual",
+            instructions="test",
+            agent=None,
+            all_changed_filenames=False,
+            unchanged_matching_files=False,
+            precomputed_info_bash_command=None,
+            source_dir=mock_source,
+            source_file=tmp_path / ".deepreview",
+            source_line=1,
+        )
+
+        result = _find_unchanged_matching_files([], rule, tmp_path)
+        assert result == []
+
+    def test_skips_glob_match_not_relative_to_source_dir(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.4.5).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        """Glob matches relative to project_root but not to source_dir are skipped."""
+        from unittest.mock import MagicMock
+
+        from deepwork.review.config import ReviewRule
+        from deepwork.review.matcher import _find_unchanged_matching_files
+
+        # source_dir mock reports itself as "src" relative to project_root.
+        mock_source = MagicMock(spec=Path)
+        mock_source.relative_to.return_value = Path("src")
+
+        # Glob returns a path under project_root but NOT under src/.
+        sibling_mock = MagicMock(spec=Path)
+        sibling_mock.is_file.return_value = True
+        sibling_mock.relative_to.return_value = Path("other/file.py")
+        mock_source.glob.return_value = [sibling_mock]
+
+        rule = ReviewRule(
+            name="test",
+            description="test",
+            include_patterns=["*.py"],
+            exclude_patterns=[],
+            strategy="individual",
+            instructions="test",
+            agent=None,
+            all_changed_filenames=False,
+            unchanged_matching_files=False,
+            precomputed_info_bash_command=None,
+            source_dir=mock_source,
+            source_file=tmp_path / ".deepreview",
+            source_line=1,
+        )
+
+        result = _find_unchanged_matching_files([], rule, tmp_path)
+        # "other/file.py" is not relative to "src" → _relative_to_dir returns None → skipped
+        assert "other/file.py" not in result
+
 
 class TestMatchFilesToRulesAllChangedFiles:
     """Test the all_changed_files strategy branch more thoroughly."""
@@ -928,6 +1006,34 @@ class TestMatchFilesToRulesAllChangedFiles:
         assert len(tasks) == 1
         assert set(tasks[0].files_to_review) == {"app.py", "lib.py", "main.ts"}
         assert tasks[0].agent_name == "reviewer"
+
+    def test_all_changed_files_strategy_with_subsequent_rule(self, tmp_path: Path) -> None:
+        # THIS TEST VALIDATES A HARD REQUIREMENT (REVIEW-REQ-004.5.1, REVIEW-REQ-004.9.2).
+        # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+        """all_changed_files rule followed by another rule — both produce tasks."""
+        rule_acf = _make_rule(
+            name="acf_rule",
+            strategy="all_changed_files",
+            source_dir=tmp_path,
+        )
+        rule_ind = _make_rule(
+            name="ind_rule",
+            strategy="individual",
+            include=["**/*.py"],
+            source_dir=tmp_path,
+        )
+        tasks = match_files_to_rules(
+            ["app.py", "main.ts"],
+            [rule_acf, rule_ind],
+            tmp_path,
+        )
+        # First rule: all_changed_files → 1 task with all files
+        # Second rule: individual → 1 task (only app.py matches *.py)
+        assert len(tasks) == 2
+        acf_task = next(t for t in tasks if t.rule_name == "acf_rule")
+        ind_task = next(t for t in tasks if t.rule_name == "ind_rule")
+        assert set(acf_task.files_to_review) == {"app.py", "main.ts"}
+        assert ind_task.files_to_review == ["app.py"]
 
 
 class TestPrecomputedInfoThreading:

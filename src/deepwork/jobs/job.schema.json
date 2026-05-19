@@ -120,6 +120,11 @@
               "description": "If true, includes matching files that were not produced as outputs but exist on disk. Useful for document freshness reviews where the reviewer needs to see the doc even when only source files changed."
             }
           }
+        },
+        "review_depth": {
+          "type": "string",
+          "enum": ["lightweight"],
+          "description": "Optional review depth hint. When set to 'lightweight', the workflow's common_job_info preamble is omitted from the review instruction file, reducing token usage for low-risk or reversible intermediate steps. Step inputs and review criteria are always included. Omit this field for standard depth (default)."
         }
       }
     },

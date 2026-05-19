@@ -91,17 +91,23 @@ def _build_preamble(
     job: JobDefinition,
     workflow: Workflow,
     input_values: dict[str, ArgumentValue],
+    review_depth: str | None = None,
 ) -> str:
     """Build the preamble prefixed to every dynamic review's instructions.
 
     Combines workflow ``common_job_info`` and the rendered step inputs.
     Returns an empty string when neither is available.
+
+    When ``review_depth`` is ``"lightweight"``, the ``## Job Context`` block
+    (common_job_info) is omitted to reduce token usage for low-risk steps.
+    Step inputs are always included regardless of depth.
     """
     input_context = _build_input_context(step, job, input_values)
-    common_info = workflow.common_job_info or ""
     preamble_parts: list[str] = []
-    if common_info:
-        preamble_parts.append(f"## Job Context\n\n{common_info}")
+    if review_depth != "lightweight":
+        common_info = workflow.common_job_info or ""
+        if common_info:
+            preamble_parts.append(f"## Job Context\n\n{common_info}")
     if input_context:
         preamble_parts.append(input_context)
     return "\n\n".join(preamble_parts)
@@ -160,7 +166,6 @@ def build_dynamic_review_rules(
     targets.
     """
     rules: list[ReviewRule] = []
-    preamble = _build_preamble(step, job, workflow, input_values)
 
     # Process each output
     for output_name, output_ref in step.outputs.items():
@@ -191,6 +196,9 @@ def build_dynamic_review_rules(
             file_paths = []
 
         for i, review_block in enumerate(review_blocks):
+            # Build preamble, respecting review_depth on this block
+            preamble = _build_preamble(step, job, workflow, input_values, review_block.review_depth)
+
             # Build full instructions with preamble
             full_instructions = (
                 f"{preamble}\n\n{review_block.instructions}"
@@ -225,10 +233,11 @@ def build_dynamic_review_rules(
                     source_dir=project_root,
                     source_file=job.job_dir / "job.yml",
                     source_line=0,
+                    review_depth=review_block.review_depth,
                 )
                 rules.append(rule)
 
-    # Process requirements review
+    # Process requirements review — always uses standard preamble (no review_depth suppression)
     if step.process_requirements and work_summary is not None:
         attrs_list = "\n".join(
             f"- **{name}**: {statement}" for name, statement in step.process_requirements.items()
@@ -249,7 +258,8 @@ def build_dynamic_review_rules(
 
         output_context = "\n".join(output_context_parts)
 
-        pqa_instructions = f"""{preamble}
+        pqa_preamble = _build_preamble(step, job, workflow, input_values)
+        pqa_instructions = f"""{pqa_preamble}
 
 ## Process Requirements Review
 
@@ -315,7 +325,6 @@ def build_string_output_review_tasks(
     ``_arg`` to distinguish it (matching the file_path rule naming).
     """
     tasks: list[ReviewTask] = []
-    preamble = _build_preamble(step, job, workflow, input_values)
 
     try:
         source_rel = (job.job_dir / "job.yml").relative_to(project_root)
@@ -345,6 +354,7 @@ def build_string_output_review_tasks(
         inline_value = value if isinstance(value, str) else str(value)
 
         for i, review_block in enumerate(review_blocks):
+            preamble = _build_preamble(step, job, workflow, input_values, review_block.review_depth)
             full_instructions = (
                 f"{preamble}\n\n{review_block.instructions}"
                 if preamble
@@ -364,6 +374,7 @@ def build_string_output_review_tasks(
                     agent_name=agent_name,
                     source_location=source_location,
                     inline_content=inline_value,
+                    review_depth=review_block.review_depth,
                 )
             )
 

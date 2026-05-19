@@ -26,6 +26,7 @@ class ReviewBlock:
     instructions: str
     agent: dict[str, str] | None = None
     additional_context: dict[str, bool] | None = None
+    review_depth: str | None = None  # "lightweight" | None (standard)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ReviewBlock":
@@ -35,6 +36,7 @@ class ReviewBlock:
             instructions=data["instructions"],
             agent=data.get("agent"),
             additional_context=data.get("additional_context"),
+            review_depth=data.get("review_depth"),
         )
 
 

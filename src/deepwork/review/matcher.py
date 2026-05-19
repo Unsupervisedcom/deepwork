@@ -246,6 +246,7 @@ def match_files_to_rules(
                         all_changed_filenames=all_filenames,
                         precomputed_info_bash_command=precompute_cmd,
                         reference_files=task_refs,
+                        review_depth=rule.review_depth,
                     )
                 )
 
@@ -264,6 +265,7 @@ def match_files_to_rules(
                     all_changed_filenames=all_filenames,
                     precomputed_info_bash_command=precompute_cmd,
                     reference_files=rule.reference_files,
+                    review_depth=rule.review_depth,
                 )
             )
 
@@ -278,6 +280,7 @@ def match_files_to_rules(
                     all_changed_filenames=all_filenames,
                     precomputed_info_bash_command=precompute_cmd,
                     reference_files=rule.reference_files,
+                    review_depth=rule.review_depth,
                 )
             )
 
