@@ -65,16 +65,6 @@ The quality review system evaluates step outputs against defined quality criteri
 4. Inputs with no value MUST be shown as "not available".
 5. If the step has no inputs, an empty string MUST be returned.
 
-### JOBS-REQ-004.9: Hung Reviewer Retry Policy
-
-1. The review guidance MUST include a clearly labelled hung-reviewer retry policy section.
-2. The guidance MUST define a reviewer as "hung" when it completes with 0 tool uses and produces no substantive output.
-3. The guidance MUST instruct the agent to retry a hung reviewer up to `REVIEWER_MAX_RETRIES` times (default: 1) before skipping.
-4. After exhausting retries the guidance MUST instruct the agent to call `mark_review_as_passed` with a skip note and inform the user — not silently pass the review without any attempt.
-5. The guidance MUST distinguish a fast-fail (elapsed time under `REVIEWER_FAST_FAIL_SECONDS`, default: 30) from a slow-fail, advising an immediate retry for fast-fails.
-6. `REVIEWER_MAX_RETRIES` and `REVIEWER_FAST_FAIL_SECONDS` MUST be named module-level constants (not inline magic numbers) so they can be adjusted without editing the guidance prose.
-7. `_build_review_guidance()` MUST accept `max_retries` and `fast_fail_seconds` keyword arguments so callers can override the defaults in tests or alternative configurations.
-
 ### JOBS-REQ-004.8: String Output Review Tasks
 
 1. When a step output has `type: string` and a review block (either on the `StepOutputRef` or inherited from the `StepArgument`), `run_quality_gate()` MUST produce a synthetic `ReviewTask` whose content-to-review is the string value itself. Such reviews MUST NOT be silently ignored.
@@ -83,3 +73,13 @@ The quality review system evaluates step outputs against defined quality criteri
 4. The synthetic task's instructions MUST be prefixed with the same preamble used for file-based reviews (workflow `common_job_info` and input context).
 5. String outputs with `None` values MUST be skipped.
 6. The synthetic task's `review_id` MUST incorporate the string value into its content hash so that distinct string values produce distinct cache keys (per REVIEW-REQ-009.1.7).
+
+### JOBS-REQ-004.9: Hung Reviewer Retry Policy
+
+1. The review guidance MUST include a clearly labelled hung-reviewer retry policy section.
+2. The guidance MUST define a reviewer as "hung" when it completes with 0 tool uses and produces no substantive output.
+3. The guidance MUST instruct the agent to retry a hung reviewer up to `REVIEWER_MAX_RETRIES` times (default: 1) before skipping.
+4. After exhausting retries the guidance MUST instruct the agent to: (a) call `mark_review_as_passed` with the review ID only (the tool accepts no comment argument), and (b) separately inform the user with a skip message — not silently pass the review without any attempt.
+5. The guidance MUST distinguish a fast-fail (elapsed time under `REVIEWER_FAST_FAIL_SECONDS`, default: 30) from a slow-hang (elapsed time at or above that threshold), advising an immediate retry for fast-fails and a brief-pause retry for slow-hangs.
+6. `REVIEWER_MAX_RETRIES` and `REVIEWER_FAST_FAIL_SECONDS` MUST be named module-level constants (not inline magic numbers) so they can be adjusted without editing the guidance prose.
+7. `_build_review_guidance()` MUST accept `max_retries` and `fast_fail_seconds` keyword arguments so callers can override the defaults in tests or alternative configurations.

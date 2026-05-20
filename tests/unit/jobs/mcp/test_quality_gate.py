@@ -1,7 +1,8 @@
 """Tests for MCP quality gate (reviews-based implementation).
 
 Validates requirements: JOBS-REQ-004, JOBS-REQ-004.1, JOBS-REQ-004.2, JOBS-REQ-004.3,
-JOBS-REQ-004.4, JOBS-REQ-004.5, JOBS-REQ-004.6, JOBS-REQ-004.7.
+JOBS-REQ-004.4, JOBS-REQ-004.5, JOBS-REQ-004.6, JOBS-REQ-004.7, JOBS-REQ-004.8,
+JOBS-REQ-004.9.
 
 Note: JOBS-REQ-009 is DEPRECATED (superseded by JOBS-REQ-004). No tests required.
 """
@@ -1924,8 +1925,8 @@ class TestHungReviewerRetryPolicy:
     def test_guidance_specifies_max_retries(self) -> None:
         """Guidance MUST specify the max retry count from REVIEWER_MAX_RETRIES."""
         result = _build_review_guidance("## Review Tasks\n\n- some task")
-        # Default is 1 retry — singular "retry" in the heading
-        assert "retry" in result.lower()
+        # Default is 1 retry — heading must say "max 1 retry"
+        assert f"max {REVIEWER_MAX_RETRIES} retry" in result or f"max {REVIEWER_MAX_RETRIES} retries" in result
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -1966,9 +1967,11 @@ class TestHungReviewerRetryPolicy:
             max_retries=3,
             fast_fail_seconds=60,
         )
-        # Custom values should appear in guidance
-        assert "3" in result  # max_retries affects retry count in text
-        assert "60" in result  # fast_fail_seconds appears in threshold
+        # max_retries=3 → heading says "max 3 retries", exhaust text says "4 failed attempts"
+        assert "max 3 retries" in result
+        assert "4 failed attempts" in result
+        # fast_fail_seconds=60 → threshold appears in fast-fail bullet
+        assert "60" in result
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
@@ -1979,3 +1982,27 @@ class TestHungReviewerRetryPolicy:
         # After exhausting retries: message mentions total attempts (max_retries + 1)
         assert "2 failed attempts" in result_1
         assert "3 failed attempts" in result_2
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_guidance_describes_slow_hang_path(self) -> None:
+        """Guidance MUST describe the slow-hang retry path (elapsed >= threshold)."""
+        result = _build_review_guidance("## Review Tasks\n\n- some task")
+        # Must mention that slow-hangs are also retried (not only fast-fails)
+        assert "slow-hang" in result or "slow" in result.lower()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_guidance_instructs_separate_user_message_not_tool_comment(self) -> None:
+        """Skip note MUST be communicated to the user separately, not as a tool arg.
+
+        mark_review_as_passed only accepts review_id — the guidance must not
+        imply passing a comment/note to the tool itself.
+        """
+        result = _build_review_guidance("## Review Tasks\n\n- some task")
+        # Guidance should tell Claude to call mark_review_as_passed AND then
+        # separately tell the user — not pass a note argument to the tool.
+        assert "tell the user" in result
+        # Must NOT suggest an impossible "append comment" or "note=" argument
+        assert "append the comment" not in result
+        assert "note=" not in result

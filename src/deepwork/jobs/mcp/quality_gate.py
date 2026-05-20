@@ -507,6 +507,8 @@ def _build_review_guidance(
             result is treated as a fast-fail and retried immediately.
     """
     retry_word = "retry" if max_retries == 1 else "retries"
+    retry_instruction = "Retry it once" if max_retries == 1 else f"Retry it up to {max_retries} times"
+    exhaust_condition = "If the retry also returns" if max_retries == 1 else f"If all {max_retries} retries return"
     total_attempts = max_retries + 1
     return f"""Quality reviews are required before this step can advance.
 
@@ -523,9 +525,10 @@ A reviewer has **hung** when it completes with **0 tool uses** — a signal of A
 **Retry policy (max {max_retries} {retry_word} per reviewer)**:
 
 1. After each reviewer completes, check whether it made 0 tool uses (shown as `0 tool uses` in the agent result) **and** produced no substantive output.
-2. If both are true the reviewer hung.  Retry it once by launching the same agent with the same prompt.
-   - If elapsed time was under {fast_fail_seconds}s the reviewer fast-failed (never got an API response) — retry immediately with no delay.
-3. If the retry **also** returns 0 tool uses: call `mark_review_as_passed` with the review ID and append the comment `"reviewer skipped after {total_attempts} failed attempts — manual review recommended"`.  Then tell the user which review was bypassed so they can verify the output manually.
+2. If both are true the reviewer hung. {retry_instruction} by re-launching the same agent with the same prompt.
+   - If elapsed time was under {fast_fail_seconds}s the reviewer fast-failed (never got an API response) — retry immediately.
+   - If elapsed time was {fast_fail_seconds}s or more (slow-hang), the reviewer started but stalled — retry after a brief pause.
+3. {exhaust_condition} 0 tool uses: call `mark_review_as_passed` with the review ID. Then tell the user: "Review skipped after {total_attempts} failed attempts — manual review recommended for this step." Do **not** proceed without informing the user.
 
 ## After Reviews
 
