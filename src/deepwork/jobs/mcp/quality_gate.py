@@ -507,8 +507,12 @@ def _build_review_guidance(
             result is treated as a fast-fail and retried immediately.
     """
     retry_word = "retry" if max_retries == 1 else "retries"
-    retry_instruction = "Retry it once" if max_retries == 1 else f"Retry it up to {max_retries} times"
-    exhaust_condition = "If the retry also returns" if max_retries == 1 else f"If all {max_retries} retries return"
+    retry_instruction = (
+        "Retry it once" if max_retries == 1 else f"Retry it up to {max_retries} times"
+    )
+    exhaust_condition = (
+        "If the retry also returns" if max_retries == 1 else f"If all {max_retries} retries return"
+    )
     total_attempts = max_retries + 1
     return f"""Quality reviews are required before this step can advance.
 

@@ -1926,7 +1926,10 @@ class TestHungReviewerRetryPolicy:
         """Guidance MUST specify the max retry count from REVIEWER_MAX_RETRIES."""
         result = _build_review_guidance("## Review Tasks\n\n- some task")
         # Default is 1 retry — heading must say "max 1 retry"
-        assert f"max {REVIEWER_MAX_RETRIES} retry" in result or f"max {REVIEWER_MAX_RETRIES} retries" in result
+        assert (
+            f"max {REVIEWER_MAX_RETRIES} retry" in result
+            or f"max {REVIEWER_MAX_RETRIES} retries" in result
+        )
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.4).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
