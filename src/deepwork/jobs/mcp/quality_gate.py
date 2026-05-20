@@ -31,6 +31,19 @@ from deepwork.utils.validation import ValidationError, validate_against_schema
 
 logger = logging.getLogger("deepwork.jobs.mcp.quality_gate")
 
+# Hung-reviewer retry policy (configurable constants).
+#
+# A reviewer is considered "hung" when it completes with 0 tool uses —
+# a strong signal of API overload or a dropped connection.  The dispatch
+# guidance instructs Claude to retry hung reviewers up to
+# REVIEWER_MAX_RETRIES times before skipping and logging a warning.
+#
+# REVIEWER_FAST_FAIL_SECONDS: if a reviewer returns 0 tool uses *and*
+# elapsed time is below this threshold it almost certainly never received
+# an API response at all — retry immediately without any backoff.
+REVIEWER_MAX_RETRIES: int = 1
+REVIEWER_FAST_FAIL_SECONDS: int = 30
+
 
 def validate_json_schemas(
     outputs: dict[str, ArgumentValue],
@@ -480,8 +493,21 @@ def run_quality_gate(
     return guidance
 
 
-def _build_review_guidance(review_output: str) -> str:
-    """Build the complete review guidance including /review skill instructions."""
+def _build_review_guidance(
+    review_output: str,
+    max_retries: int = REVIEWER_MAX_RETRIES,
+    fast_fail_seconds: int = REVIEWER_FAST_FAIL_SECONDS,
+) -> str:
+    """Build the complete review guidance including hung-reviewer retry policy.
+
+    Args:
+        review_output: Formatted list of review tasks from format_for_claude.
+        max_retries: How many times to retry a hung reviewer before skipping.
+        fast_fail_seconds: Elapsed-time threshold below which a 0-tool-use
+            result is treated as a fast-fail and retried immediately.
+    """
+    retry_word = "retry" if max_retries == 1 else "retries"
+    total_attempts = max_retries + 1
     return f"""Quality reviews are required before this step can advance.
 
 {review_output}
@@ -490,6 +516,17 @@ def _build_review_guidance(review_output: str) -> str:
 
 For each review task listed above, launch it as a parallel Agent. The task's prompt field points to an instruction file — read it and follow the review instructions.
 
+## Handling Hung Reviewers
+
+A reviewer has **hung** when it completes with **0 tool uses** — a signal of API overload or a dropped connection.  Hung reviewers must be retried; do **not** silently pass them.
+
+**Retry policy (max {max_retries} {retry_word} per reviewer)**:
+
+1. After each reviewer completes, check whether it made 0 tool uses (shown as `0 tool uses` in the agent result) **and** produced no substantive output.
+2. If both are true the reviewer hung.  Retry it once by launching the same agent with the same prompt.
+   - If elapsed time was under {fast_fail_seconds}s the reviewer fast-failed (never got an API response) — retry immediately with no delay.
+3. If the retry **also** returns 0 tool uses: call `mark_review_as_passed` with the review ID and append the comment `"reviewer skipped after {total_attempts} failed attempts — manual review recommended"`.  Then tell the user which review was bypassed so they can verify the output manually.
+
 ## After Reviews
 
-For any failing reviews, if you believe the issue is invalid, then you can call `mark_review_as_passed` on it. Otherwise, you should act on any feedback from the review to fix the issues. Once done, call `finished_step` again to see if you will pass now."""
+For any failing reviews where the reviewer produced actual findings: if you believe the issue is invalid, call `mark_review_as_passed` on it. Otherwise, act on the feedback, fix the issues, and call `finished_step` again."""

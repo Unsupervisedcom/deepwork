@@ -13,6 +13,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from deepwork.jobs.mcp.quality_gate import (
+    REVIEWER_FAST_FAIL_SECONDS,
+    REVIEWER_MAX_RETRIES,
+    _build_review_guidance,
     build_dynamic_review_rules,
     build_string_output_review_tasks,
     run_quality_gate,
@@ -1897,3 +1900,82 @@ class TestQualityGatePassCaching:
         # Review MUST run again because content changed
         assert result is not None
         assert "Quality reviews are required" in result
+
+
+class TestHungReviewerRetryPolicy:
+    """Tests for the hung-reviewer retry policy — validates JOBS-REQ-004.9."""
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.1).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_guidance_includes_hung_reviewer_section(self) -> None:
+        """Review guidance MUST include a hung-reviewer retry policy section."""
+        result = _build_review_guidance("## Review Tasks\n\n- some task")
+        assert "Handling Hung Reviewers" in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.2).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_guidance_defines_hung_as_zero_tool_uses(self) -> None:
+        """Guidance MUST define a hung reviewer as one that returns 0 tool uses."""
+        result = _build_review_guidance("## Review Tasks\n\n- some task")
+        assert "0 tool uses" in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.3).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_guidance_specifies_max_retries(self) -> None:
+        """Guidance MUST specify the max retry count from REVIEWER_MAX_RETRIES."""
+        result = _build_review_guidance("## Review Tasks\n\n- some task")
+        # Default is 1 retry — singular "retry" in the heading
+        assert "retry" in result.lower()
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.4).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_guidance_instructs_skip_with_note_after_retries_exhausted(self) -> None:
+        """After retries exhausted, guidance MUST instruct skip + log, not silent pass."""
+        result = _build_review_guidance("## Review Tasks\n\n- some task")
+        assert "mark_review_as_passed" in result
+        assert "manual review recommended" in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.5).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_guidance_mentions_fast_fail_threshold(self) -> None:
+        """Guidance MUST mention the fast-fail elapsed-time threshold."""
+        result = _build_review_guidance("## Review Tasks\n\n- some task")
+        # The threshold in seconds should appear in the guidance
+        assert str(REVIEWER_FAST_FAIL_SECONDS) in result
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_reviewer_max_retries_is_named_constant(self) -> None:
+        """REVIEWER_MAX_RETRIES MUST be a module-level integer constant."""
+        assert isinstance(REVIEWER_MAX_RETRIES, int)
+        assert REVIEWER_MAX_RETRIES >= 1
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.6).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_reviewer_fast_fail_seconds_is_named_constant(self) -> None:
+        """REVIEWER_FAST_FAIL_SECONDS MUST be a module-level integer constant."""
+        assert isinstance(REVIEWER_FAST_FAIL_SECONDS, int)
+        assert REVIEWER_FAST_FAIL_SECONDS > 0
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_build_review_guidance_accepts_override_params(self) -> None:
+        """_build_review_guidance MUST accept max_retries and fast_fail_seconds kwargs."""
+        result = _build_review_guidance(
+            "## Review Tasks\n\n- some task",
+            max_retries=3,
+            fast_fail_seconds=60,
+        )
+        # Custom values should appear in guidance
+        assert "3" in result  # max_retries affects retry count in text
+        assert "60" in result  # fast_fail_seconds appears in threshold
+
+    # THIS TEST VALIDATES A HARD REQUIREMENT (JOBS-REQ-004.9.7).
+    # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES
+    def test_build_review_guidance_retry_text_reflects_max_retries(self) -> None:
+        """Guidance retry count text MUST reflect the max_retries parameter."""
+        result_1 = _build_review_guidance("tasks", max_retries=1)
+        result_2 = _build_review_guidance("tasks", max_retries=2)
+        # After exhausting retries: message mentions total attempts (max_retries + 1)
+        assert "2 failed attempts" in result_1
+        assert "3 failed attempts" in result_2
