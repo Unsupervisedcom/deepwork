@@ -237,7 +237,7 @@ One user used DeepWork to automatically research email performance across hundre
 | **Engineers** | Standup summaries, code review, release notes |
 | **Data/Analytics** | Multi-source data pulls, ETL, custom reports and dashboards |
 
-DeepWork is a free, open-source tool — if you're already paying for a Claude Max subscription, each of these automations costs you nothing additional.
+DeepWork is free to use (source available under BSL 1.1) — if you're already paying for a Claude Max subscription, each of these automations costs you nothing additional.
 
 Similar to how vibe coding makes it easier for anyone to produce software, this is **vibe automation**: describe what you want, let it run, and then iterate on what works.
 
