@@ -3,7 +3,7 @@
 This package provides:
 
 1. Cross-platform hook wrapper system:
-   - wrapper.py: Normalizes input/output between Claude Code and Gemini CLI
+   - wrapper.py: Normalizes input/output between Claude Code, Gemini CLI, and Pi
    - claude_hook.sh: Shell wrapper for Claude Code hooks
    - gemini_hook.sh: Shell wrapper for Gemini CLI hooks
 

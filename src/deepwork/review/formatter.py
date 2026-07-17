@@ -115,6 +115,45 @@ def format_for_claude(
     return "\n".join(lines)
 
 
+def format_for_pi(
+    task_files: list[tuple[ReviewTask, Path]],
+    project_root: Path,
+) -> str:
+    """Format review tasks for Pi CLI.
+
+    Pi does not ship a built-in subagent primitive, so the output is explicit
+    about the fallback: run reviews in the current session when no delegation
+    extension is available.
+    """
+    if not task_files:
+        return "No review tasks to execute."
+
+    lines: list[str] = []
+    lines.append("Run the following DeepWork review tasks.")
+    lines.append(
+        "If a Pi subagent or parallel-delegation extension is available, dispatch "
+        "these tasks in parallel. Otherwise, complete them one at a time in this "
+        "session."
+    )
+    lines.append(
+        "Read each prompt_file and follow its instructions exactly. Report findings "
+        "with file and line references.\n"
+    )
+
+    for task, file_path in task_files:
+        try:
+            rel_path = file_path.relative_to(project_root)
+        except ValueError:
+            rel_path = file_path
+
+        lines.append(f"description: {_task_description(task)}")
+        lines.append(f"\treviewer: {task.agent_name or 'deepwork-reviewer'}")
+        lines.append(f"\tprompt_file: {rel_path}")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
 def _task_description(task: ReviewTask) -> str:
     """Generate a short description for a review task.
 

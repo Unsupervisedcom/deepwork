@@ -6,7 +6,7 @@ from pathlib import Path
 import click
 
 from deepwork.review.discovery import load_all_rules
-from deepwork.review.formatter import format_for_claude
+from deepwork.review.formatter import format_for_claude, format_for_pi
 from deepwork.review.instructions import write_instruction_files
 from deepwork.review.matcher import GitDiffError, get_changed_files, match_files_to_rules
 
@@ -15,7 +15,7 @@ from deepwork.review.matcher import GitDiffError, get_changed_files, match_files
 @click.option(
     "--instructions-for",
     "instructions_for",
-    type=click.Choice(["claude"]),
+    type=click.Choice(["claude", "pi"]),
     required=True,
     help="Target platform for review instructions.",
 )
@@ -103,7 +103,9 @@ def review(
     # Step 5: Format and output
     if instructions_for == "claude":
         output = format_for_claude(task_files, project_root)
-        click.echo(output)
+    else:
+        output = format_for_pi(task_files, project_root)
+    click.echo(output)
 
 
 def _resolve_changed_files(

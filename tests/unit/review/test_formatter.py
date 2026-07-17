@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from deepwork.review.config import ReviewTask
-from deepwork.review.formatter import _resolve_file_ref_root, format_for_claude
+from deepwork.review.formatter import _resolve_file_ref_root, format_for_claude, format_for_pi
 
 
 def _make_task(
@@ -116,6 +116,40 @@ class TestFormatForClaude:
         result = format_for_claude([(task_a, file_a), (task_b, file_b)], tmp_path)
         assert "description: Review job_a/job_definition_review" in result
         assert "description: Review job_b/job_definition_review" in result
+
+
+class TestFormatForPi:
+    """Tests for format_for_pi."""
+
+    def test_empty_tasks_returns_no_tasks_message(self, tmp_path: Path) -> None:
+        result = format_for_pi([], tmp_path)
+        assert "No review tasks" in result
+
+    def test_output_mentions_pi_delegation_fallback(self, tmp_path: Path) -> None:
+        task = _make_task()
+        file_path = tmp_path / ".deepwork" / "tmp" / "review_instructions" / "123.md"
+        result = format_for_pi([(task, file_path)], tmp_path)
+        assert result.startswith("Run the following DeepWork review tasks.")
+        assert "Pi subagent" in result
+        assert "one at a time" in result
+
+    def test_prompt_file_field_present(self, tmp_path: Path) -> None:
+        task = _make_task()
+        file_path = tmp_path / ".deepwork" / "tmp" / "review_instructions" / "7142141.md"
+        result = format_for_pi([(task, file_path)], tmp_path)
+        assert "prompt_file: .deepwork/tmp/review_instructions/7142141.md" in result
+
+    def test_default_reviewer_when_no_agent(self, tmp_path: Path) -> None:
+        task = _make_task(agent_name=None)
+        file_path = tmp_path / "instructions.md"
+        result = format_for_pi([(task, file_path)], tmp_path)
+        assert "reviewer: deepwork-reviewer" in result
+
+    def test_custom_reviewer(self, tmp_path: Path) -> None:
+        task = _make_task(agent_name="security-expert")
+        file_path = tmp_path / "instructions.md"
+        result = format_for_pi([(task, file_path)], tmp_path)
+        assert "reviewer: security-expert" in result
 
 
 class TestGitCommonDir:

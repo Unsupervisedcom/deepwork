@@ -16,6 +16,7 @@ from deepwork.setup.claude import (
     PLUGIN_KEY,
     claude_setup,
 )
+from deepwork.setup.pi import PACKAGE_SOURCE, pi_setup
 
 
 @pytest.fixture()
@@ -30,6 +31,20 @@ def claude_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 def _read_settings(claude_home: Path) -> dict:
     return json.loads((claude_home / ".claude" / "settings.json").read_text())
+
+
+@pytest.fixture()
+def pi_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Create a fake ~/.pi/agent directory and patch Path.home()."""
+    fake_home = tmp_path / "fakehome"
+    fake_home.mkdir()
+    (fake_home / ".pi" / "agent").mkdir(parents=True)
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: fake_home))
+    return fake_home
+
+
+def _read_pi_settings(pi_home: Path) -> dict:
+    return json.loads((pi_home / ".pi" / "agent" / "settings.json").read_text())
 
 
 class TestClaudeSetupFreshFile:
@@ -89,6 +104,55 @@ class TestClaudeSetupPreservesExisting:
         assert settings["enabledPlugins"]["other@marketplace"] is True
 
 
+class TestPiSetup:
+    """Pi setup configures the DeepWork package in Pi settings."""
+
+    def test_adds_deepwork_package(self, pi_home: Path) -> None:
+        changes = pi_setup()
+        assert changes == [f"Added Pi package '{PACKAGE_SOURCE}'"]
+        settings = _read_pi_settings(pi_home)
+        assert PACKAGE_SOURCE in settings["packages"]
+
+    def test_no_changes_on_rerun(self, pi_home: Path) -> None:
+        pi_setup()
+        changes = pi_setup()
+        assert changes == []
+
+    def test_preserves_existing_packages(self, pi_home: Path) -> None:
+        settings_path = pi_home / ".pi" / "agent" / "settings.json"
+        settings_path.write_text(json.dumps({"packages": ["npm:other-package"]}))
+        pi_setup()
+        settings = _read_pi_settings(pi_home)
+        assert "npm:other-package" in settings["packages"]
+        assert PACKAGE_SOURCE in settings["packages"]
+
+    def test_backs_up_invalid_json(self, pi_home: Path) -> None:
+        settings_path = pi_home / ".pi" / "agent" / "settings.json"
+        settings_path.write_text("{invalid json")
+        changes = pi_setup()
+        assert changes == [f"Added Pi package '{PACKAGE_SOURCE}'"]
+        assert settings_path.with_suffix(".json.bak").read_text() == "{invalid json"
+        settings = _read_pi_settings(pi_home)
+        assert PACKAGE_SOURCE in settings["packages"]
+
+    def test_resets_invalid_packages_value(self, pi_home: Path) -> None:
+        settings_path = pi_home / ".pi" / "agent" / "settings.json"
+        settings_path.write_text(json.dumps({"packages": "not-a-list"}))
+        changes = pi_setup()
+        assert changes == [
+            "Reset invalid Pi packages setting to a list",
+            f"Added Pi package '{PACKAGE_SOURCE}'",
+        ]
+        settings = _read_pi_settings(pi_home)
+        assert settings["packages"] == [PACKAGE_SOURCE]
+
+    def test_dict_package_source_is_detected(self, pi_home: Path) -> None:
+        settings_path = pi_home / ".pi" / "agent" / "settings.json"
+        settings_path.write_text(json.dumps({"packages": [{"source": PACKAGE_SOURCE}]}))
+        changes = pi_setup()
+        assert changes == []
+
+
 class TestClaudeSetupNoClaudeDir:
     """When ~/.claude does not exist, setup creates it."""
 
@@ -124,6 +188,26 @@ class TestSetupCLI:
         result = runner.invoke(cli, ["setup"])
         assert result.exit_code == 0
         assert "Claude Code" in result.output
+
+    def test_detects_pi_cli(self, pi_home: Path) -> None:
+        runner = click.testing.CliRunner()
+        result = runner.invoke(cli, ["setup"])
+        assert result.exit_code == 0
+        assert "Pi CLI" in result.output
+
+    def test_reports_claude_already_configured(self, claude_home: Path) -> None:
+        claude_setup()
+        runner = click.testing.CliRunner()
+        result = runner.invoke(cli, ["setup"])
+        assert result.exit_code == 0
+        assert "Claude Code — already configured" in result.output
+
+    def test_reports_pi_already_configured(self, pi_home: Path) -> None:
+        pi_setup()
+        runner = click.testing.CliRunner()
+        result = runner.invoke(cli, ["setup"])
+        assert result.exit_code == 0
+        assert "Pi CLI — already configured" in result.output
 
     # THIS TEST VALIDATES A HARD REQUIREMENT (DW-REQ-005.6.7).
     # YOU MUST NOT MODIFY THIS TEST UNLESS THE REQUIREMENT CHANGES

@@ -11,6 +11,19 @@ DeepWork fixes this with two systems: **Workflows** that force agents to follow 
 claude plugin marketplace add Unsupervisedcom/deepwork && claude plugin install deepwork@deepwork-plugins && claude "/deepwork:new_user"
 ```
 
+### Pi CLI
+```
+pi install git:github.com/Unsupervisedcom/deepwork
+```
+
+Then start Pi in a project and run `/deepwork_setup`, followed by `/new_user`.
+The Pi package covers the main DeepWork workflows, reviews, DeepSchemas, and
+planning skills. It does not install the separate learning-agents plugin.
+
+For parallel `/review` execution in Pi, optionally install
+`@tintinweb/pi-subagents`. DeepWork detects it lazily on the first review run and
+falls back to sequential reviews when it is absent.
+
 The onboarding flow will introduce you to DeepWork and help you get started. Or, do the task you want to automate — just ask Claude to do it, and work with Claude to refine it as you go:
 ```
 Research our top 3 competitors and write a SWOT analysis for each one.
@@ -138,7 +151,14 @@ In Claude Code:
 claude plugin marketplace add Unsupervisedcom/deepwork && claude plugin install deepwork@deepwork-plugins && claude "/deepwork:new_user"
 ```
 
-The onboarding flow walks you through setup. If you prefer to skip it, just start a new Claude Code session.
+In Pi CLI:
+```
+pi install git:github.com/Unsupervisedcom/deepwork
+```
+
+Then run `/deepwork_setup` in your project and invoke `/new_user`.
+
+The onboarding flow walks you through setup. If you prefer to skip it, start a new session in your agent CLI.
 
 > **Note:** If your folder isn't a Git repo yet, run `git init` first.
 
@@ -375,10 +395,11 @@ Use `/deepschema` for the full reference on creating and managing schemas.
 | Platform | Status | Notes |
 |----------|--------|-------|
 | **Claude Code** | Full Support | Recommended. Plugin-based delivery with quality hooks. |
+| **Pi CLI** | Full Support | Pi package with MCP adapter integration, skills, and extension hooks. |
 | **Gemini CLI** | Partial Support | TOML format skill, manual setup |
 | OpenCode | Planned | |
 | GitHub Copilot CLI | Planned | |
-| Others | Planned | We are nailing Claude and Gemini first, then adding others according to demand |
+| Others | Planned | We are adding platforms according to demand |
 
 **Tip:** Use the terminal (Claude Code CLI), not the VS Code extension. The terminal has full feature support.
 
