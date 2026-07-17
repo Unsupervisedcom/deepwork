@@ -147,10 +147,26 @@ step_arguments:
   - name: release_configs
     description: "CI workflow files, release scripts, and branch protection configs"
     type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Read release_audit.md and release_docs.md to verify that:
+        - The release configuration files implement the documented decisions for versioning, changelog generation, release notes, and publish targets.
+        - The CI release pipeline includes build, test, tag, and publish stages per convention 27.
+        - Publishing uses CI secret references only and does not hardcode credentials.
+        - Root and provider-specific AGENTS guidance referenced in release_docs.md matches the created documentation files.
 
   - name: release_docs.md
     description: "Documentation of release process decisions and setup"
     type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - The canonical release process is documented at the repository's standard docs location for operational/release docs, or at `docs/releases.md` / `docs/platform/releases.md` when no stronger convention exists.
+        - Root `AGENTS.md` references the canonical release doc and points to `.github/AGENTS.md` and/or `.forgejo/AGENTS.md` when those directories are relevant.
+        - The documented branch strategy, publish targets, required CI secrets, and post-setup steps are complete and consistent with the created release configs.
+        - The document is sufficient for a human or non-DeepWork agent to understand how releases work in this repository.
 
   - name: infrastructure_audit.md
     description: "Infrastructure audit documenting setup, gaps, and convention compliance"
@@ -202,6 +218,14 @@ step_arguments:
   - name: observability_configs
     description: "Monitoring configuration files (Helm values, nix modules, cloud configs, alert rules)"
     type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Read observability_plan.md to verify that:
+        - The created monitoring configs match the selected stack and implementation approach from the plan.
+        - Alert rules include runbook references per convention 9.
+        - Dashboard or monitoring coverage addresses golden signals per convention 7.
+        - The configs include evidence of validation readiness such as syntax-checkable structure, dry-run compatibility, or tool-specific validation expectations.
 
   - name: migration_description
     description: "What is being migrated (e.g., 'migrate from Zalando Postgres operator to CNPG')"
@@ -223,6 +247,13 @@ step_arguments:
   - name: github_issue_url.md
     description: "URL of the created GitHub issue"
     type: file_path
+    review:
+      strategy: matches_together
+      instructions: |
+        Verify that:
+        - The file contains a valid issue URL or equivalent shared-surface issue reference.
+        - The created issue matches the workflow intent and links to or summarizes the migration, incident, or platform work clearly enough for collaborators to act on it.
+        - Any required checklist, deliverables, or validation-gate expectations referenced by the producing workflow are reflected in the issue body.
 
   - name: migration_report.md
     description: "Migration execution report with completed steps, validation results, and final state"
@@ -837,8 +868,10 @@ workflows:
 
           1. Read context.md for CI provider, package managers, build tools, repo structure.
           2. Check for existing release infrastructure — CI release workflows, version files, changelog files, release branch patterns, tag conventions, GitHub Releases, release scripts, release tooling configuration (release-please, semantic-release, git-cliff, changesets, goreleaser).
-          3. Assess against conventions 24-29 — SemVer compliance, release notes generation, release branch strategy, CI pipeline stages (build/test/tag/publish), automated artifact publishing, changelog from commits/PRs.
-          4. Document findings with specific file paths, tool names, and configuration details.
+          3. Identify which release-policy decisions are already explicit in the repository and which still require user judgment before automation can be configured. At minimum, assess cadence, version semantics, stabilization model, backport policy, hotfix policy, merge-back policy, publish targets, and stable-vs-unstable consumption guidance.
+          4. Treat unresolved release-policy questions as audit gaps. The setup step must not invent those answers without asking the user.
+          5. Assess against conventions 24-29 — SemVer compliance, release notes generation, release branch strategy, CI pipeline stages (build/test/tag/publish), automated artifact publishing, changelog from commits/PRs.
+          6. Document findings with specific file paths, tool names, configuration details, and unresolved policy questions.
         inputs:
           context.md: {}
         outputs:
@@ -850,7 +883,7 @@ workflows:
 
           ## Objective
 
-          Configure a complete release pipeline based on gaps identified in release_audit.md. All decisions requiring user judgment MUST be surfaced via AskUserQuestion.
+          Configure a complete release pipeline based on gaps identified in release_audit.md. All decisions requiring user judgment MUST be surfaced via AskUserQuestion. Release automation implements project policy, so this workflow MUST ask the user to define the release policy before it writes automation when that policy is not already explicit.
 
           ## Task
 
@@ -859,13 +892,15 @@ workflows:
           ### Process
 
           1. Read release_audit.md (gap analysis) and context.md (platform context).
-          2. Set up versioning (convention 24) — choose version bumping tool based on stack, configure it.
-          3. Set up changelog generation (convention 29) — choose tool based on stack and CI provider.
-          4. Document release branch strategy (convention 26) — ask user for preferred model (trunk-based, release branches, GitFlow).
-          5. Create CI release workflow (convention 27) — MUST include build, test, tag, publish stages. Ask user for publish targets.
-          6. Configure automated artifact publishing (convention 28) — add publish steps with CI secret references (NEVER hardcode tokens).
-          7. Configure release notes (convention 25) — release-please, git-cliff, or GitHub auto-generated notes.
-          8. Document all decisions in release_docs.md.
+          2. Confirm the release policy with the user before configuring automation whenever it is not already explicit in the repository. Ask about cadence, version semantics, stabilization model, backport policy, hotfix policy, merge-back policy, publish targets, and stable-vs-unstable consumption guidance. Ask only for unresolved items, but do not proceed while those items remain ambiguous.
+          3. Set up versioning (convention 24) — choose version bumping tool based on stack, configure it.
+          4. Set up changelog generation (convention 29) — choose tool based on stack and CI provider.
+          5. Document release branch strategy (convention 26) — ask user for preferred model (trunk-based, release branches, GitFlow) when the confirmed release policy does not already answer it.
+          6. Create CI release workflow (convention 27) — MUST include build, test, tag, publish stages. Ask user for publish targets when they are not already part of the confirmed release policy.
+          7. Configure automated artifact publishing (convention 28) — add publish steps with CI secret references (NEVER hardcode tokens).
+          8. Configure release notes (convention 25) — release-please, git-cliff, or GitHub auto-generated notes.
+          9. Surface the release process for both humans and agents — canonical release doc following the repository's standard docs convention when one exists, concise root AGENTS.md reference, provider-specific `.github/AGENTS.md` or `.forgejo/AGENTS.md`.
+          10. Document all decisions in release_docs.md, including the release policy that was confirmed before implementation.
         inputs:
           release_audit.md: {}
           context.md: {}
@@ -873,10 +908,12 @@ workflows:
           release_configs: {}
           release_docs.md: {}
         process_requirements:
+          policy_confirmed_first: "The workflow MUST confirm the release policy with the user before configuring automation when cadence, version semantics, stabilization, backports, hotfixes, merge-back, publish targets, or stable-vs-unstable guidance are not already explicit."
           pipeline_complete: "CI release pipeline MUST include build, test, tag, and publish stages per convention 27."
           versioning_configured: "Semantic versioning MUST be set up with automated version bumping."
           release_notes: "Changelog/release notes generation MUST be configured per convention 29."
           branch_strategy_documented: "Release branch strategy MUST be documented in the repository."
+          agent_guidance_wired: "The repository MUST expose the release process through a canonical docs path that follows the repo's documentation convention when available, plus AGENTS.md references for root and relevant CI-provider directories."
           decisions_documented: "All setup decisions MUST be documented in release_docs.md."
 
   infrastructure_audit:
