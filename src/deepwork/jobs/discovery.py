@@ -63,6 +63,22 @@ def get_job_folders(project_root: Path) -> list[Path]:
     return folders
 
 
+def _get_extra_folders() -> set[Path]:
+    """Return the set of extra job folders from the environment variable.
+
+    Parses the same environment variable as :func:`get_job_folders` using
+    identical logic, returning only the *extra* entries as a set.
+    """
+    raw = os.environ.get(ENV_ADDITIONAL_JOBS_FOLDERS, "")
+    if not raw:
+        return set()
+    return {
+        Path(entry.strip())
+        for entry in raw.split(":")
+        if entry.strip()
+    }
+
+
 def load_all_jobs(
     project_root: Path,
 ) -> tuple[list[JobDefinition], list[JobLoadError]]:
@@ -79,10 +95,13 @@ def load_all_jobs(
     jobs: list[JobDefinition] = []
     errors: list[JobLoadError] = []
 
+    extra_folders = _get_extra_folders()
+
     for folder in get_job_folders(project_root):
         if not folder.exists() or not folder.is_dir():
             continue
 
+        folder_jobs: list[str] = []
         for job_dir in sorted(folder.iterdir()):
             if not job_dir.is_dir() or not (job_dir / "job.yml").exists():
                 continue
@@ -94,6 +113,7 @@ def load_all_jobs(
                 job = parse_job_definition(job_dir)
                 jobs.append(job)
                 seen_names.add(job_dir.name)
+                folder_jobs.append(job_dir.name)
             except ParseError as e:
                 logger.warning("Skipping invalid job '%s': %s", job_dir.name, e)
                 errors.append(
@@ -103,6 +123,14 @@ def load_all_jobs(
                         error=str(e),
                     )
                 )
+
+        if folder_jobs and folder in extra_folders:
+            logger.info(
+                "Loaded %d job(s) from shared folder %s: %s",
+                len(folder_jobs),
+                folder,
+                ", ".join(folder_jobs),
+            )
 
     return jobs, errors
 
