@@ -15,7 +15,7 @@ def setup() -> None:
     """
     claude_dir = Path.home() / ".claude"
     if claude_dir.is_dir():
-        from deepwork.setup.claude import claude_setup
+        from deepwork.setup.claude import claude_project_setup, claude_setup
 
         changes = claude_setup()
         if changes:
@@ -24,6 +24,12 @@ def setup() -> None:
                 click.echo(f"  • {change}")
         else:
             click.echo("Claude Code — already configured, no changes needed.")
+
+        project_changes = claude_project_setup()
+        if project_changes:
+            click.echo("Claude Code — updated .claude/settings.json:")
+            for change in project_changes:
+                click.echo(f"  • {change}")
     else:
         click.echo("No supported AI agent platforms detected (~/.claude not found).")
 

@@ -1,4 +1,4 @@
-"""Ensure ~/.claude/settings.json is configured for DeepWork."""
+"""Ensure Claude Code settings are configured for DeepWork."""
 
 from __future__ import annotations
 
@@ -78,6 +78,43 @@ def claude_setup() -> list[str]:
         if perm not in allow:
             allow.append(perm)
             changes.append(f"Added '{perm}' to permissions.allow")
+
+    if changes:
+        settings_path.write_text(json.dumps(settings, indent=2) + "\n")
+
+    return changes
+
+
+def claude_project_setup(project_dir: Path | None = None) -> list[str]:
+    """Configure project-level .claude/settings.json with DeepWork marketplace.
+
+    Adds the marketplace so team members who clone the repo get it automatically.
+    Returns a list of human-readable messages describing what changed.
+    """
+    root = project_dir or Path.cwd()
+    settings_path = root / ".claude" / "settings.json"
+
+    if settings_path.exists():
+        settings = json.loads(settings_path.read_text())
+    else:
+        settings_path.parent.mkdir(parents=True, exist_ok=True)
+        settings = {}
+
+    changes: list[str] = []
+
+    marketplaces = settings.setdefault("extraKnownMarketplaces", {})
+    if MARKETPLACE_KEY not in marketplaces:
+        marketplaces[MARKETPLACE_KEY] = {"source": MARKETPLACE_SOURCE}
+        changes.append(f"Added '{MARKETPLACE_KEY}' to project extraKnownMarketplaces")
+    else:
+        entry = marketplaces[MARKETPLACE_KEY]
+        existing_source = entry.get("source", {})
+        if (
+            existing_source.get("source") != MARKETPLACE_SOURCE["source"]
+            or existing_source.get("repo") != MARKETPLACE_SOURCE["repo"]
+        ):
+            entry["source"] = MARKETPLACE_SOURCE
+            changes.append(f"Updated '{MARKETPLACE_KEY}' project marketplace source")
 
     if changes:
         settings_path.write_text(json.dumps(settings, indent=2) + "\n")

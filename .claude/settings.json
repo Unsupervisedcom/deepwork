@@ -116,5 +116,13 @@
   },
   "enabledPlugins": {
     "plugin-dev@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "deepwork-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "Unsupervisedcom/deepwork"
+      }
+    }
   }
 }
