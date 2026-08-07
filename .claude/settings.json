@@ -6,6 +6,8 @@
       "WebFetch(domain:anthropic.com)",
       "WebFetch(domain:platform.claude.com)",
       "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:docs.openclaw.ai)",
+      "WebFetch(domain:github.com)",
       "Bash(ls:*)",
       "Bash(grep:*)",
       "Bash(find:*)",

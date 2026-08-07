@@ -41,6 +41,18 @@ For bonus points, try `/deepwork learn` after running your workflow as well, and
 </details>
 
 
+### OpenClaw
+
+OpenClaw support ships as a [Codex bundle](https://docs.openclaw.ai/plugins/bundles) in [`plugins/openclaw/`](./plugins/openclaw/). The bundle launches the DeepWork runtime via `uvx`, so you do not need to install `deepwork` separately — just have `uv` on your PATH.
+
+```bash
+git clone https://github.com/Unsupervisedcom/deepwork.git
+openclaw plugins install ./deepwork/plugins/openclaw
+openclaw gateway restart
+```
+
+Start a new OpenClaw session after the restart. See [plugins/openclaw/README.md](./plugins/openclaw/README.md) for the short install guide and [doc/openclaw_design.md](./doc/openclaw_design.md) for how the integration works, limitations, and troubleshooting.
+
 ---
 
 ## The Problem
