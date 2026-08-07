@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+## [0.14.1] - 2026-05-20
+
+### Added
+
 - `review_depth: lightweight` annotation for review blocks in `job.yml` step outputs and `.deepreview` rules — when set, the workflow's `common_job_info` preamble is omitted from review instruction files, reducing token overhead for trivial or reversible intermediate steps (closes #86)
 - Hung-reviewer retry policy in quality gate guidance: reviewers completing with 0 tool uses are retried up to `REVIEWER_MAX_RETRIES` (default: 1) times before being skipped with a "manual review recommended" note; fast-fails (elapsed < `REVIEWER_FAST_FAIL_SECONDS`, default: 30s) are retried immediately (closes #408)
 
@@ -550,7 +559,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial version.
 
-[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.14.0...HEAD
+[Unreleased]: https://github.com/Unsupervisedcom/deepwork/compare/0.14.1...HEAD
+[0.14.1]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.14.1
 [0.14.0]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.14.0
 [0.13.9]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.9
 [0.13.8]: https://github.com/Unsupervisedcom/deepwork/releases/tag/0.13.8
